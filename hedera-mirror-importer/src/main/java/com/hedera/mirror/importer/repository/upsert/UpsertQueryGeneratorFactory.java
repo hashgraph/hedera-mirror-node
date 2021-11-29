@@ -80,7 +80,6 @@ public class UpsertQueryGeneratorFactory {
     }
 
     UpsertEntity createEntity(Class<?> domainClass) {
-        Table table = AnnotationUtils.findAnnotation(domainClass, Table.class);
         Upsertable upsertable = AnnotationUtils.findAnnotation(domainClass, Upsertable.class);
 
         if (upsertable == null) {
@@ -88,6 +87,7 @@ public class UpsertQueryGeneratorFactory {
         }
 
         EntityType<?> entityType = entityManager.getMetamodel().entity(domainClass);
+        Table table = AnnotationUtils.findAnnotation(domainClass, Table.class);
         String tableName = table != null ? table.name() : toSnakeCase(entityType.getName());
         Set<String> idAttributes = getIdAttributes(entityType);
         Set<UpsertColumn> upsertColumns = new TreeSet<>();
