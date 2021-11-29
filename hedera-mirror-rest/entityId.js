@@ -205,7 +205,9 @@ const parseMemoized = mem(
    * @return {EntityId}
    */
   (id, error) => {
-    let shard, realm, num;
+    let shard = 0n,
+      realm = 0n,
+      num = 0n;
     if (isValidEntityId(id)) {
       [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
 
@@ -235,8 +237,14 @@ const parseMemoized = mem(
   entityIdCacheOptions
 );
 
+/**
+ * Check if passed in bigint is above the given threshold
+ * @param {bigint} num
+ * @param {bigint} threshold
+ * @return {boolean}
+ */
 const isBigIntGreaterThan = (num, threshold) => {
-  return typeof num === 'bigint' && num > threshold;
+  return num > threshold;
 };
 
 /**
