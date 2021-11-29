@@ -24,7 +24,7 @@ logging:
     com.hedera.mirror.monitor: info
     com.hedera.hashgraph.sdk.Executable: error
     com.hedera.hashgraph.sdk.TransactionReceiptQuery: error
-    org.springframework.cloud.kubernetes.fabric8.config.Fabric8ConfigUtils: error
+    org.springframework.cloud.kubernetes.fabric8.config: error
 management:
   endpoints:
     web:

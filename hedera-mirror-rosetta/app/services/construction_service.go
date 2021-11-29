@@ -47,6 +47,7 @@ type constructionAPIService struct {
 	hederaClient       *hedera.Client
 	nodeAccountIds     []hedera.AccountID
 	nodeAccountIdsLen  *big.Int
+	online             bool
 	transactionHandler construction.TransactionConstructor
 }
 
@@ -131,6 +132,10 @@ func (c *constructionAPIService) ConstructionMetadata(
 	ctx context.Context,
 	request *rTypes.ConstructionMetadataRequest,
 ) (*rTypes.ConstructionMetadataResponse, *rTypes.Error) {
+	if !c.online {
+		return nil, errors.ErrEndpointNotSupportedInOfflineMode
+	}
+
 	return &rTypes.ConstructionMetadataResponse{
 		Metadata: make(map[string]interface{}),
 	}, nil
@@ -232,6 +237,10 @@ func (c *constructionAPIService) ConstructionSubmit(
 	ctx context.Context,
 	request *rTypes.ConstructionSubmitRequest,
 ) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
+	if !c.online {
+		return nil, errors.ErrEndpointNotSupportedInOfflineMode
+	}
+
 	transaction, rErr := unmarshallTransactionFromHexString(request.SignedTransaction)
 	if rErr != nil {
 		return nil, rErr
@@ -286,6 +295,7 @@ func (c *constructionAPIService) getValidStartNanos(metadata map[string]interfac
 func NewConstructionAPIService(
 	network string,
 	nodes config.NodeMap,
+	online bool,
 	transactionConstructor construction.TransactionConstructor,
 ) (server.ConstructionAPIServicer, error) {
 	var err error
@@ -313,6 +323,7 @@ func NewConstructionAPIService(
 		hederaClient:       hederaClient,
 		nodeAccountIds:     nodeAccountIds,
 		nodeAccountIdsLen:  big.NewInt(int64(len(nodeAccountIds))),
+		online:             online,
 		transactionHandler: transactionConstructor,
 	}, nil
 }

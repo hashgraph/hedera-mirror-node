@@ -39,8 +39,8 @@ type BaseService struct {
 func NewBaseService(
 	blockRepo interfaces.BlockRepository,
 	transactionRepo interfaces.TransactionRepository,
-) BaseService {
-	return BaseService{
+) *BaseService {
+	return &BaseService{
 		blockRepo:       blockRepo,
 		transactionRepo: transactionRepo,
 	}
@@ -87,8 +87,4 @@ func (c *BaseService) FindByHashInBlock(
 
 func (c *BaseService) FindBetween(ctx context.Context, start int64, end int64) ([]*types.Transaction, *rTypes.Error) {
 	return c.transactionRepo.FindBetween(ctx, start, end)
-}
-
-func (c *BaseService) TypesAsArray() []string {
-	return c.transactionRepo.TypesAsArray()
 }

@@ -84,7 +84,7 @@ func (suite *baseServiceSuite) SetupTest() {
 	suite.mockTransactionRepo = &mocks.MockTransactionRepository{}
 
 	baseService := NewBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
-	suite.baseService = &baseService
+	suite.baseService = baseService
 }
 
 func (suite *baseServiceSuite) TestRetrieveBlockFindByIdentifier() {
@@ -311,17 +311,5 @@ func (suite *baseServiceSuite) TestFindBetweenThrows() {
 	// then:
 	assert.Equal(suite.T(), []*types.Transaction{}, res)
 	assert.NotNil(suite.T(), e)
-	suite.mockBlockRepo.AssertExpectations(suite.T())
-}
-
-func (suite *baseServiceSuite) TestTypesAsArray() {
-	// given:
-	suite.mockTransactionRepo.On("TypesAsArray").Return(exampleTypesArray, mocks.NilError)
-
-	// when:
-	res := suite.baseService.TypesAsArray()
-
-	// then:
-	assert.Equal(suite.T(), exampleTypesArray, res)
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }

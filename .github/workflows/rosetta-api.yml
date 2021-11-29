@@ -46,19 +46,69 @@ jobs:
           path: ./**/*.tgz
           if-no-files-found: error
 
-  validate:
+  image:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Build Mirror Node All-in-One
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Set GIT_REF
         run: |
           GIT_REF=${GITHUB_HEAD_REF:-$GITHUB_REF}
-          docker build --build-arg GIT_REF=${GIT_REF#refs/*/} --tag="${MODULE}" .
-        working-directory: ./hedera-mirror-rosetta/build
+          GIT_REF=${GIT_REF#refs/*/}
+          echo "GIT_REF=${GIT_REF}" >> $GITHUB_ENV
+
+      - name: Build Mirror Node All-in-One Docker Image and Export
+        uses: docker/build-push-action@v2
+        with:
+          build-args: GIT_REF=${{ env.GIT_REF }}
+          context: ./hedera-mirror-rosetta/build
+          tags: ${{ env.MODULE }}:latest
+          outputs: type=docker,dest=/tmp/${{ env.MODULE }}.tar
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.MODULE }}
+          path: /tmp/${{ env.MODULE }}.tar
+
+  validate:
+    runs-on: ubuntu-latest
+    needs: image
+    strategy:
+      matrix:
+        online-only: ['true', 'false']
+    timeout-minutes: 15
+    env:
+      OFFLINE_URL: http://localhost:5700
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Get Changed Files
+        id: changed-files-module
+        uses: tj-actions/changed-files@v11.5
+        with:
+          files: hedera-mirror-rosetta
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Download Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ env.MODULE }}
+          path: /tmp
+
+      - name: Load Mirror Node ALl-in-One Docker Image
+        run: |
+          docker load --input /tmp/${MODULE}.tar
+          docker image ls -a
 
       - name: Importer Configuration
         run: echo "${{ secrets.ROSETTA_IMPORTER_CONFIG }}" | base64 -d > /tmp/application_importer.yml
@@ -66,13 +116,16 @@ jobs:
       - name: Rosetta Configuration
         run: echo "${{ secrets.ROSETTA_ROSETTA_CONFIG }}" | base64 -d > /tmp/application_rosetta.yml
 
-      - name: Construction Test Prefunded Accounts
+      - name: Rosetta-cli Configuration
         run: |
+          # add prefunded accounts for construction validation, override construction offline_url
           echo "${{ secrets.ROSETTA_PREFUNDED_ACCOUNTS }}" | base64 -d > /tmp/accounts.json
           cd ./scripts/validation/testnet/
-          jq --slurpfile accounts /tmp/accounts.json '.construction.prefunded_accounts=$accounts[0]' \
-            validate-construction.json > /tmp/validate-construction.json
-          mv /tmp/validate-construction.json validate-construction.json
+          jq --slurpfile accounts /tmp/accounts.json \
+            '.construction.prefunded_accounts=$accounts[0] | .construction.offline_url="${{ env.OFFLINE_URL }}"' \
+            validation.json > /tmp/validation.json
+
+          mv /tmp/validation.json validation.json
 
       - name: Set Importer StartDate
         run: |
@@ -83,14 +136,23 @@ jobs:
           echo "STARTDATE=$startdate" >> $GITHUB_ENV
           echo "Set importer startDate to $startdate"
 
-      - name: Run Mirror Node
+      - name: Run Mirror Node in Online Mode
         run: |
-          CONTAINER_ID=$(docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=$STARTDATE \
+          ONLINE_CONTAINER_ID=$(docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=$STARTDATE \
             -e NETWORK=testnet \
             -v /tmp/application_importer.yml:/app/importer/application.yml \
             -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
-            -p 5432:5432 -p 5700:5700 "${MODULE}")
-          echo "CONTAINER_ID=$CONTAINER_ID" >> $GITHUB_ENV
+            -p 5432:5432 -p 5700:5700 "${MODULE}:latest")
+          echo "ONLINE_CONTAINER_ID=$ONLINE_CONTAINER_ID" >> $GITHUB_ENV
+
+      - name: Run Mirror Node in Offline Mode
+        if: matrix.online-only != 'true'
+        run: |
+          OFFLINE_CONTAINER_ID=$(docker run -d -e MODE=offline -e NETWORK=testnet \
+            -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
+            -p 5701:5700 "${MODULE}:latest")
+          echo "OFFLINE_CONTAINER_ID=$OFFLINE_CONTAINER_ID" >> $GITHUB_ENV
+          echo "OFFLINE_URL=http://localhost:5701" >> $GITHUB_ENV
 
       - name: Wait for Mirror Node to start syncing
         run: ./scripts/wait-for-mirror-node.sh
@@ -111,16 +173,41 @@ jobs:
           cat /tmp/construction-validation.log
           exit $code
 
-      - name: Install Postman newman CLI
-        run: npm install -g newman
+      - name: Run Rosetta BDD Tests
+        if: steps.changed-files-module.outputs.any_changed == 'true'
+        working-directory: ./hedera-mirror-rosetta/test/bdd-client
+        run: |
+          jq -r '.[] | {"privateKey": .privkey, "id": .account_identifier.address}' /tmp/accounts.json | \
+            jq -s '. | {operators: .} | .server.offlineUrl="${{ env.OFFLINE_URL }}" | {test: .} | {rosetta: .}
+              | {mirror: .} | {hedera: .}' | \
+            yq eval -P > application.yml
+          go test -v
 
       - name: Run Rosetta Postman API Tests
         working-directory: ./hedera-mirror-rosetta/scripts/validation/postman
-        run: newman run rosetta-api-postman.json
+        run: |
+          npm install -g newman
+          newman run rosetta-api-postman.json
 
       - name: Show Container Log
-        if: ${{ failure() && env.CONTAINER_ID != '' }}
-        run: docker logs $CONTAINER_ID
+        if: ${{ failure() && (env.OFFLINE_CONTAINER_ID != '' || env.ONLINE_CONTAINER_ID != '') }}
+        run: |
+          echo "Logs for offline container ${OFFLINE_CONTAINER_ID}"
+          [[ -n "${OFFLINE_CONTAINER_ID}" ]] && docker logs ${OFFLINE_CONTAINER_ID} || true
+
+          echo "Logs for online container ${ONLINE_CONTAINER_ID}"
+          [[ -n "${ONLINE_CONTAINER_ID}" ]] && docker logs ${ONLINE_CONTAINER_ID} || true
+
+  delete-image:
+    runs-on: ubuntu-latest
+    needs: validate
+    if: ${{ always() }}
+    steps:
+      - name: Delete Artifact
+        uses: geekyeggo/delete-artifact@v1
+        with:
+          name: ${{ env.MODULE }}
+          failOnError: false
 
   gosec:
     runs-on: ubuntu-latest

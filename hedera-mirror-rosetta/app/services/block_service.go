@@ -30,11 +30,11 @@ import (
 
 // blockAPIService implements the server.BlockAPIServicer interface.
 type blockAPIService struct {
-	BaseService
+	*BaseService
 }
 
 // NewBlockAPIService creates a new instance of a blockAPIService.
-func NewBlockAPIService(baseService BaseService) server.BlockAPIServicer {
+func NewBlockAPIService(baseService *BaseService) server.BlockAPIServicer {
 	return &blockAPIService{BaseService: baseService}
 }
 

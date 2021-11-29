@@ -34,9 +34,11 @@ import (
 
 // networkAPIService implements the server.NetworkAPIServicer interface.
 type networkAPIService struct {
-	BaseService
+	*BaseService
 	addressBookEntryRepo interfaces.AddressBookEntryRepository
 	network              *rTypes.NetworkIdentifier
+	online               bool
+	operationTypes       []string
 	version              *rTypes.Version
 }
 
@@ -65,7 +67,7 @@ func (n *networkAPIService) NetworkOptions(
 		Version: n.version,
 		Allow: &rTypes.Allow{
 			OperationStatuses:       operationStatuses,
-			OperationTypes:          n.TypesAsArray(),
+			OperationTypes:          n.operationTypes,
 			Errors:                  errors.Errors,
 			HistoricalBalanceLookup: true,
 		},
@@ -77,6 +79,10 @@ func (n *networkAPIService) NetworkStatus(
 	ctx context.Context,
 	request *rTypes.NetworkRequest,
 ) (*rTypes.NetworkStatusResponse, *rTypes.Error) {
+	if !n.online {
+		return nil, errors.ErrEndpointNotSupportedInOfflineMode
+	}
+
 	genesisBlock, err := n.RetrieveGenesis(ctx)
 	if err != nil {
 		return nil, err
@@ -106,9 +112,19 @@ func (n *networkAPIService) NetworkStatus(
 	}, nil
 }
 
-// NewNetworkAPIService creates a new instance of a networkAPIService.
-func NewNetworkAPIService(
-	baseService BaseService,
+// NewOfflineNetworkAPIService creates an offline networkAPIService instance.
+func NewOfflineNetworkAPIService(network *rTypes.NetworkIdentifier, version *rTypes.Version) server.NetworkAPIServicer {
+	return &networkAPIService{
+		online:         false,
+		operationTypes: tools.GetStringValuesFromInt32StringMap(types.TransactionTypes),
+		network:        network,
+		version:        version,
+	}
+}
+
+// NewOnlineNetworkAPIService creates an online networkAPIService instance.
+func NewOnlineNetworkAPIService(
+	baseService *BaseService,
 	addressBookEntryRepo interfaces.AddressBookEntryRepository,
 	network *rTypes.NetworkIdentifier,
 	version *rTypes.Version,
@@ -116,6 +132,8 @@ func NewNetworkAPIService(
 	return &networkAPIService{
 		BaseService:          baseService,
 		addressBookEntryRepo: addressBookEntryRepo,
+		online:               true,
+		operationTypes:       tools.GetStringValuesFromInt32StringMap(types.TransactionTypes),
 		network:              network,
 		version:              version,
 	}
