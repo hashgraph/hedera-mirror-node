@@ -208,24 +208,14 @@ const parseMemoized = mem(
     let shard, realm, num;
     if (isValidEntityId(id)) {
       [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
-
-      if (
-        isBigIntGreaterThan(num, maxNum) ||
-        isBigIntGreaterThan(realm, maxRealm) ||
-        isBigIntGreaterThan(shard, maxShard)
-      ) {
-        throw error();
-      }
+      validateBigIntSize(num, maxNum, error);
+      validateBigIntSize(realm, maxRealm, error);
+      validateBigIntSize(shard, maxShard, error);
     } else if (isValidSolidityAddress(id)) {
       [shard, realm, num] = parseFromSolidityAddress(id);
-
-      if (
-        isBigIntGreaterThan(num, maxSolidityRealmNum) ||
-        isBigIntGreaterThan(realm, maxSolidityRealmNum) ||
-        isBigIntGreaterThan(shard, maxSolidityShard)
-      ) {
-        throw error();
-      }
+      validateBigIntSize(num, maxSolidityRealmNum, error);
+      validateBigIntSize(realm, maxSolidityRealmNum, error);
+      validateBigIntSize(shard, maxSolidityShard, error);
     } else {
       throw error();
     }
@@ -236,13 +226,22 @@ const parseMemoized = mem(
 );
 
 /**
- * Check if passed in bigint is above the given threshold
+ * Validate num is a bigint under the provided the given threshold. Throw an error otherwise.
  * @param {bigint} num
  * @param {bigint} threshold
+ * @param {error} error
  * @return {boolean}
  */
-const isBigIntGreaterThan = (num, threshold) => {
-  return typeof num === 'bigint' && typeof threshold === 'bigint' && num > threshold;
+const validateBigIntSize = (num, threshold, error) => {
+  if (typeof num !== 'bigint' || typeof threshold !== 'bigint') {
+    throw error();
+  }
+
+  if (num > threshold) {
+    throw error();
+  }
+
+  return true;
 };
 
 /**
