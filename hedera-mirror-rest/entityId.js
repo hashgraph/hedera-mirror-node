@@ -237,7 +237,8 @@ const validateBigIntSize = (num, threshold, error) => {
     throw error();
   }
 
-  if (num > threshold) {
+  // cast to appease sonar code smell
+  if (BigInt(num) > BigInt(threshold)) {
     throw error();
   }
 
