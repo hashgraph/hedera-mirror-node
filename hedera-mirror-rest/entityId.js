@@ -204,7 +204,7 @@ const parseMemoized = mem(
    * @return {EntityId}
    */
   (id, error) => {
-    let [shard, realm, num] = [0, 0, 0];
+    let shard, realm, num;
     if (isValidEntityId(id)) {
       [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
 

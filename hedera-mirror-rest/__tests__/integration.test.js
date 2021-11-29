@@ -454,6 +454,7 @@ describe('DB integration test - spec based', () => {
 
   const specPath = path.join(__dirname, 'specs');
   fs.readdirSync(specPath).forEach((file) => {
+    // ignore non spec files e.g. hidden files on some platforms
     if (file.indexOf('.spec') < 0) {
       return;
     }

@@ -46,7 +46,7 @@ afterAll(async () => {
 beforeEach(async () => {
   if (!dbConfig.sqlConnection) {
     logger.warn(`sqlConnection undefined, acquire new connection`);
-    sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
+    dbConfig.sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
   }
 
   await integrationDbOps.cleanUp(dbConfig.sqlConnection);

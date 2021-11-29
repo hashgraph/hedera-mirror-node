@@ -111,7 +111,7 @@ const instantiateDatabase = async () => {
   dbSessionConfig.host = dockerDb.getHost();
   logger.info(`Started dockerized PostgreSQL at ${dbSessionConfig.host}:${dbSessionConfig.port}`);
 
-  return await flywayMigrate(dbSessionConfig).then(() => {
+  return flywayMigrate(dbSessionConfig).then(() => {
     return {
       dbSessionConfig: dbSessionConfig,
       dockerContainer: dockerDb,
@@ -124,10 +124,10 @@ const instantiateDatabase = async () => {
  * Run the SQL (non-java) based migrations stored in the Importer project against the target database.
  */
 const flywayMigrate = async (dbSessionConfig) => {
-  logger.info(
-    `flywayMigrate will use postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}`
-  );
   logger.info('Using flyway CLI to construct schema');
+  logger.info(
+    `flywayMigrate will connect using postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}`
+  );
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayConfigPath = path.join(flywayDataPath, `config_${dbSessionConfig.port}.json`);
   const locations = path.join('..', schemaConfigs.flyway.locations);
@@ -164,8 +164,9 @@ const flywayMigrate = async (dbSessionConfig) => {
 
   // retry logic on flyway info to ensure flyway is downloaded
   let retries = 3;
-  let retryMsDelay = 2000;
-  while (retries-- > 0) {
+  const retryMsDelay = 2000;
+  while (retries > 0) {
+    retries--;
     try {
       execSync(`node ${exePath} -c ${flywayConfigPath} clean`, {stdio: 'inherit'});
     } catch (e) {
@@ -177,15 +178,15 @@ const flywayMigrate = async (dbSessionConfig) => {
   execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
 };
 
-const closeConnection = async (dbConfig) => {
-  if (dbConfig.sqlConnection) {
-    await dbConfig.sqlConnection.end();
+const closeConnection = async (dbconfig) => {
+  if (dbconfig.sqlConnection) {
+    await dbconfig.sqlConnection.end();
   }
-  if (dbConfig.dockerContainer) {
-    await dbConfig.dockerContainer.stop();
+  if (dbconfig.dockerContainer) {
+    await dbconfig.dockerContainer.stop();
 
     // remove config file
-    const flywayConfigPath = path.join(flywayDataPath, `config_${dbConfig.dbSessionConfig.port}.json`);
+    const flywayConfigPath = path.join(flywayDataPath, `config_${dbconfig.dbSessionConfig.port}.json`);
     fs.unlink(flywayConfigPath, (err) => {
       if (err) {
         logger.warn(`Error removing ${flywayConfigPath} from file system`);
