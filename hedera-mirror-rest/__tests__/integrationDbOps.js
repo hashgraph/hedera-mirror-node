@@ -29,6 +29,7 @@ const {GenericContainer} = require('testcontainers');
 const {db: dbConfig} = require('../config');
 const {isDockerInstalled} = require('./integrationUtils');
 const {getPoolClass, loadPgRange, randomString} = require('../utils');
+const os = require('os');
 
 const logger = log4js.getLogger();
 
@@ -65,8 +66,6 @@ const v2SchemaConfigs = {
 // if v2 schema is set in env use it, else default to v1
 const schemaConfigs = process.env.MIRROR_NODE_SCHEMA === 'v2' ? v2SchemaConfigs : v1SchemaConfigs;
 
-const flywayDataPath = '.node-flywaydb';
-
 const getConnection = (dbSessionConfig) => {
   logger.info(
     `sqlConnection will use postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}?sslmode=${dbSessionConfig.sslMode}`
@@ -91,7 +90,7 @@ const getConnection = (dbSessionConfig) => {
  * Instantiate sqlConnection by either pointing at a DB specified by environment variables or instantiating a
  * testContainers/dockerized postgresql instance.
  * Returns a dbConfig object for db state orchestration by test classes
- * @return {Object} {dbSessionConfig, dockerContainer, sqlConnection} Db session details, dockerContainerInstance and sql connection
+ * @return {Promise<Object>} {dbSessionConfig, dockerContainer, sqlConnection} Db session details, dockerContainerInstance and sql connection
  */
 const instantiateDatabase = async () => {
   if (!(await isDockerInstalled())) {
@@ -129,7 +128,8 @@ const flywayMigrate = async (dbSessionConfig) => {
     `flywayMigrate will connect using postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}`
   );
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
-  const flywayConfigPath = path.join(flywayDataPath, `config_${dbSessionConfig.port}.json`);
+  const flywayDataPath = '.node-flywaydb';
+  const flywayConfigPath = path.join(os.tmpdir(), `config_${dbSessionConfig.port}.json`); // store configs in temp dir
   const locations = path.join('..', schemaConfigs.flyway.locations);
   const flywayConfig = `{
     "flywayArgs": {
@@ -152,7 +152,7 @@ const flywayMigrate = async (dbSessionConfig) => {
       "url": "jdbc:postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}",
       "user": "${dbAdminUser}"
     },
-    "version": "8.1.0",
+    "version": "7.7.3",
     "downloads": {
       "storageDirectory": "${flywayDataPath}"
     }
@@ -184,16 +184,6 @@ const closeConnection = async (dbconfig) => {
   }
   if (dbconfig.dockerContainer) {
     await dbconfig.dockerContainer.stop();
-
-    // remove config file
-    const flywayConfigPath = path.join(flywayDataPath, `config_${dbconfig.dbSessionConfig.port}.json`);
-    fs.unlink(flywayConfigPath, (err) => {
-      if (err) {
-        logger.warn(`Error removing ${flywayConfigPath} from file system`);
-      }
-
-      logger.info(`Removed ${flywayConfigPath} from file system`);
-    });
   }
   if (oldPool) {
     global.pool = oldPool;

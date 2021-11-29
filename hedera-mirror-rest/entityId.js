@@ -21,6 +21,7 @@
 'use strict';
 
 const _ = require('lodash');
+const {typeOf} = require('mathjs');
 const mem = require('mem');
 const quickLru = require('quick-lru');
 
@@ -208,13 +209,21 @@ const parseMemoized = mem(
     if (isValidEntityId(id)) {
       [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
 
-      if (num > maxNum || realm > maxRealm || shard > maxShard) {
+      if (
+        isBigIntGreaterThan(num, maxNum) ||
+        isBigIntGreaterThan(realm, maxRealm) ||
+        isBigIntGreaterThan(shard, maxShard)
+      ) {
         throw error();
       }
     } else if (isValidSolidityAddress(id)) {
       [shard, realm, num] = parseFromSolidityAddress(id);
 
-      if (num > maxSolidityRealmNum || realm > maxSolidityRealmNum || shard > maxSolidityShard) {
+      if (
+        isBigIntGreaterThan(num, maxSolidityRealmNum) ||
+        isBigIntGreaterThan(realm, maxSolidityRealmNum) ||
+        isBigIntGreaterThan(shard, maxSolidityShard)
+      ) {
         throw error();
       }
     } else {
@@ -225,6 +234,10 @@ const parseMemoized = mem(
   },
   entityIdCacheOptions
 );
+
+const isBigIntGreaterThan = (num, threshold) => {
+  return typeof num === 'bigint' && num > threshold;
+};
 
 /**
  * Parses entity ID string. The entity ID string can be shard.realm.num, realm.num, or the encoded entity ID string.

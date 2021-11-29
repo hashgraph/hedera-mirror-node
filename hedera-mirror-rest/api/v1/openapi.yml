@@ -1051,11 +1051,6 @@ components:
                 properties:
                   message:
                     type: string
-    EvmAccount:
-      type: string
-      description: "EVM entity ID in the format of `shard.realm.num` or address in 20-byte solidity address form in hex with '0x' prefix"
-      pattern: '^0x[A-Fa-f0-9]{40}+|(\d{1,5}\.){0,2}\d{1,10}$'
-      example: "0x0000000000000000000000000000000000001f41"
     FixedFee:
       type: object
       properties:
