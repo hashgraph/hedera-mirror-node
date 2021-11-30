@@ -26,7 +26,7 @@ const fs = require('fs');
 const log4js = require('log4js');
 const path = require('path');
 const {GenericContainer} = require('testcontainers');
-const {db: dbConfig} = require('../config');
+const {db: defaultDbConfig} = require('../config');
 const {isDockerInstalled} = require('./integrationUtils');
 const {getPoolClass, loadPgRange, randomString} = require('../utils');
 const os = require('os');
@@ -38,8 +38,8 @@ loadPgRange();
 
 let oldPool;
 
-dbConfig.name = process.env.POSTGRES_DB || 'mirror_node_integration';
-const dbAdminUser = process.env.POSTGRES_USER || `${dbConfig.username}_admin`;
+defaultDbConfig.name = process.env.POSTGRES_DB || 'mirror_node_integration';
+const dbAdminUser = process.env.POSTGRES_USER || `${defaultDbConfig.username}_admin`;
 const dbAdminPassword = process.env.POSTGRES_PASSWORD || crypto.randomBytes(16).toString('hex');
 
 const v1SchemaConfigs = {
@@ -99,14 +99,14 @@ const instantiateDatabase = async () => {
 
   const image = `${schemaConfigs.docker.imageName}:${schemaConfigs.docker.tagName}`;
   logger.info(`Starting PostgreSQL docker container with image ${image}`);
-  const dbSessionConfig = {...dbConfig};
+  const dbSessionConfig = {...defaultDbConfig};
   const dockerDb = await new GenericContainer(image)
     .withEnv('POSTGRES_DB', dbSessionConfig.name)
     .withEnv('POSTGRES_USER', dbAdminUser)
     .withEnv('POSTGRES_PASSWORD', dbAdminPassword)
     .withExposedPorts(dbSessionConfig.port)
     .start();
-  dbSessionConfig.port = dockerDb.getMappedPort(dbConfig.port);
+  dbSessionConfig.port = dockerDb.getMappedPort(defaultDbConfig.port);
   dbSessionConfig.host = dockerDb.getHost();
   logger.info(`Started dockerized PostgreSQL at ${dbSessionConfig.host}:${dbSessionConfig.port}`);
 
@@ -178,12 +178,12 @@ const flywayMigrate = async (dbSessionConfig) => {
   execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
 };
 
-const closeConnection = async (dbconfig) => {
-  if (dbconfig.sqlConnection) {
-    await dbconfig.sqlConnection.end();
+const closeConnection = async (dbConfig) => {
+  if (dbConfig.sqlConnection) {
+    await dbConfig.sqlConnection.end();
   }
-  if (dbconfig.dockerContainer) {
-    await dbconfig.dockerContainer.stop();
+  if (dbConfig.dockerContainer) {
+    await dbConfig.dockerContainer.stop();
   }
   if (oldPool) {
     global.pool = oldPool;

@@ -975,13 +975,14 @@ components:
           example: "0x2b048531b38d2882e86044bc972e940ee0a01938"
           nullable: true
           type: string
+        contract_id:
+          $ref: '#/components/schemas/EntityId'
         created_contract_ids:
           description: The network's released supply of hbars in tinybars
           example:
             - "0.0.1003"
           items:
             type: string
-          nullable: true
           type: array
         error_message:
           description: The message when an error occurs during smart contract execution

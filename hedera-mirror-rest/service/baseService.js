@@ -36,10 +36,9 @@ class BaseService {
 
   async getRows(query, params, functionName = '') {
     logger.trace(`${functionName} query: ${query}, params: ${params}`);
-    return pool.queryQuietly(query, params).then((result) => {
-      logger.trace(`${functionName} ${result.rows.length} entries`);
-      return result.rows;
-    });
+    const {rows} = await pool.queryQuietly(query, params);
+    logger.trace(`${functionName} ${rows.length} entries`);
+    return rows;
   }
 }
 

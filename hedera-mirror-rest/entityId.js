@@ -21,7 +21,6 @@
 'use strict';
 
 const _ = require('lodash');
-const {typeOf} = require('mathjs');
 const mem = require('mem');
 const quickLru = require('quick-lru');
 
@@ -45,9 +44,6 @@ const shardOffset = numBits + realmBits;
 const maxShard = 2n ** shardBits - 1n;
 
 const maxEncodedId = 2n ** 63n - 1n;
-
-const maxSolidityShard = 4294967295n; // ffffffff in hex
-const maxSolidityRealmNum = 18446744073709551616n; // ffffffffffffffff in hex
 
 const solidityAddressRegex = /^0x[A-Fa-f0-9]{40}$/;
 const entityIdRegex = /^(\d{1,5}\.){1,2}\d{1,10}$/;
@@ -208,15 +204,13 @@ const parseMemoized = mem(
     let shard, realm, num;
     if (isValidEntityId(id)) {
       [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
-      if (num > maxNum || realm > maxRealm || shard > maxShard) {
-        throw error();
-      }
     } else if (isValidSolidityAddress(id)) {
       [shard, realm, num] = parseFromSolidityAddress(id);
-      if (num > maxSolidityRealmNum || realm > maxSolidityRealmNum || shard > maxSolidityShard) {
-        throw error();
-      }
     } else {
+      throw error();
+    }
+
+    if (num > maxNum || realm > maxRealm || shard > maxShard) {
       throw error();
     }
 

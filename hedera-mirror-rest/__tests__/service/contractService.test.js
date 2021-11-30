@@ -30,7 +30,7 @@ jest.setTimeout(40000);
 
 let dbConfig;
 
-// set timeout for beforeAll to 2 minutes as downloading docker image if not exists can take quite some time
+// set timeout for beforeAll to 4 minutes as downloading docker image if not exists can take quite some time
 const defaultBeforeAllTimeoutMillis = 240 * 1000;
 
 beforeAll(async () => {
@@ -94,16 +94,18 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
 describe('ContractService.getContractResultsByIdAndFilters tests', () => {
   test('ContractService.getContractResultsByIdAndFilters - No match', async () => {
     const response = await ContractService.getContractResultsByIdAndFilters();
-    expect(response).toEqual(null);
+    expect(response).toEqual([]);
   });
 
   test('ContractService.getContractResultsByIdAndFilters - Row match', async () => {
-    await integrationDomainOps.addContractResult({
-      contract_id: 2,
-      consensus_timestamp: 1,
-      function_parameters: '\\x0D',
-      amount: 10,
-    });
+    await integrationDomainOps.loadContractResults([
+      {
+        contract_id: 2,
+        consensus_timestamp: 1,
+        function_parameters: '\\x0D',
+        amount: 10,
+      },
+    ]);
 
     const expectedContractResult = [
       {
@@ -120,21 +122,22 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
   });
 
   test('ContractService.getContractResultsByTimestamp - Id match', async () => {
-    await integrationDomainOps.addContractResult({
-      contract_id: 1,
-      consensus_timestamp: 1,
-      function_parameters: '\\x0D',
-      amount: 10,
-      payer_account_id: 123,
-    });
-
-    await integrationDomainOps.addContractResult({
-      contract_id: 2,
-      consensus_timestamp: 2,
-      function_parameters: '\\x0D',
-      amount: 10,
-      payer_account_id: 123,
-    });
+    await integrationDomainOps.loadContractResults([
+      {
+        contract_id: 1,
+        consensus_timestamp: 1,
+        function_parameters: '\\x0D',
+        amount: 10,
+        payer_account_id: 123,
+      },
+      {
+        contract_id: 2,
+        consensus_timestamp: 2,
+        function_parameters: '\\x0D',
+        amount: 10,
+        payer_account_id: 123,
+      },
+    ]);
 
     const expectedContractResult = [
       {
@@ -152,45 +155,43 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
   });
 
   test('ContractService.getContractResultsByIdAndFilters - All params match', async () => {
-    await integrationDomainOps.addContractResult({
-      contract_id: 2,
-      consensus_timestamp: 1,
-      function_parameters: '\\x0D',
-      amount: 10,
-      payer_account_id: 123,
-    });
-
-    await integrationDomainOps.addContractResult({
-      contract_id: 2,
-      consensus_timestamp: 2,
-      function_parameters: '\\x0D',
-      amount: 10,
-      payer_account_id: 123,
-    });
-
-    await integrationDomainOps.addContractResult({
-      contract_id: 3,
-      consensus_timestamp: 3,
-      function_parameters: '\\x0D',
-      amount: 10,
-      payer_account_id: 124,
-    });
-
-    await integrationDomainOps.addContractResult({
-      contract_id: 3,
-      consensus_timestamp: 4,
-      function_parameters: '\\x0D',
-      amount: 10,
-      payer_account_id: 124,
-    });
-
-    await integrationDomainOps.addContractResult({
-      contract_id: 3,
-      consensus_timestamp: 5,
-      function_parameters: '\\x0D',
-      amount: 10,
-      payer_account_id: 124,
-    });
+    await integrationDomainOps.loadContractResults([
+      {
+        contract_id: 2,
+        consensus_timestamp: 1,
+        function_parameters: '\\x0D',
+        amount: 10,
+        payer_account_id: 123,
+      },
+      {
+        contract_id: 2,
+        consensus_timestamp: 2,
+        function_parameters: '\\x0D',
+        amount: 10,
+        payer_account_id: 123,
+      },
+      {
+        contract_id: 3,
+        consensus_timestamp: 3,
+        function_parameters: '\\x0D',
+        amount: 10,
+        payer_account_id: 124,
+      },
+      {
+        contract_id: 3,
+        consensus_timestamp: 4,
+        function_parameters: '\\x0D',
+        amount: 10,
+        payer_account_id: 124,
+      },
+      {
+        contract_id: 3,
+        consensus_timestamp: 5,
+        function_parameters: '\\x0D',
+        amount: 10,
+        payer_account_id: 124,
+      },
+    ]);
 
     const expectedContractResult = [
       {

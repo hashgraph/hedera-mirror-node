@@ -120,16 +120,8 @@ describe('EntityId parse from entityId string', () => {
       expected: EntityId.of(1, 2, 3),
     },
     {
-      entityIdStr: '0x000000000000000000000000001fffffffffffff',
-      expected: EntityId.of(0, 0, Number.MAX_SAFE_INTEGER),
-    },
-    {
-      entityIdStr: '0x3b9ac9ff001fffffffffffff001fffffffffffff',
-      expected: EntityId.of(999999999, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER),
-    },
-    {
-      entityIdStr: '0xffffffffffffffffffffffffffffffffffffffff',
-      expected: EntityId.of(4294967295, 18446744073709551616n, 18446744073709551616n),
+      entityIdStr: '0x00007fff000000000000ffff00000000ffffffff',
+      expected: EntityId.of(32767, 65535, 4294967295),
     },
     {
       entityIdStr: null,

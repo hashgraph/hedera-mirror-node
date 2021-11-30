@@ -453,28 +453,26 @@ describe('DB integration test - spec based', () => {
   });
 
   const specPath = path.join(__dirname, 'specs');
-  fs.readdirSync(specPath).forEach((file) => {
-    // ignore non spec files e.g. hidden files on some platforms
-    if (file.indexOf('.spec') < 0) {
-      return;
-    }
+  // process applicable .spec.json files
+  fs.readdirSync(specPath)
+    .filter((f) => f.indexOf('.spec.json') > 0)
+    .forEach((file) => {
+      const p = path.join(specPath, file);
+      const specText = fs.readFileSync(p, 'utf8');
+      const spec = JSON.parse(specText);
+      const urls = spec.urls || [spec.url];
+      urls.forEach((url) =>
+        test(`DB integration test - ${file} - ${url}`, async () => {
+          await specSetupSteps(spec.setup);
+          const response = await request(server).get(url);
 
-    const p = path.join(specPath, file);
-    const specText = fs.readFileSync(p, 'utf8');
-    const spec = JSON.parse(specText);
-    const urls = spec.urls || [spec.url];
-    urls.forEach((url) =>
-      test(`DB integration test - ${file} - ${url}`, async () => {
-        await specSetupSteps(spec.setup);
-        const response = await request(server).get(url);
-
-        expect(response.status).toEqual(spec.responseStatus);
-        let jsonObj = response.text === '' ? {} : JSON.parse(response.text);
-        if (response.status === 200 && file.startsWith('stateproof')) {
-          jsonObj = transformStateProofResponse(jsonObj);
-        }
-        expect(jsonObj).toEqual(spec.responseJson);
-      })
-    );
-  });
+          expect(response.status).toEqual(spec.responseStatus);
+          let jsonObj = response.text === '' ? {} : JSON.parse(response.text);
+          if (response.status === 200 && file.startsWith('stateproof')) {
+            jsonObj = transformStateProofResponse(jsonObj);
+          }
+          expect(jsonObj).toEqual(spec.responseJson);
+        })
+      );
+    });
 });

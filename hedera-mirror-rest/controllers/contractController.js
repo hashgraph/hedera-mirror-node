@@ -357,15 +357,13 @@ const getContractResultsById = async (req, res) => {
 
   const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
   const response = {
-    results: [],
+    results: rows.map((row) => new ContractResultViewModel(row)),
     links: {
       next: null,
     },
   };
 
-  if (!_.isNil(rows)) {
-    response.results = rows.map((row) => new ContractResultViewModel(row));
-
+  if (!_.isEmpty(response.results)) {
     const lastRow = _.last(response.results);
     const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
     response.links.next = utils.getPaginationLink(
