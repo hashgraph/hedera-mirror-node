@@ -76,6 +76,7 @@ jobs:
         with:
           name: ${{ env.MODULE }}
           path: /tmp/${{ env.MODULE }}.tar
+          if-no-files-found: error
 
   validate:
     runs-on: ubuntu-latest
@@ -116,17 +117,6 @@ jobs:
       - name: Rosetta Configuration
         run: echo "${{ secrets.ROSETTA_ROSETTA_CONFIG }}" | base64 -d > /tmp/application_rosetta.yml
 
-      - name: Rosetta-cli Configuration
-        run: |
-          # add prefunded accounts for construction validation, override construction offline_url
-          echo "${{ secrets.ROSETTA_PREFUNDED_ACCOUNTS }}" | base64 -d > /tmp/accounts.json
-          cd ./scripts/validation/testnet/
-          jq --slurpfile accounts /tmp/accounts.json \
-            '.construction.prefunded_accounts=$accounts[0] | .construction.offline_url="${{ env.OFFLINE_URL }}"' \
-            validation.json > /tmp/validation.json
-
-          mv /tmp/validation.json validation.json
-
       - name: Set Importer StartDate
         run: |
           # grep extracts the date up to minute, e.g., 2021-11-15T16:48:, so as to always round down to the whole minute
@@ -159,6 +149,17 @@ jobs:
 
       - name: Get Genesis Account Balances
         run: ./scripts/validation/get-genesis-balance.sh testnet
+
+      - name: Rosetta-cli Configuration
+        run: |
+          # add prefunded accounts for construction validation, override construction offline_url
+          echo "${{ secrets.ROSETTA_PREFUNDED_ACCOUNTS }}" | base64 -d > /tmp/accounts.json
+          cd ./scripts/validation/testnet/
+          jq --slurpfile accounts /tmp/accounts.json \
+            '.construction.prefunded_accounts=$accounts[0] | .construction.offline_url="${{ env.OFFLINE_URL }}"' \
+            validation.json > /tmp/validation.json
+
+          mv /tmp/validation.json validation.json
 
       - name: Run Rosetta CLI Validation
         working-directory: ./hedera-mirror-rosetta/scripts/validation
