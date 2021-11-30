@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "nodemon app.js",
-    "integrationtest": "jest --testPathPattern='__tests__/integration.test.js' --collectCoverage=false",
+    "integrationtest": "jest --testPathPattern='/__tests__/integration.test.js|/__tests__/service/.*\\.test\\.js' --collectCoverage=false",
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
     "postinstall": "node ./npm_scripts/postinstall.js",
     "test": "jest --testPathPattern='__tests__/.*\\.test\\.js'"

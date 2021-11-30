@@ -45,6 +45,10 @@ const maxShard = 2n ** shardBits - 1n;
 
 const maxEncodedId = 2n ** 63n - 1n;
 
+const solidityAddressRegex = /^0x[A-Fa-f0-9]{40}$/;
+const entityIdRegex = /^(\d{1,5}\.){1,2}\d{1,10}$/;
+const encodedEntityIdRegex = /^\d{1,19}$/;
+
 class EntityId {
   constructor(shard, realm, num) {
     this.shard = shard;
@@ -68,12 +72,14 @@ class EntityId {
    */
   toSolidityAddress() {
     // shard, realm, and num take 4, 8, and 8 bytes respectively from the left
-    return [
-      '0x',
-      this.shard.toString(16).padStart(8, '0'),
-      this.realm.toString(16).padStart(16, '0'),
-      this.num.toString(16).padStart(16, '0'),
-    ].join('');
+    return this.num === null
+      ? null
+      : [
+          '0x',
+          toHex(this.shard).padStart(8, '0'),
+          toHex(this.realm).padStart(16, '0'),
+          toHex(this.num).padStart(16, '0'),
+        ].join('');
   }
 
   toString() {
@@ -81,9 +87,18 @@ class EntityId {
   }
 }
 
+const toHex = (num) => {
+  return num.toString(16);
+};
+
+const isValidSolidityAddress = (address) => {
+  // Accepted forms: 0x...
+  return typeof address === 'string' && solidityAddressRegex.test(address);
+};
+
 const isValidEntityId = (entityId) => {
   // Accepted forms: shard.realm.num, realm.num, or encodedId
-  return (typeof entityId === 'string' && /^(\d{1,5}\.){1,2}\d{1,10}$/.test(entityId)) || /^\d{1,19}$/.test(entityId);
+  return (typeof entityId === 'string' && entityIdRegex.test(entityId)) || encodedEntityIdRegex.test(entityId);
 };
 
 /**
@@ -140,6 +155,23 @@ const parseFromEncodedId = (id, error) => {
 };
 
 /**
+ * Parses shard, realm, num from solidity address string.
+ * @param {string} address
+ * @return {bigint[3]}
+ */
+const parseFromSolidityAddress = (address) => {
+  // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
+  const hexDigits = address.replace('0x', '');
+  const parts = [
+    Number.parseInt(hexDigits.slice(0, 8), 16), // shard
+    Number.parseInt(hexDigits.slice(8, 24), 16), // realm
+    Number.parseInt(hexDigits.slice(24, 40), 16), // num
+  ];
+
+  return parts.map((part) => BigInt(part));
+};
+
+/**
  * Parses shard, realm, num from entity ID string, can be shard.realm.num or realm.num.
  * @param {string} id
  * @return {bigint[3]}
@@ -163,17 +195,21 @@ const entityIdCacheOptions = {
 
 const parseMemoized = mem(
   /**
-   * Parses entity ID string, can be shard.realm.num, realm.num, or the encoded entity ID.
+   * Parses entity ID string, can be shard.realm.num, realm.num, the encoded entity ID or a solidity contract address.
    * @param {string} id
    * @param {Function} error
    * @return {EntityId}
    */
   (id, error) => {
-    if (!isValidEntityId(id)) {
+    let shard, realm, num;
+    if (isValidEntityId(id)) {
+      [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
+    } else if (isValidSolidityAddress(id)) {
+      [shard, realm, num] = parseFromSolidityAddress(id);
+    } else {
       throw error();
     }
 
-    const [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
     if (num > maxNum || realm > maxRealm || shard > maxShard) {
       throw error();
     }
@@ -215,6 +251,7 @@ const parse = (id, ...rest) => {
 
 module.exports = {
   isValidEntityId,
+  isValidSolidityAddress,
   of,
   parse,
 };

@@ -35,7 +35,6 @@ const accounts = require('./accounts');
 const balances = require('./balances');
 const config = require('./config');
 const constants = require('./constants');
-const contracts = require('./contracts');
 const health = require('./health');
 const network = require('./network');
 const schedules = require('./schedules');
@@ -50,6 +49,9 @@ const {serveSwaggerDocs, openApiValidator} = require('./middleware/openapiHandle
 const {responseHandler} = require('./middleware/responseHandler');
 const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
 const fs = require('fs');
+
+// routes
+const {ContractRoutes} = require('./routes');
 
 // Logger
 const logger = log4js.getLogger();
@@ -153,8 +155,7 @@ app.getAsync(`${apiPrefix}/accounts/:accountId`, accounts.getOneAccount);
 app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
 
 // contracts routes
-app.getAsync(`${apiPrefix}/contracts`, contracts.getContracts);
-app.getAsync(`${apiPrefix}/contracts/:contractId`, contracts.getContractById);
+app.useAsync('', ContractRoutes);
 
 // network routes
 app.getAsync(`${apiPrefix}/network/supply`, network.getSupply);

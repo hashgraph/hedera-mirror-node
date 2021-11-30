@@ -23,6 +23,7 @@
 module.exports = {
   AssessedCustomFee: require('./assessedCustomFee'),
   Contract: require('./contract'),
+  ContractResult: require('./contractResult'),
   CryptoTransfer: require('./cryptoTransfer'),
   CustomFee: require('./customFee'),
   FileData: require('./fileData'),
