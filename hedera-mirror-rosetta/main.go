@@ -85,9 +85,9 @@ func newBlockchainOnlineRouter(
 	tokenRepo := persistence.NewTokenRepository(dbClient)
 	transactionRepo := persistence.NewTransactionRepository(dbClient)
 
-	baseService := services.NewBaseService(blockRepo, transactionRepo)
+	baseService := services.NewOnlineBaseService(blockRepo, transactionRepo)
 
-	networkAPIService := services.NewOnlineNetworkAPIService(baseService, addressBookEntryRepo, network, version)
+	networkAPIService := services.NewNetworkAPIService(baseService, addressBookEntryRepo, network, version)
 	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
 	blockAPIService := services.NewBlockAPIService(baseService)
@@ -97,9 +97,9 @@ func newBlockchainOnlineRouter(
 	mempoolAPIController := server.NewMempoolAPIController(mempoolAPIService, asserter)
 
 	constructionAPIService, err := services.NewConstructionAPIService(
+		baseService,
 		network.Network,
 		rosetta.Nodes,
-		true,
 		construction.NewTransactionConstructor(tokenRepo),
 	)
 	if err != nil {
@@ -135,10 +135,12 @@ func newBlockchainOfflineRouter(
 	rosetta config.Rosetta,
 	version *rTypes.Version,
 ) (http.Handler, error) {
+	baseService := services.NewOfflineBaseService()
+
 	constructionAPIService, err := services.NewConstructionAPIService(
+		baseService,
 		network.Network,
 		rosetta.Nodes,
-		false,
 		construction.NewTransactionConstructor(nil),
 	)
 	if err != nil {
@@ -151,7 +153,7 @@ func newBlockchainOfflineRouter(
 	}
 
 	metricsController := middleware.NewMetricsController()
-	networkAPIService := services.NewOfflineNetworkAPIService(network, version)
+	networkAPIService := services.NewNetworkAPIService(baseService, nil, network, version)
 	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
 	return server.NewRouter(constructionAPIController, healthController, metricsController, networkAPIController), nil

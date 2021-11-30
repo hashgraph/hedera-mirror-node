@@ -154,7 +154,7 @@ func (suite *accountServiceSuite) SetupTest() {
 	suite.mockBlockRepo = &mocks.MockBlockRepository{}
 	suite.mockTransactionRepo = &mocks.MockTransactionRepository{}
 
-	baseService := NewBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
+	baseService := NewOnlineBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
 	suite.accountService = NewAccountAPIService(baseService, suite.mockAccountRepo)
 }
 

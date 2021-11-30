@@ -73,11 +73,8 @@ func getNetworkAPIService(abr interfaces.AddressBookEntryRepository, base *BaseS
 		MiddlewareVersion: nil,
 		Metadata:          nil,
 	}
-	if abr != nil {
-		return NewOnlineNetworkAPIService(base, abr, network, version)
-	} else {
-		return NewOfflineNetworkAPIService(network, version)
-	}
+
+	return NewNetworkAPIService(base, abr, network, version)
 }
 
 func TestOfflineNetworkServiceSuite(t *testing.T) {
@@ -90,7 +87,7 @@ type offlineNetworkServiceSuite struct {
 }
 
 func (suite *offlineNetworkServiceSuite) BeforeTest(suiteName, testName string) {
-	suite.networkService = getNetworkAPIService(nil, nil)
+	suite.networkService = getNetworkAPIService(nil, NewOfflineBaseService())
 }
 
 func (suite *offlineNetworkServiceSuite) TestNetworkList() {
@@ -221,7 +218,7 @@ func (suite *onlineNetworkServiceSuite) BeforeTest(suiteName, testName string) {
 	suite.mockBlockRepo = &mocks.MockBlockRepository{}
 	suite.mockTransactionRepo = &mocks.MockTransactionRepository{}
 
-	baseService := NewBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
+	baseService := NewOnlineBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
 	suite.networkService = getNetworkAPIService(suite.mockAddressBookEntryRepo, baseService)
 }
 

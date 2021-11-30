@@ -26,19 +26,16 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 var (
-	defaultContext                   = context.Background()
-	exampleHash                      = "0x12345"
-	exampleIndex                     = int64(1)
-	exampleMap                       = map[int]string{1: "value", 2: "otherValue"}
-	exampleTypesArray                = []string{"Transfer"}
-	nilMap            map[int]string = nil
-	nilArray          []string       = nil
+	defaultContext = context.Background()
+	exampleHash    = "0x12345"
+	exampleIndex   = int64(1)
 )
 
 func transaction() *types.Transaction {
@@ -69,25 +66,30 @@ func examplePartialBlockIdentifier(index *int64, hash *string) *rTypes.PartialBl
 }
 
 func TestBaseServiceSuite(t *testing.T) {
-	suite.Run(t, new(baseServiceSuite))
+	suite.Run(t, new(onlineBaseServiceSuite))
+	suite.Run(t, new(offlineBaseServiceSuite))
 }
 
-type baseServiceSuite struct {
+type onlineBaseServiceSuite struct {
 	suite.Suite
 	baseService         *BaseService
 	mockBlockRepo       *mocks.MockBlockRepository
 	mockTransactionRepo *mocks.MockTransactionRepository
 }
 
-func (suite *baseServiceSuite) SetupTest() {
+func (suite *onlineBaseServiceSuite) SetupTest() {
 	suite.mockBlockRepo = &mocks.MockBlockRepository{}
 	suite.mockTransactionRepo = &mocks.MockTransactionRepository{}
 
-	baseService := NewBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
+	baseService := NewOnlineBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
 	suite.baseService = baseService
 }
 
-func (suite *baseServiceSuite) TestRetrieveBlockFindByIdentifier() {
+func (suite *onlineBaseServiceSuite) TestIsOnline() {
+	assert.True(suite.T(), suite.baseService.IsOnline())
+}
+
+func (suite *onlineBaseServiceSuite) TestRetrieveBlockFindByIdentifier() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
 
@@ -103,7 +105,7 @@ func (suite *baseServiceSuite) TestRetrieveBlockFindByIdentifier() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestRetrieveBlockByEmptyIdentifier() {
+func (suite *onlineBaseServiceSuite) TestRetrieveBlockByEmptyIdentifier() {
 	// given
 	suite.mockBlockRepo.On("RetrieveLatest").Return(block(), mocks.NilError)
 
@@ -116,7 +118,7 @@ func (suite *baseServiceSuite) TestRetrieveBlockByEmptyIdentifier() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByIdentifier() {
+func (suite *onlineBaseServiceSuite) TestRetrieveBlockThrowsFindByIdentifier() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(mocks.NilBlock, &rTypes.Error{})
 
@@ -132,7 +134,7 @@ func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByIdentifier() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestRetrieveBlockFindByIndex() {
+func (suite *onlineBaseServiceSuite) TestRetrieveBlockFindByIndex() {
 	// given:
 	suite.mockBlockRepo.On("FindByIndex").Return(block(), mocks.NilError)
 
@@ -145,7 +147,7 @@ func (suite *baseServiceSuite) TestRetrieveBlockFindByIndex() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByIndex() {
+func (suite *onlineBaseServiceSuite) TestRetrieveBlockThrowsFindByIndex() {
 	// given:
 	suite.mockBlockRepo.On("FindByIndex").Return(mocks.NilBlock, &rTypes.Error{})
 
@@ -158,7 +160,7 @@ func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByIndex() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestRetrieveBlockFindByHash() {
+func (suite *onlineBaseServiceSuite) TestRetrieveBlockFindByHash() {
 	// given:
 	suite.mockBlockRepo.On("FindByHash").Return(block(), mocks.NilError)
 
@@ -171,7 +173,7 @@ func (suite *baseServiceSuite) TestRetrieveBlockFindByHash() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByHash() {
+func (suite *onlineBaseServiceSuite) TestRetrieveBlockThrowsFindByHash() {
 	// given:
 	suite.mockBlockRepo.On("FindByHash").Return(mocks.NilBlock, &rTypes.Error{})
 
@@ -184,7 +186,7 @@ func (suite *baseServiceSuite) TestRetrieveBlockThrowsFindByHash() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestRetrieveSecondLatest() {
+func (suite *onlineBaseServiceSuite) TestRetrieveSecondLatest() {
 	// given:
 	suite.mockBlockRepo.On("RetrieveLatest").Return(block(), mocks.NilError)
 
@@ -197,7 +199,7 @@ func (suite *baseServiceSuite) TestRetrieveSecondLatest() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestRetrieveSecondLatestThrows() {
+func (suite *onlineBaseServiceSuite) TestRetrieveSecondLatestThrows() {
 	// given:
 	suite.mockBlockRepo.On("RetrieveLatest").Return(mocks.NilBlock, &rTypes.Error{})
 
@@ -210,7 +212,7 @@ func (suite *baseServiceSuite) TestRetrieveSecondLatestThrows() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestRetrieveGenesis() {
+func (suite *onlineBaseServiceSuite) TestRetrieveGenesis() {
 	// given:
 	suite.mockBlockRepo.On("RetrieveGenesis").Return(block(), mocks.NilError)
 
@@ -223,7 +225,7 @@ func (suite *baseServiceSuite) TestRetrieveGenesis() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestRetrieveGenesisThrows() {
+func (suite *onlineBaseServiceSuite) TestRetrieveGenesisThrows() {
 	// given:
 	suite.mockBlockRepo.On("RetrieveGenesis").Return(mocks.NilBlock, &rTypes.Error{})
 
@@ -236,7 +238,7 @@ func (suite *baseServiceSuite) TestRetrieveGenesisThrows() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestFindByIdentifier() {
+func (suite *onlineBaseServiceSuite) TestFindByIdentifier() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
 
@@ -249,7 +251,7 @@ func (suite *baseServiceSuite) TestFindByIdentifier() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestFindByIdentifierThrows() {
+func (suite *onlineBaseServiceSuite) TestFindByIdentifierThrows() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(mocks.NilBlock, &rTypes.Error{})
 
@@ -262,7 +264,7 @@ func (suite *baseServiceSuite) TestFindByIdentifierThrows() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestFindByHashInBlock() {
+func (suite *onlineBaseServiceSuite) TestFindByHashInBlock() {
 	// given:
 	suite.mockTransactionRepo.On("FindByHashInBlock").Return(transaction(), mocks.NilError)
 
@@ -275,7 +277,7 @@ func (suite *baseServiceSuite) TestFindByHashInBlock() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestFindByHashInBlockThrows() {
+func (suite *onlineBaseServiceSuite) TestFindByHashInBlockThrows() {
 	// given:
 	suite.mockTransactionRepo.On("FindByHashInBlock").Return(mocks.NilTransaction, &rTypes.Error{})
 
@@ -288,7 +290,7 @@ func (suite *baseServiceSuite) TestFindByHashInBlockThrows() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestFindBetween() {
+func (suite *onlineBaseServiceSuite) TestFindBetween() {
 	// given:
 	suite.mockTransactionRepo.On("FindBetween").Return(transactions(), mocks.NilError)
 
@@ -301,7 +303,7 @@ func (suite *baseServiceSuite) TestFindBetween() {
 	suite.mockBlockRepo.AssertExpectations(suite.T())
 }
 
-func (suite *baseServiceSuite) TestFindBetweenThrows() {
+func (suite *onlineBaseServiceSuite) TestFindBetweenThrows() {
 	// given:
 	suite.mockTransactionRepo.On("FindBetween").Return([]*types.Transaction{}, &rTypes.Error{})
 
@@ -312,4 +314,58 @@ func (suite *baseServiceSuite) TestFindBetweenThrows() {
 	assert.Equal(suite.T(), []*types.Transaction{}, res)
 	assert.NotNil(suite.T(), e)
 	suite.mockBlockRepo.AssertExpectations(suite.T())
+}
+
+type offlineBaseServiceSuite struct {
+	suite.Suite
+	baseService *BaseService
+}
+
+func (suite *offlineBaseServiceSuite) SetupTest() {
+
+	baseService := NewOfflineBaseService()
+	suite.baseService = baseService
+}
+
+func (suite *offlineBaseServiceSuite) TestIsOnline() {
+	assert.False(suite.T(), suite.baseService.IsOnline())
+}
+
+func (suite *offlineBaseServiceSuite) TestFindByHashInBlock() {
+	res, err := suite.baseService.FindByHashInBlock(defaultContext, exampleHash, 1, 2)
+	assert.Nil(suite.T(), res)
+	assert.Equal(suite.T(), errors.ErrInternalServerError, err)
+}
+
+func (suite *offlineBaseServiceSuite) TestFindBetween() {
+	res, err := suite.baseService.FindBetween(defaultContext, 1, 1)
+	assert.Nil(suite.T(), res)
+	assert.Equal(suite.T(), errors.ErrInternalServerError, err)
+}
+
+func (suite *offlineBaseServiceSuite) TestFindByIdentifier() {
+	res, err := suite.baseService.FindByIdentifier(defaultContext, exampleIndex, exampleHash)
+	assert.Nil(suite.T(), res)
+	assert.Equal(suite.T(), errors.ErrInternalServerError, err)
+}
+
+func (suite *offlineBaseServiceSuite) TestRetrieveBlock() {
+	res, err := suite.baseService.RetrieveBlock(
+		defaultContext,
+		examplePartialBlockIdentifier(&exampleIndex, &exampleHash),
+	)
+	assert.Nil(suite.T(), res)
+	assert.Equal(suite.T(), errors.ErrInternalServerError, err)
+}
+
+func (suite *offlineBaseServiceSuite) TestRetrieveGenesis() {
+	res, err := suite.baseService.RetrieveGenesis(defaultContext)
+	assert.Nil(suite.T(), res)
+	assert.Equal(suite.T(), errors.ErrInternalServerError, err)
+}
+
+func (suite *offlineBaseServiceSuite) TestRetrieveLatest() {
+	res, err := suite.baseService.RetrieveLatest(defaultContext)
+	assert.Nil(suite.T(), res)
+	assert.Equal(suite.T(), errors.ErrInternalServerError, err)
 }

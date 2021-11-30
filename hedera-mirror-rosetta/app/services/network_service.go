@@ -37,7 +37,6 @@ type networkAPIService struct {
 	*BaseService
 	addressBookEntryRepo interfaces.AddressBookEntryRepository
 	network              *rTypes.NetworkIdentifier
-	online               bool
 	operationTypes       []string
 	version              *rTypes.Version
 }
@@ -79,7 +78,7 @@ func (n *networkAPIService) NetworkStatus(
 	ctx context.Context,
 	request *rTypes.NetworkRequest,
 ) (*rTypes.NetworkStatusResponse, *rTypes.Error) {
-	if !n.online {
+	if !n.IsOnline() {
 		return nil, errors.ErrEndpointNotSupportedInOfflineMode
 	}
 
@@ -112,18 +111,8 @@ func (n *networkAPIService) NetworkStatus(
 	}, nil
 }
 
-// NewOfflineNetworkAPIService creates an offline networkAPIService instance.
-func NewOfflineNetworkAPIService(network *rTypes.NetworkIdentifier, version *rTypes.Version) server.NetworkAPIServicer {
-	return &networkAPIService{
-		online:         false,
-		operationTypes: tools.GetStringValuesFromInt32StringMap(types.TransactionTypes),
-		network:        network,
-		version:        version,
-	}
-}
-
-// NewOnlineNetworkAPIService creates an online networkAPIService instance.
-func NewOnlineNetworkAPIService(
+// NewNetworkAPIService creates a networkAPIService instance.
+func NewNetworkAPIService(
 	baseService *BaseService,
 	addressBookEntryRepo interfaces.AddressBookEntryRepository,
 	network *rTypes.NetworkIdentifier,
@@ -132,7 +121,6 @@ func NewOnlineNetworkAPIService(
 	return &networkAPIService{
 		BaseService:          baseService,
 		addressBookEntryRepo: addressBookEntryRepo,
-		online:               true,
 		operationTypes:       tools.GetStringValuesFromInt32StringMap(types.TransactionTypes),
 		network:              network,
 		version:              version,
