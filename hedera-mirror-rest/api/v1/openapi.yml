@@ -117,7 +117,7 @@ paths:
   /api/v1/contracts/{contractId}/results:
     get:
       summary: List contract results from a contract on the network
-      description: Returns a list of all contract results for a contracts function executions.
+      description: Returns a list of all ContractResults for a contract's function executions.
       operationId: listContractResults
       parameters:
         - $ref: '#/components/parameters/contractIdPathParam'
