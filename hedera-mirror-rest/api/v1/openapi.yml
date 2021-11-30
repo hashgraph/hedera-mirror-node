@@ -1008,7 +1008,7 @@ components:
         timestamp:
           $ref: '#/components/schemas/Timestamp'
         to:
-          $ref: '#/components/schemas/SolidityAddress'
+          $ref: '#/components/schemas/SolidityAddressNullable'
     ContractResults:
       type: array
       items:
@@ -1251,6 +1251,15 @@ components:
       format: binary
       minLength: 42
       maxLength: 42
+      pattern: '^0x[A-Fa-f0-9]{40}$'
+      example: "0x0000000000000000000000000000000000001f41"
+    SolidityAddressNullable:
+      type: string
+      description: A network entity encoded as a solidity address in hex
+      format: binary
+      minLength: 42
+      maxLength: 42
+      nullable: true
       pattern: '^0x[A-Fa-f0-9]{40}$'
       example: "0x0000000000000000000000000000000000001f41"
     StateProofFiles:
