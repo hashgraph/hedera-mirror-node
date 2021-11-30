@@ -29,6 +29,7 @@ const yaml = require('js-yaml');
 
 // files
 const config = require('../config');
+const OpenApiValidator = require('express-openapi-validator');
 
 let v1OpenApiDocument;
 
@@ -91,7 +92,19 @@ const serveSwaggerDocs = (app) => {
   app.use(`/api/v1/${config.openapi.swaggerUIPath}`, swaggerUi.serve, swaggerUi.setup(getV1OpenApiObject(), options));
 };
 
+const openApiValidator = (app) => {
+  app.use(
+    OpenApiValidator.middleware({
+      apiSpec: path.resolve(process.cwd(), getSpecPath(1)),
+      ignoreUndocumented: true,
+      validateRequests: false,
+      validateResponses: true,
+    })
+  );
+};
+
 module.exports = {
   getV1OpenApiObject,
   serveSwaggerDocs,
+  openApiValidator,
 };

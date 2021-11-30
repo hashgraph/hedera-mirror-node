@@ -22,7 +22,7 @@
       },
       {
         "num": 9,
-        "expiration_timestamp": "-9223372036854775808",
+        "expiration_timestamp": "9223372036854775806",
         "max_automatic_token_associations": 150,
         "receiver_sig_required": null
       },
@@ -289,7 +289,7 @@
           "tokens": []
         },
         "account": "0.0.9",
-        "expiry_timestamp": "-9223372036.854775808",
+        "expiry_timestamp": "9223372036.854775806",
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
