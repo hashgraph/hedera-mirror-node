@@ -26,12 +26,12 @@ const {
   response: {
     limit: {default: defaultLimit},
   },
-} = require('../config');
-const constants = require('../constants');
-const contracts = require('../contracts');
-const {formatSqlQueryString} = require('./testutils');
-const utils = require('../utils');
-const {Contract} = require('../model');
+} = require('../../config');
+const constants = require('../../constants');
+const contracts = require('../../controllers/contractController');
+const {formatSqlQueryString} = require('../testutils');
+const utils = require('../../utils');
+const {Contract} = require('../../model');
 
 const contractFields = [
   Contract.AUTO_RENEW_PERIOD,
@@ -51,6 +51,9 @@ const assertSqlQueryEqual = (actual, expected) => {
   expect(formatSqlQueryString(actual)).toEqual(formatSqlQueryString(expected));
 };
 
+const emptyFilterString = 'empty filters';
+const primaryContractFilter = 'cr.contract_id = $1';
+
 describe('extractSqlFromContractFilters', () => {
   const defaultExpected = {
     filterQuery: '',
@@ -62,7 +65,7 @@ describe('extractSqlFromContractFilters', () => {
 
   const specs = [
     {
-      name: 'empty filters',
+      name: emptyFilterString,
       input: [],
       expected: defaultExpected,
     },
@@ -135,7 +138,7 @@ describe('extractTimestampConditionsFromContractFilters', () => {
   const timestampColumn = Contract.getFullName(Contract.TIMESTAMP_RANGE);
   const specs = [
     {
-      name: 'empty filters',
+      name: emptyFilterString,
       input: [],
       expected: {
         conditions: [],
@@ -335,6 +338,122 @@ describe('getContractsQuery', () => {
     test(`${spec.name}`, () => {
       assertSqlQueryEqual(
         contracts.getContractsQuery(spec.input.whereQuery, spec.input.limitQuery, spec.input.order),
+        spec.expected
+      );
+    });
+  });
+});
+
+describe('extractContractResultsByIdQuery', () => {
+  const defaultContractId = 1;
+  const defaultExpected = {
+    conditions: [primaryContractFilter],
+    params: [defaultContractId],
+    order: constants.orderFilterValues.DESC,
+    limit: defaultLimit,
+  };
+
+  const specs = [
+    {
+      name: emptyFilterString,
+      input: {filter: [], contractId: defaultContractId},
+      expected: defaultExpected,
+    },
+    {
+      name: 'limit',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.LIMIT,
+            operator: utils.opsMap.eq,
+            value: 20,
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        limit: 20,
+      },
+    },
+    {
+      name: 'order',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.ORDER,
+            operator: utils.opsMap.eq,
+            value: constants.orderFilterValues.ASC,
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        order: constants.orderFilterValues.ASC,
+      },
+    },
+    {
+      name: 'contractResult.from',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.FROM,
+            operator: utils.opsMap.eq,
+            value: '1001',
+          },
+          {
+            key: constants.filterKeys.FROM,
+            operator: utils.opsMap.eq,
+            value: '1002',
+          },
+          {
+            key: constants.filterKeys.FROM,
+            operator: utils.opsMap.gt,
+            value: '1000',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [primaryContractFilter, 'cr.payer_account_id > $2', 'cr.payer_account_id in ($3,$4)'],
+        params: [defaultContractId, '1000', '1001', '1002'],
+      },
+    },
+    {
+      name: 'contractResult.timestamp',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '1001',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '1002',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gt,
+            value: '1000',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [primaryContractFilter, 'cr.consensus_timestamp > $2', 'cr.consensus_timestamp in ($3,$4)'],
+        params: [defaultContractId, '1000', '1001', '1002'],
+      },
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(contracts.extractContractResultsByIdQuery(spec.input.filter, spec.input.contractId)).toEqual(
         spec.expected
       );
     });

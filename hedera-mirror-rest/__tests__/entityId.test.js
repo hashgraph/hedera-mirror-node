@@ -112,6 +112,18 @@ describe('EntityId parse from entityId string', () => {
       expected: EntityId.of(0, 0, 1),
     },
     {
+      entityIdStr: '0x0000000000000000000000000000000000000001',
+      expected: EntityId.of(0, 0, 1),
+    },
+    {
+      entityIdStr: '0x0000000100000000000000020000000000000003',
+      expected: EntityId.of(1, 2, 3),
+    },
+    {
+      entityIdStr: '0x00007fff000000000000ffff00000000ffffffff',
+      expected: EntityId.of(32767, 65535, 4294967295),
+    },
+    {
       entityIdStr: null,
       isNullable: true,
       expected: EntityId.of(null, null, null),
@@ -152,6 +164,26 @@ describe('EntityId parse from entityId string', () => {
     },
     {
       entityIdStr: '-1',
+      expectErr: true,
+    },
+    {
+      entityIdStr: '0x',
+      expectErr: true,
+    },
+    {
+      entityIdStr: '0x010203',
+      expectErr: true,
+    },
+    {
+      entityIdStr: '0x00000001000000000000000200000000000000034',
+      expectErr: true,
+    },
+    {
+      entityIdStr: '0x2540be3f6001fffffffffffff001fffffffffffff', // 9999999990, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER
+      expectErr: true,
+    },
+    {
+      entityIdStr: '0x10000000000000000000000000000000000000000', // ffffffffffffffffffffffffffffffffffffffff + 1
       expectErr: true,
     },
   ];

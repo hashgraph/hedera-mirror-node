@@ -42,6 +42,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadContracts(testDataJson.contracts);
+  await loadContractResults(testDataJson.contractresults);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
   await loadFileData(testDataJson.filedata);
@@ -91,6 +92,16 @@ const loadContracts = async (contracts) => {
 
   for (const contract of contracts) {
     await addContract(contract);
+  }
+};
+
+const loadContractResults = async (contractResults) => {
+  if (contractResults == null) {
+    return;
+  }
+
+  for (const contractResult of contractResults) {
+    await addContractResult(contractResult);
   }
 };
 
@@ -565,6 +576,60 @@ const addContract = async (contract) => {
   );
 };
 
+const addContractResult = async (contractResultInput) => {
+  const insertFields = [
+    'amount',
+    'bloom',
+    'call_result',
+    'consensus_timestamp',
+    'contract_id',
+    'created_contract_ids',
+    'error_message',
+    'function_parameters',
+    'function_result',
+    'gas_limit',
+    'gas_used',
+    'payer_account_id',
+  ];
+  const positions = _.range(1, insertFields.length + 1)
+    .map((position) => `$${position}`)
+    .join(',');
+
+  const contractResult = {
+    amount: 0,
+    bloom: null,
+    call_result: null,
+    consensus_timestamp: 1234510001,
+    contract_id: 0,
+    created_contract_ids: [],
+    error_message: '',
+    function_parameters: Buffer.from([1, 1, 2, 2, 3, 3]),
+    function_result: null,
+    gas_limit: 1000,
+    gas_used: 10,
+    payer_account_id: 101,
+    ...contractResultInput,
+  };
+
+  contractResult.bloom =
+    contractResultInput.bloom != null ? Buffer.from(contractResultInput.bloom) : contractResult.bloom;
+  contractResult.call_result =
+    contractResultInput.call_result != null ? Buffer.from(contractResultInput.call_result) : contractResult.call_result;
+  contractResult.function_parameters =
+    contractResultInput.function_parameters != null
+      ? Buffer.from(contractResultInput.function_parameters)
+      : contractResult.function_parameters;
+  contractResult.function_result =
+    contractResultInput.function_result != null
+      ? Buffer.from(contractResultInput.function_result)
+      : contractResult.function_result;
+
+  await sqlConnection.query(
+    `insert into contract_result (${insertFields.join(',')}) values (${positions})`,
+    insertFields.map((name) => contractResult[name])
+  );
+};
+
 const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
@@ -813,6 +878,7 @@ module.exports = {
   addCryptoTransaction,
   addNft,
   addToken,
+  loadContractResults,
   setAccountBalance,
   setUp,
 };

@@ -27,14 +27,15 @@ const {
   response: {
     limit: {default: defaultLimit},
   },
-} = require('./config');
-const constants = require('./constants');
-const EntityId = require('./entityId');
-const utils = require('./utils');
+} = require('../config');
+const constants = require('../constants');
+const EntityId = require('../entityId');
+const utils = require('../utils');
 
-const {Contract, FileData} = require('./model');
-const {ContractViewModel} = require('./viewmodel');
-const {NotFoundError} = require('./errors/notFoundError');
+const {Contract, FileData, ContractResult} = require('../model');
+const {ContractService} = require('../service');
+const {ContractViewModel, ContractResultViewModel} = require('../viewmodel');
+const {NotFoundError} = require('../errors/notFoundError');
 
 const contractSelectFields = [
   Contract.AUTO_RENEW_PERIOD,
@@ -339,13 +340,139 @@ const getContracts = async (req, res) => {
   res.locals[constants.responseDataLabel] = response;
 };
 
+/**
+ * Handler function for /contracts/:contractId/results API
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns {Promise<void>}
+ */
+const getContractResultsById = async (req, res) => {
+  utils.validateReq(req);
+
+  // extract filters from query param
+  const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
+  const filters = utils.buildAndValidateFilters(req.query);
+
+  const {conditions, params, order, limit} = extractContractResultsByIdQuery(filters, contractId);
+
+  const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
+  const response = {
+    results: rows.map((row) => new ContractResultViewModel(row)),
+    links: {
+      next: null,
+    },
+  };
+
+  if (!_.isEmpty(response.results)) {
+    const lastRow = _.last(response.results);
+    const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
+    response.links.next = utils.getPaginationLink(
+      req,
+      response.results.length !== limit,
+      constants.filterKeys.TIMESTAMP,
+      lastContractResultTimestamp,
+      order
+    );
+  }
+
+  res.locals[constants.responseDataLabel] = response;
+};
+
+/**
+ * Extracts SQL where conditions, params, order, and limit
+ *
+ * @param {[]} filters parsed and validated filters
+ * @param {string} contractId encoded contract ID
+ * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
+ */
+const extractContractResultsByIdQuery = (filters, contractId) => {
+  let limit = defaultLimit;
+  let order = constants.orderFilterValues.DESC;
+  const conditions = [`${ContractResult.getFullName(ContractResult.CONTRACT_ID)} = $1`];
+  const params = [contractId];
+
+  const contractResultFromFullName = ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID);
+  const contractResultFromInValues = [];
+
+  const contractResultTimestampFullName = ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP);
+  const contractResultTimestampInValues = [];
+
+  for (const filter of filters) {
+    switch (filter.key) {
+      case constants.filterKeys.FROM:
+        // handle repeated values
+        updateConditionsAndParamsWithInValues(
+          filter,
+          contractResultFromInValues,
+          params,
+          conditions,
+          contractResultFromFullName
+        );
+        break;
+      case constants.filterKeys.LIMIT:
+        limit = filter.value;
+        break;
+      case constants.filterKeys.ORDER:
+        order = filter.value;
+        break;
+      case constants.filterKeys.TIMESTAMP:
+        // handle repeated values
+        updateConditionsAndParamsWithInValues(
+          filter,
+          contractResultTimestampInValues,
+          params,
+          conditions,
+          contractResultTimestampFullName
+        );
+        break;
+      default:
+        break;
+    }
+  }
+
+  // update query with repeated values
+  updateQueryFiltersWithInValues(params, conditions, contractResultFromInValues, contractResultFromFullName);
+  updateQueryFiltersWithInValues(params, conditions, contractResultTimestampInValues, contractResultTimestampFullName);
+
+  return {
+    conditions: conditions,
+    params: params,
+    order: order,
+    limit: limit,
+  };
+};
+
+const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams, existingConditions, fullName) => {
+  if (filter.operator === utils.opsMap.eq) {
+    // aggregate '=' conditions and use the sql 'in' operator
+    invalues.push(filter.value);
+  } else {
+    existingParams.push(filter.value);
+    existingConditions.push(`${fullName}${filter.operator}$${existingParams.length}`);
+  }
+};
+
+const updateQueryFiltersWithInValues = (existingParams, existingConditions, invalues, fullName) => {
+  if (!_.isNil(invalues) && !_.isEmpty(invalues)) {
+    // add the condition 'c.id in ()'
+    const start = existingParams.length + 1; // start is the next positional index
+    existingParams.push(...invalues);
+    const positions = _.range(invalues.length)
+      .map((position) => position + start)
+      .map((position) => `$${position}`);
+    existingConditions.push(`${fullName} in (${positions})`);
+  }
+};
+
 module.exports = {
   getContractById,
   getContracts,
+  getContractResultsById,
 };
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
+    extractContractResultsByIdQuery,
     extractSqlFromContractFilters,
     extractTimestampConditionsFromContractFilters,
     fileDataQuery,

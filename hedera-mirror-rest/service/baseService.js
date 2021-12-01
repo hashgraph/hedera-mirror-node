@@ -20,8 +20,26 @@
 
 'use strict';
 
-module.exports = {
-  ContractService: require('./contractService'),
-  NftService: require('./nftService'),
-  TokenService: require('./tokenService'),
-};
+const _ = require('lodash');
+
+/**
+ * Base service class that other services should inherit from for their retrieval business logic
+ */
+class BaseService {
+  getOrderByQuery(column, order) {
+    return `order by ${column} ${order}`;
+  }
+
+  getLimitQuery(limitParamCount) {
+    return `limit $${limitParamCount}`;
+  }
+
+  async getRows(query, params, functionName = '') {
+    logger.trace(`${functionName} query: ${query}, params: ${params}`);
+    const {rows} = await pool.queryQuietly(query, params);
+    logger.trace(`${functionName} ${rows.length} entries`);
+    return rows;
+  }
+}
+
+module.exports = BaseService;
