@@ -576,10 +576,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(EntityId.of(logInfo.getContractID()), ContractLog::getContractId)
                 .returns(logInfo.getData().toByteArray(), ContractLog::getData)
                 .returns(0, ContractLog::getIndex)
-                .returns(Hex.encodeHexString(logInfo.getTopic(0).toByteArray()), ContractLog::getTopic0)
-                .returns(Hex.encodeHexString(logInfo.getTopic(1).toByteArray()), ContractLog::getTopic1)
-                .returns(Hex.encodeHexString(logInfo.getTopic(2).toByteArray()), ContractLog::getTopic2)
-                .returns(Hex.encodeHexString(logInfo.getTopic(3).toByteArray()), ContractLog::getTopic3);
+                .returns(Utility.getTopic(logInfo, 0), ContractLog::getTopic0)
+                .returns(Utility.getTopic(logInfo, 1), ContractLog::getTopic1)
+                .returns(Utility.getTopic(logInfo, 2), ContractLog::getTopic2)
+                .returns(Utility.getTopic(logInfo, 3), ContractLog::getTopic3);
     }
 
     private TransactionRecord createOrUpdateRecord(TransactionBody transactionBody) {
