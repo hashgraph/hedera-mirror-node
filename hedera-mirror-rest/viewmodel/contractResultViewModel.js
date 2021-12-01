@@ -34,7 +34,7 @@ class ContractResultViewModel {
    *
    * @param {ContractResult} contract
    */
-  constructor(contractResult) {
+  constructor(contractResult, recordFile = undefined, transaction = undefined) {
     Object.assign(this, {
       amount: Number(contractResult.amount),
       bloom: utils.toHexString(contractResult.bloom, true),
@@ -49,6 +49,14 @@ class ContractResultViewModel {
       timestamp: utils.nsToSecNs(contractResult.consensusTimestamp),
       to: EntityId.parse(contractResult.contractId, true).toSolidityAddress(),
     });
+
+    if (!_.isUndefined(recordFile)) {
+      this.block_hash = null;
+      this.block_number = null;
+    }
+    if (!_.isUndefined(transaction)) {
+      this.hash = null;
+    }
   }
 }
 

@@ -47,6 +47,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadEntities(testDataJson.entities);
   await loadFileData(testDataJson.filedata);
   await loadNfts(testDataJson.nfts);
+  await loadRecordFiles(testDataJson.recordFiles);
   await loadSchedules(testDataJson.schedules);
   await loadTopicMessages(testDataJson.topicmessages);
   await loadTokens(testDataJson.tokens);
@@ -162,6 +163,15 @@ const loadSchedules = async (schedules) => {
 
   for (const schedule of schedules) {
     await addSchedule(schedule);
+  }
+};
+
+const loadRecordFiles = async (recordFiles) => {
+  if (recordFiles == null) {
+    return;
+  }
+  for (const recordFile of recordFiles) {
+    await addRecordFile(recordFile);
   }
 };
 
@@ -873,12 +883,65 @@ const addNft = async (nft) => {
   );
 };
 
+const addRecordFile = async (recordFileInput) => {
+  const insertFields = [
+    'bytes',
+    'consensus_end',
+    'consensus_start',
+    'count',
+    'digest_algorithm',
+    'file_hash',
+    'index',
+    'hapi_version_major',
+    'hapi_version_minor',
+    'hapi_version_patch',
+    'hash',
+    'load_end',
+    'load_start',
+    'name',
+    'node_account_id',
+    'prev_hash',
+    'version',
+  ];
+  const positions = _.range(1, insertFields.length + 1)
+    .map((position) => `$${position}`)
+    .join(',');
+
+  const recordFile = {
+    bytes: Buffer.from([1, 1, 2, 2, 3, 3]),
+    consensus_end: 1628751573995691000,
+    consensus_start: 1628751572000852000,
+    count: 1200,
+    digest_algorithm: 0,
+    file_hash: 'dee34bdd8bbe32fdb53ce7e3cf764a0495fa5e93b15ca567208cfb384231301bedf821de07b0d8dc3fb55c5b3c90ac61',
+    index: 123456789,
+    hapi_version_major: 0,
+    hapi_version_minor: 11,
+    hapi_version_patch: 0,
+    hash: 'ed55d98d53fd55c9caf5f61affe88cd2978d37128ec54af5dace29b6fd271cbd079ebe487bda5f227087e2638b1100cf',
+    load_end: 1629298236,
+    load_start: 1629298233,
+    name: '2021-08-12T06_59_32.000852000Z.rcd',
+    node_account_id: 3,
+    prev_hash: '715b4f711cbd24cc4e3a7413646f58f04a95ec811c056727742f035c890c044371fe86065021e7e977961c4aa68aa5f0',
+    version: 5,
+    ...recordFileInput,
+  };
+  recordFile.bytes = recordFileInput.bytes != null ? Buffer.from(recordFileInput.bytes) : recordFile.bytes;
+  await sqlConnection.query(
+    `insert into record_file (${insertFields.join(',')}) values (${positions})`,
+    insertFields.map((name) => recordFile[name])
+  );
+};
+
 module.exports = {
   addAccount,
   addCryptoTransaction,
   addNft,
   addToken,
   loadContractResults,
+  loadRecordFiles,
+  loadTransactions,
   setAccountBalance,
   setUp,
 };

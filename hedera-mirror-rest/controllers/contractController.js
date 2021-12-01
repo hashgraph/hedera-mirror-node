@@ -30,6 +30,7 @@ const {
 } = require('../config');
 const constants = require('../constants');
 const EntityId = require('../entityId');
+const TransactionId = require('../transactionId');
 const utils = require('../utils');
 
 const {Contract, FileData, ContractResult} = require('../model');
@@ -340,6 +341,46 @@ const getContracts = async (req, res) => {
   res.locals[constants.responseDataLabel] = response;
 };
 
+const defaultParamSupportMap = {
+  [constants.filterKeys.LIMIT]: true,
+  [constants.filterKeys.ORDER]: true,
+};
+const contractResultsByIdParamSupportMap = {
+  [constants.filterKeys.FROM]: true,
+  [constants.filterKeys.TIMESTAMP]: true,
+  ...defaultParamSupportMap,
+};
+
+/**
+ * Verify contractId meets entity id format
+ */
+const validateContractIdParam = (contractId) => {
+  if (!EntityId.isValidEntityId(contractId)) {
+    throw InvalidArgumentError.forParams(constants.filterKeys.CONTRACTID);
+  }
+};
+
+const getAndValidateContractIdRequestPathParam = (req) => {
+  const contractIdString = req.params.contractId;
+  validateContractIdParam(contractIdString);
+  return EntityId.parse(contractIdString, constants.filterKeys.CONTRACTID).getEncodedId();
+};
+
+/**
+ * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
+ */
+const validateConsensusTimestampParam = (consensusTimestamp) => {
+  if (!utils.isValidTimestampParam(consensusTimestamp)) {
+    throw InvalidArgumentError.forParams(topicMessageColumns.CONSENSUS_TIMESTAMP);
+  }
+};
+
+const getAndValidateConsensusTimestampPathParam = (req) => {
+  const consensusTimestampParam = req.params.consensusTimestamp;
+  validateConsensusTimestampParam(consensusTimestampParam);
+  return utils.parseTimestampParam(consensusTimestampParam);
+};
+
 /**
  * Handler function for /contracts/:contractId/results API
  * @param {Request} req HTTP request object
@@ -347,13 +388,13 @@ const getContracts = async (req, res) => {
  * @returns {Promise<void>}
  */
 const getContractResultsById = async (req, res) => {
-  utils.validateReq(req);
+  const {contractId, filters} = extractContractIdAndFiltersFromValidatedRequest(req);
 
-  // extract filters from query param
-  const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
-  const filters = utils.buildAndValidateFilters(req.query);
-
-  const {conditions, params, order, limit} = extractContractResultsByIdQuery(filters, contractId);
+  const {conditions, params, order, limit} = extractContractResultsByIdQuery(
+    filters,
+    contractId,
+    contractResultsByIdParamSupportMap
+  );
 
   const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
   const response = {
@@ -379,13 +420,66 @@ const getContractResultsById = async (req, res) => {
 };
 
 /**
+ * Handler function for /contracts/:contractId/results/timestamp API
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns {Promise<void>}
+ */
+const getContractResultsByTimestamp = async (req, res) => {
+  const {contractId} = extractContractIdAndFiltersFromValidatedRequest(req);
+  const timestamp = getAndValidateConsensusTimestampPathParam(req);
+  const rows = await ContractService.getContractResultsByIdAndTimestamp(contractId, timestamp);
+
+  if (rows === null) {
+    throw new NotFoundError();
+  }
+
+  const response = new ContractResultViewModel(row.contractResult, row.recordFile, row.transaction);
+  res.locals[constants.responseDataLabel] = response;
+};
+
+/**
+ * Handler function for /contracts/results/transactionId API
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns {Promise<void>}
+ */
+const getContractResultsByTransactionId = async (req, res) => {
+  utils.validateReq(req);
+  // extract filters from query param
+  const transactionId = TransactionId.fromString(req.params.transactionId);
+  const rows = await ContractService.getContractResultsByTransactionId(
+    transactionId.getValidStartNs(),
+    transactionId.getEntityId().getEncodedId()
+  );
+
+  if (rows === null) {
+    throw new NotFoundError();
+  }
+
+  const response = new ContractResultViewModel(row.contractResult, row.recordFile, row.transaction);
+  res.locals[constants.responseDataLabel] = response;
+};
+
+const extractContractIdAndFiltersFromValidatedRequest = (req) => {
+  utils.validateReq(req);
+  // extract filters from query param
+  const contractId = getAndValidateContractIdRequestPathParam(req);
+  const filters = utils.buildAndValidateFilters(req.query);
+  return {
+    contractId: contractId,
+    filters: filters,
+  };
+};
+
+/**
  * Extracts SQL where conditions, params, order, and limit
  *
  * @param {[]} filters parsed and validated filters
  * @param {string} contractId encoded contract ID
  * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
  */
-const extractContractResultsByIdQuery = (filters, contractId) => {
+const extractContractResultsByIdQuery = (filters, contractId, paramSupportMap = defaultParamSupportMap) => {
   let limit = defaultLimit;
   let order = constants.orderFilterValues.DESC;
   const conditions = [`${ContractResult.getFullName(ContractResult.CONTRACT_ID)} = $1`];
@@ -398,6 +492,11 @@ const extractContractResultsByIdQuery = (filters, contractId) => {
   const contractResultTimestampInValues = [];
 
   for (const filter of filters) {
+    if (_.isNil(defaultParamSupportMap[filter.key])) {
+      // param not supported for current endpoint
+      continue;
+    }
+
     switch (filter.key) {
       case constants.filterKeys.FROM:
         // handle repeated values
@@ -468,6 +567,8 @@ module.exports = {
   getContractById,
   getContracts,
   getContractResultsById,
+  getContractResultsByTimestamp,
+  getContractResultsByTransactionId,
 };
 
 if (utils.isTestEnv()) {

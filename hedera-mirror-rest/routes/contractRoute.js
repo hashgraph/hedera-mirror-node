@@ -31,5 +31,6 @@ const path = '/api/v1/contracts';
 router.getAsync(`${path}`, ContractController.getContracts);
 router.getAsync(`${path}/:contractId`, ContractController.getContractById);
 router.getAsync(`${path}/:contractId/results`, ContractController.getContractResultsById);
+router.getAsync(`${path}/:contractId/results/:timestamp`, ContractController.getContractResultsByTimestamp);
 
 module.exports = router;

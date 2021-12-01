@@ -216,3 +216,116 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
     expect(response).toMatchObject(expectedContractResult);
   });
 });
+
+describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
+  test('ContractService.getContractResultsByIdAndTimestamp - Row match', async () => {
+    await integrationDomainOps.loadContractResults([
+      {
+        contract_id: 2,
+        consensus_timestamp: 2,
+        function_parameters: '\\x0D',
+        amount: 10,
+      },
+    ]);
+
+    await integrationDomainOps.loadRecordFiles([
+      {
+        index: 1,
+        consensus_start: 1,
+        consensus_end: 3,
+        file_hash: 'dee34',
+      },
+    ]);
+
+    await integrationDomainOps.loadTransactions([
+      {
+        consensus_timestamp: 2,
+        payerAccountId: '5',
+      },
+    ]);
+
+    const expectedDetailedContractResult = {
+      contractResult: {
+        amount: '10',
+        bloom: null,
+        callResult: null,
+        consensusTimestamp: '2',
+        contractId: '2',
+        createdContractIds: [],
+        errorMessage: '',
+        functionResult: null,
+        gasLimit: '1000',
+        gasUsed: '10',
+        payerAccountId: '5',
+      },
+      recordFile: {
+        consensusEnd: '3',
+        fileHash: 'dee34',
+        index: '1',
+      },
+      transaction: {
+        consensusTimestamp: '2',
+        payerAccountId: '5',
+      },
+    };
+    const response = await ContractService.getContractResultsByIdAndTimestamp(2, 2);
+    expect(response).toMatchObject(expectedDetailedContractResult);
+  });
+});
+
+describe('ContractService.getContractResultsByTransactionId tests', () => {
+  test('ContractService.getContractResultsByTransactionId - Row match', async () => {
+    await integrationDomainOps.loadContractResults([
+      {
+        contract_id: 2,
+        consensus_timestamp: 2,
+        function_parameters: '\\x0D',
+        amount: 10,
+      },
+    ]);
+
+    await integrationDomainOps.loadRecordFiles([
+      {
+        index: 1,
+        consensus_start: 1,
+        consensus_end: 3,
+        file_hash: 'dee34',
+      },
+    ]);
+
+    await integrationDomainOps.loadTransactions([
+      {
+        consensus_timestamp: 2,
+        payerAccountId: '5',
+        valid_start_timestamp: 1,
+      },
+    ]);
+
+    const expectedDetailedContractResult = {
+      contractResult: {
+        amount: '10',
+        bloom: null,
+        callResult: null,
+        consensusTimestamp: '2',
+        contractId: '2',
+        createdContractIds: [],
+        errorMessage: '',
+        functionResult: null,
+        gasLimit: '1000',
+        gasUsed: '10',
+        payerAccountId: '5',
+      },
+      recordFile: {
+        consensusEnd: '3',
+        fileHash: 'dee34',
+        index: '1',
+      },
+      transaction: {
+        consensusTimestamp: '2',
+        payerAccountId: '5',
+      },
+    };
+    const response = await ContractService.getContractResultsByTransactionId(1, 5);
+    expect(response).toMatchObject(expectedDetailedContractResult);
+  });
+});
