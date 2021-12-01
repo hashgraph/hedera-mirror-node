@@ -29,7 +29,7 @@ hedera:
     rosetta:
       test:
         operators:
-          - privateKey: 90e42b7c7f8fc8185da1554a4c7ff485deadbeefdeadbeefdeadbeefdeadbeef
+          - privateKey: 90e42b7c...
             id: 0.0.65342
 ```
 

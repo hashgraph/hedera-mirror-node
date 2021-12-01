@@ -150,7 +150,7 @@ jobs:
       - name: Get Genesis Account Balances
         run: ./scripts/validation/get-genesis-balance.sh testnet
 
-      - name: Rosetta-cli Configuration
+      - name: Rosetta CLI Configuration
         run: |
           # add prefunded accounts for construction validation, override construction offline_url
           echo "${{ secrets.ROSETTA_PREFUNDED_ACCOUNTS }}" | base64 -d > /tmp/accounts.json

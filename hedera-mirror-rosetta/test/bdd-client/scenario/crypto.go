@@ -37,7 +37,7 @@ type cryptoFeature struct {
 	transactionHash string
 }
 
-func (c *cryptoFeature) iSendCryptoCreateTransaction(ctx context.Context) error {
+func (c *cryptoFeature) createCryptoAccount(ctx context.Context) error {
 	sk, err := hedera.GeneratePrivateKey()
 	if err != nil {
 		log.Errorf("Failed to generate private key for new account: %v", err)
@@ -71,7 +71,7 @@ func (c *cryptoFeature) iSendCryptoCreateTransaction(ctx context.Context) error 
 	return nil
 }
 
-func (c *cryptoFeature) theDataApiShouldShowTheCryptoCreateTransaction(ctx context.Context) error {
+func (c *cryptoFeature) verifyCryptoCreateTransaction(ctx context.Context) error {
 	transaction, err := testClient.FindTransaction(ctx, c.transactionHash)
 	if err != nil {
 		log.Infof("Failed to find cryptocreate with hash %s", c.transactionHash)
@@ -118,7 +118,7 @@ func (c *cryptoFeature) theDataApiShouldShowTheCryptoCreateTransaction(ctx conte
 	return err
 }
 
-func (c *cryptoFeature) iTransferHbarToTreasury(ctx context.Context) error {
+func (c *cryptoFeature) transferHbarToTreasury(ctx context.Context) error {
 	operations := []*types.Operation{
 		{
 			OperationIdentifier: &types.OperationIdentifier{Index: 0},
@@ -145,7 +145,7 @@ func (c *cryptoFeature) iTransferHbarToTreasury(ctx context.Context) error {
 	return nil
 }
 
-func (c *cryptoFeature) theDataApiShouldShowTheCryptoTransferTransaction(ctx context.Context) error {
+func (c *cryptoFeature) verifyCryptoTransferTransaction(ctx context.Context) error {
 	transaction, err := testClient.FindTransaction(ctx, c.transactionHash)
 	if err != nil {
 		log.Infof("Failed to find cryptotransfer with hash %s", c.transactionHash)
@@ -192,9 +192,9 @@ func initializeCryptoScenario(ctx *godog.ScenarioContext) {
 
 	ctx.After(crypto.cleanup)
 
-	ctx.Step("I send a CryptoCreate transaction to network", crypto.iSendCryptoCreateTransaction)
-	ctx.Step("the DATA API should show the CryptoCreate transaction", crypto.theDataApiShouldShowTheCryptoCreateTransaction)
+	ctx.Step("I send a CryptoCreate transaction to network", crypto.createCryptoAccount)
+	ctx.Step("the DATA API should show the CryptoCreate transaction", crypto.verifyCryptoCreateTransaction)
 
-	ctx.Step("I transfer some hbar to the treasury account", crypto.iTransferHbarToTreasury)
-	ctx.Step("the DATA API should show the CryptoTransfer transaction", crypto.theDataApiShouldShowTheCryptoTransferTransaction)
+	ctx.Step("I transfer some hbar to the treasury account", crypto.transferHbarToTreasury)
+	ctx.Step("the DATA API should show the CryptoTransfer transaction", crypto.verifyCryptoTransferTransaction)
 }
