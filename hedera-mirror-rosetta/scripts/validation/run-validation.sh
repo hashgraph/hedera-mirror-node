@@ -9,11 +9,11 @@ api=${2:-data}
 case $network in
   demo)
     check="check:$api"
-    config="./${network}/validate-$api.json"
+    config="./${network}/validation.json"
     ;;
   testnet)
     check="check:$api"
-    config="./${network}/validate-$api.json"
+    config="./${network}/validation.json"
     ;;
   *)
     echo "Unsupported network ${network}"

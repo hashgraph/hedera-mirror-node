@@ -62,11 +62,12 @@ var (
 	invalidTransaction     = "InvalidTxHexString"
 	invalidTypeTransaction = "0x0a332a310a2d0a140a0c08a6e4cb840610f6a3aeef0112041882810c12021805188084af5f22020878c20107320508d0c8e1031200"
 	nodeAccountId          = hedera.AccountID{Account: 7}
+	offlineBaseService     = NewOfflineBaseService()
+	onlineBaseService      = NewOnlineBaseService(&mocks.MockBlockRepository{}, &mocks.MockTransactionRepository{})
 	payerId                = hedera.AccountID{Account: 100}
 	publicKeyStr           = "eba8cc093a83a4ca5e813e30d8c503babb35c22d57d34b6ec5ac0303a6aaba77" // without ed25519PubKeyPrefix
 	privateKey, _          = hedera.PrivateKeyFromString("302e020100300506032b6570042204207904b9687878e08e101723f7b724cd61a42bbff93923177bf3fcc2240b0dd3bc")
 	validSignedTransaction = "0x0aaa012aa7010a3d0a140a0c08feafcb840610ae86c0db03120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f12660a640a20eba8cc093a83a4ca5e813e30d8c503babb35c22d57d34b6ec5ac0303a6aaba771a40793de745bc19dd8fe8e817891f51b8fe1e259c2e6428bd7fa075b181585a2d40e3666a7c9a1873abb5433ffe1414502836d8d37082eaf94a648b530e9fa78108"
-	// validUnsignedTransaction = "0x0a432a410a3d0a140a0c08feafcb840610ae86c0db03120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f1200"
 )
 
 func dummyConstructionCombineRequest() *types.ConstructionCombineRequest {
@@ -259,7 +260,11 @@ func TestNewConstructionAPIService(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual, err := NewConstructionAPIService(tt.network, tt.nodes, &mocks.MockTransactionConstructor{})
+			actual, err := NewConstructionAPIService(
+				onlineBaseService,
+				tt.network, tt.nodes,
+				&mocks.MockTransactionConstructor{},
+			)
 
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -282,7 +287,7 @@ func TestConstructionCombine(t *testing.T) {
 	expectedConstructionCombineResponse := &types.ConstructionCombineResponse{
 		SignedTransaction: validSignedTransaction,
 	}
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 
 	// when:
 	res, e := service.ConstructionCombine(nil, dummyConstructionCombineRequest())
@@ -296,7 +301,7 @@ func TestConstructionCombineThrowsWithNoSignature(t *testing.T) {
 	// given
 	request := dummyConstructionCombineRequest()
 	request.Signatures = []*types.Signature{}
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 
 	// when
 	res, e := service.ConstructionCombine(nil, request)
@@ -310,7 +315,7 @@ func TestConstructionCombineThrowsWithInvalidSignatureType(t *testing.T) {
 	// given
 	request := dummyConstructionCombineRequest()
 	request.Signatures[0].SignatureType = types.Schnorr1
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 
 	// when
 	res, e := service.ConstructionCombine(nil, request)
@@ -326,7 +331,7 @@ func TestConstructionCombineThrowsWhenDecodeStringFails(t *testing.T) {
 	exampleCorruptedTxHexStrConstructionCombineRequest.UnsignedTransaction = invalidTransaction
 
 	// when:
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionCombine(nil, exampleCorruptedTxHexStrConstructionCombineRequest)
 
 	// then:
@@ -340,7 +345,7 @@ func TestConstructionCombineThrowsWhenUnmarshallFails(t *testing.T) {
 	exampleCorruptedTxHexStrConstructionCombineRequest.UnsignedTransaction = corruptedTransaction
 
 	// when:
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionCombine(nil, exampleCorruptedTxHexStrConstructionCombineRequest)
 
 	// then:
@@ -354,7 +359,7 @@ func TestConstructionCombineThrowsWithInvalidPublicKey(t *testing.T) {
 	exampleInvalidPublicKeyConstructionCombineRequest.Signatures[0].PublicKey = &types.PublicKey{}
 
 	// when:
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionCombine(nil, exampleInvalidPublicKeyConstructionCombineRequest)
 
 	// then:
@@ -368,7 +373,7 @@ func TestConstructionCombineThrowsWithInvalidSignature(t *testing.T) {
 	exampleInvalidSigningPayloadConstructionCombineRequest.Signatures[0].Bytes = []byte("bad signature")
 
 	// when:
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionCombine(nil, exampleInvalidSigningPayloadConstructionCombineRequest)
 
 	// then:
@@ -382,7 +387,7 @@ func TestConstructionCombineThrowsWithInvalidTransactionType(t *testing.T) {
 	exampleInvalidTransactionTypeConstructionCombineRequest.UnsignedTransaction = invalidTypeTransaction
 
 	// when:
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionCombine(nil, exampleInvalidTransactionTypeConstructionCombineRequest)
 
 	// then:
@@ -392,7 +397,7 @@ func TestConstructionCombineThrowsWithInvalidTransactionType(t *testing.T) {
 
 func TestConstructionDerive(t *testing.T) {
 	// given
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 
 	// when:
 	res, e := service.ConstructionDerive(nil, nil)
@@ -411,7 +416,7 @@ func TestConstructionHash(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionHash(nil, exampleConstructionHashRequest)
 
 	// then:
@@ -424,7 +429,7 @@ func TestConstructionHashThrowsWhenDecodeStringFails(t *testing.T) {
 	exampleConstructionHashRequest := dummyConstructionHashRequest(invalidTransaction)
 
 	// when:
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionHash(nil, exampleConstructionHashRequest)
 
 	// then:
@@ -439,12 +444,24 @@ func TestConstructionMetadata(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionMetadata(nil, nil)
 
 	// then:
 	assert.Equal(t, expectedResponse, res)
 	assert.Nil(t, e)
+}
+
+func TestConstructionMetadataOffline(t *testing.T) {
+	// given
+	service, _ := NewConstructionAPIService(offlineBaseService, defaultNetwork, defaultNodes, nil)
+
+	// when:
+	res, e := service.ConstructionMetadata(nil, nil)
+
+	// then:
+	assert.Equal(t, errors.ErrEndpointNotSupportedInOfflineMode, e)
+	assert.Nil(t, res)
 }
 
 func TestConstructionParse(t *testing.T) {
@@ -480,7 +497,7 @@ func TestConstructionParse(t *testing.T) {
 			mockConstructor.
 				On("Parse", defaultContext, mock.IsType(&hedera.TransferTransaction{})).
 				Return(operations, []hedera.AccountID{defaultAccountId1}, mocks.NilError)
-			service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
+			service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, mockConstructor)
 
 			// when:
 			res, e := service.ConstructionParse(defaultContext, request)
@@ -499,7 +516,7 @@ func TestConstructionParseThrowsWhenConstructorParseFails(t *testing.T) {
 	mockConstructor.
 		On("Parse", defaultContext, mock.IsType(&hedera.TransferTransaction{})).
 		Return(mocks.NilOperations, mocks.NilSigners, errors.ErrInternalServerError)
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, mockConstructor)
 
 	// when
 	res, e := service.ConstructionParse(defaultContext, dummyConstructionParseRequest(validSignedTransaction, false))
@@ -513,7 +530,7 @@ func TestConstructionParseThrowsWhenConstructorParseFails(t *testing.T) {
 func TestConstructionParseThrowsWhenDecodeStringFails(t *testing.T) {
 	// given
 	mockConstructor := &mocks.MockTransactionConstructor{}
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, mockConstructor)
 
 	// when
 	res, e := service.ConstructionParse(nil, dummyConstructionParseRequest(invalidTransaction, false))
@@ -526,7 +543,7 @@ func TestConstructionParseThrowsWhenDecodeStringFails(t *testing.T) {
 func TestConstructionParseThrowsWhenUnmarshallFails(t *testing.T) {
 	// given
 	mockConstructor := &mocks.MockTransactionConstructor{}
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, mockConstructor)
 
 	// when
 	res, e := service.ConstructionParse(nil, dummyConstructionParseRequest(corruptedTransaction, false))
@@ -569,7 +586,7 @@ func TestConstructionPayloads(t *testing.T) {
 			mock.IsType(int64(0)),
 		).
 		Return(transaction, []hedera.AccountID{defaultAccountId1}, mocks.NilError)
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, mockConstructor)
 
 	// when
 	actual, e := service.ConstructionPayloads(defaultContext, dummyPayloadsRequest(operations))
@@ -595,7 +612,7 @@ func TestConstructionPayloadsThrowsWithConstuctorConstructFailure(t *testing.T) 
 			mock.IsType(int64(0)),
 		).
 		Return(mocks.NilHederaTransaction, mocks.NilSigners, errors.ErrInternalServerError)
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, mockConstructor)
 
 	// when
 	actual, err := service.ConstructionPayloads(defaultContext, dummyPayloadsRequest(operations))
@@ -613,7 +630,7 @@ func TestConstructionSubmitThrowsWhenDecodeStringFails(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionSubmit(defaultContext, exampleConstructionSubmitRequest)
 
 	// then:
@@ -631,12 +648,29 @@ func TestConstructionSubmitThrowsWhenUnmarshalBinaryFails(t *testing.T) {
 	}
 
 	// when:
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, nil)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 	res, e := service.ConstructionSubmit(defaultContext, exampleConstructionSubmitRequest)
 
 	// then:
 	assert.Nil(t, res)
 	assert.Equal(t, errors.ErrTransactionUnmarshallingFailed, e)
+}
+
+func TestConstructionSubmitOffline(t *testing.T) {
+	// given
+	request := &types.ConstructionSubmitRequest{
+		NetworkIdentifier: networkIdentifier(),
+		SignedTransaction: "0xfc2267c53ef8a27e2ab65f0a6b5e5607ba33b9c8c8f7304d8cb4a77aee19107d",
+	}
+
+	service, _ := NewConstructionAPIService(offlineBaseService, defaultNetwork, defaultNodes, nil)
+
+	// when
+	res, e := service.ConstructionSubmit(defaultContext, request)
+
+	// then
+	assert.Equal(t, errors.ErrEndpointNotSupportedInOfflineMode, e)
+	assert.Nil(t, res)
 }
 
 func TestConstructionPreprocess(t *testing.T) {
@@ -648,7 +682,7 @@ func TestConstructionPreprocess(t *testing.T) {
 	mockConstructor.
 		On("Preprocess", defaultContext, mock.IsType([]*types.Operation{})).
 		Return([]hedera.AccountID{defaultAccountId1}, mocks.NilError)
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, mockConstructor)
 
 	// when:
 	actual, e := service.ConstructionPreprocess(defaultContext, dummyConstructionPreprocessRequest(true))
@@ -664,7 +698,7 @@ func TestConstructionPreprocessThrowsWithConstructorPreprocessFailure(t *testing
 	mockConstructor.
 		On("Preprocess", defaultContext, mock.IsType([]*types.Operation{})).
 		Return(mocks.NilSigners, errors.ErrInternalServerError)
-	service, _ := NewConstructionAPIService(defaultNetwork, defaultNodes, mockConstructor)
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, mockConstructor)
 
 	// when:
 	actual, e := service.ConstructionPreprocess(defaultContext, dummyConstructionPreprocessRequest(false))

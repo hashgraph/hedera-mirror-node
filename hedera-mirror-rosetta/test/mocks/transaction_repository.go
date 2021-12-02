@@ -51,8 +51,3 @@ func (m *MockTransactionRepository) FindBetween(ctx context.Context, start, end 
 	args := m.Called()
 	return args.Get(0).([]*types.Transaction), args.Get(1).(*rTypes.Error)
 }
-
-func (m *MockTransactionRepository) TypesAsArray() []string {
-	args := m.Called()
-	return args.Get(0).([]string)
-}

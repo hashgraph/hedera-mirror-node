@@ -10,7 +10,18 @@
   "online_url": "http://localhost:5700",
   "data_directory": "",
   "http_timeout": 10,
-  "tip_delay": 300,
+  "tip_delay": 20,
+  "construction": {
+    "broadcast_limit": 1,
+    "clear_broadcasts": true,
+    "constructor_dsl_file": "testnet.ros",
+    "end_conditions": {
+      "transfer": 10
+    },
+    "offline_url": "http://localhost:5701",
+    "prefunded_accounts": [],
+    "stale_depth": 20
+  },
   "data": {
     "reconciliation_disabled": false,
     "inactive_discrepency_search_disabled": false,

@@ -305,10 +305,6 @@ func (tr *transactionRepository) FindByHashInBlock(
 	return transaction, nil
 }
 
-func (tr *transactionRepository) TypesAsArray() []string {
-	return tools.GetStringValuesFromInt32StringMap(types.TransactionTypes)
-}
-
 func (tr *transactionRepository) constructTransaction(sameHashTransactions []*transaction) (
 	*types.Transaction,
 	*rTypes.Error,

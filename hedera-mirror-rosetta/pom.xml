@@ -60,7 +60,11 @@
                                 <flag>-race</flag>
                                 <flag>-v</flag>
                             </buildFlags>
+                            <packages>
+                                <folder>./app/...</folder>
+                            </packages>
                             <skip>${skipTests}</skip>
+                            <verbose>true</verbose>
                         </configuration>
                     </execution>
                     <execution>

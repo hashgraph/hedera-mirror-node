@@ -33,12 +33,12 @@ import (
 
 // AccountAPIService implements the server.AccountAPIServicer interface.
 type AccountAPIService struct {
-	BaseService
+	*BaseService
 	accountRepo interfaces.AccountRepository
 }
 
 // NewAccountAPIService creates a new instance of a AccountAPIService.
-func NewAccountAPIService(base BaseService, accountRepo interfaces.AccountRepository) server.AccountAPIServicer {
+func NewAccountAPIService(base *BaseService, accountRepo interfaces.AccountRepository) server.AccountAPIServicer {
 	return &AccountAPIService{
 		BaseService: base,
 		accountRepo: accountRepo,

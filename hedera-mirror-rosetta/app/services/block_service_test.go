@@ -156,12 +156,12 @@ func (suite *blockServiceSuite) SetupTest() {
 	suite.mockBlockRepo = &mocks.MockBlockRepository{}
 	suite.mockTransactionRepo = &mocks.MockTransactionRepository{}
 
-	baseService := NewBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
+	baseService := NewOnlineBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
 	suite.blockService = NewBlockAPIService(baseService)
 }
 
 func (suite *blockServiceSuite) TestNewBlockAPIService() {
-	baseService := NewBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
+	baseService := NewOnlineBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
 	blockService := NewBlockAPIService(baseService)
 
 	assert.IsType(suite.T(), &blockAPIService{}, blockService)
