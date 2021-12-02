@@ -51,12 +51,12 @@ class ContractResultViewModel {
     });
 
     if (!_.isUndefined(recordFile)) {
-      this.block_hash = utils.toHexString(recordFile.hash, true);
+      this.block_hash = utils.addHexPrefix(recordFile.hash);
       this.block_number = Number(recordFile.index);
     }
 
     if (!_.isUndefined(transaction)) {
-      this.hash = utils.addHexPrefix(transaction.transactionHash);
+      this.hash = utils.toHexString(transaction.transactionHash, true);
     }
   }
 }
