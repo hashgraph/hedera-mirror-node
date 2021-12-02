@@ -61,9 +61,13 @@ class ContractService extends BaseService {
     ${Transaction.getFullName(Transaction.TRANSACTION_HASH)}
     from ${ContractResult.tableName} ${ContractResult.tableAlias}
     join ${Transaction.tableName} ${Transaction.tableAlias}  on 
+    ${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)} = ${Transaction.getFullName(
+    Transaction.PAYER_ACCOUNT_ID
+  )} and
     ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
     Transaction.CONSENSUS_TIMESTAMP
-  )}`;
+  )}
+  `;
 
   async getContractResultsByIdAndFilters(
     whereConditions = [],

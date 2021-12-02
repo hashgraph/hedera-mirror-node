@@ -218,6 +218,11 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
 });
 
 describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
+  test('ContractService.getContractResultsByIdAndTimestamp - No match', async () => {
+    const response = await ContractService.getContractResultsByIdAndTimestamp();
+    expect(response).toEqual(null);
+  });
+
   test('ContractService.getContractResultsByIdAndTimestamp - Row match', async () => {
     await integrationDomainOps.loadContractResults([
       {
@@ -225,6 +230,7 @@ describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
         consensus_timestamp: 2,
         function_parameters: '\\x0D',
         amount: 10,
+        payer_account_id: '5',
       },
     ]);
 
@@ -285,6 +291,7 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
       consensus_timestamp: 2,
       function_parameters: '\\x0D',
       amount: 10,
+      payer_account_id: '5',
     },
   ];
   const transactionsInput = [
