@@ -94,7 +94,7 @@ class ContractService extends BaseService {
   }
 
   /**
-   * Retrieves a detailed view of a contract result
+   * Retrieves a detailed view of a contract result based on timestamp
    *
    * @param {string} contractId encoded contract ID
    * @param {string} timestamp consensus timestamp
@@ -130,7 +130,7 @@ class ContractService extends BaseService {
   }
 
   /**
-   * Retrieves a detailed view of a contract result
+   * Retrieves a detailed view of a contract result based on transactionId
    *
    * @param {number} validStartNs validStartNs
    * @param {number} payerAccountId payerAccountId

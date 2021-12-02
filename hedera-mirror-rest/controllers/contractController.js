@@ -515,7 +515,7 @@ const getContractResultsById = async (req, res) => {
 };
 
 /**
- * Handler function for /contracts/:contractId/results/timestamp API
+ * Handler function for /contracts/:contractId/results/:timestamp API
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @returns {Promise<void>}
@@ -534,7 +534,7 @@ const getContractResultsByTimestamp = async (req, res) => {
 };
 
 /**
- * Handler function for /contracts/results/transactionId API
+ * Handler function for /contracts/results/:transactionId API
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @returns {Promise<void>}

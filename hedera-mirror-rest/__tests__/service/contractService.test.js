@@ -274,7 +274,7 @@ describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
       },
     };
 
-    await expect(await ContractService.getContractResultsByIdAndTimestamp(2, 2)).resolves.toMatchObject(
+    await expect(ContractService.getContractResultsByIdAndTimestamp(2, 2)).resolves.toMatchObject(
       expectedDetailedContractResult
     );
   });
