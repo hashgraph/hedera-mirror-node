@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <artifactId>hedera-mirror-common</artifactId>
-    <description>Contains common code like domain classes shared among multiple modules</description>
+    <description>Contains common code to be shared among multiple modules</description>
     <modelVersion>4.0.0</modelVersion>
     <name>Hedera Mirror Node Common</name>
     <packaging>jar</packaging>
@@ -89,4 +89,14 @@
             </exclusions>
         </dependency>
     </dependencies>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>
