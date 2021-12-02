@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.reader.signature;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
+import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA384;
 
 import java.io.IOException;
 import javax.inject.Named;

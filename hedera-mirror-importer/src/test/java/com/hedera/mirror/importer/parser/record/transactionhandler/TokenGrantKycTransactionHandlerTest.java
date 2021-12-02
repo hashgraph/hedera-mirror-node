@@ -25,7 +25,7 @@ import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.common.domain.entity.EntityType;
 
 class TokenGrantKycTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override

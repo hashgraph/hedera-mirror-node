@@ -38,9 +38,9 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import reactor.retry.Repeat;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcProperties;
 import com.hedera.mirror.grpc.domain.Entity;
-import com.hedera.mirror.grpc.domain.EntityType;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
@@ -94,7 +94,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
     private Mono<?> topicExists(TopicMessageFilter filter) {
         return Mono.justOrEmpty(entityRepository
-                .findById(filter.getTopicId()))
+                        .findById(filter.getTopicId()))
                 .switchIfEmpty(grpcProperties.isCheckTopicExists() ? Mono.error(new TopicNotFoundException()) :
                         Mono.just(Entity.builder().type(EntityType.TOPIC).build()))
                 .filter(e -> e.getType() == EntityType.TOPIC)

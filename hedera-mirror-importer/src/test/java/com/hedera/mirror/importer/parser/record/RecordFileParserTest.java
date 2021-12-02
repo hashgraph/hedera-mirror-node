@@ -46,15 +46,15 @@ import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
-import com.hedera.mirror.importer.domain.DigestAlgorithm;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser> {
 

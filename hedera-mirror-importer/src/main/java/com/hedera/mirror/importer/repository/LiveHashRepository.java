@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.LiveHash;
+import com.hedera.mirror.common.domain.transaction.LiveHash;
 
 public interface LiveHashRepository extends CrudRepository<LiveHash, Long> {
 }

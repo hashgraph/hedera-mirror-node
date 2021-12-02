@@ -33,6 +33,11 @@
         </dependency>
         <dependency>
             <groupId>com.hedera</groupId>
+            <artifactId>hedera-mirror-common</artifactId>
+            <version>${release.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hedera</groupId>
             <artifactId>hedera-mirror-protobuf</artifactId>
             <version>${release.version}</version>
         </dependency>

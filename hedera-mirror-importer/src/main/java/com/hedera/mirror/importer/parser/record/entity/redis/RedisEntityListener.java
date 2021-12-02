@@ -41,9 +41,9 @@ import org.springframework.core.annotation.Order;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
 
+import com.hedera.mirror.common.domain.topic.StreamMessage;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.StreamMessage;
-import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;

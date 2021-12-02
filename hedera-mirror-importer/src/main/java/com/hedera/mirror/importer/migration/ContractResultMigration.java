@@ -40,7 +40,8 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -109,8 +110,8 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
                 createdContractIds[i] = getContractId(contractFunctionResult.getCreatedContractIDs(i));
             }
 
-            contractResult.setBloom(Utility.toBytes(contractFunctionResult.getBloom()));
-            contractResult.setCallResult(Utility.toBytes(contractFunctionResult.getContractCallResult()));
+            contractResult.setBloom(DomainUtils.toBytes(contractFunctionResult.getBloom()));
+            contractResult.setCallResult(DomainUtils.toBytes(contractFunctionResult.getContractCallResult()));
             contractResult.setContractId(getContractId(contractFunctionResult.getContractID()));
             contractResult.setCreatedContractIds(createdContractIds);
             contractResult.setErrorMessage(contractFunctionResult.getErrorMessage());
@@ -121,10 +122,10 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
                 List<ByteString> topics = contractLoginfo.getTopicList();
 
                 MigrationContractLog migrationContractLog = new MigrationContractLog();
-                migrationContractLog.setBloom(Utility.toBytes(contractLoginfo.getBloom()));
+                migrationContractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
                 migrationContractLog.setConsensusTimestamp(consensusTimestamp);
                 migrationContractLog.setContractId(getContractId(contractLoginfo.getContractID()));
-                migrationContractLog.setData(Utility.toBytes(contractLoginfo.getData()));
+                migrationContractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
                 migrationContractLog.setIndex(index);
                 migrationContractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
                 migrationContractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));

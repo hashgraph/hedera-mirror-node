@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.TokenBalance;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 
 public interface TokenBalanceRepository extends CrudRepository<TokenBalance, TokenBalance.Id> {
 }

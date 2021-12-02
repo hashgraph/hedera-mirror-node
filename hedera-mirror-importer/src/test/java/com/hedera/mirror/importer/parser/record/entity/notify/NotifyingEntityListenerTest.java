@@ -33,7 +33,7 @@ import org.springframework.jdbc.support.JdbcUtils;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 

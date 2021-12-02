@@ -21,6 +21,9 @@ package com.hedera.mirror.importer.migration;
  */
 
 import com.google.common.base.Stopwatch;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.CryptoGetInfoResponse.AccountInfo;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -47,14 +50,13 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.AbstractEntity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
-import com.hedera.mirror.importer.util.EntityIdEndec;
-import com.hedera.mirror.importer.util.Utility;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
@@ -207,7 +209,7 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
         }
 
         if (entity.getExpirationTimestamp() == null && accountInfo.hasExpirationTime()) {
-            entity.setExpirationTimestamp(Utility.timestampInNanosMax(accountInfo.getExpirationTime()));
+            entity.setExpirationTimestamp(DomainUtils.timestampInNanosMax(accountInfo.getExpirationTime()));
             updated = true;
         }
 

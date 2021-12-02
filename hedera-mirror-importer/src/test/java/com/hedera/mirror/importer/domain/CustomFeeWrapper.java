@@ -20,11 +20,14 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.transaction.CustomFee;
+
 import lombok.Data;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.RowMapper;
 
-import com.hedera.mirror.importer.util.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
 
 @Data
 public class CustomFeeWrapper {

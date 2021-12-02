@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.addressbook;
 import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME;
 import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_5M;
 
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
@@ -53,18 +55,17 @@ import org.springframework.core.io.Resource;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
+import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.AddressBookEntry;
-import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
@@ -87,59 +88,6 @@ public class AddressBookServiceImpl implements AddressBookService {
         this.fileDataRepository = fileDataRepository;
         this.mirrorProperties = mirrorProperties;
         this.transactionTemplate = transactionTemplate;
-    }
-
-    /**
-     * Updates mirror node with new address book details provided in fileData object
-     *
-     * @param fileData file data entry containing address book bytes
-     */
-    @Override
-    @CacheEvict(allEntries = true)
-    public void update(FileData fileData) {
-        if (!isAddressBook(fileData.getEntityId())) {
-            log.warn("Not an address book File ID. Skipping processing ...");
-            return;
-        }
-
-        if (fileData.getFileData() == null || fileData.getFileData().length == 0) {
-            log.warn("Byte array contents were empty. Skipping processing ...");
-            return;
-        }
-
-        log.info("Received an address book update: {}", fileData);
-
-        // ensure address_book table is populated with latest addressBook prior to additions
-        validateAndCompleteAddressBookList(fileData);
-
-        parse(fileData);
-    }
-
-    /**
-     * Retrieves the latest address book from db
-     *
-     * @return returns AddressBook containing network node details
-     */
-    @Override
-    @Cacheable
-    public AddressBook getCurrent() {
-        long consensusTimestamp = Utility.convertToNanosMax(Instant.now());
-
-        // retrieve latest address book. If address_book is empty parse initial and historic address book files
-        return addressBookRepository
-                .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
-                .orElseGet(this::migrate);
-    }
-
-    /**
-     * Checks if provided EntityId is a valid AddressBook file EntityId
-     *
-     * @param entityId file  entity id
-     * @return returns true if valid address book EntityId
-     */
-    @Override
-    public boolean isAddressBook(EntityId entityId) {
-        return ADDRESS_BOOK_101_ENTITY_ID.equals(entityId) || ADDRESS_BOOK_102_ENTITY_ID.equals(entityId);
     }
 
     /**
@@ -179,139 +127,6 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     private static long getAddressBookStartConsensusTimestamp(FileData fileData) {
         return fileData.getConsensusTimestamp() + 1;
-    }
-
-    /**
-     * Migrates address book data by searching file_data table for applicable 101 and 102 files. These files are
-     * converted to AddressBook objects and used to populate address_book and address_book_entry tables. Migrate flow
-     * will populate initial addressBook where applicable and consider all file_data present
-     *
-     * @return Latest AddressBook from historical files
-     */
-    @Override
-    public synchronized AddressBook migrate() {
-        long consensusTimestamp = Utility.convertToNanosMax(Instant.now());
-        var currentAddressBook = addressBookRepository
-                .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
-                .orElse(null);
-
-        if (currentAddressBook != null) {
-            // verify no file_data 102 entries exists after current addressBook
-            List<FileData> fileDataList = fileDataRepository
-                    .findAddressBooksBetween(currentAddressBook.getStartConsensusTimestamp(), Long.MAX_VALUE, 1);
-            if (CollectionUtils.isEmpty(fileDataList)) {
-                log.trace("All valid address books exist in db, skipping migration");
-                return currentAddressBook;
-            }
-
-            log.warn("Valid address book file data entries exist in db after current address book");
-        }
-
-        log.info("Empty or incomplete list of address books found in db, proceeding with migration");
-        return transactionTemplate.execute(status -> {
-            log.info("Searching for address book on file system");
-            var initialAddressBook = currentAddressBook == null ? parse(getInitialAddressBookFileData()) :
-                    currentAddressBook;
-
-            // Parse all applicable addressBook file_data entries are processed
-            AddressBook latestAddressBook = parseHistoricAddressBooks(initialAddressBook
-                    .getStartConsensusTimestamp() - 1, consensusTimestamp);
-
-            // set latestAddressBook as newest addressBook from file_data entries or initial addressBook from filesystem
-            latestAddressBook = latestAddressBook == null ? initialAddressBook : latestAddressBook;
-
-            log.info("Migration complete. Current address book to db: {}", latestAddressBook);
-            return latestAddressBook;
-        });
-    }
-
-    /**
-     * Ensure all addressBook file_data entries prior to this fileData and after the current address book have been
-     * parsed. If not parse them and populate the address_book tables to complete the list. This does not handle initial
-     * startup and only ensure any unprocessed address book files are processed.
-     *
-     * @param fileData
-     */
-    private void validateAndCompleteAddressBookList(FileData fileData) {
-        AddressBook currentAddressBook = getCurrent();
-        long startConsensusTimestamp = currentAddressBook == null ? 0 : currentAddressBook.getStartConsensusTimestamp();
-
-        transactionTemplate.executeWithoutResult(status ->
-                // Parse all applicable missed addressBook file_data entries in range
-                parseHistoricAddressBooks(
-                        startConsensusTimestamp,
-                        fileData.getConsensusTimestamp())
-        );
-    }
-
-    /**
-     * Parses provided fileData object into an AddressBook object if valid and stores into db. Also updates previous
-     * address book endConsensusTimestamp based on new address book's startConsensusTimestamp.
-     *
-     * @param fileData file data with timestamp, contents, entityId and transaction type for parsing
-     * @return Parsed AddressBook from fileData object
-     */
-    private AddressBook parse(FileData fileData) {
-        if (addressBookRepository.existsById(getAddressBookStartConsensusTimestamp(fileData))) {
-            // skip as address book already exists
-            log.info("Address book from fileData {} already exists, skip parsing", fileData);
-            return null;
-        }
-
-        byte[] addressBookBytes = null;
-        if (fileData.transactionTypeIsAppend()) {
-            // concatenate bytes from partial address book file data in db
-            addressBookBytes = combinePreviousFileDataContents(fileData);
-        } else {
-            addressBookBytes = fileData.getFileData();
-        }
-
-        var addressBook = buildAddressBook(new FileData(fileData
-                .getConsensusTimestamp(), addressBookBytes, fileData.getEntityId(), fileData.getTransactionType()));
-        if (addressBook != null) {
-            addressBook = addressBookRepository.save(addressBook);
-            log.info("Saved new address book to db: {}", addressBook);
-
-            // update previous addressBook
-            updatePreviousAddressBook(fileData);
-        }
-
-        return addressBook;
-    }
-
-    /**
-     * Concatenates byte arrays of first fileCreate/fileUpdate transaction and intermediate fileAppend entries that make
-     * up the potential addressBook
-     *
-     * @param fileData file data entry containing address book bytes
-     * @return
-     */
-    private byte[] combinePreviousFileDataContents(FileData fileData) {
-        FileData firstPartialAddressBook = fileDataRepository.findLatestMatchingFile(
-                fileData.getConsensusTimestamp(),
-                fileData.getEntityId().getId(),
-                List.of(TransactionType.FILECREATE.getProtoId(), TransactionType.FILEUPDATE.getProtoId())
-        ).orElseThrow(() -> new IllegalStateException(
-                "Missing FileData entry. FileAppend expects a corresponding  FileCreate/FileUpdate entry"));
-
-        List<FileData> appendFileDataEntries = fileDataRepository.findFilesInRange(
-                getAddressBookStartConsensusTimestamp(firstPartialAddressBook),
-                fileData.getConsensusTimestamp() - 1,
-                firstPartialAddressBook.getEntityId().getId(),
-                TransactionType.FILEAPPEND.getProtoId()
-        );
-
-        try (var bos = new ByteArrayOutputStream(firstPartialAddressBook.getFileData().length)) {
-            bos.write(firstPartialAddressBook.getFileData());
-            for (var i = 0; i < appendFileDataEntries.size(); i++) {
-                bos.write(appendFileDataEntries.get(i).getFileData());
-            }
-
-            bos.write(fileData.getFileData());
-            return bos.toByteArray();
-        } catch (IOException ex) {
-            throw new InvalidDatasetException("Error concatenating partial address book fileData entries", ex);
-        }
     }
 
     /**
@@ -436,6 +251,192 @@ public class AddressBookServiceImpl implements AddressBookService {
                 InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress(),
                 serviceEndpoint.getPort(),
                 nodeAccountId);
+    }
+
+    /**
+     * Updates mirror node with new address book details provided in fileData object
+     *
+     * @param fileData file data entry containing address book bytes
+     */
+    @Override
+    @CacheEvict(allEntries = true)
+    public void update(FileData fileData) {
+        if (!isAddressBook(fileData.getEntityId())) {
+            log.warn("Not an address book File ID. Skipping processing ...");
+            return;
+        }
+
+        if (fileData.getFileData() == null || fileData.getFileData().length == 0) {
+            log.warn("Byte array contents were empty. Skipping processing ...");
+            return;
+        }
+
+        log.info("Received an address book update: {}", fileData);
+
+        // ensure address_book table is populated with latest addressBook prior to additions
+        validateAndCompleteAddressBookList(fileData);
+
+        parse(fileData);
+    }
+
+    /**
+     * Retrieves the latest address book from db
+     *
+     * @return returns AddressBook containing network node details
+     */
+    @Override
+    @Cacheable
+    public AddressBook getCurrent() {
+        long consensusTimestamp = DomainUtils.convertToNanosMax(Instant.now());
+
+        // retrieve latest address book. If address_book is empty parse initial and historic address book files
+        return addressBookRepository
+                .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
+                .orElseGet(this::migrate);
+    }
+
+    /**
+     * Checks if provided EntityId is a valid AddressBook file EntityId
+     *
+     * @param entityId file  entity id
+     * @return returns true if valid address book EntityId
+     */
+    @Override
+    public boolean isAddressBook(EntityId entityId) {
+        return ADDRESS_BOOK_101_ENTITY_ID.equals(entityId) || ADDRESS_BOOK_102_ENTITY_ID.equals(entityId);
+    }
+
+    /**
+     * Migrates address book data by searching file_data table for applicable 101 and 102 files. These files are
+     * converted to AddressBook objects and used to populate address_book and address_book_entry tables. Migrate flow
+     * will populate initial addressBook where applicable and consider all file_data present
+     *
+     * @return Latest AddressBook from historical files
+     */
+    @Override
+    public synchronized AddressBook migrate() {
+        long consensusTimestamp = DomainUtils.convertToNanosMax(Instant.now());
+        var currentAddressBook = addressBookRepository
+                .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
+                .orElse(null);
+
+        if (currentAddressBook != null) {
+            // verify no file_data 102 entries exists after current addressBook
+            List<FileData> fileDataList = fileDataRepository
+                    .findAddressBooksBetween(currentAddressBook.getStartConsensusTimestamp(), Long.MAX_VALUE, 1);
+            if (CollectionUtils.isEmpty(fileDataList)) {
+                log.trace("All valid address books exist in db, skipping migration");
+                return currentAddressBook;
+            }
+
+            log.warn("Valid address book file data entries exist in db after current address book");
+        }
+
+        log.info("Empty or incomplete list of address books found in db, proceeding with migration");
+        return transactionTemplate.execute(status -> {
+            log.info("Searching for address book on file system");
+            var initialAddressBook = currentAddressBook == null ? parse(getInitialAddressBookFileData()) :
+                    currentAddressBook;
+
+            // Parse all applicable addressBook file_data entries are processed
+            AddressBook latestAddressBook = parseHistoricAddressBooks(initialAddressBook
+                    .getStartConsensusTimestamp() - 1, consensusTimestamp);
+
+            // set latestAddressBook as newest addressBook from file_data entries or initial addressBook from filesystem
+            latestAddressBook = latestAddressBook == null ? initialAddressBook : latestAddressBook;
+
+            log.info("Migration complete. Current address book to db: {}", latestAddressBook);
+            return latestAddressBook;
+        });
+    }
+
+    /**
+     * Ensure all addressBook file_data entries prior to this fileData and after the current address book have been
+     * parsed. If not parse them and populate the address_book tables to complete the list. This does not handle initial
+     * startup and only ensure any unprocessed address book files are processed.
+     *
+     * @param fileData
+     */
+    private void validateAndCompleteAddressBookList(FileData fileData) {
+        AddressBook currentAddressBook = getCurrent();
+        long startConsensusTimestamp = currentAddressBook == null ? 0 : currentAddressBook.getStartConsensusTimestamp();
+
+        transactionTemplate.executeWithoutResult(status ->
+                // Parse all applicable missed addressBook file_data entries in range
+                parseHistoricAddressBooks(
+                        startConsensusTimestamp,
+                        fileData.getConsensusTimestamp())
+        );
+    }
+
+    /**
+     * Parses provided fileData object into an AddressBook object if valid and stores into db. Also updates previous
+     * address book endConsensusTimestamp based on new address book's startConsensusTimestamp.
+     *
+     * @param fileData file data with timestamp, contents, entityId and transaction type for parsing
+     * @return Parsed AddressBook from fileData object
+     */
+    private AddressBook parse(FileData fileData) {
+        if (addressBookRepository.existsById(getAddressBookStartConsensusTimestamp(fileData))) {
+            // skip as address book already exists
+            log.info("Address book from fileData {} already exists, skip parsing", fileData);
+            return null;
+        }
+
+        byte[] addressBookBytes = null;
+        if (fileData.transactionTypeIsAppend()) {
+            // concatenate bytes from partial address book file data in db
+            addressBookBytes = combinePreviousFileDataContents(fileData);
+        } else {
+            addressBookBytes = fileData.getFileData();
+        }
+
+        var addressBook = buildAddressBook(new FileData(fileData
+                .getConsensusTimestamp(), addressBookBytes, fileData.getEntityId(), fileData.getTransactionType()));
+        if (addressBook != null) {
+            addressBook = addressBookRepository.save(addressBook);
+            log.info("Saved new address book to db: {}", addressBook);
+
+            // update previous addressBook
+            updatePreviousAddressBook(fileData);
+        }
+
+        return addressBook;
+    }
+
+    /**
+     * Concatenates byte arrays of first fileCreate/fileUpdate transaction and intermediate fileAppend entries that make
+     * up the potential addressBook
+     *
+     * @param fileData file data entry containing address book bytes
+     * @return
+     */
+    private byte[] combinePreviousFileDataContents(FileData fileData) {
+        FileData firstPartialAddressBook = fileDataRepository.findLatestMatchingFile(
+                fileData.getConsensusTimestamp(),
+                fileData.getEntityId().getId(),
+                List.of(TransactionType.FILECREATE.getProtoId(), TransactionType.FILEUPDATE.getProtoId())
+        ).orElseThrow(() -> new IllegalStateException(
+                "Missing FileData entry. FileAppend expects a corresponding  FileCreate/FileUpdate entry"));
+
+        List<FileData> appendFileDataEntries = fileDataRepository.findFilesInRange(
+                getAddressBookStartConsensusTimestamp(firstPartialAddressBook),
+                fileData.getConsensusTimestamp() - 1,
+                firstPartialAddressBook.getEntityId().getId(),
+                TransactionType.FILEAPPEND.getProtoId()
+        );
+
+        try (var bos = new ByteArrayOutputStream(firstPartialAddressBook.getFileData().length)) {
+            bos.write(firstPartialAddressBook.getFileData());
+            for (var i = 0; i < appendFileDataEntries.size(); i++) {
+                bos.write(appendFileDataEntries.get(i).getFileData());
+            }
+
+            bos.write(fileData.getFileData());
+            return bos.toByteArray();
+        } catch (IOException ex) {
+            throw new InvalidDatasetException("Error concatenating partial address book fileData entries", ex);
+        }
     }
 
     /**

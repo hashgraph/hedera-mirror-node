@@ -38,7 +38,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.PreparedStatementCallback;
 
-import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListener;

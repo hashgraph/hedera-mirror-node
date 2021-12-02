@@ -25,7 +25,7 @@ import java.util.Set;
 import javax.inject.Named;
 import lombok.Value;
 
-import com.hedera.mirror.importer.domain.Schedule_;
+import com.hedera.mirror.common.domain.schedule.Schedule_;
 
 @Named
 @Value

@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;

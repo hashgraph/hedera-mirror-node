@@ -24,8 +24,8 @@ import javax.inject.Named;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.data.convert.WritingConverter;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.domain.Entity;
-import com.hedera.mirror.grpc.domain.EntityType;
 
 @Named
 @WritingConverter

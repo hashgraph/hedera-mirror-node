@@ -27,8 +27,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.domain.Entity;
-import com.hedera.mirror.grpc.domain.EntityType;
 
 class EncodedIdToEntityConverterTest {
 

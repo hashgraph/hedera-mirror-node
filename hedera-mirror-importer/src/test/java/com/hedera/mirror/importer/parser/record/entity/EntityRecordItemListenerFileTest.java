@@ -25,6 +25,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -50,13 +53,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Value;
 
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
-import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -289,7 +292,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         AddressBook newAddressBook = addressBookService.getCurrent();
         assertAll(
                 () -> assertThat(newAddressBook.getStartConsensusTimestamp())
-                        .isEqualTo(Utility.timeStampInNanos(recordAppend.getConsensusTimestamp()) + 1),
+                        .isEqualTo(DomainUtils.timeStampInNanos(recordAppend.getConsensusTimestamp()) + 1),
                 () -> assertThat(newAddressBook.getEntries())
                         .describedAs("Should overwrite address book with new update")
                         .hasSize(13),
@@ -351,7 +354,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         AddressBook newAddressBook = addressBookService.getCurrent();
         assertAll(
                 () -> assertThat(newAddressBook.getStartConsensusTimestamp())
-                        .isEqualTo(Utility.timeStampInNanos(recordAppend.getConsensusTimestamp()) + 1),
+                        .isEqualTo(DomainUtils.timeStampInNanos(recordAppend.getConsensusTimestamp()) + 1),
                 () -> assertThat(newAddressBook.getEntries())
                         .describedAs("Should overwrite address book with new update")
                         .hasSize(13),
@@ -456,7 +459,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
                 () -> assertTransactionAndRecord(transactionBody, record),
                 // Additional entity checks
                 () -> assertFalse(actualFile.getDeleted()),
-                () -> assertEquals(Utility.timeStampInNanos(transactionBody.getFileUpdate().getExpirationTime()),
+                () -> assertEquals(DomainUtils.timeStampInNanos(transactionBody.getFileUpdate().getExpirationTime()),
                         actualFile.getExpirationTimestamp()),
                 () -> assertNotNull(actualFile.getKey()),
                 () -> assertNull(actualFile.getAutoRenewPeriod()),
@@ -480,7 +483,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
                 () -> assertTransactionAndRecord(transactionBody, record),
                 // Additional entity checks
                 () -> assertFalse(actualFile.getDeleted()),
-                () -> assertEquals(Utility.timeStampInNanos(transactionBody.getFileUpdate().getExpirationTime()),
+                () -> assertEquals(DomainUtils.timeStampInNanos(transactionBody.getFileUpdate().getExpirationTime()),
                         actualFile.getExpirationTimestamp()),
                 () -> assertNull(actualFile.getKey()),
                 () -> assertNull(actualFile.getAutoRenewPeriod()),
@@ -611,7 +614,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
                 () -> assertFileEntityAndData(fileUpdateTransactionBody, record.getConsensusTimestamp()),
                 () -> assertAddressBookData(addressBook, record.getConsensusTimestamp()),
                 () -> assertThat(currentAddressBook.getStartConsensusTimestamp())
-                        .isEqualTo(Utility.timeStampInNanos(record.getConsensusTimestamp()) + 1),
+                        .isEqualTo(DomainUtils.timeStampInNanos(record.getConsensusTimestamp()) + 1),
                 () -> assertThat(currentAddressBook.getEntries()).hasSize(4),
                 () -> assertEquals(2, addressBookRepository.count()),
                 () -> assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + 4, addressBookEntryRepository.count()),
@@ -739,7 +742,8 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     }
 
     private void assertFailedFileTransaction(TransactionBody transactionBody, TransactionRecord record) {
-        com.hedera.mirror.importer.domain.Transaction transaction = getDbTransaction(record.getConsensusTimestamp());
+        com.hedera.mirror.common.domain.transaction.Transaction transaction =
+                getDbTransaction(record.getConsensusTimestamp());
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertThat(transaction.getEntityId()).isEqualTo(EntityId.of(record.getReceipt().getFileID())));
@@ -749,7 +753,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         Entity actualFile = getTransactionEntity(consensusTimestamp);
         assertAll(
                 () -> assertFalse(actualFile.getDeleted()),
-                () -> assertEquals(Utility.timeStampInNanos(expected.getExpirationTime()), actualFile
+                () -> assertEquals(DomainUtils.timeStampInNanos(expected.getExpirationTime()), actualFile
                         .getExpirationTimestamp()),
                 () -> assertEquals(expected.getMemo(), actualFile.getMemo()),
                 () -> assertArrayEquals(expected.getKeys().toByteArray(), actualFile.getKey()),
@@ -766,7 +770,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     private void assertFileEntity(FileUpdateTransactionBody expected, Timestamp consensusTimestamp) {
         Entity actualFile = getTransactionEntity(consensusTimestamp);
         assertAll(
-                () -> assertEquals(Utility.timeStampInNanos(expected.getExpirationTime()), actualFile
+                () -> assertEquals(DomainUtils.timeStampInNanos(expected.getExpirationTime()), actualFile
                         .getExpirationTimestamp()),
                 () -> assertFalse(actualFile.getDeleted()),
                 () -> assertEquals(expected.getMemo().getValue(), actualFile.getMemo()),
@@ -782,13 +786,14 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     }
 
     private void assertFileData(ByteString expected, Timestamp consensusTimestamp) {
-        FileData actualFileData = fileDataRepository.findById(Utility.timeStampInNanos(consensusTimestamp)).get();
+        FileData actualFileData = fileDataRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp)).get();
         assertArrayEquals(expected.toByteArray(), actualFileData.getFileData());
     }
 
     private void assertAddressBookData(byte[] expected, Timestamp consensusTimestamp) {
         // addressBook.getStartConsensusTimestamp = transaction.consensusTimestamp + 1ns
-        AddressBook actualAddressBook = addressBookRepository.findById(Utility.timeStampInNanos(consensusTimestamp) + 1)
+        AddressBook actualAddressBook =
+                addressBookRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp) + 1)
                 .get();
         assertArrayEquals(expected, actualAddressBook.getFileData());
     }

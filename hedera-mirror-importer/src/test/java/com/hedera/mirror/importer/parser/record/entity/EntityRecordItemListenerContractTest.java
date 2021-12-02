@@ -20,12 +20,15 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
-import static com.hedera.mirror.importer.util.Utility.toBytes;
+import static com.hedera.mirror.common.util.DomainUtils.toBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
@@ -51,12 +54,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import com.hedera.mirror.importer.domain.Contract;
-import com.hedera.mirror.importer.domain.ContractLog;
-import com.hedera.mirror.importer.domain.ContractResult;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractLog;
+import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -477,7 +480,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(createdTimestamp, Contract::getModifiedTimestamp)
                 .returns(null, Contract::getObtainerId)
                 .returns(EntityId.of(transactionBody.getProxyAccountID()), Contract::getProxyAccountId)
-                .returns(Utility.getPublicKey(adminKey), Contract::getPublicKey)
+                .returns(DomainUtils.getPublicKey(adminKey), Contract::getPublicKey)
                 .returns(EntityType.CONTRACT, Contract::getType);
 
         if (entityProperties.getPersist().isContracts()) {
@@ -501,25 +504,25 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     private ObjectAssert<Contract> assertContractEntity(ContractUpdateTransactionBody expected,
                                                         Timestamp consensusTimestamp) {
         Contract contract = getTransactionEntity(consensusTimestamp);
-        long updatedTimestamp = Utility.timeStampInNanos(consensusTimestamp);
+        long updatedTimestamp = DomainUtils.timeStampInNanos(consensusTimestamp);
         var adminKey = expected.getAdminKey().toByteArray();
 
         return assertThat(contract)
                 .isNotNull()
                 .returns(expected.getAutoRenewPeriod().getSeconds(), Contract::getAutoRenewPeriod)
                 .returns(false, Contract::getDeleted)
-                .returns(Utility.timeStampInNanos(expected.getExpirationTime()), Contract::getExpirationTimestamp)
+                .returns(DomainUtils.timeStampInNanos(expected.getExpirationTime()), Contract::getExpirationTimestamp)
                 .returns(adminKey, Contract::getKey)
                 .returns(getMemoFromContractUpdateTransactionBody(expected), Contract::getMemo)
                 .returns(updatedTimestamp, Contract::getModifiedTimestamp)
                 .returns(null, Contract::getObtainerId)
                 .returns(EntityId.of(expected.getProxyAccountID()), Contract::getProxyAccountId)
-                .returns(Utility.getPublicKey(adminKey), Contract::getPublicKey)
+                .returns(DomainUtils.getPublicKey(adminKey), Contract::getPublicKey)
                 .returns(EntityType.CONTRACT, Contract::getType);
     }
 
     private void assertContractCreateResult(ContractCreateTransactionBody transactionBody, TransactionRecord record) {
-        long consensusTimestamp = Utility.timestampInNanosMax(record.getConsensusTimestamp());
+        long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
         ContractFunctionResult result = record.getContractCreateResult();
         ContractLoginfo logInfo = result.getLogInfo(0);
 
@@ -535,7 +538,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     private void assertContractCallResult(ContractCallTransactionBody transactionBody, TransactionRecord record) {
-        long consensusTimestamp = Utility.timestampInNanosMax(record.getConsensusTimestamp());
+        long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
         ContractFunctionResult result = record.getContractCallResult();
         ContractLoginfo logInfo = result.getLogInfo(0);
 
@@ -664,7 +667,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     private Optional<ContractResult> getContractResult(Timestamp consensusTimestamp) {
-        return contractResultRepository.findById(Utility.timeStampInNanos(consensusTimestamp));
+        return contractResultRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp));
     }
 
     private String getMemoFromContractUpdateTransactionBody(ContractUpdateTransactionBody body) {

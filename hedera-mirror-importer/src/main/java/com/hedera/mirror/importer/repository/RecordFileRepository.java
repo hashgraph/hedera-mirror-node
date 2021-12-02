@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.repository;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 
-import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 
 public interface RecordFileRepository extends StreamFileRepository<RecordFile, Long> {
 

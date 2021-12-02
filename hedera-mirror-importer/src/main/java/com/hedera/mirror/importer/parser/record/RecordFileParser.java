@@ -37,11 +37,11 @@ import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.TransactionType;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 

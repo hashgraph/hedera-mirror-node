@@ -20,12 +20,12 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityType.CONTRACT;
-import static com.hedera.mirror.importer.domain.EntityType.FILE;
-import static com.hedera.mirror.importer.domain.EntityType.SCHEDULE;
-import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
-import static com.hedera.mirror.importer.domain.EntityType.TOPIC;
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
+import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -51,8 +51,8 @@ import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.converter.RangeToStringSerializer;
-import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.common.converter.RangeToStringSerializer;
+import com.hedera.mirror.common.domain.entity.EntityType;
 
 @EnabledIfV1
 @Tag("migration")

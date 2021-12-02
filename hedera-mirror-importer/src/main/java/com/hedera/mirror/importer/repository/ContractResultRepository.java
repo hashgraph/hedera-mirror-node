@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractResult;
 
 public interface ContractResultRepository extends CrudRepository<ContractResult, Long> {
 }

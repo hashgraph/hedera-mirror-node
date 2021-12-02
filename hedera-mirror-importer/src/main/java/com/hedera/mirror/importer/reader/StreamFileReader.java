@@ -20,9 +20,9 @@ package com.hedera.mirror.importer.reader;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.parser.domain.StreamItem;
 
 public interface StreamFileReader<S extends StreamFile, I extends StreamItem> {
 

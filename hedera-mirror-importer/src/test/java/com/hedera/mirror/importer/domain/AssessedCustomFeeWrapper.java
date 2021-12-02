@@ -22,12 +22,16 @@ package com.hedera.mirror.importer.domain;
 
 import java.sql.SQLException;
 import java.util.Arrays;
+
+import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
+
 import lombok.Data;
 import org.postgresql.jdbc.PgArray;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.RowMapper;
 
-import com.hedera.mirror.importer.util.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
 
 @Data
 public class AssessedCustomFeeWrapper {

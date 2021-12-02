@@ -21,15 +21,10 @@ package com.hedera.mirror.importer;
  */
 
 import com.google.common.collect.Range;
+import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.time.Instant;
 import java.util.Collection;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.util.EntityIdEndec;
-
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +38,9 @@ import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.jdbc.Sql;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.config.MeterRegistryConfiguration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 

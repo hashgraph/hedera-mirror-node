@@ -53,17 +53,17 @@ import org.springframework.cache.interceptor.SimpleKey;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.ResourceUtils;
 
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
+import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.CacheConfiguration;
-import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.AddressBookEntry;
-import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionType;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
@@ -77,36 +77,26 @@ class AddressBookServiceImplTest extends IntegrationTest {
     private static final String baseAccountId = "0.0.";
     private static final String baseIp = "127.0.0.";
     private static final int basePort = 50211;
-
+    private static byte[] initialAddressBookBytes;
     @TempDir
     Path dataPath;
-
     @Value("classpath:addressbook")
     Path testPath;
-
     @Resource
     private TransactionTemplate transactionTemplate;
-
     @Resource
     private AddressBookRepository addressBookRepository;
-
     @Resource
     private AddressBookEntryRepository addressBookEntryRepository;
-
     @Resource
     private AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
-
     @Resource
     private FileDataRepository fileDataRepository;
-
     @Resource
     private AddressBookService addressBookService;
-
     @Qualifier(CacheConfiguration.EXPIRE_AFTER_5M)
     @Resource
     private CacheManager cacheManager;
-
-    private static byte[] initialAddressBookBytes;
 
     private static NodeAddressBook addressBook(int size, int endPointSize) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
@@ -137,6 +127,12 @@ class AddressBookServiceImplTest extends IntegrationTest {
         return builder.build();
     }
 
+    @BeforeAll
+    static void setupAll() throws IOException {
+        Path addressBookPath = ResourceUtils.getFile("classpath:addressbook/testnet").toPath();
+        initialAddressBookBytes = Files.readAllBytes(addressBookPath);
+    }
+
     private FileData createFileData(byte[] contents, long consensusTimeStamp, boolean is102,
                                     TransactionType transactionType) {
         EntityId entityId = is102 ? AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID :
@@ -159,12 +155,6 @@ class AddressBookServiceImplTest extends IntegrationTest {
         FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionType.FILEAPPEND);
         fileDataRepository.save(fileData);
         addressBookService.update(fileData);
-    }
-
-    @BeforeAll
-    static void setupAll() throws IOException {
-        Path addressBookPath = ResourceUtils.getFile("classpath:addressbook/testnet").toPath();
-        initialAddressBookBytes = Files.readAllBytes(addressBookPath);
     }
 
     @Test

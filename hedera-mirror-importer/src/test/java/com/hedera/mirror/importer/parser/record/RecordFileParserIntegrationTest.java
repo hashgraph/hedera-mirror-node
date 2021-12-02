@@ -29,7 +29,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
 
-import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,8 +38,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;

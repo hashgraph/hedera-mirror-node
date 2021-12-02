@@ -23,6 +23,9 @@ package com.hedera.mirror.importer.reader.balance;
 import com.google.protobuf.CodedInputStream;
 import com.google.protobuf.ExtensionRegistryLite;
 import com.google.protobuf.UnknownFieldSet;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,14 +40,13 @@ import org.apache.commons.io.IOUtils;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.AccountBalanceFile;
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
-import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 
 @Log4j2
@@ -102,7 +104,7 @@ public class ProtoBalanceFileReader implements BalanceFileReader {
                                 break;
                             case TAG_TIMESTAMP:
                                 Timestamp timestamp = input.readMessage(Timestamp.parser(), extensionRegistry);
-                                consensusTimestamp.set(Utility.timestampInNanosMax(timestamp));
+                                consensusTimestamp.set(DomainUtils.timestampInNanosMax(timestamp));
                                 break;
                             case TAG_BALANCE:
                                 Assert.state(consensusTimestamp.get() > 0, "Missing consensus timestamp)");

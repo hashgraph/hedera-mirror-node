@@ -43,8 +43,8 @@ import org.postgresql.copy.PGCopyOutputStream;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
 import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
-import com.hedera.mirror.importer.converter.EntityIdSerializer;
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.common.converter.EntityIdSerializer;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 

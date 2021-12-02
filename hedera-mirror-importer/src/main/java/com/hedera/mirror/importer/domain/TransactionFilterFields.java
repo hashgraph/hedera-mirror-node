@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+
 import lombok.Value;
 
 /**

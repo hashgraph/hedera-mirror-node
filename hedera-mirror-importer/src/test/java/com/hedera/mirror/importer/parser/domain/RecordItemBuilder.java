@@ -25,6 +25,9 @@ import static com.hedera.mirror.importer.domain.DomainBuilder.KEY_LENGTH_ED25519
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
+
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -55,7 +58,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
-import com.hedera.mirror.importer.domain.TransactionType;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.util.Utility;
 
 /**

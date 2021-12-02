@@ -36,6 +36,7 @@ import org.springframework.context.annotation.Scope;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 

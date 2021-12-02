@@ -24,15 +24,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.util.List;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.cglib.core.ReflectUtils;
 
-import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.util.Utility;
 
 // Common tests for streams (record and events) which are linked by previous file's hash.
 public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloaderTest {
@@ -72,11 +74,11 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
             // @formatter:on
     })
     void verifyHashChain(String actualPrevFileHash, String expectedPrevFileHash,
-            Instant verifyHashAfter, Instant fileInstant,
-            Boolean expectedResult, String testName) {
+                         Instant verifyHashAfter, Instant fileInstant,
+                         Boolean expectedResult, String testName) {
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(verifyHashAfter);
         StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
-        streamFile.setConsensusStart(Utility.convertToNanosMax(fileInstant));
+        streamFile.setConsensusStart(DomainUtils.convertToNanosMax(fileInstant));
         streamFile.setName(StreamFilename.getFilename(streamType, StreamFilename.FileType.DATA, fileInstant));
         streamFile.setPreviousHash(actualPrevFileHash);
         assertThat(downloader.verifyHashChain(streamFile, expectedPrevFileHash))

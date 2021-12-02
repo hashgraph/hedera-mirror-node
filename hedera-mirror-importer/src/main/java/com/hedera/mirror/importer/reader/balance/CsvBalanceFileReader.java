@@ -39,13 +39,13 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.AccountBalanceFile;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParser;
-import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @RequiredArgsConstructor
@@ -115,7 +115,7 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
                     .forEachOrdered(items::add);
 
             accountBalanceFile.setCount(count.get());
-            accountBalanceFile.setFileHash(Utility.bytesToHex(messageDigest.digest()));
+            accountBalanceFile.setFileHash(DomainUtils.bytesToHex(messageDigest.digest()));
             accountBalanceFile.setItems(Flux.fromIterable(items));
             return accountBalanceFile;
         } catch (IOException ex) {
@@ -127,6 +127,6 @@ public abstract class CsvBalanceFileReader implements BalanceFileReader {
 
     protected long convertTimestamp(String timestamp) {
         Instant instant = Instant.parse(timestamp);
-        return Utility.convertToNanosMax(instant);
+        return DomainUtils.convertToNanosMax(instant);
     }
 }

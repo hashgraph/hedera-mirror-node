@@ -28,7 +28,7 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.AccountBalanceFile;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
 

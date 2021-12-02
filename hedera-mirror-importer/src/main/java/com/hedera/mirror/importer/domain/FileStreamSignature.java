@@ -26,7 +26,9 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
-import com.hedera.mirror.importer.util.Utility;
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
 
 @Data
 @ToString(exclude = {"bytes", "fileHash", "fileHashSignature", "metadataHash", "metadataHashSignature"})
@@ -53,11 +55,11 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
     }
 
     public String getFileHashAsHex() {
-        return Utility.bytesToHex(fileHash);
+        return DomainUtils.bytesToHex(fileHash);
     }
 
     public String getMetadataHashAsHex() {
-        return Utility.bytesToHex(metadataHash);
+        return DomainUtils.bytesToHex(metadataHash);
     }
 
     public String getNodeAccountIdString() {
