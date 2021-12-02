@@ -98,7 +98,7 @@ class ContractService extends BaseService {
    *
    * @param {string} contractId encoded contract ID
    * @param {string} timestamp consensus timestamp
-   * @return {{contractResult: ContractResult, recordFile: RecordFile, transaction: Transaction}}
+   * @return {Promise<{contractResult: ContractResult, recordFile: RecordFile, transaction: Transaction}>}
    */
   async getContractResultsByIdAndTimestamp(contractId, timestamp) {
     const recordFile = await RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp);
@@ -134,7 +134,7 @@ class ContractService extends BaseService {
    *
    * @param {number} validStartNs validStartNs
    * @param {number} payerAccountId payerAccountId
-   * @return {{contractResult: ContractResult, recordFile: RecordFile, transaction: Transaction}}
+   * @return {Promise<{contractResult: ContractResult, recordFile: RecordFile, transaction: Transaction}>}
    */
   async getContractResultsByTransactionId(validStartNs, payerAccountId) {
     const whereParams = [validStartNs, payerAccountId];

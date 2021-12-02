@@ -45,7 +45,7 @@ class RecordFileService extends BaseService {
    * Retrieves the recordFile containing the transaction of the given timestamp
    *
    * @param {string} timestamp encoded contract ID
-   * @return {RecordFile} recordFile subset
+   * @return {Promise<RecordFile>} recordFile subset
    */
   async getRecordFileBlockDetailsFromTimestamp(timestamp) {
     const rows = await super.getRows(

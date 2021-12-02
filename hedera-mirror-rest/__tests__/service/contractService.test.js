@@ -219,8 +219,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
 
 describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
   test('ContractService.getContractResultsByIdAndTimestamp - No match', async () => {
-    const response = await ContractService.getContractResultsByIdAndTimestamp();
-    expect(response).toEqual(null);
+    await expect(ContractService.getContractResultsByIdAndTimestamp()).resolves.toEqual(null);
   });
 
   test('ContractService.getContractResultsByIdAndTimestamp - Row match', async () => {
@@ -274,15 +273,16 @@ describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
         payerAccountId: '5',
       },
     };
-    const response = await ContractService.getContractResultsByIdAndTimestamp(2, 2);
-    expect(response).toMatchObject(expectedDetailedContractResult);
+
+    await expect(await ContractService.getContractResultsByIdAndTimestamp(2, 2)).resolves.toMatchObject(
+      expectedDetailedContractResult
+    );
   });
 });
 
 describe('ContractService.getContractResultsByTransactionId tests', () => {
   test('ContractService.getContractResultsByIdAndFilters - No match', async () => {
-    const response = await ContractService.getContractResultsByTransactionId();
-    expect(response).toEqual(null);
+    await expect(ContractService.getContractResultsByTransactionId()).resolves.toEqual(null);
   });
 
   const contractResultsInput = [
@@ -339,8 +339,10 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
         payerAccountId: '5',
       },
     };
-    const response = await ContractService.getContractResultsByTransactionId(1, 5);
-    expect(response).toMatchObject(expectedDetailedContractResult);
+
+    await expect(ContractService.getContractResultsByTransactionId(1, 5)).resolves.toMatchObject(
+      expectedDetailedContractResult
+    );
   });
 
   test('ContractService.getContractResultsByTransactionId - Row match with record timestamp start match', async () => {
@@ -381,8 +383,10 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
         payerAccountId: '5',
       },
     };
-    const response = await ContractService.getContractResultsByTransactionId(1, 5);
-    expect(response).toMatchObject(expectedDetailedContractResult);
+
+    await expect(ContractService.getContractResultsByTransactionId(1, 5)).resolves.toMatchObject(
+      expectedDetailedContractResult
+    );
   });
 
   test('ContractService.getContractResultsByTransactionId - Row match with record timestamp end match', async () => {
@@ -423,7 +427,9 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
         payerAccountId: '5',
       },
     };
-    const response = await ContractService.getContractResultsByTransactionId(1, 5);
-    expect(response).toMatchObject(expectedDetailedContractResult);
+
+    await expect(ContractService.getContractResultsByTransactionId(1, 5)).resolves.toMatchObject(
+      expectedDetailedContractResult
+    );
   });
 });
