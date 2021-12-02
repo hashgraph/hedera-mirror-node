@@ -274,15 +274,28 @@ describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
 });
 
 describe('ContractService.getContractResultsByTransactionId tests', () => {
-  test('ContractService.getContractResultsByTransactionId - Row match', async () => {
-    await integrationDomainOps.loadContractResults([
-      {
-        contract_id: 2,
-        consensus_timestamp: 2,
-        function_parameters: '\\x0D',
-        amount: 10,
-      },
-    ]);
+  test('ContractService.getContractResultsByIdAndFilters - No match', async () => {
+    const response = await ContractService.getContractResultsByTransactionId();
+    expect(response).toEqual(null);
+  });
+
+  const contractResultsInput = [
+    {
+      contract_id: 2,
+      consensus_timestamp: 2,
+      function_parameters: '\\x0D',
+      amount: 10,
+    },
+  ];
+  const transactionsInput = [
+    {
+      consensus_timestamp: 2,
+      payerAccountId: '5',
+      valid_start_timestamp: 1,
+    },
+  ];
+  test('ContractService.getContractResultsByTransactionId - Row match with in range record timestamp', async () => {
+    await integrationDomainOps.loadContractResults(contractResultsInput);
 
     await integrationDomainOps.loadRecordFiles([
       {
@@ -293,13 +306,7 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
       },
     ]);
 
-    await integrationDomainOps.loadTransactions([
-      {
-        consensus_timestamp: 2,
-        payerAccountId: '5',
-        valid_start_timestamp: 1,
-      },
-    ]);
+    await integrationDomainOps.loadTransactions(transactionsInput);
 
     const expectedDetailedContractResult = {
       contractResult: {
@@ -317,6 +324,90 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
       },
       recordFile: {
         consensusEnd: '3',
+        fileHash: 'dee34',
+        index: '1',
+      },
+      transaction: {
+        consensusTimestamp: '2',
+        payerAccountId: '5',
+      },
+    };
+    const response = await ContractService.getContractResultsByTransactionId(1, 5);
+    expect(response).toMatchObject(expectedDetailedContractResult);
+  });
+
+  test('ContractService.getContractResultsByTransactionId - Row match with record timestamp start match', async () => {
+    await integrationDomainOps.loadContractResults(contractResultsInput);
+
+    await integrationDomainOps.loadRecordFiles([
+      {
+        index: 1,
+        consensus_start: 2,
+        consensus_end: 3,
+        file_hash: 'dee34',
+      },
+    ]);
+
+    await integrationDomainOps.loadTransactions(transactionsInput);
+
+    const expectedDetailedContractResult = {
+      contractResult: {
+        amount: '10',
+        bloom: null,
+        callResult: null,
+        consensusTimestamp: '2',
+        contractId: '2',
+        createdContractIds: [],
+        errorMessage: '',
+        functionResult: null,
+        gasLimit: '1000',
+        gasUsed: '10',
+        payerAccountId: '5',
+      },
+      recordFile: {
+        consensusEnd: '3',
+        fileHash: 'dee34',
+        index: '1',
+      },
+      transaction: {
+        consensusTimestamp: '2',
+        payerAccountId: '5',
+      },
+    };
+    const response = await ContractService.getContractResultsByTransactionId(1, 5);
+    expect(response).toMatchObject(expectedDetailedContractResult);
+  });
+
+  test('ContractService.getContractResultsByTransactionId - Row match with record timestamp end match', async () => {
+    await integrationDomainOps.loadContractResults(contractResultsInput);
+
+    await integrationDomainOps.loadRecordFiles([
+      {
+        index: 1,
+        consensus_start: 1,
+        consensus_end: 2,
+        file_hash: 'dee34',
+      },
+    ]);
+
+    await integrationDomainOps.loadTransactions(transactionsInput);
+
+    const expectedDetailedContractResult = {
+      contractResult: {
+        amount: '10',
+        bloom: null,
+        callResult: null,
+        consensusTimestamp: '2',
+        contractId: '2',
+        createdContractIds: [],
+        errorMessage: '',
+        functionResult: null,
+        gasLimit: '1000',
+        gasUsed: '10',
+        payerAccountId: '5',
+      },
+      recordFile: {
+        consensusEnd: '2',
         fileHash: 'dee34',
         index: '1',
       },

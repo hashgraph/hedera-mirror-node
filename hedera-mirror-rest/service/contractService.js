@@ -31,6 +31,7 @@ const {
   },
 } = require('../config');
 const {orderFilterValues} = require('../constants');
+const {logger} = require('../stream/utils');
 
 /**
  * Contract retrieval business logic
@@ -63,13 +64,6 @@ class ContractService extends BaseService {
     ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
     Transaction.CONSENSUS_TIMESTAMP
   )}`;
-
-  // maybe instead of a join just search record_file to gets it's index value
-  static recordFileIndexFromTimestampQuery = `select 
-    ${RecordFile.getFullName(RecordFile.INDEX)}
-    from ${RecordFile.tableName} ${RecordFile.tableAlias} 
-    where  ${RecordFile.getFullName(RecordFile.CONSENSUS_START)} <= $1 and
-    ${RecordFile.getFullName(RecordFile.CONSENSUS_END)} >= $1`; // add an index to support this
 
   async getContractResultsByIdAndFilters(
     whereConditions = [],
@@ -104,6 +98,10 @@ class ContractService extends BaseService {
    */
   async getContractResultsByIdAndTimestamp(contractId, timestamp) {
     const recordFile = await RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp);
+    if (recordFile === null) {
+      return null;
+    }
+
     // get detailed contract results
     const whereParams = [contractId, timestamp];
     const whereConditions = [
@@ -113,6 +111,7 @@ class ContractService extends BaseService {
     const query = [ContractService.contractResultsDetailedQuery, `where ${whereConditions.join(' and ')}`].join('\n');
     const rows = await super.getRows(query, whereParams, 'getContractResultsByIdAndTimestamp');
     if (_.isEmpty(rows) || rows.length > 1) {
+      logger.trace(`No matching contract results for contractId: ${contractId}, timestamp: ${timestamp}`);
       return null;
     }
 
@@ -134,10 +133,6 @@ class ContractService extends BaseService {
    * @return {{contractResult: ContractResult, recordFile: RecordFile, transaction: Transaction}}
    */
   async getContractResultsByTransactionId(validStartNs, payerAccountId) {
-    // 1. Using transactionId get transactionId join with contractResult by consensusTimestamp
-    // 2. Using consensustimestamp get recordFile
-
-    // extract validStartNs and payerAccountId
     const whereParams = [validStartNs, payerAccountId];
     const whereConditions = [
       `${Transaction.getFullName(Transaction.VALID_START_NS)} = $1`,
@@ -156,6 +151,10 @@ class ContractService extends BaseService {
     const recordFile = await RecordFileService.getRecordFileBlockDetailsFromTimestamp(
       contractResult.consensusTimestamp
     );
+    if (recordFile === null) {
+      logger.trace(`No matching record file found for timestamp: ${timestamp}`);
+      return null;
+    }
 
     return {
       contractResult: contractResult,

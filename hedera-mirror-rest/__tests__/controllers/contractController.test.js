@@ -453,9 +453,13 @@ describe('extractContractResultsByIdQuery', () => {
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      expect(contracts.extractContractResultsByIdQuery(spec.input.filter, spec.input.contractId)).toEqual(
-        spec.expected
-      );
+      expect(
+        contracts.extractContractResultsByIdQuery(
+          spec.input.filter,
+          spec.input.contractId,
+          contracts.contractResultsByIdParamSupportMap
+        )
+      ).toEqual(spec.expected);
     });
   });
 });
