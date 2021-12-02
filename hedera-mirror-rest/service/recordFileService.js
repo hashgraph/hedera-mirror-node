@@ -51,7 +51,7 @@ class RecordFileService extends BaseService {
     const rows = await super.getRows(
       RecordFileService.recordFileBlockDetailsFromTimestampQuery,
       [timestamp],
-      'getRecordIndexFromTimestamp'
+      'getRecordFileBlockDetailsFromTimestamp'
     );
     if (_.isEmpty(rows) || rows.length > 1) {
       return null;

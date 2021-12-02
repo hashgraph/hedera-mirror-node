@@ -56,7 +56,7 @@ class ContractResultViewModel {
     }
 
     if (!_.isUndefined(transaction)) {
-      this.hash = utils.toHexString(transaction.transactionHash, true);
+      this.hash = utils.addHexPrefix(transaction.transactionHash);
     }
   }
 }

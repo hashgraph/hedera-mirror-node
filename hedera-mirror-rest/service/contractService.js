@@ -114,7 +114,7 @@ class ContractService extends BaseService {
     ];
     const query = [ContractService.contractResultsDetailedQuery, `where ${whereConditions.join(' and ')}`].join('\n');
     const rows = await super.getRows(query, whereParams, 'getContractResultsByIdAndTimestamp');
-    if (_.isEmpty(rows) || rows.length > 1) {
+    if (rows.length !== 1) {
       logger.trace(`No matching contract results for contractId: ${contractId}, timestamp: ${timestamp}`);
       return null;
     }
@@ -123,9 +123,9 @@ class ContractService extends BaseService {
     const contractResult = new ContractResult(result);
     const transaction = new Transaction(result);
     return {
-      contractResult: contractResult,
-      recordFile: recordFile,
-      transaction: transaction,
+      contractResult,
+      recordFile,
+      transaction,
     };
   }
 
@@ -143,8 +143,8 @@ class ContractService extends BaseService {
       `${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)} = $2`,
     ];
     const query = [ContractService.contractResultsDetailedQuery, `where ${whereConditions.join(' and ')}`].join('\n');
-    const rows = await super.getRows(query, whereParams, 'getContractResultsByIdAndTimestamp');
-    if (_.isEmpty(rows) || rows.length > 1) {
+    const rows = await super.getRows(query, whereParams, 'getContractResultsByTransactionId');
+    if (rows.length !== 1) {
       return null;
     }
 

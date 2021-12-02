@@ -261,7 +261,7 @@ const expectedDetailedContractResult = {
 
 describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
   test('ContractService.getContractResultsByIdAndTimestamp - No match', async () => {
-    await expect(ContractService.getContractResultsByIdAndTimestamp()).resolves.toEqual(null);
+    await expect(ContractService.getContractResultsByIdAndTimestamp(1, 2)).resolves.toBeNull();
   });
 
   test('ContractService.getContractResultsByIdAndTimestamp - Row match', async () => {
@@ -286,7 +286,7 @@ describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
 
 describe('ContractService.getContractResultsByTransactionId tests', () => {
   test('ContractService.getContractResultsByIdAndFilters - No match', async () => {
-    await expect(ContractService.getContractResultsByTransactionId()).resolves.toEqual(null);
+    await expect(ContractService.getContractResultsByTransactionId(1, 2)).resolves.toBeNull();
   });
 
   test('ContractService.getContractResultsByTransactionId - Row match with in range record timestamp', async () => {
