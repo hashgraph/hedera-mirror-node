@@ -20,7 +20,7 @@ package com.hedera.mirror.common.exception;
  * ‍
  */
 
-public class MirrorNodeException extends RuntimeException {
+public abstract class MirrorNodeException extends RuntimeException {
 
     public MirrorNodeException(String message) {
         super(message);

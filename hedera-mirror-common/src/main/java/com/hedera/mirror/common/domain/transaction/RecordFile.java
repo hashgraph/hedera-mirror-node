@@ -26,6 +26,9 @@ import javax.persistence.Entity;
 import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Transient;
+
+import com.hedera.mirror.common.domain.StreamItem;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

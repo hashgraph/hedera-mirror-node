@@ -20,11 +20,13 @@ package com.hedera.mirror.common.exception;
  * ‍
  */
 
-public class InvalidEntityException extends MirrorNodeException {
+public class ProtobufException extends MirrorNodeException {
 
-    private static final long serialVersionUID = 1988238764876411857L;
-
-    public InvalidEntityException(String message) {
+    public ProtobufException(String message) {
         super(message);
+    }
+
+    public ProtobufException(String message, Throwable throwable) {
+        super(message, throwable);
     }
 }

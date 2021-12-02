@@ -24,6 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.common.exception.ProtobufException;
+
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -35,8 +38,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.common.exception.MirrorNodeException;
 
 class RecordItemTest {
 
@@ -150,7 +151,7 @@ class RecordItemTest {
 
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {
         assertThatThrownBy(() -> new RecordItem(transactionBytes, recordBytes))
-                .isInstanceOf(MirrorNodeException.class)
+                .isInstanceOf(ProtobufException.class)
                 .hasMessage(expectedMessage);
     }
 

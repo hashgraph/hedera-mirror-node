@@ -22,6 +22,9 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import com.hedera.mirror.common.exception.ProtobufException;
+
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -36,7 +39,6 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.exception.MirrorNodeException;
 import com.hedera.mirror.common.util.DomainUtils;
 
 @Log4j2
@@ -69,12 +71,12 @@ public class RecordItem implements StreamItem {
         try {
             transaction = Transaction.parseFrom(transactionBytes);
         } catch (InvalidProtocolBufferException e) {
-            throw new MirrorNodeException(BAD_TRANSACTION_BYTES_MESSAGE, e);
+            throw new ProtobufException(BAD_TRANSACTION_BYTES_MESSAGE, e);
         }
         try {
             record = TransactionRecord.parseFrom(recordBytes);
         } catch (InvalidProtocolBufferException e) {
-            throw new MirrorNodeException(BAD_RECORD_BYTES_MESSAGE, e);
+            throw new ProtobufException(BAD_RECORD_BYTES_MESSAGE, e);
         }
         transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
         transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());
@@ -112,9 +114,9 @@ public class RecordItem implements StreamItem {
             } else if (transaction.hasBody()) {
                 return new TransactionBodyAndSignatureMap(transaction.getBody(), transaction.getSigMap());
             }
-            throw new MirrorNodeException(BAD_TRANSACTION_BODY_BYTES_MESSAGE);
+            throw new ProtobufException(BAD_TRANSACTION_BODY_BYTES_MESSAGE);
         } catch (InvalidProtocolBufferException e) {
-            throw new MirrorNodeException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
+            throw new ProtobufException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
         }
     }
 
