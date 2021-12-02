@@ -22,7 +22,7 @@
         "index": 17,
         "consensus_start": 167654000123450,
         "consensus_end": 167654000123460,
-        "file_hash": "contractRecordHash"
+        "hash": "contractRecordHash"
       }
     ],
     "transactions": [

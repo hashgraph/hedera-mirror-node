@@ -51,7 +51,7 @@ class ContractResultViewModel {
     });
 
     if (!_.isUndefined(recordFile)) {
-      this.block_hash = utils.toHexString(recordFile.fileHash, true);
+      this.block_hash = utils.toHexString(recordFile.hash, true);
       this.block_number = Number(recordFile.index);
     }
 

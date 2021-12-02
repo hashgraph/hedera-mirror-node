@@ -238,7 +238,7 @@ describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
         index: 1,
         consensus_start: 1,
         consensus_end: 3,
-        file_hash: 'dee34',
+        hash: 'dee34',
       },
     ]);
 
@@ -265,7 +265,7 @@ describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
       },
       recordFile: {
         consensusEnd: '3',
-        fileHash: 'dee34',
+        hash: 'dee34',
         index: '1',
       },
       transaction: {
@@ -309,7 +309,7 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
         index: 1,
         consensus_start: 1,
         consensus_end: 3,
-        file_hash: 'dee34',
+        hash: 'dee34',
       },
     ]);
 
@@ -331,7 +331,7 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
       },
       recordFile: {
         consensusEnd: '3',
-        fileHash: 'dee34',
+        hash: 'dee34',
         index: '1',
       },
       transaction: {
@@ -353,7 +353,7 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
         index: 1,
         consensus_start: 2,
         consensus_end: 3,
-        file_hash: 'dee34',
+        hash: 'dee34',
       },
     ]);
 
@@ -375,7 +375,7 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
       },
       recordFile: {
         consensusEnd: '3',
-        fileHash: 'dee34',
+        hash: 'dee34',
         index: '1',
       },
       transaction: {
@@ -397,7 +397,7 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
         index: 1,
         consensus_start: 1,
         consensus_end: 2,
-        file_hash: 'dee34',
+        hash: 'dee34',
       },
     ]);
 
@@ -419,7 +419,7 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
       },
       recordFile: {
         consensusEnd: '2',
-        fileHash: 'dee34',
+        hash: 'dee34',
         index: '1',
       },
       transaction: {
