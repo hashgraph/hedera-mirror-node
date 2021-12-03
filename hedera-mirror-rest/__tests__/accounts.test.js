@@ -392,7 +392,7 @@ describe('processRow', () => {
     };
     const expectedNoBalance = {
       ...expected,
-      balance: undefined,
+      balance: null,
     };
     expect(processRow(inputBalanceUndefined)).toEqual(expectedNoBalance);
   });

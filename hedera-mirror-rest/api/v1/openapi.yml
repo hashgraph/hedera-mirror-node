@@ -114,6 +114,28 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
+  /api/v1/contracts/{contractId}/results:
+    get:
+      summary: List contract results from a contract on the network
+      description: Returns a list of all ContractResults for a contract's function executions.
+      operationId: listContractResults
+      parameters:
+        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/fromQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/timestampQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResultsResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - contracts
   /api/v1/network/supply:
     get:
       summary: Get the network supply
@@ -571,6 +593,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Nft'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/NotFoundError'
       tags:
@@ -673,7 +697,7 @@ components:
       type: object
       properties:
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: '#/components/schemas/TimestampNullable'
         balances:
           type: array
           items:
@@ -696,6 +720,13 @@ components:
       properties:
         contracts:
           $ref: '#/components/schemas/Contracts'
+        links:
+          $ref: '#/components/schemas/Links'
+    ContractResultsResponse:
+      type: object
+      properties:
+        contracts:
+          $ref: '#/components/schemas/ContractResults'
         links:
           $ref: '#/components/schemas/Links'
     NetworkSupplyResponse:
@@ -728,7 +759,7 @@ components:
       type: object
       properties:
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: '#/components/schemas/TimestampNullable'
         balances:
           $ref: '#/components/schemas/TokenDistribution'
         links:
@@ -870,9 +901,10 @@ components:
         - tokens
       properties:
         timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: '#/components/schemas/TimestampNullable'
         balance:
           type: number
+          nullable: true
         tokens:
           type: array
           items:
@@ -882,6 +914,7 @@ components:
                 $ref: '#/components/schemas/EntityId'
               balance:
                 type: number
+      nullable: true
       example:
         timestamp: "0.000002345"
         balance: 80
@@ -923,6 +956,63 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Contract'
+    ContractResult:
+      type: object
+      properties:
+        amount:
+          description: The number of tinybars sent to the function
+          example: 10
+          format: int64
+          nullable: true
+          type: integer
+        bloom:
+          description: The hex encoded bloom filter for the record
+          example: "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398"
+          nullable: true
+          type: string
+        call_result:
+          description: The hex encoded result returned by the function
+          example: "0x2b048531b38d2882e86044bc972e940ee0a01938"
+          nullable: true
+          type: string
+        contract_id:
+          $ref: '#/components/schemas/EntityId'
+        created_contract_ids:
+          description: The network's released supply of hbars in tinybars
+          example:
+            - "0.0.1003"
+          items:
+            type: string
+          type: array
+        error_message:
+          description: The message when an error occurs during smart contract execution
+          example: "Out of gas"
+          nullable: true
+          type: string
+        from:
+          $ref: '#/components/schemas/SolidityAddress'
+        function_parameters:
+          description: The hex encoded parameters passed to the function
+          example: "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b"
+          type: string
+        gas_limit:
+          description: The maximum units of gas allowed for contract execution
+          example: 100000
+          format: int64
+          type: integer
+        gas_used:
+          description: The units of gas used to execute contract
+          example: 1000
+          format: int64
+          type: integer
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        to:
+          $ref: '#/components/schemas/SolidityAddressNullable'
+    ContractResults:
+      type: array
+      items:
+        $ref: '#/components/schemas/ContractResult'
     CustomFees:
       type: object
       properties:
@@ -945,6 +1035,7 @@ components:
       description: "Network entity ID in the format of `shard.realm.num`"
       pattern: '^\d{1,10}\.\d{1,10}\.\d{1,10}$'
       example: "0.1.2"
+      nullable: true
     EntityIdQuery:
       type: string
       pattern: ^((gte?|lte?|eq|ne)\:)?(\d{1,10}\.\d{1,10}\.)?\d{1,10}$
@@ -1065,9 +1156,14 @@ components:
         serial_number: 124
         token_id: "0.0.222"
     Nfts:
-      type: array
-      items:
-        $ref: '#/components/schemas/Nft'
+      type: object
+      properties:
+        nfts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Nft'
+        links:
+          $ref: '#/components/schemas/Links'
     NftTransactionTransfer:
       type: object
       properties:
@@ -1091,9 +1187,14 @@ components:
         type: "CRYPTOTRANSFER"
         token_id: "0.0.1000"
     NftTransactionHistory:
-      type: array
-      items:
-        $ref: '#/components/schemas/NftTransactionTransfer'
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/NftTransactionTransfer'
+        links:
+          $ref: '#/components/schemas/Links'
     Schedule:
       type: object
       properties:
@@ -1150,6 +1251,16 @@ components:
       format: binary
       minLength: 42
       maxLength: 42
+      pattern: '^0x[A-Fa-f0-9]{40}$'
+      example: "0x0000000000000000000000000000000000001f41"
+    SolidityAddressNullable:
+      type: string
+      description: A network entity encoded as a solidity address in hex
+      format: binary
+      minLength: 42
+      maxLength: 42
+      nullable: true
+      pattern: '^0x[A-Fa-f0-9]{40}$'
       example: "0x0000000000000000000000000000000000001f41"
     StateProofFiles:
       type: object
@@ -1190,11 +1301,12 @@ components:
     Timestamp:
       type: string
       example: "1586567700.453054000"
-      pattern: '/^\d{1,10}(\.\d{1,9})?$'
+      pattern: '^\d{1,10}(\.\d{1,9})?$'
     TimestampNullable:
-      allOf:
-        - $ref: '#/components/schemas/Timestamp'
-        - nullable: true
+      type: string
+      example: "1586567700.453054000"
+      pattern: '^\d{1,10}(\.\d{1,9})?$'
+      nullable: true
     TimestampRange:
       type: object
       description: A timestamp range an entity is valid for
@@ -1274,6 +1386,7 @@ components:
         deleted:
           type: boolean
           example: true
+          nullable: true
         expiry_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         fee_schedule_key:
@@ -1385,7 +1498,6 @@ components:
           $ref: '#/components/schemas/EntityId'
         message:
           type: string
-          format: byte
         running_hash:
           type: string
           format: byte
@@ -1421,6 +1533,7 @@ components:
         bytes:
           type: string
           format: byte
+          nullable: true
         transaction_hash:
           type: string
           format: byte
@@ -1755,6 +1868,14 @@ components:
       description: Contract entity id
       schema:
         $ref: '#/components/schemas/EntityId'
+    fromQueryParam:
+      name: contractId
+      in: query
+      description: Contract entity id or address
+      schema:
+        oneOf:
+          - $ref: '#/components/schemas/EntityId'
+          - $ref: '#/components/schemas/SolidityAddress'
     limitQueryParam:
       name: limit
       in: query

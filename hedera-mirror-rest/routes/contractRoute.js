@@ -20,26 +20,16 @@
 
 'use strict';
 
-const _ = require('lodash');
+// external libraries
+const {Router} = require('@awaitjs/express');
+const router = Router();
 
-/**
- * Base service class that other services should inherit from for their retrieval business logic
- */
-class BaseService {
-  getOrderByQuery(column, order) {
-    return `order by ${column} ${order}`;
-  }
+const {ContractController} = require('../controllers/');
 
-  getLimitQuery(limitParamCount) {
-    return `limit $${limitParamCount}`;
-  }
+// use full path to ensure controllers have access for next link population
+const path = '/api/v1/contracts';
+router.getAsync(`${path}`, ContractController.getContracts);
+router.getAsync(`${path}/:contractId`, ContractController.getContractById);
+router.getAsync(`${path}/:contractId/results`, ContractController.getContractResultsById);
 
-  async getRows(query, params, functionName = '') {
-    logger.trace(`${functionName} query: ${query}, params: ${params}`);
-    const {rows} = await pool.queryQuietly(query, params);
-    logger.trace(`${functionName} ${rows.length} entries`);
-    return rows;
-  }
-}
-
-module.exports = BaseService;
+module.exports = router;

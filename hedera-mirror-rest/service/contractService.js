@@ -53,7 +53,7 @@ class ContractService extends BaseService {
   ) {
     const [query, params] = this.getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
     const rows = await super.getRows(query, params, 'getContractResultsByIdAndFilters');
-    return _.isEmpty(rows) ? null : rows.map((cr) => new ContractResult(cr));
+    return _.isEmpty(rows) ? [] : rows.map((cr) => new ContractResult(cr));
   }
 
   async getContractLogsByIdAndFilters(
@@ -64,7 +64,7 @@ class ContractService extends BaseService {
   ) {
     const [query, params] = this.getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
     const rows = await super.getRows(query, params, 'getContractResultsByIdAndFilters');
-    return _.isEmpty(rows) ? null : rows.map((cr) => new ContractResult(cr));
+    return _.isEmpty(rows) ? [] : rows.map((cr) => new ContractResult(cr));
   }
 
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
@@ -92,6 +92,6 @@ class ContractService extends BaseService {
 
     return [query, params];
   }
-}
+
 
 module.exports = new ContractService();

@@ -1,0 +1,47 @@
+{
+  "description": "Contract results api call for a specific contract using contract id with a timestamp filter",
+  "setup": {
+    "contractresults": [
+      {
+        "amount": 20,
+        "consensus_timestamp": "187654000123456",
+        "contract_id": 5001
+      },
+      {
+        "amount": 30,
+        "consensus_timestamp": "987654000123456",
+        "contract_id": 5001,
+        "created_contract_ids": [7001]
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/0.0.5001/results?timestamp=987654.000123456",
+    "/api/v1/contracts/0.0.5001/results?timestamp=eq:987654.000123456",
+    "/api/v1/contracts/0.0.5001/results?timestamp=gt:200000.000123456&timestamp=lt:999999.000123456",
+    "/api/v1/contracts/0.0.5001/results?timestamp=gte:987654.000123456&timestamp=lte:987654.000123456",
+    "/api/v1/contracts/0.0.5001/results?timestamp=ne:187654.000123456"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "results": [
+      {
+        "amount": 30,
+        "bloom": null,
+        "call_result": null,
+        "contract_id": "0.0.5001",
+        "created_contract_ids": ["0.0.7001"],
+        "error_message": "",
+        "from": "0x0000000000000000000000000000000000000065",
+        "function_parameters": "0x010102020303",
+        "gas_limit": 1000,
+        "gas_used": 10,
+        "timestamp": "987654.000123456",
+        "to": "0x0000000000000000000000000000000000001389"
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

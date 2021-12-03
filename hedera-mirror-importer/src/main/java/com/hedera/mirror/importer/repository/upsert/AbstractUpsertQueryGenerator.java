@@ -48,21 +48,14 @@ import org.springframework.util.ReflectionUtils;
 
 @RequiredArgsConstructor
 public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGenerator {
-    protected static final String EMPTY_STRING = "''";
+
+    private static final String EMPTY_STRING = "''";
     private static final String EMPTY_CLAUSE = "";
-    private static final String V1_DIRECTORY = "/v1";
-    private static final String V2_DIRECTORY = "/v2";
     private static final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator.comparing(DomainField::getName);
+
     protected final Logger log = LogManager.getLogger(getClass());
-    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {
-    }.getRawType();
-    @Getter(lazy = true)
-    private final String insertQuery = generateInsertQuery();
+    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) { }.getRawType();
     private volatile Set<Field> attributes = null;
-    @Getter(lazy = true)
-    private final String updateQuery = generateUpdateQuery();
-    @Value("${spring.flyway.locations:v1}")
-    private String version;
 
     protected boolean isInsertOnly() {
         return false;
@@ -124,7 +117,8 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return Collections.emptySet();
     }
 
-    private String generateInsertQuery() {
+    @Override
+    public String getInsertQuery() {
         StringBuilder insertQueryBuilder = new StringBuilder(StringUtils.joinWith(
                 " ",
                 getCteForInsert(),
@@ -149,7 +143,8 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
         return insertQueryBuilder.toString();
     }
 
-    private String generateUpdateQuery() {
+    @Override
+    public String getUpdateQuery() {
         if (isInsertOnly()) {
             return EMPTY_CLAUSE;
         }

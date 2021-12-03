@@ -21,6 +21,7 @@
 'use strict';
 
 module.exports = {
+  ContractService: require('./contractService'),
   NftService: require('./nftService'),
   TokenService: require('./tokenService'),
 };

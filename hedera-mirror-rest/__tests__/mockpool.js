@@ -217,10 +217,12 @@ class Pool {
         },
       ];
       row.charged_tx_fee = 100 + i;
-      row.transaction_hash = '';
-      row.scheduled = false;
       row.entity_id = null;
+      row.max_fee = i;
+      row.scheduled = false;
       row.transaction_bytes = '';
+      row.transaction_hash = '';
+      row.valid_duration_seconds = i;
       rows.push(row);
     }
     if (['asc', 'ASC'].includes(order)) {
@@ -359,6 +361,9 @@ class Pool {
       row.expiration_timestamp = this.toNs(this.timeNow + 1000);
       row.id = this.getAccountId(accountNum, i);
       row.key = Buffer.from(`Key for row ${i}`);
+      row.max_automatic_token_associations = i;
+      row.memo = 'account_memo' + i;
+      row.receiver_sig_required = false;
       row.type = 'Account';
 
       rows.push(row);

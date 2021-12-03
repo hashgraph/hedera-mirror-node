@@ -18,7 +18,7 @@ logging:
     root: warn
     com.hedera.mirror.importer: info
     org.flywaydb.core.internal.command.DbMigrate: info
-    org.springframework.cloud.kubernetes.fabric8.config.Fabric8ConfigUtils: error
+    org.springframework.cloud.kubernetes.fabric8.config: error
     #org.hibernate.type.descriptor.sql.BasicBinder: trace
 management:
   endpoints:
@@ -68,14 +68,15 @@ spring:
   datasource:
     name: ${hedera.mirror.importer.db.name}
     password: ${hedera.mirror.importer.db.password}
-    url: jdbc:postgresql://${hedera.mirror.importer.db.host}:${hedera.mirror.importer.db.port}/${hedera.mirror.importer.db.name}
+    url: jdbc:postgresql://${hedera.mirror.importer.db.host}:${hedera.mirror.importer.db.port}/${hedera.mirror.importer.db.name}?tcpKeepAlive=true
     username: ${hedera.mirror.importer.db.username}
     hikari:
+      # Note: Flyway does not use Hikari so these properties are ignored. Use URL properties for Flyway instead.
       data-source-properties:
         #loggerLevel: TRACE
         logUnclosedConnections: true
         reWriteBatchedInserts: true
-      maximumPoolSize: 14 # recommended connections = ((core_count * 2) + effective_spindle_count), though somewhat outdated as we use SSDs
+      maximumPoolSize: 14
   flyway:
     baselineOnMigrate: true
     connectRetries: 20
