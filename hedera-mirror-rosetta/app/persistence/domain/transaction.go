@@ -32,21 +32,23 @@ const (
 )
 
 type Transaction struct {
-	ConsensusTimestamp   int64 `gorm:"primaryKey"`
-	ChargedTxFee         int64
-	EntityId             *EntityId
-	InitialBalance       int64
-	MaxFee               int64
-	Memo                 []byte
-	NodeAccountId        *EntityId
-	PayerAccountId       EntityId
-	Result               int16
-	Scheduled            bool
-	TransactionBytes     []byte
-	TransactionHash      []byte
-	Type                 int16
-	ValidDurationSeconds int64
-	ValidStartNs         int64
+	ConsensusTimestamp       int64 `gorm:"primaryKey"`
+	ChargedTxFee             int64
+	EntityId                 *EntityId
+	InitialBalance           int64
+	MaxFee                   int64
+	Memo                     []byte
+	NodeAccountId            *EntityId
+	Nonce                    int32
+	ParentConsensusTimestamp int64
+	PayerAccountId           EntityId
+	Result                   int16
+	Scheduled                bool
+	TransactionBytes         []byte
+	TransactionHash          []byte
+	Type                     int16
+	ValidDurationSeconds     int64
+	ValidStartNs             int64
 }
 
 func (Transaction) TableName() string {
