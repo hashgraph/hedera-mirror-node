@@ -31,7 +31,6 @@ const {
   },
 } = require('../config');
 const {orderFilterValues} = require('../constants');
-const {logger} = require('../stream/utils');
 
 /**
  * Contract retrieval business logic
