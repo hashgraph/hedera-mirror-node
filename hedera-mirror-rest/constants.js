@@ -25,6 +25,7 @@ const filterKeys = {
   ACCOUNT_ID: 'account.id',
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_PUBLICKEY: 'account.publickey',
+  ADDRESS: 'address',
   BALANCE: 'balance',
   CONTRACTID: 'contractid',
   CONTRACT_ID: 'contract.id',
@@ -45,6 +46,10 @@ const filterKeys = {
   TOKEN_ID: 'token.id',
   TOKEN_TYPE: 'type',
   TOPIC_ID: 'topic.id',
+  TOPIC0: 'topic0',
+  TOPIC1: 'topic1',
+  TOPIC2: 'topic2',
+  TOPIC3: 'topic3',
   TRANSACTION_TYPE: 'transactiontype',
 };
 

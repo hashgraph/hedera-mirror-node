@@ -20,17 +20,21 @@
 
 'use strict';
 
-// external libraries
-const {Router} = require('@awaitjs/express');
-const router = Router();
+const EntityId = require('../entityId');
+const ContractLog = require('../model/contractLog');
 
-const {ContractController} = require('../controllers/');
-
-// use full path to ensure controllers have access for next link population
-const path = '/api/v1/contracts';
-router.getAsync(`${path}`, ContractController.getContracts);
-router.getAsync(`${path}/:contractId`, ContractController.getContractById);
-router.getAsync(`${path}/:contractId/results`, ContractController.getContractResultsById);
-router.getAsync(`${path}/:contractId/results/logs`, ContractController.getContractLogs);
-
-module.exports = router;
+/**
+ * Contract logs view model
+ */
+class ContractLogViewModel {
+  /**
+   * Constructs contractResult view model
+   *
+   * @param {ContractLog} contractLog
+   */
+  constructor(contractLog) {
+    Object.assign(this, {
+      address: EntityId.parse(contractLog.address),
+    });
+  }
+}

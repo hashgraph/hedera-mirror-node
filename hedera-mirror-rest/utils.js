@@ -92,6 +92,15 @@ const isValidPublicKeyQuery = (query) => {
   return publicKeyPattern.test(query);
 };
 
+const contractTopicPattern = /^[0-9A-Fa-f]{64}$/;
+const isValidOpAndTopic = (op, query) => {
+  return contractTopicPattern.test(query) && op === 'eq';
+};
+
+const isValidOpAndAddress = (op, query) => {
+  return EntityId.isValidSolidityAddress(query) && op === 'eq';
+};
+
 const isValidUtf8Encoding = (query) => {
   if (!query) {
     return false;
@@ -162,6 +171,9 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.ACCOUNT_PUBLICKEY:
       ret = isValidPublicKeyQuery(val);
       break;
+    case constants.filterKeys.ADDRESS:
+      ret = isValidOpAndAddress(op, val);
+      break;
     case constants.filterKeys.BALANCE:
       ret = isValidBooleanOpAndValue(op, val);
       break;
@@ -201,6 +213,12 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.TOKEN_TYPE:
       ret = isValidValueIgnoreCase(val, Object.values(constants.tokenTypeFilter));
+      break;
+    case constants.filterKeys.TOPIC0:
+    case constants.filterKeys.TOPIC1:
+    case constants.filterKeys.TOPIC2:
+    case constants.filterKeys.TOPIC3:
+      ret = isValidOpAndTopic(op, val);
       break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       ret = isPositiveLong(val);

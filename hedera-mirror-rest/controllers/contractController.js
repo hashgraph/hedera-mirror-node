@@ -36,6 +36,8 @@ const {Contract, FileData, ContractResult} = require('../model');
 const {ContractService} = require('../service');
 const {ContractViewModel, ContractResultViewModel} = require('../viewmodel');
 const {NotFoundError} = require('../errors/notFoundError');
+const ContractLog = require('../model/contractLog');
+const contractService = require('../service/contractService');
 
 const contractSelectFields = [
   Contract.AUTO_RENEW_PERIOD,
@@ -357,7 +359,57 @@ const getContractResultsById = async (req, res) => {
 
   const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
   const response = {
-    results: rows.map((row) => new ContractResultViewModel(row)),
+    results: rows.map((row) => new ContractLogViewModel(row)),
+    links: {
+      next: null,
+    },
+  };
+
+  if (!_.isEmpty(response.results)) {
+    const lastRow = _.last(response.results);
+    const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
+    response.links.next = utils.getPaginationLink(
+      req,
+      response.results.length !== limit,
+      constants.filterKeys.TIMESTAMP,
+      lastContractResultTimestamp,
+      order
+    );
+  }
+
+  res.locals[constants.responseDataLabel] = response;
+};
+
+/**
+ * Handler function for /contracts/:contractId/results/logs API
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns {Promise<void>}
+ */
+const getContractLogs = async (req, res) => {
+  utils.validateReq(req);
+
+  // extract filters from query param
+  const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
+  const filters = utils.buildAndValidateFilters(req.query);
+
+  // get sql filter query, params, limit and limit query from query filters
+  const {conditions, params, order, limit, subQueryConditions, subQueryParams} = extractContractLogsByIdQuery(
+    filters,
+    contractId
+  );
+
+  const rows = contractService.getContractLogsByIdAndFilters(
+    conditions,
+    params,
+    order,
+    limit,
+    subQueryConditions,
+    subQueryParams
+  );
+
+  const response = {
+    results: rows.map((row) => new ContractLogViewModel(row)),
     links: {
       next: null,
     },
@@ -442,20 +494,164 @@ const extractContractResultsByIdQuery = (filters, contractId) => {
   };
 };
 
-const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams, existingConditions, fullName) => {
+/**
+ * Extracts SQL where conditions, params, order, and limit
+ *
+ * @param {[]} filters parsed and validated filters
+ * @param {string} contractId encoded contract ID
+ * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
+ */
+const extractContractLogsByIdQuery = (filters, contractId) => {
+  let limit = defaultLimit;
+  let order = constants.orderFilterValues.DESC;
+  const conditions = [];
+  const params = [];
+
+  const contractLogAddressFullName = ContractLog.getFullName(ContractLog.CONTRACT_ID);
+  const contractLogAddressInValues = [];
+
+  const contractLogTopic0FullName = ContractResult.getFullName(ContractLog.TOPIC0);
+  const contractLogTopic0InValues = [];
+
+  const contractLogTopic1FullName = ContractResult.getFullName(ContractLog.TOPIC1);
+  const contractLogTopic1InValues = [];
+
+  const contractLogTopic2FullName = ContractResult.getFullName(ContractLog.TOPIC2);
+  const contractLogTopic2InValues = [];
+
+  const contractLogTopic3FullName = ContractResult.getFullName(ContractLog.TOPIC3);
+  const contractLogTopic3InValues = [];
+
+  const timestampFilters = [];
+
+  for (const filter of filters) {
+    switch (filter.key) {
+      case constants.filterKeys.ADDRESS:
+        //Convert the adddress to a contractId
+        const [shard, realm, num] = EntityId.parseFromSolidityAddress(filter.value);
+        filter.value = EntityId.of(shard, realm, num).getEncodedId();
+        updateConditionsAndParamsWithInValues(
+          filter,
+          contractLogAddressInValues,
+          params,
+          conditions,
+          contractLogAddressFullName
+        );
+        break;
+      case constants.filterKeys.LIMIT:
+        limit = filter.value;
+        break;
+      case constants.filterKeys.ORDER:
+        order = filter.value;
+        break;
+      case constants.filterKeys.TIMESTAMP:
+        timestampFilters.push(filter);
+        break;
+      case constants.filterKeys.TOPIC0:
+        // handle repeated values
+        updateConditionsAndParamsWithInValues(
+          filter,
+          contractLogTopic0InValues,
+          params,
+          conditions,
+          contractLogTopic0FullName
+        );
+        break;
+      case constants.filterKeys.TOPIC1:
+        updateConditionsAndParamsWithInValues(
+          filter,
+          contractLogTopic1InValues,
+          params,
+          conditions,
+          contractLogTopic1FullName
+        );
+        break;
+      case constants.filterKeys.TOPIC2:
+        updateConditionsAndParamsWithInValues(
+          filter,
+          contractLogTopic2InValues,
+          params,
+          conditions,
+          contractLogTopic2FullName
+        );
+        break;
+      case constants.filterKeys.TOPIC3:
+        updateConditionsAndParamsWithInValues(
+          filter,
+          contractLogTopic3InValues,
+          params,
+          conditions,
+          contractLogTopic3FullName
+        );
+        break;
+      default:
+        break;
+    }
+  }
+
+  // update query with repeated values
+  updateQueryFiltersWithInValues(params, conditions, contractLogAddressInValues, contractLogAddressFullName);
+
+  updateQueryFiltersWithInValues(params, conditions, contractLogTopic0InValues, contractLogTopic0FullName);
+  updateQueryFiltersWithInValues(params, conditions, contractLogTopic1InValues, contractLogTopic1FullName);
+  updateQueryFiltersWithInValues(params, conditions, contractLogTopic2InValues, contractLogTopic2FullName);
+  updateQueryFiltersWithInValues(params, conditions, contractLogTopic3InValues, contractLogTopic3FullName);
+
+  const contractLogTimestampFullName = ContractResult.getFullName(ContractLog.CONSENSUS_TIMESTAMP);
+  const contractLogTimestampInValues = [];
+  const subQueryConditions = [`${ContractLog.getFullName(ContractLog.CONTRACT_ID)} = $${params.length + 1}`];
+  const subQueryParams = [contractId];
+
+  for (const filter of timestampFilters) {
+    updateConditionsAndParamsWithInValues(
+      filter,
+      contractLogTimestampInValues,
+      subQueryParams,
+      subQueryConditions,
+      contractLogTimestampFullName,
+      params.length
+    );
+  }
+
+  updateQueryFiltersWithInValues(
+    subQueryParams,
+    subQueryConditions,
+    contractLogTimestampInValues,
+    contractLogTimestampFullName,
+    params.length + subQueryParams.length - 1
+  );
+
+  return {
+    conditions: conditions,
+    params: params,
+    order: order,
+    limit: limit,
+    subQueryConditions: subQueryConditions,
+    subQueryParams: subQueryParams,
+  };
+};
+
+const updateConditionsAndParamsWithInValues = (
+  filter,
+  invalues,
+  existingParams,
+  existingConditions,
+  fullName,
+  offset = 0
+) => {
   if (filter.operator === utils.opsMap.eq) {
     // aggregate '=' conditions and use the sql 'in' operator
     invalues.push(filter.value);
   } else {
     existingParams.push(filter.value);
-    existingConditions.push(`${fullName}${filter.operator}$${existingParams.length}`);
+    existingConditions.push(`${fullName}${filter.operator}$${existingParams.length + offset}`);
   }
 };
 
-const updateQueryFiltersWithInValues = (existingParams, existingConditions, invalues, fullName) => {
+const updateQueryFiltersWithInValues = (existingParams, existingConditions, invalues, fullName, offset = 0) => {
   if (!_.isNil(invalues) && !_.isEmpty(invalues)) {
     // add the condition 'c.id in ()'
-    const start = existingParams.length + 1; // start is the next positional index
+    const start = existingParams.length + offset + 1; // start is the next positional index
     existingParams.push(...invalues);
     const positions = _.range(invalues.length)
       .map((position) => position + start)
@@ -467,6 +663,7 @@ const updateQueryFiltersWithInValues = (existingParams, existingConditions, inva
 module.exports = {
   getContractById,
   getContracts,
+  getContractLogs,
   getContractResultsById,
 };
 
