@@ -12,7 +12,7 @@
   "http_timeout": 15,
   "tip_delay": 20,
   "construction": {
-    "broadcast_limit": 3,
+    "broadcast_limit": 1,
     "clear_broadcasts": true,
     "constructor_dsl_file": "testnet.ros",
     "end_conditions": {
@@ -21,7 +21,7 @@
     "ignore_broadcast_failures": true,
     "offline_url": "http://localhost:5701",
     "prefunded_accounts": [],
-    "stale_depth": 20
+    "stale_depth": 8
   },
   "data": {
     "reconciliation_disabled": false,
