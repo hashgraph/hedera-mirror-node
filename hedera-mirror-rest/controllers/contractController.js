@@ -34,10 +34,11 @@ const utils = require('../utils');
 
 const {Contract, FileData, ContractResult} = require('../model');
 const {ContractService} = require('../service');
-const {ContractViewModel, ContractResultViewModel} = require('../viewmodel');
+const {ContractViewModel, ContractLogViewModel, ContractResultViewModel} = require('../viewmodel');
 const {NotFoundError} = require('../errors/notFoundError');
 const ContractLog = require('../model/contractLog');
 const contractService = require('../service/contractService');
+const {logger} = require('../stream/utils');
 
 const contractSelectFields = [
   Contract.AUTO_RENEW_PERIOD,
@@ -359,7 +360,7 @@ const getContractResultsById = async (req, res) => {
 
   const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
   const response = {
-    results: rows.map((row) => new ContractLogViewModel(row)),
+    results: rows.map((row) => new ContractResultViewModel(row)),
     links: {
       next: null,
     },
@@ -391,7 +392,7 @@ const getContractLogs = async (req, res) => {
 
   // extract filters from query param
   const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
-  const filters = utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query, contractLogfilterValidityChecks);
 
   // get sql filter query, params, limit and limit query from query filters
   const {conditions, params, order, limit, subQueryConditions, subQueryParams} = extractContractLogsByIdQuery(
@@ -399,7 +400,7 @@ const getContractLogs = async (req, res) => {
     contractId
   );
 
-  const rows = contractService.getContractLogsByIdAndFilters(
+  const rows = await contractService.getContractLogsByIdAndFilters(
     conditions,
     params,
     order,
@@ -409,25 +410,52 @@ const getContractLogs = async (req, res) => {
   );
 
   const response = {
-    results: rows.map((row) => new ContractLogViewModel(row)),
-    links: {
-      next: null,
-    },
+    logs: rows.map((row) => new ContractLogViewModel(row)),
   };
 
-  if (!_.isEmpty(response.results)) {
-    const lastRow = _.last(response.results);
-    const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
-    response.links.next = utils.getPaginationLink(
-      req,
-      response.results.length !== limit,
-      constants.filterKeys.TIMESTAMP,
-      lastContractResultTimestamp,
-      order
-    );
+  res.locals[constants.responseDataLabel] = response;
+};
+
+const contractLogfilterValidityChecks = (param, op, val) => {
+  let ret = false;
+
+  if (op === undefined || val === undefined) {
+    return ret;
   }
 
-  res.locals[constants.responseDataLabel] = response;
+  // Validate operator
+  if (!utils.isValidOperatorQuery(op)) {
+    logger.info(utils.isValidOperatorQuery(val));
+    return ret;
+  }
+
+  // Validate the value
+  switch (param) {
+    case constants.filterKeys.ADDRESS:
+      ret = utils.isValidOpAndAddress(op, val);
+      break;
+    case constants.filterKeys.LIMIT:
+      ret = utils.isPositiveLong(val);
+      break;
+    case constants.filterKeys.ORDER:
+      // Acceptable words: asc or desc
+      ret = utils.isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
+      break;
+    case constants.filterKeys.TOPIC0:
+    case constants.filterKeys.TOPIC1:
+    case constants.filterKeys.TOPIC2:
+    case constants.filterKeys.TOPIC3:
+      ret = utils.isValidOpAndTopic(op, val);
+      break;
+    case constants.filterKeys.TIMESTAMP:
+      ret = utils.isValidTimestampParamAndOp(op, val);
+      break;
+    default:
+      // Every parameter should be included here. Otherwise, it will not be accepted.
+      ret = false;
+  }
+
+  return ret;
 };
 
 /**
@@ -510,16 +538,16 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   const contractLogAddressFullName = ContractLog.getFullName(ContractLog.CONTRACT_ID);
   const contractLogAddressInValues = [];
 
-  const contractLogTopic0FullName = ContractResult.getFullName(ContractLog.TOPIC0);
+  const contractLogTopic0FullName = ContractLog.getFullName(ContractLog.TOPIC0);
   const contractLogTopic0InValues = [];
 
-  const contractLogTopic1FullName = ContractResult.getFullName(ContractLog.TOPIC1);
+  const contractLogTopic1FullName = ContractLog.getFullName(ContractLog.TOPIC1);
   const contractLogTopic1InValues = [];
 
-  const contractLogTopic2FullName = ContractResult.getFullName(ContractLog.TOPIC2);
+  const contractLogTopic2FullName = ContractLog.getFullName(ContractLog.TOPIC2);
   const contractLogTopic2InValues = [];
 
-  const contractLogTopic3FullName = ContractResult.getFullName(ContractLog.TOPIC3);
+  const contractLogTopic3FullName = ContractLog.getFullName(ContractLog.TOPIC3);
   const contractLogTopic3InValues = [];
 
   const timestampFilters = [];
@@ -597,7 +625,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   updateQueryFiltersWithInValues(params, conditions, contractLogTopic2InValues, contractLogTopic2FullName);
   updateQueryFiltersWithInValues(params, conditions, contractLogTopic3InValues, contractLogTopic3FullName);
 
-  const contractLogTimestampFullName = ContractResult.getFullName(ContractLog.CONSENSUS_TIMESTAMP);
+  const contractLogTimestampFullName = ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP);
   const contractLogTimestampInValues = [];
   const subQueryConditions = [`${ContractLog.getFullName(ContractLog.CONTRACT_ID)} = $${params.length + 1}`];
   const subQueryParams = [contractId];

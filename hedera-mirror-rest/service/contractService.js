@@ -44,14 +44,14 @@ class ContractService extends BaseService {
     from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
 
   static contractLogTimestampSubQuery = `select ${ContractLog.CONSENSUS_TIMESTAMP} 
-    from ${ContractLog.tableName} ${ContractResult.tableAlias}`;
+    from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
   static contractLogsByIdQuery = `select 
   ${ContractLog.CONTRACT_ID},
   ${ContractLog.BLOOM},
   ${ContractLog.CONSENSUS_TIMESTAMP},
   ${ContractLog.DATA},
-  array_to_json(array_remove(ARRAY[${ContractLog.TOPIC0}, ${ContractLog.TOPIC1}, ${ContractLog.TOPIC2}, ${ContractLog.TOPIC3}], null))::jsonb as topics,  
+  array_to_json(array_remove(ARRAY[${ContractLog.TOPIC0}, ${ContractLog.TOPIC1}, ${ContractLog.TOPIC2}, ${ContractLog.TOPIC3}], null))::jsonb as topics
     from ${ContractLog.tableName} ${ContractLog.tableAlias} where ${ContractLog.CONSENSUS_TIMESTAMP} in (`;
 
   async getContractResultsByIdAndFilters(

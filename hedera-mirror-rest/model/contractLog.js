@@ -46,6 +46,7 @@ class ContractLog {
   static TOPIC1 = 'topic1';
   static TOPIC2 = 'topic2';
   static TOPIC3 = 'topic3';
+  static TOPICS = 'topics';
 
   /**
    * Gets full column name with table alias prepended.

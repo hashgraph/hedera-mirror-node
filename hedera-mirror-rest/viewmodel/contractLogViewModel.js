@@ -22,6 +22,8 @@
 
 const EntityId = require('../entityId');
 const ContractLog = require('../model/contractLog');
+const constants = require('../constants');
+const utils = require('../utils');
 
 /**
  * Contract logs view model
@@ -34,7 +36,13 @@ class ContractLogViewModel {
    */
   constructor(contractLog) {
     Object.assign(this, {
-      address: EntityId.parse(contractLog.address),
+      address: EntityId.parse(contractLog.contractId, constants.filterKeys.CONTRACTID).toSolidityAddress(),
+      bloom: utils.toHexString(contractLog.bloom, true),
+      data: utils.toHexString(contractLog.data, true),
+      timestamp: contractLog.consensusTimestamp,
+      topics: contractLog.topics,
     });
   }
 }
+
+module.exports = ContractLogViewModel;
