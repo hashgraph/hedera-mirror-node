@@ -395,18 +395,17 @@ const getContractLogs = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, contractLogfilterValidityChecks);
 
   // get sql filter query, params, limit and limit query from query filters
-  const {conditions, params, order, limit, subQueryConditions, subQueryParams} = extractContractLogsByIdQuery(
-    filters,
-    contractId
-  );
+  const {conditions, params, subQueryConditions, subQueryParams, timestampOrder, indexOrder, limit} =
+    extractContractLogsByIdQuery(filters, contractId);
 
   const rows = await contractService.getContractLogsByIdAndFilters(
     conditions,
     params,
-    order,
-    limit,
     subQueryConditions,
-    subQueryParams
+    subQueryParams,
+    timestampOrder,
+    indexOrder,
+    limit
   );
 
   const response = {
@@ -531,7 +530,8 @@ const extractContractResultsByIdQuery = (filters, contractId) => {
  */
 const extractContractLogsByIdQuery = (filters, contractId) => {
   let limit = defaultLimit;
-  let order = constants.orderFilterValues.DESC;
+  let timestampOrder = constants.orderFilterValues.DESC;
+  let indexOrder = constants.orderFilterValues.ASC;
   const conditions = [];
   const params = [];
 
@@ -570,7 +570,8 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         limit = filter.value;
         break;
       case constants.filterKeys.ORDER:
-        order = filter.value;
+        timestampOrder = filter.value;
+        indexOrder = filter.value;
         break;
       case constants.filterKeys.TIMESTAMP:
         timestampFilters.push(filter);
@@ -652,10 +653,11 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   return {
     conditions: conditions,
     params: params,
-    order: order,
-    limit: limit,
     subQueryConditions: subQueryConditions,
     subQueryParams: subQueryParams,
+    timestampOrder,
+    indexOrder,
+    limit,
   };
 };
 

@@ -96,16 +96,18 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
     const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
       [],
       [],
-      'asc',
-      5,
       ['cl.contract_id = $1'],
-      [2]
+      [2],
+      'desc',
+      'asc',
+      5
     );
     expect(formatSqlQueryString(query)).toEqual(
       formatSqlQueryString(`select cl.contract_id,
                                    cl.bloom,
                                    cl.consensus_timestamp,
                                    cl.data,
+                                   cl.index,
                                    array_to_json(array_remove(ARRAY [cl.topic0, cl.topic1, cl.topic2, cl.topic3],
                                                               null))::jsonb as topics
                             from contract_log cl
@@ -113,10 +115,12 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
                               select cl.consensus_timestamp
                               from contract_log cl
                               where cl.contract_id = $1
-                              order by cl.consensus_timestamp asc
+                              order by cl.consensus_timestamp desc,
+                                       cl.index asc
                               limit $2
                             )
-                            order by cl.consensus_timestamp asc
+                            order by cl.consensus_timestamp desc,
+                                     cl.index asc
                             limit $2`)
     );
     expect(params).toEqual([2, 5]);
@@ -132,16 +136,18 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
         'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
         1002,
       ],
-      'asc',
-      5,
       ['cl.contract_id = $6', 'cl.timestamp in($7, $8)'],
-      [1001, 20, 30]
+      [1001, 20, 30],
+      'asc',
+      'desc',
+      5
     );
     expect(formatSqlQueryString(query)).toEqual(
       formatSqlQueryString(`select cl.contract_id,
                                    cl.bloom,
                                    cl.consensus_timestamp,
                                    cl.data,
+                                   cl.index,
                                    array_to_json(array_remove(ARRAY [cl.topic0, cl.topic1, cl.topic2, cl.topic3],
                                                               null))::jsonb as topics
                             from contract_log cl
@@ -150,7 +156,8 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
                               from contract_log cl
                               where cl.contract_id = $6
                                 and cl.timestamp in ($7, $8)
-                              order by cl.consensus_timestamp asc
+                              order by cl.consensus_timestamp asc,
+                                       cl.index desc
                               limit $9
                             )
                               and cl.topic0 = $1
@@ -158,7 +165,8 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
                               and cl.topic2 = $3
                               and cl.topic3 = $4
                               and cl.contract_id = $5
-                            order by cl.consensus_timestamp asc
+                            order by cl.consensus_timestamp asc,
+                                     cl.index desc
                             limit $9`)
     );
     expect(params).toEqual([
@@ -410,10 +418,11 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
         2,
       ],
-      'desc',
-      25,
       ['cl.contract_id = $6', 'cl.consensus_timestamp in($7)'],
-      [3, 20]
+      [3, 20],
+      'desc',
+      'asc',
+      25
     );
     expect(response).toMatchObject(expectedContractLog);
   });

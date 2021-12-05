@@ -263,11 +263,12 @@ describe('formatContractRow', () => {
 
 describe('getContractByIdQuery', () => {
   const mainQuery = `select ${[...contractFields, 'cf.bytecode']}
-    from contract c, contract_file cf`;
+                     from contract c,
+                          contract_file cf`;
   const queryForTable = (table, extraConditions) => {
     return `select ${contractFields}
-      from ${table} c
-      where c.id = $1 ${(extraConditions && ' and ' + extraConditions.join(' and ')) || ''}`;
+            from ${table} c
+            where c.id = $1 ${(extraConditions && ' and ' + extraConditions.join(' and ')) || ''}`;
   };
   const timestampConditions = ['c.timestamp_range && $2', 'c.timestamp_range && $3'];
 
@@ -277,10 +278,11 @@ describe('getContractByIdQuery', () => {
       input: [],
       expected: `with contract as (
         ${queryForTable('contract')}
-      ), contract_file as (
-          ${contracts.fileDataQuery}
-      )
-      ${mainQuery}`,
+      ),
+                      contract_file as (
+                        ${contracts.fileDataQuery}
+                      )
+                   ${mainQuery}`,
     },
     {
       name: 'historical',
@@ -291,10 +293,11 @@ describe('getContractByIdQuery', () => {
         ${queryForTable('contract_history', timestampConditions)}
         order by timestamp_range desc
         limit 1
-	    ), contract_file as (
-        ${contracts.fileDataQuery}
-      )
-	    ${mainQuery}`,
+      ),
+                      contract_file as (
+                        ${contracts.fileDataQuery}
+                      )
+                   ${mainQuery}`,
     },
   ];
 
@@ -315,9 +318,9 @@ describe('getContractsQuery', () => {
         order: 'asc',
       },
       expected: `select ${contractFields}
-        from contract c
-        order by c.id asc
-        limit $1`,
+                 from contract c
+                 order by c.id asc
+                 limit $1`,
     },
     {
       name: 'non-empty whereQuery',
@@ -548,10 +551,11 @@ describe('extractContractLogsByIdQuery', () => {
   const defaultExpected = {
     conditions: [],
     params: [],
-    order: constants.orderFilterValues.DESC,
-    limit: defaultLimit,
     subQueryConditions: [],
     subQueryParams: [],
+    timestampOrder: constants.orderFilterValues.DESC,
+    indexOrder: constants.orderFilterValues.ASC,
+    limit: defaultLimit,
   };
   const specs = [
     {
@@ -683,7 +687,7 @@ describe('extractContractLogsByIdQuery', () => {
       },
     },
     {
-      name: 'order',
+      name: 'order asc',
       input: {
         filter: [
           {
@@ -698,7 +702,28 @@ describe('extractContractLogsByIdQuery', () => {
         ...defaultExpected,
         subQueryConditions: ['cl.contract_id = $1'],
         subQueryParams: [defaultContractId],
-        order: constants.orderFilterValues.ASC,
+        timestampOrder: constants.orderFilterValues.ASC,
+        indexOrder: constants.orderFilterValues.ASC,
+      },
+    },
+    {
+      name: 'order desc',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.ORDER,
+            operator: utils.opsMap.eq,
+            value: constants.orderFilterValues.DESC,
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        subQueryConditions: ['cl.contract_id = $1'],
+        subQueryParams: [defaultContractId],
+        timestampOrder: constants.orderFilterValues.DESC,
+        indexOrder: constants.orderFilterValues.DESC,
       },
     },
   ];
