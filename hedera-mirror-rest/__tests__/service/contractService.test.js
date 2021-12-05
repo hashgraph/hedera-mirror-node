@@ -91,6 +91,90 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
   });
 });
 
+describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
+  test('ContractService.getContractLogsByIdAndFiltersQuery - Verify simple query', async () => {
+    const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
+      [],
+      [],
+      'asc',
+      5,
+      ['cl.contract_id = $1'],
+      [2]
+    );
+    expect(formatSqlQueryString(query)).toEqual(
+      formatSqlQueryString(`select cl.contract_id,
+                                   cl.bloom,
+                                   cl.consensus_timestamp,
+                                   cl.data,
+                                   array_to_json(array_remove(ARRAY [cl.topic0, cl.topic1, cl.topic2, cl.topic3],
+                                                              null))::jsonb as topics
+                            from contract_log cl
+                            where cl.consensus_timestamp in (
+                              select cl.consensus_timestamp
+                              from contract_log cl
+                              where cl.contract_id = $1
+                              order by cl.consensus_timestamp asc
+                              limit $2
+                            )
+                            order by cl.consensus_timestamp asc
+                            limit $2`)
+    );
+    expect(params).toEqual([2, 5]);
+  });
+
+  test('ContractService.getContractLogsByIdAndFiltersQuery - Verify additional conditions', async () => {
+    const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
+      ['cl.topic0 = $1', 'cl.topic1 = $2', 'cl.topic2 = $3', 'cl.topic3 = $4', 'cl.contract_id = $5'],
+      [
+        'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
+        'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
+        'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
+        'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
+        1002,
+      ],
+      'asc',
+      5,
+      ['cl.contract_id = $6', 'cl.timestamp in($7, $8)'],
+      [1001, 20, 30]
+    );
+    expect(formatSqlQueryString(query)).toEqual(
+      formatSqlQueryString(`select cl.contract_id,
+                                   cl.bloom,
+                                   cl.consensus_timestamp,
+                                   cl.data,
+                                   array_to_json(array_remove(ARRAY [cl.topic0, cl.topic1, cl.topic2, cl.topic3],
+                                                              null))::jsonb as topics
+                            from contract_log cl
+                            where cl.consensus_timestamp in (
+                              select cl.consensus_timestamp
+                              from contract_log cl
+                              where cl.contract_id = $6
+                                and cl.timestamp in ($7, $8)
+                              order by cl.consensus_timestamp asc
+                              limit $9
+                            )
+                              and cl.topic0 = $1
+                              and cl.topic1 = $2
+                              and cl.topic2 = $3
+                              and cl.topic3 = $4
+                              and cl.contract_id = $5
+                            order by cl.consensus_timestamp asc
+                            limit $9`)
+    );
+    expect(params).toEqual([
+      'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
+      'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
+      'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
+      'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
+      1002,
+      1001,
+      20,
+      30,
+      5,
+    ]);
+  });
+});
+
 describe('ContractService.getContractResultsByIdAndFilters tests', () => {
   test('ContractService.getContractResultsByIdAndFilters - No match', async () => {
     const response = await ContractService.getContractResultsByIdAndFilters();

@@ -646,7 +646,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
     subQueryConditions,
     contractLogTimestampInValues,
     contractLogTimestampFullName,
-    params.length + subQueryParams.length - 1
+    params.length + subQueryParams.length - 2
   );
 
   return {
@@ -697,6 +697,8 @@ module.exports = {
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
+    contractLogfilterValidityChecks,
+    extractContractLogsByIdQuery,
     extractContractResultsByIdQuery,
     extractSqlFromContractFilters,
     extractTimestampConditionsFromContractFilters,

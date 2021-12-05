@@ -82,6 +82,11 @@ const isValidTimestampParam = (timestamp) => {
   return /^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp);
 };
 
+const isValidTimestampParamAndOp = (op, timestamp) => {
+  // Accepted forms: seconds or seconds.upto 9 digits
+  return op !== 'ne' && (/^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp));
+};
+
 const isValidOperatorQuery = (query) => {
   return /^(gte?|lte?|eq|ne)$/.test(query);
 };
@@ -1017,6 +1022,8 @@ module.exports = {
   isPositiveLong,
   isValidPublicKeyQuery,
   isValidOperatorQuery,
+  isValidOpAndTopic,
+  isValidOpAndAddress,
   isValidValueIgnoreCase,
   isValidTimestampParam,
   loadPgRange,
@@ -1034,6 +1041,7 @@ module.exports = {
   parsePublicKeyQueryParam,
   parseResultParams,
   parseTimestampParam,
+  isValidTimestampParamAndOp,
   parseTimestampQueryParam,
   parseTokenBalances,
   parseTransactionTypeParam,

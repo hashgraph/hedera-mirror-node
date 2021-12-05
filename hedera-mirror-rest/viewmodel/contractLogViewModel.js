@@ -39,7 +39,7 @@ class ContractLogViewModel {
       address: EntityId.parse(contractLog.contractId, constants.filterKeys.CONTRACTID).toSolidityAddress(),
       bloom: utils.toHexString(contractLog.bloom, true),
       data: utils.toHexString(contractLog.data, true),
-      timestamp: contractLog.consensusTimestamp,
+      timestamp: utils.nsToSecNs(contractLog.consensusTimestamp),
       topics: contractLog.topics,
     });
   }

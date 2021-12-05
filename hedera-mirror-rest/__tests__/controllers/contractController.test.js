@@ -327,10 +327,10 @@ describe('getContractsQuery', () => {
         order: 'desc',
       },
       expected: `select ${contractFields}
-        from contract c
-        where c.id <= $1
-        order by c.id desc
-        limit $2`,
+                 from contract c
+                 where c.id <= $1
+                 order by c.id desc
+                 limit $2`,
     },
   ];
 
@@ -456,6 +456,255 @@ describe('extractContractResultsByIdQuery', () => {
       expect(contracts.extractContractResultsByIdQuery(spec.input.filter, spec.input.contractId)).toEqual(
         spec.expected
       );
+    });
+  });
+});
+
+describe('contractLogfilterValidityChecks', () => {
+  test('valid address op', () => {
+    expect(
+      contracts.contractLogfilterValidityChecks(
+        constants.filterKeys.ADDRESS,
+        'eq',
+        '0x0000000000000000000000000000000000001234'
+      )
+    ).toBeTruthy();
+  });
+  test('invalid address val', () => {
+    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.ADDRESS, 'eq', 'aa')).toBeFalsy();
+  });
+  test('invalid address op', () => {
+    expect(
+      contracts.contractLogfilterValidityChecks(
+        constants.filterKeys.ADDRESS,
+        'gt',
+        '0x0000000000000000000000000000000000001234'
+      )
+    ).toBeFalsy();
+  });
+  test('valid limit', () => {
+    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.LIMIT, 'eq', 222)).toBeTruthy();
+  });
+  test('invalid limit', () => {
+    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.LIMIT, 'eq', -1)).toBeFalsy();
+  });
+  test('valid order', () => {
+    expect(
+      contracts.contractLogfilterValidityChecks(constants.filterKeys.ORDER, 'eq', constants.orderFilterValues.ASC)
+    ).toBeTruthy();
+  });
+  test('invalid limit', () => {
+    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.ORDER, 'eq', 'back')).toBeFalsy();
+  });
+  test('valid topic', () => {
+    expect(
+      contracts.contractLogfilterValidityChecks(
+        constants.filterKeys.TOPIC0,
+        'eq',
+        '0000000000000000000000000000000000000000000000000000000000001234'
+      )
+    ).toBeTruthy();
+  });
+  test('imvalid topic op', () => {
+    expect(
+      contracts.contractLogfilterValidityChecks(
+        constants.filterKeys.TOPIC1,
+        'lt',
+        '0000000000000000000000000000000000000000000000000000000000001234'
+      )
+    ).toBeFalsy();
+  });
+  test('imvalid topic val', () => {
+    expect(
+      contracts.contractLogfilterValidityChecks(
+        constants.filterKeys.TOPIC3,
+        'lt',
+        '000000000000000000000000000000000000000000000000000000000001234'
+      )
+    ).toBeTruthy();
+  });
+  test('valid timestamp', () => {
+    expect(
+      contracts.contractLogfilterValidityChecks(constants.filterKeys.TIMESTAMP, 'eq', '1638732974.495514000')
+    ).toBeTruthy();
+  });
+  test('invalid timestamp val', () => {
+    expect(
+      contracts.contractLogfilterValidityChecks(constants.filterKeys.TIMESTAMP, 'eq', '16387329744.95514000')
+    ).toBeFalsy();
+  });
+  test('invalid timestamp op', () => {
+    expect(
+      contracts.contractLogfilterValidityChecks(constants.filterKeys.TIMESTAMP, 'ne', '16387329744.95514000')
+    ).toBeFalsy();
+  });
+  test('invalid param', () => {
+    expect(contracts.contractLogfilterValidityChecks('test')).toBeFalsy();
+  });
+});
+
+describe('extractContractLogsByIdQuery', () => {
+  const defaultContractId = 1;
+  const defaultExpected = {
+    conditions: [],
+    params: [],
+    order: constants.orderFilterValues.DESC,
+    limit: defaultLimit,
+    subQueryConditions: [],
+    subQueryParams: [],
+  };
+  const specs = [
+    {
+      name: emptyFilterString,
+      input: {filter: [], contractId: defaultContractId},
+      expected: {
+        ...defaultExpected,
+        subQueryConditions: ['cl.contract_id = $1'],
+        subQueryParams: [defaultContractId],
+      },
+    },
+    {
+      name: 'timestamp',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '1001',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '1002',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gt,
+            value: '1000',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        subQueryConditions: ['cl.contract_id = $1', 'cl.consensus_timestamp > $2', 'cl.consensus_timestamp in ($3,$4)'],
+        subQueryParams: [defaultContractId, '1000', '1001', '1002'],
+      },
+    },
+    {
+      name: 'topics',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TOPIC0,
+            operator: utils.opsMap.eq,
+            value: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+          },
+          {
+            key: constants.filterKeys.TOPIC0,
+            operator: utils.opsMap.eq,
+            value: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
+          },
+
+          {
+            key: constants.filterKeys.TOPIC1,
+            operator: utils.opsMap.eq,
+            value: '0x59d088293f09d5119d5b55858b989ffce4d398dc',
+          },
+          {
+            key: constants.filterKeys.TOPIC2,
+            operator: utils.opsMap.eq,
+            value: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
+          },
+          {
+            key: constants.filterKeys.TOPIC3,
+            operator: utils.opsMap.eq,
+            value: '0x59d088293f09d5119d5b55858b989ffce4d398dd',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: ['cl.topic0 in ($1,$2)', 'cl.topic1 in ($3)', 'cl.topic2 in ($4)', 'cl.topic3 in ($5)'],
+        params: [
+          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
+          '0x59d088293f09d5119d5b55858b989ffce4d398dc',
+          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
+          '0x59d088293f09d5119d5b55858b989ffce4d398dd',
+        ],
+        subQueryConditions: ['cl.contract_id = $6'],
+        subQueryParams: [defaultContractId],
+      },
+    },
+    {
+      name: 'address',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.ADDRESS,
+            operator: utils.opsMap.eq,
+            value: '0x0000000000000000000000000000000000001234',
+          },
+          {
+            key: constants.filterKeys.ADDRESS,
+            operator: utils.opsMap.eq,
+            value: '0x0000000000000000000000000000000000001893',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: ['cl.contract_id in ($1,$2)'],
+        params: ['4660', '6291'],
+        subQueryConditions: ['cl.contract_id = $3'],
+        subQueryParams: [defaultContractId],
+      },
+    },
+    {
+      name: 'limit',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.LIMIT,
+            operator: utils.opsMap.eq,
+            value: 20,
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        subQueryConditions: ['cl.contract_id = $1'],
+        subQueryParams: [defaultContractId],
+        limit: 20,
+      },
+    },
+    {
+      name: 'order',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.ORDER,
+            operator: utils.opsMap.eq,
+            value: constants.orderFilterValues.ASC,
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        subQueryConditions: ['cl.contract_id = $1'],
+        subQueryParams: [defaultContractId],
+        order: constants.orderFilterValues.ASC,
+      },
+    },
+  ];
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(contracts.extractContractLogsByIdQuery(spec.input.filter, spec.input.contractId)).toEqual(spec.expected);
     });
   });
 });
