@@ -34,6 +34,8 @@ import (
 
 const (
 	configPrefix  = "hedera.mirror.rosetta.test"
+	configName     = "application"
+	configTypeYaml = "yml"
 	defaultConfig = `
 hedera:
   mirror:
@@ -45,15 +47,16 @@ hedera:
           - id:
             privateKey:
         server:
+           dataRetry:
+             backOff: 1s
+             max: 20
            offlineUrl: http://localhost:5701
            onlineUrl: http://localhost:5700
-           httpTimeout: 10
-           retry:
-             backOff: 1
-             max: 20
+           httpTimeout: 15s
+           submitRetry:
+             backOff: 200ms
+             max: 5
 `
-	configName     = "application"
-	configTypeYaml = "yml"
 )
 
 type config struct {
@@ -86,15 +89,20 @@ func loadConfig() (*config, error) {
 	v := viper.Sub(configPrefix)
 
 	config := &config{}
-	if err := v.Unmarshal(
-		config,
-		viper.DecodeHook(mapstructure.ComposeDecodeHookFunc(accountIdDecodeHook, privateKeyDecodeHook)),
-	); err != nil {
+	if err := v.Unmarshal(config, addDecodeHooks); err != nil {
 		log.Errorf("Failed to unmarshal config %v", err)
 		return nil, err
 	}
 
 	return config, nil
+}
+
+func addDecodeHooks(c *mapstructure.DecoderConfig) {
+	hooks := []mapstructure.DecodeHookFunc{accountIdDecodeHook, privateKeyDecodeHook}
+	if c.DecodeHook != nil {
+		hooks = append([]mapstructure.DecodeHookFunc{c.DecodeHook}, hooks...)
+	}
+	c.DecodeHook = mapstructure.ComposeDecodeHookFunc(hooks...)
 }
 
 func accountIdDecodeHook(from, to reflect.Type, data interface{}) (interface{}, error) {

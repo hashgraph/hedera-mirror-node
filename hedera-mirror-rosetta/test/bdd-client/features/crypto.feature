@@ -1,7 +1,8 @@
+@crypto
 Feature: Crypto related transactions
 
   Scenario: Validate CryptoCreate transaction
-    When I send a CryptoCreate transaction to network
+    When I create a crypto account
     Then the DATA API should show the CryptoCreate transaction
 
   Scenario: Validate CryptoTransfer transaction
