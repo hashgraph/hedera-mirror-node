@@ -300,3 +300,121 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
     expect(response).toMatchObject(expectedContractResult);
   });
 });
+
+describe('ContractService.getContractLogsByIdAndFilters tests', () => {
+  test('ContractService.getContractLogsByIdAndFilters - No match', async () => {
+    const response = await ContractService.getContractLogsByIdAndFilters();
+    expect(response).toEqual([]);
+  });
+
+  test('ContractService.getContractLogsByIdAndFilters - Row match', async () => {
+    await integrationDomainOps.loadContractLogs([
+      {
+        consensus_timestamp: 1,
+        contract_id: 2,
+        index: 0,
+      },
+    ]);
+
+    const expectedContractLog = [
+      {
+        consensusTimestamp: '1',
+        contractId: '2',
+      },
+    ];
+
+    const response = await ContractService.getContractLogsByIdAndFilters();
+    expect(response).toMatchObject(expectedContractLog);
+  });
+
+  test('ContractService.getContractLogsByIdAndFilters - Id match', async () => {
+    await integrationDomainOps.loadContractLogs([
+      {
+        consensus_timestamp: 1,
+        contract_id: 2,
+        index: 0,
+      },
+      {
+        consensus_timestamp: 1,
+        contract_id: 3,
+        index: 1,
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 3,
+        index: 0,
+      },
+    ]);
+
+    const expectedContractLog = [
+      {
+        consensusTimestamp: '1',
+        contractId: '2',
+      },
+      {
+        consensusTimestamp: '1',
+        contractId: '3',
+      },
+    ];
+
+    const response = await ContractService.getContractLogsByIdAndFilters(
+      [],
+      [],
+      'desc',
+      25,
+      ['cl.contract_id = $1'],
+      ['2']
+    );
+    expect(response).toMatchObject(expectedContractLog);
+  });
+
+  test('ContractService.getContractLogsByIdAndFilters - All params match', async () => {
+    await integrationDomainOps.loadContractLogs([
+      {
+        consensus_timestamp: 20,
+        contract_id: 2,
+        index: 0,
+        topic0: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
+        topic1: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
+        topic2: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
+        topic3: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
+      },
+      {
+        consensus_timestamp: 20,
+        contract_id: 3,
+        index: 1,
+        topic0: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
+        topic1: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
+        topic2: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
+        topic3: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 3,
+        index: 0,
+      },
+    ]);
+
+    const expectedContractLog = [
+      {
+        consensusTimestamp: '20',
+        contractId: '2',
+      },
+    ];
+    const response = await ContractService.getContractLogsByIdAndFilters(
+      ['cl.topic0 = $1', 'cl.topic1 = $2', 'cl.topic2 = $3', 'cl.topic3 = $4', 'cl.contract_id in($5)'],
+      [
+        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
+        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
+        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
+        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
+        2,
+      ],
+      'desc',
+      25,
+      ['cl.contract_id = $6', 'cl.consensus_timestamp in($7)'],
+      [3, 20]
+    );
+    expect(response).toMatchObject(expectedContractLog);
+  });
+});

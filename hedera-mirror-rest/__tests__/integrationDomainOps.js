@@ -43,6 +43,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadContracts(testDataJson.contracts);
   await loadContractResults(testDataJson.contractresults);
+  await loadContractLogs(testDataJson.contractlogs);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
   await loadFileData(testDataJson.filedata);
@@ -102,6 +103,16 @@ const loadContractResults = async (contractResults) => {
 
   for (const contractResult of contractResults) {
     await addContractResult(contractResult);
+  }
+};
+
+const loadContractLogs = async (contractLogs) => {
+  if (contractLogs == null) {
+    return;
+  }
+
+  for (const contractLog of contractLogs) {
+    await addContractLog(contractLog);
   }
 };
 
@@ -625,8 +636,50 @@ const addContractResult = async (contractResultInput) => {
       : contractResult.function_result;
 
   await sqlConnection.query(
-    `insert into contract_result (${insertFields.join(',')}) values (${positions})`,
+    `insert into contract_result (${insertFields.join(',')})
+     values (${positions})`,
     insertFields.map((name) => contractResult[name])
+  );
+};
+
+const addContractLog = async (contractLogInput) => {
+  const insertFields = [
+    'bloom',
+    'consensus_timestamp',
+    'contract_id',
+    'data',
+    'index',
+    'payer_account_id',
+    'topic0',
+    'topic1',
+    'topic2',
+    'topic3',
+  ];
+  const positions = _.range(1, insertFields.length + 1)
+    .map((position) => `$${position}`)
+    .join(',');
+
+  const contractLog = {
+    bloom: '\\x0123',
+    consensus_timestamp: 1234510001,
+    contract_id: 0,
+    data: '\\x0123',
+    index: 0,
+    payer_account_id: 1,
+    topic0: 'aaaaaaaaaa',
+    topic1: 'bbbbbbbbbb',
+    topic2: 'cccccccccc',
+    topic3: 'dddddddddd',
+    ...contractLogInput,
+  };
+
+  contractLog.bloom = contractLogInput.bloom != null ? Buffer.from(contractLogInput.bloom) : contractLog.bloom;
+  contractLog.data = contractLogInput.data != null ? Buffer.from(contractLogInput.data) : contractLog.data;
+
+  await sqlConnection.query(
+    `insert into contract_log (${insertFields.join(',')})
+     values (${positions})`,
+    insertFields.map((name) => contractLog[name])
   );
 };
 
@@ -879,6 +932,7 @@ module.exports = {
   addNft,
   addToken,
   loadContractResults,
+  loadContractLogs,
   setAccountBalance,
   setUp,
 };
