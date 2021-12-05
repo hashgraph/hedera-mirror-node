@@ -6,7 +6,8 @@ require (
 	github.com/coinbase/rosetta-sdk-go v0.7.1
 	github.com/cucumber/godog v0.12.2
 	github.com/go-playground/validator/v10 v10.9.0
-	github.com/hashgraph/hedera-sdk-go/v2 v2.4.0
+	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20211111073741-479b2c5befce
+	github.com/hashgraph/hedera-sdk-go/v2 v2.6.0
 	github.com/hellofresh/health-go/v4 v4.5.0
 	github.com/jackc/pgtype v1.9.1
 	github.com/lib/pq v1.10.4
@@ -17,11 +18,11 @@ require (
 	github.com/prometheus/client_golang v1.11.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.9.0
+	github.com/spf13/viper v1.8.1
 	github.com/stretchr/testify v1.7.0
 	github.com/thanhpk/randstr v1.0.4
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/protobuf v1.26.1-0.20210525005349-febffdd88e85
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.2.2
 	gorm.io/gorm v1.22.3
@@ -103,7 +104,7 @@ require (
 	golang.org/x/net v0.0.0-20210907225631-ff17edfbf26d // indirect
 	golang.org/x/sys v0.0.0-20210906170528-6f6e22806c34 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20210903162649-d08c68adba83 // indirect
+	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
 	google.golang.org/grpc v1.41.0 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect

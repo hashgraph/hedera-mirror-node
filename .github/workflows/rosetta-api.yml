@@ -90,6 +90,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 2  # retrieve the preceding commit so changed-files action can diff and get the changes
 
       - name: Get Changed Files
         id: changed-files-module

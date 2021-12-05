@@ -24,15 +24,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/hashgraph/hedera-sdk-go/v2/proto"
+	"github.com/hashgraph/hedera-protobufs-go/services"
 	"github.com/stretchr/testify/assert"
 )
 
-var hederaFunctionalityLength = 67
-
 func TestResponseCodeUpToDate(t *testing.T) {
 	// given
-	for code, name := range proto.ResponseCodeEnum_name {
+	for code, name := range services.ResponseCodeEnum_name {
 		assert.Equal(t, name, TransactionResults[code])
 	}
 }
@@ -45,7 +43,7 @@ func TestTransactionTypesUpToDate(t *testing.T) {
 }
 
 func getSdkTransactionTypes() map[int32]string {
-	body := proto.TransactionBody{}
+	body := services.TransactionBody{}
 	dataFields := body.ProtoReflect().Descriptor().Oneofs().ByName("data").Fields()
 	transactionTypes := make(map[int32]string)
 	for i := 0; i < dataFields.Len(); i++ {
