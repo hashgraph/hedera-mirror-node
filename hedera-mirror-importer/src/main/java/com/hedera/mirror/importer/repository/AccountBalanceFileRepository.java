@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.repository;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 
-import com.hedera.mirror.importer.domain.AccountBalanceFile;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 
 public interface AccountBalanceFileRepository extends StreamFileRepository<AccountBalanceFile, Long> {
 

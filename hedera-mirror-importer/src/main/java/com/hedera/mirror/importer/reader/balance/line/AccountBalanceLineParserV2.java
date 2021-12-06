@@ -22,7 +22,9 @@ package com.hedera.mirror.importer.reader.balance.line;
 
 import com.google.common.base.Splitter;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.mirror.importer.domain.EntityType;
+
+import com.hedera.mirror.common.domain.entity.EntityType;
+
 import com.hederahashgraph.api.proto.java.TokenBalances;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.ArrayList;
@@ -33,9 +35,9 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base64;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.TokenBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Named

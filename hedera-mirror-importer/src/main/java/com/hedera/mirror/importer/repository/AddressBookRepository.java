@@ -24,7 +24,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.AddressBook;
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
 
 public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
     @Query(value = "select * from address_book where start_consensus_timestamp <= ?1 and file_id = ?2 order by " +

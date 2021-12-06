@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.parser;
 
 import java.time.Duration;
 
-import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.common.domain.StreamType;
 
 public interface ParserProperties {
 

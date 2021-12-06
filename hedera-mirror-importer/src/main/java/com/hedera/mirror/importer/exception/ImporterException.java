@@ -20,7 +20,9 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public abstract class ImporterException extends RuntimeException {
+import com.hedera.mirror.common.exception.MirrorNodeException;
+
+public abstract class ImporterException extends MirrorNodeException {
 
     private static final long serialVersionUID = -4366690969696518274L;
 

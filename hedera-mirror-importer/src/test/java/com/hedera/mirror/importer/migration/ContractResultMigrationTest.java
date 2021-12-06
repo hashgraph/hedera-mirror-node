@@ -42,7 +42,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
 @EnabledIfV1
 @Tag("migration")

@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.batch;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -46,15 +46,15 @@ import org.postgresql.copy.CopyManager;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.AssessedCustomFee;
+import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
-import com.hedera.mirror.importer.domain.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.importer.domain.DomainBuilder;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.TokenTransfer;
-import com.hedera.mirror.importer.domain.TopicMessage;
-import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;

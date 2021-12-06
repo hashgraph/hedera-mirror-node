@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.repository;
 import java.util.Optional;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamFile;
 
 public interface StreamFileRepository<T extends StreamFile, I> extends CrudRepository<T, I> {
 

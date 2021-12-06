@@ -26,10 +26,10 @@ import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.DigestAlgorithm;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.event.EventFile;
 
 class EventFileRepositoryTest extends AbstractRepositoryTest {
 

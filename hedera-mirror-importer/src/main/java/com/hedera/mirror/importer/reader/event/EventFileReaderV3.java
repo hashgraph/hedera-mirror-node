@@ -26,24 +26,26 @@ import java.io.DataInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
 import javax.inject.Named;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 
-import com.hedera.mirror.importer.domain.DigestAlgorithm;
-import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
-import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
 public class EventFileReaderV3 implements EventFileReader {
 
-    protected static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
     public static final byte EVENT_TYPE_PREV_HASH = 1; // next 48 bytes are SHA-384 hash of previous files
     public static final int EVENT_PREV_HASH_LENGTH = 48; // SHA-384 - 48 bytes
     public static final byte EVENT_STREAM_FILE_VERSION_2 = 2;
     public static final byte EVENT_STREAM_FILE_VERSION_3 = 3;
+    protected static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
 
     @Override
     public EventFile read(StreamFileData streamFileData) {
@@ -52,7 +54,7 @@ public class EventFileReaderV3 implements EventFileReader {
         Stopwatch stopwatch = Stopwatch.createStarted();
         boolean success = false;
 
-        long consensusStart = Utility.convertToNanosMax(streamFileData.getInstant());
+        long consensusStart = DomainUtils.convertToNanosMax(streamFileData.getInstant());
         EventFile eventFile = new EventFile();
         eventFile.setBytes(streamFileData.getBytes());
         eventFile.setConsensusEnd(consensusStart);

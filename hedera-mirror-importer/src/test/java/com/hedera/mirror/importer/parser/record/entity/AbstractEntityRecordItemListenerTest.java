@@ -27,6 +27,9 @@ import static org.assertj.core.api.Assertions.from;
 import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -50,20 +53,20 @@ import java.util.function.Consumer;
 import javax.annotation.Resource;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.AbstractEntity;
-import com.hedera.mirror.importer.domain.Contract;
-import com.hedera.mirror.importer.domain.CryptoTransfer;
-import com.hedera.mirror.importer.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.DomainBuilder;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
@@ -222,7 +225,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     }
 
     protected void assertRecordTransfers(TransactionRecord record) {
-        long consensusTimestamp = Utility.timeStampInNanos(record.getConsensusTimestamp());
+        long consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
         if (entityProperties.getPersist().isCryptoTransferAmounts()) {
             TransferList transferList = record.getTransferList();
             for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
@@ -245,7 +248,8 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     private void assertRecord(TransactionRecord record, Transaction dbTransaction) {
         assertThat(dbTransaction)
                 .isNotNull()
-                .returns(Utility.timeStampInNanos(record.getConsensusTimestamp()), Transaction::getConsensusTimestamp)
+                .returns(DomainUtils.timeStampInNanos(record.getConsensusTimestamp()),
+                        Transaction::getConsensusTimestamp)
                 .returns(record.getTransactionFee(), Transaction::getChargedTxFee)
                 .returns(record.getReceipt().getStatusValue(), Transaction::getResult)
                 .returns(record.getTransactionHash().toByteArray(), Transaction::getTransactionHash)
@@ -256,7 +260,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     private void assertTransaction(TransactionBody transactionBody, Transaction dbTransaction) {
         var transactionId = transactionBody.getTransactionID();
         var validDurationSeconds = transactionBody.getTransactionValidDuration().getSeconds();
-        var validStart = Utility.timeStampInNanos(transactionId.getTransactionValidStart());
+        var validStart = DomainUtils.timeStampInNanos(transactionId.getTransactionValidStart());
 
         assertThat(dbTransaction)
                 .isNotNull()
@@ -314,12 +318,12 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         return recordBuilder.build();
     }
 
-    protected com.hedera.mirror.importer.domain.Transaction getDbTransaction(Timestamp consensusTimestamp) {
-        return transactionRepository.findById(Utility.timeStampInNanos(consensusTimestamp)).get();
+    protected Transaction getDbTransaction(Timestamp consensusTimestamp) {
+        return transactionRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp)).get();
     }
 
     protected <T extends AbstractEntity> T getTransactionEntity(Timestamp consensusTimestamp) {
-        var transaction = transactionRepository.findById(Utility.timeStampInNanos(consensusTimestamp)).get();
+        var transaction = transactionRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp)).get();
         return getEntity(transaction.getEntityId());
     }
 

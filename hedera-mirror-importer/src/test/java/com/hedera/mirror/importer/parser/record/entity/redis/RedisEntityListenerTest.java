@@ -41,11 +41,11 @@ import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.topic.StreamMessage;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.StreamMessage;
-import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 

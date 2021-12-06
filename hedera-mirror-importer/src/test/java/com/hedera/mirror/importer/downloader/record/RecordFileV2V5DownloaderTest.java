@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.hedera.mirror.importer.TestRecordFiles;
-import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 
 // test v2 record file followed by a v5 record file, the start object running hash in v5 record file should match the
 // file hash of the last v2 record file

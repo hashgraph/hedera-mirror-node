@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.repository;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 
-import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.common.domain.event.EventFile;
 
 public interface EventFileRepository extends StreamFileRepository<EventFile, Long> {
 

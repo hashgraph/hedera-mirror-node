@@ -53,13 +53,13 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.Schedule;
-import com.hedera.mirror.importer.domain.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
@@ -440,8 +440,9 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     private void assertTransactionInRepository(long consensusTimestamp, boolean scheduled,
                                                ResponseCodeEnum responseCode) {
         assertThat(transactionRepository.findById(consensusTimestamp)).get()
-                .returns(scheduled, from(com.hedera.mirror.importer.domain.Transaction::isScheduled))
-                .returns(responseCode.getNumber(), from(com.hedera.mirror.importer.domain.Transaction::getResult));
+                .returns(scheduled, from(com.hedera.mirror.common.domain.transaction.Transaction::isScheduled))
+                .returns(responseCode.getNumber(),
+                        from(com.hedera.mirror.common.domain.transaction.Transaction::getResult));
     }
 
     private List<TransactionSignature> toTransactionSignatureList(long timestamp, ScheduleID scheduleId,

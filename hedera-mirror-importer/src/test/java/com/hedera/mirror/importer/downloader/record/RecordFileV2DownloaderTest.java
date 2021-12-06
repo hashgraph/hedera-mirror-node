@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 
 class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
 

@@ -37,11 +37,11 @@ import org.mockito.Mockito;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.GrpcProperties;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.Entity;
-import com.hedera.mirror.grpc.domain.EntityType;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
@@ -452,12 +452,12 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .build();
 
         Mockito.when(entityRepository
-                .findById(retrieverFilter.getTopicId()))
+                        .findById(retrieverFilter.getTopicId()))
                 .thenReturn(Optional
                         .of(Entity.builder().type(EntityType.TOPIC).build()));
 
         Mockito.when(topicMessageRetriever
-                .retrieve(ArgumentMatchers.isA(TopicMessageFilter.class), ArgumentMatchers.eq(true)))
+                        .retrieve(ArgumentMatchers.isA(TopicMessageFilter.class), ArgumentMatchers.eq(true)))
                 .thenReturn(Flux
                         .just(topicMessage(1, Instant.EPOCH),
                                 topicMessage(1, Instant.EPOCH.plus(1, ChronoUnit.NANOS)),
@@ -497,10 +497,10 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .thenReturn(Flux.empty());
         Mockito.when(topicListener.listen(filter)).thenReturn(Flux.just(beforeMissing, afterMissing));
         Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers
-                        .argThat(t -> t.getLimit() == 2 &&
-                                t.getStartTime().equals(beforeMissing.getConsensusTimestampInstant().plusNanos(1)) &&
-                                t.getEndTime().equals(afterMissing.getConsensusTimestampInstant())),
-                ArgumentMatchers.eq(false)))
+                                .argThat(t -> t.getLimit() == 2 &&
+                                        t.getStartTime().equals(beforeMissing.getConsensusTimestampInstant().plusNanos(1)) &&
+                                        t.getEndTime().equals(afterMissing.getConsensusTimestampInstant())),
+                        ArgumentMatchers.eq(false)))
                 .thenReturn(Flux.just(
                         topicMessage(2),
                         topicMessage(3)
@@ -584,7 +584,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         TopicMessage afterMissing3 = topicMessage(10);
 
         Mockito.when(entityRepository
-                .findById(retrieverFilter.getTopicId()))
+                        .findById(retrieverFilter.getTopicId()))
                 .thenReturn(Optional
                         .of(Entity.builder().type(EntityType.TOPIC).build()));
 
@@ -593,16 +593,16 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .build();
 
         Mockito.when(topicListener
-                .listen(ArgumentMatchers.argThat(l -> l.getStartTime().equals(listenerFilter.getStartTime()))))
+                        .listen(ArgumentMatchers.argThat(l -> l.getStartTime().equals(listenerFilter.getStartTime()))))
                 .thenReturn(Flux.just(beforeMissing1, beforeMissing2, afterMissing1, afterMissing2, afterMissing3));
 
         Mockito.when(topicMessageRetriever
-                .retrieve(ArgumentMatchers.isA(TopicMessageFilter.class), ArgumentMatchers.eq(true)))
+                        .retrieve(ArgumentMatchers.isA(TopicMessageFilter.class), ArgumentMatchers.eq(true)))
                 .thenReturn(
                         Flux.just(retrieved1)
                 );
         Mockito.when(topicMessageRetriever
-                .retrieve(ArgumentMatchers.isA(TopicMessageFilter.class), ArgumentMatchers.eq(false)))
+                        .retrieve(ArgumentMatchers.isA(TopicMessageFilter.class), ArgumentMatchers.eq(false)))
                 .thenReturn(
                         Flux.just(retrieved2), // missing historic
                         Flux.just(
@@ -641,7 +641,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         // mock entity type check
         Mockito.when(entityRepository
-                .findById(filter.getTopicId()))
+                        .findById(filter.getTopicId()))
                 .thenReturn(Optional
                         .of(Entity.builder().type(EntityType.TOPIC).build()));
         Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers.eq(filter), ArgumentMatchers.eq(true)))
@@ -652,13 +652,13 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .build();
 
         Mockito.when(topicListener
-                .listen(ArgumentMatchers.argThat(l -> l.getStartTime().equals(listenerFilter.getStartTime()))))
+                        .listen(ArgumentMatchers.argThat(l -> l.getStartTime().equals(listenerFilter.getStartTime()))))
                 .thenReturn(Flux.just(beforeMissing1, beforeMissing2, afterMissing1, afterMissing2, afterMissing3));
         Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers
-                        .argThat(t -> t.getLimit() == 3 &&
-                                t.getStartTime().equals(beforeMissing2.getConsensusTimestampInstant().plusNanos(1)) &&
-                                t.getEndTime().equals(afterMissing1.getConsensusTimestampInstant())),
-                ArgumentMatchers.eq(false)))
+                                .argThat(t -> t.getLimit() == 3 &&
+                                        t.getStartTime().equals(beforeMissing2.getConsensusTimestampInstant().plusNanos(1)) &&
+                                        t.getEndTime().equals(afterMissing1.getConsensusTimestampInstant())),
+                        ArgumentMatchers.eq(false)))
                 .thenReturn(missingMessages);
     }
 

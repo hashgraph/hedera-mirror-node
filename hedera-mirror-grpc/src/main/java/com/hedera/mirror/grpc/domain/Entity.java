@@ -33,6 +33,8 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
+
 @Builder
 @Data
 @javax.persistence.Entity

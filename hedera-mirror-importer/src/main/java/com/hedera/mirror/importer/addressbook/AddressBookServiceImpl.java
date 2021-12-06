@@ -23,6 +23,10 @@ package com.hedera.mirror.importer.addressbook;
 import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.ADDRESS_BOOK_102_CACHE_NAME;
 import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_5M;
 
+import com.hedera.mirror.common.domain.file.FileData;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
@@ -53,14 +57,14 @@ import org.springframework.core.io.Resource;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
+import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.AddressBookEntry;
-import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -123,7 +127,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     @Override
     @Cacheable
     public AddressBook getCurrent() {
-        long consensusTimestamp = Utility.convertToNanosMax(Instant.now());
+        long consensusTimestamp = DomainUtils.convertToNanosMax(Instant.now());
 
         // retrieve latest address book. If address_book is empty parse initial and historic address book files
         return addressBookRepository
@@ -190,7 +194,7 @@ public class AddressBookServiceImpl implements AddressBookService {
      */
     @Override
     public synchronized AddressBook migrate() {
-        long consensusTimestamp = Utility.convertToNanosMax(Instant.now());
+        long consensusTimestamp = DomainUtils.convertToNanosMax(Instant.now());
         var currentAddressBook = addressBookRepository
                 .findLatestAddressBook(consensusTimestamp, ADDRESS_BOOK_102_ENTITY_ID.getId())
                 .orElse(null);

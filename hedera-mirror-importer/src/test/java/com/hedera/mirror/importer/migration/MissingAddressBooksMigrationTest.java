@@ -41,15 +41,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
+import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
-import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.AddressBookEntry;
-import com.hedera.mirror.importer.domain.AddressBookServiceEndpoint;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionType;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
@@ -74,6 +74,35 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
 
     @Resource
     private EntityProperties entityProperties;
+
+    private static NodeAddressBook addressBook(int size, int endPointSize) {
+        NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
+        for (int i = 0; i < size; ++i) {
+            long nodeId = 3 + i;
+            NodeAddress.Builder nodeAddressBuilder = NodeAddress.newBuilder()
+                    .setIpAddress(ByteString.copyFromUtf8("127.0.0." + nodeId))
+                    .setPortno((int) nodeId)
+                    .setNodeId(nodeId)
+                    .setMemo(ByteString.copyFromUtf8("0.0." + nodeId))
+                    .setNodeAccountId(AccountID.newBuilder().setAccountNum(nodeId))
+                    .setNodeCertHash(ByteString.copyFromUtf8("nodeCertHash"))
+                    .setRSAPubKey("rsa+public/key");
+
+            // add service endpoints
+            if (endPointSize > 0) {
+                List<ServiceEndpoint> serviceEndpoints = new ArrayList<>();
+                for (int j = 1; j <= size; ++j) {
+                    serviceEndpoints.add(ServiceEndpoint.newBuilder()
+                            .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, (byte) j}))
+                            .setPort(443 + j)
+                            .build());
+                }
+            }
+
+            builder.addNodeAddress(nodeAddressBuilder.build());
+        }
+        return builder.build();
+    }
 
     @Test
     void verifyAddressBookMigrationWithNewFileDataAfterCurrentAddressBook() {
@@ -172,35 +201,6 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
             nodeAddressCustomizer.accept(builder);
         }
 
-        return builder.build();
-    }
-
-    private static NodeAddressBook addressBook(int size, int endPointSize) {
-        NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
-        for (int i = 0; i < size; ++i) {
-            long nodeId = 3 + i;
-            NodeAddress.Builder nodeAddressBuilder = NodeAddress.newBuilder()
-                    .setIpAddress(ByteString.copyFromUtf8("127.0.0." + nodeId))
-                    .setPortno((int) nodeId)
-                    .setNodeId(nodeId)
-                    .setMemo(ByteString.copyFromUtf8("0.0." + nodeId))
-                    .setNodeAccountId(AccountID.newBuilder().setAccountNum(nodeId))
-                    .setNodeCertHash(ByteString.copyFromUtf8("nodeCertHash"))
-                    .setRSAPubKey("rsa+public/key");
-
-            // add service endpoints
-            if (endPointSize > 0) {
-                List<ServiceEndpoint> serviceEndpoints = new ArrayList<>();
-                for (int j = 1; j <= size; ++j) {
-                    serviceEndpoints.add(ServiceEndpoint.newBuilder()
-                            .setIpAddressV4(ByteString.copyFrom(new byte[] {127, 0, 0, (byte) j}))
-                            .setPort(443 + j)
-                            .build());
-                }
-            }
-
-            builder.addNodeAddress(nodeAddressBuilder.build());
-        }
         return builder.build();
     }
 

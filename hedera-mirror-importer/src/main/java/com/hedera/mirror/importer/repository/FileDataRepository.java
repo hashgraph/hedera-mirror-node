@@ -25,7 +25,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.common.domain.file.FileData;
 
 public interface FileDataRepository extends CrudRepository<FileData, Long> {
     @Query(value = "select * from file_data where consensus_timestamp between ?1 and ?2 and entity_id " +

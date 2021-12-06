@@ -31,6 +31,7 @@
     </licenses>
 
     <modules>
+        <module>hedera-mirror-common</module>
         <module>hedera-mirror-grpc</module>
         <module>hedera-mirror-importer</module>
         <module>hedera-mirror-monitor</module>

@@ -24,7 +24,7 @@ import java.util.List;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
 
 public interface AccountBalanceRepository extends CrudRepository<AccountBalance, AccountBalance.Id> {
 

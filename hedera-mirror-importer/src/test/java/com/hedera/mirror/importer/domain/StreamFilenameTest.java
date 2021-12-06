@@ -28,6 +28,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.hedera.mirror.common.domain.StreamType;
+
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -52,7 +55,7 @@ class StreamFilenameTest {
             // @formatter:on
     })
     void newStreamFile(String filename, String compressor, String extension, StreamFilename.FileType fileType,
-            String fullExtension, Instant instant, StreamType streamType) {
+                       String fullExtension, Instant instant, StreamType streamType) {
         StreamFilename streamFilename = new StreamFilename(filename);
         String[] fields = {"filename", "compressor", "extension.name", "fileType", "fullExtension", "instant",
                 "streamType"};
@@ -62,7 +65,7 @@ class StreamFilenameTest {
     }
 
     @ParameterizedTest(name = "Exception creating StreamFilename from \"{0}\"")
-    @ValueSource(strings = { "2020-06-03_Balances.csv_sig", "2020-06-03T16_45_00.1Z", "2020-06-03T16_45_00.1Z.stream",
+    @ValueSource(strings = {"2020-06-03_Balances.csv_sig", "2020-06-03T16_45_00.1Z", "2020-06-03T16_45_00.1Z.stream",
             "2020-06-03T16_45_00.1Z.csv_sig"})
     void newStreamFileFromInvalidFilename(String filename) {
         assertThrows(InvalidStreamFileException.class, () -> new StreamFilename(filename));

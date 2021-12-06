@@ -20,8 +20,8 @@ package com.hedera.mirror.importer.reader.balance;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.AccountBalanceFile;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.reader.StreamFileReader;
 
