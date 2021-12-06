@@ -29,6 +29,7 @@ import com.google.common.collect.Range;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.io.File;
 import java.io.IOException;
+import java.sql.PreparedStatement;
 import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
@@ -168,17 +169,17 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 token,
                 schedule));
 
-        Transaction transfer1 = transaction(schedule
+        MigrationTransaction transfer1 = transaction(schedule
                 .getCreatedTimestamp() + 200L, 0, SUCCESS, TransactionType.CRYPTOTRANSFER);
-        Transaction transfer2 = transaction(schedule
+        MigrationTransaction transfer2 = transaction(schedule
                 .getCreatedTimestamp() + 300L, 0, SUCCESS, TransactionType.CRYPTOTRANSFER);
-        Transaction transfer3 = transaction(schedule
+        MigrationTransaction transfer3 = transaction(schedule
                 .getCreatedTimestamp() + 400L, 0, SUCCESS, TransactionType.CRYPTOTRANSFER);
-        Transaction transfer4 = transaction(schedule
+        MigrationTransaction transfer4 = transaction(schedule
                 .getCreatedTimestamp() + 500L, 0, SUCCESS, TransactionType.CRYPTOTRANSFER);
-        Transaction transfer5 = transaction(schedule
+        MigrationTransaction transfer5 = transaction(schedule
                 .getCreatedTimestamp() + 600L, 0, SUCCESS, TransactionType.CRYPTOTRANSFER);
-        transactionRepository.saveAll(List.of(
+        persistTransactions(List.of(
                 transaction(contract.getCreatedTimestamp(), contract
                         .getId(), SUCCESS, TransactionType.CONTRACTCREATEINSTANCE),
                 transaction(contract.getCreatedTimestamp() + 1, contract
@@ -415,13 +416,13 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 .containsExactlyInAnyOrderElementsOf(expectedTokenTransfers);
     }
 
-    private Transaction transaction(long consensusNs, long entityNum, ResponseCodeEnum result,
-                                    TransactionType type) {
-        Transaction transaction = new Transaction();
+    private MigrationTransaction transaction(long consensusNs, long entityNum, ResponseCodeEnum result,
+                                             TransactionType type) {
+        MigrationTransaction transaction = new MigrationTransaction();
         transaction.setConsensusTimestamp(consensusNs);
-        transaction.setEntityId(EntityId.of(0, 0, entityNum, EntityType.UNKNOWN));
-        transaction.setNodeAccountId(NODE_ACCOUNT_ID);
-        transaction.setPayerAccountId(PAYER_ID);
+        transaction.setEntityId(entityNum);
+        transaction.setNodeAccountId(NODE_ACCOUNT_ID.getId());
+        transaction.setPayerAccountId(PAYER_ID.getId());
         transaction.setResult(result.getNumber());
         transaction.setType(type.getProtoId());
         transaction.setValidStartNs(consensusNs - 10);
@@ -612,6 +613,25 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         }
     }
 
+    private void persistTransactions(List<MigrationTransaction> transactions) {
+        transactions.forEach(t -> {
+            jdbcOperations.update(c -> {
+                PreparedStatement preparedStatement = c.prepareStatement("insert into transaction " +
+                        "(consensus_timestamp, entity_id, node_account_id, payer_account_id, result, type, " +
+                        "valid_start_ns) " +
+                        "values (?, ?, ?, ?, ?, ?, ?)");
+                preparedStatement.setLong(1, t.getConsensusTimestamp());
+                preparedStatement.setLong(2, t.getEntityId());
+                preparedStatement.setLong(3, t.getNodeAccountId());
+                preparedStatement.setLong(4, t.getPayerAccountId());
+                preparedStatement.setInt(5, t.getResult());
+                preparedStatement.setInt(6, t.getType());
+                preparedStatement.setLong(7, t.getValidStartNs());
+                return preparedStatement;
+            });
+        });
+    }
+
     /**
      * Ensure entity tables match expected state before V_1_47.0
      */
@@ -652,5 +672,16 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         private EntityId payerAccountId;
         private EntityId receiver;
         private EntityId sender;
+    }
+
+    @Data
+    private class MigrationTransaction {
+        private Long consensusTimestamp;
+        private Long entityId;
+        private Long nodeAccountId;
+        private Long payerAccountId;
+        private Integer result;
+        private Integer type;
+        private Long validStartNs;
     }
 }

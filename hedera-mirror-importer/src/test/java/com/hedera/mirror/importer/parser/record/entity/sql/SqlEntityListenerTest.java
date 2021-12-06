@@ -1106,6 +1106,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         transaction.setEntityId(entityId);
         transaction.setNodeAccountId(entityId);
         transaction.setMemo("memo".getBytes());
+        transaction.setNonce(0);
         transaction.setType(14);
         transaction.setResult(22);
         transaction.setTransactionHash("transaction hash".getBytes());

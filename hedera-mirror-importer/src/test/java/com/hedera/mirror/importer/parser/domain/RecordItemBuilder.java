@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.domain;
 
 import static com.hedera.mirror.importer.domain.DomainBuilder.KEY_LENGTH_ECDSA;
 import static com.hedera.mirror.importer.domain.DomainBuilder.KEY_LENGTH_ED25519;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
@@ -30,6 +31,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -44,6 +46,9 @@ import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -76,6 +81,18 @@ public class RecordItemBuilder {
     private final AtomicLong id = new AtomicLong(1000L);
     private final Instant now = Instant.now();
     private final SecureRandom random = new SecureRandom();
+
+    public Builder<ContractCallTransactionBody.Builder> contractCall() {
+        ContractID contractId = contractId();
+        ContractCallTransactionBody.Builder transactionBody = ContractCallTransactionBody.newBuilder()
+                .setAmount(5_000L)
+                .setContractID(contractId)
+                .setFunctionParameters(bytes(64))
+                .setGas(10_000L);
+
+        return new Builder<>(TransactionType.CONTRACTCALL, transactionBody)
+                .record(r -> r.setContractCallResult(contractFunctionResult(contractId)));
+    }
 
     public Builder<ContractCreateTransactionBody.Builder> contractCreate() {
         ContractID contractId = contractId();
@@ -114,6 +131,18 @@ public class RecordItemBuilder {
                         .addTopic(bytes(32))
                         .addTopic(bytes(32))
                         .addTopic(bytes(32)).build());
+    }
+
+    public Builder<TokenMintTransactionBody.Builder> tokenMint(TokenType tokenType) {
+        TokenMintTransactionBody.Builder transactionBody = TokenMintTransactionBody.newBuilder().setToken(tokenId());
+
+        if (tokenType == FUNGIBLE_COMMON) {
+            transactionBody.setAmount(1000L);
+        } else {
+            transactionBody.addMetadata(bytes(16)).addMetadata(bytes(16));
+        }
+
+        return new Builder<>(TransactionType.TOKENMINT, transactionBody);
     }
 
     // Helper methods
@@ -161,6 +190,10 @@ public class RecordItemBuilder {
 
     private Timestamp timestamp() {
         return Utility.instantToTimestamp(now.plusSeconds(id()));
+    }
+
+    private TokenID tokenId() {
+        return TokenID.newBuilder().setTokenNum(id()).build();
     }
 
     public class Builder<T extends GeneratedMessageV3.Builder> {
