@@ -4,7 +4,7 @@ alter table contract_log
 
 -- Backfill parent_contract_id based on index
 update contract_log child
-set parent_contract_id = parent.contract_id
+set child.parent_contract_id = parent.contract_id
 from contract_log parent
 where parent.consensus_timestamp = child.consensus_timestamp
   and parent.index = 0
