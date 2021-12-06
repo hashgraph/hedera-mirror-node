@@ -370,18 +370,31 @@ const getAndValidateContractIdRequestPathParam = (req) => {
 };
 
 /**
- * Verify consensusTimestamp meets seconds or seconds.upto 9 digits format
+ * Verify both
+ * consensusTimestamp meets seconds or seconds.upto 9 digits format
+ * contractId meets entity id format
  */
-const validateConsensusTimestampParam = (consensusTimestamp) => {
+const validateContractIdAndConsensusTimestampParam = (consensusTimestamp, contractId) => {
+  const params = [];
+  if (!EntityId.isValidEntityId(contractId)) {
+    params.push(constants.filterKeys.CONTRACTID);
+  }
   if (!utils.isValidTimestampParam(consensusTimestamp)) {
-    throw InvalidArgumentError.forParams(constants.filterKeys.TIMESTAMP);
+    params.push(constants.filterKeys.TIMESTAMP);
+  }
+
+  if (params.length > 0) {
+    throw InvalidArgumentError.forParams(params);
   }
 };
 
-const getAndValidateConsensusTimestampPathParam = (req) => {
-  const consensusTimestampParam = req.params.consensusTimestamp;
-  validateConsensusTimestampParam(consensusTimestampParam);
-  return utils.parseTimestampParam(consensusTimestampParam);
+const getAndValidateContractIdAndConsensusTimestampPathParams = (req) => {
+  const {consensusTimestamp, contractId} = req.params;
+  validateContractIdAndConsensusTimestampParam(consensusTimestamp, contractId);
+  return {
+    timestamp: utils.parseTimestampParam(consensusTimestamp),
+    contractId: EntityId.parse(contractId, constants.filterKeys.CONTRACTID).getEncodedId(),
+  };
 };
 
 const extractContractIdAndFiltersFromValidatedRequest = (req) => {
@@ -521,8 +534,7 @@ const getContractResultsById = async (req, res) => {
  * @returns {Promise<void>}
  */
 const getContractResultsByTimestamp = async (req, res) => {
-  const {contractId} = extractContractIdAndFiltersFromValidatedRequest(req);
-  const timestamp = getAndValidateConsensusTimestampPathParam(req);
+  const {timestamp, contractId} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
   const row = await ContractService.getContractResultsByIdAndTimestamp(contractId, timestamp);
 
   if (row === null) {
