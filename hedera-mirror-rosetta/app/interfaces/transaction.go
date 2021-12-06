@@ -43,9 +43,9 @@ type Transaction interface {
 	// GetTransactionID returns the transaction id
 	GetTransactionID() hedera.TransactionID
 
-	// ToBytes serializes the Transaction to a byte slice
-	ToBytes() ([]byte, error)
-
 	// String encodes the Transaction to a string
 	String() string
+
+	// ToBytes serializes the Transaction to a byte slice
+	ToBytes() ([]byte, error)
 }

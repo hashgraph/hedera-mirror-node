@@ -25,6 +25,7 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 )
@@ -35,60 +36,89 @@ type BaseService struct {
 	transactionRepo interfaces.TransactionRepository
 }
 
-// NewBaseService - Service containing common functions that are shared between other services
-func NewBaseService(
+// NewOfflineBaseService - Service containing common functions that are shared between other services, for offline mode
+func NewOfflineBaseService() *BaseService {
+	return &BaseService{}
+}
+
+// NewOnlineBaseService - Service containing common functions that are shared between other services, for online mode
+func NewOnlineBaseService(
 	blockRepo interfaces.BlockRepository,
 	transactionRepo interfaces.TransactionRepository,
-) BaseService {
-	return BaseService{
+) *BaseService {
+	return &BaseService{
 		blockRepo:       blockRepo,
 		transactionRepo: transactionRepo,
 	}
 }
 
-// RetrieveBlock - Retrieves Block by a given PartialBlockIdentifier
-func (c *BaseService) RetrieveBlock(ctx context.Context, bIdentifier *rTypes.PartialBlockIdentifier) (
-	*types.Block,
-	*rTypes.Error,
-) {
-	if bIdentifier.Hash != nil && bIdentifier.Index != nil {
-		h := tools.SafeRemoveHexPrefix(*bIdentifier.Hash)
-		return c.blockRepo.FindByIdentifier(ctx, *bIdentifier.Index, h)
-	} else if bIdentifier.Hash == nil && bIdentifier.Index != nil {
-		return c.blockRepo.FindByIndex(ctx, *bIdentifier.Index)
-	} else if bIdentifier.Index == nil && bIdentifier.Hash != nil {
-		h := tools.SafeRemoveHexPrefix(*bIdentifier.Hash)
-		return c.blockRepo.FindByHash(ctx, h)
-	} else {
-		return c.blockRepo.RetrieveLatest(ctx)
-	}
+func (b *BaseService) IsOnline() bool {
+	return b.blockRepo != nil
 }
 
-func (c *BaseService) RetrieveGenesis(ctx context.Context) (*types.Block, *rTypes.Error) {
-	return c.blockRepo.RetrieveGenesis(ctx)
-}
-
-func (c *BaseService) RetrieveLatest(ctx context.Context) (*types.Block, *rTypes.Error) {
-	return c.blockRepo.RetrieveLatest(ctx)
-}
-
-func (c *BaseService) FindByIdentifier(ctx context.Context, index int64, hash string) (*types.Block, *rTypes.Error) {
-	return c.blockRepo.FindByIdentifier(ctx, index, hash)
-}
-
-func (c *BaseService) FindByHashInBlock(
+func (b *BaseService) FindByHashInBlock(
 	ctx context.Context,
 	identifier string,
 	consensusStart int64,
 	consensusEnd int64,
 ) (*types.Transaction, *rTypes.Error) {
-	return c.transactionRepo.FindByHashInBlock(ctx, identifier, consensusStart, consensusEnd)
+	if !b.IsOnline() {
+		return nil, errors.ErrInternalServerError
+	}
+
+	return b.transactionRepo.FindByHashInBlock(ctx, identifier, consensusStart, consensusEnd)
 }
 
-func (c *BaseService) FindBetween(ctx context.Context, start int64, end int64) ([]*types.Transaction, *rTypes.Error) {
-	return c.transactionRepo.FindBetween(ctx, start, end)
+func (b *BaseService) FindBetween(ctx context.Context, start int64, end int64) ([]*types.Transaction, *rTypes.Error) {
+	if !b.IsOnline() {
+		return nil, errors.ErrInternalServerError
+	}
+
+	return b.transactionRepo.FindBetween(ctx, start, end)
 }
 
-func (c *BaseService) TypesAsArray() []string {
-	return c.transactionRepo.TypesAsArray()
+func (b *BaseService) FindByIdentifier(ctx context.Context, index int64, hash string) (*types.Block, *rTypes.Error) {
+	if !b.IsOnline() {
+		return nil, errors.ErrInternalServerError
+	}
+
+	return b.blockRepo.FindByIdentifier(ctx, index, hash)
+}
+
+// RetrieveBlock - Retrieves Block by a given PartialBlockIdentifier
+func (b *BaseService) RetrieveBlock(ctx context.Context, bIdentifier *rTypes.PartialBlockIdentifier) (
+	*types.Block,
+	*rTypes.Error,
+) {
+	if !b.IsOnline() {
+		return nil, errors.ErrInternalServerError
+	}
+
+	if bIdentifier.Hash != nil && bIdentifier.Index != nil {
+		h := tools.SafeRemoveHexPrefix(*bIdentifier.Hash)
+		return b.blockRepo.FindByIdentifier(ctx, *bIdentifier.Index, h)
+	} else if bIdentifier.Hash == nil && bIdentifier.Index != nil {
+		return b.blockRepo.FindByIndex(ctx, *bIdentifier.Index)
+	} else if bIdentifier.Index == nil && bIdentifier.Hash != nil {
+		h := tools.SafeRemoveHexPrefix(*bIdentifier.Hash)
+		return b.blockRepo.FindByHash(ctx, h)
+	} else {
+		return b.blockRepo.RetrieveLatest(ctx)
+	}
+}
+
+func (b *BaseService) RetrieveGenesis(ctx context.Context) (*types.Block, *rTypes.Error) {
+	if !b.IsOnline() {
+		return nil, errors.ErrInternalServerError
+	}
+
+	return b.blockRepo.RetrieveGenesis(ctx)
+}
+
+func (b *BaseService) RetrieveLatest(ctx context.Context) (*types.Block, *rTypes.Error) {
+	if !b.IsOnline() {
+		return nil, errors.ErrInternalServerError
+	}
+
+	return b.blockRepo.RetrieveLatest(ctx)
 }

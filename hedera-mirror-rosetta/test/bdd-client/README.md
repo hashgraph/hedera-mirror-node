@@ -1,0 +1,91 @@
+# Rosetta BDD Test Client
+
+This package provides a BDD test client for rosetta server.
+
+## Overview
+
+The BDD test client aims to provide better end-to-end test coverage of the rosetta Construction API, in addition to the
+`rosetta-cli` [Constructor DSL](https://github.com/coinbase/rosetta-sdk-go/tree/master/constructor/dsl) based
+[crypto transfer transaction Construction API tests](/hedera-mirror-rosetta/scripts/validation/testnet/testnet.ros).
+
+The client currently supports basic crypto create and crypto transfer scenarios.
+
+## Requirements
+
+- golang 1.17+
+- a testnet account with private key
+- aws / gcp credentials with requester pay enabled to access the Hedera network cloud storage
+
+## Test Client Configuration
+
+Configuration properties can be customized in an `application.yml` file in the test client source directory. Most
+properties have default values and should work out of the box.
+
+The only required property is an operator account and its private key, for example:
+
+```yaml
+hedera:
+  mirror:
+    rosetta:
+      test:
+        operators:
+          - privateKey: 90e42b7c...
+            id: 0.0.65342
+```
+
+Please refer to the [appendix](#test-configuration-properties) for the complete list of properties.
+
+## Run the Test
+
+1. Build the Rosetta All-in-One Docker Image
+
+   ```shell
+   $ cd ../../build
+   $ docker build --build-arg GIT_REF=${RELEASE_TAG} -t hedera-mirror-rosetta:${RELEASE_TAG} .
+   ```
+
+   > Note you can check the release tags [here](https://github.com/hashgraph/hedera-mirror-node/releases)
+
+2. Configure and run the online mode and offline mode rosetta containers
+
+   `hedera-mirror-importer` is a built-in component in the rosetta all-in-one docker image. Please refer to the
+   [guide](https://docs.hedera.com/guides/mirrornet/run-your-own-beta-mirror-node) to properly configure the importer in
+   the online mode rosetta container.
+
+   Run the online mode rosetta container:
+
+   ```shell
+   docker run -d -e NETWORK=testnet \
+     -v /tmp/application_importer.yml:/app/importer/application.yml \
+     -p :5700:5700 hedera-mirror-rosetta:${RELEASE_TAG}
+   ```
+
+   Run the offline mode rosetta container:
+
+   ```shell
+   docker run -d -e MODE=offline -e NETWORK=testnet -p 5701:5700 hedera-mirror-rosetta:${RELEASE_TAG}
+   ```
+
+3. Configure and run the test client
+
+   ```shell
+   $ go test -v
+   ```
+
+## Appendix
+
+### Test Configuration Properties
+
+The following table lists the available properties along with their default values.
+
+| Name                                              | Default               | Description                                                                |
+| ------------------------------------------------- | --------------------- | -------------------------------------------------------------------------- |
+| `hedera.mirror.rosetta.test.log.level`            | debug                 | The log level                                                              |
+| `hedera.mirror.rosetta.test.operators`            | []                    | A list of operators with the account ids and corresponding private keys    |
+| `hedera.mirror.rosetta.test.operators.id`         |                       | The operator account id, in the format of shard.realm.num                  |
+| `hedera.mirror.rosetta.test.operators.privateKey` |                       | The operator's private key in hex                                          |
+| `hedera.mirror.rosetta.test.server.offlineUrl`    | http://localhost:5701 | The url of the offline rosetta server                                      |
+| `hedera.mirror.rosetta.test.server.onlineUrl`     | http://localhost:5700 | The url of the online rosetta server                                       |
+| `hedera.mirror.rosetta.test.server.httpTimeout`   | 10                    | The timeout in seconds of an http request sent to the rosetta server       |
+| `hedera.mirror.rosetta.test.server.retry.backOff` | 1                     | The amount of time to wait between retries, if the request can be retried. |
+| `hedera.mirror.rosetta.test.server.retry.max`     | 1                     | The max retires of a request.                                              |

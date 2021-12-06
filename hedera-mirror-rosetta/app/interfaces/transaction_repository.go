@@ -38,7 +38,4 @@ type TransactionRepository interface {
 		*types.Transaction,
 		*rTypes.Error,
 	)
-
-	// TypesAsArray returns all Transaction type names as an array
-	TypesAsArray() []string
 }

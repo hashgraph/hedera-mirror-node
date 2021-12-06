@@ -27,7 +27,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/coinbase/rosetta-sdk-go/asserter"
+	rosettaAsserter "github.com/coinbase/rosetta-sdk-go/asserter"
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
@@ -41,10 +41,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	moduleName     = "hedera-mirror-rosetta"
-	rosettaVersion = "1.4.10"
-)
+const moduleName = "hedera-mirror-rosetta"
 
 var Version = "development"
 
@@ -76,11 +73,11 @@ func configLogger(level string) {
 // of server controllers, serving "online" mode.
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#online-mode-endpoints
 func newBlockchainOnlineRouter(
+	asserter *rosettaAsserter.Asserter,
+	dbClient interfaces.DbClient,
 	network *rTypes.NetworkIdentifier,
 	rosetta config.Rosetta,
-	asserter *asserter.Asserter,
 	version *rTypes.Version,
-	dbClient interfaces.DbClient,
 ) (http.Handler, error) {
 	accountRepo := persistence.NewAccountRepository(dbClient)
 	addressBookEntryRepo := persistence.NewAddressBookEntryRepository(dbClient)
@@ -88,7 +85,7 @@ func newBlockchainOnlineRouter(
 	tokenRepo := persistence.NewTokenRepository(dbClient)
 	transactionRepo := persistence.NewTransactionRepository(dbClient)
 
-	baseService := services.NewBaseService(blockRepo, transactionRepo)
+	baseService := services.NewOnlineBaseService(blockRepo, transactionRepo)
 
 	networkAPIService := services.NewNetworkAPIService(baseService, addressBookEntryRepo, network, version)
 	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
@@ -100,6 +97,7 @@ func newBlockchainOnlineRouter(
 	mempoolAPIController := server.NewMempoolAPIController(mempoolAPIService, asserter)
 
 	constructionAPIService, err := services.NewConstructionAPIService(
+		baseService,
 		network.Network,
 		rosetta.Nodes,
 		construction.NewTransactionConstructor(tokenRepo),
@@ -132,12 +130,16 @@ func newBlockchainOnlineRouter(
 // of server controllers, serving "offline" mode.
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#offline-mode-endpoints
 func newBlockchainOfflineRouter(
-	network string,
+	asserter *rosettaAsserter.Asserter,
+	network *rTypes.NetworkIdentifier,
 	rosetta config.Rosetta,
-	asserter *asserter.Asserter,
+	version *rTypes.Version,
 ) (http.Handler, error) {
+	baseService := services.NewOfflineBaseService()
+
 	constructionAPIService, err := services.NewConstructionAPIService(
-		network,
+		baseService,
+		network.Network,
 		rosetta.Nodes,
 		construction.NewTransactionConstructor(nil),
 	)
@@ -146,12 +148,15 @@ func newBlockchainOfflineRouter(
 	}
 	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter)
 	healthController, err := middleware.NewHealthController(rosetta.Db)
-	metricsController := middleware.NewMetricsController()
 	if err != nil {
 		return nil, err
 	}
 
-	return server.NewRouter(constructionAPIController, healthController, metricsController), nil
+	metricsController := middleware.NewMetricsController()
+	networkAPIService := services.NewNetworkAPIService(baseService, nil, network, version)
+	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
+
+	return server.NewRouter(constructionAPIController, healthController, metricsController, networkAPIController), nil
 }
 
 func main() {
@@ -162,7 +167,7 @@ func main() {
 		log.Fatalf("Failed to load config: %s", err)
 	}
 
-	log.Infof("%s version %s, rosetta api version %s", moduleName, Version, rosettaVersion)
+	log.Infof("%s version %s, rosetta api version %s", moduleName, Version, rTypes.RosettaAPIVersion)
 
 	configLogger(rosettaConfig.Log.Level)
 
@@ -175,12 +180,12 @@ func main() {
 	}
 
 	version := &rTypes.Version{
-		RosettaVersion:    rosettaVersion,
+		RosettaVersion:    rTypes.RosettaAPIVersion,
 		NodeVersion:       rosettaConfig.NodeVersion,
 		MiddlewareVersion: &Version,
 	}
 
-	asserter, err := asserter.NewServer(
+	asserter, err := rosettaAsserter.NewServer(
 		types.SupportedOperationTypes,
 		true,
 		[]*rTypes.NetworkIdentifier{network},
@@ -197,14 +202,14 @@ func main() {
 	if rosettaConfig.Online {
 		dbClient := db.ConnectToDb(rosettaConfig.Db)
 
-		router, err = newBlockchainOnlineRouter(network, *rosettaConfig, asserter, version, dbClient)
+		router, err = newBlockchainOnlineRouter(asserter, dbClient, network, *rosettaConfig, version)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		log.Info("Serving Rosetta API in ONLINE mode")
 	} else {
-		router, err = newBlockchainOfflineRouter(network.Network, *rosettaConfig, asserter)
+		router, err = newBlockchainOfflineRouter(asserter, network, *rosettaConfig, version)
 		if err != nil {
 			log.Fatal(err)
 		}

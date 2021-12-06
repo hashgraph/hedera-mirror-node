@@ -34,9 +34,10 @@ import (
 
 // networkAPIService implements the server.NetworkAPIServicer interface.
 type networkAPIService struct {
-	BaseService
+	*BaseService
 	addressBookEntryRepo interfaces.AddressBookEntryRepository
 	network              *rTypes.NetworkIdentifier
+	operationTypes       []string
 	version              *rTypes.Version
 }
 
@@ -65,7 +66,7 @@ func (n *networkAPIService) NetworkOptions(
 		Version: n.version,
 		Allow: &rTypes.Allow{
 			OperationStatuses:       operationStatuses,
-			OperationTypes:          n.TypesAsArray(),
+			OperationTypes:          n.operationTypes,
 			Errors:                  errors.Errors,
 			HistoricalBalanceLookup: true,
 		},
@@ -77,6 +78,10 @@ func (n *networkAPIService) NetworkStatus(
 	ctx context.Context,
 	request *rTypes.NetworkRequest,
 ) (*rTypes.NetworkStatusResponse, *rTypes.Error) {
+	if !n.IsOnline() {
+		return nil, errors.ErrEndpointNotSupportedInOfflineMode
+	}
+
 	genesisBlock, err := n.RetrieveGenesis(ctx)
 	if err != nil {
 		return nil, err
@@ -106,9 +111,9 @@ func (n *networkAPIService) NetworkStatus(
 	}, nil
 }
 
-// NewNetworkAPIService creates a new instance of a networkAPIService.
+// NewNetworkAPIService creates a networkAPIService instance.
 func NewNetworkAPIService(
-	baseService BaseService,
+	baseService *BaseService,
 	addressBookEntryRepo interfaces.AddressBookEntryRepository,
 	network *rTypes.NetworkIdentifier,
 	version *rTypes.Version,
@@ -116,6 +121,7 @@ func NewNetworkAPIService(
 	return &networkAPIService{
 		BaseService:          baseService,
 		addressBookEntryRepo: addressBookEntryRepo,
+		operationTypes:       tools.GetStringValuesFromInt32StringMap(types.TransactionTypes),
 		network:              network,
 		version:              version,
 	}
