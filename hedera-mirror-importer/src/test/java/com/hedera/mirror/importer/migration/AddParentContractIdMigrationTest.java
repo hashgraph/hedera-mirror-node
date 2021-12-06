@@ -54,15 +54,16 @@ class AddParentContractIdMigrationTest extends IntegrationTest {
     void verifyParentContractIdMigration() throws Exception {
 
         persistContractResult(Arrays.asList(
-                contractResult(1, 1),
-                contractResult(2, 2)
+                contractResult(1, Long.valueOf(1)),
+                contractResult(2, Long.valueOf(2)),
+                contractResult(3, null)
         ));
         persistContractLog(Arrays.asList(
                 contractLog(1, 1, 0),
                 contractLog(1, 2, 1),
                 contractLog(1, 3, 2),
                 contractLog(2, 1, 0),
-                contractLog(4, 1, 0)
+                contractLog(3, 1, 0)
         ));
         // migration
         migrate();
@@ -83,7 +84,7 @@ class AddParentContractIdMigrationTest extends IntegrationTest {
         return migrationContractLog;
     }
 
-    private MigrationContractResult contractResult(long consensusTimestamp, long contractId) {
+    private MigrationContractResult contractResult(long consensusTimestamp, Long contractId) {
         MigrationContractResult migrationContractResult = new MigrationContractResult();
         migrationContractResult.setConsensusTimestamp(consensusTimestamp);
         migrationContractResult.setContractId(contractId);
