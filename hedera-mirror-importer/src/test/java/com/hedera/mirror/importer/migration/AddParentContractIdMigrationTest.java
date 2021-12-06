@@ -95,7 +95,8 @@ class AddParentContractIdMigrationTest extends IntegrationTest {
     }
 
     private List<MigrationContractLog> retrieveContractLogs() {
-        return jdbcOperations.query("select consensus_timestamp, contract_id, parent_contract_id from contract_log",
+        return jdbcOperations.query("select consensus_timestamp, contract_id, root_contract_id from contract_log " +
+                        "order by root_contract_id asc",
                 new BeanPropertyRowMapper<>(MigrationContractLog.class));
     }
 
@@ -135,7 +136,7 @@ class AddParentContractIdMigrationTest extends IntegrationTest {
         private byte[] data = new byte[] {2, 2};
         private int index = 0;
         private long payerAccountId = 100;
-        private long rootContractId;
+        private Long rootContractId;
     }
 
     @Data
