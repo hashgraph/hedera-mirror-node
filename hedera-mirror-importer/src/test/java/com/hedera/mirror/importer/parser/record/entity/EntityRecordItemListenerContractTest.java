@@ -37,6 +37,7 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -44,7 +45,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
-import org.apache.commons.codec.binary.Hex;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -358,6 +358,43 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContractCallResult(contractCallTransactionBody, record)
         );
+    }
+
+    @Test
+    void contractCallTokenPrecompiles() {
+        // given
+        RecordItem recordItemCall = recordItemBuilder.contractCall().build();
+        parseRecordItemAndCommit(recordItemCall);
+
+        var parentConsensusTimestamp = recordItemCall.getRecord().getConsensusTimestamp();
+        var parentTransactionId = recordItemCall.getTransactionBody().getTransactionID();
+        var childTransactionId = parentTransactionId.toBuilder().setNonce(1).build();
+        var payerAccount = recordItemCall.getPayerAccountId();
+        var validStart = Utility.timeStampInNanos(parentTransactionId.getTransactionValidStart());
+
+        // when
+        RecordItem recordItemMint = recordItemBuilder.tokenMint(TokenType.FUNGIBLE_COMMON)
+                .transactionBodyWrapper(b -> b.setTransactionID(childTransactionId))
+                .record(r -> r.setParentConsensusTimestamp(parentConsensusTimestamp))
+                .build();
+        parseRecordItemAndCommit(recordItemMint);
+
+        // then
+        assertEquals(2, transactionRepository.count());
+        assertThat(transactionRepository.findById(recordItemCall.getConsensusTimestamp()))
+                .get()
+                .returns(payerAccount, com.hedera.mirror.importer.domain.Transaction::getPayerAccountId)
+                .returns(validStart, com.hedera.mirror.importer.domain.Transaction::getValidStartNs)
+                .returns(0, com.hedera.mirror.importer.domain.Transaction::getNonce)
+                .returns(null, com.hedera.mirror.importer.domain.Transaction::getParentConsensusTimestamp);
+
+        assertThat(transactionRepository.findById(recordItemMint.getConsensusTimestamp()))
+                .get()
+                .returns(payerAccount, com.hedera.mirror.importer.domain.Transaction::getPayerAccountId)
+                .returns(validStart, com.hedera.mirror.importer.domain.Transaction::getValidStartNs)
+                .returns(1, com.hedera.mirror.importer.domain.Transaction::getNonce)
+                .returns(recordItemCall.getConsensusTimestamp(),
+                        com.hedera.mirror.importer.domain.Transaction::getParentConsensusTimestamp);
     }
 
     @Test

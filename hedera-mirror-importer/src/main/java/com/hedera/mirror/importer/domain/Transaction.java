@@ -61,6 +61,10 @@ public class Transaction implements Persistable<Long> {
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId nodeAccountId;
 
+    private Integer nonce;
+
+    private Long parentConsensusTimestamp;
+
     @Convert(converter = AccountIdConverter.class)
     @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId payerAccountId;
