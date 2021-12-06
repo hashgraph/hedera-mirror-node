@@ -42,16 +42,16 @@ import com.hedera.mirror.importer.IntegrationTest;
 @EnabledIfV1
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.50.2")
-class AddParentContractIdMigrationTest extends IntegrationTest {
+class AddRootContractIdMigrationTest extends IntegrationTest {
 
     @Resource
     private JdbcOperations jdbcOperations;
 
-    @Value("classpath:db/migration/v1/V1.50.3__contract_logs_parent_id.sql")
+    @Value("classpath:db/migration/v1/V1.50.3__contract_logs_root_id.sql")
     private File migrationSql;
 
     @Test
-    void verifyParentContractIdMigration() throws Exception {
+    void verifyRootContractIdMigration() throws Exception {
 
         persistContractResult(Arrays.asList(
                 contractResult(1, Long.valueOf(1)),
