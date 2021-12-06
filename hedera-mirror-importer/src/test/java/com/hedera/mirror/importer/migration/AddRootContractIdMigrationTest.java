@@ -73,7 +73,7 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
         assertThat(results.get(1).getRootContractId()).isEqualTo(1);
         assertThat(results.get(2).getRootContractId()).isEqualTo(1);
         assertThat(results.get(3).getRootContractId()).isEqualTo(2);
-        assertThat(results.get(4).getRootContractId()).isEqualTo(null);
+        assertThat(results.get(4).getRootContractId()).isNull();
     }
 
     private MigrationContractLog contractLog(long consensusTimestamp, long contractId, int index) {
