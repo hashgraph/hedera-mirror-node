@@ -144,7 +144,7 @@ class AddParentContractIdMigrationTest extends IntegrationTest {
     @NoArgsConstructor
     private static class MigrationContractResult {
         private long consensusTimestamp;
-        private long contractId;
+        private Long contractId;
         private byte[] functionParameters = new byte[] {2, 2};
         private long gasLimit = 2;
         private long gasUsed = 2;
