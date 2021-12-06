@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Resource;
-import org.assertj.core.api.IterableAssert;
 import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -77,36 +76,26 @@ class AddressBookServiceImplTest extends IntegrationTest {
     private static final String baseAccountId = "0.0.";
     private static final String baseIp = "127.0.0.";
     private static final int basePort = 50211;
-
+    private static byte[] initialAddressBookBytes;
     @TempDir
     Path dataPath;
-
     @Value("classpath:addressbook")
     Path testPath;
-
     @Resource
     private TransactionTemplate transactionTemplate;
-
     @Resource
     private AddressBookRepository addressBookRepository;
-
     @Resource
     private AddressBookEntryRepository addressBookEntryRepository;
-
     @Resource
     private AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
-
     @Resource
     private FileDataRepository fileDataRepository;
-
     @Resource
     private AddressBookService addressBookService;
-
     @Qualifier(CacheConfiguration.EXPIRE_AFTER_5M)
     @Resource
     private CacheManager cacheManager;
-
-    private static byte[] initialAddressBookBytes;
 
     private static NodeAddressBook addressBook(int size, int endPointSize) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
@@ -137,6 +126,12 @@ class AddressBookServiceImplTest extends IntegrationTest {
         return builder.build();
     }
 
+    @BeforeAll
+    static void setupAll() throws IOException {
+        Path addressBookPath = ResourceUtils.getFile("classpath:addressbook/testnet").toPath();
+        initialAddressBookBytes = Files.readAllBytes(addressBookPath);
+    }
+
     private FileData createFileData(byte[] contents, long consensusTimeStamp, boolean is102,
                                     TransactionType transactionType) {
         EntityId entityId = is102 ? AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID :
@@ -159,12 +154,6 @@ class AddressBookServiceImplTest extends IntegrationTest {
         FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionType.FILEAPPEND);
         fileDataRepository.save(fileData);
         addressBookService.update(fileData);
-    }
-
-    @BeforeAll
-    static void setupAll() throws IOException {
-        Path addressBookPath = ResourceUtils.getFile("classpath:addressbook/testnet").toPath();
-        initialAddressBookBytes = Files.readAllBytes(addressBookPath);
     }
 
     @Test
@@ -1025,8 +1014,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
             return;
         }
 
-        IterableAssert<AddressBookServiceEndpoint> listAssert = assertThat(actual)
-                .hasSize(expected.size());
+        var listAssert = assertThat(actual).hasSize(expected.size());
 
         for (ServiceEndpoint serviceEndpoint : expected) {
             listAssert.anySatisfy(abe -> {
