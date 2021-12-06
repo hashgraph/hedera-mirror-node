@@ -242,6 +242,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 body.getTransactionValidDuration().getSeconds() : null;
         // transactions in stream always have valid node account id.
         var nodeAccount = EntityId.of(body.getNodeAccountID());
+        var transactionId = body.getTransactionID();
 
         // build transaction
         Transaction transaction = new Transaction();
@@ -251,6 +252,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setMaxFee(body.getTransactionFee());
         transaction.setMemo(Utility.toBytes(body.getMemoBytes()));
         transaction.setNodeAccountId(nodeAccount);
+        transaction.setNonce(transactionId.getNonce());
         transaction.setPayerAccountId(recordItem.getPayerAccountId());
         transaction.setResult(txRecord.getReceipt().getStatusValue());
         transaction.setScheduled(txRecord.hasScheduleRef());
@@ -259,7 +261,11 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setTransactionHash(Utility.toBytes(txRecord.getTransactionHash()));
         transaction.setType(recordItem.getTransactionType());
         transaction.setValidDurationSeconds(validDurationSeconds);
-        transaction.setValidStartNs(Utility.timeStampInNanos(body.getTransactionID().getTransactionValidStart()));
+        transaction.setValidStartNs(Utility.timeStampInNanos(transactionId.getTransactionValidStart()));
+
+        if (txRecord.hasParentConsensusTimestamp()) {
+            transaction.setParentConsensusTimestamp(Utility.timestampInNanosMax(txRecord.getParentConsensusTimestamp()));
+        }
 
         return transaction;
     }

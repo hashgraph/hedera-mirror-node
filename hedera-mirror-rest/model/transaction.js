@@ -23,30 +23,8 @@
 const constants = require('../constants');
 
 class Transaction {
-  /**
-   * Parses transaction table columns into object
-   */
-  constructor(transaction) {
-    this.chargedTxFee = transaction.charged_tx_fee;
-    this.consensusTimestamp = transaction.consensus_timestamp;
-    this.entityId = transaction.entity_id;
-    this.initialBalance = transaction.initial_balance;
-    this.maxFee = transaction.max_fee;
-    this.memo = transaction.memo;
-    this.nodeAccountId = transaction.node_account_id;
-    this.payerAccountId = transaction.payer_account_id;
-    this.result = transaction.result;
-    this.scheduled = transaction.scheduled;
-    this.transactionHash = transaction.transaction_hash;
-    this.transactionBytes = transaction.transaction_bytes;
-    this.type = transaction.type;
-    this.validDurationSeconds = transaction.valid_duration_seconds;
-    this.validStartNs = transaction.valid_start_ns;
-  }
-
   static tableAlias = 't';
   static tableName = 'transaction';
-
   static CHARGED_TX_FEE = `charged_tx_fee`;
   static CHARGED_TX_FEE_FULL_NAME = `${this.tableAlias}.${this.CHARGED_TX_FEE}`;
   static CONSENSUS_TIMESTAMP = `consensus_timestamp`;
@@ -61,6 +39,10 @@ class Transaction {
   static MEMO_FULL_NAME = `${this.tableAlias}.${this.MEMO}`;
   static NODE_ACCOUNT_ID = `node_account_id`;
   static NODE_ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.NODE_ACCOUNT_ID}`;
+  static NONCE = `nonce`;
+  static NONCE_FULL_NAME = `${this.tableAlias}.${this.NONCE}`;
+  static PARENT_CONSENSUS_TIMESTAMP = `parent_consensus_timestamp`;
+  static PARENT_CONSENSUS_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.PARENT_CONSENSUS_TIMESTAMP}`;
   static PAYER_ACCOUNT_ID = `payer_account_id`;
   static PAYER_ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.PAYER_ACCOUNT_ID}`;
   static RESULT = `result`;
@@ -77,10 +59,32 @@ class Transaction {
   static VALID_DURATION_SECONDS_FULL_NAME = `${this.tableAlias}.${this.VALID_DURATION_SECONDS}`;
   static VALID_START_NS = `valid_start_ns`;
   static VALID_START_NS_FULL_NAME = `${this.tableAlias}.${this.VALID_START_NS}`;
-
   static FILTER_MAP = {
     [constants.filterKeys.TIMESTAMP]: Transaction.CONSENSUS_TIMESTAMP_FULL_NAME,
   };
+
+  /**
+   * Parses transaction table columns into object
+   */
+  constructor(transaction) {
+    this.chargedTxFee = transaction.charged_tx_fee;
+    this.consensusTimestamp = transaction.consensus_timestamp;
+    this.entityId = transaction.entity_id;
+    this.initialBalance = transaction.initial_balance;
+    this.maxFee = transaction.max_fee;
+    this.memo = transaction.memo;
+    this.nodeAccountId = transaction.node_account_id;
+    this.nonce = transaction.nonce;
+    this.parentConsensusTimestamp = transaction.parent_consensus_timestamp;
+    this.payerAccountId = transaction.payer_account_id;
+    this.result = transaction.result;
+    this.scheduled = transaction.scheduled;
+    this.transactionHash = transaction.transaction_hash;
+    this.transactionBytes = transaction.transaction_bytes;
+    this.type = transaction.type;
+    this.validDurationSeconds = transaction.valid_duration_seconds;
+    this.validStartNs = transaction.valid_start_ns;
+  }
 }
 
 module.exports = Transaction;
