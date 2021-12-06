@@ -58,6 +58,9 @@ public class ContractLog implements Persistable<ContractLog.Id> {
     @javax.persistence.Id
     private int index;
 
+    @Convert(converter = ContractIdConverter.class)
+    private EntityId parentContractId;
+
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 

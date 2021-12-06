@@ -576,6 +576,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(EntityId.of(logInfo.getContractID()), ContractLog::getContractId)
                 .returns(logInfo.getData().toByteArray(), ContractLog::getData)
                 .returns(0, ContractLog::getIndex)
+                .returns(EntityId.of(result.getContractID()), ContractLog::getParentContractId)
                 .returns(Hex.encodeHexString(logInfo.getTopic(0).toByteArray()), ContractLog::getTopic0)
                 .returns(Hex.encodeHexString(logInfo.getTopic(1).toByteArray()), ContractLog::getTopic1)
                 .returns(Hex.encodeHexString(logInfo.getTopic(2).toByteArray()), ContractLog::getTopic2)
