@@ -42,7 +42,7 @@
     "qs": "^6.10.1",
     "quick-lru": "^5.1.1",
     "swagger-stats": "^0.99.2",
-    "swagger-ui-express": "^4.1.6"
+    "swagger-ui-express": "^4.2.0"
   },
   "bundledDependencies": [
     "asn1js",
@@ -85,7 +85,7 @@
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-security": "^1.4.0",
     "husky": "^7.0.4",
-    "jest": "^27.3.1",
+    "jest": "^27.4.3",
     "jest-circus": "^27.3.1",
     "jest-junit": "^13.0.0",
     "mock-req-res": "^1.2.0",
