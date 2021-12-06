@@ -26,9 +26,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
-
-import com.hedera.mirror.common.util.DomainUtils;
-
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
@@ -60,6 +57,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -373,7 +371,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var parentTransactionId = recordItemCall.getTransactionBody().getTransactionID();
         var childTransactionId = parentTransactionId.toBuilder().setNonce(1).build();
         var payerAccount = recordItemCall.getPayerAccountId();
-        var validStart = Utility.timeStampInNanos(parentTransactionId.getTransactionValidStart());
+        var validStart = DomainUtils.timeStampInNanos(parentTransactionId.getTransactionValidStart());
 
         // when
         RecordItem recordItemMint = recordItemBuilder.tokenMint(TokenType.FUNGIBLE_COMMON)
@@ -386,18 +384,18 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertEquals(2, transactionRepository.count());
         assertThat(transactionRepository.findById(recordItemCall.getConsensusTimestamp()))
                 .get()
-                .returns(payerAccount, com.hedera.mirror.importer.domain.Transaction::getPayerAccountId)
-                .returns(validStart, com.hedera.mirror.importer.domain.Transaction::getValidStartNs)
-                .returns(0, com.hedera.mirror.importer.domain.Transaction::getNonce)
-                .returns(null, com.hedera.mirror.importer.domain.Transaction::getParentConsensusTimestamp);
+                .returns(payerAccount, com.hedera.mirror.common.domain.transaction.Transaction::getPayerAccountId)
+                .returns(validStart, com.hedera.mirror.common.domain.transaction.Transaction::getValidStartNs)
+                .returns(0, com.hedera.mirror.common.domain.transaction.Transaction::getNonce)
+                .returns(null, com.hedera.mirror.common.domain.transaction.Transaction::getParentConsensusTimestamp);
 
         assertThat(transactionRepository.findById(recordItemMint.getConsensusTimestamp()))
                 .get()
-                .returns(payerAccount, com.hedera.mirror.importer.domain.Transaction::getPayerAccountId)
-                .returns(validStart, com.hedera.mirror.importer.domain.Transaction::getValidStartNs)
-                .returns(1, com.hedera.mirror.importer.domain.Transaction::getNonce)
+                .returns(payerAccount, com.hedera.mirror.common.domain.transaction.Transaction::getPayerAccountId)
+                .returns(validStart, com.hedera.mirror.common.domain.transaction.Transaction::getValidStartNs)
+                .returns(1, com.hedera.mirror.common.domain.transaction.Transaction::getNonce)
                 .returns(recordItemCall.getConsensusTimestamp(),
-                        com.hedera.mirror.importer.domain.Transaction::getParentConsensusTimestamp);
+                        com.hedera.mirror.common.domain.transaction.Transaction::getParentConsensusTimestamp);
     }
 
     @Test
