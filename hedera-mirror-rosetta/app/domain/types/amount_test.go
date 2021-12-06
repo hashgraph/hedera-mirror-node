@@ -34,7 +34,8 @@ var (
 	tokenId           = domain.MustDecodeEntityId(1580)
 	tokenIdStr        = tokenId.String()
 	metadatasBytes    = [][]byte{[]byte("foo"), []byte("bar")}
-	metadatasBase64   = []string{"Zm9v", "YmFy"}
+	metadatasBase64   = []interface{}{"Zm9v", "YmFy"}
+	// metadatasBase64Strs = []string{"Zm9v", "YmFy"}
 )
 
 func TestHbarAmountGetValue(t *testing.T) {
@@ -90,7 +91,7 @@ func TestTokenAmountToRosettaAmount(t *testing.T) {
 					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 				},
 				Metadata: map[string]interface{}{
-					MetadataKeySerialNumbers: []string{"1", "2", "3", "4", "5", "6"},
+					MetadataKeySerialNumbers: []interface{}{"1", "2", "3", "4", "5", "6"},
 				},
 			},
 		},
@@ -178,7 +179,7 @@ func TestNewAmountSuccess(t *testing.T) {
 					Decimals: 0,
 					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 				},
-				Metadata: map[string]interface{}{MetadataKeySerialNumbers: []string{"1", "2"}},
+				Metadata: map[string]interface{}{MetadataKeySerialNumbers: []interface{}{"1", "2"}},
 			},
 			expected: &TokenAmount{
 				SerialNumbers: []int64{1, 2},
@@ -366,7 +367,7 @@ func TestNewAmountFailure(t *testing.T) {
 					Symbol:   tokenIdStr,
 					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 				},
-				Metadata: map[string]interface{}{MetadataKeyMetadatas: []string{metadatasBase64[0]}},
+				Metadata: map[string]interface{}{MetadataKeyMetadatas: []interface{}{metadatasBase64[0]}},
 			},
 		},
 	}

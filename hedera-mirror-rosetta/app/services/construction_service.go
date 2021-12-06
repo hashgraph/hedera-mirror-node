@@ -25,6 +25,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
@@ -246,21 +247,27 @@ func (c *constructionAPIService) ConstructionSubmit(
 		return nil, rErr
 	}
 
-	hash, err := transaction.GetTransactionHash()
+	hashBytes, err := transaction.GetTransactionHash()
 	if err != nil {
 		return nil, errors.ErrTransactionHashFailed
 	}
 
+	hash := tools.SafeAddHexPrefix(hex.EncodeToString(hashBytes))
+	log.Infof("Submitting transaction %s (hash %s) to node %s", transaction.GetTransactionID(),
+		hash, transaction.GetNodeAccountIDs()[0])
+
 	_, err = transaction.Execute(c.hederaClient)
 	if err != nil {
 		log.Errorf("Failed to execute transaction %s: %s", transaction.GetTransactionID(), err)
-		return nil, errors.ErrTransactionSubmissionFailed
+		return nil, errors.AddErrorDetails(
+			errors.ErrTransactionSubmissionFailed,
+			"reason",
+			fmt.Sprintf("%s", err),
+		)
 	}
 
 	return &rTypes.TransactionIdentifierResponse{
-		TransactionIdentifier: &rTypes.TransactionIdentifier{
-			Hash: tools.SafeAddHexPrefix(hex.EncodeToString(hash)),
-		},
+		TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: hash},
 	}, nil
 }
 

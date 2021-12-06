@@ -119,7 +119,7 @@ func TestCompareCurrency(t *testing.T) {
 	}
 }
 
-func TestIsEmptyPublicKey(t *testing.T) {
+func TestIsNonEmptyPublicKey(t *testing.T) {
 	var tests = []struct {
 		name     string
 		key      hedera.Key
@@ -127,12 +127,12 @@ func TestIsEmptyPublicKey(t *testing.T) {
 	}{
 		{
 			name:     "Success",
-			key:      hedera.PublicKey{},
+			key:      adminKey,
 			expected: true,
 		},
 		{
-			name:     "NotEmptyPublicKey",
-			key:      adminKey,
+			name:     "EmptyPublicKey",
+			key:      hedera.PublicKey{},
 			expected: false,
 		},
 		{
@@ -144,7 +144,7 @@ func TestIsEmptyPublicKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, isEmptyPublicKey(tt.key))
+			assert.Equal(t, tt.expected, isNonEmptyPublicKey(tt.key))
 		})
 	}
 }

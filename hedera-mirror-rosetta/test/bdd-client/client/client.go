@@ -39,12 +39,12 @@ const agent = "hedera-mirror-rosetta-test-bdd-client"
 var defaultInitialBalance = hedera.NewHbar(10)
 
 type Client struct {
-	firstOperator hedera.AccountID
 	hederaClient  *hedera.Client
 	network       *types.NetworkIdentifier
 	offlineClient *rosettaClient.APIClient
 	onlineClient  *rosettaClient.APIClient
-	operators     map[hedera.AccountID]hedera.PrivateKey
+	operators     []Operator
+	privateKeys   map[hedera.AccountID]hedera.PrivateKey
 	dataRetry     retry
 	submitRetry   retry
 }
@@ -82,16 +82,45 @@ func (c Client) CreateAccount(initialBalance hedera.Hbar) (*hedera.AccountID, *h
 func (c Client) DeleteAccount(accountId hedera.AccountID, privateKey *hedera.PrivateKey) error {
 	_, err := hedera.NewAccountDeleteTransaction().
 		SetAccountID(accountId).
-		SetTransferAccountID(c.firstOperator).
+		SetTransferAccountID(c.operators[0].Id).
 		SetTransactionID(hedera.TransactionIDGenerate(accountId)).
 		Sign(*privateKey).
 		Execute(c.hederaClient)
 	if err != nil {
 		log.Errorf("Failed to delete account %s: %v", accountId, err)
-		return nil
+		return err
 	}
 
 	log.Infof("Successfully submitted the AccountDeleteTransaction for %s", accountId)
+	return nil
+}
+
+func (c Client) DeleteToken(tokenId hedera.TokenID) error {
+	_, err := hedera.NewTokenDeleteTransaction().
+		SetTokenID(tokenId).
+		Execute(c.hederaClient)
+	if err != nil {
+		log.Errorf("Failed to delete token %s: %v", tokenId, err)
+		return err
+	}
+
+	log.Infof("Successfully submitted the TokenDeleteTransaction for %s", tokenId)
+	return nil
+}
+
+func (c Client) TokenDissociate(operator Operator, tokenId hedera.TokenID) error {
+	_, err := hedera.NewTokenDissociateTransaction().
+		SetAccountID(operator.Id).
+		SetTokenIDs(tokenId).
+		Sign(operator.PrivateKey).
+		Execute(c.hederaClient)
+	if err != nil {
+		log.Errorf("Failed to dissociate account %s with token %s: %v", operator.Id, tokenId, err)
+		return err
+	}
+
+	log.Infof("Successfully submitted the TokenDissociateTransaction for account %s and token %s",
+		operator.Id, tokenId)
 	return nil
 }
 
@@ -148,12 +177,8 @@ func (c Client) FindTransaction(ctx context.Context, hash string) (
 	return transaction, nil
 }
 
-func (c Client) GetFirstOperatorAccount() *types.AccountIdentifier {
-	return &types.AccountIdentifier{Address: c.firstOperator.String()}
-}
-
-func (c Client) GetFirstOperatorPrivateKey() hedera.PrivateKey {
-	return c.operators[c.firstOperator]
+func (c Client) GetOperator(index int) Operator {
+	return c.operators[index]
 }
 
 // Submit submits the operations to the network, goes through the construction preprocess, metadata, payloads, combine,
@@ -168,11 +193,12 @@ func (c Client) Submit(ctx context.Context, operations []*types.Operation, signe
 	onlineConstructor := c.onlineClient.ConstructionAPI
 
 	if signers == nil {
-		signers = map[string]hedera.PrivateKey{c.firstOperator.String(): c.operators[c.firstOperator]}
+		operator := c.operators[0]
+		signers = map[string]hedera.PrivateKey{operator.Id.String(): operator.PrivateKey}
 	} else {
 		for signerId := range signers {
 			accountId, _ := hedera.AccountIDFromString(signerId)
-			operatorKey, ok := c.operators[accountId]
+			operatorKey, ok := c.privateKeys[accountId]
 			if ok {
 				signers[signerId] = operatorKey
 			}
@@ -321,13 +347,9 @@ func NewClient(serverCfg Server, operators []Operator) Client {
 
 	log.Info("Successfully set up rosetta clients for online and offline servers")
 
-	var firstOperator hedera.AccountID
-	operatorsMap := make(map[hedera.AccountID]hedera.PrivateKey)
-	for idx, operator := range operators {
-		if idx == 0 {
-			firstOperator = operator.Id
-		}
-		operatorsMap[operator.Id] = operator.PrivateKey
+	privateKeys := make(map[hedera.AccountID]hedera.PrivateKey)
+	for _, operator := range operators {
+		privateKeys[operator.Id] = operator.PrivateKey
 	}
 
 	// create hedera client
@@ -336,16 +358,16 @@ func NewClient(serverCfg Server, operators []Operator) Client {
 		log.Fatalf("Failed to create client for hedera '%s'", network.Network)
 	}
 	log.Infof("Successfully created client for hedera '%s'", network.Network)
-	hederaClient.SetOperator(firstOperator, operatorsMap[firstOperator])
+	hederaClient.SetOperator(operators[0].Id, operators[0].PrivateKey)
 
 	return Client{
 		dataRetry:     serverCfg.DataRetry,
-		firstOperator: firstOperator,
 		hederaClient:  hederaClient,
 		network:       network,
 		offlineClient: offlineClient,
 		onlineClient:  onlineClient,
-		operators:     operatorsMap,
+		operators:     operators,
+		privateKeys:   privateKeys,
 		submitRetry:   serverCfg.SubmitRetry,
 	}
 }

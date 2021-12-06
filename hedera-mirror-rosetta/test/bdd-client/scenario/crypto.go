@@ -48,7 +48,7 @@ func (c *cryptoFeature) createCryptoAccount(ctx context.Context) error {
 	operations := []*types.Operation{
 		{
 			OperationIdentifier: &types.OperationIdentifier{Index: 0},
-			Account:             testClient.GetFirstOperatorAccount(),
+			Account:             getRosettaAccountIdentifier(testClient.GetOperator(0).Id),
 			Amount: &types.Amount{
 				// fund 10 hbar so the account can pay the transaction to delete itself
 				Value:    "1000000000",
@@ -70,6 +70,7 @@ func (c *cryptoFeature) verifyCryptoCreateTransaction(ctx context.Context) error
 
 	if err = assertTransactionAll(
 		transaction,
+		assertTransactionOpSuccess,
 		assertTransactionOpCount(1, gte),
 		assertTransactionOpType(operationTypeCryptoCreateAccount),
 		assertTransactionMetadataAndType("entity_id", ""),
@@ -77,23 +78,23 @@ func (c *cryptoFeature) verifyCryptoCreateTransaction(ctx context.Context) error
 		return err
 	}
 
-	accountStr, _ := transaction.Metadata["entity_id"].(string)
-	accountId, err := hedera.AccountIDFromString(accountStr)
+	accountIdStr := transaction.Metadata["entity_id"].(string)
+	accountId, err := hedera.AccountIDFromString(accountIdStr)
 	if err != nil {
-		log.Errorf("Invalid account id: %s", accountStr)
+		log.Errorf("Invalid account id: %s", accountIdStr)
 		return err
 	}
 	c.newAccountId = &accountId
-	log.Infof("Successfully retrieved new account %s from transaction", accountStr)
+	log.Infof("Successfully retrieved new account %s from transaction", accountIdStr)
 
-	return err
+	return nil
 }
 
 func (c *cryptoFeature) transferHbarToTreasury(ctx context.Context) error {
 	operations := []*types.Operation{
 		{
 			OperationIdentifier: &types.OperationIdentifier{Index: 0},
-			Account:             testClient.GetFirstOperatorAccount(),
+			Account:             getRosettaAccountIdentifier(testClient.GetOperator(0).Id),
 			Amount:              &types.Amount{Value: "-1", Currency: currencyHbar},
 			Type:                operationTypeCryptoTransfer,
 		},
@@ -116,7 +117,7 @@ func (c *cryptoFeature) verifyCryptoTransferTransaction(ctx context.Context) err
 
 	expectedAccountAmounts := []accountAmount{
 		{
-			Account: testClient.GetFirstOperatorAccount(),
+			Account: getRosettaAccountIdentifier(testClient.GetOperator(0).Id),
 			Amount:  &types.Amount{Value: "-1", Currency: currencyHbar},
 		},
 		{
@@ -127,6 +128,7 @@ func (c *cryptoFeature) verifyCryptoTransferTransaction(ctx context.Context) err
 
 	return assertTransactionAll(
 		transaction,
+		assertTransactionOpSuccess,
 		assertTransactionOpCount(2, gte),
 		assertTransactionOpType(operationTypeCryptoTransfer),
 		assertTransactionIncludesTransfers(expectedAccountAmounts),
@@ -143,7 +145,7 @@ func (c *cryptoFeature) cleanup(ctx context.Context, s *godog.Scenario, err erro
 	c.newAccountId = nil
 	c.newAccountKey = nil
 
-	return nil, err
+	return ctx, err
 }
 
 func initializeCryptoScenario(ctx *godog.ScenarioContext) {
@@ -155,5 +157,5 @@ func initializeCryptoScenario(ctx *godog.ScenarioContext) {
 	ctx.Step("the DATA API should show the CryptoCreate transaction", crypto.verifyCryptoCreateTransaction)
 
 	ctx.Step("I transfer some hbar to the treasury account", crypto.transferHbarToTreasury)
-	ctx.Step("the DATA API should show the CryptoTransfer transaction", crypto.verifyCryptoTransferTransaction)
+	ctx.Step("^the DATA API should show the CryptoTransfer transaction$", crypto.verifyCryptoTransferTransaction)
 }

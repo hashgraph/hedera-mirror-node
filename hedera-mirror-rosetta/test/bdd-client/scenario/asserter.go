@@ -39,6 +39,7 @@ func (a *asserter) Errorf(format string, args ...interface{}) {
 
 type assertTransactionFunc func(t *asserter, transaction *types.Transaction)
 type compareOp int
+type includeFilterFunc func(operation *types.Operation) bool
 
 const (
 	eq compareOp = iota
@@ -79,6 +80,16 @@ func assertTransactionOpType(expectedOpType string) assertTransactionFunc {
 	}
 }
 
+func assertTransactionOpSuccess(t *asserter, transaction *types.Transaction) {
+	message := "operation %d status ('%s') isn't success"
+	for index, operation := range transaction.Operations {
+		status := *operation.Status
+		if !assert.Equalf(t, status, operationStatusSuccess, message, index, status) {
+			return
+		}
+	}
+}
+
 func assertTransactionOpCount(expected int, op compareOp) assertTransactionFunc {
 	return func(t *asserter, transaction *types.Transaction) {
 		comparisonFuncs[op](t, len(transaction.Operations), expected)
@@ -88,12 +99,20 @@ func assertTransactionOpCount(expected int, op compareOp) assertTransactionFunc 
 func assertTransactionMetadataAndType(expected string, expectedType interface{}) assertTransactionFunc {
 	return func(t *asserter, transaction *types.Transaction) {
 		metadata := transaction.Metadata
-
 		if !assert.Contains(t, metadata, expected) {
 			return
 		}
-
 		assert.IsType(t, expectedType, metadata[expected])
+	}
+}
+
+func assertTransactionMetadata(key string, value interface{}) assertTransactionFunc {
+	return func(t *asserter, transaction *types.Transaction) {
+		metadata := transaction.Metadata
+		if !assert.Contains(t, metadata, key) {
+			return
+		}
+		assert.Equal(t, metadata[key], value)
 	}
 }
 
@@ -106,12 +125,36 @@ func assertTransactionIncludesTransfers(expected []accountAmount) assertTransact
 	return func(t *asserter, transaction *types.Transaction) {
 		actual := make([]accountAmount, 0, len(transaction.Operations))
 		for _, operation := range transaction.Operations {
-			actual = append(actual, accountAmount{
-				Account: operation.Account,
-				Amount:  operation.Amount,
-			})
+			actual = append(actual, accountAmount{Account: operation.Account, Amount: operation.Amount})
 		}
 
 		assert.Subset(t, actual, expected)
 	}
+}
+
+func assertTransactionOnlyIncludesTransfers(
+	expected []accountAmount,
+	includeFilter includeFilterFunc,
+	ignoreAmountMetadata bool,
+) assertTransactionFunc {
+	return func(t *asserter, transaction *types.Transaction) {
+		actual := make([]accountAmount, 0, len(transaction.Operations))
+		for _, operation := range transaction.Operations {
+			if includeFilter(operation) {
+				amount := operation.Amount
+				if ignoreAmountMetadata {
+					amount = removeMetadata(amount)
+				}
+				actual = append(actual, accountAmount{Account: operation.Account, Amount: amount})
+			}
+		}
+
+		assert.ElementsMatch(t, actual, expected)
+	}
+}
+
+func removeMetadata(amount *types.Amount) *types.Amount {
+	clone := *amount
+	clone.Metadata = nil
+	return &clone
 }

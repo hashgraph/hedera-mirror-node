@@ -8,7 +8,7 @@ The BDD test client aims to provide better end-to-end test coverage of the roset
 `rosetta-cli` [Constructor DSL](https://github.com/coinbase/rosetta-sdk-go/tree/master/constructor/dsl) based
 [crypto transfer transaction Construction API tests](/hedera-mirror-rosetta/scripts/validation/testnet/testnet.ros).
 
-The client currently supports basic crypto create and crypto transfer scenarios.
+The client currently supports basic crypto create, crypto transfer, and hts scenarios.
 
 ## Requirements
 

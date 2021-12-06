@@ -184,7 +184,9 @@ jobs:
             jq -s '. | {operators: .} | .server.offlineUrl="${{ env.OFFLINE_URL }}" | {test: .} | {rosetta: .}
               | {mirror: .} | {hedera: .}' | \
             yq eval -P > application.yml
-          go test -v
+          # hts transactions require online mode so as to verify the token currency using data in db
+          [[ ${{ matrix.online-only }} = 'false' ]] && tags="--godog.tags='~@hts'" || true
+          go test -v "${tags}"
 
       - name: Run Rosetta Postman API Tests
         working-directory: ./hedera-mirror-rosetta/scripts/validation/postman

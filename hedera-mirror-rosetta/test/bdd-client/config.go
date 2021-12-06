@@ -33,10 +33,10 @@ import (
 )
 
 const (
-	configPrefix  = "hedera.mirror.rosetta.test"
 	configName     = "application"
+	configPrefix   = "hedera.mirror.rosetta.test"
 	configTypeYaml = "yml"
-	defaultConfig = `
+	defaultConfig  = `
 hedera:
   mirror:
     rosetta:
