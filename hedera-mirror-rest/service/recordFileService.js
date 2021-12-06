@@ -35,7 +35,7 @@ class RecordFileService extends BaseService {
 
   static recordFileBlockDetailsFromTimestampQuery = `select 
     ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
-    from ${RecordFile.tableName} ${RecordFile.tableAlias} 
+    from ${RecordFile.tableName} 
     where  ${RecordFile.CONSENSUS_END} >= $1
     order by ${RecordFile.CONSENSUS_END} asc
     limit 1`;

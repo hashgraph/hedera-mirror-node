@@ -543,10 +543,7 @@ const getContractResultsByTransactionId = async (req, res) => {
   utils.validateReq(req);
   // extract filters from query param
   const transactionId = TransactionId.fromString(req.params.transactionId);
-  const row = await ContractService.getContractResultsByTransactionId(
-    transactionId.getValidStartNs(),
-    transactionId.getEntityId().getEncodedId()
-  );
+  const row = await ContractService.getContractResultsByTransactionId(transactionId);
 
   if (row === null) {
     throw new NotFoundError();

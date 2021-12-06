@@ -22,6 +22,7 @@
 
 const {ContractService} = require('../../service');
 const {formatSqlQueryString} = require('../testutils');
+const TransactionId = require('../../transactionId');
 
 const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
@@ -285,8 +286,11 @@ describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
 });
 
 describe('ContractService.getContractResultsByTransactionId tests', () => {
+  const defaultTransactionId = TransactionId.fromString('0.0.5-0000000000-000000001');
   test('ContractService.getContractResultsByIdAndFilters - No match', async () => {
-    await expect(ContractService.getContractResultsByTransactionId(1, 2)).resolves.toBeNull();
+    await expect(
+      ContractService.getContractResultsByTransactionId(TransactionId.fromString('0.0.2-0000000000-000000003'))
+    ).resolves.toBeNull();
   });
 
   test('ContractService.getContractResultsByTransactionId - Row match with in range record timestamp', async () => {
@@ -303,7 +307,7 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
 
     await integrationDomainOps.loadTransactions(transactionsInput);
 
-    await expect(ContractService.getContractResultsByTransactionId(1, 5)).resolves.toMatchObject(
+    await expect(ContractService.getContractResultsByTransactionId(defaultTransactionId)).resolves.toMatchObject(
       expectedDetailedContractResult
     );
   });
@@ -322,7 +326,7 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
 
     await integrationDomainOps.loadTransactions(transactionsInput);
 
-    await expect(ContractService.getContractResultsByTransactionId(1, 5)).resolves.toMatchObject(
+    await expect(ContractService.getContractResultsByTransactionId(defaultTransactionId)).resolves.toMatchObject(
       expectedDetailedContractResult
     );
   });
@@ -343,7 +347,7 @@ describe('ContractService.getContractResultsByTransactionId tests', () => {
 
     expectedDetailedContractResult.recordFile.consensusEnd = '2';
 
-    await expect(ContractService.getContractResultsByTransactionId(1, 5)).resolves.toMatchObject(
+    await expect(ContractService.getContractResultsByTransactionId(defaultTransactionId)).resolves.toMatchObject(
       expectedDetailedContractResult
     );
   });

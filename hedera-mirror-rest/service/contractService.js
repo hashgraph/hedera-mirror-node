@@ -131,12 +131,11 @@ class ContractService extends BaseService {
   /**
    * Retrieves a detailed view of a contract result based on transactionId
    *
-   * @param {number} validStartNs validStartNs
-   * @param {number} payerAccountId payerAccountId
+   * @param {Object} transactionId transactionId
    * @return {Promise<{contractResult: ContractResult, recordFile: RecordFile, transaction: Transaction}>}
    */
-  async getContractResultsByTransactionId(validStartNs, payerAccountId) {
-    const whereParams = [validStartNs, payerAccountId];
+  async getContractResultsByTransactionId(transactionId) {
+    const whereParams = [transactionId.getValidStartNs(), transactionId.getEntityId().getEncodedId()];
     const whereConditions = [
       `${Transaction.getFullName(Transaction.VALID_START_NS)} = $1`,
       `${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)} = $2`,

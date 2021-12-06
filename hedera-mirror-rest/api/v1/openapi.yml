@@ -136,6 +136,47 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
+  /api/v1/contracts/{contractId}/results/{timestamp}:
+    get:
+      summary: List the contract result from a contract on the network at a given timestamp
+      description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
+      operationId: getContracResulttByIdAndTimestamp
+      parameters:
+        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/timestampPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResultResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - contracts
+  /api/v1/contracts/results/{transactionId}:
+    get:
+      summary: List the contract result from a contract on the network for a given transactionId
+      description: Returns a single ContractResult for a contract's function executions for a given transactionId.
+      operationId: getContractResultByTransactionId
+      parameters:
+        - $ref: '#/components/parameters/transactionIdPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResultResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - contracts
   /api/v1/network/supply:
     get:
       summary: Get the network supply
@@ -722,6 +763,11 @@ components:
           $ref: '#/components/schemas/Contracts'
         links:
           $ref: '#/components/schemas/Links'
+    ContractResultResponse:
+      type: object
+      properties:
+        contracts:
+          $ref: '#/components/schemas/ContractResultExpanded'
     ContractResultsResponse:
       type: object
       properties:
@@ -1005,6 +1051,74 @@ components:
           example: 1000
           format: int64
           type: integer
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        to:
+          $ref: '#/components/schemas/SolidityAddressNullable'
+    ContractResultExpanded:
+      type: object
+      properties:
+        amount:
+          description: The number of tinybars sent to the function
+          example: 10
+          format: int64
+          nullable: true
+          type: integer
+        block_hash:
+          description: The hex encoded block (record file chain) hash
+          example: "0x6ceecd8bb224da491"
+          nullable: true
+          type: string
+        block_number:
+          description: The block number. Since Hedera does not have the native concept of blocks, this counts the number of record files seen since the mirror node's configured start date. This can vary between mirror nodes that use different start dates.
+          example: 10
+          format: int64
+          nullable: true
+          type: integer
+        bloom:
+          description: The hex encoded bloom filter for the record
+          example: "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398"
+          nullable: true
+          type: string
+        call_result:
+          description: The hex encoded result returned by the function
+          example: "0x2b048531b38d2882e86044bc972e940ee0a01938"
+          nullable: true
+          type: string
+        contract_id:
+          $ref: '#/components/schemas/EntityId'
+        created_contract_ids:
+          description: The network's released supply of hbars in tinybars
+          example:
+            - "0.0.1003"
+          items:
+            type: string
+          type: array
+        error_message:
+          description: The message when an error occurs during smart contract execution
+          example: "Out of gas"
+          nullable: true
+          type: string
+        from:
+          $ref: '#/components/schemas/SolidityAddress'
+        function_parameters:
+          description: The hex encoded parameters passed to the function
+          example: "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b"
+          type: string
+        gas_limit:
+          description: The maximum units of gas allowed for contract execution
+          example: 100000
+          format: int64
+          type: integer
+        gas_used:
+          description: The units of gas used to execute contract
+          example: 1000
+          format: int64
+          type: integer
+        hash:
+          description: The hex encoded transaction hash
+          example: "0x3531396130303866616264653464"
+          type: string
         timestamp:
           $ref: '#/components/schemas/Timestamp'
         to:
@@ -2033,6 +2147,15 @@ components:
         items:
           type: string
           pattern: ^((eq|gt|gte|lt|lte|ne):)?\d{1,10}(.\d{1,9})?$
+    timestampPathParam:
+      name: timestamp
+      in: path
+      description: The correlating transaction consensus timesampt
+      required: true
+      example: 1234567890.000000700
+      schema:
+        type: string
+        pattern: ^\d{1,10}(.\d{1,9})?$
     tokenInfoTimestampQueryParam:
       name: timestamp
       in: query
