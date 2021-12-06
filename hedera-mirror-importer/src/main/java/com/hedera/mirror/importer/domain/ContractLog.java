@@ -59,7 +59,7 @@ public class ContractLog implements Persistable<ContractLog.Id> {
     private int index;
 
     @Convert(converter = ContractIdConverter.class)
-    private EntityId parentContractId;
+    private EntityId rootContractId;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;

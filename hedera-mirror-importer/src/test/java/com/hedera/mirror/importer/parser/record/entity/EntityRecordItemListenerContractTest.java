@@ -613,7 +613,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(EntityId.of(logInfo.getContractID()), ContractLog::getContractId)
                 .returns(logInfo.getData().toByteArray(), ContractLog::getData)
                 .returns(0, ContractLog::getIndex)
-                .returns(EntityId.of(result.getContractID()), ContractLog::getParentContractId)
+                .returns(EntityId.of(result.getContractID()), ContractLog::getRootContractId)
                 .returns(Utility.getTopic(logInfo, 0), ContractLog::getTopic0)
                 .returns(Utility.getTopic(logInfo, 1), ContractLog::getTopic1)
                 .returns(Utility.getTopic(logInfo, 2), ContractLog::getTopic2)
