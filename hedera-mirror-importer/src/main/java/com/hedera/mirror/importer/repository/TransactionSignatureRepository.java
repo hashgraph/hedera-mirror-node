@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 
 public interface TransactionSignatureRepository extends CrudRepository<TransactionSignature, TransactionSignature.Id> {
 }

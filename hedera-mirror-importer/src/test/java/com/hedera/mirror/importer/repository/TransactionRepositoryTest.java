@@ -26,10 +26,10 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionType;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 
 class TransactionRepositoryTest extends AbstractRepositoryTest {
 
@@ -52,6 +52,7 @@ class TransactionRepositoryTest extends AbstractRepositoryTest {
         transaction.setInitialBalance(1000L);
         transaction.setMemo("transaction memo".getBytes());
         transaction.setNodeAccountId(EntityId.of(0, 0, 2, EntityType.ACCOUNT));
+        transaction.setNonce(0);
         transaction.setPayerAccountId(EntityId.of(0, 0, 3, EntityType.ACCOUNT));
         transaction.setResult(ResponseCodeEnum.SUCCESS.getNumber());
         transaction.setType(TransactionType.CRYPTOCREATEACCOUNT.getProtoId());

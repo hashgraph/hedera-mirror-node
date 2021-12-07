@@ -24,10 +24,10 @@ import java.io.IOException;
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 
-import com.hedera.mirror.importer.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
-@EqualsAndHashCode(callSuper=true)
+@EqualsAndHashCode(callSuper = true)
 @Value
 public class HashObject extends AbstractStreamObject {
 

@@ -31,7 +31,7 @@ import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 
 import com.hedera.mirror.importer.domain.DomainBuilder;
-import com.hedera.mirror.importer.domain.Entity;
+import com.hedera.mirror.common.domain.entity.Entity;
 
 class EntityRepositoryTest extends AbstractRepositoryTest {
 

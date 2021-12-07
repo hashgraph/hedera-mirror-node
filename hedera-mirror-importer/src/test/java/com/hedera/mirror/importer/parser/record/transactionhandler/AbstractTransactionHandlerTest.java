@@ -29,6 +29,9 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Message;
 import com.google.protobuf.StringValue;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -62,12 +65,13 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.importer.domain.AbstractEntity;
-import com.hedera.mirror.importer.domain.Contract;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityOperation;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -98,9 +102,9 @@ abstract class AbstractTransactionHandlerTest {
     protected static final BoolValue UPDATED_RECEIVER_SIG_REQUIRED = BoolValue.of(true);
     protected static final Timestamp MODIFIED_TIMESTAMP = Timestamp.newBuilder().setSeconds(200).setNanos(2).build();
     private static final Timestamp CREATED_TIMESTAMP = Timestamp.newBuilder().setSeconds(100).setNanos(1).build();
-    private static final Long CREATED_TIMESTAMP_NS = Utility.timestampInNanosMax(CREATED_TIMESTAMP);
+    private static final Long CREATED_TIMESTAMP_NS = DomainUtils.timestampInNanosMax(CREATED_TIMESTAMP);
 
-    private static final Long MODIFIED_TIMESTAMP_NS = Utility.timestampInNanosMax(MODIFIED_TIMESTAMP);
+    private static final Long MODIFIED_TIMESTAMP_NS = DomainUtils.timestampInNanosMax(MODIFIED_TIMESTAMP);
 
     protected final Logger log = LogManager.getLogger(getClass());
 
@@ -205,7 +209,7 @@ abstract class AbstractTransactionHandlerTest {
                 UpdateEntityTestSpec::getDescription,
                 (testSpec) -> {
                     // when
-                    var transaction = new com.hedera.mirror.importer.domain.Transaction();
+                    var transaction = new com.hedera.mirror.common.domain.transaction.Transaction();
                     transaction.setEntityId(testSpec.getExpected().toEntityId());
                     Mockito.reset(entityListener);
                     transactionHandler.updateTransaction(transaction, testSpec.getRecordItem());
@@ -433,7 +437,7 @@ abstract class AbstractTransactionHandlerTest {
                     break;
                 case "expiry":
                 case "expirationTime":
-                    entity.setExpirationTimestamp(Utility.timestampInNanosMax(DEFAULT_EXPIRATION_TIME));
+                    entity.setExpirationTimestamp(DomainUtils.timestampInNanosMax(DEFAULT_EXPIRATION_TIME));
                     break;
                 case "keys":
                     entity.setKey(DEFAULT_KEY_LIST.toByteArray());

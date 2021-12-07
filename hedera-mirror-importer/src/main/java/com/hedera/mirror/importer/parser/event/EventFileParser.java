@@ -26,7 +26,7 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.repository.StreamFileRepository;

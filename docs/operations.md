@@ -141,12 +141,12 @@ For mirror node operators running the v1 database schema, the following steps ca
 4. Configure properties
 
    First, locate the directory that contains the TimescaleDB migration scripts. For source code, the target directory is
-   located at `hedera-mirror-importer/src/main/resources/db/scripts/timescaledb`. For binaries, the migration directory
+   located at `hedera-mirror-importer/src/main/resources/db/scripts/v2`. For binaries, the migration directory
    can be extracted from the JAR file:
 
    ```shell
    jar -xvf hedera-mirror-importer-*.jar
-   cd BOOT-INF/classes/db/scripts/timescaledb
+   cd BOOT-INF/classes/db/scripts/v2
    ```
 
    The configuration file `migration.config` contains database variables that need to be modified before running the

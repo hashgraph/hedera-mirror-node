@@ -26,7 +26,7 @@ import java.time.Duration;
 import java.util.Map;
 
 import com.hedera.mirror.importer.TestRecordFiles;
-import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 
 class RecordFileV5DownloaderTest extends AbstractRecordFileDownloaderTest {
 

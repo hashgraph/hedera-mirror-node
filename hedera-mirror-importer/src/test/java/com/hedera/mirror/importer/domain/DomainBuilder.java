@@ -20,14 +20,17 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityType.CONTRACT;
-import static com.hedera.mirror.importer.domain.EntityType.FILE;
-import static com.hedera.mirror.importer.domain.EntityType.SCHEDULE;
-import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
+import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import java.security.SecureRandom;
@@ -47,7 +50,23 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.core.GenericTypeResolver;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.util.Utility;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractLog;
+import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.NftTransfer;
+import com.hedera.mirror.common.domain.token.NftTransferId;
+import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 
 @Log4j2
 @Named
@@ -283,7 +302,7 @@ public class DomainBuilder {
     }
 
     public long timestamp() {
-        return Utility.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id();
+        return DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id();
     }
 
     private <T> CrudRepository<T, ?> getRepository(Class<T> domainClass) {

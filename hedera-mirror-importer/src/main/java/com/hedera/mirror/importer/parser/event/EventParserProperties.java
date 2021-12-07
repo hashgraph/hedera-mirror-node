@@ -25,7 +25,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.parser.AbstractParserProperties;
 
 @Component("eventParserProperties")

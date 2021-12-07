@@ -27,8 +27,8 @@ import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
 import lombok.Value;
 
-import com.hedera.mirror.importer.domain.TokenId_;
-import com.hedera.mirror.importer.domain.Token_;
+import com.hedera.mirror.common.domain.token.TokenId_;
+import com.hedera.mirror.common.domain.token.Token_;
 
 @Named
 @Value

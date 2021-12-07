@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.TokenTransfer;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
 
 public interface TokenTransferRepository extends CrudRepository<TokenTransfer, TokenTransfer.Id> {
 }

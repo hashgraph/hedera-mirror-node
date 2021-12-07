@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 
 public interface TopicMessageRepository extends CrudRepository<TopicMessage, Long> {
 }

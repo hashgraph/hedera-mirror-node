@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y gcc git openjdk-11-jdk-headless
 RUN git clone -b ${GIT_REF} --depth 1 https://github.com/hashgraph/hedera-mirror-node
 WORKDIR /hedera-mirror-node
 RUN ./mvnw --batch-mode --no-transfer-progress --show-version clean package -Dmaven.test.skip \
-    -pl hedera-mirror-importer,hedera-mirror-rosetta
+    -pl hedera-mirror-importer,hedera-mirror-rosetta --also-make
 WORKDIR /app
 RUN mkdir importer rosetta scripts \
     && cp /hedera-mirror-node/hedera-mirror-rosetta/build/* . \

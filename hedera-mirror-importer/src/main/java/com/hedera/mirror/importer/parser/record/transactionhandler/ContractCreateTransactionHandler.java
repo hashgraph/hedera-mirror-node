@@ -22,15 +22,15 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import javax.inject.Named;
 
-import com.hedera.mirror.importer.domain.Contract;
-import com.hedera.mirror.importer.domain.ContractResult;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.Transaction;
-import com.hedera.mirror.importer.domain.TransactionType;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class ContractCreateTransactionHandler extends AbstractContractCallTransactionHandler {
@@ -76,7 +76,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
             contractResult.setAmount(transactionBody.getInitialBalance());
             contractResult.setConsensusTimestamp(consensusTimestamp);
             contractResult.setContractId(EntityId.of(transactionRecord.getReceipt().getContractID()));
-            contractResult.setFunctionParameters(Utility.toBytes(transactionBody.getConstructorParameters()));
+            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
             contractResult.setPayerAccountId(transaction.getPayerAccountId());
 

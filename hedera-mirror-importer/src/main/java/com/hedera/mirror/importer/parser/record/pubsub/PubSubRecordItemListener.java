@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -31,14 +33,14 @@ import org.springframework.integration.MessageTimeoutException;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.support.MessageBuilder;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
@@ -66,7 +68,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
         TransactionType transactionType = TransactionType.of(recordItem.getTransactionType());
         TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionType);
         log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
-        long consensusTimestamp = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
+        long consensusTimestamp = DomainUtils.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entity = transactionHandler.getEntity(recordItem);
         PubSubMessage pubSubMessage = buildPubSubMessage(consensusTimestamp, entity, recordItem);
         try {

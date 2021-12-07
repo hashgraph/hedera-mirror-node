@@ -24,6 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.UnknownFieldSet;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.io.File;
 import java.nio.file.Paths;
@@ -37,15 +40,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import reactor.core.publisher.Flux;
 
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.AccountBalanceFile;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.domain.TokenBalance;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.AllAccountBalances;
 import com.hedera.services.stream.proto.SingleAccountBalances;
 
@@ -139,7 +141,7 @@ class ProtoBalanceFileReaderTest {
 
     private AccountBalanceFile getExpectedAccountBalanceFile(StreamFileData streamFileData) {
         Instant instant = Instant.parse(TIMESTAMP.replace("_", ":"));
-        long consensusTimestamp = Utility.convertToNanosMax(instant);
+        long consensusTimestamp = DomainUtils.convertToNanosMax(instant);
 
         long accountNum = 2000;
         long hbarBalance = 3000;
@@ -147,16 +149,16 @@ class ProtoBalanceFileReaderTest {
         long tokenBalance = 6000;
 
         List<AccountBalance> accountBalances = IntStream.range(0, 10).mapToObj(i -> {
-            EntityId accountId = EntityId.of(0, 0, accountNum + i, EntityType.ACCOUNT);
-            List<TokenBalance> tokenBalances = IntStream.range(0, 5).mapToObj(j -> {
-                EntityId tokenId = EntityId.of(0, 0, tokenNum + i * 5 + j, EntityType.TOKEN);
-                return new TokenBalance(tokenBalance + i * 5 + j,
-                        new TokenBalance.Id(consensusTimestamp, accountId, tokenId));
-            })
-                    .collect(Collectors.toList());
-            return new AccountBalance(hbarBalance + i, tokenBalances, new AccountBalance.Id(consensusTimestamp,
-                    accountId));
-        })
+                    EntityId accountId = EntityId.of(0, 0, accountNum + i, EntityType.ACCOUNT);
+                    List<TokenBalance> tokenBalances = IntStream.range(0, 5).mapToObj(j -> {
+                                EntityId tokenId = EntityId.of(0, 0, tokenNum + i * 5 + j, EntityType.TOKEN);
+                                return new TokenBalance(tokenBalance + i * 5 + j,
+                                        new TokenBalance.Id(consensusTimestamp, accountId, tokenId));
+                            })
+                            .collect(Collectors.toList());
+                    return new AccountBalance(hbarBalance + i, tokenBalances, new AccountBalance.Id(consensusTimestamp,
+                            accountId));
+                })
                 .collect(Collectors.toList());
         return AccountBalanceFile.builder()
                 .bytes(streamFileData.getBytes())

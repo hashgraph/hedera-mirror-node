@@ -49,15 +49,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.converter.KeyConverter;
 import com.hedera.mirror.importer.converter.TopicIdArgumentConverter;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.TopicMessage;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
-import com.hedera.mirror.importer.util.Utility;
 
 class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListenerTest {
 
@@ -288,7 +288,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             topic.setAutoRenewPeriod(updatedAutoRenewPeriod);
         }
         if (updatedExpirationTimeSeconds != null && updatedExpirationTimeNanos != null) {
-            topic.setExpirationTimestamp(Utility
+            topic.setExpirationTimestamp(DomainUtils
                     .convertToNanosMax(updatedExpirationTimeSeconds, updatedExpirationTimeNanos));
         }
         if (updatedAdminKey != null) {
@@ -619,7 +619,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             topic.setAutoRenewPeriod(autoRenewPeriod);
         }
         if (expirationTimeSeconds != null && expirationTimeNanos != null) {
-            topic.setExpirationTimestamp(Utility.convertToNanosMax(expirationTimeSeconds, expirationTimeNanos));
+            topic.setExpirationTimestamp(DomainUtils.convertToNanosMax(expirationTimeSeconds, expirationTimeNanos));
         }
         if (null != adminKey) {
             topic.setKey(adminKey.toByteArray());

@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamFile;
 
 public interface StreamFileParser<T extends StreamFile> {
 

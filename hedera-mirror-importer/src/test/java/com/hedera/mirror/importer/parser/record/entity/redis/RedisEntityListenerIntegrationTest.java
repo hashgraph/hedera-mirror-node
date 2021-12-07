@@ -29,8 +29,8 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
-import com.hedera.mirror.importer.domain.StreamMessage;
-import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.common.domain.topic.StreamMessage;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListenerTest;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

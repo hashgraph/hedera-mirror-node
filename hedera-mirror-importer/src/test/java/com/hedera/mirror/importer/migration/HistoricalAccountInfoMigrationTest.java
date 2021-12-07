@@ -36,13 +36,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.AbstractEntity;
-import com.hedera.mirror.importer.domain.Contract;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -212,7 +213,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     @Test
     void create() {
         AccountInfo.Builder accountInfo = accountInfo();
-        String publicKey = Utility.getPublicKey(accountInfo.getKey().toByteArray());
+        String publicKey = DomainUtils.getPublicKey(accountInfo.getKey().toByteArray());
 
         assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isTrue();
 
@@ -221,7 +222,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
                 .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entity::getAutoRenewPeriod))
                 .returns(accountInfo.getDeleted(), from(Entity::getDeleted))
                 .returns(publicKey, from(Entity::getPublicKey))
-                .returns(Utility
+                .returns(DomainUtils
                         .timeStampInNanos(accountInfo.getExpirationTime()), from(Entity::getExpirationTimestamp))
                 .returns(accountInfo.getKey().toByteArray(), from(Entity::getKey))
                 .returns(accountInfo.getMemo(), from(Entity::getMemo))
@@ -232,7 +233,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     void update() {
         createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, false);
         AccountInfo.Builder accountInfo = accountInfo();
-        String publicKey = Utility.getPublicKey(accountInfo.getKey().toByteArray());
+        String publicKey = DomainUtils.getPublicKey(accountInfo.getKey().toByteArray());
 
         assertThat(historicalAccountInfoMigration.process(accountInfo.build())).isTrue();
 
@@ -241,7 +242,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
                 .returns(accountInfo.getAutoRenewPeriod().getSeconds(), from(Entity::getAutoRenewPeriod))
                 .returns(accountInfo.getDeleted(), from(Entity::getDeleted))
                 .returns(publicKey, from(Entity::getPublicKey))
-                .returns(Utility
+                .returns(DomainUtils
                         .timeStampInNanos(accountInfo.getExpirationTime()), from(Entity::getExpirationTimestamp))
                 .returns(accountInfo.getKey().toByteArray(), from(Entity::getKey))
                 .returns(accountInfo.getMemo(), from(Entity::getMemo))

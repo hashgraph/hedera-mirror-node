@@ -20,9 +20,9 @@ package com.hedera.mirror.importer.addressbook;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.FileData;
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.file.FileData;
 
 public interface AddressBookService {
 

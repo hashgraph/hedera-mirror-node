@@ -28,7 +28,7 @@ import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.Contract;
+import com.hedera.mirror.common.domain.contract.Contract;
 
 class GenericUpsertQueryGeneratorTest extends IntegrationTest {
 

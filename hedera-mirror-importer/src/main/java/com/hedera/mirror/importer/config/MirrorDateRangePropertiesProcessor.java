@@ -30,15 +30,18 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.cglib.core.ReflectUtils;
 
+import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.domain.StreamType;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -159,7 +162,7 @@ public class MirrorDateRangePropertiesProcessor {
 
             String filename = StreamFilename.getFilename(streamType, DATA, effectiveStartDate);
             T effectiveStreamFile = (T) ReflectUtils.newInstance(streamType.getStreamFileClass());
-            effectiveStreamFile.setConsensusStart(Utility.convertToNanosMax(effectiveStartDate));
+            effectiveStreamFile.setConsensusStart(DomainUtils.convertToNanosMax(effectiveStartDate));
             effectiveStreamFile.setName(filename);
             effectiveStreamFile.setIndex(streamFile.map(StreamFile::getIndex).orElse(null));
             streamFile = Optional.of(effectiveStreamFile);
@@ -203,12 +206,12 @@ public class MirrorDateRangePropertiesProcessor {
             if (startDate == null) {
                 startDate = Instant.EPOCH;
             }
-            start = Utility.convertToNanosMax(startDate);
+            start = DomainUtils.convertToNanosMax(startDate);
 
             if (endDate == null) {
                 end = Long.MAX_VALUE;
             } else {
-                end = Utility.convertToNanosMax(endDate);
+                end = DomainUtils.convertToNanosMax(endDate);
             }
         }
 

@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.ContractLog;
+import com.hedera.mirror.common.domain.contract.ContractLog;
 
 class ContractLogRepositoryTest extends AbstractRepositoryTest {
 

@@ -27,12 +27,13 @@ import java.util.Comparator;
 import java.util.List;
 import javax.annotation.Resource;
 
-import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.common.domain.entity.EntityType;
+
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.TokenBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 
 class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
 
