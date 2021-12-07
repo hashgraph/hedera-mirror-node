@@ -41,21 +41,19 @@ class ContractService extends BaseService {
   }
 
   static contractResultsByIdQuery = `select *
-    from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
+                                     from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
 
-  static contractLogTimestampSubQuery = `select ${ContractLog.tableAlias}.${ContractLog.CONSENSUS_TIMESTAMP} 
-    from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
-
-  static contractLogsByIdQuery = `select 
-  ${ContractLog.tableAlias}.${ContractLog.CONTRACT_ID},
-  ${ContractLog.tableAlias}.${ContractLog.BLOOM},
-  ${ContractLog.tableAlias}.${ContractLog.CONSENSUS_TIMESTAMP},
-  ${ContractLog.tableAlias}.${ContractLog.DATA},
-  array_to_json(array_remove(ARRAY[${ContractLog.tableAlias}.${ContractLog.TOPIC0}, 
-    ${ContractLog.tableAlias}.${ContractLog.TOPIC1}, 
-    ${ContractLog.tableAlias}.${ContractLog.TOPIC2},
-    ${ContractLog.tableAlias}.${ContractLog.TOPIC3}], null))::jsonb as topics
-    from ${ContractLog.tableName} ${ContractLog.tableAlias} where ${ContractLog.tableAlias}.${ContractLog.CONSENSUS_TIMESTAMP} in (`;
+  static contractLogsByIdQuery = `select ${ContractLog.getFullName(ContractLog.CONTRACT_ID)},
+                                         ${ContractLog.getFullName(ContractLog.BLOOM)},
+                                         ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
+                                         ${ContractLog.getFullName(ContractLog.DATA)},
+                                         ${ContractLog.getFullName(ContractLog.INDEX)},
+                                         array_to_json(array_remove(
+                                           ARRAY [${ContractLog.getFullName(ContractLog.TOPIC0)},
+                                             ${ContractLog.getFullName(ContractLog.TOPIC1)},
+                                             ${ContractLog.getFullName(ContractLog.TOPIC2)},
+                                             ${ContractLog.getFullName(ContractLog.TOPIC3)}], null))::jsonb as topics
+                                  from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
   async getContractResultsByIdAndFilters(
     whereConditions = [],
@@ -71,18 +69,16 @@ class ContractService extends BaseService {
   async getContractLogsByIdAndFilters(
     whereConditions = [],
     whereParams = [],
-    order = orderFilterValues.DESC,
-    limit = defaultLimit,
-    subQueryConditions,
-    subQueryParams
+    timestampOrder = orderFilterValues.DESC,
+    indexOrder = orderFilterValues.ASC,
+    limit = defaultLimit
   ) {
     const [query, params] = this.getContractLogsByIdAndFiltersQuery(
       whereConditions,
       whereParams,
-      order,
-      limit,
-      subQueryConditions,
-      subQueryParams
+      timestampOrder,
+      indexOrder,
+      limit
     );
     const rows = await super.getRows(query, params, 'getContractLogsByIdAndFilters');
     return _.isEmpty(rows) ? [] : rows.map((cr) => new ContractLog(cr));
@@ -101,18 +97,16 @@ class ContractService extends BaseService {
     return [query, params];
   }
 
-  getContractLogsByIdAndFiltersQuery(whereConditions, whereParams, order, limit, subQueryConditions, subQueryParams) {
-    const params = whereParams.concat(subQueryParams);
-    // params.concat(subQueryParams);
+  getContractLogsByIdAndFiltersQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit) {
+    const params = whereParams;
+    const orderClause = [
+      super.getOrderByQuery(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
+      `${ContractLog.getFullName(ContractLog.INDEX)} ${indexOrder}`,
+    ].join(', ');
     const query = [
       ContractService.contractLogsByIdQuery,
-      ContractService.contractLogTimestampSubQuery,
-      subQueryConditions.length > 0 ? `where ${subQueryConditions.join(' and ')}` : '',
-      super.getOrderByQuery(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), order),
-      super.getLimitQuery(params.length + 1),
-      `)`,
-      whereConditions.length > 0 ? `and ${whereConditions.join(' and ')}` : '',
-      super.getOrderByQuery(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), order),
+      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
+      orderClause,
       super.getLimitQuery(params.length + 1),
     ].join('\n');
     params.push(limit);

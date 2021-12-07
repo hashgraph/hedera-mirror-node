@@ -94,8 +94,6 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
 describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
   test('ContractService.getContractLogsByIdAndFiltersQuery - Verify simple query', async () => {
     const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
-      [],
-      [],
       ['cl.contract_id = $1'],
       [2],
       'desc',
@@ -111,14 +109,7 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
                                    array_to_json(array_remove(ARRAY [cl.topic0, cl.topic1, cl.topic2, cl.topic3],
                                                               null))::jsonb as topics
                             from contract_log cl
-                            where cl.consensus_timestamp in (
-                              select cl.consensus_timestamp
-                              from contract_log cl
-                              where cl.contract_id = $1
-                              order by cl.consensus_timestamp desc,
-                                       cl.index asc
-                              limit $2
-                            )
+                            where cl.contract_id = $1
                             order by cl.consensus_timestamp desc,
                                      cl.index asc
                             limit $2`)
@@ -128,17 +119,26 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
 
   test('ContractService.getContractLogsByIdAndFiltersQuery - Verify additional conditions', async () => {
     const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
-      ['cl.topic0 = $1', 'cl.topic1 = $2', 'cl.topic2 = $3', 'cl.topic3 = $4', 'cl.contract_id = $5'],
       [
+        'cl.root_contract_id = $1',
+        'cl.topic0 in ($2)',
+        'cl.topic1 in ($3)',
+        'cl.topic2 in ($4)',
+        'cl.topic3 in ($5)',
+        'cl.contract_id in ($6)',
+        'cl.consensus_timestamp in ( $7, $8)',
+      ],
+      [
+        1001,
         'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
         'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
         'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
         'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
         1002,
+        20,
+        30,
       ],
-      ['cl.contract_id = $6', 'cl.timestamp in($7, $8)'],
-      [1001, 20, 30],
-      'asc',
+      'desc',
       'desc',
       5
     );
@@ -151,31 +151,24 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
                                    array_to_json(array_remove(ARRAY [cl.topic0, cl.topic1, cl.topic2, cl.topic3],
                                                               null))::jsonb as topics
                             from contract_log cl
-                            where cl.consensus_timestamp in (
-                              select cl.consensus_timestamp
-                              from contract_log cl
-                              where cl.contract_id = $6
-                                and cl.timestamp in ($7, $8)
-                              order by cl.consensus_timestamp asc,
-                                       cl.index desc
-                              limit $9
-                            )
-                              and cl.topic0 = $1
-                              and cl.topic1 = $2
-                              and cl.topic2 = $3
-                              and cl.topic3 = $4
-                              and cl.contract_id = $5
-                            order by cl.consensus_timestamp asc,
+                            where cl.root_contract_id = $1
+                              and cl.topic0 in ($2)
+                              and cl.topic1 in ($3)
+                              and cl.topic2 in ($4)
+                              and cl.topic3 in ($5)
+                              and cl.contract_id in ($6)
+                              and cl.consensus_timestamp in ($7, $8)
+                            order by cl.consensus_timestamp desc,
                                      cl.index desc
                             limit $9`)
     );
     expect(params).toEqual([
+      1001,
       'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
       'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
       'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
       'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
       1002,
-      1001,
       20,
       30,
       5,
@@ -341,37 +334,52 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
         consensus_timestamp: 1,
         contract_id: 2,
         index: 0,
+        root_contract_id: 8,
       },
       {
         consensus_timestamp: 1,
         contract_id: 3,
         index: 1,
+        root_contract_id: 8,
       },
       {
         consensus_timestamp: 2,
         contract_id: 3,
         index: 0,
+        root_contract_id: 9,
+      },
+      {
+        consensus_timestamp: 3,
+        contract_id: 4,
+        index: 0,
+        root_contract_id: 8,
       },
     ]);
 
     const expectedContractLog = [
       {
+        consensusTimestamp: '3',
+        contractId: '4',
+        index: 0,
+      },
+      {
         consensusTimestamp: '1',
         contractId: '2',
+        index: 0,
       },
       {
         consensusTimestamp: '1',
         contractId: '3',
+        index: 1,
       },
     ];
 
     const response = await ContractService.getContractLogsByIdAndFilters(
-      [],
-      [],
+      ['cl.root_contract_id = $1'],
+      ['8'],
       'desc',
-      25,
-      ['cl.contract_id = $1'],
-      ['2']
+      'asc',
+      25
     );
     expect(response).toMatchObject(expectedContractLog);
   });
@@ -382,6 +390,7 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
         consensus_timestamp: 20,
         contract_id: 2,
         index: 0,
+        root_contract_id: 10,
         topic0: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
         topic1: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
         topic2: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
@@ -391,6 +400,7 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
         consensus_timestamp: 20,
         contract_id: 3,
         index: 1,
+        root_contract_id: 10,
         topic0: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
         topic1: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
         topic2: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
@@ -400,6 +410,7 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
         consensus_timestamp: 2,
         contract_id: 3,
         index: 0,
+        root_contract_id: 10,
       },
     ]);
 
@@ -410,16 +421,24 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
       },
     ];
     const response = await ContractService.getContractLogsByIdAndFilters(
-      ['cl.topic0 = $1', 'cl.topic1 = $2', 'cl.topic2 = $3', 'cl.topic3 = $4', 'cl.contract_id in($5)'],
       [
+        'cl.root_contract_id = $1',
+        'cl.topic0 in ($2)',
+        'cl.topic1 in ($3)',
+        'cl.topic2 in ($4)',
+        'cl.topic3 in ($5)',
+        'cl.contract_id in ($6)',
+        'cl.consensus_timestamp in ($7)',
+      ],
+      [
+        10,
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
         2,
+        20,
       ],
-      ['cl.contract_id = $6', 'cl.consensus_timestamp in($7)'],
-      [3, 20],
       'desc',
       'asc',
       25
