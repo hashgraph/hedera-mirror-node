@@ -158,7 +158,7 @@ sudo vi /usr/etc/hedera-mirror-importer/application.yml
 3 ) Wipe Database
 
 ```console
-scp hedera-mirror-importer/src/main/resources/db/scripts/cleanup.sql user@server:~
+scp hedera-mirror-importer/src/main/resources/db/scripts/drop.sql user@server:~
 ssh user@server
 psql -h dbhost -d mirror_node -U mirror_node -f drop.sql
 ```
