@@ -21,14 +21,15 @@
 package scenario
 
 import (
-	"fmt"
-
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/cucumber/godog"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/bdd-client/client"
+	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
 const (
+	operationStatusSuccess = "SUCCESS"
+
 	operationTypeCryptoCreateAccount = "CRYPTOCREATEACCOUNT"
 	operationTypeCryptoTransfer      = "CRYPTOTRANSFER"
 	operationTypeTokenAssociate      = "TOKENASSOCIATE"
@@ -52,7 +53,7 @@ var (
 		Metadata: map[string]interface{}{"issuer": "Hedera"},
 	}
 	testClient      client.Client
-	treasuryAccount = &types.AccountIdentifier{Address: "0.0.98"}
+	treasuryAccount = getRosettaAccountIdentifier(hedera.AccountID{Account: 98})
 )
 
 func SetupTestClient(serverCfg client.Server, operators []client.Operator) {
@@ -64,7 +65,6 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	InitializeTokenScenario(ctx)
 }
 
-func encodeTransfer(operation *types.Operation) string {
-	amount := operation.Amount
-	return fmt.Sprintf("%s_%s_%s", operation.Account.Address, amount.Currency.Symbol, amount.Value)
+func getRosettaAccountIdentifier(accountId hedera.AccountID) *types.AccountIdentifier {
+	return &types.AccountIdentifier{Address: accountId.String()}
 }

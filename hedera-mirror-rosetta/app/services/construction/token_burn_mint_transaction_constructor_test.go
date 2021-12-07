@@ -42,7 +42,7 @@ const (
 
 var (
 	metadatasBytes  = [][]byte{[]byte("foo"), []byte("bar")}
-	metadatasBase64 = []string{"Zm9v", "YmFy"}
+	metadatasBase64 = []interface{}{"Zm9v", "YmFy"}
 )
 
 func TestTokenBurnMintTransactionConstructorSuite(t *testing.T) {
@@ -155,7 +155,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
 				} else {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-					assertTokenBurnMintTransaction(t, operations, nodeAccountId, tx)
+					assertTokenBurnMintTransaction(t, operations, nodeAccountId, tx, tt.token)
 					mockTokenRepo.AssertExpectations(t)
 
 					if tt.validStartNanos != 0 {
@@ -310,7 +310,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		runTests(t, types.OperationTypeTokenBurn, newTokenBurnTransactionConstructor)
 	})
 
-	suite.T().Run("TokenDissociateTransactionConstructor", func(t *testing.T) {
+	suite.T().Run("TokenMintTransactionConstructor", func(t *testing.T) {
 		runTests(t, types.OperationTypeTokenMint, newTokenMintTransactionConstructor)
 	})
 }
@@ -463,7 +463,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) getOperations(
 
 	if token.Type == domain.TokenTypeNonFungibleUnique {
 		if operationType == types.OperationTypeTokenBurn {
-			operation.Amount.Metadata = map[string]interface{}{types.MetadataKeySerialNumbers: []string{"1", "2"}}
+			operation.Amount.Metadata = map[string]interface{}{types.MetadataKeySerialNumbers: []interface{}{"1", "2"}}
 		} else {
 			operation.Amount.Metadata = map[string]interface{}{types.MetadataKeyMetadatas: metadatasBase64}
 		}
@@ -477,6 +477,7 @@ func assertTokenBurnMintTransaction(
 	operations []*rTypes.Operation,
 	nodeAccountId hedera.AccountID,
 	actual interfaces.Transaction,
+	dbToken domain.Token,
 ) {
 	assert.True(t, actual.IsFrozen())
 	if operations[0].Type == types.OperationTypeTokenBurn {
@@ -487,17 +488,27 @@ func assertTokenBurnMintTransaction(
 
 	var payer string
 	var token string
+	var value string
 
 	switch tx := actual.(type) {
 	case *hedera.TokenBurnTransaction:
 		payer = tx.GetTransactionID().AccountID.String()
 		token = tx.GetTokenID().String()
+		value = fmt.Sprintf("%d", -int64(tx.GetAmount()))
+		if dbToken.Type == domain.TokenTypeNonFungibleUnique {
+			value = fmt.Sprintf("%d", -len(tx.GetSerialNumbers()))
+		}
 	case *hedera.TokenMintTransaction:
 		payer = tx.GetTransactionID().AccountID.String()
 		token = tx.GetTokenID().String()
+		value = fmt.Sprintf("%d", tx.GetAmount())
+		if dbToken.Type == domain.TokenTypeNonFungibleUnique {
+			value = fmt.Sprintf("%d", len(tx.GetMetadatas()))
+		}
 	}
 
 	assert.Equal(t, operations[0].Account.Address, payer)
 	assert.Equal(t, operations[0].Amount.Currency.Symbol, token)
+	assert.Equal(t, operations[0].Amount.Value, value)
 	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
 }

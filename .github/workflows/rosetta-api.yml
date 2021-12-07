@@ -90,6 +90,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 2  # retrieve the preceding commit so changed-files action can diff and get the changes
 
       - name: Get Changed Files
         id: changed-files-module
@@ -182,7 +184,9 @@ jobs:
             jq -s '. | {operators: .} | .server.offlineUrl="${{ env.OFFLINE_URL }}" | {test: .} | {rosetta: .}
               | {mirror: .} | {hedera: .}' | \
             yq eval -P > application.yml
-          go test -v
+          # hts transactions require online mode so as to verify the token currency using data in db
+          [[ ${{ matrix.online-only }} = 'false' ]] && tags="--godog.tags=~@hts" || true
+          go test -v $tags
 
       - name: Run Rosetta Postman API Tests
         working-directory: ./hedera-mirror-rosetta/scripts/validation/postman

@@ -23,6 +23,7 @@ package construction
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -65,13 +66,13 @@ func getTransactionId(payer hedera.AccountID, validStartNanos int64) hedera.Tran
 	return hedera.NewTransactionIDWithValidStart(payer, time.Unix(0, validStartNanos))
 }
 
-func isEmptyPublicKey(key hedera.Key) bool {
+func isNonEmptyPublicKey(key hedera.Key) bool {
 	pk, ok := key.(hedera.PublicKey)
 	if !ok {
 		return false
 	}
 
-	return len(pk.Bytes()) == 0
+	return len(pk.Bytes()) != 0
 }
 
 func isZeroAccountId(accountId hedera.AccountID) bool {
@@ -218,8 +219,18 @@ func validateToken(
 		return nil, errors.ErrInvalidCurrency
 	}
 
-	if tokenType, ok := currency.Metadata[types.MetadataKeyType].(string); !ok || tokenType != token.Type {
-		return nil, errors.ErrInvalidCurrency
+	if tokenType, ok := currency.Metadata[types.MetadataKeyType].(string); !ok {
+		return nil, errors.AddErrorDetails(
+			errors.ErrInvalidTransaction,
+			"reason",
+			fmt.Sprintf("metadata '%s' has wrong data type", types.MetadataKeyType),
+		)
+	} else if tokenType != token.Type {
+		return nil, errors.AddErrorDetails(
+			errors.ErrInvalidCurrency,
+			"reason",
+			fmt.Sprintf("currenty type '%s' doesn't match '%s' in ledger", tokenType, token.Type),
+		)
 	}
 
 	return types.Token{Token: token}.ToHederaTokenId(), nil

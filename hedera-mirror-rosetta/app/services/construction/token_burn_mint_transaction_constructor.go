@@ -204,6 +204,9 @@ func (t *tokenBurnMintTransactionConstructor) preprocessOperationAmount(
 		if tokenAmount.Value >= 0 || (isNft && len(tokenAmount.SerialNumbers) == 0) {
 			return nil, errors.ErrInvalidOperationsAmount
 		}
+
+		// negate the burn value to make it positive
+		tokenAmount.Value = -tokenAmount.Value
 	} else {
 		if tokenAmount.Value <= 0 || (isNft && len(tokenAmount.Metadatas) == 0) {
 			return nil, errors.ErrInvalidOperationsAmount
