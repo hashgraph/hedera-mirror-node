@@ -22,8 +22,8 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.NftTransfer;
-import com.hedera.mirror.importer.domain.NftTransferId;
+import com.hedera.mirror.common.domain.token.NftTransfer;
+import com.hedera.mirror.common.domain.token.NftTransferId;
 
 public interface NftTransferRepository extends CrudRepository<NftTransfer, NftTransferId> {
 

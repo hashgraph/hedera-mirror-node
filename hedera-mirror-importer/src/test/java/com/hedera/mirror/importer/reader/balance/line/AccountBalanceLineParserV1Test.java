@@ -30,7 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 class AccountBalanceLineParserV1Test {

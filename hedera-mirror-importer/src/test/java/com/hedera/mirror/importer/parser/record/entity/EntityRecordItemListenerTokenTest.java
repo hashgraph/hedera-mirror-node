@@ -68,32 +68,32 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.AssessedCustomFee;
+import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
-import com.hedera.mirror.importer.domain.CustomFee;
+import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.importer.domain.CustomFeeWrapper;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.Nft;
-import com.hedera.mirror.importer.domain.NftId;
-import com.hedera.mirror.importer.domain.NftTransferId;
-import com.hedera.mirror.importer.domain.Token;
-import com.hedera.mirror.importer.domain.TokenAccount;
-import com.hedera.mirror.importer.domain.TokenAccountId;
-import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
-import com.hedera.mirror.importer.domain.TokenId;
-import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
-import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
-import com.hedera.mirror.importer.domain.TokenTransfer;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.NftId;
+import com.hedera.mirror.common.domain.token.NftTransferId;
+import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAccountId;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
-import com.hedera.mirror.importer.util.EntityIdEndec;
 
 class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListenerTest {
 
@@ -1327,10 +1327,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTransactionInRepository(ResponseCodeEnum.SUCCESS, consensusTimestamp, null);
     }
 
-    private com.hedera.mirror.importer.domain.NftTransfer domainNftTransfer(long consensusTimestamp, AccountID receiver,
-                                                                            AccountID sender, long serialNumber,
-                                                                            TokenID token, AccountID payer) {
-        var nftTransfer = new com.hedera.mirror.importer.domain.NftTransfer();
+    private com.hedera.mirror.common.domain.token.NftTransfer domainNftTransfer(long consensusTimestamp,
+                                                                                AccountID receiver,
+                                                                                AccountID sender, long serialNumber,
+                                                                                TokenID token, AccountID payer) {
+        var nftTransfer = new com.hedera.mirror.common.domain.token.NftTransfer();
         nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, EntityId.of(token)));
         nftTransfer.setPayerAccountId(EntityId.of(payer));
         if (!receiver.equals(DEFAULT_ACCOUNT_ID)) {
@@ -1632,8 +1633,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var id = new NftTransferId(consensusTimestamp, serialNumber, EntityId.of(tokenID));
         assertThat(nftTransferRepository.findById(id))
                 .get()
-                .returns(receiver, from(com.hedera.mirror.importer.domain.NftTransfer::getReceiverAccountId))
-                .returns(sender, from(com.hedera.mirror.importer.domain.NftTransfer::getSenderAccountId));
+                .returns(receiver, from(com.hedera.mirror.common.domain.token.NftTransfer::getReceiverAccountId))
+                .returns(sender, from(com.hedera.mirror.common.domain.token.NftTransfer::getSenderAccountId));
     }
 
     private void createTokenEntity(TokenID tokenId, TokenType tokenType, String symbol, long consensusTimestamp,

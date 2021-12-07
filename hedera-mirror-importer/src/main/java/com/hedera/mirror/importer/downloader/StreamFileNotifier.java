@@ -25,7 +25,7 @@ import static com.hedera.mirror.importer.config.MessagingConfiguration.CHANNEL_S
 import javax.inject.Named;
 import org.springframework.integration.annotation.MessagingGateway;
 
-import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamFile;
 
 @Named
 @MessagingGateway(defaultRequestChannel = CHANNEL_STREAM)

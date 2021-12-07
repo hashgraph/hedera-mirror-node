@@ -24,7 +24,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
-import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.common.domain.entity.EntityType;
 
 class TokenDissociateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override

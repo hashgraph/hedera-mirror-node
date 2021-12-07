@@ -25,10 +25,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.NftTransfer;
-import com.hedera.mirror.importer.domain.NftTransferId;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.NftTransfer;
+import com.hedera.mirror.common.domain.token.NftTransferId;
 
 class NftTransferRepositoryTest extends AbstractRepositoryTest {
 

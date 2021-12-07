@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.parser.record.entity.AbstractEntityRecordItemListenerTest;
 import com.hedera.mirror.importer.util.Utility;
 

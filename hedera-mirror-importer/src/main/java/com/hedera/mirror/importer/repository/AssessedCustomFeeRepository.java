@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.AssessedCustomFee;
+import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 
 public interface AssessedCustomFeeRepository extends CrudRepository<AssessedCustomFee, AssessedCustomFee.Id> {
 }

@@ -37,12 +37,10 @@ import java.util.stream.Collectors;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ReflectionUtils;
 
@@ -54,7 +52,8 @@ public abstract class AbstractUpsertQueryGenerator<T> implements UpsertQueryGene
     private static final Comparator<DomainField> DOMAIN_FIELD_COMPARATOR = Comparator.comparing(DomainField::getName);
 
     protected final Logger log = LogManager.getLogger(getClass());
-    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) { }.getRawType();
+    private final Class<T> metaModelClass = (Class<T>) new TypeToken<T>(getClass()) {
+    }.getRawType();
     private volatile Set<Field> attributes = null;
 
     protected boolean isInsertOnly() {

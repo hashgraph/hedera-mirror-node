@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.reader.balance.line;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
 
 public interface AccountBalanceLineParser {
     AccountBalance parse(String line, long consensusTimestamp);

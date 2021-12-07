@@ -27,22 +27,21 @@ import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
 import lombok.Value;
 
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.NftId_;
-import com.hedera.mirror.importer.domain.Nft_;
-import com.hedera.mirror.importer.domain.TokenId_;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.NftId_;
+import com.hedera.mirror.common.domain.token.Nft_;
+import com.hedera.mirror.common.domain.token.TokenId_;
 
 @Named
 @Value
 public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> {
+    private static final String RESERVED_ENTITY_ID = EntityId.EMPTY.getId().toString();
     private final String finalTableName = "nft";
     private final String temporaryTableName = getFinalTableName() + "_temp";
     private final List<String> conflictIdColumns = List.of(NftId_.TOKEN_ID, NftId_.SERIAL_NUMBER);
     private final Set<String> nullableColumns = Set.of(Nft_.ACCOUNT_ID);
     private final Set<String> nonUpdatableColumns = Set.of(Nft_.CREATED_TIMESTAMP, Nft_.ID, Nft_.METADATA,
             NftId_.SERIAL_NUMBER, NftId_.TOKEN_ID);
-    private static final String RESERVED_ENTITY_ID = EntityId.EMPTY.getId().toString();
-
     @Getter(lazy = true)
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
     private final Set<SingularAttribute> selectableColumns = Set.of(Nft_.accountId, Nft_.createdTimestamp, Nft_.deleted,

@@ -30,9 +30,9 @@ import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.TopicMessage;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 
 @RequiredArgsConstructor
 public abstract class BatchEntityListenerTest extends IntegrationTest {

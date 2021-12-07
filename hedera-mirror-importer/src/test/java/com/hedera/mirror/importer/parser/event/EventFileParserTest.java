@@ -30,15 +30,15 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.importer.domain.DigestAlgorithm;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.EventFile;
-import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.event.EventFile;
+import com.hedera.mirror.common.domain.event.EventItem;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
-import com.hedera.mirror.importer.parser.domain.EventItem;
 
 class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> {
 

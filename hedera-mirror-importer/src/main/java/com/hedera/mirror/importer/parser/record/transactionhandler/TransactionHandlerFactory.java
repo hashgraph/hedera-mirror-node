@@ -26,7 +26,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 
-import com.hedera.mirror.importer.domain.TransactionType;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 
 @Named
 public class TransactionHandlerFactory {

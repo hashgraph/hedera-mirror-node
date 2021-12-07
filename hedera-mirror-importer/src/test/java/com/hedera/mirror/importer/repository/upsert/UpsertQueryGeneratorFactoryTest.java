@@ -27,10 +27,10 @@ import javax.annotation.Resource;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.Contract;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.Schedule;
 
 class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
 

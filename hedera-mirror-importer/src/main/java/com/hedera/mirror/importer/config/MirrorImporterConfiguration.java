@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
 import org.springframework.context.SmartLifecycle;
@@ -39,8 +40,8 @@ import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.TokenTransfer;
 import com.hedera.mirror.importer.leader.LeaderAspect;
 import com.hedera.mirror.importer.leader.LeaderService;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
@@ -50,6 +51,7 @@ import com.hedera.mirror.importer.repository.upsert.TokenDissociateTransferUpser
 
 @Configuration
 @EnableAsync
+@EntityScan({"com.hedera.mirror.common.domain", "com.hedera.mirror.importer.repository.upsert"})
 @Log4j2
 @RequiredArgsConstructor
 @AutoConfigureBefore(FlywayAutoConfiguration.class) // Since this configuration creates FlywayConfigurationCustomizer

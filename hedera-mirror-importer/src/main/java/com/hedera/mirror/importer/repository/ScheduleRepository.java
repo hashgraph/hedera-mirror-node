@@ -26,7 +26,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
-import com.hedera.mirror.importer.domain.Schedule;
+import com.hedera.mirror.common.domain.schedule.Schedule;
 
 public interface ScheduleRepository extends CrudRepository<Schedule, Long> {
     @Modifying

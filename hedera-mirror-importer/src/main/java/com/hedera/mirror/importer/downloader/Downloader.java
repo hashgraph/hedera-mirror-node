@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
+import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA384;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.maxBy;
@@ -61,13 +61,13 @@ import software.amazon.awssdk.services.s3.model.S3Object;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.importer.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;

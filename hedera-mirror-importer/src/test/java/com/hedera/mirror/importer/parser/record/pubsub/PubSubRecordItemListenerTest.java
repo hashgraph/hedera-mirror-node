@@ -63,13 +63,13 @@ import org.springframework.integration.MessageTimeoutException;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.TransactionType;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategyImpl;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;

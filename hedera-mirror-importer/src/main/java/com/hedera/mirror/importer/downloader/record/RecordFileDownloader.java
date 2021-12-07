@@ -27,7 +27,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.downloader.StreamFileNotifier;

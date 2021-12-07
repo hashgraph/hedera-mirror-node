@@ -52,11 +52,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import com.hedera.mirror.importer.domain.CryptoTransfer;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.LiveHash;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.util.Utility;
 
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
@@ -81,7 +82,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         var accountEntityId = EntityId.of(accountId);
-        var consensusTimestamp = Utility.timeStampInNanos(record.getConsensusTimestamp());
+        var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
         Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
                 INITIAL_BALANCE, consensusTimestamp, accountEntityId));
@@ -173,17 +174,18 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 // transaction body inputs
                 () -> assertEquals(cryptoUpdateTransactionBody.getAutoRenewPeriod().getSeconds(),
                         dbAccountEntity.getAutoRenewPeriod()),
-                () -> assertEquals(Utility.getPublicKey(
+                () -> assertEquals(DomainUtils.getPublicKey(
                         cryptoUpdateTransactionBody.getKey().toByteArray()), dbAccountEntity.getPublicKey()),
                 () -> assertEquals(EntityId.of(cryptoUpdateTransactionBody.getProxyAccountID()),
                         dbAccountEntity.getProxyAccountId()),
-                () -> assertArrayEquals(cryptoUpdateTransactionBody.getKey().toByteArray(), dbAccountEntity.getKey()),
+                () -> assertArrayEquals(cryptoUpdateTransactionBody.getKey()
+                        .toByteArray(), dbAccountEntity.getKey()),
                 () -> assertEquals(cryptoUpdateTransactionBody.getMaxAutomaticTokenAssociations().getValue(),
                         dbAccountEntity.getMaxAutomaticTokenAssociations()),
                 () -> assertEquals(cryptoUpdateTransactionBody.getMemo().getValue(), dbAccountEntity.getMemo()),
-                () -> assertEquals(Utility.timeStampInNanos(cryptoUpdateTransactionBody.getExpirationTime()),
+                () -> assertEquals(DomainUtils.timeStampInNanos(cryptoUpdateTransactionBody.getExpirationTime()),
                         dbAccountEntity.getExpirationTimestamp()),
-                () -> assertEquals(Utility.timestampInNanosMax(record.getConsensusTimestamp()),
+                () -> assertEquals(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()),
                         dbAccountEntity.getModifiedTimestamp()),
                 () -> assertFalse(dbAccountEntity.getReceiverSigRequired())
         );
@@ -209,10 +211,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        assertThat(transactionRepository.findById(Utility.timestampInNanosMax(record.getConsensusTimestamp())))
+        assertThat(transactionRepository.findById(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp())))
                 .get()
-                .extracting(com.hedera.mirror.importer.domain.Transaction::getPayerAccountId,
-                        com.hedera.mirror.importer.domain.Transaction::getEntityId)
+                .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getPayerAccountId,
+                        com.hedera.mirror.common.domain.transaction.Transaction::getEntityId)
                 .containsOnly(EntityId.of(accountId));
     }
 
@@ -324,7 +326,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertThat(dbAccountEntity)
                         .isNotNull()
                         .returns(true, Entity::getDeleted)
-                        .returns(Utility.timestampInNanosMax(record.getConsensusTimestamp()),
+                        .returns(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()),
                                 Entity::getModifiedTimestamp)
                         .usingRecursiveComparison()
                         .ignoringFields("deleted", "timestampRange")
@@ -488,7 +490,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         assertThat(transactionRepository.findAll())
                 .hasSize(1)
-                .extracting(com.hedera.mirror.importer.domain.Transaction::getResult)
+                .extracting(com.hedera.mirror.common.domain.transaction.Transaction::getResult)
                 .containsOnly(unknownResult);
     }
 
@@ -509,7 +511,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     private void assertCryptoEntity(CryptoCreateTransactionBody expected, Timestamp consensusTimestamp) {
         Entity actualAccount = getTransactionEntity(consensusTimestamp);
-        long timestamp = Utility.timestampInNanosMax(consensusTimestamp);
+        long timestamp = DomainUtils.timestampInNanosMax(consensusTimestamp);
         assertAll(
                 () -> assertEquals(expected.getAutoRenewPeriod().getSeconds(), actualAccount.getAutoRenewPeriod()),
                 () -> assertEquals(timestamp, actualAccount.getCreatedTimestamp()),
@@ -519,9 +521,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(0, actualAccount.getMaxAutomaticTokenAssociations()),
                 () -> assertEquals(expected.getMemo(), actualAccount.getMemo()),
                 () -> assertEquals(timestamp, actualAccount.getModifiedTimestamp()),
-                () -> assertEquals(Utility.getPublicKey(expected.getKey().toByteArray()),
+                () -> assertEquals(DomainUtils.getPublicKey(expected.getKey().toByteArray()),
                         actualAccount.getPublicKey()),
-                () -> assertEquals(EntityId.of(expected.getProxyAccountID()), actualAccount.getProxyAccountId()),
+                () -> assertEquals(EntityId.of(expected.getProxyAccountID()),
+                        actualAccount.getProxyAccountId()),
                 () -> assertEquals(expected.getReceiverSigRequired(), actualAccount.getReceiverSigRequired())
         );
     }

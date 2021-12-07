@@ -30,8 +30,8 @@ import org.springframework.integration.dsl.MessageChannels;
 import org.springframework.integration.dsl.Pollers;
 import org.springframework.messaging.MessageChannel;
 
-import com.hedera.mirror.importer.domain.StreamFile;
-import com.hedera.mirror.importer.domain.StreamType;
+import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.parser.ParserProperties;
 import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.parser.balance.AccountBalanceFileParser;

@@ -41,7 +41,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.util.Utility;
 
 class PubSubMessageTest {

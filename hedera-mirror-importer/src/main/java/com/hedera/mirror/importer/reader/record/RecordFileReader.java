@@ -20,8 +20,8 @@ package com.hedera.mirror.importer.reader.record;
  * ‍
  */
 
-import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.reader.StreamFileReader;
 
 public interface RecordFileReader extends StreamFileReader<RecordFile, RecordItem> {

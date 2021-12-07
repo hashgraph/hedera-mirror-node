@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.reader;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.DigestAlgorithm.SHA384;
+import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA384;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -51,7 +51,8 @@ class HashObjectTest {
             "1226, 1, , 61, true",
     })
     void newHashObject(long classId, int classVersion, Integer digestType, int bytesToTruncate, boolean expectThrown) throws IOException {
-        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); DataOutputStream dos = new DataOutputStream(bos)) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); DataOutputStream dos =
+                new DataOutputStream(bos)) {
             // given
             dos.writeLong(classId);
             dos.writeInt(classVersion);

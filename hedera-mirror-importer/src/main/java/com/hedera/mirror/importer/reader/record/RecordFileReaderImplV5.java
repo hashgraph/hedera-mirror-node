@@ -36,12 +36,12 @@ import lombok.Getter;
 import org.apache.commons.codec.binary.Hex;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.importer.domain.DigestAlgorithm;
-import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.reader.AbstractStreamObject;
 import com.hedera.mirror.importer.reader.HashObject;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;

@@ -29,7 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.hedera.mirror.importer.domain.EntityType;
+import com.hedera.mirror.common.domain.entity.EntityType;
+
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,8 +39,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.AccountBalance;
-import com.hedera.mirror.importer.domain.TokenBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 class AccountBalanceLineParserV2Test {

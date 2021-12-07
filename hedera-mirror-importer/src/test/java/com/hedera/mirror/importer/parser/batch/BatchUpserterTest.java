@@ -20,9 +20,9 @@ package com.hedera.mirror.importer.parser.batch;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
-import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
@@ -39,26 +39,26 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.transaction.support.TransactionOperations;
 
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.Contract;
 import com.hedera.mirror.importer.domain.DomainBuilder;
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.Nft;
-import com.hedera.mirror.importer.domain.NftId;
-import com.hedera.mirror.importer.domain.NftTransfer;
-import com.hedera.mirror.importer.domain.NftTransferId;
-import com.hedera.mirror.importer.domain.Schedule;
-import com.hedera.mirror.importer.domain.Token;
-import com.hedera.mirror.importer.domain.TokenAccount;
-import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
-import com.hedera.mirror.importer.domain.TokenId;
-import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
-import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
-import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
-import com.hedera.mirror.importer.domain.TokenTransfer;
-import com.hedera.mirror.importer.domain.TokenTypeEnum;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.NftId;
+import com.hedera.mirror.common.domain.token.NftTransfer;
+import com.hedera.mirror.common.domain.token.NftTransferId;
+import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.NftRepository;

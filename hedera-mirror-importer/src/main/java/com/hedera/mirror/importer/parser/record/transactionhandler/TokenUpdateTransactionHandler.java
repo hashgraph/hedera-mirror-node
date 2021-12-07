@@ -20,18 +20,19 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import javax.inject.Named;
 
-import com.hedera.mirror.importer.domain.Entity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.NftTransferId;
-import com.hedera.mirror.importer.domain.TransactionType;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.NftTransferId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.NftRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
@@ -65,7 +66,7 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         if (transactionBody.hasExpiry()) {
-            entity.setExpirationTimestamp(Utility.timestampInNanosMax(transactionBody.getExpiry()));
+            entity.setExpirationTimestamp(DomainUtils.timestampInNanosMax(transactionBody.getExpiry()));
         }
 
         if (transactionBody.hasMemo()) {

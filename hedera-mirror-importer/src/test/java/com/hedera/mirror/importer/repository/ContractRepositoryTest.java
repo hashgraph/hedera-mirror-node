@@ -27,7 +27,7 @@ import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.RowMapper;
 
-import com.hedera.mirror.importer.domain.Contract;
+import com.hedera.mirror.common.domain.contract.Contract;
 
 class ContractRepositoryTest extends AbstractRepositoryTest {
 

@@ -27,6 +27,8 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import com.hedera.mirror.common.util.DomainUtils;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
@@ -72,6 +74,15 @@ import org.springframework.cglib.core.ReflectUtils;
 import org.springframework.util.ResourceUtils;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
+import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.TestUtils;
@@ -80,27 +91,18 @@ import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.config.CloudStorageConfiguration;
 import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.importer.domain.AddressBook;
-import com.hedera.mirror.importer.domain.AddressBookEntry;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.RecordFile;
-import com.hedera.mirror.importer.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.importer.domain.StreamType;
-import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
-import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
 @Log4j2
 public abstract class AbstractDownloaderTest {
     private static final int S3_PROXY_PORT = 8001;
-
+    protected static Set<EntityId> allNodeAccountIds;
+    protected static AddressBook addressBook;
     @Mock
     protected StreamFileNotifier streamFileNotifier;
     @Mock
@@ -127,10 +129,6 @@ public abstract class AbstractDownloaderTest {
     protected SignatureFileReader signatureFileReader;
     protected StreamType streamType;
     protected long firstIndex = 0L;
-
-    protected static Set<EntityId> allNodeAccountIds;
-    protected static AddressBook addressBook;
-
     @TempDir
     Path dataPath;
 
@@ -164,6 +162,28 @@ public abstract class AbstractDownloaderTest {
         }
     }
 
+    @BeforeAll
+    static void beforeAll() throws IOException {
+        addressBook = loadAddressBook("testnet");
+        allNodeAccountIds = addressBook.getNodeSet();
+    }
+
+    protected static AddressBook loadAddressBook(String filename) throws IOException {
+        Path addressBookPath = ResourceUtils.getFile(String.format("classpath:addressbook/%s", filename)).toPath();
+        byte[] addressBookBytes = Files.readAllBytes(addressBookPath);
+        EntityId entityId = EntityId.of(0, 0, 102, EntityType.FILE);
+        long now = Instant.now().getEpochSecond();
+        return AddressBookServiceImpl.buildAddressBook(new FileData(
+                now,
+                addressBookBytes,
+                entityId,
+                TransactionType.FILECREATE.getProtoId()));
+    }
+
+    private static Stream<Arguments> provideAllNodeAccountIds() {
+        return allNodeAccountIds.stream().map(Arguments::of);
+    }
+
     // Implementation can assume that mirrorProperties and commonDownloaderProperties have been initialized.
     protected abstract DownloaderProperties getDownloaderProperties();
 
@@ -187,12 +207,6 @@ public abstract class AbstractDownloaderTest {
         }
 
         return false;
-    }
-
-    @BeforeAll
-    static void beforeAll() throws IOException {
-        addressBook = loadAddressBook("testnet");
-        allNodeAccountIds = addressBook.getNodeSet();
     }
 
     protected void beforeEach() throws Exception {
@@ -663,7 +677,7 @@ public abstract class AbstractDownloaderTest {
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
         StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
         streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
-        streamFile.setConsensusStart(Utility.convertToNanosMax(instant));
+        streamFile.setConsensusStart(DomainUtils.convertToNanosMax(instant));
         streamFile.setHash(hash);
         streamFile.setIndex(index);
 
@@ -681,21 +695,5 @@ public abstract class AbstractDownloaderTest {
      */
     protected void expectLastStreamFile(Instant instant) {
         expectLastStreamFile(null, null, instant);
-    }
-
-    protected static AddressBook loadAddressBook(String filename) throws IOException {
-        Path addressBookPath = ResourceUtils.getFile(String.format("classpath:addressbook/%s", filename)).toPath();
-        byte[] addressBookBytes = Files.readAllBytes(addressBookPath);
-        EntityId entityId = EntityId.of(0, 0, 102, EntityType.FILE);
-        long now = Instant.now().getEpochSecond();
-        return AddressBookServiceImpl.buildAddressBook(new FileData(
-                now,
-                addressBookBytes,
-                entityId,
-                TransactionType.FILECREATE.getProtoId()));
-    }
-
-    private static Stream<Arguments> provideAllNodeAccountIds() {
-        return allNodeAccountIds.stream().map(Arguments::of);
     }
 }

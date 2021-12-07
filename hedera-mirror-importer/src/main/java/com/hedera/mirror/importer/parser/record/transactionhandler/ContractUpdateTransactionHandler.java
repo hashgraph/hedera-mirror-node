@@ -22,12 +22,12 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import javax.inject.Named;
 
-import com.hedera.mirror.importer.domain.Contract;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.TransactionType;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
@@ -48,7 +48,7 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
         var transactionBody = recordItem.getTransactionBody().getContractUpdateInstance();
 
         if (transactionBody.hasExpirationTime()) {
-            contract.setExpirationTimestamp(Utility.timestampInNanosMax(transactionBody.getExpirationTime()));
+            contract.setExpirationTimestamp(DomainUtils.timestampInNanosMax(transactionBody.getExpirationTime()));
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {
