@@ -2,7 +2,7 @@
 alter table contract_log
     add column root_contract_id bigint;
 
--- Backfill root_contract_id based on index
+-- Backfill root_contract_id based on timestamp
 update contract_log
 set root_contract_id = contract_result.contract_id
 from contract_result
