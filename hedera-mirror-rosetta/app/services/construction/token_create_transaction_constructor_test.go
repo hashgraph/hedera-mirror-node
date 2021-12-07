@@ -107,9 +107,9 @@ func (suite *tokenCreateTransactionConstructorSuite) TestConstruct() {
 				assert.Nil(t, signers)
 				assert.Nil(t, tx)
 			} else {
+				// the default
 				expectedSigners := []hedera.AccountID{treasury, autoRenewAccount}
 				if tt.expectedSigners != nil {
-					// the default
 					expectedSigners = tt.expectedSigners
 				}
 

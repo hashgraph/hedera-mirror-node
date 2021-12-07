@@ -648,7 +648,7 @@ func (t *tokenFeature) tokenUpdate(ctx context.Context) error {
 }
 
 func (t *tokenFeature) verifyTokenUpdate(ctx context.Context) error {
-	log.Info("Verifiying TokenUpdate transaction")
+	log.Info("Verifying TokenUpdate transaction")
 
 	transaction, err := t.findTransaction(ctx, operationTypeTokenUpdate)
 	if err != nil {
@@ -683,10 +683,10 @@ func (t *tokenFeature) cleanup(ctx context.Context, s *godog.Scenario, err error
 			log.Errorf("Failed to delete token: %s", err)
 		}
 		if err1 := testClient.TokenDissociate(t.normalOperator, *t.tokenId); err1 != nil {
-			log.Errorf("Failed dissociate account %s: %s", t.normalOperator.Id, err1)
+			log.Errorf("Failed to dissociate account %s: %s", t.normalOperator.Id, err1)
 		}
 		if err1 := testClient.TokenDissociate(t.adminOperator, *t.tokenId); err1 != nil {
-			log.Errorf("Failed dissociate account %s: %s", t.adminOperator.Id, err1)
+			log.Errorf("Failed to dissociate account %s: %s", t.adminOperator.Id, err1)
 		}
 	}
 

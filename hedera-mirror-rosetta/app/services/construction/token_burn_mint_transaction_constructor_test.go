@@ -494,9 +494,9 @@ func assertTokenBurnMintTransaction(
 	case *hedera.TokenBurnTransaction:
 		payer = tx.GetTransactionID().AccountID.String()
 		token = tx.GetTokenID().String()
-		value = fmt.Sprintf("-%d", tx.GetAmount())
+		value = fmt.Sprintf("%d", -int64(tx.GetAmount()))
 		if dbToken.Type == domain.TokenTypeNonFungibleUnique {
-			value = fmt.Sprintf("-%d", len(tx.GetSerialNumbers()))
+			value = fmt.Sprintf("%d", -len(tx.GetSerialNumbers()))
 		}
 	case *hedera.TokenMintTransaction:
 		payer = tx.GetTransactionID().AccountID.String()
