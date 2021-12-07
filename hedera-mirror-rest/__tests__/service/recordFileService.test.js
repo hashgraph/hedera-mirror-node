@@ -21,7 +21,9 @@
 'use strict';
 
 const {RecordFileService} = require('../../service');
-const {formatSqlQueryString} = require('../testutils');
+
+// add logger configuration support
+require('../testutils');
 
 const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
@@ -52,8 +54,8 @@ beforeEach(async () => {
   await integrationDbOps.cleanUp(dbConfig.sqlConnection);
 });
 
-describe('RecordFileService.getRecordFileBlockDetailsFromTimestam tests', () => {
-  test('RecordFileService.getRecordFileBlockDetailsFromTimestam - No match', async () => {
+describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () => {
+  test('RecordFileService.getRecordFileBlockDetailsFromTimestamp - No match', async () => {
     await expect(RecordFileService.getRecordFileBlockDetailsFromTimestamp(1)).resolves.toBeNull();
   });
 

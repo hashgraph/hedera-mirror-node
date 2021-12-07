@@ -27,7 +27,7 @@
       }
     ]
   },
-  "url": ["/api/v1/contracts/-1.0.1/results/now", "/api/v1/contracts/x/results/167654.000123456.2"],
+  "urls": ["/api/v1/contracts/-1.0.1/results/now", "/api/v1/contracts/x/results/167654.000123456.2"],
   "responseStatus": 400,
   "responseJson": {
     "_status": {
