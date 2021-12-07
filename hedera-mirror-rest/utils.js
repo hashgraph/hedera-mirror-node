@@ -199,6 +199,9 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.FROM:
       ret = EntityId.isValidEntityId(val) || EntityId.isValidSolidityAddress(val);
       break;
+    case constants.filterKeys.INDEX:
+      ret = isNumeric(val) & (val > 0);
+      break;
     case constants.filterKeys.LIMIT:
       ret = isPositiveLong(val);
       break;
@@ -1017,6 +1020,7 @@ module.exports = {
   getPaginationLink,
   getPoolClass,
   ipMask,
+  isNumeric,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
   isPositiveLong,

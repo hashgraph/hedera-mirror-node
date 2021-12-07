@@ -31,7 +31,7 @@ const constants = require('../../constants');
 const contracts = require('../../controllers/contractController');
 const {formatSqlQueryString} = require('../testutils');
 const utils = require('../../utils');
-const {Contract} = require('../../model');
+const {Contract, ContractLog} = require('../../model');
 
 const contractFields = [
   Contract.AUTO_RENEW_PERIOD,
@@ -485,11 +485,20 @@ describe('contractLogfilterValidityChecks', () => {
       )
     ).toBeFalsy();
   });
+  test('valid index', () => {
+    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.INDEX, 'eq', '22')).toBeTruthy();
+  });
+  test('invalid index', () => {
+    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.INDEX, 'eq', '-1')).toBeFalsy();
+  });
+  test('invalid index string', () => {
+    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.INDEX, 'eq', 'aa')).toBeFalsy();
+  });
   test('valid limit', () => {
-    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.LIMIT, 'eq', 222)).toBeTruthy();
+    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.LIMIT, 'eq', '222')).toBeTruthy();
   });
   test('invalid limit', () => {
-    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.LIMIT, 'eq', -1)).toBeFalsy();
+    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.LIMIT, 'eq', -'1')).toBeFalsy();
   });
   test('valid order', () => {
     expect(
@@ -517,14 +526,14 @@ describe('contractLogfilterValidityChecks', () => {
       )
     ).toBeFalsy();
   });
-  test('imvalid topic val', () => {
+  test('invalid topic val', () => {
     expect(
       contracts.contractLogfilterValidityChecks(
         constants.filterKeys.TOPIC3,
         'lt',
         '000000000000000000000000000000000000000000000000000000000001234'
       )
-    ).toBeTruthy();
+    ).toBeFalsy();
   });
   test('valid timestamp', () => {
     expect(
@@ -549,10 +558,8 @@ describe('contractLogfilterValidityChecks', () => {
 describe('extractContractLogsByIdQuery', () => {
   const defaultContractId = 1;
   const defaultExpected = {
-    conditions: [],
-    params: [],
-    subQueryConditions: [],
-    subQueryParams: [],
+    conditions: ['cl.root_contract_id = $1'],
+    params: [defaultContractId],
     timestampOrder: constants.orderFilterValues.DESC,
     indexOrder: constants.orderFilterValues.ASC,
     limit: defaultLimit,
@@ -563,8 +570,6 @@ describe('extractContractLogsByIdQuery', () => {
       input: {filter: [], contractId: defaultContractId},
       expected: {
         ...defaultExpected,
-        subQueryConditions: ['cl.contract_id = $1'],
-        subQueryParams: [defaultContractId],
       },
     },
     {
@@ -591,8 +596,8 @@ describe('extractContractLogsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        subQueryConditions: ['cl.contract_id = $1', 'cl.consensus_timestamp > $2', 'cl.consensus_timestamp in ($3,$4)'],
-        subQueryParams: [defaultContractId, '1000', '1001', '1002'],
+        conditions: ['cl.root_contract_id = $1', 'cl.consensus_timestamp > $2', 'cl.consensus_timestamp in ($3,$4)'],
+        params: [defaultContractId, '1000', '1001', '1002'],
       },
     },
     {
@@ -630,16 +635,21 @@ describe('extractContractLogsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['cl.topic0 in ($1,$2)', 'cl.topic1 in ($3)', 'cl.topic2 in ($4)', 'cl.topic3 in ($5)'],
+        conditions: [
+          'cl.root_contract_id = $1',
+          'cl.topic0 in ($2,$3)',
+          'cl.topic1 in ($4)',
+          'cl.topic2 in ($5)',
+          'cl.topic3 in ($6)',
+        ],
         params: [
+          defaultContractId,
           '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
           '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
           '0x59d088293f09d5119d5b55858b989ffce4d398dc',
           '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
           '0x59d088293f09d5119d5b55858b989ffce4d398dd',
         ],
-        subQueryConditions: ['cl.contract_id = $6'],
-        subQueryParams: [defaultContractId],
       },
     },
     {
@@ -661,10 +671,8 @@ describe('extractContractLogsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['cl.contract_id in ($1,$2)'],
-        params: ['4660', '6291'],
-        subQueryConditions: ['cl.contract_id = $3'],
-        subQueryParams: [defaultContractId],
+        conditions: ['cl.root_contract_id = $1', 'cl.contract_id in ($2,$3)'],
+        params: [defaultContractId, '4660', '6291'],
       },
     },
     {
@@ -681,8 +689,6 @@ describe('extractContractLogsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        subQueryConditions: ['cl.contract_id = $1'],
-        subQueryParams: [defaultContractId],
         limit: 20,
       },
     },
@@ -700,8 +706,6 @@ describe('extractContractLogsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        subQueryConditions: ['cl.contract_id = $1'],
-        subQueryParams: [defaultContractId],
         timestampOrder: constants.orderFilterValues.ASC,
         indexOrder: constants.orderFilterValues.ASC,
       },
@@ -720,8 +724,6 @@ describe('extractContractLogsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        subQueryConditions: ['cl.contract_id = $1'],
-        subQueryParams: [defaultContractId],
         timestampOrder: constants.orderFilterValues.DESC,
         indexOrder: constants.orderFilterValues.DESC,
       },

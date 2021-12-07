@@ -57,30 +57,36 @@ const contractSelectFields = [
 // the query finds the file content valid at the contract's created timestamp T by aggregating the contents of all the
 // file* txs from the latest FileCreate or FileUpdate transaction before T, to T
 // Note the 'contract' relation is the cte not the 'contract' table
-const fileDataQuery = `select
-      string_agg(
-          ${FileData.getFullName(FileData.FILE_DATA)}, ''
-          order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
-      ) bytecode
-    from ${FileData.tableName} ${FileData.tableAlias}
-    join ${Contract.tableName} ${Contract.tableAlias}
-      on ${Contract.getFullName(Contract.FILE_ID)} = ${FileData.getFullName(FileData.ENTITY_ID)}
-    where ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} >= (
-      select ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
-      from ${FileData.tableName} ${FileData.tableAlias}
-      join ${Contract.tableName} ${Contract.tableAlias}
-        on ${Contract.getFullName(Contract.FILE_ID)} = ${FileData.getFullName(FileData.ENTITY_ID)}
-          and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${Contract.getFullName(
+const fileDataQuery = `select string_agg(
+                                ${FileData.getFullName(FileData.FILE_DATA)}, ''
+                                order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
+                                ) bytecode
+                       from ${FileData.tableName} ${FileData.tableAlias}
+                              join ${Contract.tableName} ${Contract.tableAlias}
+                                   on ${Contract.getFullName(Contract.FILE_ID)} = ${FileData.getFullName(
+  FileData.ENTITY_ID
+)}
+                       where ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} >= (
+                         select ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
+                         from ${FileData.tableName} ${FileData.tableAlias}
+                                join ${Contract.tableName} ${Contract.tableAlias}
+                                     on ${Contract.getFullName(Contract.FILE_ID)} =
+                                        ${FileData.getFullName(FileData.ENTITY_ID)}
+                                       and
+                                        ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${Contract.getFullName(
   Contract.CREATED_TIMESTAMP
 )}
-      where ${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 17
-        or (${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 19 and length(${FileData.getFullName(
-  FileData.FILE_DATA
-)}) <> 0)
-      order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} desc
-      limit 1
-    ) and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${Contract.getFullName(Contract.CREATED_TIMESTAMP)}
-      and ${Contract.getFullName(Contract.FILE_ID)} is not null`;
+                         where ${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 17
+                            or (${FileData.getFullName(
+                              FileData.TRANSACTION_TYPE
+                            )} = 19 and length(${FileData.getFullName(FileData.FILE_DATA)}) <> 0)
+                         order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} desc
+                         limit 1
+                       )
+                         and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${Contract.getFullName(
+  Contract.CREATED_TIMESTAMP
+)}
+                         and ${Contract.getFullName(Contract.FILE_ID)} is not null`;
 
 /**
  * Extracts the sql where clause, params, order and limit values to be used from the provided contract query
@@ -244,9 +250,10 @@ const getContractByIdQuery = (timestampConditions) => {
 
   const cte = `with contract as (
     ${tableUnionQueries.join('\n')}
-  ), contract_file as (
-    ${fileDataQuery}
-  )`;
+  ),
+                    contract_file as (
+                      ${fileDataQuery}
+                    )`;
 
   return [
     cte,
@@ -395,14 +402,11 @@ const getContractLogs = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, contractLogfilterValidityChecks);
 
   // get sql filter query, params, limit and limit query from query filters
-  const {conditions, params, subQueryConditions, subQueryParams, timestampOrder, indexOrder, limit} =
-    extractContractLogsByIdQuery(filters, contractId);
+  const {conditions, params, timestampOrder, indexOrder, limit} = extractContractLogsByIdQuery(filters, contractId);
 
   const rows = await contractService.getContractLogsByIdAndFilters(
     conditions,
     params,
-    subQueryConditions,
-    subQueryParams,
     timestampOrder,
     indexOrder,
     limit
@@ -435,6 +439,9 @@ const contractLogfilterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.LIMIT:
       ret = utils.isPositiveLong(val);
+      break;
+    case constants.filterKeys.INDEX:
+      ret = utils.isNumeric(val) & (val > 0);
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
@@ -532,11 +539,17 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   let limit = defaultLimit;
   let timestampOrder = constants.orderFilterValues.DESC;
   let indexOrder = constants.orderFilterValues.ASC;
-  const conditions = [];
-  const params = [];
+  const conditions = [`${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)} = $1`];
+  const params = [contractId];
 
   const contractLogAddressFullName = ContractLog.getFullName(ContractLog.CONTRACT_ID);
   const contractLogAddressInValues = [];
+
+  const contractLogIndexFullName = ContractLog.getFullName(ContractLog.INDEX);
+  const contractLogIndexInValues = [];
+
+  const contractLogTimestampFullName = ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP);
+  const contractLogTimestampInValues = [];
 
   const contractLogTopic0FullName = ContractLog.getFullName(ContractLog.TOPIC0);
   const contractLogTopic0InValues = [];
@@ -549,8 +562,6 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
 
   const contractLogTopic3FullName = ContractLog.getFullName(ContractLog.TOPIC3);
   const contractLogTopic3InValues = [];
-
-  const timestampFilters = [];
 
   for (const filter of filters) {
     switch (filter.key) {
@@ -566,6 +577,15 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
           contractLogAddressFullName
         );
         break;
+      case constants.filterKeys.INDEX:
+        updateConditionsAndParamsWithInValues(
+          filter,
+          contractLogIndexInValues,
+          params,
+          conditions,
+          contractLogIndexFullName
+        );
+        break;
       case constants.filterKeys.LIMIT:
         limit = filter.value;
         break;
@@ -574,7 +594,13 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         indexOrder = filter.value;
         break;
       case constants.filterKeys.TIMESTAMP:
-        timestampFilters.push(filter);
+        updateConditionsAndParamsWithInValues(
+          filter,
+          contractLogTimestampInValues,
+          params,
+          conditions,
+          contractLogTimestampFullName
+        );
         break;
       case constants.filterKeys.TOPIC0:
         // handle repeated values
@@ -620,41 +646,16 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
 
   // update query with repeated values
   updateQueryFiltersWithInValues(params, conditions, contractLogAddressInValues, contractLogAddressFullName);
-
+  updateQueryFiltersWithInValues(params, conditions, contractLogIndexInValues, contractLogIndexFullName);
+  updateQueryFiltersWithInValues(params, conditions, contractLogTimestampInValues, contractLogTimestampFullName);
   updateQueryFiltersWithInValues(params, conditions, contractLogTopic0InValues, contractLogTopic0FullName);
   updateQueryFiltersWithInValues(params, conditions, contractLogTopic1InValues, contractLogTopic1FullName);
   updateQueryFiltersWithInValues(params, conditions, contractLogTopic2InValues, contractLogTopic2FullName);
   updateQueryFiltersWithInValues(params, conditions, contractLogTopic3InValues, contractLogTopic3FullName);
 
-  const contractLogTimestampFullName = ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP);
-  const contractLogTimestampInValues = [];
-  const subQueryConditions = [`${ContractLog.getFullName(ContractLog.CONTRACT_ID)} = $${params.length + 1}`];
-  const subQueryParams = [contractId];
-
-  for (const filter of timestampFilters) {
-    updateConditionsAndParamsWithInValues(
-      filter,
-      contractLogTimestampInValues,
-      subQueryParams,
-      subQueryConditions,
-      contractLogTimestampFullName,
-      params.length
-    );
-  }
-
-  updateQueryFiltersWithInValues(
-    subQueryParams,
-    subQueryConditions,
-    contractLogTimestampInValues,
-    contractLogTimestampFullName,
-    params.length + subQueryParams.length - 2
-  );
-
   return {
-    conditions: conditions,
-    params: params,
-    subQueryConditions: subQueryConditions,
-    subQueryParams: subQueryParams,
+    conditions,
+    params,
     timestampOrder,
     indexOrder,
     limit,

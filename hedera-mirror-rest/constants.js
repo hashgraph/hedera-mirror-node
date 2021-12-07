@@ -33,6 +33,7 @@ const filterKeys = {
   ENCODING: 'encoding',
   FROM: 'from',
   ENTITY_PUBLICKEY: 'publickey',
+  INDEX: 'index',
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',
