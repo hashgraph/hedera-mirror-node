@@ -679,9 +679,15 @@ func (t *tokenFeature) cleanup(ctx context.Context, s *godog.Scenario, err error
 	t.baseFeature.cleanup()
 
 	if t.tokenId != nil {
-		testClient.DeleteToken(*t.tokenId)
-		testClient.TokenDissociate(testClient.GetOperator(normalOperatorIndex), *t.tokenId)
-		testClient.TokenDissociate(testClient.GetOperator(adminOperatorIndex), *t.tokenId)
+		if err1 := testClient.DeleteToken(*t.tokenId); err1 != nil {
+			log.Errorf("Failed to delete token: %s", err)
+		}
+		if err1 := testClient.TokenDissociate(t.normalOperator, *t.tokenId); err1 != nil {
+			log.Errorf("Failed dissociate account %s: %s", t.normalOperator.Id, err1)
+		}
+		if err1 := testClient.TokenDissociate(t.adminOperator, *t.tokenId); err1 != nil {
+			log.Errorf("Failed dissociate account %s: %s", t.adminOperator.Id, err1)
+		}
 	}
 
 	t.tokenId = nil

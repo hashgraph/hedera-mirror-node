@@ -35,7 +35,6 @@ var (
 	tokenIdStr        = tokenId.String()
 	metadatasBytes    = [][]byte{[]byte("foo"), []byte("bar")}
 	metadatasBase64   = []interface{}{"Zm9v", "YmFy"}
-	// metadatasBase64Strs = []string{"Zm9v", "YmFy"}
 )
 
 func TestHbarAmountGetValue(t *testing.T) {

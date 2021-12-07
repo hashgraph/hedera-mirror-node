@@ -65,11 +65,6 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	InitializeTokenScenario(ctx)
 }
 
-// func encodeTransfer(operation *types.Operation) string {
-// 	amount := operation.Amount
-// 	return fmt.Sprintf("%s_%s_%s", operation.Account.Address, amount.Currency.Symbol, amount.Value)
-// }
-
 func getRosettaAccountIdentifier(accountId hedera.AccountID) *types.AccountIdentifier {
 	return &types.AccountIdentifier{Address: accountId.String()}
 }
