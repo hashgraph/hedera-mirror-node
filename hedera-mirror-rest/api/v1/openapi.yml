@@ -140,7 +140,7 @@ paths:
     get:
       summary: List the contract result from a contract on the network at a given timestamp
       description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
-      operationId: getContracResultByIdAndTimestamp
+      operationId: getContractResultByIdAndTimestamp
       parameters:
         - $ref: '#/components/parameters/entityIdPathParam'
         - $ref: '#/components/parameters/timestampPathParam'

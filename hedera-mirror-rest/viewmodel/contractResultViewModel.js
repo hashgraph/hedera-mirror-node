@@ -50,12 +50,12 @@ class ContractResultViewModel {
       to: EntityId.parse(contractResult.contractId, true).toSolidityAddress(),
     });
 
-    if (!_.isUndefined(recordFile)) {
+    if (!_.isNil(recordFile)) {
       this.block_hash = utils.addHexPrefix(recordFile.hash);
       this.block_number = Number(recordFile.index);
     }
 
-    if (!_.isUndefined(transaction)) {
+    if (!_.isNil(transaction)) {
       this.hash = utils.toHexString(transaction.transactionHash, true);
     }
   }

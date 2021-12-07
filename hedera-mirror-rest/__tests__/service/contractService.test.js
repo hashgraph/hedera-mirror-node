@@ -285,6 +285,32 @@ describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
   });
 });
 
+describe('ContractService.getDetailedContractResultsByIdAndTimestamp tests', () => {
+  test('ContractService.getDetailedContractResultsByIdAndTimestamp - No match', async () => {
+    await expect(ContractService.getDetailedContractResultsByTimestamp(1)).resolves.toBeNull();
+  });
+
+  test('ContractService.getDetailedContractResultsByIdAndTimestamp - Row match', async () => {
+    await integrationDomainOps.loadContractResults(contractResultsInput);
+
+    await integrationDomainOps.loadRecordFiles([
+      {
+        index: 1,
+        consensus_start: 1,
+        consensus_end: 3,
+        hash: 'dee34',
+      },
+    ]);
+
+    await integrationDomainOps.loadTransactions(transactionsInput);
+
+    await expect(ContractService.getDetailedContractResultsByTimestamp(2)).resolves.toMatchObject({
+      consensusTimestamp: '2',
+      payerAccountId: '5',
+    });
+  });
+});
+
 describe('ContractService.getContractResultsByTransactionId tests', () => {
   const defaultTransactionId = TransactionId.fromString('0.0.5-0000000000-000000001');
   test('ContractService.getContractResultsByIdAndFilters - No match', async () => {

@@ -36,7 +36,8 @@ const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
 const {Contract, FileData, ContractResult} = require('../model');
-const {ContractService} = require('../service');
+const {ContractService, RecordFileService, TransactionService} = require('../service');
+const {logger} = require('../stream/utils');
 const TransactionId = require('../transactionId');
 const utils = require('../utils');
 const {ContractViewModel, ContractResultViewModel} = require('../viewmodel');
@@ -534,15 +535,22 @@ const getContractResultsById = async (req, res) => {
  * @returns {Promise<void>}
  */
 const getContractResultsByTimestamp = async (req, res) => {
-  const {timestamp, contractId} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
-  const row = await ContractService.getContractResultsByIdAndTimestamp(contractId, timestamp);
+  const {timestamp} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
 
-  if (row === null) {
-    throw new NotFoundError();
-  }
+  // retrieve contract result, recordFile and transaction models concurrently
+  await Promise.all([
+    ContractService.getDetailedContractResultsByTimestamp(timestamp),
+    RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
+    TransactionService.getTransactionContractDetailsFromTimestamp(timestamp),
+  ]).then((responses) => {
+    const contractResult = responses[0];
 
-  const response = new ContractResultViewModel(row.contractResult, row.recordFile, row.transaction);
-  res.locals[constants.responseDataLabel] = response;
+    if (contractResult === null) {
+      throw new NotFoundError();
+    }
+
+    res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResult, responses[1], responses[2]);
+  });
 };
 
 /**
@@ -555,14 +563,26 @@ const getContractResultsByTransactionId = async (req, res) => {
   utils.validateReq(req);
   // extract filters from query param
   const transactionId = TransactionId.fromString(req.params.transactionId);
-  const row = await ContractService.getContractResultsByTransactionId(transactionId);
 
-  if (row === null) {
-    throw new NotFoundError();
+  // get transaction using id.
+  const transaction = await TransactionService.getTransactionContractDetailsFromTransactionId(transactionId);
+  if (transaction === null) {
+    throw new NotFoundError('No correlating transaction');
   }
 
-  const response = new ContractResultViewModel(row.contractResult, row.recordFile, row.transaction);
-  res.locals[constants.responseDataLabel] = response;
+  // retrieve contract result and recordFile models concurrently using transaction timestamp
+  await Promise.all([
+    ContractService.getDetailedContractResultsByTimestamp(transaction.consensusTimestamp),
+    RecordFileService.getRecordFileBlockDetailsFromTimestamp(transaction.consensusTimestamp),
+  ]).then((responses) => {
+    const contractResult = responses[0];
+
+    if (contractResult === null) {
+      throw new NotFoundError();
+    }
+
+    res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResult, responses[1], transaction);
+  });
 };
 
 const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams, existingConditions, fullName) => {

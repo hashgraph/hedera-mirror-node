@@ -129,6 +129,26 @@ class ContractService extends BaseService {
   }
 
   /**
+   * Retrieves a detailed view of a contract result based on timestamp
+   *
+   * @param {string} timestamp consensus timestamp
+   * @return {Promise<{ContractResult}>}
+   */
+  async getDetailedContractResultsByTimestamp(timestamp) {
+    // get detailed contract results
+    const whereParams = [timestamp];
+    const whereConditions = [`${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = $1`];
+    const query = [ContractService.contractResultsByIdQuery, `where ${whereConditions.join(' and ')}`].join('\n');
+    const rows = await super.getRows(query, whereParams, 'getContractResultsByIdAndTimestamp');
+    if (rows.length !== 1) {
+      logger.trace(`No matching contract results for timestamp: ${timestamp}`);
+      return null;
+    }
+
+    return new ContractResult(rows[0]);
+  }
+
+  /**
    * Retrieves a detailed view of a contract result based on transactionId
    *
    * @param {Object} transactionId transactionId
@@ -154,7 +174,7 @@ class ContractService extends BaseService {
       contractResult.consensusTimestamp
     );
     if (recordFile === null) {
-      logger.trace(`No matching record file found for timestamp: ${timestamp}`);
+      logger.trace(`No matching record file found for timestamp: ${transactionId}`);
       return null;
     }
 
