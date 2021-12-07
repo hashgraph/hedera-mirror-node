@@ -86,8 +86,8 @@ func (t *tokenCreateTransactionConstructor) Construct(
 
 	if !isZeroAccountId(tokenCreate.AutoRenewAccount) {
 		tx.SetAutoRenewAccount(tokenCreate.AutoRenewAccount)
-	} else {
-		// set an valid auto renew account
+	} else if tokenCreate.Expiry == 0 {
+		// set a valid auto renew account when expiry is not set
 		tx.SetAutoRenewAccount(treasury)
 	}
 
