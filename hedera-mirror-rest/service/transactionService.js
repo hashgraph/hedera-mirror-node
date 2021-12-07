@@ -60,7 +60,7 @@ class TransactionService extends BaseService {
   }
 
   /**
-   * Retrieves the transaction for based on the transaction id
+   * Retrieves the transaction based on the transaction id
    *
    * @param {TransactionId} transactionId transactionId
    * @return {Promise<Transaction>} transaction subset

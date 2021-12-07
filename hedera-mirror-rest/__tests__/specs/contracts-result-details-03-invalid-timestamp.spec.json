@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call for a specific contract using contract id and timestamp with no file match",
+  "description": "Contract results api call for a specific contract using invalid contract id and timestamp params",
   "setup": {
     "contractresults": [
       {

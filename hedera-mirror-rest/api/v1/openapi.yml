@@ -138,7 +138,7 @@ paths:
         - contracts
   /api/v1/contracts/{contractId}/results/{timestamp}:
     get:
-      summary: List the contract result from a contract on the network at a given timestamp
+      summary: Get the contract result from a contract on the network executed at a given timestamp
       description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
       operationId: getContractResultByIdAndTimestamp
       parameters:
@@ -159,7 +159,7 @@ paths:
         - contracts
   /api/v1/contracts/results/{transactionId}:
     get:
-      summary: List the contract result from a contract on the network for a given transactionId
+      summary: Get the contract result from a contract on the network for a given transactionId
       description: Returns a single ContractResult for a contract's function executions for a given transactionId.
       operationId: getContractResultByTransactionId
       parameters:

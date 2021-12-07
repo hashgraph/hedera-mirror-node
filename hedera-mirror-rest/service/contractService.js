@@ -23,8 +23,7 @@
 const _ = require('lodash');
 
 const BaseService = require('./baseService');
-const RecordFileService = require('./recordFileService');
-const {ContractResult, RecordFile, Transaction} = require('../model');
+const {ContractResult} = require('../model');
 const {
   response: {
     limit: {default: defaultLimit},
