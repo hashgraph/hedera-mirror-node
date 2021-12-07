@@ -209,6 +209,14 @@ func (t *tokenCreateTransactionConstructor) Parse(ctx context.Context, transacti
 		metadata["supply_key"] = tokenCreateTransaction.GetSupplyKey().String()
 	}
 
+	if tokenCreateTransaction.GetSupplyType() == hedera.TokenSupplyTypeFinite {
+		metadata["supply_type"] = domain.TokenSupplyTypeFinite
+	}
+
+	if tokenCreateTransaction.GetTokenType() == hedera.TokenTypeNonFungibleUnique {
+		metadata["type"] = domain.TokenTypeNonFungibleUnique
+	}
+
 	if isNonEmptyPublicKey(tokenCreateTransaction.GetWipeKey()) {
 		metadata["wipe_key"] = tokenCreateTransaction.GetWipeKey().String()
 	}

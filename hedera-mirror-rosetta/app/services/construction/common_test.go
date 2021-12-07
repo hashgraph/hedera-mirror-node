@@ -483,7 +483,30 @@ func TestValidateToken(t *testing.T) {
 		},
 		{
 			name:        "DecimalsMismatch",
-			currency:    &rTypes.Currency{Symbol: "0.0.212", Decimals: 19867},
+			currency:    &rTypes.Currency{Symbol: dbTokenA.TokenId.String(), Decimals: 19867},
+			expectError: true,
+		},
+		{
+			name:        "MissingMetadata",
+			currency:    &rTypes.Currency{Symbol: dbTokenA.TokenId.String(), Decimals: int32(dbTokenA.Decimals)},
+			expectError: true,
+		},
+		{
+			name: "InvalidTokenTypeDataType",
+			currency: &rTypes.Currency{
+				Symbol:   dbTokenA.TokenId.String(),
+				Decimals: int32(dbTokenA.Decimals),
+				Metadata: map[string]interface{}{"type": 100},
+			},
+			expectError: true,
+		},
+		{
+			name: "TokenTypeMismatch",
+			currency: &rTypes.Currency{
+				Symbol:   dbTokenA.TokenId.String(),
+				Decimals: int32(dbTokenA.Decimals),
+				Metadata: map[string]interface{}{"type": "foobar"},
+			},
 			expectError: true,
 		},
 	}
