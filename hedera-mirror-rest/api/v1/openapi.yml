@@ -1004,11 +1004,6 @@ components:
           format: int64
           nullable: true
           type: integer
-        bloom:
-          description: The hex encoded bloom filter for the record
-          example: "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398"
-          nullable: true
-          type: string
         call_result:
           description: The hex encoded result returned by the function
           example: "0x2b048531b38d2882e86044bc972e940ee0a01938"

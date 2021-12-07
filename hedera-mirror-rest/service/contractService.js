@@ -40,33 +40,34 @@ class ContractService extends BaseService {
     super();
   }
 
-  static contractResultsByIdQuery = `select *
-    from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
+  static detailedContractResultsQuery = `select *
+  from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
 
-  // contract results with additional details from record_file (block) and transaction tables from timestamp
-  static contractResultsDetailedQuery = `select 
-    ${ContractResult.getFullName(ContractResult.AMOUNT)},
-    ${ContractResult.getFullName(ContractResult.BLOOM)},
-    ${ContractResult.getFullName(ContractResult.CALL_RESULT)},
-    ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)},
-    ${ContractResult.getFullName(ContractResult.CONTRACT_ID)},
-    ${ContractResult.getFullName(ContractResult.CREATED_CONTRACT_IDS)},
-    ${ContractResult.getFullName(ContractResult.ERROR_MESSAGE)},
-    ${ContractResult.getFullName(ContractResult.FUNCTION_PARAMETERS)},
-    ${ContractResult.getFullName(ContractResult.FUNCTION_RESULT)},
-    ${ContractResult.getFullName(ContractResult.GAS_LIMIT)},
-    ${ContractResult.getFullName(ContractResult.GAS_USED)},
-    ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
-    ${Transaction.getFullName(Transaction.TRANSACTION_HASH)}
-    from ${ContractResult.tableName} ${ContractResult.tableAlias}
-    join ${Transaction.tableName} ${Transaction.tableAlias}  on 
-    ${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)} = ${Transaction.getFullName(
-    Transaction.PAYER_ACCOUNT_ID
-  )} and
-    ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
-    Transaction.CONSENSUS_TIMESTAMP
-  )}
-  `;
+  static contractResultsQuery = `select 
+    ${ContractResult.AMOUNT},
+    ${ContractResult.CALL_RESULT},
+    ${ContractResult.CONSENSUS_TIMESTAMP},
+    ${ContractResult.CONTRACT_ID},
+    ${ContractResult.CREATED_CONTRACT_IDS},
+    ${ContractResult.ERROR_MESSAGE},
+    ${ContractResult.FUNCTION_PARAMETERS},
+    ${ContractResult.GAS_LIMIT},
+    ${ContractResult.GAS_USED},
+    ${ContractResult.PAYER_ACCOUNT_ID}
+    from ${ContractResult.tableName}`;
+
+  getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
+    const params = whereParams;
+    const query = [
+      ContractService.detailedContractResultsQuery,
+      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
+      super.getOrderByQuery(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order),
+      super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
+    ].join('\n');
+    params.push(limit);
+
+    return [query, params];
+  }
 
   async getContractResultsByIdAndFilters(
     whereConditions = [],
@@ -79,66 +80,16 @@ class ContractService extends BaseService {
     return _.isEmpty(rows) ? [] : rows.map((cr) => new ContractResult(cr));
   }
 
-  getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
-    const params = whereParams;
-    const query = [
-      ContractService.contractResultsByIdQuery,
-      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
-      super.getOrderByQuery(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order),
-      super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
-    ].join('\n');
-    params.push(limit);
-
-    return [query, params];
-  }
-
   /**
-   * Retrieves a detailed view of a contract result based on timestamp
-   *
-   * @param {string} contractId encoded contract ID
-   * @param {string} timestamp consensus timestamp
-   * @return {Promise<{contractResult: ContractResult, recordFile: RecordFile, transaction: Transaction}>}
-   */
-  async getContractResultsByIdAndTimestamp(contractId, timestamp) {
-    const recordFile = await RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp);
-    if (recordFile === null) {
-      return null;
-    }
-
-    // get detailed contract results
-    const whereParams = [contractId, timestamp];
-    const whereConditions = [
-      `${ContractResult.getFullName(ContractResult.CONTRACT_ID)} = $1`,
-      `${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = $2`,
-    ];
-    const query = [ContractService.contractResultsDetailedQuery, `where ${whereConditions.join(' and ')}`].join('\n');
-    const rows = await super.getRows(query, whereParams, 'getContractResultsByIdAndTimestamp');
-    if (rows.length !== 1) {
-      logger.trace(`No matching contract results for contractId: ${contractId}, timestamp: ${timestamp}`);
-      return null;
-    }
-
-    const result = rows[0];
-    const contractResult = new ContractResult(result);
-    const transaction = new Transaction(result);
-    return {
-      contractResult,
-      recordFile,
-      transaction,
-    };
-  }
-
-  /**
-   * Retrieves a detailed view of a contract result based on timestamp
+   * Retrieves a contract result based on its timestamp
    *
    * @param {string} timestamp consensus timestamp
    * @return {Promise<{ContractResult}>}
    */
-  async getDetailedContractResultsByTimestamp(timestamp) {
-    // get detailed contract results
+  async getContractResultByTimestamp(timestamp) {
     const whereParams = [timestamp];
-    const whereConditions = [`${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = $1`];
-    const query = [ContractService.contractResultsByIdQuery, `where ${whereConditions.join(' and ')}`].join('\n');
+    const whereConditions = [`${ContractResult.CONSENSUS_TIMESTAMP} = $1`];
+    const query = [ContractService.contractResultsQuery, `where ${whereConditions.join(' and ')}`].join('\n');
     const rows = await super.getRows(query, whereParams, 'getContractResultsByIdAndTimestamp');
     if (rows.length !== 1) {
       logger.trace(`No matching contract results for timestamp: ${timestamp}`);
@@ -146,43 +97,6 @@ class ContractService extends BaseService {
     }
 
     return new ContractResult(rows[0]);
-  }
-
-  /**
-   * Retrieves a detailed view of a contract result based on transactionId
-   *
-   * @param {Object} transactionId transactionId
-   * @return {Promise<{contractResult: ContractResult, recordFile: RecordFile, transaction: Transaction}>}
-   */
-  async getContractResultsByTransactionId(transactionId) {
-    const whereParams = [transactionId.getValidStartNs(), transactionId.getEntityId().getEncodedId()];
-    const whereConditions = [
-      `${Transaction.getFullName(Transaction.VALID_START_NS)} = $1`,
-      `${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)} = $2`,
-    ];
-    const query = [ContractService.contractResultsDetailedQuery, `where ${whereConditions.join(' and ')}`].join('\n');
-    const rows = await super.getRows(query, whereParams, 'getContractResultsByTransactionId');
-    if (rows.length !== 1) {
-      return null;
-    }
-
-    const result = rows[0];
-    const contractResult = new ContractResult(result);
-    const transaction = new Transaction(result);
-
-    const recordFile = await RecordFileService.getRecordFileBlockDetailsFromTimestamp(
-      contractResult.consensusTimestamp
-    );
-    if (recordFile === null) {
-      logger.trace(`No matching record file found for timestamp: ${transactionId}`);
-      return null;
-    }
-
-    return {
-      contractResult: contractResult,
-      recordFile: recordFile,
-      transaction: transaction,
-    };
   }
 }
 

@@ -404,8 +404,8 @@ const extractContractIdAndFiltersFromValidatedRequest = (req) => {
   const contractId = getAndValidateContractIdRequestPathParam(req);
   const filters = utils.buildAndValidateFilters(req.query);
   return {
-    contractId: contractId,
-    filters: filters,
+    contractId,
+    filters,
   };
 };
 
@@ -529,7 +529,7 @@ const getContractResultsById = async (req, res) => {
 };
 
 /**
- * Handler function for /contracts/:contractId/results/:timestamp API
+ * Handler function for /contracts/:contractId/results/:consensusTimestamp API
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @returns {Promise<void>}
@@ -539,7 +539,7 @@ const getContractResultsByTimestamp = async (req, res) => {
 
   // retrieve contract result, recordFile and transaction models concurrently
   await Promise.all([
-    ContractService.getDetailedContractResultsByTimestamp(timestamp),
+    ContractService.getContractResultByTimestamp(timestamp),
     RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
     TransactionService.getTransactionContractDetailsFromTimestamp(timestamp),
   ]).then((responses) => {
@@ -572,7 +572,7 @@ const getContractResultsByTransactionId = async (req, res) => {
 
   // retrieve contract result and recordFile models concurrently using transaction timestamp
   await Promise.all([
-    ContractService.getDetailedContractResultsByTimestamp(transaction.consensusTimestamp),
+    ContractService.getContractResultByTimestamp(transaction.consensusTimestamp),
     RecordFileService.getRecordFileBlockDetailsFromTimestamp(transaction.consensusTimestamp),
   ]).then((responses) => {
     const contractResult = responses[0];
@@ -613,5 +613,7 @@ if (utils.isTestEnv()) {
     formatContractRow,
     getContractByIdQuery,
     getContractsQuery,
+    validateContractIdAndConsensusTimestampParam,
+    validateContractIdParam,
   });
 }

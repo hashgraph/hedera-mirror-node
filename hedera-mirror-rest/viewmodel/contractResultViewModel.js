@@ -37,7 +37,6 @@ class ContractResultViewModel {
   constructor(contractResult, recordFile = undefined, transaction = undefined) {
     Object.assign(this, {
       amount: Number(contractResult.amount),
-      bloom: utils.toHexString(contractResult.bloom, true),
       call_result: utils.toHexString(contractResult.callResult, true),
       contract_id: EntityId.parse(contractResult.contractId).toString(),
       created_contract_ids: _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString()),

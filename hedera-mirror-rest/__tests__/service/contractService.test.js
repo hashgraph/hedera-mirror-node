@@ -22,7 +22,6 @@
 
 const {ContractService} = require('../../service');
 const {formatSqlQueryString} = require('../testutils');
-const TransactionId = require('../../transactionId');
 
 const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
@@ -218,163 +217,36 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
   });
 });
 
-const contractResultsInput = [
-  {
-    contract_id: 2,
-    consensus_timestamp: 2,
-    function_parameters: '\\x0D',
-    amount: 10,
-    payer_account_id: '5',
-  },
-];
-const transactionsInput = [
-  {
-    consensus_timestamp: 2,
-    payerAccountId: '5',
-    valid_start_timestamp: 1,
-  },
-];
-
-const expectedDetailedContractResult = {
-  contractResult: {
-    amount: '10',
-    bloom: null,
-    callResult: null,
-    consensusTimestamp: '2',
-    contractId: '2',
-    createdContractIds: [],
-    errorMessage: '',
-    functionResult: null,
-    gasLimit: '1000',
-    gasUsed: '10',
-    payerAccountId: '5',
-  },
-  recordFile: {
-    consensusEnd: '3',
-    hash: 'dee34',
-    index: '1',
-  },
-  transaction: {
-    consensusTimestamp: '2',
-    payerAccountId: '5',
-  },
-};
-
-describe('ContractService.getContractResultsByIdAndTimestamp tests', () => {
-  test('ContractService.getContractResultsByIdAndTimestamp - No match', async () => {
-    await expect(ContractService.getContractResultsByIdAndTimestamp(1, 2)).resolves.toBeNull();
+describe('ContractService.getContractResultsByTimestamp tests', () => {
+  test('ContractService.getContractResultsByTimestamp - No match', async () => {
+    await expect(ContractService.getContractResultByTimestamp(1)).resolves.toBeNull();
   });
 
-  test('ContractService.getContractResultsByIdAndTimestamp - Row match', async () => {
-    await integrationDomainOps.loadContractResults(contractResultsInput);
-
-    await integrationDomainOps.loadRecordFiles([
+  test('ContractService.getContractResultsByTimestamp - Row match', async () => {
+    const contractResultsInput = [
       {
-        index: 1,
-        consensus_start: 1,
-        consensus_end: 3,
-        hash: 'dee34',
+        contract_id: 2,
+        consensus_timestamp: 2,
+        function_parameters: '\\x0D',
+        amount: 10,
+        payer_account_id: '5',
       },
-    ]);
+    ];
 
-    await integrationDomainOps.loadTransactions(transactionsInput);
-
-    await expect(ContractService.getContractResultsByIdAndTimestamp(2, 2)).resolves.toMatchObject(
-      expectedDetailedContractResult
-    );
-  });
-});
-
-describe('ContractService.getDetailedContractResultsByIdAndTimestamp tests', () => {
-  test('ContractService.getDetailedContractResultsByIdAndTimestamp - No match', async () => {
-    await expect(ContractService.getDetailedContractResultsByTimestamp(1)).resolves.toBeNull();
-  });
-
-  test('ContractService.getDetailedContractResultsByIdAndTimestamp - Row match', async () => {
-    await integrationDomainOps.loadContractResults(contractResultsInput);
-
-    await integrationDomainOps.loadRecordFiles([
-      {
-        index: 1,
-        consensus_start: 1,
-        consensus_end: 3,
-        hash: 'dee34',
-      },
-    ]);
-
-    await integrationDomainOps.loadTransactions(transactionsInput);
-
-    await expect(ContractService.getDetailedContractResultsByTimestamp(2)).resolves.toMatchObject({
+    const expectedContractResult = {
+      amount: '10',
+      callResult: null,
       consensusTimestamp: '2',
+      contractId: '2',
+      createdContractIds: [],
+      errorMessage: '',
+      gasLimit: '1000',
+      gasUsed: '10',
       payerAccountId: '5',
-    });
-  });
-});
+    };
 
-describe('ContractService.getContractResultsByTransactionId tests', () => {
-  const defaultTransactionId = TransactionId.fromString('0.0.5-0000000000-000000001');
-  test('ContractService.getContractResultsByIdAndFilters - No match', async () => {
-    await expect(
-      ContractService.getContractResultsByTransactionId(TransactionId.fromString('0.0.2-0000000000-000000003'))
-    ).resolves.toBeNull();
-  });
-
-  test('ContractService.getContractResultsByTransactionId - Row match with in range record timestamp', async () => {
     await integrationDomainOps.loadContractResults(contractResultsInput);
 
-    await integrationDomainOps.loadRecordFiles([
-      {
-        index: 1,
-        consensus_start: 1,
-        consensus_end: 3,
-        hash: 'dee34',
-      },
-    ]);
-
-    await integrationDomainOps.loadTransactions(transactionsInput);
-
-    await expect(ContractService.getContractResultsByTransactionId(defaultTransactionId)).resolves.toMatchObject(
-      expectedDetailedContractResult
-    );
-  });
-
-  test('ContractService.getContractResultsByTransactionId - Row match with record timestamp start match', async () => {
-    await integrationDomainOps.loadContractResults(contractResultsInput);
-
-    await integrationDomainOps.loadRecordFiles([
-      {
-        index: 1,
-        consensus_start: 2,
-        consensus_end: 3,
-        hash: 'dee34',
-      },
-    ]);
-
-    await integrationDomainOps.loadTransactions(transactionsInput);
-
-    await expect(ContractService.getContractResultsByTransactionId(defaultTransactionId)).resolves.toMatchObject(
-      expectedDetailedContractResult
-    );
-  });
-
-  test('ContractService.getContractResultsByTransactionId - Row match with record timestamp end match', async () => {
-    await integrationDomainOps.loadContractResults(contractResultsInput);
-
-    await integrationDomainOps.loadRecordFiles([
-      {
-        index: 1,
-        consensus_start: 1,
-        consensus_end: 2,
-        hash: 'dee34',
-      },
-    ]);
-
-    await integrationDomainOps.loadTransactions(transactionsInput);
-
-    expectedDetailedContractResult.recordFile.consensusEnd = '2';
-
-    await expect(ContractService.getContractResultsByTransactionId(defaultTransactionId)).resolves.toMatchObject(
-      expectedDetailedContractResult
-    );
+    await expect(ContractService.getContractResultByTimestamp(2)).resolves.toMatchObject(expectedContractResult);
   });
 });
