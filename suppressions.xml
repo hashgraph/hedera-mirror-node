@@ -43,4 +43,9 @@
         <packageUrl regex="true">^pkg:maven/io\.netty/netty\-.*@4\.1\.52\.Final$</packageUrl>
         <cpe>cpe:/a:netty:netty</cpe>
     </suppress>
+    <suppress>
+        <notes>Scan show spring-data-redis impacted but CVE is applicable to redis server not clients</notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework\.data/spring\-data\-redis@.*$</packageUrl>
+        <cve>CVE-2021-32626</cve>
+    </suppress>
 </suppressions>
