@@ -216,3 +216,37 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
     expect(response).toMatchObject(expectedContractResult);
   });
 });
+
+describe('ContractService.getContractResultsByTimestamp tests', () => {
+  test('ContractService.getContractResultsByTimestamp - No match', async () => {
+    await expect(ContractService.getContractResultByTimestamp(1)).resolves.toBeNull();
+  });
+
+  test('ContractService.getContractResultsByTimestamp - Row match', async () => {
+    const contractResultsInput = [
+      {
+        contract_id: 2,
+        consensus_timestamp: 2,
+        function_parameters: '\\x0D',
+        amount: 10,
+        payer_account_id: '5',
+      },
+    ];
+
+    const expectedContractResult = {
+      amount: '10',
+      callResult: null,
+      consensusTimestamp: '2',
+      contractId: '2',
+      createdContractIds: [],
+      errorMessage: '',
+      gasLimit: '1000',
+      gasUsed: '10',
+      payerAccountId: '5',
+    };
+
+    await integrationDomainOps.loadContractResults(contractResultsInput);
+
+    await expect(ContractService.getContractResultByTimestamp(2)).resolves.toMatchObject(expectedContractResult);
+  });
+});

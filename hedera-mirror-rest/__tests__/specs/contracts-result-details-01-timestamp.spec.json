@@ -1,0 +1,71 @@
+{
+  "description": "Contract results api call using contract id and timestamp",
+  "setup": {
+    "contractresults": [
+      {
+        "amount": 30,
+        "bloom": [5, 5],
+        "call_result": [6, 6],
+        "consensus_timestamp": "167654000123456",
+        "contract_id": 5001,
+        "created_contract_ids": [7001],
+        "error_message": "",
+        "function_parameters": [7, 7],
+        "function_result": [8, 8],
+        "gas_limit": 987654,
+        "gas_used": 123,
+        "payer_account_id": 8001
+      }
+    ],
+    "recordFiles": [
+      {
+        "index": 16,
+        "consensus_start": 167654000123439,
+        "consensus_end": 167654000123449,
+        "hash": "f292e5624f6f4cf8c134c9"
+      },
+      {
+        "index": 17,
+        "consensus_start": 167654000123450,
+        "consensus_end": 167654000123460,
+        "hash": "6ceecd8bb224da491"
+      },
+      {
+        "index": 18,
+        "consensus_start": 167654000123461,
+        "consensus_end": 167654000123470,
+        "hash": "e19f4a235bee1e6bb19258b"
+      }
+    ],
+    "transactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "payerAccountId": "8001",
+        "transaction_hash": "519a008fabde4d",
+        "valid_start_timestamp": 167654000123400
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/0.0.5001/results/167654.000123456",
+    "/api/v1/contracts/0.5001/results/167654.000123456",
+    "/api/v1/contracts/5001/results/167654.000123456"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "amount": 30,
+    "block_hash": "0x6ceecd8bb224da491",
+    "block_number": 17,
+    "call_result": "0x0606",
+    "contract_id": "0.0.5001",
+    "created_contract_ids": ["0.0.7001"],
+    "error_message": "",
+    "from": "0x0000000000000000000000000000000000001f41",
+    "function_parameters": "0x0707",
+    "gas_limit": 987654,
+    "gas_used": 123,
+    "hash": "0x3531396130303866616264653464",
+    "timestamp": "167654.000123456",
+    "to": "0x0000000000000000000000000000000000001389"
+  }
+}

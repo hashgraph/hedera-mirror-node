@@ -1,0 +1,33 @@
+{
+  "description": "Contract results api call for a specific contract using transactionId with no results match",
+  "setup": {
+    "contractresults": [],
+    "recordFiles": [
+      {
+        "index": 17,
+        "consensus_start": 167654000123450,
+        "consensus_end": 167654000123460,
+        "hash": "6ceecd8bb224da491"
+      }
+    ],
+    "transactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "payerAccountId": "5",
+        "transaction_hash": "519a008fabde4d",
+        "valid_start_timestamp": 167654000123455
+      }
+    ]
+  },
+  "url": "/api/v1/contracts/results/0.0.5-167654-000123455",
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
+  }
+}
