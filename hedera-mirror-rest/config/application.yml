@@ -96,7 +96,7 @@ hedera:
         swaggerUIPath: 'docs'
       port: 5551
       response:
-        compression: true
+        compression: false
         includeHostInLink: false
         limit:
           default: 25
