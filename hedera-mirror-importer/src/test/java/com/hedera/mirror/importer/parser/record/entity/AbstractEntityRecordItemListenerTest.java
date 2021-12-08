@@ -27,9 +27,6 @@ import static org.assertj.core.api.Assertions.from;
 import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import com.hedera.mirror.common.util.DomainUtils;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -64,6 +61,7 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.StreamFilename;
@@ -311,6 +309,12 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         }
         if (transactionBody.hasCryptoTransfer() && status == ResponseCodeEnum.SUCCESS.getNumber()) {
             for (var aa : transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList()) {
+                // handle alias case.
+                // Network will correctly populate accountNum in record, ignore for test case
+                if (aa.getAccountID().getAccountCase() == AccountID.AccountCase.ALIAS) {
+                    continue;
+                }
+
                 transferList.addAccountAmounts(aa);
             }
         }
@@ -337,6 +341,11 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     protected AccountAmount.Builder accountAmount(long accountNum, long amount) {
         return AccountAmount.newBuilder().setAccountID(AccountID.newBuilder().setAccountNum(accountNum))
+                .setAmount(amount);
+    }
+
+    protected AccountAmount.Builder accountAliasAmount(ByteString alias, long amount) {
+        return AccountAmount.newBuilder().setAccountID(AccountID.newBuilder().setAlias(alias))
                 .setAmount(amount);
     }
 

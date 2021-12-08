@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -32,6 +33,7 @@ import java.util.List;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.util.DomainUtils;
 
 class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -61,6 +63,9 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     protected AbstractEntity getExpectedUpdatedEntity() {
         AbstractEntity entity = super.getExpectedUpdatedEntity();
         ((Entity) entity).setMaxAutomaticTokenAssociations(0);
+        ((Entity) entity).setAlias(
+                DomainUtils.toBytes(ByteString
+                        .copyFromUtf8("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff")));
         return entity;
     }
 
@@ -82,6 +87,26 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                         .description("create entity with non-zero max_automatic_token_associations")
                         .expected(expected)
                         .recordItem(getRecordItem(body, getDefaultTransactionRecord().build()))
+                        .build()
+        );
+
+        // alias
+        TransactionBody aliasBody = getTransactionBodyForUpdateEntityWithoutMemo();
+        Message aliasInnerBody = getInnerBody(aliasBody);
+        FieldDescriptor aliasField = getInnerBodyFieldDescriptorByName("alias");
+        ByteString aliasByteString = ByteString
+                .copyFromUtf8("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff");
+        aliasInnerBody = aliasInnerBody.toBuilder().setField(aliasField, aliasByteString).build();
+        aliasBody = getTransactionBody(body, aliasInnerBody);
+
+        AbstractEntity aliasExpected = getExpectedUpdatedEntity();
+        ((Entity) aliasExpected).setAlias(
+                DomainUtils.toBytes(aliasByteString));
+        testSpecs.add(
+                UpdateEntityTestSpec.builder()
+                        .description("create entity with non-null alias")
+                        .expected(aliasExpected)
+                        .recordItem(getRecordItem(aliasBody, getDefaultTransactionRecord().build()))
                         .build()
         );
 

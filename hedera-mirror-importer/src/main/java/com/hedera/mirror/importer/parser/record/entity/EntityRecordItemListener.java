@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -97,32 +98,36 @@ import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 
 @Log4j2
 @Named
 @ConditionOnEntityRecordParser
 public class EntityRecordItemListener implements RecordItemListener {
-    private final EntityProperties entityProperties;
     private final AddressBookService addressBookService;
-    private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final EntityListener entityListener;
-    private final TransactionHandlerFactory transactionHandlerFactory;
-    private final Predicate<TransactionFilterFields> transactionFilter;
+    private final EntityProperties entityProperties;
+    private final EntityRepository entityRepository;
     private final FileDataRepository fileDataRepository;
+    private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
+    private final Predicate<TransactionFilterFields> transactionFilter;
+    private final TransactionHandlerFactory transactionHandlerFactory;
 
     public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
                                     AddressBookService addressBookService,
                                     NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                                     EntityListener entityListener,
                                     TransactionHandlerFactory transactionHandlerFactory,
-                                    FileDataRepository fileDataRepository) {
-        this.entityProperties = entityProperties;
+                                    FileDataRepository fileDataRepository,
+                                    EntityRepository entityRepository) {
         this.addressBookService = addressBookService;
-        this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
         this.entityListener = entityListener;
-        this.transactionHandlerFactory = transactionHandlerFactory;
+        this.entityProperties = entityProperties;
+        this.entityRepository = entityRepository;
         this.fileDataRepository = fileDataRepository;
+        this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
+        this.transactionHandlerFactory = transactionHandlerFactory;
         transactionFilter = commonParserProperties.getFilter();
     }
 
@@ -264,7 +269,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setValidStartNs(DomainUtils.timeStampInNanos(transactionId.getTransactionValidStart()));
 
         if (txRecord.hasParentConsensusTimestamp()) {
-            transaction.setParentConsensusTimestamp(DomainUtils.timestampInNanosMax(txRecord.getParentConsensusTimestamp()));
+            transaction.setParentConsensusTimestamp(DomainUtils
+                    .timestampInNanosMax(txRecord.getParentConsensusTimestamp()));
         }
 
         return transaction;
@@ -286,8 +292,24 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (aa.getAmount() != 0) {
                 NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
                 nonFeeTransfer.setAmount(aa.getAmount());
-                nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, EntityId.of(aa.getAccountID())));
                 nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
+
+                AccountID accountID = aa.getAccountID();
+                EntityId entityId = null;
+
+                switch (accountID.getAccountCase()) {
+                    case ACCOUNTNUM:
+                        entityId = EntityId.of(aa.getAccountID());
+                        break;
+                    case ALIAS:
+                        entityId = entityRepository.findByAlias(
+                                DomainUtils.toBytes(accountID.getAlias())).get().toEntityId();
+                        break;
+                    default:
+                        throw new InvalidDatasetException("Unsupported account: " + accountID.getAccountCase());
+                }
+
+                nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, entityId));
                 entityListener.onNonFeeTransfer(nonFeeTransfer);
             }
         }
@@ -311,7 +333,8 @@ public class EntityRecordItemListener implements RecordItemListener {
                 TransactionID transactionID = chunkInfo.getInitialTransactionID();
                 topicMessage.setPayerAccountId(EntityId.of(transactionID.getAccountID()));
                 topicMessage
-                        .setValidStartTimestamp(DomainUtils.timestampInNanosMax(transactionID.getTransactionValidStart()));
+                        .setValidStartTimestamp(DomainUtils
+                                .timestampInNanosMax(transactionID.getTransactionValidStart()));
             }
         }
 

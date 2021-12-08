@@ -24,9 +24,10 @@ import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
@@ -62,6 +63,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
             entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
+        entity.setAlias(DomainUtils.toBytes(recordItem.getRecord().getAlias()));
         entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
         entity.setMemo(transactionBody.getMemo());
         entity.setReceiverSigRequired(transactionBody.getReceiverSigRequired());
