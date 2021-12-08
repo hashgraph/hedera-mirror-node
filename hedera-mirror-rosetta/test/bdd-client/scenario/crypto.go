@@ -22,16 +22,15 @@ package scenario
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/cucumber/godog"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
-	"github.com/stretchr/testify/assert"
 )
 
 type cryptoFeature struct {
+	*baseFeature
 	newAccountId    *hedera.AccountID
 	newAccountKey   *hedera.PrivateKey
 	transactionHash string
@@ -49,7 +48,7 @@ func (c *cryptoFeature) createCryptoAccount(ctx context.Context) error {
 	operations := []*types.Operation{
 		{
 			OperationIdentifier: &types.OperationIdentifier{Index: 0},
-			Account:             testClient.GetFirstOperatorAccount(),
+			Account:             getRosettaAccountIdentifier(testClient.GetOperator(0).Id),
 			Amount: &types.Amount{
 				// fund 10 hbar so the account can pay the transaction to delete itself
 				Value:    "1000000000",
@@ -60,69 +59,42 @@ func (c *cryptoFeature) createCryptoAccount(ctx context.Context) error {
 		},
 	}
 
-	transactionIdentifier, err := testClient.Submit(ctx, operations, nil)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Submitted CryptoCreate transaction %s succcesfully", transactionIdentifier.Hash)
-	c.transactionHash = transactionIdentifier.Hash
-
-	return nil
+	return c.submit(ctx, operations, nil)
 }
 
 func (c *cryptoFeature) verifyCryptoCreateTransaction(ctx context.Context) error {
-	transaction, err := testClient.FindTransaction(ctx, c.transactionHash)
+	transaction, err := c.findTransaction(ctx, operationTypeCryptoCreateAccount)
 	if err != nil {
-		log.Infof("Failed to find cryptocreate with hash %s", c.transactionHash)
 		return err
 	}
 
-	var t asserter
-	if !assert.GreaterOrEqual(
-		&t,
-		len(transaction.Operations),
-		1,
-		"Transaction should have at least one operation",
-	) {
-		return t.err
+	if err = assertTransactionAll(
+		transaction,
+		assertTransactionOpSuccess,
+		assertTransactionOpCount(1, gte),
+		assertTransactionOpType(operationTypeCryptoCreateAccount),
+		assertTransactionMetadataAndType("entity_id", ""),
+	); err != nil {
+		return err
 	}
 
-	operation := transaction.Operations[0]
-	if !assert.Equal(&t, operationTypeCryptoCreateAccount, operation.Type) {
-		return t.err
-	}
-
-	if !assert.Contains(&t, transaction.Metadata, "entity_id") {
-		return t.err
-	}
-
-	if !assert.IsType(
-		&t,
-		"",
-		transaction.Metadata["entity_id"],
-		"Transaction metadata 'entity_id' value should be of type string",
-	) {
-		return t.err
-	}
-
-	accountStr, _ := transaction.Metadata["entity_id"].(string)
-	accountId, err := hedera.AccountIDFromString(accountStr)
+	accountIdStr := transaction.Metadata["entity_id"].(string)
+	accountId, err := hedera.AccountIDFromString(accountIdStr)
 	if err != nil {
-		log.Errorf("Invalid account id: %s", accountStr)
+		log.Errorf("Invalid account id: %s", accountIdStr)
 		return err
 	}
 	c.newAccountId = &accountId
-	log.Infof("Successfully retrieved new account %s from transaction", accountStr)
+	log.Infof("Successfully retrieved new account %s from transaction", accountIdStr)
 
-	return err
+	return nil
 }
 
 func (c *cryptoFeature) transferHbarToTreasury(ctx context.Context) error {
 	operations := []*types.Operation{
 		{
 			OperationIdentifier: &types.OperationIdentifier{Index: 0},
-			Account:             testClient.GetFirstOperatorAccount(),
+			Account:             getRosettaAccountIdentifier(testClient.GetOperator(0).Id),
 			Amount:              &types.Amount{Value: "-1", Currency: currencyHbar},
 			Type:                operationTypeCryptoTransfer,
 		},
@@ -134,67 +106,56 @@ func (c *cryptoFeature) transferHbarToTreasury(ctx context.Context) error {
 		},
 	}
 
-	transactionIdentifier, err := testClient.Submit(ctx, operations, nil)
-	if err != nil {
-		return err
-	}
-
-	log.Infof("Submitted CryptoTransfer transaction %s succcesfully", transactionIdentifier.Hash)
-	c.transactionHash = transactionIdentifier.Hash
-
-	return nil
+	return c.submit(ctx, operations, nil)
 }
 
 func (c *cryptoFeature) verifyCryptoTransferTransaction(ctx context.Context) error {
-	transaction, err := testClient.FindTransaction(ctx, c.transactionHash)
+	transaction, err := c.findTransaction(ctx, operationTypeCryptoTransfer)
 	if err != nil {
-		log.Infof("Failed to find cryptotransfer with hash %s", c.transactionHash)
 		return err
 	}
 
-	// check operation type and the transfer from operator to treasury
-	actualOperationTypes := make(map[string]int)
-	actualTransfers := make([]string, 0)
-	for _, operation := range transaction.Operations {
-		actualOperationTypes[operation.Type] = 1
-		actualTransfers = append(actualTransfers, encodeTransfer(operation))
+	expectedAccountAmounts := []accountAmount{
+		{
+			Account: getRosettaAccountIdentifier(testClient.GetOperator(0).Id),
+			Amount:  &types.Amount{Value: "-1", Currency: currencyHbar},
+		},
+		{
+			Account: treasuryAccount,
+			Amount:  &types.Amount{Value: "1", Currency: currencyHbar},
+		},
 	}
 
-	var t asserter
-	if !assert.Equal(&t, map[string]int{operationTypeCryptoTransfer: 1}, actualOperationTypes) {
-		return err
-	}
-
-	expectedTransfers := []string{
-		fmt.Sprintf("%s_%s_-1", testClient.GetFirstOperatorAccount().Address, currencyHbar.Symbol),
-		fmt.Sprintf("%s_%s_1", treasuryAccount.Address, currencyHbar.Symbol),
-	}
-	if !assert.Subset(&t, actualTransfers, expectedTransfers) {
-		return t.err
-	}
-
-	return err
+	return assertTransactionAll(
+		transaction,
+		assertTransactionOpSuccess,
+		assertTransactionOpCount(2, gte),
+		assertTransactionOpType(operationTypeCryptoTransfer),
+		assertTransactionIncludesTransfers(expectedAccountAmounts),
+	)
 }
 
 func (c *cryptoFeature) cleanup(ctx context.Context, s *godog.Scenario, err error) (context.Context, error) {
+	c.baseFeature.cleanup()
+
 	if c.newAccountId != nil {
 		testClient.DeleteAccount(*c.newAccountId, c.newAccountKey) // #nosec
 	}
 
 	c.newAccountId = nil
 	c.newAccountKey = nil
-	c.transactionHash = ""
-	return nil, err
+
+	return ctx, err
 }
 
 func initializeCryptoScenario(ctx *godog.ScenarioContext) {
-	crypto := &cryptoFeature{}
+	crypto := &cryptoFeature{baseFeature: &baseFeature{}}
 
 	ctx.After(crypto.cleanup)
 
-	ctx.Step("I send a CryptoCreate transaction to network", crypto.createCryptoAccount)
+	ctx.Step("I create a crypto account", crypto.createCryptoAccount)
 	ctx.Step("the DATA API should show the CryptoCreate transaction", crypto.verifyCryptoCreateTransaction)
 
 	ctx.Step("I transfer some hbar to the treasury account", crypto.transferHbarToTreasury)
-	ctx.Step("the DATA API should show the CryptoTransfer transaction", crypto.verifyCryptoTransferTransaction)
+	ctx.Step("^the DATA API should show the CryptoTransfer transaction$", crypto.verifyCryptoTransferTransaction)
 }

@@ -1,0 +1,52 @@
+{
+  "description": "Contract results api call for a specific contract using an invalid transactionId",
+  "setup": {
+    "contractresults": [
+      {
+        "amount": 30,
+        "bloom": [5, 5],
+        "call_result": [6, 6],
+        "consensus_timestamp": "167654000123456",
+        "contract_id": 5001,
+        "created_contract_ids": [7001],
+        "error_message": "",
+        "function_parameters": [7, 7],
+        "function_result": [8, 8],
+        "gas_limit": 987654,
+        "gas_used": 123,
+        "payer_account_id": 8001
+      }
+    ],
+    "recordFiles": [
+      {
+        "index": 17,
+        "consensus_start": 167654000123450,
+        "consensus_end": 167654000123460,
+        "hash": "6ceecd8bb224da491"
+      }
+    ],
+    "transactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "payerAccountId": "5",
+        "transaction_hash": "519a008fabde4d",
+        "valid_start_timestamp": 167654000123400
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/results/1",
+    "/api/v1/contracts/results/x",
+    "/api/v1/contracts/results/0.0.x-167654-000123456"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid Transaction id. Please use \"shard.realm.num-sss-nnn\" format where sss are seconds and nnn are nanoseconds"
+        }
+      ]
+    }
+  }
+}

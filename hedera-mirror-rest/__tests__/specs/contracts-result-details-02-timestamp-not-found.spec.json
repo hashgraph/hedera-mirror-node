@@ -1,0 +1,45 @@
+{
+  "description": "Contract results api call for a specific contract using contract id and timestamp with no match",
+  "setup": {
+    "contractresults": [
+      {
+        "amount": 30,
+        "bloom": [5, 5],
+        "call_result": [6, 6],
+        "consensus_timestamp": "167654000123457",
+        "contract_id": 5001,
+        "created_contract_ids": [7001],
+        "error_message": "",
+        "function_parameters": [7, 7],
+        "function_result": [8, 8],
+        "gas_limit": 987654,
+        "gas_used": 123,
+        "payer_account_id": 8001
+      }
+    ],
+    "recordFiles": [],
+    "transactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "payerAccountId": "5",
+        "transaction_hash": "519a008fabde4d",
+        "valid_start_timestamp": 167654000123400
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/0.0.5001/results/167654.000123456",
+    "/api/v1/contracts/0.5001/results/167654.000123456",
+    "/api/v1/contracts/5001/results/167654.000123456"
+  ],
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
+  }
+}

@@ -85,6 +85,16 @@ class Transaction {
     this.validDurationSeconds = transaction.valid_duration_seconds;
     this.validStartNs = transaction.valid_start_ns;
   }
+
+  /**
+    * Gets full column name with table alias prepended.
+    *
+    * @param {string} columnName
+    * @private
+    */
+   static getFullName(columnName) {
+    return `${this.tableAlias}.${columnName}`;
+  }
 }
 
 module.exports = Transaction;

@@ -44,7 +44,7 @@ import (
 )
 
 const (
-	dbCleanupScript = "hedera-mirror-importer/src/main/resources/db/scripts/cleanup.sql"
+	dbCleanupScript = "hedera-mirror-importer/src/test/resources/db/scripts/cleanup.sql"
 	dbMigrationPath = "hedera-mirror-importer/src/main/resources/db/migration/v1"
 	dbName          = "mirror_node"
 	dbUsername      = "mirror_rosetta_integration"

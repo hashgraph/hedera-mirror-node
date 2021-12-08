@@ -9,7 +9,7 @@
   "retry_elapsed_time": 5,
   "online_url": "http://localhost:5700",
   "data_directory": "",
-  "http_timeout": 10,
+  "http_timeout": 15,
   "tip_delay": 20,
   "construction": {
     "broadcast_limit": 1,
@@ -18,9 +18,10 @@
     "end_conditions": {
       "transfer": 10
     },
+    "ignore_broadcast_failures": true,
     "offline_url": "http://localhost:5701",
     "prefunded_accounts": [],
-    "stale_depth": 20
+    "stale_depth": 8
   },
   "data": {
     "reconciliation_disabled": false,

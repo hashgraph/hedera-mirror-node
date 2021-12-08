@@ -29,6 +29,7 @@ const {
 } = require('../../config');
 const constants = require('../../constants');
 const contracts = require('../../controllers/contractController');
+const {InvalidArgumentError} = require('../../errors/invalidArgumentError');
 const {formatSqlQueryString} = require('../testutils');
 const utils = require('../../utils');
 const {Contract} = require('../../model');
@@ -453,9 +454,99 @@ describe('extractContractResultsByIdQuery', () => {
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      expect(contracts.extractContractResultsByIdQuery(spec.input.filter, spec.input.contractId)).toEqual(
-        spec.expected
-      );
+      expect(
+        contracts.extractContractResultsByIdQuery(
+          spec.input.filter,
+          spec.input.contractId,
+          contracts.contractResultsByIdParamSupportMap
+        )
+      ).toEqual(spec.expected);
+    });
+  });
+});
+
+describe('validateContractIdAndConsensusTimestampParam', () => {
+  const validSpecs = [
+    {
+      contractId: '1',
+      consensusTimestamp: '1',
+    },
+    {
+      contractId: '0.1',
+      consensusTimestamp: '1.1',
+    },
+    {
+      contractId: '0.0.1',
+      consensusTimestamp: '167654.000123456',
+    },
+  ];
+
+  validSpecs.forEach((spec) => {
+    test(`valid validateContractIdAndConsensusTimestampParam case - ${spec.name}`, () => {
+      expect(() =>
+        contracts.validateContractIdAndConsensusTimestampParam(spec.consensusTimestamp, spec.contractId)
+      ).not.toThrow(InvalidArgumentError);
+    });
+  });
+
+  const inValidSpecs = [
+    {
+      contractId: '1',
+      consensusTimestamp: 'y',
+    },
+    {
+      contractId: 'x',
+      consensusTimestamp: '1',
+    },
+    {
+      contractId: 'x',
+      consensusTimestamp: 'y',
+    },
+  ];
+
+  inValidSpecs.forEach((spec) => {
+    test(`invalid validateContractIdAndConsensusTimestampParam case - ${spec.name}`, () => {
+      expect(() =>
+        contracts.validateContractIdAndConsensusTimestampParam(spec.consensusTimestamp, spec.contractId)
+      ).toThrow(InvalidArgumentError);
+    });
+  });
+});
+
+describe('validateContractIdParam', () => {
+  const validSpecs = [
+    {
+      contractId: '1',
+    },
+    {
+      contractId: '0.1',
+    },
+    {
+      contractId: '0.0.1',
+    },
+  ];
+
+  validSpecs.forEach((spec) => {
+    test(`valid validateContractIdParam case - ${spec.name}`, () => {
+      expect(() => contracts.validateContractIdParam(spec.contractId)).not.toThrow(InvalidArgumentError);
+    });
+  });
+
+  const inValidSpecs = [
+    {
+      contractId: '-1',
+    },
+    {
+      contractId: 'x',
+    },
+    {
+      contractId: '0.1.2.3',
+    },
+  ];
+
+  inValidSpecs.forEach((spec) => {
+    test(`invalid validateContractIdParam case - ${spec.name}`, () => {
+      expect(() => contracts.validateContractIdParam(spec.contractId)).toThrow(InvalidArgumentError);
     });
   });
 });

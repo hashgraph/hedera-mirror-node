@@ -198,7 +198,7 @@ const cleanupSql = fs.readFileSync(
     '..',
     'hedera-mirror-importer',
     'src',
-    'main',
+    'test',
     'resources',
     'db',
     'scripts',

@@ -80,12 +80,15 @@ func (t *tokenCreateTransactionConstructor) Construct(
 		SetTransactionID(getTransactionId(treasury, validStartNanos)).
 		SetTreasuryAccountID(treasury)
 
-	if !isEmptyPublicKey(tokenCreate.AdminKey) {
+	if !tokenCreate.AdminKey.isEmpty() {
 		tx.SetAdminKey(tokenCreate.AdminKey.PublicKey)
 	}
 
 	if !isZeroAccountId(tokenCreate.AutoRenewAccount) {
 		tx.SetAutoRenewAccount(tokenCreate.AutoRenewAccount)
+	} else if tokenCreate.Expiry == 0 {
+		// set a valid auto renew account when expiry is not set
+		tx.SetAutoRenewAccount(treasury)
 	}
 
 	if tokenCreate.AutoRenewPeriod != 0 {
@@ -96,15 +99,15 @@ func (t *tokenCreateTransactionConstructor) Construct(
 		tx.SetExpirationTime(time.Unix(tokenCreate.Expiry, 0))
 	}
 
-	if !isEmptyPublicKey(tokenCreate.FreezeKey) {
+	if !tokenCreate.FreezeKey.isEmpty() {
 		tx.SetFreezeKey(tokenCreate.FreezeKey.PublicKey)
 	}
 
-	if !isEmptyPublicKey(tokenCreate.KycKey) {
+	if !tokenCreate.KycKey.isEmpty() {
 		tx.SetKycKey(tokenCreate.KycKey.PublicKey)
 	}
 
-	if !isEmptyPublicKey(tokenCreate.SupplyKey) {
+	if !tokenCreate.SupplyKey.isEmpty() {
 		tx.SetSupplyKey(tokenCreate.SupplyKey.PublicKey)
 	}
 
@@ -118,7 +121,7 @@ func (t *tokenCreateTransactionConstructor) Construct(
 		tx.SetTokenType(hedera.TokenTypeNonFungibleUnique)
 	}
 
-	if !isEmptyPublicKey(tokenCreate.WipeKey) {
+	if !tokenCreate.WipeKey.isEmpty() {
 		tx.SetWipeKey(tokenCreate.WipeKey.PublicKey)
 	}
 
@@ -177,7 +180,7 @@ func (t *tokenCreateTransactionConstructor) Parse(ctx context.Context, transacti
 
 	signers := []hedera.AccountID{treasury}
 
-	if !isEmptyPublicKey(tokenCreateTransaction.GetAdminKey()) {
+	if isNonEmptyPublicKey(tokenCreateTransaction.GetAdminKey()) {
 		metadata["admin_key"] = tokenCreateTransaction.GetAdminKey().String()
 	}
 
@@ -194,19 +197,27 @@ func (t *tokenCreateTransactionConstructor) Parse(ctx context.Context, transacti
 		metadata["expiry"] = tokenCreateTransaction.GetExpirationTime().Unix()
 	}
 
-	if !isEmptyPublicKey(tokenCreateTransaction.GetFreezeKey()) {
+	if isNonEmptyPublicKey(tokenCreateTransaction.GetFreezeKey()) {
 		metadata["freeze_key"] = tokenCreateTransaction.GetFreezeKey().String()
 	}
 
-	if !isEmptyPublicKey(tokenCreateTransaction.GetKycKey()) {
+	if isNonEmptyPublicKey(tokenCreateTransaction.GetKycKey()) {
 		metadata["kyc_key"] = tokenCreateTransaction.GetKycKey().String()
 	}
 
-	if !isEmptyPublicKey(tokenCreateTransaction.GetSupplyKey()) {
+	if isNonEmptyPublicKey(tokenCreateTransaction.GetSupplyKey()) {
 		metadata["supply_key"] = tokenCreateTransaction.GetSupplyKey().String()
 	}
 
-	if !isEmptyPublicKey(tokenCreateTransaction.GetWipeKey()) {
+	if tokenCreateTransaction.GetSupplyType() == hedera.TokenSupplyTypeFinite {
+		metadata["supply_type"] = domain.TokenSupplyTypeFinite
+	}
+
+	if tokenCreateTransaction.GetTokenType() == hedera.TokenTypeNonFungibleUnique {
+		metadata["type"] = domain.TokenTypeNonFungibleUnique
+	}
+
+	if isNonEmptyPublicKey(tokenCreateTransaction.GetWipeKey()) {
 		metadata["wipe_key"] = tokenCreateTransaction.GetWipeKey().String()
 	}
 

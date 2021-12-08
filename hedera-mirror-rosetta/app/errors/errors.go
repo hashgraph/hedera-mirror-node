@@ -109,6 +109,16 @@ var (
 	Errors = make([]*types.Error, 0)
 )
 
+func AddErrorDetails(err *types.Error, key, description string) *types.Error {
+	clone := *err
+	clone.Details = make(map[string]interface{})
+	for k, v := range err.Details {
+		clone.Details[k] = v
+	}
+	clone.Details[key] = description
+	return &clone
+}
+
 func newError(message string, statusCode int32, retriable bool) *types.Error {
 	err := &types.Error{
 		Message:   message,

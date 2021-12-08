@@ -370,8 +370,8 @@ Optional filters
 ```
 
 - `access_list` should be retrieved by a join between the `contract_result` and `contract_access_list` tables.
-- `block_hash` should be retrieved by a join with the `record_file` table to find the `file_hash` of the file containing
-  the transaction.
+- `block_hash` should be retrieved by a join with the `record_file` table to find the `hash` of the file containing the
+  transaction.
 - `hash` should be retrieved by a join with the `transaction` table
 - `hedera_child_transactions` (when added) will be retrieved by a join between the `contract_result` and transfer tables
   (`assessed_custom_fee`, `crypto_transfer`, `token_transfer`, `nft_transfer`) tables based on child timestamps.
