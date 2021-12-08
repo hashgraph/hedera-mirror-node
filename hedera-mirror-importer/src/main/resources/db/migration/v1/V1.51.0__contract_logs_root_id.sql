@@ -6,7 +6,8 @@ alter table contract_log
 update contract_log
 set root_contract_id = contract_result.contract_id
 from contract_result
-where contract_log.consensus_timestamp = contract_result.consensus_timestamp;
+where contract_log.consensus_timestamp = contract_result.consensus_timestamp
+  and contract_log.contract_id <> contract_result.contract_id;
 
 -- Create index on contract_id and timestamp for contract logs REST API
 create index if not exists contract_log__contract_id_timestamp_index
