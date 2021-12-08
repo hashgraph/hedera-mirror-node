@@ -20,15 +20,17 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_5M;
+import static com.hedera.mirror.importer.config.CacheConfiguration.ACCOUNT_ALIAS_CACHE;
 
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 
 public interface EntityRepository extends CrudRepository<Entity, Long> {
-    @Cacheable(cacheNames = "entityAlias", cacheManager = EXPIRE_AFTER_5M, key = "{#p0}")
-    Optional<Entity> findByAlias(byte[] alias);
+    @Cacheable(cacheNames = "entityAlias", cacheManager = ACCOUNT_ALIAS_CACHE)
+    @Query(value = "select id from entity where alias = ?1 and deleted <> true", nativeQuery = true)
+    Optional<Long> findByAlias(byte[] alias);
 }

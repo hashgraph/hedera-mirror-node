@@ -31,7 +31,6 @@ import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.DomainBuilder;
 
 class EntityRepositoryTest extends AbstractRepositoryTest {
@@ -101,10 +100,8 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    void entityWithAlias() {
-        byte[] aliasBytes = DomainUtils.toBytes(
-                ByteString.copyFromUtf8("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff"));
-        Entity entity = domainBuilder.entity().customize(e -> e.alias(aliasBytes)).persist();
-        assertThat(entityRepository.findByAlias(aliasBytes)).get().isEqualTo(entity);
+    void entityFindByAlias() {
+        Entity entity = domainBuilder.entity().persist();
+        assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
     }
 }

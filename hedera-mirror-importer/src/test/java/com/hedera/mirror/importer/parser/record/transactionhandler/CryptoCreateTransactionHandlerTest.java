@@ -63,7 +63,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     protected AbstractEntity getExpectedUpdatedEntity() {
         AbstractEntity entity = super.getExpectedUpdatedEntity();
         ((Entity) entity).setMaxAutomaticTokenAssociations(0);
-        ((Entity) entity).setAlias(DomainUtils.toBytes(ByteString.EMPTY));
+        ((Entity) entity).setAlias(new byte[0]);
         return entity;
     }
 

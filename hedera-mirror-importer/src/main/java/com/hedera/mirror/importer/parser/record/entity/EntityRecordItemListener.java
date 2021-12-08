@@ -63,6 +63,7 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -294,31 +295,36 @@ public class EntityRecordItemListener implements RecordItemListener {
                 nonFeeTransfer.setAmount(aa.getAmount());
                 nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
 
-                AccountID accountID = aa.getAccountID();
-                EntityId entityId;
-
-                switch (accountID.getAccountCase()) {
-                    case ACCOUNTNUM:
-                        entityId = EntityId.of(aa.getAccountID());
-                        break;
-                    case ALIAS:
-                        var optionalEntity = entityRepository.findByAlias(
-                                DomainUtils.toBytes(accountID.getAlias()));
-                        if (!optionalEntity.isPresent()) {
-                            throw new InvalidDatasetException("AccountID not present for alias: " + accountID
-                                    .getAlias());
-                        }
-
-                        entityId = optionalEntity.get().toEntityId();
-                        break;
-                    default:
-                        throw new InvalidDatasetException("Unsupported account: " + accountID.getAccountCase());
-                }
+                EntityId entityId = getEntityFromAccountId(aa.getAccountID());
 
                 nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, entityId));
                 entityListener.onNonFeeTransfer(nonFeeTransfer);
             }
         }
+    }
+
+    private EntityId getEntityFromAccountId(AccountID accountID) {
+        EntityId entityId;
+
+        switch (accountID.getAccountCase()) {
+            case ACCOUNTNUM:
+                entityId = EntityId.of(accountID);
+                break;
+            case ALIAS:
+                var optionalEntity = entityRepository.findByAlias(
+                        DomainUtils.toBytes(accountID.getAlias()));
+                if (!optionalEntity.isPresent()) {
+                    throw new InvalidDatasetException("AccountID not present for alias: " + accountID
+                            .getAlias());
+                }
+
+                entityId = EntityId.of(optionalEntity.get(), EntityType.ACCOUNT);
+                break;
+            default:
+                throw new InvalidDatasetException("Unsupported account: " + accountID.getAccountCase());
+        }
+
+        return entityId;
     }
 
     private void insertConsensusTopicMessage(ConsensusSubmitMessageTransactionBody transactionBody,

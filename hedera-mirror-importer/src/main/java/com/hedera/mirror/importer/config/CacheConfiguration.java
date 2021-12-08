@@ -28,6 +28,7 @@ import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.cache.transaction.TransactionAwareCacheManagerProxy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 @ConditionalOnProperty(prefix = "spring.cache", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -36,11 +37,20 @@ import org.springframework.context.annotation.Configuration;
 public class CacheConfiguration {
 
     public static final String EXPIRE_AFTER_5M = "cacheManagerExpireAfter5m";
+    public static final String ACCOUNT_ALIAS_CACHE = "accountAliasCache";
 
     @Bean(EXPIRE_AFTER_5M)
+    @Primary
     CacheManager cacheManager5m() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=100,expireAfterWrite=5m");
+        return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
+    }
+
+    @Bean(ACCOUNT_ALIAS_CACHE)
+    CacheManager accountAliasCacheManager() {
+        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCacheSpecification("maximumSize=100000,expireAfterWrite=30m");
         return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
 }
