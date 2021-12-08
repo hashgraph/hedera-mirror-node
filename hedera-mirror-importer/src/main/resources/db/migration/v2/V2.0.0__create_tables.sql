@@ -171,6 +171,7 @@ comment on table custom_fee is 'HTS Custom fees';
 -- entity
 create table if not exists entity
 (
+    alias                            byte[]            null,
     auto_renew_account_id            bigint            null,
     auto_renew_period                bigint            null,
     created_timestamp                bigint            null,

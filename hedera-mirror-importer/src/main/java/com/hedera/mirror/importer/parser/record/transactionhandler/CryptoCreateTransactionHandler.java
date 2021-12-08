@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -63,7 +64,10 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
             entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
-        entity.setAlias(DomainUtils.toBytes(recordItem.getRecord().getAlias()));
+        if (recordItem.getRecord().getAlias() != ByteString.EMPTY) {
+            entity.setAlias(DomainUtils.toBytes(recordItem.getRecord().getAlias()));
+        }
+
         entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
         entity.setMemo(transactionBody.getMemo());
         entity.setReceiverSigRequired(transactionBody.getReceiverSigRequired());

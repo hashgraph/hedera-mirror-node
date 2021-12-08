@@ -83,6 +83,11 @@ create index if not exists entity__id_type
 create index if not exists entity__public_key_type
     on entity (public_key, type) where public_key is not null;
 
+create index if not exists entity__alias_deleted
+    on entity (alias, deleted);
+create unique index if not exists entity__alias_id
+    on entity (alias, id);
+
 -- entity_history
 alter table if exists entity_history
     add constraint entity_history__pk primary key (id, timestamp_range);
