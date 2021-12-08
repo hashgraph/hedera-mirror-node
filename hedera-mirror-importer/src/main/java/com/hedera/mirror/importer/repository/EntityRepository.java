@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.repository;
 import static com.hedera.mirror.importer.config.CacheConfiguration.ACCOUNT_ALIAS_CACHE;
 
 import java.util.Optional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -33,4 +35,16 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
     @Cacheable(cacheNames = "entityAlias", cacheManager = ACCOUNT_ALIAS_CACHE)
     @Query(value = "select id from entity where alias = ?1 and deleted <> true", nativeQuery = true)
     Optional<Long> findByAlias(byte[] alias);
+
+    @Cacheable(cacheNames = "entityAlias", cacheManager = ACCOUNT_ALIAS_CACHE)
+    @Query(value = "select alias from entity where id = ?1 and alias is not null", nativeQuery = true)
+    Optional<byte[]> findByIdWithAliasNotNull(Long id);
+
+    @CacheEvict(cacheNames = "entityAlias", cacheManager = ACCOUNT_ALIAS_CACHE)
+    default void evictAliasCache(byte[] alias) {
+    }
+
+    @CachePut(cacheNames = "entityAlias", cacheManager = ACCOUNT_ALIAS_CACHE)
+    default void addToAliasCache(byte[] alias, Long id) {
+    }
 }

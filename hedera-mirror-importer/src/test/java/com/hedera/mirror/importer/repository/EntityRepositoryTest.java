@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.repository;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
@@ -103,5 +104,25 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
     void entityFindByAlias() {
         Entity entity = domainBuilder.entity().persist();
         assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
+    }
+
+    @Test
+    void entityFindByIdWithAliasNotNull() {
+        Entity entity = domainBuilder.entity().persist();
+        Entity entity2 = domainBuilder.entity().customize(x -> x.alias(new byte[0])).persist();
+        assertThat(entityRepository.findByIdWithAliasNotNull(entity.getId())).get().isEqualTo(entity.getAlias());
+        assertThat(entityRepository.findByIdWithAliasNotNull(entity2.getId())).get().isEqualTo(new byte[0]);
+    }
+
+    @Test
+    void entityEvictAliasCache() {
+        Entity entity = domainBuilder.entity().get();
+        assertDoesNotThrow(() -> entityRepository.evictAliasCache(entity.getAlias()));
+    }
+
+    @Test
+    void entityAddToAliasCache() {
+        Entity entity = domainBuilder.entity().get();
+        assertDoesNotThrow(() -> entityRepository.addToAliasCache(entity.getAlias(), entity.getId()));
     }
 }

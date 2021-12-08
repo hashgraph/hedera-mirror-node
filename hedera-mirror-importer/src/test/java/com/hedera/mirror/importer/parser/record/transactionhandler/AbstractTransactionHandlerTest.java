@@ -71,6 +71,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
@@ -110,6 +111,9 @@ abstract class AbstractTransactionHandlerTest {
 
     @Mock
     protected EntityListener entityListener;
+
+    @Mock
+    protected EntityRepository entityRepository;
 
     @Captor
     private ArgumentCaptor<AbstractEntity> entityCaptor;

@@ -319,6 +319,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 }
 
                 entityId = EntityId.of(optionalEntity.get(), EntityType.ACCOUNT);
+                entityRepository.addToAliasCache(DomainUtils.toBytes(accountID.getAlias()), entityId.getId());
                 break;
             default:
                 throw new InvalidDatasetException("Unsupported account: " + accountID.getAccountCase());
