@@ -219,7 +219,8 @@ abstract class AbstractTransactionHandlerTest {
                     }
 
                     // then
-                    assertThat(entityCaptor.getValue()).isEqualTo(testSpec.getExpected());
+                    assertThat(entityCaptor.getValue()).usingRecursiveComparison()
+                            .isEqualTo(testSpec.getExpected());
                 }
         );
     }
@@ -266,6 +267,7 @@ abstract class AbstractTransactionHandlerTest {
         List<UpdateEntityTestSpec> testSpecs = new LinkedList<>();
         AbstractEntity expected = getExpectedUpdatedEntity();
         expected.setMemo(""); // Proto defaults to empty string
+        ((Entity) expected).setAlias(DomainUtils.toBytes(ByteString.EMPTY));
 
         // no memo set, expect empty memo
         testSpecs.add(
@@ -278,6 +280,7 @@ abstract class AbstractTransactionHandlerTest {
 
         expected = getExpectedUpdatedEntity();
         expected.setMemo("");
+        ((Entity) expected).setAlias(DomainUtils.toBytes(ByteString.EMPTY));
         // memo set to empty string, expect empty memo
         Message updatedInnerBody = innerBody.toBuilder().setField(memoField, "").build();
         testSpecs.add(
@@ -291,6 +294,7 @@ abstract class AbstractTransactionHandlerTest {
         // memo set to non-empty string, expect memo set
         expected = getExpectedUpdatedEntity();
         expected.setMemo(DEFAULT_MEMO);
+        ((Entity) expected).setAlias(DomainUtils.toBytes(ByteString.EMPTY));
         updatedInnerBody = innerBody.toBuilder().setField(memoField, DEFAULT_MEMO).build();
         testSpecs.add(
                 UpdateEntityTestSpec.builder()

@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -32,6 +33,7 @@ import java.util.List;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.util.DomainUtils;
 
 class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -76,6 +78,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
         AbstractEntity expected = getExpectedUpdatedEntity();
         ((Entity) expected).setMaxAutomaticTokenAssociations(500);
+        ((Entity) expected).setAlias(DomainUtils.toBytes(ByteString.EMPTY));
         expected.setMemo("");
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
