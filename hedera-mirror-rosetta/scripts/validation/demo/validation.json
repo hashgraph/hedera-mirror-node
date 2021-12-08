@@ -13,7 +13,7 @@
   "tip_delay": 300,
   "data": {
     "reconciliation_disabled": false,
-    "inactive_discrepency_search_disabled": false,
+    "inactive_discrepancy_search_disabled": false,
     "balance_tracking_disabled": false,
     "bootstrap_balances": "./data_genesis_balances.json",
     "end_conditions": {
