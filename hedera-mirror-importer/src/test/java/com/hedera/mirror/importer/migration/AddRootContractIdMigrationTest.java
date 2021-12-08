@@ -48,7 +48,7 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
     @Resource
     private JdbcOperations jdbcOperations;
 
-    @Value("classpath:db/migration/v1/V1.50.3__contract_logs_root_id.sql")
+    @Value("classpath:db/migration/v1/V1.51.0__contract_logs_root_id.sql")
     private File migrationSql;
 
     @BeforeEach
@@ -81,7 +81,7 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
         migrate();
 
         List<MigrationContractLog> results = retrieveContractLogs();
-        assertThat(results.get(0).getRootContractId()).isEqualTo(1);
+        assertThat(results.get(0).getRootContractId()).isNull();
         assertThat(results.get(1).getRootContractId()).isEqualTo(1);
         assertThat(results.get(2).getRootContractId()).isEqualTo(1);
         assertThat(results.get(3).getRootContractId()).isEqualTo(2);
@@ -109,7 +109,7 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
 
     private List<MigrationContractLog> retrieveContractLogs() {
         return jdbcOperations.query("select consensus_timestamp, contract_id, root_contract_id from contract_log " +
-                        "order by root_contract_id asc",
+                        "order by consensus_timestamp asc, index asc",
                 new BeanPropertyRowMapper<>(MigrationContractLog.class));
     }
 

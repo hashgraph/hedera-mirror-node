@@ -607,14 +607,17 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         assertThat(contractLogRepository.findAll())
                 .filteredOn(c -> c.getConsensusTimestamp() == consensusTimestamp)
-                .hasSize(1)
+                .hasSize(2)
                 .first()
                 .returns(logInfo.getBloom().toByteArray(), ContractLog::getBloom)
                 .returns(consensusTimestamp, ContractLog::getConsensusTimestamp)
                 .returns(EntityId.of(logInfo.getContractID()), ContractLog::getContractId)
                 .returns(logInfo.getData().toByteArray(), ContractLog::getData)
                 .returns(0, ContractLog::getIndex)
-                .returns(EntityId.of(result.getContractID()), ContractLog::getRootContractId)
+                .returns(EntityId.of(logInfo.getContractID())
+                                .equals(EntityId.of(result.getContractID())) ? null :
+                                EntityId.of(result.getContractID()),
+                        ContractLog::getRootContractId)
                 .returns(Utility.getTopic(logInfo, 0), ContractLog::getTopic0)
                 .returns(Utility.getTopic(logInfo, 1), ContractLog::getTopic1)
                 .returns(Utility.getTopic(logInfo, 2), ContractLog::getTopic2)
@@ -653,6 +656,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         builder.addCreatedContractIDs(CREATED_CONTRACT_ID);
         builder.setErrorMessage("call error message");
         builder.setGasUsed(30);
+        builder.addLogInfo(ContractLoginfo.newBuilder()
+                .setBloom(ByteString.copyFromUtf8("bloom"))
+                .setContractID(CONTRACT_ID)
+                .setData(ByteString.copyFromUtf8("data"))
+                .addTopic(ByteString.copyFromUtf8("Topic0"))
+                .addTopic(ByteString.copyFromUtf8("Topic1"))
+                .addTopic(ByteString.copyFromUtf8("Topic2"))
+                .addTopic(ByteString.copyFromUtf8("Topic3")).build());
         builder.addLogInfo(ContractLoginfo.newBuilder()
                 .setBloom(ByteString.copyFromUtf8("bloom"))
                 .setContractID(CREATED_CONTRACT_ID)

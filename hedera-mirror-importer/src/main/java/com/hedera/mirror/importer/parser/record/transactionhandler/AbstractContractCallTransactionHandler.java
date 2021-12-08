@@ -80,7 +80,9 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             contractLog.setContractId(EntityId.of(contractLoginfo.getContractID()));
             contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
-            contractLog.setRootContractId(contractResult.getContractId());
+            if (!contractLog.getContractId().equals(contractResult.getContractId())) {
+                contractLog.setRootContractId(contractResult.getContractId());
+            }
             contractLog.setPayerAccountId(contractResult.getPayerAccountId());
             contractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
             contractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
