@@ -52,7 +52,7 @@ hedera:
              max: 20
            offlineUrl: http://localhost:5701
            onlineUrl: http://localhost:5700
-           httpTimeout: 15s
+           httpTimeout: 25s
            submitRetry:
              backOff: 200ms
              max: 5
