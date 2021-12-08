@@ -801,6 +801,70 @@ const buildFilters = (query) => {
   return filterObject;
 };
 
+/**
+ *
+ * @param timestamps a value or array of values directly from the req
+ * @returns {{value: string, key: string, operator: string}|*[]}
+ */
+const checkTimestampRange = (timestamps) => {
+  //define the bounds
+  let latest = undefined;
+  let earliest = undefined;
+
+  //no timestamp param, add a lower bound
+  if (!timestamps) {
+    return {
+      key: constants.filterKeys.TIMESTAMP,
+      operator: opsMap.gte,
+      value: `${new Date().getTime() - config.maxTimestampRange}000000`,
+    };
+  }
+
+  const timestampsArray = Array.isArray(timestamps) ? timestamps : [timestamps];
+
+  for (const val of timestampsArray) {
+    const filter = buildComparatorFilter(constants.filterKeys.TIMESTAMP, val);
+    if (filter.operator === `gt` || filter.operator === 'gte') {
+      if (earliest == undefined) {
+        earliest = parseTimestampParam(filter.value);
+      } else {
+        throw InvalidArgumentError.forParams(timestamps);
+      }
+    }
+    if (filter.operator === `lt` || filter.operator === 'lte') {
+      if (latest == undefined) {
+        latest = parseTimestampParam(filter.value);
+      } else {
+        throw InvalidArgumentError.forParams(timestamps);
+      }
+    }
+  }
+
+  if (latest === undefined && earliest === undefined) {
+    //Only params are equality, needs no range
+    return null;
+  } else if (earliest === undefined) {
+    //lower bound unset
+    return {
+      key: constants.filterKeys.TIMESTAMP,
+      operator: 'ge',
+      value: `${BigInt(latest) - BigInt(config.maxTimestampRange * 1000000)}`,
+    };
+  } else if (latest == undefined) {
+    //upper bound unset
+    return {
+      key: constants.filterKeys.TIMESTAMP,
+      operator: 'le',
+      value: `${BigInt(earliest) + BigInt(config.maxTimestampRange * 1000000)}`,
+    };
+  } else if (latest - earliest > config.maxTimestampRange || latest - earliest < 0) {
+    //range too big or small
+    throw InvalidArgumentError.forParamsRange(timestamps);
+  }
+  //range was set and is valid, add no filter
+  return null;
+};
+
 const buildComparatorFilter = (name, filter) => {
   const splitVal = filter.split(':');
   const opVal = splitVal.length === 1 ? ['eq', filter] : splitVal;
@@ -1009,6 +1073,7 @@ module.exports = {
   buildAndValidateFilters,
   buildComparatorFilter,
   buildPgSqlObject,
+  checkTimestampRange,
   createTransactionId,
   convertMySqlStyleQueryToPostgres,
   encodeBase64,
