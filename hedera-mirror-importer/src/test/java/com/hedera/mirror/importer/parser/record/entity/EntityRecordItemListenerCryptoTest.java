@@ -76,6 +76,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
             ByteString.copyFromUtf8(ALIAS_KEY_2)
     };
     private static final long[] additionalTransferAmounts = {1001, 1002};
+    private static final long[] additionalAliasTransferAmounts = {1003, 1004};
 
     @BeforeEach
     void before() {
@@ -551,18 +552,19 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         assertAll(
-                () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEntities(),
-                () -> assertEquals(3, cryptoTransferRepository
-                        .count()), // 5 - 2 for skipped alias cases in record creation test logic
-                () -> assertEquals(additionalAliasTransfers.length, nonFeeTransferRepository.count()),
+                () -> assertEquals(3, transactionRepository.count()),
+                () -> assertEntities(EntityId.of(accountId1), EntityId.of(accountId2)),
+                () -> assertEquals(13, cryptoTransferRepository
+                        .count()), // ((5 transfers * 3 transactions) - 2 skipped alisa transfers in record test logic
+                () -> assertEquals(additionalTransfers.length + additionalTransfers.length +
+                        additionalAliasTransfers.length, nonFeeTransferRepository
+                        .count()), // 2 non fee transfers * 3 transactions
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertThat(nonFeeTransferRepository.findAll())
-                        .filteredOn(x -> x.getAmount() > 0)
                         .extracting(NonFeeTransfer::getId)
                         .extracting(NonFeeTransfer.Id::getEntityId)
                         .extracting(EntityId::getEntityNum)
-                        .containsExactlyInAnyOrder(accountId1.getAccountNum(), accountId2.getAccountNum())
+                        .contains(accountId1.getAccountNum(), accountId2.getAccountNum())
         );
     }
 
@@ -688,7 +690,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
             for (int i = 0; i < additionalTransfers.length; i++) {
                 builder.getCryptoTransferBuilder().getTransfersBuilder()
                         .addAccountAmounts(accountAliasAmount(additionalAliasTransfers[i],
-                                additionalTransferAmounts[i]));
+                                additionalAliasTransferAmounts[i]));
             }
         });
     }
