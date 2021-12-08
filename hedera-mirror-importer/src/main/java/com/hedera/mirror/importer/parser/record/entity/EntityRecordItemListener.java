@@ -295,15 +295,21 @@ public class EntityRecordItemListener implements RecordItemListener {
                 nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
 
                 AccountID accountID = aa.getAccountID();
-                EntityId entityId = null;
+                EntityId entityId;
 
                 switch (accountID.getAccountCase()) {
                     case ACCOUNTNUM:
                         entityId = EntityId.of(aa.getAccountID());
                         break;
                     case ALIAS:
-                        entityId = entityRepository.findByAlias(
-                                DomainUtils.toBytes(accountID.getAlias())).get().toEntityId();
+                        var optionalEntity = entityRepository.findByAlias(
+                                DomainUtils.toBytes(accountID.getAlias()));
+                        if (!optionalEntity.isPresent()) {
+                            throw new InvalidDatasetException("AccountID not present for alias: " + accountID
+                                    .getAlias());
+                        }
+
+                        entityId = optionalEntity.get().toEntityId();
                         break;
                     default:
                         throw new InvalidDatasetException("Unsupported account: " + accountID.getAccountCase());

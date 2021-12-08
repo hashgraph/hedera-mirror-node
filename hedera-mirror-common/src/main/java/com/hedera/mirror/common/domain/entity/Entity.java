@@ -20,6 +20,7 @@ package com.hedera.mirror.common.domain.entity;
  * ‍
  */
 
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,6 +35,7 @@ import com.hedera.mirror.common.converter.AccountIdConverter;
 @SuperBuilder
 public class Entity extends AbstractEntity {
 
+    @Column(updatable = false)
     @ToString.Exclude
     private byte[] alias;
 
