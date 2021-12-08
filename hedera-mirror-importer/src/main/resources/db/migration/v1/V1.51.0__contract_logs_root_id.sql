@@ -12,7 +12,3 @@ where contract_log.consensus_timestamp = contract_result.consensus_timestamp
 -- Create index on contract_id and timestamp for contract logs REST API
 create index if not exists contract_log__contract_id_timestamp_index
     on contract_log (contract_id, consensus_timestamp desc, index);
-
--- Create index on root_contract_id and timestamp for contract logs REST API
-create index if not exists contract_log__root_contract_id_timestamp_index
-    on contract_log (root_contract_id, consensus_timestamp desc, index);
