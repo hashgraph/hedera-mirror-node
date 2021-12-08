@@ -29,6 +29,7 @@ import javax.annotation.Resource;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.io.FileUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,6 +50,17 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
 
     @Value("classpath:db/migration/v1/V1.50.3__contract_logs_root_id.sql")
     private File migrationSql;
+
+    @BeforeEach
+    void setup() {
+        revertMigration();
+    }
+
+    @Test
+    void verifyRootContractIdMigrationEmpty() throws Exception {
+        migrate();
+        assertThat(retrieveContractLogs()).isEmpty();
+    }
 
     @Test
     void verifyRootContractIdMigration() throws Exception {
@@ -126,6 +138,11 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
                             contractResult.getGasLimit(), contractResult.getGasUsed(),
                             contractResult.getPayerAccountId());
         }
+    }
+
+    private void revertMigration() {
+        jdbcOperations
+                .update("alter table contract_log drop column if exists root_contract_id");
     }
 
     @Data
