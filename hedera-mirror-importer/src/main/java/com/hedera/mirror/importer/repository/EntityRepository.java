@@ -27,9 +27,11 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 
+@Transactional
 public interface EntityRepository extends CrudRepository<Entity, Long> {
     String ACCOUNT_ALIAS_CACHE_NAME = "entityAlias";
 
