@@ -97,7 +97,7 @@ const isValidPublicKeyQuery = (query) => {
   return publicKeyPattern.test(query);
 };
 
-const contractTopicPattern = /^[0-9A-Fa-f]{64}$/;
+const contractTopicPattern = /^0x[0-9A-Fa-f]{64}$/;
 const isValidOpAndTopic = (op, query) => {
   return contractTopicPattern.test(query) && op === 'eq';
 };
