@@ -12,6 +12,7 @@ defaults:
     working-directory: ./hedera-mirror-rosetta
 
 env:
+  IMAGE: hedera-mirror-rosetta-image
   MODULE: hedera-mirror-rosetta
 
 jobs:
@@ -74,7 +75,7 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ env.MODULE }}
+          name: ${{ env.IMAGE }}
           path: /tmp/${{ env.MODULE }}.tar
           if-no-files-found: error
 
@@ -105,7 +106,7 @@ jobs:
       - name: Download Artifact
         uses: actions/download-artifact@v2
         with:
-          name: ${{ env.MODULE }}
+          name: ${{ env.IMAGE }}
           path: /tmp
 
       - name: Load Mirror Node ALl-in-One Docker Image
@@ -211,7 +212,7 @@ jobs:
       - name: Delete Artifact
         uses: geekyeggo/delete-artifact@v1
         with:
-          name: ${{ env.MODULE }}
+          name: ${{ env.IMAGE }}
           failOnError: false
 
   gosec:
