@@ -26,7 +26,7 @@ const constants = require('../constants.js');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {InvalidClauseError} = require('../errors/invalidClauseError');
 const {TransactionType} = require('../model');
-const {getLimitParamValue} = require('../utils');
+const {checkTimestampRange, getLimitParamValue} = require('../utils');
 const {keyTypes} = require('../constants');
 const EntityId = require('../entityId');
 
@@ -1015,5 +1015,39 @@ describe('Utils test - utils.parseTransactionTypeParam', () => {
     expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
       `type = ${TransactionType.getProtoId('CONSENSUSSUBMITMESSAGE')}`
     );
+  });
+
+  describe('checkTimestampRange', () => {
+    test('none', () => {
+      expect(checkTimestampRange()).toBeFalsy();
+    });
+    test('one param gt', () => {
+      expect(checkTimestampRange('gt:1638921702.000')).toBeFalsy();
+    });
+    test('one param eq', () => {
+      expect(checkTimestampRange('eq:1638921702.000')).toBeTruthy();
+    });
+    test('two params gt and eq', () => {
+      expect(checkTimestampRange(['gt:1638921702.000', 'eq:1638921702'])).toBeTruthy();
+    });
+    test('two both sides', () => {
+      const newMin = checkTimestampRange(['lte:1638921702.000000000', 'gte:1638921701.000']);
+      expect(newMin).toBeTruthy();
+    });
+    test('two bad range backwards', () => {
+      expect(checkTimestampRange(['lte:1638921701.000000000', 'gte:1638921702.000'])).toBeFalsy();
+    });
+    test('two bad range too big', () => {
+      expect(checkTimestampRange(['lte:1638921702.000000000', 'gte:1738921702.000'])).toBeFalsy();
+    });
+    test('two both gt', () => {
+      expect(checkTimestampRange(['gt:1638921702.000000000', 'gte:1738921702.000'])).toBeFalsy();
+    });
+    test('two both lt', () => {
+      expect(checkTimestampRange(['lt:1638921702.000000000', 'lte:1738921702.000'])).toBeFalsy();
+    });
+    test('three gt lt eq', () => {
+      expect(checkTimestampRange(['gt:1638921702.000000000', 'lte:1638921701.000', 'eq:1638921701.000'])).toBeTruthy();
+    });
   });
 });

@@ -1002,10 +1002,58 @@ const loadPgRange = () => {
   pgRange.install(pg);
 };
 
+/**
+ *
+ * @param timestamps a value or array of values directly from the req
+ * @returns {{value: string, key: string, operator: string}|*[]}
+ */
+const checkTimestampRange = (timestamps) => {
+  //define the bounds
+  let latest = undefined;
+  let earliest = undefined;
+
+  //no timestamp param, add a lower bound
+  if (!timestamps) {
+    return false;
+  }
+
+  const timestampsArray = Array.isArray(timestamps) ? timestamps : [timestamps];
+
+  for (const val of timestampsArray) {
+    const filter = buildComparatorFilter(constants.filterKeys.TIMESTAMP, val);
+    if (filter.operator === 'eq') {
+      return true;
+    } else if (filter.operator === `gt` || filter.operator === 'gte') {
+      if (earliest == undefined) {
+        earliest = parseTimestampParam(filter.value);
+      } else {
+        return false;
+      }
+    } else if (filter.operator === `lt` || filter.operator === 'lte') {
+      if (latest == undefined) {
+        latest = parseTimestampParam(filter.value);
+      } else {
+        return false;
+      }
+    }
+  }
+
+  if (
+    latest === undefined ||
+    earliest === undefined ||
+    latest - earliest > config.maxTimestampRange ||
+    latest - earliest < 0
+  ) {
+    return false;
+  }
+  return true;
+};
+
 module.exports = {
   buildAndValidateFilters,
   buildComparatorFilter,
   buildPgSqlObject,
+  checkTimestampRange,
   createTransactionId,
   convertMySqlStyleQueryToPostgres,
   encodeBase64,
