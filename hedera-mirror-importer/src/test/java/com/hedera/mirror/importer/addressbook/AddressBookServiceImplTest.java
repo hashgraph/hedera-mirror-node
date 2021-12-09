@@ -40,7 +40,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.annotation.Resource;
-import org.assertj.core.api.IterableAssert;
 import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -1015,8 +1014,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
             return;
         }
 
-        IterableAssert<AddressBookServiceEndpoint> listAssert = assertThat(actual)
-                .hasSize(expected.size());
+        var listAssert = assertThat(actual).hasSize(expected.size());
 
         for (ServiceEndpoint serviceEndpoint : expected) {
             listAssert.anySatisfy(abe -> {
