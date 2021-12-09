@@ -24,14 +24,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
+import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 
-import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.importer.domain.DomainBuilder;
 
 class EntityRepositoryTest extends AbstractRepositoryTest {
 
@@ -53,7 +54,7 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    void entityPublicKeyUpdates() {
+    void publicKeyUpdates() {
         Entity entity = domainBuilder.entity().customize(b -> b.key(null)).persist();
 
         // unset key should result in null public key
@@ -89,7 +90,7 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
      * This test verifies that the Entity domain object and table definition are in sync with the entity_history table.
      */
     @Test
-    void entityHistory() {
+    void history() {
         Entity entity = domainBuilder.entity().persist();
 
         jdbcOperations.update("insert into entity_history select * from entity");
@@ -97,5 +98,34 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
 
         assertThat(entityRepository.findAll()).containsExactly(entity);
         assertThat(entityHistory).containsExactly(entity);
+    }
+
+    @Test
+    void findByAlias() {
+        Entity entity = domainBuilder.entity().get();
+        byte[] alias = entity.getAlias();
+
+        // Cache and DB return nothing on empty table
+        assertThat(entityRepository.findByAlias(alias)).isNotPresent();
+
+        // DB state is reflected in cache
+        entityRepository.save(entity);
+        assertThat(entityRepository.findByAlias(alias)).get().isEqualTo(entity.getId());
+
+        // Cache returns ID after DB is cleared
+        entityRepository.deleteAll();
+        assertThat(entityRepository.findByAlias(alias)).get().isEqualTo(entity.getId());
+
+        // A new byte[] with the same data retrieves the same value from the cache
+        byte[] aliasCopy = Arrays.copyOf(alias, alias.length);
+        assertThat(entityRepository.findByAlias(aliasCopy)).get().isEqualTo(entity.getId());
+    }
+
+    @Test
+    void storeAlias() {
+        Entity entity = domainBuilder.entity().get();
+        byte[] alias = entity.getAlias();
+        entityRepository.storeAlias(alias, entity.getId());
+        assertThat(entityRepository.findByAlias(alias)).get().isEqualTo(entity.getId());
     }
 }

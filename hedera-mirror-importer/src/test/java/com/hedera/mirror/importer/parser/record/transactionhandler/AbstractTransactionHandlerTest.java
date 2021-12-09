@@ -29,9 +29,6 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Message;
 import com.google.protobuf.StringValue;
-
-import com.hedera.mirror.common.util.DomainUtils;
-
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -72,7 +69,9 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityOperation;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
@@ -94,7 +93,7 @@ abstract class AbstractTransactionHandlerTest {
             "5a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96G");
 
     protected static final KeyList DEFAULT_KEY_LIST = KeyList.newBuilder().addAllKeys(
-                    Arrays.asList(DEFAULT_KEY, DEFAULT_SUBMIT_KEY))
+            Arrays.asList(DEFAULT_KEY, DEFAULT_SUBMIT_KEY))
             .build();
 
     protected static final String UPDATED_MEMO = "update memo";
@@ -112,6 +111,9 @@ abstract class AbstractTransactionHandlerTest {
 
     @Mock
     protected EntityListener entityListener;
+
+    @Mock
+    protected EntityRepository entityRepository;
 
     @Captor
     private ArgumentCaptor<AbstractEntity> entityCaptor;

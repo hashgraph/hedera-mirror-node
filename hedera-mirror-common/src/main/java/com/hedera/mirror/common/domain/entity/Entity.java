@@ -20,8 +20,8 @@ package com.hedera.mirror.common.domain.entity;
  * ‍
  */
 
+import javax.persistence.Column;
 import javax.persistence.Convert;
-
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -34,6 +34,10 @@ import com.hedera.mirror.common.converter.AccountIdConverter;
 @NoArgsConstructor
 @SuperBuilder
 public class Entity extends AbstractEntity {
+
+    @Column(updatable = false)
+    @ToString.Exclude
+    private byte[] alias;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId autoRenewAccountId;
