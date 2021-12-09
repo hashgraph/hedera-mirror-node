@@ -267,8 +267,8 @@ describe('getContractByIdQuery', () => {
                           contract_file cf`;
   const queryForTable = (table, extraConditions) => {
     return `select ${contractFields}
-            from ${table} c
-            where c.id = $1 ${(extraConditions && ' and ' + extraConditions.join(' and ')) || ''}`;
+      from ${table} c
+      where c.id = $1 ${(extraConditions && ' and ' + extraConditions.join(' and ')) || ''}`;
   };
   const timestampConditions = ['c.timestamp_range && $2', 'c.timestamp_range && $3'];
 
@@ -278,11 +278,10 @@ describe('getContractByIdQuery', () => {
       input: [],
       expected: `with contract as (
         ${queryForTable('contract')}
-      ),
-                      contract_file as (
-                        ${contracts.fileDataQuery}
-                      )
-                   ${mainQuery}`,
+      ), contract_file as (
+          ${contracts.fileDataQuery}
+      )
+      ${mainQuery}`,
     },
     {
       name: 'historical',
@@ -293,11 +292,10 @@ describe('getContractByIdQuery', () => {
         ${queryForTable('contract_history', timestampConditions)}
         order by timestamp_range desc
         limit 1
-      ),
-                      contract_file as (
-                        ${contracts.fileDataQuery}
-                      )
-                   ${mainQuery}`,
+      ), contract_file as (
+        ${contracts.fileDataQuery}
+      )
+      ${mainQuery}`,
     },
   ];
 
@@ -318,9 +316,9 @@ describe('getContractsQuery', () => {
         order: 'asc',
       },
       expected: `select ${contractFields}
-                 from contract c
-                 order by c.id asc
-                 limit $1`,
+       from contract c
+       order by c.id asc
+       limit $1`,
     },
     {
       name: 'non-empty whereQuery',
@@ -330,10 +328,10 @@ describe('getContractsQuery', () => {
         order: 'desc',
       },
       expected: `select ${contractFields}
-                 from contract c
-                 where c.id <= $1
-                 order by c.id desc
-                 limit $2`,
+        from contract c
+        where c.id <= $1
+        order by c.id desc
+        limit $2`,
     },
   ];
 
