@@ -26,7 +26,7 @@ const constants = require('../constants.js');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {InvalidClauseError} = require('../errors/invalidClauseError');
 const {TransactionType} = require('../model');
-const {getLimitParamValue, checkTimestampRange} = require('../utils');
+const {getLimitParamValue} = require('../utils');
 const {keyTypes} = require('../constants');
 const EntityId = require('../entityId');
 
@@ -978,83 +978,6 @@ describe('Utils getLimitParamValue', () => {
 
   test('values array', () => {
     expect(getLimitParamValue(['1', '50'])).toEqual(50);
-  });
-});
-
-describe('checkTimestampRange', () => {
-  test('none', () => {
-    const testTime = BigInt(`${new Date().getTime() - 3.156e10}000000`);
-    const newMin = checkTimestampRange();
-    expect(BigInt(newMin.value)).toBeGreaterThanOrEqual(testTime);
-  });
-  test('one lte', () => {
-    const newMin = checkTimestampRange('gt:1638921702.000');
-    expect(newMin).toEqual({
-      key: 'timestamp',
-      operator: 'le',
-      value: '1670457702000000000',
-    });
-  });
-  test('one gte', () => {
-    const newMin = checkTimestampRange('lte:1638921702.000000000');
-    expect(newMin).toEqual({
-      key: 'timestamp',
-      operator: 'ge',
-      value: '1607385702000000000',
-    });
-  });
-  test('one eq', () => {
-    const newMin = checkTimestampRange('1638921702.000000000');
-    expect(newMin).toEqual(null);
-  });
-  test('two lte', () => {
-    const newMin = checkTimestampRange(['gt:1638921702.000', 'eq:1638921702']);
-    expect(newMin).toEqual({
-      key: 'timestamp',
-      operator: 'le',
-      value: '1670457702000000000',
-    });
-  });
-  test('two gte', () => {
-    const newMin = checkTimestampRange(['lte:1638921702.000000000', 'eq:1638921702']);
-    expect(newMin).toEqual({
-      key: 'timestamp',
-      operator: 'ge',
-      value: '1607385702000000000',
-    });
-  });
-  test('two both sides', () => {
-    const newMin = checkTimestampRange(['lte:1638921702.000000000', 'gte:1638921701.000']);
-    expect(newMin).toEqual(null);
-  });
-  test('two bad range backwards', () => {
-    expect(() => {
-      checkTimestampRange(['lte:1638921701.000000000', 'gte:1638921702.000']);
-    }).toThrowError(InvalidArgumentError);
-  });
-  test('two bad range too big', () => {
-    expect(() => {
-      checkTimestampRange(['lte:1638921702.000000000', 'gte:1738921702.000']);
-    }).toThrowError(InvalidArgumentError);
-  });
-  test('two both gt', () => {
-    expect(() => {
-      checkTimestampRange(['gt:1638921702.000000000', 'gte:1738921702.000']);
-    }).toThrowError(InvalidArgumentError);
-  });
-  test('two both lt', () => {
-    expect(() => {
-      checkTimestampRange(['lt:1638921702.000000000', 'lte:1738921702.000']);
-    }).toThrowError(InvalidArgumentError);
-  });
-  test('four all eq', () => {
-    const newMin = checkTimestampRange([
-      'eq:1638921702.000000000',
-      'eq:1638921701.000',
-      'eq:1638921701.000',
-      'eq:1638921701.000',
-    ]);
-    expect(newMin).toEqual(null);
   });
 });
 
