@@ -413,7 +413,7 @@ const getContractLogs = async (req, res) => {
   );
 
   const response = {
-    logs: rows.map((row) => new ContractLogViewModel(row)),
+    contract_logs: rows.map((row) => new ContractLogViewModel(row)),
   };
 
   res.locals[constants.responseDataLabel] = response;
@@ -434,9 +434,9 @@ const contractLogfilterValidityChecks = (param, op, val) => {
 
   // Validate the value
   switch (param) {
-    case constants.filterKeys.ADDRESS:
-      ret = utils.isValidOpAndAddress(op, val);
-      break;
+    // case constants.filterKeys.ADDRESS:
+    //   ret = utils.isValidOpAndAddress(op, val);
+    //   break;
     case constants.filterKeys.LIMIT:
       ret = utils.isPositiveLong(val);
       break;
@@ -539,11 +539,11 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   let limit = defaultLimit;
   let timestampOrder = constants.orderFilterValues.DESC;
   let indexOrder = constants.orderFilterValues.ASC;
-  const conditions = [`${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)} = $1`];
+  const conditions = [`${ContractLog.getFullName(ContractLog.CONTRACT_ID)} = $1`];
   const params = [contractId];
 
-  const contractLogAddressFullName = ContractLog.getFullName(ContractLog.CONTRACT_ID);
-  const contractLogAddressInValues = [];
+  // const contractLogAddressFullName = ContractLog.getFullName(ContractLog.CONTRACT_ID);
+  // const contractLogAddressInValues = [];
 
   const contractLogIndexFullName = ContractLog.getFullName(ContractLog.INDEX);
   const contractLogIndexInValues = [];
@@ -565,18 +565,18 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
 
   for (const filter of filters) {
     switch (filter.key) {
-      case constants.filterKeys.ADDRESS:
-        //Convert the adddress to a contractId
-        const [shard, realm, num] = EntityId.parseFromSolidityAddress(filter.value);
-        filter.value = EntityId.of(shard, realm, num).getEncodedId();
-        updateConditionsAndParamsWithInValues(
-          filter,
-          contractLogAddressInValues,
-          params,
-          conditions,
-          contractLogAddressFullName
-        );
-        break;
+      // case constants.filterKeys.ADDRESS:
+      //   //Convert the adddress to a contractId
+      //   const [shard, realm, num] = EntityId.parseFromSolidityAddress(filter.value);
+      //   filter.value = EntityId.of(shard, realm, num).getEncodedId();
+      //   updateConditionsAndParamsWithInValues(
+      //     filter,
+      //     contractLogAddressInValues,
+      //     params,
+      //     conditions,
+      //     contractLogAddressFullName
+      //   );
+      //   break;
       case constants.filterKeys.INDEX:
         updateConditionsAndParamsWithInValues(
           filter,
@@ -604,6 +604,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         break;
       case constants.filterKeys.TOPIC0:
         // handle repeated values
+        filter.value = filter.value.replace('0x', '');
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTopic0InValues,
@@ -613,6 +614,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         );
         break;
       case constants.filterKeys.TOPIC1:
+        filter.value = filter.value.replace('0x', '');
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTopic1InValues,
@@ -622,6 +624,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         );
         break;
       case constants.filterKeys.TOPIC2:
+        filter.value = filter.value.replace('0x', '');
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTopic2InValues,
@@ -631,6 +634,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         );
         break;
       case constants.filterKeys.TOPIC3:
+        filter.value = filter.value.replace('0x', '');
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTopic3InValues,
@@ -645,13 +649,37 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   }
 
   // update query with repeated values
-  updateQueryFiltersWithInValues(params, conditions, contractLogAddressInValues, contractLogAddressFullName);
+  // updateQueryFiltersWithInValues(params, conditions, contractLogAddressInValues, contractLogAddressFullName);
   updateQueryFiltersWithInValues(params, conditions, contractLogIndexInValues, contractLogIndexFullName);
   updateQueryFiltersWithInValues(params, conditions, contractLogTimestampInValues, contractLogTimestampFullName);
-  updateQueryFiltersWithInValues(params, conditions, contractLogTopic0InValues, contractLogTopic0FullName);
-  updateQueryFiltersWithInValues(params, conditions, contractLogTopic1InValues, contractLogTopic1FullName);
-  updateQueryFiltersWithInValues(params, conditions, contractLogTopic2InValues, contractLogTopic2FullName);
-  updateQueryFiltersWithInValues(params, conditions, contractLogTopic3InValues, contractLogTopic3FullName);
+  updateQueryFiltersWithInValues(
+    params,
+    conditions,
+    contractLogTopic0InValues,
+    contractLogTopic0FullName,
+    paramStringBuilderBytes
+  );
+  updateQueryFiltersWithInValues(
+    params,
+    conditions,
+    contractLogTopic1InValues,
+    contractLogTopic1FullName,
+    paramStringBuilderBytes
+  );
+  updateQueryFiltersWithInValues(
+    params,
+    conditions,
+    contractLogTopic2InValues,
+    contractLogTopic2FullName,
+    paramStringBuilderBytes
+  );
+  updateQueryFiltersWithInValues(
+    params,
+    conditions,
+    contractLogTopic3InValues,
+    contractLogTopic3FullName,
+    paramStringBuilderBytes
+  );
 
   return {
     conditions,
@@ -662,33 +690,42 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   };
 };
 
-const updateConditionsAndParamsWithInValues = (
-  filter,
-  invalues,
-  existingParams,
-  existingConditions,
-  fullName,
-  offset = 0
-) => {
+const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams, existingConditions, fullName) => {
   if (filter.operator === utils.opsMap.eq) {
     // aggregate '=' conditions and use the sql 'in' operator
     invalues.push(filter.value);
   } else {
     existingParams.push(filter.value);
-    existingConditions.push(`${fullName}${filter.operator}$${existingParams.length + offset}`);
+    existingConditions.push(`${fullName}${filter.operator}$${existingParams.length}`);
   }
 };
 
-const updateQueryFiltersWithInValues = (existingParams, existingConditions, invalues, fullName, offset = 0) => {
+const updateQueryFiltersWithInValues = (
+  existingParams,
+  existingConditions,
+  invalues,
+  fullName,
+  paramStringBuilder = paramStringBuilderDefault
+) => {
   if (!_.isNil(invalues) && !_.isEmpty(invalues)) {
     // add the condition 'c.id in ()'
-    const start = existingParams.length + offset + 1; // start is the next positional index
+    const start = existingParams.length + 1; // start is the next positional index
     existingParams.push(...invalues);
-    const positions = _.range(invalues.length)
-      .map((position) => position + start)
-      .map((position) => `$${position}`);
+    const positions = paramStringBuilder(invalues, start);
     existingConditions.push(`${fullName} in (${positions})`);
   }
+};
+
+const paramStringBuilderDefault = (invalues, start) => {
+  return _.range(invalues.length)
+    .map((position) => position + start)
+    .map((position) => `$${position}`);
+};
+
+const paramStringBuilderBytes = (invalues, start) => {
+  return _.range(invalues.length)
+    .map((position) => position + start)
+    .map((position) => `decode($${position}, 'hex')`);
 };
 
 module.exports = {

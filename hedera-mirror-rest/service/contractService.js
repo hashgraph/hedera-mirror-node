@@ -48,11 +48,11 @@ class ContractService extends BaseService {
                                          ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
                                          ${ContractLog.getFullName(ContractLog.DATA)},
                                          ${ContractLog.getFullName(ContractLog.INDEX)},
-                                         array_to_json(array_remove(
-                                           ARRAY [${ContractLog.getFullName(ContractLog.TOPIC0)},
-                                             ${ContractLog.getFullName(ContractLog.TOPIC1)},
-                                             ${ContractLog.getFullName(ContractLog.TOPIC2)},
-                                             ${ContractLog.getFullName(ContractLog.TOPIC3)}], null))::jsonb as topics
+                                         ${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)},
+                                         ${ContractLog.getFullName(ContractLog.TOPIC0)},
+                                         ${ContractLog.getFullName(ContractLog.TOPIC1)},
+                                         ${ContractLog.getFullName(ContractLog.TOPIC2)},
+                                         ${ContractLog.getFullName(ContractLog.TOPIC3)}
                                   from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
   async getContractResultsByIdAndFilters(

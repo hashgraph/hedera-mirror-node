@@ -37,12 +37,17 @@ class ContractLogViewModel {
   constructor(contractLog) {
     Object.assign(this, {
       address: EntityId.parse(contractLog.contractId, constants.filterKeys.CONTRACTID).toSolidityAddress(),
-      bloom: utils.toHexString(contractLog.bloom, true),
       data: utils.toHexString(contractLog.data, true),
       index: contractLog.index,
+      root_contract_id:
+        contractLog.rootContractId !== null ? EntityId.parse(contractLog.rootContractId).toString() : null,
       timestamp: utils.nsToSecNs(contractLog.consensusTimestamp),
-      topics: contractLog.topics,
+      topics: this._formatTopics([contractLog.topic0, contractLog.topic1, contractLog.topic2, contractLog.topic3]),
     });
+  }
+
+  _formatTopics(topics) {
+    return topics.filter((topic) => topic !== null).map((topic) => utils.toHexString(topic, true));
   }
 }
 

@@ -663,20 +663,24 @@ const addContractLog = async (contractLogInput) => {
   const contractLog = {
     bloom: '\\x0123',
     consensus_timestamp: 1234510001,
-    contract_id: 0,
+    contract_id: 1,
     data: '\\x0123',
     index: 0,
-    payer_account_id: 1,
-    root_contract_id: 0,
-    topic0: 'aaaaaaaaaa',
-    topic1: 'bbbbbbbbbb',
-    topic2: 'cccccccccc',
-    topic3: 'dddddddddd',
+    payer_account_id: 2,
+    root_contract_id: null,
+    topic0: '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+    topic1: '\\x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
+    topic2: '\\xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+    topic3: '\\xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
     ...contractLogInput,
   };
 
   contractLog.bloom = contractLogInput.bloom != null ? Buffer.from(contractLogInput.bloom) : contractLog.bloom;
   contractLog.data = contractLogInput.data != null ? Buffer.from(contractLogInput.data) : contractLog.data;
+  contractLog.topic0 = contractLogInput.topic0 != null ? Buffer.from(contractLogInput.topic0) : contractLog.topic0;
+  contractLog.topic1 = contractLogInput.topic1 != null ? Buffer.from(contractLogInput.topic1) : contractLog.topic1;
+  contractLog.topic2 = contractLogInput.topic2 != null ? Buffer.from(contractLogInput.topic2) : contractLog.topic2;
+  contractLog.topic3 = contractLogInput.topic3 != null ? Buffer.from(contractLogInput.topic3) : contractLog.topic3;
 
   await sqlConnection.query(
     `insert into contract_log (${insertFields.join(',')})

@@ -106,8 +106,11 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
                                    cl.consensus_timestamp,
                                    cl.data,
                                    cl.index,
-                                   array_to_json(array_remove(ARRAY [cl.topic0, cl.topic1, cl.topic2, cl.topic3],
-                                                              null))::jsonb as topics
+                                   cl.root_contract_id,
+                                   cl.topic0,
+                                   cl.topic1,
+                                   cl.topic2,
+                                   cl.topic3
                             from contract_log cl
                             where cl.contract_id = $1
                             order by cl.consensus_timestamp desc,
@@ -120,13 +123,13 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
   test('ContractService.getContractLogsByIdAndFiltersQuery - Verify additional conditions', async () => {
     const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
       [
-        'cl.root_contract_id = $1',
-        'cl.topic0 in ($2)',
-        'cl.topic1 in ($3)',
-        'cl.topic2 in ($4)',
-        'cl.topic3 in ($5)',
-        'cl.contract_id in ($6)',
-        'cl.consensus_timestamp in ( $7, $8)',
+        `cl.root_contract_id = $1`,
+        `cl.topic0 in (decode($2, 'hex'))`,
+        `cl.topic1 in (decode($3, 'hex'))`,
+        `cl.topic2 in (decode($4, 'hex'))`,
+        `cl.topic3 in (decode($5, 'hex'))`,
+        `cl.contract_id in ($6)`,
+        `cl.consensus_timestamp in ( $7, $8)`,
       ],
       [
         1001,
@@ -148,14 +151,17 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
                                    cl.consensus_timestamp,
                                    cl.data,
                                    cl.index,
-                                   array_to_json(array_remove(ARRAY [cl.topic0, cl.topic1, cl.topic2, cl.topic3],
-                                                              null))::jsonb as topics
+                                   cl.root_contract_id,
+                                   cl.topic0,
+                                   cl.topic1,
+                                   cl.topic2,
+                                   cl.topic3
                             from contract_log cl
                             where cl.root_contract_id = $1
-                              and cl.topic0 in ($2)
-                              and cl.topic1 in ($3)
-                              and cl.topic2 in ($4)
-                              and cl.topic3 in ($5)
+                              and cl.topic0 in (decode($2, 'hex'))
+                              and cl.topic1 in (decode($3, 'hex'))
+                              and cl.topic2 in (decode($4, 'hex'))
+                              and cl.topic3 in (decode($5, 'hex'))
                               and cl.contract_id in ($6)
                               and cl.consensus_timestamp in ($7, $8)
                             order by cl.consensus_timestamp desc,
