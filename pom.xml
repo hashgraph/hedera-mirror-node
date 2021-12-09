@@ -39,6 +39,7 @@
         <module>hedera-mirror-rest</module>
         <module>hedera-mirror-rosetta</module>
         <module>hedera-mirror-test</module>
+        <module>hedera-mirror-web3</module>
     </modules>
 
     <organization>
@@ -390,6 +391,13 @@
                     <runOnlyOnce>true</runOnlyOnce>
                     <skipPoms>false</skipPoms>
                     <verbose>false</verbose>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
                 </configuration>
             </plugin>
         </plugins>

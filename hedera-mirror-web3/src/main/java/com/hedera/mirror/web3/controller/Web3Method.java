@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.exception;
+package com.hedera.mirror.web3.controller;
 
 /*-
  * ‌
@@ -20,14 +20,25 @@ package com.hedera.mirror.grpc.exception;
  * ‍
  */
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-public class TopicNotFoundException extends MirrorNodeException {
+@Getter
+@RequiredArgsConstructor
+public enum Web3Method {
 
-    private static final String MESSAGE = "Topic does not exist";
-    private static final long serialVersionUID = 809036847722840635L;
+    ETH_BLOCKNUMBER("eth_blockNumber");
 
-    public TopicNotFoundException() {
-        super(MESSAGE);
+    private static final Map<String, Web3Method> NAMES = Arrays.stream(values())
+            .collect(Collectors.toMap(Web3Method::getName, Function.identity()));
+
+    private final String name;
+
+    public static Web3Method of(String name) {
+        return NAMES.get(name);
     }
 }

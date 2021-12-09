@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.exception;
+package com.hedera.mirror.web3.service;
 
 /*-
  * ‌
@@ -20,14 +20,11 @@ package com.hedera.mirror.grpc.exception;
  * ‍
  */
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
+import com.hedera.mirror.web3.controller.Web3Method;
 
-public class TopicNotFoundException extends MirrorNodeException {
+public interface Web3Service<I, O> {
 
-    private static final String MESSAGE = "Topic does not exist";
-    private static final long serialVersionUID = 809036847722840635L;
+    Web3Method getMethod();
 
-    public TopicNotFoundException() {
-        super(MESSAGE);
-    }
+    O get(I request);
 }

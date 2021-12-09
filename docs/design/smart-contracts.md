@@ -107,16 +107,16 @@ Create a new table to store the results of the contract's log output.
 ```sql
 create table if not exists contract_log
 (
-  bloom               bytea       not null,
-  consensus_timestamp bigint      not null,
-  contract_id         bigint      not null,
-  data                bytea       not null,
-  index               int         not null,
-  root_contract_id    bigint      null,
-  topic0              bytea       null,
-  topic1              bytea       null,
-  topic2              bytea       null,
-  topic3              bytea       null,
+  bloom               bytea  not null,
+  consensus_timestamp bigint not null,
+  contract_id         bigint not null,
+  data                bytea  not null,
+  index               int    not null,
+  root_contract_id    bigint null,
+  topic0              bytea  null,
+  topic1              bytea  null,
+  topic2              bytea  null,
+  topic3              bytea  null,
   primary key (consensus_timestamp, index)
 );
 
@@ -439,18 +439,18 @@ methods for ease of interaction by DApps.
 The HyperLedger Besu EVM supports the methods captured
 at [ETH methods](https://besu.hyperledger.org/en/stable/Reference/API-Methods/#eth-methods)
 
-The Mirror Node should implement a subset of the standard calls used to
+The Mirror Node should implement a subset of the standard calls used to:
 
-- support existing Ethereum developers who may call the JSON-RPC endpoints directly
-- encompass Hedera EVM translation logic that can be wrapped by potential Web3 modules.
+- Support existing Ethereum developers who may call the JSON-RPC endpoints directly.
+- Encompass Hedera EVM translation logic that can be wrapped by potential Web3 modules.
 
 ### Setup
 
 - Create a new Maven module `hedera-mirror-web3`
 - Create a new Maven module `hedera-mirror-common` that encompasses all domain POJOs and repositories
-- Use [JSON-RPC for Java](https://github.com/briandilley/jsonrpc4j) or Spring WebFlux to establish a JSON-RPC server
+- Use Spring WebFlux to establish a JSON-RPC server
   with [JSON-RPC 2.0 specification](https://www.jsonrpc.org/specification) support to service rpc calls
-- Use `spring-boot-starter-data-jdbc` for database access
+- Use `spring-boot-starter-data-jpa` for database access
 - Create a Helm child chart `hedera-mirror-web3` and add to Kubernetes deployment flow
 - Add to CI and utilize a Postman collection for endpoint verification
 
@@ -461,18 +461,13 @@ be created using Spring based on `hedera-mirror-common` domains to extract infor
 
 ### JSON-RPC Service
 
-Establish an
+- `Web3Service` interface that describes the supported rpc methods
+- Implement `Web3Service` for each of the supported RPC methods. Methods query the appropriate tables and return data in
+  the expected format.
 
-- `JSONRpcService` interface that describes the supported rpc methods
-- `JSONRpcServiceImpl` class that contains the logic to service the rpc methods called. Methods query the appropriate
-  `account_balance`, `contract`, `record_file`, and `transaction` tables returning data in expected schema formats.
+#### Request
 
-#### Request POJOs
-
-Depending on the web dependency used we may have to manually handle input conversion from String to JSON. If so utilize
-[Jackson](https://github.com/FasterXML/jackson) library to create a `JSONRpcRequest` object that each method can parse.
-
-Requests are typically of the JSON format
+Requests are typically of the below JSON format:
 
 ```json
 {
@@ -483,36 +478,36 @@ Requests are typically of the JSON format
 }
 ```
 
-An appropriate POJO schema would be
+It's corresponding domain model:
 
 ```java
-public class JSONRpcRequest {
-  private long id;
+public class Web3Request<T> {
+  private Long id;
   private String jsonrpc;
   private String method;
-  private String[] params;
+  private T params;
 }
   ```
 
-#### Response POJOs
+#### Response
 
-Responses are typically of the standard [JSON-RPC format](https://www.jsonrpc.org/specification#response_object)
+Responses are typically of the standard [JSON-RPC format](https://www.jsonrpc.org/specification#response_object).
 
-- Successful request response
+- Successful response
   ```json
   {
     "id": 1,
     "jsonrpc": "2.0",
-    "result": "SUCCESS"
+    "result": "0x1"
   }
   ```
 
-- Failed request response
+- Failed response
   ```json
   {
     "error": {
       "code": -32600,
-      "meaning": "The JSON sent is not a valid Request object.",
+      "data": "id field must not be null",
       "message": "Invalid Request"
     },
     "id": 1,
@@ -522,38 +517,39 @@ Responses are typically of the standard [JSON-RPC format](https://www.jsonrpc.or
 
 > _Note:_ `result` data type is dynamic. Either `result` or `error` must be present in a response, not both.
 
-An appropriate set of POJO schema would be
+An appropriate set of models would be:
 
-- `JSONRpcResponse`
+- `Web3Response`
   ```java
   @Data
-  public class JSONRpcResponse<T> {
-    private final String jsonrpc = "2.0";
+  public class Web3SuccessResponse<T> {
     private Long id;
+    private final String jsonrpc = "2.0";
     private T result;
   }
   ```
 
-- `ErrorJSONRpcResponse`
+- `Web3ErrorResponse`
   ```java
-  public class JSONRpcErrorResponse extends JSONRpcResponse {
-    private ErrorJSONRpcResponse error;
+  public class Web3ErrorResponse {
+    private Long id;
+    private final String jsonrpc = "2.0";
+    private Web3Error error;
 
-    private class ErrorJSONRpcResponse {
-      private long code;
-      private String meaning;
+    private class Web3Error {
+      private int code;
+      private String data;
       private String message;
     }
   }
   ```
 
-The result field will be populated with the value to be returned. Additional POJOs per complex response value should be
-added. The value can range from regular data types (String, int, array) to defined Ethereum objects such as
+The result field will be populated with the value to be returned. Additional classes per complex response value should
+be added. The value can range from regular data types (String, int, array) to defined Ethereum objects such as:
 
 - [Block](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#block-object)
 - [Log](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#log-object)
 - [Transaction](https://besu.hyperledger.org/en/stable/Reference/API-Objects/#transaction-object)
-- ...
 
 #### ETH Method Analysis
 

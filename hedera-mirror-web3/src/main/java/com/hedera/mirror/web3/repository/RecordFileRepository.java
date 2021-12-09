@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.exception;
+package com.hedera.mirror.web3.repository;
 
 /*-
  * ‌
@@ -20,14 +20,14 @@ package com.hedera.mirror.grpc.exception;
  * ‍
  */
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.PagingAndSortingRepository;
 
-public class TopicNotFoundException extends MirrorNodeException {
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 
-    private static final String MESSAGE = "Topic does not exist";
-    private static final long serialVersionUID = 809036847722840635L;
+public interface RecordFileRepository extends PagingAndSortingRepository<RecordFile, Long> {
 
-    public TopicNotFoundException() {
-        super(MESSAGE);
-    }
+    @Query("select max(r.index) from RecordFile r")
+    Optional<Long> findLatestIndex();
 }

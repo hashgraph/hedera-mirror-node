@@ -52,8 +52,12 @@ management:
         readiness:
           include: ping
 server:
+  compression:
+    enabled: true
   http2:
     enabled: true
+  netty:
+    connection-timeout: 3s
   port: 8082
   shutdown: graceful
 spring:
