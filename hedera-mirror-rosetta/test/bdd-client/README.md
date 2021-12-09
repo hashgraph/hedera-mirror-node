@@ -88,6 +88,6 @@ The following table lists the available properties along with their default valu
 | `hedera.mirror.rosetta.test.server.dataRetry.max`       | 20                    | The max retries of a data request                                          |
 | `hedera.mirror.rosetta.test.server.offlineUrl`          | http://localhost:5701 | The url of the offline rosetta server                                      |
 | `hedera.mirror.rosetta.test.server.onlineUrl`           | http://localhost:5700 | The url of the online rosetta server                                       |
-| `hedera.mirror.rosetta.test.server.httpTimeout`         | 15s                   | The timeout of an http request sent to the rosetta server                  |
+| `hedera.mirror.rosetta.test.server.httpTimeout`         | 25s                   | The timeout of an http request sent to the rosetta server                  |
 | `hedera.mirror.rosetta.test.server.submitRetry.backOff` | 200ms                 | The amount of time to wait between submit request retries                  |
 | `hedera.mirror.rosetta.test.server.submitRetry.max`     | 5                     | The max retries of a submit request                                        |
