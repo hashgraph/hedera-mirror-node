@@ -295,6 +295,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         Entity entityCreate = domainBuilder.entity().get();
 
         Entity entityUpdate = entityCreate.toEntityId().toEntity();
+        entityUpdate.setAlias(entityCreate.getAlias());
         entityUpdate.setAutoRenewAccountId(EntityId.of(101L, ACCOUNT));
         entityUpdate.setAutoRenewPeriod(30L);
         entityUpdate.setExpirationTimestamp(500L);
@@ -307,6 +308,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entityUpdate.setSubmitKey(domainBuilder.key());
 
         Entity entityDelete = entityCreate.toEntityId().toEntity();
+        entityDelete.setAlias(entityCreate.getAlias());
         entityDelete.setDeleted(true);
         entityDelete.setModifiedTimestamp(entityCreate.getModifiedTimestamp() + 2);
 

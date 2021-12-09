@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.CacheConfiguration.ACCOUNT_ALIAS_CACHE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -28,6 +29,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -47,6 +50,10 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
     @Resource
     private JdbcOperations jdbcOperations;
 
+    @Qualifier(ACCOUNT_ALIAS_CACHE)
+    @Resource
+    private CacheManager cacheManager;
+
     @Test
     void nullCharacter() {
         Entity entity = domainBuilder.entity().customize(e -> e.memo("abc" + (char) 0)).persist();
@@ -54,7 +61,7 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    void entityPublicKeyUpdates() {
+    void publicKeyUpdates() {
         Entity entity = domainBuilder.entity().customize(b -> b.key(null)).persist();
 
         // unset key should result in null public key
@@ -90,7 +97,7 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
      * This test verifies that the Entity domain object and table definition are in sync with the entity_history table.
      */
     @Test
-    void entityHistory() {
+    void history() {
         Entity entity = domainBuilder.entity().persist();
 
         jdbcOperations.update("insert into entity_history select * from entity");
@@ -101,28 +108,44 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    void entityFindByAlias() {
+    void findByAlias() {
         Entity entity = domainBuilder.entity().persist();
         assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
     }
 
     @Test
-    void entityFindByIdWithAliasNotNull() {
-        Entity entity = domainBuilder.entity().persist();
-        Entity entity2 = domainBuilder.entity().customize(x -> x.alias(new byte[0])).persist();
-        assertThat(entityRepository.findByIdWithAliasNotNull(entity.getId())).get().isEqualTo(entity.getAlias());
-        assertThat(entityRepository.findByIdWithAliasNotNull(entity2.getId())).get().isEqualTo(new byte[0]);
+    void storeAlias() {
+        Entity entity = domainBuilder.entity().get();
+        entityRepository.storeAlias(entity.getAlias(), entity.getId());
+        assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
     }
 
     @Test
-    void entityEvictAliasCache() {
-        Entity entity = domainBuilder.entity().get();
-        assertDoesNotThrow(() -> entityRepository.evictAliasCache(entity.getAlias()));
-    }
+    void verifyCacheFlow() {
+        var domainPersister = domainBuilder.entity();
+        Entity entity = domainPersister.get();
 
-    @Test
-    void entityAddToAliasCache() {
-        Entity entity = domainBuilder.entity().get();
-        assertDoesNotThrow(() -> entityRepository.addToAliasCache(entity.getAlias(), entity.getId()));
+        // cache and db return nothing on empty table
+        assertNull(cacheManager.getCache(ACCOUNT_ALIAS_CACHE)
+                .get(entity.getAlias()));
+        assertThat(entityRepository.findByAlias(entity.getAlias())).isNotPresent();
+        domainPersister.persist();
+
+        // db state is reflected in cache
+        assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
+        Long id = (Long) cacheManager
+                .getCache(ACCOUNT_ALIAS_CACHE)
+                .get(entity.getAlias()).get();
+        assertNotNull(id);
+        assertThat(id).isEqualTo(entity.getId());
+
+        // cache returns id after db is cleared
+        entityRepository.deleteAll();
+        assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
+        Long preservedId = (Long) cacheManager
+                .getCache(ACCOUNT_ALIAS_CACHE)
+                .get(entity.getAlias()).get();
+        assertNotNull(preservedId);
+        assertThat(preservedId).isEqualTo(entity.getId());
     }
 }

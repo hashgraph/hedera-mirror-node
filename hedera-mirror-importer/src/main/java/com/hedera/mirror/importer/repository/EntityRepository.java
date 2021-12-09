@@ -35,7 +35,7 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
     @Query(value = "select id from entity where alias = ?1 and deleted <> true", nativeQuery = true)
     Optional<Long> findByAlias(byte[] alias);
 
-    @CachePut(cacheNames = "entityAlias", cacheManager = ACCOUNT_ALIAS_CACHE, key = "#p0")
+    @CachePut(cacheNames = "entityAlias", cacheManager = ACCOUNT_ALIAS_CACHE, key = "#alias")
     default Long storeAlias(byte[] alias, Long id) {
         return id;
     }

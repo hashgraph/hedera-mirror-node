@@ -270,8 +270,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setValidStartNs(DomainUtils.timeStampInNanos(transactionId.getTransactionValidStart()));
 
         if (txRecord.hasParentConsensusTimestamp()) {
-            transaction.setParentConsensusTimestamp(DomainUtils
-                    .timestampInNanosMax(txRecord.getParentConsensusTimestamp()));
+            transaction.setParentConsensusTimestamp(DomainUtils.timestampInNanosMax(txRecord.getParentConsensusTimestamp()));
         }
 
         return transaction;
@@ -296,7 +295,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
 
                 EntityId entityId = getAccountId(aa.getAccountID());
-
                 nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, entityId));
                 entityListener.onNonFeeTransfer(nonFeeTransfer);
             }
@@ -334,9 +332,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (chunkInfo.hasInitialTransactionID()) {
                 TransactionID transactionID = chunkInfo.getInitialTransactionID();
                 topicMessage.setPayerAccountId(EntityId.of(transactionID.getAccountID()));
-                topicMessage
-                        .setValidStartTimestamp(DomainUtils
-                                .timestampInNanosMax(transactionID.getTransactionValidStart()));
+                topicMessage.setValidStartTimestamp(
+                    DomainUtils.timestampInNanosMax(transactionID.getTransactionValidStart()));
             }
         }
 
