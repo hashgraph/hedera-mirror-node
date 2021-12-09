@@ -26,27 +26,24 @@ const {Range} = require('pg-range');
 
 describe('ContractLogViewModel', () => {
   const hexArray = Array(18).fill(0x00).concat(0x12, 0x34);
-  // bloomArray.push(0x12, 0x34);
   const defaultContractLog = {
     contractId: '1',
-    //TODO update bloom
-    bloom: Buffer.from(hexArray),
     data: Buffer.from(hexArray),
     consensusTimestamp: '99999999000000000',
-    topics: [
-      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-    ],
+    index: 6,
+    rootContractId: '2',
+    topic0: Buffer.from([0x01, 0x02]),
+    topic1: Buffer.from([0x01, 0x02]),
+    topic2: Buffer.from([0x01, 0x02]),
+    topic3: Buffer.from([0x01, 0x02]),
   };
   const defaultExpected = {
     address: '0x0000000000000000000000000000000000000001',
-    bloom: '0x0000000000000000000000000000000000001234',
     data: '0x0000000000000000000000000000000000001234',
+    index: 6,
+    root_contract_id: '0.0.2',
     timestamp: '99999999.000000000',
-    topics: [
-      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-    ],
+    topics: ['0x0102', '0x0102', '0x0102', '0x0102'],
   };
 
   test('default', () => {
@@ -57,11 +54,26 @@ describe('ContractLogViewModel', () => {
     expect(
       new ContractLogViewModel({
         ...defaultContractLog,
-        topics: [],
+        topic0: null,
+        topic1: null,
+        topic2: null,
+        topic3: null,
       })
     ).toEqual({
       ...defaultExpected,
       topics: [],
+    });
+  });
+
+  test('no root contract id', () => {
+    expect(
+      new ContractLogViewModel({
+        ...defaultContractLog,
+        rootContractId: null,
+      })
+    ).toEqual({
+      ...defaultExpected,
+      root_contract_id: null,
     });
   });
 });
