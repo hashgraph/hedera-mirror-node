@@ -30,12 +30,16 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.repository.EntityRepository;
 
 @Named
 class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    CryptoCreateTransactionHandler(EntityListener entityListener) {
+    private final EntityRepository entityRepository;
+
+    CryptoCreateTransactionHandler(EntityListener entityListener, EntityRepository entityRepository) {
         super(entityListener, TransactionType.CRYPTOCREATEACCOUNT);
+        this.entityRepository = entityRepository;
     }
 
     @Override
@@ -65,7 +69,9 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
         }
 
         if (recordItem.getRecord().getAlias() != ByteString.EMPTY) {
-            entity.setAlias(DomainUtils.toBytes(recordItem.getRecord().getAlias()));
+            var alias = DomainUtils.toBytes(recordItem.getRecord().getAlias());
+            entity.setAlias(alias);
+            entityRepository.storeAlias(alias, getEntity(recordItem).getId());
         }
 
         entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());

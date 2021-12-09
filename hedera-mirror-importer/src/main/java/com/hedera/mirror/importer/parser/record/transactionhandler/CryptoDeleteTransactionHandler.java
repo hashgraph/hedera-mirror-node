@@ -27,17 +27,12 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.repository.EntityRepository;
 
 @Named
 class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    private final EntityRepository entityRepository;
-
-    CryptoDeleteTransactionHandler(EntityListener entityListener,
-                                   EntityRepository entityRepository) {
+    CryptoDeleteTransactionHandler(EntityListener entityListener) {
         super(entityListener, TransactionType.CRYPTODELETE);
-        this.entityRepository = entityRepository;
     }
 
     @Override
@@ -48,9 +43,5 @@ class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandle
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         entityListener.onEntity(entity);
-        var optionalEntity = entityRepository.findByIdWithAliasNotNull(getEntity(recordItem).getId());
-        if (optionalEntity.isPresent()) {
-            entityRepository.evictAliasCache(optionalEntity.get());
-        }
     }
 }

@@ -295,7 +295,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 nonFeeTransfer.setAmount(aa.getAmount());
                 nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
 
-                EntityId entityId = getEntityFromAccountId(aa.getAccountID());
+                EntityId entityId = getAccountId(aa.getAccountID());
 
                 nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, entityId));
                 entityListener.onNonFeeTransfer(nonFeeTransfer);
@@ -303,29 +303,18 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private EntityId getEntityFromAccountId(AccountID accountID) {
-        EntityId entityId;
-
+    private EntityId getAccountId(AccountID accountID) {
         switch (accountID.getAccountCase()) {
             case ACCOUNTNUM:
-                entityId = EntityId.of(accountID);
-                break;
+                return EntityId.of(accountID);
             case ALIAS:
-                var optionalEntity = entityRepository.findByAlias(
-                        DomainUtils.toBytes(accountID.getAlias()));
-                if (!optionalEntity.isPresent()) {
-                    throw new InvalidDatasetException("AccountID not present for alias: " + accountID
-                            .getAlias());
-                }
-
-                entityId = EntityId.of(optionalEntity.get(), EntityType.ACCOUNT);
-                entityRepository.addToAliasCache(DomainUtils.toBytes(accountID.getAlias()), entityId.getId());
-                break;
+                var alias = DomainUtils.toBytes(accountID.getAlias());
+                return entityRepository.findByAlias(alias)
+                        .map(id -> EntityId.of(id, EntityType.ACCOUNT))
+                        .orElseThrow(() -> new InvalidDatasetException("AccountID not present for alias: " + accountID.getAlias()));
             default:
-                throw new InvalidDatasetException("Unsupported account: " + accountID.getAccountCase());
+                throw new InvalidDatasetException("Unsupported account: " + accountID);
         }
-
-        return entityId;
     }
 
     private void insertConsensusTopicMessage(ConsensusSubmitMessageTransactionBody transactionBody,

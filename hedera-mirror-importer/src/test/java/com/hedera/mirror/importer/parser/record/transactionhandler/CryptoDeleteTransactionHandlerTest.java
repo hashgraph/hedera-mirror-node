@@ -30,7 +30,7 @@ class CryptoDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransac
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoDeleteTransactionHandler(entityListener, entityRepository);
+        return new CryptoDeleteTransactionHandler(entityListener);
     }
 
     @Override
