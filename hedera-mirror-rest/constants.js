@@ -25,7 +25,6 @@ const filterKeys = {
   ACCOUNT_ID: 'account.id',
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_PUBLICKEY: 'account.publickey',
-  ADDRESS: 'address',
   BALANCE: 'balance',
   CONTRACTID: 'contractid',
   CONTRACT_ID: 'contract.id',

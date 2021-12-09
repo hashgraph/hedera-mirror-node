@@ -176,9 +176,6 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.ACCOUNT_PUBLICKEY:
       ret = isValidPublicKeyQuery(val);
       break;
-    case constants.filterKeys.ADDRESS:
-      ret = isValidOpAndAddress(op, val);
-      break;
     case constants.filterKeys.BALANCE:
       ret = isValidBooleanOpAndValue(op, val);
       break;

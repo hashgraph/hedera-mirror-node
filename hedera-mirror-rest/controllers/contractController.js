@@ -427,9 +427,6 @@ const contractLogfilterValidityChecks = (param, op, val) => {
 
   // Validate the value
   switch (param) {
-    // case constants.filterKeys.ADDRESS:
-    //   ret = utils.isValidOpAndAddress(op, val);
-    //   break;
     case constants.filterKeys.LIMIT:
       ret = utils.isPositiveLong(val);
       break;
@@ -535,9 +532,6 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   const conditions = [`${ContractLog.getFullName(ContractLog.CONTRACT_ID)} = $1`];
   const params = [contractId];
 
-  // const contractLogAddressFullName = ContractLog.getFullName(ContractLog.CONTRACT_ID);
-  // const contractLogAddressInValues = [];
-
   const contractLogIndexFullName = ContractLog.getFullName(ContractLog.INDEX);
   const contractLogIndexInValues = [];
 
@@ -558,18 +552,6 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
 
   for (const filter of filters) {
     switch (filter.key) {
-      // case constants.filterKeys.ADDRESS:
-      //   //Convert the adddress to a contractId
-      //   const [shard, realm, num] = EntityId.parseFromSolidityAddress(filter.value);
-      //   filter.value = EntityId.of(shard, realm, num).getEncodedId();
-      //   updateConditionsAndParamsWithInValues(
-      //     filter,
-      //     contractLogAddressInValues,
-      //     params,
-      //     conditions,
-      //     contractLogAddressFullName
-      //   );
-      //   break;
       case constants.filterKeys.INDEX:
         updateConditionsAndParamsWithInValues(
           filter,
@@ -642,7 +624,6 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   }
 
   // update query with repeated values
-  // updateQueryFiltersWithInValues(params, conditions, contractLogAddressInValues, contractLogAddressFullName);
   updateQueryFiltersWithInValues(params, conditions, contractLogIndexInValues, contractLogIndexFullName);
   updateQueryFiltersWithInValues(params, conditions, contractLogTimestampInValues, contractLogTimestampFullName);
   updateQueryFiltersWithInValues(

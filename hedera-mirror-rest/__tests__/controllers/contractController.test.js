@@ -462,27 +462,6 @@ describe('extractContractResultsByIdQuery', () => {
 });
 
 describe('contractLogfilterValidityChecks', () => {
-  // test('valid address op', () => {
-  //   expect(
-  //     contracts.contractLogfilterValidityChecks(
-  //       constants.filterKeys.ADDRESS,
-  //       'eq',
-  //       '0x0000000000000000000000000000000000001234'
-  //     )
-  //   ).toBeTruthy();
-  // });
-  test('invalid address val', () => {
-    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.ADDRESS, 'eq', 'aa')).toBeFalsy();
-  });
-  test('invalid address op', () => {
-    expect(
-      contracts.contractLogfilterValidityChecks(
-        constants.filterKeys.ADDRESS,
-        'gt',
-        '0x0000000000000000000000000000000000001234'
-      )
-    ).toBeFalsy();
-  });
   test('valid index', () => {
     expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.INDEX, 'eq', '22')).toBeTruthy();
   });
@@ -650,29 +629,6 @@ describe('extractContractLogsByIdQuery', () => {
         ],
       },
     },
-    // {
-    //   name: 'address',
-    //   input: {
-    //     filter: [
-    //       {
-    //         key: constants.filterKeys.ADDRESS,
-    //         operator: utils.opsMap.eq,
-    //         value: '0x0000000000000000000000000000000000001234',
-    //       },
-    //       {
-    //         key: constants.filterKeys.ADDRESS,
-    //         operator: utils.opsMap.eq,
-    //         value: '0x0000000000000000000000000000000000001893',
-    //       },
-    //     ],
-    //     contractId: defaultContractId,
-    //   },
-    //   expected: {
-    //     ...defaultExpected,
-    //     conditions: ['cl.contract_id = $1', 'cl.contract_id in ($2,$3)'],
-    //     params: [defaultContractId, '4660', '6291'],
-    //   },
-    // },
     {
       name: 'limit',
       input: {
