@@ -20,19 +20,14 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.CacheConfiguration.ACCOUNT_ALIAS_CACHE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
+import java.util.Arrays;
 import java.util.List;
 import javax.annotation.Resource;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.CacheManager;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -51,15 +46,6 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private JdbcOperations jdbcOperations;
-
-    @Qualifier(ACCOUNT_ALIAS_CACHE)
-    @Resource
-    private CacheManager cacheManager;
-
-    @BeforeEach
-    void beforeEach() {
-        cacheManager.getCache(EntityRepository.ACCOUNT_ALIAS_CACHE_NAME).clear();
-    }
 
     @Test
     void nullCharacter() {
@@ -116,45 +102,30 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void findByAlias() {
-        Entity entity = domainBuilder.entity().persist();
-        assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
+        Entity entity = domainBuilder.entity().get();
+        byte[] alias = entity.getAlias();
+
+        // Cache and DB return nothing on empty table
+        assertThat(entityRepository.findByAlias(alias)).isNotPresent();
+
+        // DB state is reflected in cache
+        entityRepository.save(entity);
+        assertThat(entityRepository.findByAlias(alias)).get().isEqualTo(entity.getId());
+
+        // Cache returns ID after DB is cleared
+        entityRepository.deleteAll();
+        assertThat(entityRepository.findByAlias(alias)).get().isEqualTo(entity.getId());
+
+        // A new byte[] with the same data retrieves the same value from the cache
+        byte[] aliasCopy = Arrays.copyOf(alias, alias.length);
+        assertThat(entityRepository.findByAlias(aliasCopy)).get().isEqualTo(entity.getId());
     }
 
-    @Disabled("Cache logic fails at repository scoped test level")
     @Test
     void storeAlias() {
         Entity entity = domainBuilder.entity().get();
-        entityRepository.storeAlias(entity.getAlias(), entity.getId());
-        assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
-    }
-
-    @Disabled("Cache logic fails at repository scoped test level")
-    @Test
-    void verifyCacheFlow() {
-        var domainPersister = domainBuilder.entity();
-        Entity entity = domainPersister.get();
-
-        // cache and db return nothing on empty table
-        assertNull(cacheManager.getCache(EntityRepository.ACCOUNT_ALIAS_CACHE_NAME)
-                .get(entity.getAlias()));
-        assertThat(entityRepository.findByAlias(entity.getAlias())).isNotPresent();
-        domainPersister.persist();
-
-        // db state is reflected in cache
-        assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
-        Long id = (Long) cacheManager
-                .getCache(EntityRepository.ACCOUNT_ALIAS_CACHE_NAME)
-                .get(entity.getAlias()).get();
-        assertNotNull(id);
-        assertThat(id).isEqualTo(entity.getId());
-
-        // cache returns id after db is cleared
-        entityRepository.deleteAll();
-        assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
-        Long preservedId = (Long) cacheManager
-                .getCache(EntityRepository.ACCOUNT_ALIAS_CACHE_NAME)
-                .get(entity.getAlias()).get();
-        assertNotNull(preservedId);
-        assertThat(preservedId).isEqualTo(entity.getId());
+        byte[] alias = entity.getAlias();
+        entityRepository.storeAlias(alias, entity.getId());
+        assertThat(entityRepository.findByAlias(alias)).get().isEqualTo(entity.getId());
     }
 }

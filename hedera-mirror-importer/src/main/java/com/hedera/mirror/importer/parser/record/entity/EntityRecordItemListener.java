@@ -61,6 +61,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -290,12 +291,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         var transactionRecord = recordItem.getRecord();
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
+                EntityId entityId = getAccountId(aa.getAccountID());
+
                 NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
                 nonFeeTransfer.setAmount(aa.getAmount());
-                nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
-
-                EntityId entityId = getAccountId(aa.getAccountID());
                 nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, entityId));
+                nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
                 entityListener.onNonFeeTransfer(nonFeeTransfer);
             }
         }
@@ -309,9 +310,9 @@ public class EntityRecordItemListener implements RecordItemListener {
                 var alias = DomainUtils.toBytes(accountID.getAlias());
                 return entityRepository.findByAlias(alias)
                         .map(id -> EntityId.of(id, EntityType.ACCOUNT))
-                        .orElseThrow(() -> new InvalidDatasetException("AccountID not present for alias: " + accountID.getAlias()));
+                        .orElseThrow(() -> new InvalidDatasetException("AccountID not present for alias: " + Hex.encodeHexString(alias)));
             default:
-                throw new InvalidDatasetException("Unsupported account: " + accountID);
+                throw new InvalidDatasetException("Unsupported AccountID: " + accountID);
         }
     }
 
@@ -333,7 +334,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 TransactionID transactionID = chunkInfo.getInitialTransactionID();
                 topicMessage.setPayerAccountId(EntityId.of(transactionID.getAccountID()));
                 topicMessage.setValidStartTimestamp(
-                    DomainUtils.timestampInNanosMax(transactionID.getTransactionValidStart()));
+                        DomainUtils.timestampInNanosMax(transactionID.getTransactionValidStart()));
             }
         }
 

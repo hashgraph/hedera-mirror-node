@@ -56,6 +56,12 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
 
+        if (recordItem.getRecord().getAlias() != ByteString.EMPTY) {
+            var alias = DomainUtils.toBytes(recordItem.getRecord().getAlias());
+            entity.setAlias(alias);
+            entityRepository.storeAlias(alias, entity.getId());
+        }
+
         if (transactionBody.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
         }
@@ -66,12 +72,6 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
 
         if (transactionBody.hasProxyAccountID()) {
             entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
-        }
-
-        if (recordItem.getRecord().getAlias() != ByteString.EMPTY) {
-            var alias = DomainUtils.toBytes(recordItem.getRecord().getAlias());
-            entity.setAlias(alias);
-            entityRepository.storeAlias(alias, entity.getId());
         }
 
         entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());

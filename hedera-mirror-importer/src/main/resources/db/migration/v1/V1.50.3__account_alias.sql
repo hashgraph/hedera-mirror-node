@@ -11,4 +11,4 @@ alter table if exists entity_history
 
 -- support retrieval by alias
 create index if not exists entity__alias
-    on entity (alias);
+    on entity (alias) where alias is not null;

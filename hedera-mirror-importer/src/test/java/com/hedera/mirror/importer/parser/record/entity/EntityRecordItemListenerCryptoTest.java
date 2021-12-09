@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.CacheConfiguration.ACCOUNT_ALIAS_CACHE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -48,14 +47,11 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.cache.CacheManager;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -64,7 +60,6 @@ import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
@@ -82,10 +77,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     };
     private static final long[] additionalTransferAmounts = {1001, 1002};
     private static final long[] additionalAliasTransferAmounts = {1003, 1004};
-
-    @Qualifier(ACCOUNT_ALIAS_CACHE)
-    @Resource
-    private CacheManager cacheManager;
 
     @BeforeEach
     void before() {
@@ -200,41 +191,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp()),
                 () -> assertEquals(mirrorAlias, record.getAlias()),
                 () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance()),
-                () -> assertThat(initialBalanceTransfer).isPresent()
+                () -> assertThat(initialBalanceTransfer).isPresent(),
+                () -> assertThat(entityRepository.findByAlias(mirrorAlias.toByteArray())).get()
+                        .isEqualTo(accountEntityId.getId())
         );
-    }
-
-    @Test
-    void cryptoAccountAliasCacheFlow() {
-        ByteString mirrorAlias = ByteString.copyFromUtf8(ALIAS_KEY_1);
-        var alias = DomainUtils.toBytes(mirrorAlias);
-        assertNull(cacheManager.getCache(EntityRepository.ACCOUNT_ALIAS_CACHE_NAME)
-                .get(alias));
-
-        Transaction transaction = cryptoCreateTransaction();
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = buildTransactionRecord(
-                recordBuilder -> recordBuilder.setAlias(mirrorAlias).getReceiptBuilder().setAccountID(accountId1),
-                transactionBody,
-                ResponseCodeEnum.SUCCESS.getNumber());
-
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
-
-        // verify create flow populated cache
-        Long id = (Long) cacheManager
-                .getCache(EntityRepository.ACCOUNT_ALIAS_CACHE_NAME)
-                .get(alias).get();
-        assertNotNull(id);
-        assertThat(id).isEqualTo(accountId1.getAccountNum());
-
-        // verify cache is still populated with empty db table
-        entityRepository.deleteAll();
-        assertThat(entityRepository.findByAlias(alias)).isNotPresent();
-        Long preservedId = (Long) cacheManager
-                .getCache(EntityRepository.ACCOUNT_ALIAS_CACHE_NAME)
-                .get(alias).get();
-        assertNotNull(preservedId);
-        assertThat(preservedId).isEqualTo(accountId1.getAccountNum());
     }
 
     @Test
@@ -314,8 +274,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         bodyBuilder.getCryptoUpdateAccountBuilder().setProxyAccountID(AccountID.getDefaultInstance());
         transactionBody = bodyBuilder.build();
         transaction = Transaction.newBuilder().setSignedTransactionBytes(SignedTransaction.newBuilder()
-                .setBodyBytes(transactionBody.toByteString())
-                .build().toByteString())
+                        .setBodyBytes(transactionBody.toByteString())
+                        .build().toByteString())
                 .build();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 

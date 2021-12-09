@@ -20,11 +20,14 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
+import java.util.Arrays;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.interceptor.KeyGenerator;
+import org.springframework.cache.interceptor.SimpleKeyGenerator;
 import org.springframework.cache.transaction.TransactionAwareCacheManagerProxy;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -37,7 +40,8 @@ import org.springframework.context.annotation.Primary;
 public class CacheConfiguration {
 
     public static final String EXPIRE_AFTER_5M = "cacheManagerExpireAfter5m";
-    public static final String ACCOUNT_ALIAS_CACHE = "accountAliasCache";
+    public static final String CACHE_MANAGER_ALIAS = "cacheManagerAlias";
+    public static final String KEY_GENERATOR_ALIAS = "keyGeneratorAlias";
 
     @Bean(EXPIRE_AFTER_5M)
     @Primary
@@ -47,10 +51,16 @@ public class CacheConfiguration {
         return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
 
-    @Bean(ACCOUNT_ALIAS_CACHE)
-    CacheManager accountAliasCacheManager() {
+    @Bean(CACHE_MANAGER_ALIAS)
+    CacheManager cacheManagerAlias() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=100000,expireAfterWrite=30m");
         return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
+    }
+
+    @Bean(KEY_GENERATOR_ALIAS)
+    KeyGenerator keyGeneratorAlias() {
+        return (target, method, params) -> params.length >= 1 && params[0] instanceof byte[] ?
+                Arrays.hashCode((byte[]) params[0]) : SimpleKeyGenerator.generateKey(params);
     }
 }

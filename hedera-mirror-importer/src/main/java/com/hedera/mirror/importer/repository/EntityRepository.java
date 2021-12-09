@@ -20,26 +20,26 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.CacheConfiguration.ACCOUNT_ALIAS_CACHE;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ALIAS;
+import static com.hedera.mirror.importer.config.CacheConfiguration.KEY_GENERATOR_ALIAS;
 
 import java.util.Optional;
+import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 
-@Transactional
+@CacheConfig(cacheManager = CACHE_MANAGER_ALIAS, cacheNames = "entityAlias", keyGenerator = KEY_GENERATOR_ALIAS)
 public interface EntityRepository extends CrudRepository<Entity, Long> {
-    String ACCOUNT_ALIAS_CACHE_NAME = "entityAlias";
 
-    @Cacheable(cacheNames = ACCOUNT_ALIAS_CACHE_NAME, cacheManager = ACCOUNT_ALIAS_CACHE)
+    @Cacheable(unless = "#result == null")
     @Query(value = "select id from entity where alias = ?1 and deleted <> true", nativeQuery = true)
     Optional<Long> findByAlias(byte[] alias);
 
-    @CachePut(cacheNames = ACCOUNT_ALIAS_CACHE_NAME, cacheManager = ACCOUNT_ALIAS_CACHE, key = "#p0")
+    @CachePut
     default Long storeAlias(byte[] alias, Long id) {
         return id;
     }
