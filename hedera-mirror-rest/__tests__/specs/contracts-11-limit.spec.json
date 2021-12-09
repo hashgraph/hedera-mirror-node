@@ -43,20 +43,20 @@
       {
         "admin_key": {
           "_type": "ProtobufEncoded",
-          "key": "010101"
+          "key": "030303"
         },
-        "auto_renew_period": null,
-        "contract_id": "0.0.8001",
-        "created_timestamp": "987654.000123456",
+        "auto_renew_period": 1500,
+        "contract_id": "0.0.8003",
+        "created_timestamp": "987654.222123456",
         "deleted": false,
-        "expiration_timestamp": null,
+        "expiration_timestamp": "1236987654.000000123",
         "file_id": "0.0.5001",
         "memo": "contract memo",
-        "obtainer_id": null,
-        "proxy_account_id": null,
-        "solidity_address": "0x0000000000000000000000000000000000001f41",
+        "obtainer_id": "0.0.7001",
+        "proxy_account_id": "0.0.7005",
+        "solidity_address": "0x0000000000000000000000000000000000001f43",
         "timestamp": {
-          "from": "997654.000123457",
+          "from": "987654.222123456",
           "to": null
         }
       },
@@ -82,7 +82,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/contracts?limit=2&contract.id=gt:0.0.8002"
+      "next": "/api/v1/contracts?limit=2&contract.id=lt:0.0.8002"
     }
   }
 }

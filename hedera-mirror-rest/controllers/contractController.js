@@ -94,7 +94,7 @@ const extractSqlFromContractFilters = (filters) => {
   const filterQuery = {
     filterQuery: '',
     params: [defaultLimit],
-    order: constants.orderFilterValues.ASC,
+    order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
     limitQuery: 'limit $1',
   };
