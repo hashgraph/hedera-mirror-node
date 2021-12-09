@@ -71,7 +71,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
         if (recordItem.getRecord().getAlias() != ByteString.EMPTY) {
             var alias = DomainUtils.toBytes(recordItem.getRecord().getAlias());
             entity.setAlias(alias);
-            entityRepository.storeAlias(alias, getEntity(recordItem).getId());
+            entityRepository.storeAlias(alias, entity.getId());
         }
 
         entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());

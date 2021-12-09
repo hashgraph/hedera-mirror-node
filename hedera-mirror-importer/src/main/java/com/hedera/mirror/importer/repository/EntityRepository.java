@@ -31,11 +31,13 @@ import org.springframework.data.repository.CrudRepository;
 import com.hedera.mirror.common.domain.entity.Entity;
 
 public interface EntityRepository extends CrudRepository<Entity, Long> {
-    @Cacheable(cacheNames = "entityAlias", cacheManager = ACCOUNT_ALIAS_CACHE)
+    String ACCOUNT_ALIAS_CACHE_NAME = "entityAlias";
+
+    @Cacheable(cacheNames = ACCOUNT_ALIAS_CACHE_NAME, cacheManager = ACCOUNT_ALIAS_CACHE)
     @Query(value = "select id from entity where alias = ?1 and deleted <> true", nativeQuery = true)
     Optional<Long> findByAlias(byte[] alias);
 
-    @CachePut(cacheNames = "entityAlias", cacheManager = ACCOUNT_ALIAS_CACHE, key = "#alias")
+    @CachePut(cacheNames = ACCOUNT_ALIAS_CACHE_NAME, cacheManager = ACCOUNT_ALIAS_CACHE, key = "#p0")
     default Long storeAlias(byte[] alias, Long id) {
         return id;
     }

@@ -126,7 +126,7 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
         Entity entity = domainPersister.get();
 
         // cache and db return nothing on empty table
-        assertNull(cacheManager.getCache(ACCOUNT_ALIAS_CACHE)
+        assertNull(cacheManager.getCache(EntityRepository.ACCOUNT_ALIAS_CACHE_NAME)
                 .get(entity.getAlias()));
         assertThat(entityRepository.findByAlias(entity.getAlias())).isNotPresent();
         domainPersister.persist();
@@ -134,7 +134,7 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
         // db state is reflected in cache
         assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
         Long id = (Long) cacheManager
-                .getCache(ACCOUNT_ALIAS_CACHE)
+                .getCache(EntityRepository.ACCOUNT_ALIAS_CACHE_NAME)
                 .get(entity.getAlias()).get();
         assertNotNull(id);
         assertThat(id).isEqualTo(entity.getId());
@@ -143,7 +143,7 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
         entityRepository.deleteAll();
         assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
         Long preservedId = (Long) cacheManager
-                .getCache(ACCOUNT_ALIAS_CACHE)
+                .getCache(EntityRepository.ACCOUNT_ALIAS_CACHE_NAME)
                 .get(entity.getAlias()).get();
         assertNotNull(preservedId);
         assertThat(preservedId).isEqualTo(entity.getId());
