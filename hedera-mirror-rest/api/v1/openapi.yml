@@ -183,7 +183,7 @@ paths:
       description: Returns a list of all ContractLogs for a contract's function executions.
       operationId: listContractLogs
       parameters:
-        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
         - $ref: '#/components/parameters/indexQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'

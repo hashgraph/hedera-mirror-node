@@ -439,7 +439,7 @@ const getContractLogs = async (req, res) => {
     contract_logs: rows.map((row) => new ContractLogViewModel(row)),
   };
 
-  res.locals[constants.responseDataLabel] = response;
+  res.send(response);
 };
 
 /**
