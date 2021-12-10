@@ -32,9 +32,11 @@ const constants = require('../constants');
 const EntityId = require('../entityId');
 const utils = require('../utils');
 
+const config = require('../config.js');
 const {Contract, FileData, ContractResult} = require('../model');
 const {ContractService} = require('../service');
 const {ContractViewModel, ContractLogViewModel, ContractResultViewModel} = require('../viewmodel');
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 const ContractLog = require('../model/contractLog');
 const contractService = require('../service/contractService');
@@ -390,9 +392,10 @@ const getContractResultsById = async (req, res) => {
 const getContractLogs = async (req, res) => {
   utils.validateReq(req);
 
+  checkTimestampsForTopics(req.query.timestamp, req.query.topic0, req.query.topic1, req.query.topic2, req.query.topic3);
   // extract filters from query param
   const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
-  const filters = utils.buildAndValidateFilters(req.query, contractLogfilterValidityChecks);
+  const filters = utils.buildAndValidateFilters(req.query);
 
   // get sql filter query, params, limit and limit query from query filters
   const {conditions, params, timestampOrder, indexOrder, limit} = extractContractLogsByIdQuery(filters, contractId);
@@ -410,48 +413,6 @@ const getContractLogs = async (req, res) => {
   };
 
   res.locals[constants.responseDataLabel] = response;
-};
-
-const contractLogfilterValidityChecks = (param, op, val) => {
-  let ret = false;
-
-  if (op === undefined || val === undefined) {
-    return ret;
-  }
-
-  // Validate operator
-  if (!utils.isValidOperatorQuery(op)) {
-    logger.info(utils.isValidOperatorQuery(val));
-    return ret;
-  }
-
-  // Validate the value
-  switch (param) {
-    case constants.filterKeys.LIMIT:
-      ret = utils.isPositiveLong(val);
-      break;
-    case constants.filterKeys.INDEX:
-      ret = utils.isNumeric(val) & (val > 0);
-      break;
-    case constants.filterKeys.ORDER:
-      // Acceptable words: asc or desc
-      ret = utils.isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
-      break;
-    case constants.filterKeys.TOPIC0:
-    case constants.filterKeys.TOPIC1:
-    case constants.filterKeys.TOPIC2:
-    case constants.filterKeys.TOPIC3:
-      ret = utils.isValidOpAndTopic(op, val);
-      break;
-    case constants.filterKeys.TIMESTAMP:
-      ret = utils.isValidTimestampParamAndOp(op, val);
-      break;
-    default:
-      // Every parameter should be included here. Otherwise, it will not be accepted.
-      ret = false;
-  }
-
-  return ret;
 };
 
 /**
@@ -702,6 +663,14 @@ const paramStringBuilderBytes = (invalues, start) => {
     .map((position) => `decode($${position}, 'hex')`);
 };
 
+const checkTimestampsForTopics = (timestamps, topic0, topic1, topic2, topic3) => {
+  if (topic0 || topic1 || topic2 || topic3) {
+    if (!utils.checkTimestampRange(timestamps)) {
+      throw new InvalidArgumentError(`Cannot search topics without timestamp range within ${config}`);
+    }
+  }
+};
+
 module.exports = {
   getContractById,
   getContracts,
@@ -711,7 +680,7 @@ module.exports = {
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
-    contractLogfilterValidityChecks,
+    checkTimestampsForTopics,
     extractContractLogsByIdQuery,
     extractContractResultsByIdQuery,
     extractSqlFromContractFilters,

@@ -32,6 +32,7 @@ const contracts = require('../../controllers/contractController');
 const {formatSqlQueryString} = require('../testutils');
 const utils = require('../../utils');
 const {Contract, ContractLog} = require('../../model');
+const {InvalidArgumentError} = require('../../errors/invalidArgumentError');
 
 const contractFields = [
   Contract.AUTO_RENEW_PERIOD,
@@ -461,77 +462,6 @@ describe('extractContractResultsByIdQuery', () => {
   });
 });
 
-describe('contractLogfilterValidityChecks', () => {
-  test('valid index', () => {
-    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.INDEX, 'eq', '22')).toBeTruthy();
-  });
-  test('invalid index', () => {
-    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.INDEX, 'eq', '-1')).toBeFalsy();
-  });
-  test('invalid index string', () => {
-    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.INDEX, 'eq', 'aa')).toBeFalsy();
-  });
-  test('valid limit', () => {
-    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.LIMIT, 'eq', '222')).toBeTruthy();
-  });
-  test('invalid limit', () => {
-    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.LIMIT, 'eq', -'1')).toBeFalsy();
-  });
-  test('valid order', () => {
-    expect(
-      contracts.contractLogfilterValidityChecks(constants.filterKeys.ORDER, 'eq', constants.orderFilterValues.ASC)
-    ).toBeTruthy();
-  });
-  test('invalid limit', () => {
-    expect(contracts.contractLogfilterValidityChecks(constants.filterKeys.ORDER, 'eq', 'back')).toBeFalsy();
-  });
-  test('valid topic', () => {
-    expect(
-      contracts.contractLogfilterValidityChecks(
-        constants.filterKeys.TOPIC0,
-        'eq',
-        '0x0000000000000000000000000000000000000000000000000000000000001234'
-      )
-    ).toBeTruthy();
-  });
-  test('imvalid topic op', () => {
-    expect(
-      contracts.contractLogfilterValidityChecks(
-        constants.filterKeys.TOPIC1,
-        'lt',
-        '0x0000000000000000000000000000000000000000000000000000000000001234'
-      )
-    ).toBeFalsy();
-  });
-  test('invalid topic val', () => {
-    expect(
-      contracts.contractLogfilterValidityChecks(
-        constants.filterKeys.TOPIC3,
-        'eq',
-        '0x000000000000000000000000000000000000000000000000000000000001234'
-      )
-    ).toBeFalsy();
-  });
-  test('valid timestamp', () => {
-    expect(
-      contracts.contractLogfilterValidityChecks(constants.filterKeys.TIMESTAMP, 'eq', '1638732974.495514000')
-    ).toBeTruthy();
-  });
-  test('invalid timestamp val', () => {
-    expect(
-      contracts.contractLogfilterValidityChecks(constants.filterKeys.TIMESTAMP, 'eq', '16387329744.95514000')
-    ).toBeFalsy();
-  });
-  test('invalid timestamp op', () => {
-    expect(
-      contracts.contractLogfilterValidityChecks(constants.filterKeys.TIMESTAMP, 'ne', '16387329744.95514000')
-    ).toBeFalsy();
-  });
-  test('invalid param', () => {
-    expect(contracts.contractLogfilterValidityChecks('test')).toBeFalsy();
-  });
-});
-
 describe('extractContractLogsByIdQuery', () => {
   const defaultContractId = 1;
   const defaultExpected = {
@@ -687,5 +617,36 @@ describe('extractContractLogsByIdQuery', () => {
     test(`${spec.name}`, () => {
       expect(contracts.extractContractLogsByIdQuery(spec.input.filter, spec.input.contractId)).toEqual(spec.expected);
     });
+  });
+});
+
+describe('checkTimestampsForTopics', () => {
+  test('no topic params', () => {
+    contracts.checkTimestampsForTopics(undefined, undefined, undefined, undefined, undefined);
+  });
+  test('topic0 param no timestamps', () => {
+    expect(() => {
+      contracts.checkTimestampsForTopics(undefined, '0x123', undefined, undefined, undefined);
+    }).toThrow(InvalidArgumentError);
+  });
+  test('topic1 param one timestamp gt', () => {
+    expect(() => {
+      contracts.checkTimestampsForTopics('gt:123', undefined, '0x123', undefined, undefined);
+    }).toThrow(InvalidArgumentError);
+  });
+  test('topic0 param', () => {
+    expect(() => {
+      contracts.checkTimestampsForTopics('lt:123', undefined, undefined, '0x123', undefined);
+    }).toThrow(InvalidArgumentError);
+  });
+  test('topic0 param', () => {
+    expect(() => {
+      contracts.checkTimestampsForTopics('ne:123', undefined, undefined, undefined, '0x123');
+    }).toThrow(InvalidArgumentError);
+  });
+  test('all topics valid timestamp', () => {
+    expect(() => {
+      contracts.checkTimestampsForTopics('e:123', '0x123', '0x123', '0x123', '0x123');
+    }).toThrow(InvalidArgumentError);
   });
 });

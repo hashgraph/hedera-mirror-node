@@ -1017,37 +1017,38 @@ describe('Utils test - utils.parseTransactionTypeParam', () => {
     );
   });
 
-  describe('checkTimestampRange', () => {
-    test('none', () => {
-      expect(checkTimestampRange()).toBeFalsy();
+  describe('Utils test - utils.checkTimestampRange', () => {
+    test('Utils test - utils.checkTimestampRange - no params', () => {
+      expect(utils.checkTimestampRange()).toBeFalsy();
     });
-    test('one param gt', () => {
-      expect(checkTimestampRange('gt:1638921702.000')).toBeFalsy();
+    test('Utils test - utils.checkTimestampRange - one param gt', () => {
+      expect(utils.checkTimestampRange('gt:1638921702.000')).toBeFalsy();
     });
-    test('one param eq', () => {
-      expect(checkTimestampRange('eq:1638921702.000')).toBeTruthy();
+    test('Utils test - utils.checkTimestampRange - one param eq', () => {
+      expect(utils.checkTimestampRange('eq:1638921702.000')).toBeTruthy();
     });
-    test('two params gt and eq', () => {
-      expect(checkTimestampRange(['gt:1638921702.000', 'eq:1638921702'])).toBeTruthy();
+    test('Utils test - utils.checkTimestampRange - two params gt and eq', () => {
+      expect(utils.checkTimestampRange(['gt:1638921702.000', 'eq:1638921702'])).toBeTruthy();
     });
-    test('two both sides', () => {
-      const newMin = checkTimestampRange(['lte:1638921702.000000000', 'gte:1638921701.000']);
-      expect(newMin).toBeTruthy();
+    test('Utils test - utils.checkTimestampRange - two both sides', () => {
+      expect(checkTimestampRange(['lte:1638921702.000000000', 'gte:1638921701.000'])).toBeTruthy();
     });
-    test('two bad range backwards', () => {
-      expect(checkTimestampRange(['lte:1638921701.000000000', 'gte:1638921702.000'])).toBeFalsy();
+    test('Utils test - utils.checkTimestampRange - two bad range backwards', () => {
+      expect(utils.checkTimestampRange(['lte:1638921701.000000000', 'gte:1638921702.000'])).toBeFalsy();
     });
-    test('two bad range too big', () => {
-      expect(checkTimestampRange(['lte:1638921702.000000000', 'gte:1738921702.000'])).toBeFalsy();
+    test('Utils test - utils.checkTimestampRange - two bad range too big', () => {
+      expect(utils.checkTimestampRange(['lte:1638921702.000000000', 'gte:1738921702.000'])).toBeFalsy();
     });
-    test('two both gt', () => {
-      expect(checkTimestampRange(['gt:1638921702.000000000', 'gte:1738921702.000'])).toBeFalsy();
+    test('Utils test - utils.checkTimestampRange - two gt and gte', () => {
+      expect(utils.checkTimestampRange(['gt:1638921702.000000000', 'gte:1738921702.000'])).toBeFalsy();
     });
-    test('two both lt', () => {
-      expect(checkTimestampRange(['lt:1638921702.000000000', 'lte:1738921702.000'])).toBeFalsy();
+    test('Utils test - utils.checkTimestampRange - two lt and lte', () => {
+      expect(utils.checkTimestampRange(['lt:1638921702.000000000', 'lte:1738921702.000'])).toBeFalsy();
     });
-    test('three gt lt eq', () => {
-      expect(checkTimestampRange(['gt:1638921702.000000000', 'lte:1638921701.000', 'eq:1638921701.000'])).toBeTruthy();
+    test('Utils test - utils.checkTimestampRange - three gt lte eq', () => {
+      expect(
+        utils.checkTimestampRange(['gt:1638921702.000000000', 'lte:1638921701.000', 'eq:1638921701.000'])
+      ).toBeTruthy();
     });
   });
 });
