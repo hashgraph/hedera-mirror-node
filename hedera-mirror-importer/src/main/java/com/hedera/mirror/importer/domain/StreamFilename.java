@@ -31,6 +31,9 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.hedera.mirror.common.domain.StreamType;
+
 import lombok.EqualsAndHashCode;
 import lombok.Value;
 import org.apache.commons.io.FilenameUtils;
@@ -109,8 +112,8 @@ public class StreamFilename implements Comparable<StreamFilename> {
 
     /**
      * Returns the filename after this file, in the order of timestamp. This is done by removing the separator '.' and
-     * extension from the filename, then appending '_', so that regardless of the extension being used, files after
-     * the generated filename will always be newer than this file.
+     * extension from the filename, then appending '_', so that regardless of the extension being used, files after the
+     * generated filename will always be newer than this file.
      *
      * @return the filename to mark files after this stream filename
      */

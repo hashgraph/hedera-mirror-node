@@ -662,6 +662,10 @@ const randomString = async (length) => {
   return bytes.toString('hex');
 };
 
+const addHexPrefix = (hexString) => {
+  return `0x${hexString}`;
+};
+
 /**
  * Converts the byte array returned by SQL queries into hex string
  * @param {Array} byteArray Array of bytes to be converted to hex string
@@ -674,7 +678,7 @@ const toHexString = (byteArray, addPrefix = false) => {
   }
 
   const encoded = Buffer.from(byteArray, 'utf8').toString('hex');
-  return addPrefix ? `0x${encoded}` : encoded;
+  return addPrefix ? addHexPrefix(encoded) : encoded;
 };
 
 // These match protobuf encoded hex strings. The prefixes listed check if it's a primitive key, a key list with one
@@ -1041,7 +1045,7 @@ const checkTimestampRange = (timestamps) => {
   if (
     latest === undefined ||
     earliest === undefined ||
-    latest - earliest > config.maxTimestampRange ||
+    latest - earliest > config.maxTimestampRange * 1000000000 ||
     latest - earliest < 0
   ) {
     return false;
@@ -1050,6 +1054,7 @@ const checkTimestampRange = (timestamps) => {
 };
 
 module.exports = {
+  addHexPrefix,
   buildAndValidateFilters,
   buildComparatorFilter,
   buildPgSqlObject,

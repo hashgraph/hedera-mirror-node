@@ -30,6 +30,7 @@ module.exports = {
   FileData: require('./fileData'),
   Nft: require('./nft'),
   NftTransfer: require('./nftTransfer'),
+  RecordFile: require('./recordFile'),
   SignatureType: require('./signatureType'),
   Token: require('./token'),
   TokenFreezeStatus: require('./tokenFreezeStatus'),

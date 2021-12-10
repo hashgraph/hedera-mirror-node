@@ -27,11 +27,12 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.importer.domain.Contract;
-import com.hedera.mirror.importer.domain.ContractLog;
-import com.hedera.mirror.importer.domain.ContractResult;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractLog;
+import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.util.Utility;
@@ -62,8 +63,8 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             }
         }
 
-        contractResult.setBloom(Utility.toBytes(functionResult.getBloom()));
-        contractResult.setCallResult(Utility.toBytes(functionResult.getContractCallResult()));
+        contractResult.setBloom(DomainUtils.toBytes(functionResult.getBloom()));
+        contractResult.setCallResult(DomainUtils.toBytes(functionResult.getContractCallResult()));
         contractResult.setCreatedContractIds(createdContractIds);
         contractResult.setErrorMessage(functionResult.getErrorMessage());
         contractResult.setFunctionResult(functionResult.toByteArray());
@@ -74,10 +75,10 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
 
             ContractLog contractLog = new ContractLog();
-            contractLog.setBloom(Utility.toBytes(contractLoginfo.getBloom()));
+            contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
             contractLog.setConsensusTimestamp(consensusTimestamp);
             contractLog.setContractId(EntityId.of(contractLoginfo.getContractID()));
-            contractLog.setData(Utility.toBytes(contractLoginfo.getData()));
+            contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
             contractLog.setPayerAccountId(contractResult.getPayerAccountId());
             contractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));

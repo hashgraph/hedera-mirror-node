@@ -24,6 +24,11 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+
+import com.hedera.mirror.importer.IntegrationTest;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -33,10 +38,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -71,7 +76,7 @@ class RecordFileParserPerformanceTest extends IntegrationTest {
     }
 
     @Test
-    @Timeout(15)
+    @Timeout(25)
     void parse() {
         recordFiles.forEach(recordFileParser::parse);
         assertThat(recordFileRepository.count()).isEqualTo(recordFiles.size());

@@ -20,10 +20,10 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.EntityType.ACCOUNT;
-import static com.hedera.mirror.importer.domain.EntityType.TOKEN;
-import static com.hedera.mirror.importer.domain.TokenTypeEnum.FUNGIBLE_COMMON;
-import static com.hedera.mirror.importer.domain.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.mirror.common.domain.token.TokenTypeEnum.FUNGIBLE_COMMON;
+import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
@@ -43,25 +43,25 @@ import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.TestPropertySource;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.Nft;
-import com.hedera.mirror.importer.domain.NftTransfer;
-import com.hedera.mirror.importer.domain.NftTransferId;
-import com.hedera.mirror.importer.domain.Token;
-import com.hedera.mirror.importer.domain.TokenAccount;
-import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
-import com.hedera.mirror.importer.domain.TokenId;
-import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
-import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
-import com.hedera.mirror.importer.domain.TokenTransfer;
-import com.hedera.mirror.importer.domain.TokenTypeEnum;
-import com.hedera.mirror.importer.domain.Transaction;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.NftTransfer;
+import com.hedera.mirror.common.domain.token.NftTransferId;
+import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
-import com.hedera.mirror.importer.util.EntityIdEndec;
 
 @EnabledIfV1
 @Tag("migration")

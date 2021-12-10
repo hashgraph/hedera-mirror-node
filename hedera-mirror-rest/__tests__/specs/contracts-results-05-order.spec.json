@@ -21,7 +21,6 @@
     "results": [
       {
         "amount": 20,
-        "bloom": null,
         "call_result": null,
         "contract_id": "0.0.5001",
         "created_contract_ids": [],
@@ -35,7 +34,6 @@
       },
       {
         "amount": 30,
-        "bloom": null,
         "call_result": null,
         "contract_id": "0.0.5001",
         "created_contract_ids": ["0.0.7001"],

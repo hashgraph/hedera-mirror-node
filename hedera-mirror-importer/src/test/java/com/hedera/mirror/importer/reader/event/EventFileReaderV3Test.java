@@ -26,13 +26,15 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.common.primitives.Ints;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+
+import com.hedera.mirror.common.util.DomainUtils;
+
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.EventFile;
+import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
-import com.hedera.mirror.importer.util.Utility;
 
 class EventFileReaderV3Test {
 
@@ -117,7 +119,7 @@ class EventFileReaderV3Test {
 
     private void verifyForSuccess(EventFile eventFile, StreamFileData inputFile, int expectedFileVersion,
                                   byte[] expectedPrevHash) {
-        long consensusStart = Utility.convertToNanosMax(inputFile.getInstant());
+        long consensusStart = DomainUtils.convertToNanosMax(inputFile.getInstant());
         assertThat(eventFile).isNotNull();
         assertThat(eventFile.getBytes()).isNotEmpty().isEqualTo(inputFile.getBytes());
         assertThat(eventFile.getConsensusStart()).isEqualTo(consensusStart);

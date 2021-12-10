@@ -45,7 +45,7 @@ const dbAdminPassword = process.env.POSTGRES_PASSWORD || crypto.randomBytes(16).
 const v1SchemaConfigs = {
   docker: {
     imageName: 'postgres',
-    tagName: '9.6-alpine',
+    tagName: '13.5-alpine',
   },
   flyway: {
     baselineVersion: '0',
@@ -152,7 +152,7 @@ const flywayMigrate = async (dbSessionConfig) => {
       "url": "jdbc:postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}",
       "user": "${dbAdminUser}"
     },
-    "version": "7.7.3",
+    "version": "8.0.4",
     "downloads": {
       "storageDirectory": "${flywayDataPath}"
     }
@@ -198,7 +198,7 @@ const cleanupSql = fs.readFileSync(
     '..',
     'hedera-mirror-importer',
     'src',
-    'main',
+    'test',
     'resources',
     'db',
     'scripts',

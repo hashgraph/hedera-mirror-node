@@ -171,6 +171,7 @@ comment on table custom_fee is 'HTS Custom fees';
 -- entity
 create table if not exists entity
 (
+    alias                            bytea             null,
     auto_renew_account_id            bigint            null,
     auto_renew_period                bigint            null,
     created_timestamp                bigint            null,
@@ -383,21 +384,23 @@ comment on table topic_message is 'Topic entity sequenced messages';
 -- transaction
 create table if not exists transaction
 (
-    charged_tx_fee         bigint,
-    consensus_timestamp    bigint   not null,
-    entity_id              bigint,
-    initial_balance        bigint            default 0,
-    max_fee                bigint,
-    memo                   bytea,
-    node_account_id        bigint,
-    payer_account_id       bigint   not null,
-    result                 smallint not null,
-    scheduled              boolean  not null default false,
-    transaction_bytes      bytea,
-    transaction_hash       bytea,
-    type                   smallint not null,
-    valid_start_ns         bigint   not null,
-    valid_duration_seconds bigint
+    charged_tx_fee             bigint,
+    consensus_timestamp        bigint   not null,
+    entity_id                  bigint,
+    initial_balance            bigint            default 0,
+    max_fee                    bigint,
+    memo                       bytea,
+    node_account_id            bigint,
+    nonce                      integer           default 0 not null,
+    parent_consensus_timestamp bigint   null,
+    payer_account_id           bigint   not null,
+    result                     smallint not null,
+    scheduled                  boolean  not null default false,
+    transaction_bytes          bytea,
+    transaction_hash           bytea,
+    type                       smallint not null,
+    valid_start_ns             bigint   not null,
+    valid_duration_seconds     bigint
 );
 comment on table transaction is 'Submitted network transactions';
 

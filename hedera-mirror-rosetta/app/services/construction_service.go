@@ -25,6 +25,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rand"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
@@ -34,8 +35,8 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/construction"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
+	"github.com/hashgraph/hedera-protobufs-go/services"
 	"github.com/hashgraph/hedera-sdk-go/v2"
-	"github.com/hashgraph/hedera-sdk-go/v2/proto"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/protobuf/encoding/prototext"
 )
@@ -44,6 +45,7 @@ const MetadataKeyValidStartNanos = "valid_start_nanos"
 
 // constructionAPIService implements the server.ConstructionAPIServicer interface.
 type constructionAPIService struct {
+	*BaseService
 	hederaClient       *hedera.Client
 	nodeAccountIds     []hedera.AccountID
 	nodeAccountIdsLen  *big.Int
@@ -131,6 +133,10 @@ func (c *constructionAPIService) ConstructionMetadata(
 	ctx context.Context,
 	request *rTypes.ConstructionMetadataRequest,
 ) (*rTypes.ConstructionMetadataResponse, *rTypes.Error) {
+	if !c.IsOnline() {
+		return nil, errors.ErrEndpointNotSupportedInOfflineMode
+	}
+
 	return &rTypes.ConstructionMetadataResponse{
 		Metadata: make(map[string]interface{}),
 	}, nil
@@ -232,26 +238,36 @@ func (c *constructionAPIService) ConstructionSubmit(
 	ctx context.Context,
 	request *rTypes.ConstructionSubmitRequest,
 ) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
+	if !c.IsOnline() {
+		return nil, errors.ErrEndpointNotSupportedInOfflineMode
+	}
+
 	transaction, rErr := unmarshallTransactionFromHexString(request.SignedTransaction)
 	if rErr != nil {
 		return nil, rErr
 	}
 
-	hash, err := transaction.GetTransactionHash()
+	hashBytes, err := transaction.GetTransactionHash()
 	if err != nil {
 		return nil, errors.ErrTransactionHashFailed
 	}
 
+	hash := tools.SafeAddHexPrefix(hex.EncodeToString(hashBytes))
+	log.Infof("Submitting transaction %s (hash %s) to node %s", transaction.GetTransactionID(),
+		hash, transaction.GetNodeAccountIDs()[0])
+
 	_, err = transaction.Execute(c.hederaClient)
 	if err != nil {
 		log.Errorf("Failed to execute transaction %s: %s", transaction.GetTransactionID(), err)
-		return nil, errors.ErrTransactionSubmissionFailed
+		return nil, errors.AddErrorDetails(
+			errors.ErrTransactionSubmissionFailed,
+			"reason",
+			fmt.Sprintf("%s", err),
+		)
 	}
 
 	return &rTypes.TransactionIdentifierResponse{
-		TransactionIdentifier: &rTypes.TransactionIdentifier{
-			Hash: tools.SafeAddHexPrefix(hex.EncodeToString(hash[:])),
-		},
+		TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: hash},
 	}, nil
 }
 
@@ -284,6 +300,7 @@ func (c *constructionAPIService) getValidStartNanos(metadata map[string]interfac
 
 // NewConstructionAPIService creates a new instance of a constructionAPIService.
 func NewConstructionAPIService(
+	baseService *BaseService,
 	network string,
 	nodes config.NodeMap,
 	transactionConstructor construction.TransactionConstructor,
@@ -303,6 +320,9 @@ func NewConstructionAPIService(
 		return nil, err
 	}
 
+	// disable SDK auto retry
+	hederaClient.SetMaxAttempts(1)
+
 	networkMap := hederaClient.GetNetwork()
 	nodeAccountIds := make([]hedera.AccountID, 0, len(networkMap))
 	for _, nodeAccountId := range networkMap {
@@ -310,6 +330,7 @@ func NewConstructionAPIService(
 	}
 
 	return &constructionAPIService{
+		BaseService:        baseService,
 		hederaClient:       hederaClient,
 		nodeAccountIds:     nodeAccountIds,
 		nodeAccountIdsLen:  big.NewInt(int64(len(nodeAccountIds))),
@@ -356,7 +377,7 @@ func addSignature(transaction interfaces.Transaction, pubKey hedera.PublicKey, s
 }
 
 func getFrozenTransactionBodyBytes(transaction interfaces.Transaction) ([]byte, *rTypes.Error) {
-	signedTransaction := proto.SignedTransaction{}
+	signedTransaction := services.SignedTransaction{}
 	if err := prototext.Unmarshal([]byte(transaction.String()), &signedTransaction); err != nil {
 		return nil, errors.ErrTransactionUnmarshallingFailed
 	}

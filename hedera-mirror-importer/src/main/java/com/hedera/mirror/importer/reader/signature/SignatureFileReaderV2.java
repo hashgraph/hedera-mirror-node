@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.reader.signature;
 import java.io.IOException;
 import javax.inject.Named;
 
-import com.hedera.mirror.importer.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFileData;

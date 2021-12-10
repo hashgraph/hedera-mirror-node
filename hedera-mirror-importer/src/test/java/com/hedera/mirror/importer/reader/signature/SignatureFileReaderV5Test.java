@@ -38,7 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFileData;

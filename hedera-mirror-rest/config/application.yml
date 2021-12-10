@@ -25,6 +25,7 @@ hedera:
       log:
         level: debug
       maxRepeatedQueryParameters: 100
+      maxTimestampRange: 31622400
       metrics:
         enabled: true
         config:

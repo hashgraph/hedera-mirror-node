@@ -26,9 +26,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.Nft;
-import com.hedera.mirror.importer.domain.NftId;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.NftId;
 
 @Transactional
 public interface NftRepository extends CrudRepository<Nft, NftId> {

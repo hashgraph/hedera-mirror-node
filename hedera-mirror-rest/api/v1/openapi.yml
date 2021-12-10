@@ -99,7 +99,7 @@ paths:
       description: Return the contract information given an id
       operationId: getContractById
       parameters:
-        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
         - $ref: '#/components/parameters/timestampQueryParam'
       responses:
         200:
@@ -120,7 +120,7 @@ paths:
       description: Returns a list of all ContractResults for a contract's function executions.
       operationId: listContractResults
       parameters:
-        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
         - $ref: '#/components/parameters/fromQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
@@ -134,6 +134,47 @@ paths:
                 $ref: '#/components/schemas/ContractResultsResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - contracts
+  /api/v1/contracts/{contractId}/results/{timestamp}:
+    get:
+      summary: Get the contract result from a contract on the network executed at a given timestamp
+      description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
+      operationId: getContractResultByIdAndTimestamp
+      parameters:
+        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/timestampPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResultResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - contracts
+  /api/v1/contracts/results/{transactionId}:
+    get:
+      summary: Get the contract result from a contract on the network for a given transactionId
+      description: Returns a single ContractResult for a contract's function executions for a given transactionId.
+      operationId: getContractResultByTransactionId
+      parameters:
+        - $ref: '#/components/parameters/transactionIdPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResultResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
   /api/v1/contracts/{contractId}/results/logs:
@@ -209,7 +250,7 @@ paths:
       description: Returns schedule information based on the given schedule id
       operationId: getScheduleById
       parameters:
-        - $ref: '#/components/parameters/scheduleIdPathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
       responses:
         200:
           description: OK
@@ -317,7 +358,7 @@ paths:
       description: Returns the list of topic messages for the given topic id.
       operationId: listTopicMessagesById
       parameters:
-        - $ref: '#/components/parameters/topicIdPathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
         - name: sequencenumber
           in: query
           example: 2
@@ -350,7 +391,7 @@ paths:
       description: Returns a single topic message the given topic id and sequence number.
       operationId: getTopicMessageByIdAndSequenceNumber
       parameters:
-        - $ref: '#/components/parameters/topicIdPathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
         - name: sequencenumber
           in: path
           required: true
@@ -377,14 +418,7 @@ paths:
       description: Returns a topic message the given the consensusTimestamp.
       operationId: getTopicMessagesByConsensusTimestamp
       parameters:
-        - name: consensusTimestamp
-          in: path
-          required: true
-          description: Consensus timestamp of topic message
-          example: 1234567890
-          schema:
-            type: number
-            format: float
+        - $ref: '#/components/parameters/timestampPathParam'
       responses:
         200:
           description: OK
@@ -427,7 +461,7 @@ paths:
       description: Returns token entity information given the id
       operationId: getTokenById
       parameters:
-        - $ref: '#/components/parameters/tokenIdPathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
         - $ref: '#/components/parameters/tokenInfoTimestampQueryParam'
       responses:
         200:
@@ -556,7 +590,7 @@ paths:
       description: Returns a list of token balances given the id. This represents the Token supply distribution across the network
       operationId: listTokenBalancesById
       parameters:
-        - $ref: '#/components/parameters/tokenIdPathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/balanceQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
@@ -584,7 +618,7 @@ paths:
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
-        - $ref: '#/components/parameters/tokenIdPathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
       responses:
         200:
           description: OK
@@ -611,7 +645,7 @@ paths:
       operationId: listNftBySerialnumber
       parameters:
         - $ref: '#/components/parameters/serialNumberPathParam'
-        - $ref: '#/components/parameters/tokenIdPathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
       responses:
         200:
           description: OK
@@ -632,7 +666,7 @@ paths:
       operationId: listNftTransactions
       parameters:
         - $ref: '#/components/parameters/serialNumberPathParam'
-        - $ref: '#/components/parameters/tokenIdPathParam'
+        - $ref: '#/components/parameters/entityIdPathParam'
       responses:
         200:
           description: OK
@@ -683,7 +717,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.46.0-SNAPSHOT
+  version: 0.47.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -748,6 +782,11 @@ components:
           $ref: '#/components/schemas/Contracts'
         links:
           $ref: '#/components/schemas/Links'
+    ContractResultResponse:
+      type: object
+      properties:
+        contracts:
+          $ref: '#/components/schemas/ContractResultDetails'
     ContractResultsResponse:
       type: object
       properties:
@@ -1028,11 +1067,6 @@ components:
           format: int64
           nullable: true
           type: integer
-        bloom:
-          description: The hex encoded bloom filter for the record
-          example: "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398"
-          nullable: true
-          type: string
         call_result:
           description: The hex encoded result returned by the function
           example: "0x2b048531b38d2882e86044bc972e940ee0a01938"
@@ -1042,10 +1076,8 @@ components:
           $ref: '#/components/schemas/EntityId'
         created_contract_ids:
           description: The network's released supply of hbars in tinybars
-          example:
-            - "0.0.1003"
           items:
-            type: string
+            $ref: '#/components/schemas/EntityId'
           type: array
         error_message:
           description: The message when an error occurs during smart contract execution
@@ -1072,6 +1104,26 @@ components:
           $ref: '#/components/schemas/Timestamp'
         to:
           $ref: '#/components/schemas/SolidityAddressNullable'
+    ContractResultDetails:
+      allOf:
+        - $ref: '#/components/schemas/ContractResult'
+        - type: object
+          properties:
+            block_hash:
+              description: The hex encoded block (record file chain) hash
+              example: "0x6ceecd8bb224da491"
+              nullable: true
+              type: string
+            block_number:
+              description: The block number. Since Hedera does not have the native concept of blocks, this counts the number of record files seen since the mirror node's configured start date. This can vary between mirror nodes that use different start dates.
+              example: 10
+              format: int64
+              nullable: true
+              type: integer
+            hash:
+              description: The hex encoded transaction hash
+              example: "0x3531396130303866616264653464"
+              type: string
     ContractResults:
       type: array
       items:
@@ -1928,11 +1980,11 @@ components:
           value: lte:0.0.700
       schema:
         $ref: '#/components/schemas/EntityIdQuery'
-    contractIdPathParam:
-      name: contractId
+    entityIdPathParam:
+      name: entityId
       in: path
       required: true
-      description: Contract entity id
+      description: Entity id
       schema:
         $ref: '#/components/schemas/EntityId'
     fromQueryParam:
@@ -1973,14 +2025,6 @@ components:
       in: query
       description: The public key to compare against
       example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
-      schema:
-        type: string
-    scheduleIdPathParam:
-      name: scheduleId
-      in: path
-      required: true
-      description: Schedule entity id
-      example: 0.0.2035
       schema:
         type: string
     scheduleIdQueryParam:
@@ -2107,6 +2151,15 @@ components:
         items:
           type: string
           pattern: ^((eq|gt|gte|lt|lte|ne):)?\d{1,10}(.\d{1,9})?$
+    timestampPathParam:
+      name: timestamp
+      in: path
+      description: The timestamp at which the associated transaction reached consensus
+      required: true
+      example: 1234567890.000000700
+      schema:
+        type: string
+        pattern: ^\d{1,10}(.\d{1,9})?$
     tokenInfoTimestampQueryParam:
       name: timestamp
       in: query
@@ -2234,14 +2287,6 @@ components:
           value: lte:0.0.700
       schema:
         $ref: '#/components/schemas/EntityIdQuery'
-    tokenIdPathParam:
-      name: tokenId
-      in: path
-      required: true
-      description: Token entity id
-      example: 0.0.1135
-      schema:
-        type: string
     tokenTypeQueryParam:
       name: type
       in: query
@@ -2254,11 +2299,3 @@ components:
         type: array
         items:
           type: string
-    topicIdPathParam:
-      name: topicId
-      in: path
-      required: true
-      description: Topic entity id
-      example: 0.2.3
-      schema:
-        type: string

@@ -30,7 +30,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializer;
 
-import com.hedera.mirror.importer.domain.StreamMessage;
+import com.hedera.mirror.common.domain.topic.StreamMessage;
 
 @Configuration
 public class RedisConfiguration {

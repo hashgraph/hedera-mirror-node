@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/mirror-monitor",
-  "version": "0.46.0-SNAPSHOT",
+  "version": "0.47.0-SNAPSHOT",
   "description": "Hedera Mirror Node Monitor",
   "main": "server.js",
   "private": true,
@@ -28,7 +28,7 @@
     "pretty-ms": "^7.0.1"
   },
   "devDependencies": {
-    "jest": "^27.3.1",
+    "jest": "^27.4.3",
     "nodemon": "^2.0.15"
   }
 }

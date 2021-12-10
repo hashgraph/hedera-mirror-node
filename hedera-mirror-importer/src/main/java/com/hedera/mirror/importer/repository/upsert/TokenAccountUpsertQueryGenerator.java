@@ -28,11 +28,11 @@ import javax.persistence.metamodel.SingularAttribute;
 import lombok.Getter;
 import lombok.Value;
 
-import com.hedera.mirror.importer.domain.TokenAccountId_;
-import com.hedera.mirror.importer.domain.TokenAccount_;
-import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
-import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
-import com.hedera.mirror.importer.domain.Token_;
+import com.hedera.mirror.common.domain.token.TokenAccountId_;
+import com.hedera.mirror.common.domain.token.TokenAccount_;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.token.Token_;
 
 @Named
 @Value

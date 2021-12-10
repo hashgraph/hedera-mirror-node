@@ -40,6 +40,16 @@ class BaseService {
     logger.trace(`${functionName} ${rows.length} entries`);
     return rows;
   }
+
+  async getSingleRow(query, params, functionName = '') {
+    logger.trace(`${functionName} query: ${query}, params: ${params}`);
+    const rows = await this.getRows(query, params, functionName);
+    if (_.isEmpty(rows) || rows.length > 1) {
+      return null;
+    }
+
+    return rows[0];
+  }
 }
 
 module.exports = BaseService;

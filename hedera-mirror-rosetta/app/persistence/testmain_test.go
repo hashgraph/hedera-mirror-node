@@ -70,6 +70,7 @@ func addTransaction(
 		ChargedTxFee:         17,
 		EntityId:             entityId,
 		NodeAccountId:        nodeAccountId,
+		Nonce:                0,
 		PayerAccountId:       payerAccountId,
 		Result:               result,
 		TransactionHash:      transactionHash,

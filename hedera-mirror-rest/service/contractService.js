@@ -40,9 +40,23 @@ class ContractService extends BaseService {
     super();
   }
 
+  static detailedContractResultsQuery = `select *
+  from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
   static contractResultsByIdQuery = `select *
                                      from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
 
+  static contractResultsQuery = `select
+    ${ContractResult.AMOUNT},
+    ${ContractResult.CALL_RESULT},
+    ${ContractResult.CONSENSUS_TIMESTAMP},
+    ${ContractResult.CONTRACT_ID},
+    ${ContractResult.CREATED_CONTRACT_IDS},
+    ${ContractResult.ERROR_MESSAGE},
+    ${ContractResult.FUNCTION_PARAMETERS},
+    ${ContractResult.GAS_LIMIT},
+    ${ContractResult.GAS_USED},
+    ${ContractResult.PAYER_ACCOUNT_ID}
+    from ${ContractResult.tableName}`;
   static contractLogsByIdQuery = `select ${ContractLog.getFullName(ContractLog.CONTRACT_ID)},
                                          ${ContractLog.getFullName(ContractLog.BLOOM)},
                                          ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
@@ -87,10 +101,10 @@ class ContractService extends BaseService {
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
     const query = [
-      ContractService.contractResultsByIdQuery,
+      ContractService.detailedContractResultsQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
       super.getOrderByQuery(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order),
-      super.getLimitQuery(whereParams.length + 1),
+      super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
     ].join('\n');
     params.push(limit);
 
@@ -115,6 +129,36 @@ class ContractService extends BaseService {
     logger.info(params);
 
     return [query, params];
+  }
+
+  async getContractResultsByIdAndFilters(
+    whereConditions = [],
+    whereParams = [],
+    order = orderFilterValues.DESC,
+    limit = defaultLimit
+  ) {
+    const [query, params] = this.getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
+    const rows = await super.getRows(query, params, 'getContractResultsByIdAndFilters');
+    return _.isEmpty(rows) ? [] : rows.map((cr) => new ContractResult(cr));
+  }
+
+  /**
+   * Retrieves a contract result based on its timestamp
+   *
+   * @param {string} timestamp consensus timestamp
+   * @return {Promise<{ContractResult}>}
+   */
+  async getContractResultByTimestamp(timestamp) {
+    const whereParams = [timestamp];
+    const whereConditions = [`${ContractResult.CONSENSUS_TIMESTAMP} = $1`];
+    const query = [ContractService.contractResultsQuery, `where ${whereConditions.join(' and ')}`].join('\n');
+    const rows = await super.getRows(query, whereParams, 'getContractResultsByIdAndTimestamp');
+    if (rows.length !== 1) {
+      logger.trace(`No matching contract results for timestamp: ${timestamp}`);
+      return null;
+    }
+
+    return new ContractResult(rows[0]);
   }
 }
 

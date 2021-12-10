@@ -41,7 +41,7 @@ import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.util.Utility;
 
 class PubSubMessageTest {
@@ -52,66 +52,6 @@ class PubSubMessageTest {
     private static final TopicID TOPIC_ID = TopicID.newBuilder().setTopicNum(20L).build();
     private static final ByteString BYTE_STRING = ByteString.copyFromUtf8("abcdef");
     private static final Long INT64_VALUE = 100_000_000L;
-
-    @Test
-    void testSerializationAllFieldsSet() throws Exception {
-        Iterable<AccountAmount> nonFeeTransfers = Lists.newArrayList(
-                AccountAmount.newBuilder().setAccountID(ACCOUNT_ID).setAmount(INT64_VALUE).build(),
-                AccountAmount.newBuilder().setAccountID(ACCOUNT_ID).setAmount(INT64_VALUE).build());
-        PubSubMessage pubSubMessage = new PubSubMessage(
-                DEFAULT_TIMESTAMP_LONG,
-                EntityId.of(TOPIC_ID),
-                10,
-                new PubSubMessage.Transaction(getTransactionBody(), getSignatureMap()),
-                getTransactionRecord(),
-                nonFeeTransfers);
-        ObjectMapper objectMapper = new ObjectMapper();
-        String actual = objectMapper.writeValueAsString(pubSubMessage);
-        String expected = "{" +
-                "  \"consensusTimestamp\" : 123456789," +
-                "  \"entity\" : {" +
-                "    \"shardNum\" : 0," +
-                "    \"realmNum\" : 0," +
-                "    \"entityNum\" : 20," +
-                "    \"type\" : 4" +
-                "  }," +
-                "  \"transactionType\" : 10," +
-                getExpectedTransactionJson() + "," +
-                getExpectedTransactionRecord() + "," +
-                "  \"nonFeeTransfers\" : [ {" +
-                "    \"accountID\": {" +
-                "      \"shardNum\": \"0\"," +
-                "      \"realmNum\": \"0\"," +
-                "      \"accountNum\": \"10\"" +
-                "      }," +
-                "    \"amount\": \"100000000\"" +
-                "  }, {" +
-                "    \"accountID\": {" +
-                "      \"shardNum\": \"0\"," +
-                "      \"realmNum\": \"0\"," +
-                "      \"accountNum\": \"10\"" +
-                "      }," +
-                "    \"amount\": \"100000000\"" +
-                "  } ]" +
-                "}";
-        JSONAssert.assertEquals(expected, actual, true);
-    }
-
-    @Test
-    void testSerializationWithNullFields() throws Exception {
-        PubSubMessage pubSubMessage = new PubSubMessage(DEFAULT_TIMESTAMP_LONG, null, 10,
-                new PubSubMessage.Transaction(getTransactionBody(), getSignatureMap()),
-                getTransactionRecord(), null);
-        ObjectMapper objectMapper = new ObjectMapper();
-        String actual = objectMapper.writeValueAsString(pubSubMessage);
-        String expected = "{" +
-                "  \"consensusTimestamp\" : 123456789," +
-                "  \"transactionType\" : 10," +
-                getExpectedTransactionJson() + "," +
-                getExpectedTransactionRecord() +
-                "}";
-        JSONAssert.assertEquals(expected, actual, true);
-    }
 
     private static TransactionBody getTransactionBody() {
         return TransactionBody.newBuilder()
@@ -155,7 +95,8 @@ class PubSubMessageTest {
                 "        \"realmNum\": \"0\"," +
                 "        \"accountNum\": \"10\"" +
                 "      }," +
-                "      \"scheduled\": false" +
+                "      \"scheduled\": false," +
+                "      \"nonce\": 0" +
                 "    }," +
                 "    \"nodeAccountID\": {" +
                 "      \"shardNum\": \"0\"," +
@@ -240,7 +181,68 @@ class PubSubMessageTest {
                 "  }," +
                 "  \"tokenTransferLists\":[]," +
                 "  \"assessedCustomFees\":[]," +
-                "  \"automaticTokenAssociations\":[]" +
+                "  \"automaticTokenAssociations\":[]," +
+                "  \"alias\":\"\"" +
                 "}";
+    }
+
+    @Test
+    void testSerializationAllFieldsSet() throws Exception {
+        Iterable<AccountAmount> nonFeeTransfers = Lists.newArrayList(
+                AccountAmount.newBuilder().setAccountID(ACCOUNT_ID).setAmount(INT64_VALUE).build(),
+                AccountAmount.newBuilder().setAccountID(ACCOUNT_ID).setAmount(INT64_VALUE).build());
+        PubSubMessage pubSubMessage = new PubSubMessage(
+                DEFAULT_TIMESTAMP_LONG,
+                EntityId.of(TOPIC_ID),
+                10,
+                new PubSubMessage.Transaction(getTransactionBody(), getSignatureMap()),
+                getTransactionRecord(),
+                nonFeeTransfers);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String actual = objectMapper.writeValueAsString(pubSubMessage);
+        String expected = "{" +
+                "  \"consensusTimestamp\" : 123456789," +
+                "  \"entity\" : {" +
+                "    \"shardNum\" : 0," +
+                "    \"realmNum\" : 0," +
+                "    \"entityNum\" : 20," +
+                "    \"type\" : 4" +
+                "  }," +
+                "  \"transactionType\" : 10," +
+                getExpectedTransactionJson() + "," +
+                getExpectedTransactionRecord() + "," +
+                "  \"nonFeeTransfers\" : [ {" +
+                "    \"accountID\": {" +
+                "      \"shardNum\": \"0\"," +
+                "      \"realmNum\": \"0\"," +
+                "      \"accountNum\": \"10\"" +
+                "      }," +
+                "    \"amount\": \"100000000\"" +
+                "  }, {" +
+                "    \"accountID\": {" +
+                "      \"shardNum\": \"0\"," +
+                "      \"realmNum\": \"0\"," +
+                "      \"accountNum\": \"10\"" +
+                "      }," +
+                "    \"amount\": \"100000000\"" +
+                "  } ]" +
+                "}";
+        JSONAssert.assertEquals(expected, actual, true);
+    }
+
+    @Test
+    void testSerializationWithNullFields() throws Exception {
+        PubSubMessage pubSubMessage = new PubSubMessage(DEFAULT_TIMESTAMP_LONG, null, 10,
+                new PubSubMessage.Transaction(getTransactionBody(), getSignatureMap()),
+                getTransactionRecord(), null);
+        ObjectMapper objectMapper = new ObjectMapper();
+        String actual = objectMapper.writeValueAsString(pubSubMessage);
+        String expected = "{" +
+                "  \"consensusTimestamp\" : 123456789," +
+                "  \"transactionType\" : 10," +
+                getExpectedTransactionJson() + "," +
+                getExpectedTransactionRecord() +
+                "}";
+        JSONAssert.assertEquals(expected, actual, true);
     }
 }

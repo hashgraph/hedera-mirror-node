@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.common.util.DomainUtils;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -35,13 +37,13 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.importer.domain.AbstractEntity;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.NftTransferId;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.NftTransferId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.repository.NftRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
 class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -84,7 +86,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         AccountID previousAccountId = AccountID.newBuilder().setAccountNum(1L).build();
         AccountID newAccountId = AccountID.newBuilder().setAccountNum(2L).build();
         TokenID tokenID = TokenID.newBuilder().setTokenNum(3L).build();
-        long consensusTimestamp = Utility.timestampInNanosMax(MODIFIED_TIMESTAMP);
+        long consensusTimestamp = DomainUtils.timestampInNanosMax(MODIFIED_TIMESTAMP);
         TokenTransferList tokenTransferList = TokenTransferList.newBuilder()
                 .setToken(tokenID)
                 .addNftTransfers(NftTransfer.newBuilder()
@@ -96,8 +98,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         TransactionRecord record = getDefaultTransactionRecord().addTokenTransferLists(tokenTransferList).build();
         RecordItem recordItem = getRecordItem(getDefaultTransactionBody().build(), record);
 
-        com.hedera.mirror.importer.domain.Transaction transaction =
-                new com.hedera.mirror.importer.domain.Transaction();
+        Transaction transaction = new Transaction();
         transaction.setEntityId(entity.toEntityId());
         transactionHandler.updateTransaction(transaction, recordItem);
 
@@ -121,8 +122,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         TransactionRecord record = getDefaultTransactionRecord().addTokenTransferLists(tokenTransferList).build();
         RecordItem recordItem = getRecordItem(getDefaultTransactionBody().build(), record);
 
-        com.hedera.mirror.importer.domain.Transaction transaction =
-                new com.hedera.mirror.importer.domain.Transaction();
+        Transaction transaction = new Transaction();
         transaction.setEntityId(entity.toEntityId());
         transactionHandler.updateTransaction(transaction, recordItem);
 

@@ -22,8 +22,8 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.importer.domain.TokenAccount;
-import com.hedera.mirror.importer.domain.TokenAccountId;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAccountId;
 
 public interface TokenAccountRepository extends CrudRepository<TokenAccount, TokenAccountId> {
 }

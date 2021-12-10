@@ -65,11 +65,22 @@ func (suite *tokenCreateTransactionConstructorSuite) TestConstruct() {
 		updateOperations updateOperationsFunc
 		validStartNanos  int64
 		expectError      bool
+		expectedSigners  []hedera.AccountID
 	}{
 		{name: "SuccessFT"},
 		{name: "SuccessFTExplicit", tokenType: domain.TokenTypeFungibleCommon},
 		{name: "SuccessNFT", tokenType: domain.TokenTypeNonFungibleUnique},
 		{name: "SuccessValidStartNanos", validStartNanos: 100},
+		{
+			name: "SuccessWithoutAutoRenewAccountAndExpiry",
+			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
+				metadata := operations[0].Metadata
+				delete(metadata, "auto_renew_account")
+				delete(metadata, "expiry")
+				return operations
+			},
+			expectedSigners: []hedera.AccountID{treasury},
+		},
 		{
 			name:             "EmptyOperations",
 			updateOperations: getEmptyOperations,
@@ -96,8 +107,14 @@ func (suite *tokenCreateTransactionConstructorSuite) TestConstruct() {
 				assert.Nil(t, signers)
 				assert.Nil(t, tx)
 			} else {
+				// the default
+				expectedSigners := []hedera.AccountID{treasury, autoRenewAccount}
+				if tt.expectedSigners != nil {
+					expectedSigners = tt.expectedSigners
+				}
+
 				assert.Nil(t, err)
-				assert.ElementsMatch(t, []hedera.AccountID{treasury, autoRenewAccount}, signers)
+				assert.ElementsMatch(t, expectedSigners, signers)
 				assertTokenCreateTransaction(t, operations[0], nodeAccountId, tx)
 
 				if tt.validStartNanos != 0 {
@@ -122,9 +139,11 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 			SetKycKey(kycKey).
 			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetSupplyKey(supplyKey).
+			SetSupplyType(hedera.TokenSupplyTypeFinite).
 			SetTokenMemo(memo).
 			SetTokenName(name).
 			SetTokenSymbol(symbol).
+			SetTokenType(hedera.TokenTypeNonFungibleUnique).
 			SetTransactionID(hedera.TransactionIDGenerate(treasury)).
 			SetWipeKey(wipeKey)
 	}
@@ -180,7 +199,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			expectedOperations := getTokenCreateOperations("")
+			expectedOperations := getTokenCreateOperations(domain.TokenTypeNonFungibleUnique)
 
 			h := newTokenCreateTransactionConstructor()
 			tx := tt.getTransaction()
@@ -367,22 +386,43 @@ func assertTokenCreateTransaction(
 	assert.Equal(t, operation.Account.Address, payer)
 	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
 
-	assert.Equal(t, operation.Metadata["admin_key"], tx.GetAdminKey().String())
-	assert.Equal(t, operation.Metadata["auto_renew_account"], tx.GetAutoRenewAccount().String())
-	assert.Equal(t, 0.0, tx.GetAutoRenewPeriod().Seconds())
-	assert.Equal(t, operation.Metadata["decimals"], tx.GetDecimals())
-	assert.Equal(t, operation.Metadata["expiry"], tx.GetExpirationTime().Unix())
-	assert.Equal(t, operation.Metadata["freeze_default"], tx.GetFreezeDefault())
-	assert.Equal(t, operation.Metadata["freeze_key"], tx.GetFreezeKey().String())
-	assert.Equal(t, operation.Metadata["initial_supply"], tx.GetInitialSupply())
-	assert.Equal(t, operation.Metadata["kyc_key"], tx.GetKycKey().String())
-	assert.Equal(t, operation.Metadata["memo"], tx.GetTokenMemo())
-	assert.Equal(t, operation.Metadata["name"], tx.GetTokenName())
-	assert.Equal(t, operation.Metadata["supply_key"], tx.GetSupplyKey().String())
-	assert.Equal(t, operation.Metadata["symbol"], tx.GetTokenSymbol())
-	assert.Equal(t, operation.Metadata["wipe_key"], tx.GetWipeKey().String())
+	metadata := operation.Metadata
+	expectedAutoRenewAccount := metadata["auto_renew_account"]
+	expectedAutoRenewPeriod := 0.0
+	if expectedAutoRenewAccount == nil && metadata["expiry"] == nil {
+		expectedAutoRenewAccount = payer
+		expectedAutoRenewPeriod = hedera.NewTokenCreateTransaction().GetAutoRenewPeriod().Seconds()
+	}
 
-	tokenType, _ := operation.Metadata[types.MetadataKeyType].(string)
+	var expectedExpiry time.Time
+	if metadata["expiry"] != nil {
+		expectedExpiry = time.Unix(metadata["expiry"].(int64), 0)
+	} else {
+		expectedExpiry = time.Time{}
+	}
+
+	expectedSupplyType := hedera.TokenSupplyTypeInfinite
+	if metadata["supply_type"] != nil && metadata["supply_type"].(string) == domain.TokenSupplyTypeFinite {
+		expectedSupplyType = hedera.TokenSupplyTypeFinite
+	}
+
+	assert.Equal(t, metadata["admin_key"], tx.GetAdminKey().String())
+	assert.Equal(t, expectedAutoRenewAccount, tx.GetAutoRenewAccount().String())
+	assert.Equal(t, expectedAutoRenewPeriod, tx.GetAutoRenewPeriod().Seconds())
+	assert.Equal(t, metadata["decimals"], tx.GetDecimals())
+	assert.Equal(t, expectedExpiry, tx.GetExpirationTime())
+	assert.Equal(t, metadata["freeze_default"], tx.GetFreezeDefault())
+	assert.Equal(t, metadata["freeze_key"], tx.GetFreezeKey().String())
+	assert.Equal(t, metadata["initial_supply"], tx.GetInitialSupply())
+	assert.Equal(t, metadata["kyc_key"], tx.GetKycKey().String())
+	assert.Equal(t, metadata["memo"], tx.GetTokenMemo())
+	assert.Equal(t, metadata["name"], tx.GetTokenName())
+	assert.Equal(t, metadata["supply_key"], tx.GetSupplyKey().String())
+	assert.Equal(t, expectedSupplyType, tx.GetSupplyType())
+	assert.Equal(t, metadata["symbol"], tx.GetTokenSymbol())
+	assert.Equal(t, metadata["wipe_key"], tx.GetWipeKey().String())
+
+	tokenType, _ := metadata[types.MetadataKeyType].(string)
 	sdkTokenType := hedera.TokenTypeNonFungibleUnique
 	if tokenType == "" || tokenType == domain.TokenTypeFungibleCommon {
 		sdkTokenType = hedera.TokenTypeFungibleCommon
@@ -408,6 +448,7 @@ func getTokenCreateOperations(tokenType string) []*rTypes.Operation {
 			"memo":               memo,
 			"name":               name,
 			"supply_key":         supplyKeyStr,
+			"supply_type":        domain.TokenSupplyTypeFinite,
 			"symbol":             symbol,
 			"wipe_key":           wipeKeyStr,
 		},

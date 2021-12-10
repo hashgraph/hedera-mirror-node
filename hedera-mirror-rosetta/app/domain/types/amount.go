@@ -95,7 +95,7 @@ func (t *TokenAmount) ToRosetta() *types.Amount {
 	if t.Type == domain.TokenTypeNonFungibleUnique {
 		metadata := make(map[string]interface{})
 		if len(t.SerialNumbers) > 0 {
-			serialNumbers := make([]string, 0, len(t.SerialNumbers))
+			serialNumbers := make([]interface{}, 0, len(t.SerialNumbers))
 			for _, serialNumber := range t.SerialNumbers {
 				serialNumbers = append(serialNumbers, strconv.FormatInt(serialNumber, 10))
 			}
@@ -103,7 +103,7 @@ func (t *TokenAmount) ToRosetta() *types.Amount {
 		}
 
 		if len(t.Metadatas) > 0 {
-			nftMetadatas := make([]string, 0, len(t.Metadatas))
+			nftMetadatas := make([]interface{}, 0, len(t.Metadatas))
 			for _, nftMetadata := range t.Metadatas {
 				nftMetadatas = append(nftMetadatas, base64.StdEncoding.EncodeToString(nftMetadata))
 			}
@@ -186,19 +186,27 @@ func parseNftMetadata(metadata map[string]interface{}, tokenAmount *TokenAmount)
 		return errors.ErrInvalidOperationsAmount
 	}
 
-	if serialNumbers, ok := metadata[MetadataKeySerialNumbers].([]string); ok {
+	if serialNumbers, ok := metadata[MetadataKeySerialNumbers].([]interface{}); ok {
 		tokenAmount.SerialNumbers = make([]int64, 0, len(serialNumbers))
 		for _, serialNumber := range serialNumbers {
-			number, err := strconv.ParseInt(serialNumber, 10, 64)
+			serialNumberStr, ok := serialNumber.(string)
+			if !ok {
+				return errors.ErrInvalidOperationsAmount
+			}
+			number, err := strconv.ParseInt(serialNumberStr, 10, 64)
 			if err != nil {
-				return errors.ErrInvalidOperationsTotalAmount
+				return errors.ErrInvalidOperationsAmount
 			}
 			tokenAmount.SerialNumbers = append(tokenAmount.SerialNumbers, number)
 		}
-	} else if metadatas, ok := metadata[MetadataKeyMetadatas].([]string); ok {
+	} else if metadatas, ok := metadata[MetadataKeyMetadatas].([]interface{}); ok {
 		tokenAmount.Metadatas = make([][]byte, 0, len(metadatas))
 		for _, metadata := range metadatas {
-			metaBytes, err := base64.StdEncoding.DecodeString(metadata)
+			metaStr, ok := metadata.(string)
+			if !ok {
+				return errors.ErrInvalidOperationsAmount
+			}
+			metaBytes, err := base64.StdEncoding.DecodeString(metaStr)
 			if err != nil {
 				return errors.ErrInvalidOperationsAmount
 			}

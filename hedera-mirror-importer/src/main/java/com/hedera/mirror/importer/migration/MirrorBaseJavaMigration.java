@@ -34,6 +34,11 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
     protected final Logger log = LogManager.getLogger(getClass());
 
     @Override
+    public boolean isBaselineMigration() {
+        return false;
+    }
+
+    @Override
     public void migrate(Context context) throws IOException {
         Configuration configuration = context.getConfiguration();
 

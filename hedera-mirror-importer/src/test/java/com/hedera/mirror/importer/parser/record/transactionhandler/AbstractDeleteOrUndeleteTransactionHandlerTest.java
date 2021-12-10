@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.importer.domain.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
 
 @RequiredArgsConstructor
 abstract class AbstractDeleteOrUndeleteTransactionHandlerTest extends AbstractTransactionHandlerTest {

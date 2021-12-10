@@ -30,9 +30,9 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
-import com.hedera.mirror.importer.domain.TransactionType;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 
 @Data
 @Validated

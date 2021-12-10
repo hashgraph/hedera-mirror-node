@@ -197,12 +197,6 @@ func (suite *transactionRepositorySuite) TestNewTransactionRepository() {
 	assert.NotNil(suite.T(), t)
 }
 
-func (suite *transactionRepositorySuite) TestTypesAsArray() {
-	t := NewTransactionRepository(dbClient)
-	actual := t.TypesAsArray()
-	assert.NotEmpty(suite.T(), actual)
-}
-
 func (suite *transactionRepositorySuite) TestFindBetween() {
 	// given
 	expected := suite.setupDb(true)

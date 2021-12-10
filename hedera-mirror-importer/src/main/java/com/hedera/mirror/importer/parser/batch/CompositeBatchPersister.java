@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.AnnotationUtils;
 
-import com.hedera.mirror.importer.domain.Upsertable;
+import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.UpsertQueryGeneratorFactory;

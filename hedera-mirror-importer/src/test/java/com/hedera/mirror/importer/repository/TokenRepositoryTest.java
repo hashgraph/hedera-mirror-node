@@ -29,13 +29,13 @@ import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.EntityType;
-import com.hedera.mirror.importer.domain.Token;
-import com.hedera.mirror.importer.domain.TokenId;
-import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
-import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
-import com.hedera.mirror.importer.domain.TokenTypeEnum;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 
 class TokenRepositoryTest extends AbstractRepositoryTest {
 

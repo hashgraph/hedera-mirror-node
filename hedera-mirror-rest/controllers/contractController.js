@@ -30,17 +30,18 @@ const {
 } = require('../config');
 const constants = require('../constants');
 const EntityId = require('../entityId');
-const utils = require('../utils');
 
-const config = require('../config.js');
-const {Contract, FileData, ContractResult} = require('../model');
-const {ContractService} = require('../service');
-const {ContractViewModel, ContractLogViewModel, ContractResultViewModel} = require('../viewmodel');
+// errors
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
-const ContractLog = require('../model/contractLog');
-const contractService = require('../service/contractService');
+
+const config = require('../config.js');
+const {Contract, FileData, ContractLog, ContractResult} = require('../model');
+const {ContractService, RecordFileService, TransactionService} = require('../service');
 const {logger} = require('../stream/utils');
+const TransactionId = require('../transactionId');
+const utils = require('../utils');
+const {ContractViewModel, ContractLogViewModel, ContractResultViewModel} = require('../viewmodel');
 
 const contractSelectFields = [
   Contract.AUTO_RENEW_PERIOD,
@@ -345,42 +346,68 @@ const getContracts = async (req, res) => {
   res.locals[constants.responseDataLabel] = response;
 };
 
+const defaultParamSupportMap = {
+  [constants.filterKeys.LIMIT]: true,
+  [constants.filterKeys.ORDER]: true,
+};
+const contractResultsByIdParamSupportMap = {
+  [constants.filterKeys.FROM]: true,
+  [constants.filterKeys.TIMESTAMP]: true,
+  ...defaultParamSupportMap,
+};
+
 /**
- * Handler function for /contracts/:contractId/results API
- * @param {Request} req HTTP request object
- * @param {Response} res HTTP response object
- * @returns {Promise<void>}
+ * Verify contractId meets entity id format
  */
-const getContractResultsById = async (req, res) => {
-  utils.validateReq(req);
+const validateContractIdParam = (contractId) => {
+  if (!EntityId.isValidEntityId(contractId)) {
+    throw InvalidArgumentError.forParams(constants.filterKeys.CONTRACTID);
+  }
+};
 
-  // extract filters from query param
-  const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
-  const filters = utils.buildAndValidateFilters(req.query);
+const getAndValidateContractIdRequestPathParam = (req) => {
+  const contractIdString = req.params.contractId;
+  validateContractIdParam(contractIdString);
+  return EntityId.parse(contractIdString, constants.filterKeys.CONTRACTID).getEncodedId();
+};
 
-  const {conditions, params, order, limit} = extractContractResultsByIdQuery(filters, contractId);
-
-  const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
-  const response = {
-    results: rows.map((row) => new ContractResultViewModel(row)),
-    links: {
-      next: null,
-    },
-  };
-
-  if (!_.isEmpty(response.results)) {
-    const lastRow = _.last(response.results);
-    const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
-    response.links.next = utils.getPaginationLink(
-      req,
-      response.results.length !== limit,
-      constants.filterKeys.TIMESTAMP,
-      lastContractResultTimestamp,
-      order
-    );
+/**
+ * Verify both
+ * consensusTimestamp meets seconds or seconds.upto 9 digits format
+ * contractId meets entity id format
+ */
+const validateContractIdAndConsensusTimestampParam = (consensusTimestamp, contractId) => {
+  const params = [];
+  if (!EntityId.isValidEntityId(contractId)) {
+    params.push(constants.filterKeys.CONTRACTID);
+  }
+  if (!utils.isValidTimestampParam(consensusTimestamp)) {
+    params.push(constants.filterKeys.TIMESTAMP);
   }
 
-  res.locals[constants.responseDataLabel] = response;
+  if (params.length > 0) {
+    throw InvalidArgumentError.forParams(params);
+  }
+};
+
+const getAndValidateContractIdAndConsensusTimestampPathParams = (req) => {
+  const {consensusTimestamp, contractId} = req.params;
+  validateContractIdAndConsensusTimestampParam(consensusTimestamp, contractId);
+  return {
+    timestamp: utils.parseTimestampParam(consensusTimestamp),
+    contractId: EntityId.parse(contractId, constants.filterKeys.CONTRACTID).getEncodedId(),
+  };
+};
+
+const extractContractIdAndFiltersFromValidatedRequest = (req) => {
+  utils.validateReq(req);
+  // extract filters from query param
+  const contractId = getAndValidateContractIdRequestPathParam(req);
+  const filters = utils.buildAndValidateFilters(req.query);
+  return {
+    contractId,
+    filters,
+  };
 };
 
 /**
@@ -422,7 +449,7 @@ const getContractLogs = async (req, res) => {
  * @param {string} contractId encoded contract ID
  * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
  */
-const extractContractResultsByIdQuery = (filters, contractId) => {
+const extractContractResultsByIdQuery = (filters, contractId, paramSupportMap = defaultParamSupportMap) => {
   let limit = defaultLimit;
   let order = constants.orderFilterValues.DESC;
   const conditions = [`${ContractResult.getFullName(ContractResult.CONTRACT_ID)} = $1`];
@@ -435,6 +462,11 @@ const extractContractResultsByIdQuery = (filters, contractId) => {
   const contractResultTimestampInValues = [];
 
   for (const filter of filters) {
+    if (_.isNil(paramSupportMap[filter.key])) {
+      // param not supported for current endpoint
+      continue;
+    }
+
     switch (filter.key) {
       case constants.filterKeys.FROM:
         // handle repeated values
@@ -477,6 +509,101 @@ const extractContractResultsByIdQuery = (filters, contractId) => {
     order: order,
     limit: limit,
   };
+};
+
+/**
+ * Handler function for /contracts/:contractId/results API
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns {Promise<void>}
+ */
+const getContractResultsById = async (req, res) => {
+  const {contractId, filters} = extractContractIdAndFiltersFromValidatedRequest(req);
+
+  const {conditions, params, order, limit} = extractContractResultsByIdQuery(
+    filters,
+    contractId,
+    contractResultsByIdParamSupportMap
+  );
+
+  const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
+  const response = {
+    results: rows.map((row) => new ContractResultViewModel(row)),
+    links: {
+      next: null,
+    },
+  };
+
+  if (!_.isEmpty(response.results)) {
+    const lastRow = _.last(response.results);
+    const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
+    response.links.next = utils.getPaginationLink(
+      req,
+      response.results.length !== limit,
+      constants.filterKeys.TIMESTAMP,
+      lastContractResultTimestamp,
+      order
+    );
+  }
+
+  res.locals[constants.responseDataLabel] = response;
+};
+
+/**
+ * Handler function for /contracts/:contractId/results/:consensusTimestamp API
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns {Promise<void>}
+ */
+const getContractResultsByTimestamp = async (req, res) => {
+  const {timestamp} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
+
+  // retrieve contract result, recordFile and transaction models concurrently
+  await Promise.all([
+    ContractService.getContractResultByTimestamp(timestamp),
+    RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
+    TransactionService.getTransactionContractDetailsFromTimestamp(timestamp),
+  ]).then((responses) => {
+    const contractResult = responses[0];
+
+    if (contractResult === null) {
+      throw new NotFoundError();
+    }
+
+    res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResult, responses[1], responses[2]);
+  });
+};
+
+/**
+ * Handler function for /contracts/results/:transactionId API
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns {Promise<void>}
+ */
+const getContractResultsByTransactionId = async (req, res) => {
+  utils.validateReq(req);
+  // extract filters from query param
+  const transactionId = TransactionId.fromString(req.params.transactionId);
+
+  // get transaction using id.
+  const transaction = await TransactionService.getTransactionContractDetailsFromTransactionId(transactionId);
+  if (transaction === null) {
+    throw new NotFoundError('No correlating transaction');
+  }
+
+  // retrieve contract result and recordFile models concurrently using transaction timestamp
+  await Promise.all([
+    ContractService.getContractResultByTimestamp(transaction.consensusTimestamp),
+    RecordFileService.getRecordFileBlockDetailsFromTimestamp(transaction.consensusTimestamp),
+  ]).then((responses) => {
+    const contractResult = responses[0];
+
+    if (contractResult === null) {
+      throw new NotFoundError();
+    }
+
+    res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResult, responses[1], transaction);
+  });
 };
 
 /**
@@ -666,7 +793,7 @@ const paramStringBuilderBytes = (invalues, start) => {
 const checkTimestampsForTopics = (timestamps, topic0, topic1, topic2, topic3) => {
   if (topic0 || topic1 || topic2 || topic3) {
     if (!utils.checkTimestampRange(timestamps)) {
-      throw new InvalidArgumentError(`Cannot search topics without timestamp range within ${config}`);
+      throw new InvalidArgumentError(`Cannot search topics without timestamp range within ${config.maxTimestampRange}`);
     }
   }
 };
@@ -676,10 +803,13 @@ module.exports = {
   getContracts,
   getContractLogs,
   getContractResultsById,
+  getContractResultsByTimestamp,
+  getContractResultsByTransactionId,
 };
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
+    contractResultsByIdParamSupportMap,
     checkTimestampsForTopics,
     extractContractLogsByIdQuery,
     extractContractResultsByIdQuery,
@@ -689,5 +819,7 @@ if (utils.isTestEnv()) {
     formatContractRow,
     getContractByIdQuery,
     getContractsQuery,
+    validateContractIdAndConsensusTimestampParam,
+    validateContractIdParam,
   });
 }

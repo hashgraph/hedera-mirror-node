@@ -30,7 +30,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListenerTest {
 

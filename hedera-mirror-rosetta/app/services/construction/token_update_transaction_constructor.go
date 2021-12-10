@@ -172,7 +172,7 @@ func (t *tokenUpdateTransactionConstructor) Parse(ctx context.Context, transacti
 	metadata["name"] = tokenUpdateTransaction.GetTokenName()
 	metadata["symbol"] = tokenUpdateTransaction.GetTokenSymbol()
 
-	if !isEmptyPublicKey(tokenUpdateTransaction.GetAdminKey()) {
+	if isNonEmptyPublicKey(tokenUpdateTransaction.GetAdminKey()) {
 		metadata["admin_key"] = tokenUpdateTransaction.GetAdminKey().String()
 	}
 
@@ -188,15 +188,15 @@ func (t *tokenUpdateTransactionConstructor) Parse(ctx context.Context, transacti
 		metadata["expiry"] = tokenUpdateTransaction.GetExpirationTime().Unix()
 	}
 
-	if !isEmptyPublicKey(tokenUpdateTransaction.GetFreezeKey()) {
+	if isNonEmptyPublicKey(tokenUpdateTransaction.GetFreezeKey()) {
 		metadata["freeze_key"] = tokenUpdateTransaction.GetFreezeKey().String()
 	}
 
-	if !isEmptyPublicKey(tokenUpdateTransaction.GetKycKey()) {
+	if isNonEmptyPublicKey(tokenUpdateTransaction.GetKycKey()) {
 		metadata["kyc_key"] = tokenUpdateTransaction.GetKycKey().String()
 	}
 
-	if !isEmptyPublicKey(tokenUpdateTransaction.GetSupplyKey()) {
+	if isNonEmptyPublicKey(tokenUpdateTransaction.GetSupplyKey()) {
 		metadata["supply_key"] = tokenUpdateTransaction.GetSupplyKey().String()
 	}
 
@@ -216,7 +216,7 @@ func (t *tokenUpdateTransactionConstructor) Parse(ctx context.Context, transacti
 		metadata["treasury"] = tokenUpdateTransaction.GetTreasuryAccountID().String()
 	}
 
-	if !isEmptyPublicKey(tokenUpdateTransaction.GetWipeKey()) {
+	if isNonEmptyPublicKey(tokenUpdateTransaction.GetWipeKey()) {
 		metadata["wipe_key"] = tokenUpdateTransaction.GetWipeKey().String()
 	}
 

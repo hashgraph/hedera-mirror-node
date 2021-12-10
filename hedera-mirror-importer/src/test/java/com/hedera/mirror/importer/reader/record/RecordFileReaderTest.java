@@ -39,10 +39,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
 
 import com.hedera.mirror.importer.TestRecordFiles;
-import com.hedera.mirror.importer.domain.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 @ExtendWith(MockitoExtension.class)
 abstract class RecordFileReaderTest {

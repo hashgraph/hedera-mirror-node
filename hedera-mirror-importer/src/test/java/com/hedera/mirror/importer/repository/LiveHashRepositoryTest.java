@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.importer.domain.LiveHash;
+import com.hedera.mirror.common.domain.transaction.LiveHash;
 
 class LiveHashRepositoryTest extends AbstractRepositoryTest {
 

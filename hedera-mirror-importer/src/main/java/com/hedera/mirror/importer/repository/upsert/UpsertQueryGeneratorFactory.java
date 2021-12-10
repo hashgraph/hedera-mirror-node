@@ -46,7 +46,7 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.annotation.AnnotationUtils;
 
-import com.hedera.mirror.importer.domain.Upsertable;
+import com.hedera.mirror.common.domain.Upsertable;
 
 @Log4j2
 @Named

@@ -34,7 +34,7 @@ var (
 	tokenId           = domain.MustDecodeEntityId(1580)
 	tokenIdStr        = tokenId.String()
 	metadatasBytes    = [][]byte{[]byte("foo"), []byte("bar")}
-	metadatasBase64   = []string{"Zm9v", "YmFy"}
+	metadatasBase64   = []interface{}{"Zm9v", "YmFy"}
 )
 
 func TestHbarAmountGetValue(t *testing.T) {
@@ -90,7 +90,7 @@ func TestTokenAmountToRosettaAmount(t *testing.T) {
 					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 				},
 				Metadata: map[string]interface{}{
-					MetadataKeySerialNumbers: []string{"1", "2", "3", "4", "5", "6"},
+					MetadataKeySerialNumbers: []interface{}{"1", "2", "3", "4", "5", "6"},
 				},
 			},
 		},
@@ -178,7 +178,7 @@ func TestNewAmountSuccess(t *testing.T) {
 					Decimals: 0,
 					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 				},
-				Metadata: map[string]interface{}{MetadataKeySerialNumbers: []string{"1", "2"}},
+				Metadata: map[string]interface{}{MetadataKeySerialNumbers: []interface{}{"1", "2"}},
 			},
 			expected: &TokenAmount{
 				SerialNumbers: []int64{1, 2},
@@ -322,7 +322,18 @@ func TestNewAmountFailure(t *testing.T) {
 					Symbol:   tokenIdStr,
 					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 				},
-				Metadata: map[string]interface{}{MetadataKeySerialNumbers: []string{"abc", "def"}},
+				Metadata: map[string]interface{}{MetadataKeySerialNumbers: []interface{}{"abc", "def"}},
+			},
+		},
+		{
+			name: "InvalidSerialNumberType",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   tokenIdStr,
+					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{MetadataKeySerialNumbers: []interface{}{1, 2}},
 			},
 		},
 		{
@@ -333,7 +344,7 @@ func TestNewAmountFailure(t *testing.T) {
 					Symbol:   tokenIdStr,
 					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 				},
-				Metadata: map[string]interface{}{MetadataKeySerialNumbers: []float64{1}},
+				Metadata: map[string]interface{}{MetadataKeySerialNumbers: []interface{}{"1"}},
 			},
 		},
 		{
@@ -355,7 +366,18 @@ func TestNewAmountFailure(t *testing.T) {
 					Symbol:   tokenIdStr,
 					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 				},
-				Metadata: map[string]interface{}{MetadataKeyMetadatas: []string{"0xabcd", "0xa0b0"}},
+				Metadata: map[string]interface{}{MetadataKeyMetadatas: []interface{}{"0xabcd", "0xa0b0"}},
+			},
+		},
+		{
+			name: "InvalidNftMetadataType",
+			input: &types.Amount{
+				Value: "2",
+				Currency: &types.Currency{
+					Symbol:   tokenIdStr,
+					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
+				},
+				Metadata: map[string]interface{}{MetadataKeyMetadatas: []interface{}{10, 12}},
 			},
 		},
 		{
@@ -366,7 +388,7 @@ func TestNewAmountFailure(t *testing.T) {
 					Symbol:   tokenIdStr,
 					Metadata: map[string]interface{}{MetadataKeyType: domain.TokenTypeNonFungibleUnique},
 				},
-				Metadata: map[string]interface{}{MetadataKeyMetadatas: []string{metadatasBase64[0]}},
+				Metadata: map[string]interface{}{MetadataKeyMetadatas: []interface{}{metadatasBase64[0]}},
 			},
 		},
 	}

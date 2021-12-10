@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -60,69 +61,75 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.NftTransfer;
+import com.hedera.mirror.common.domain.token.NftTransferId;
+import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
+import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.AssessedCustomFee;
-import com.hedera.mirror.importer.domain.CryptoTransfer;
-import com.hedera.mirror.importer.domain.CustomFee;
-import com.hedera.mirror.importer.domain.EntityId;
-import com.hedera.mirror.importer.domain.FileData;
-import com.hedera.mirror.importer.domain.LiveHash;
-import com.hedera.mirror.importer.domain.Nft;
-import com.hedera.mirror.importer.domain.NftTransfer;
-import com.hedera.mirror.importer.domain.NftTransferId;
-import com.hedera.mirror.importer.domain.NonFeeTransfer;
-import com.hedera.mirror.importer.domain.Schedule;
-import com.hedera.mirror.importer.domain.Token;
-import com.hedera.mirror.importer.domain.TokenAccount;
-import com.hedera.mirror.importer.domain.TokenFreezeStatusEnum;
-import com.hedera.mirror.importer.domain.TokenId;
-import com.hedera.mirror.importer.domain.TokenKycStatusEnum;
-import com.hedera.mirror.importer.domain.TokenPauseStatusEnum;
-import com.hedera.mirror.importer.domain.TokenSupplyTypeEnum;
-import com.hedera.mirror.importer.domain.TokenTransfer;
-import com.hedera.mirror.importer.domain.TokenTypeEnum;
-import com.hedera.mirror.importer.domain.TopicMessage;
-import com.hedera.mirror.importer.domain.Transaction;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
-import com.hedera.mirror.importer.domain.TransactionSignature;
-import com.hedera.mirror.importer.domain.TransactionType;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.exception.InvalidEntityException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
-import com.hedera.mirror.importer.parser.domain.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
 @ConditionOnEntityRecordParser
 public class EntityRecordItemListener implements RecordItemListener {
-    private final EntityProperties entityProperties;
     private final AddressBookService addressBookService;
-    private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final EntityListener entityListener;
-    private final TransactionHandlerFactory transactionHandlerFactory;
-    private final Predicate<TransactionFilterFields> transactionFilter;
+    private final EntityProperties entityProperties;
+    private final EntityRepository entityRepository;
     private final FileDataRepository fileDataRepository;
+    private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
+    private final Predicate<TransactionFilterFields> transactionFilter;
+    private final TransactionHandlerFactory transactionHandlerFactory;
 
     public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
                                     AddressBookService addressBookService,
                                     NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
                                     EntityListener entityListener,
                                     TransactionHandlerFactory transactionHandlerFactory,
-                                    FileDataRepository fileDataRepository) {
-        this.entityProperties = entityProperties;
+                                    FileDataRepository fileDataRepository,
+                                    EntityRepository entityRepository) {
         this.addressBookService = addressBookService;
-        this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
         this.entityListener = entityListener;
-        this.transactionHandlerFactory = transactionHandlerFactory;
+        this.entityProperties = entityProperties;
+        this.entityRepository = entityRepository;
         this.fileDataRepository = fileDataRepository;
+        this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
+        this.transactionHandlerFactory = transactionHandlerFactory;
         transactionFilter = commonParserProperties.getFilter();
     }
 
@@ -134,7 +141,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionType transactionType = TransactionType.of(transactionTypeValue);
         TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionType);
 
-        long consensusTimestamp = Utility.timeStampInNanos(txRecord.getConsensusTimestamp());
+        long consensusTimestamp = DomainUtils.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entityId;
         try {
             entityId = transactionHandler.getEntity(recordItem);
@@ -188,7 +195,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             } else if (body.hasFileAppend()) {
                 insertFileAppend(consensusTimestamp, body.getFileAppend(), transactionTypeValue);
             } else if (body.hasFileCreate()) {
-                insertFileData(consensusTimestamp, Utility.toBytes(body.getFileCreate().getContents()),
+                insertFileData(consensusTimestamp, DomainUtils.toBytes(body.getFileCreate().getContents()),
                         txRecord.getReceipt().getFileID(), transactionTypeValue);
             } else if (body.hasFileUpdate()) {
                 insertFileUpdate(consensusTimestamp, body.getFileUpdate(), transactionTypeValue);
@@ -242,6 +249,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 body.getTransactionValidDuration().getSeconds() : null;
         // transactions in stream always have valid node account id.
         var nodeAccount = EntityId.of(body.getNodeAccountID());
+        var transactionId = body.getTransactionID();
 
         // build transaction
         Transaction transaction = new Transaction();
@@ -249,17 +257,22 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setConsensusTimestamp(consensusTimestamp);
         transaction.setInitialBalance(0L);
         transaction.setMaxFee(body.getTransactionFee());
-        transaction.setMemo(Utility.toBytes(body.getMemoBytes()));
+        transaction.setMemo(DomainUtils.toBytes(body.getMemoBytes()));
         transaction.setNodeAccountId(nodeAccount);
+        transaction.setNonce(transactionId.getNonce());
         transaction.setPayerAccountId(recordItem.getPayerAccountId());
         transaction.setResult(txRecord.getReceipt().getStatusValue());
         transaction.setScheduled(txRecord.hasScheduleRef());
         transaction.setTransactionBytes(entityProperties.getPersist().isTransactionBytes() ?
                 recordItem.getTransactionBytes() : null);
-        transaction.setTransactionHash(Utility.toBytes(txRecord.getTransactionHash()));
+        transaction.setTransactionHash(DomainUtils.toBytes(txRecord.getTransactionHash()));
         transaction.setType(recordItem.getTransactionType());
         transaction.setValidDurationSeconds(validDurationSeconds);
-        transaction.setValidStartNs(Utility.timeStampInNanos(body.getTransactionID().getTransactionValidStart()));
+        transaction.setValidStartNs(DomainUtils.timeStampInNanos(transactionId.getTransactionValidStart()));
+
+        if (txRecord.hasParentConsensusTimestamp()) {
+            transaction.setParentConsensusTimestamp(DomainUtils.timestampInNanosMax(txRecord.getParentConsensusTimestamp()));
+        }
 
         return transaction;
     }
@@ -278,12 +291,28 @@ public class EntityRecordItemListener implements RecordItemListener {
         var transactionRecord = recordItem.getRecord();
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
+                EntityId entityId = getAccountId(aa.getAccountID());
+
                 NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
                 nonFeeTransfer.setAmount(aa.getAmount());
-                nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, EntityId.of(aa.getAccountID())));
+                nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, entityId));
                 nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
                 entityListener.onNonFeeTransfer(nonFeeTransfer);
             }
+        }
+    }
+
+    private EntityId getAccountId(AccountID accountID) {
+        switch (accountID.getAccountCase()) {
+            case ACCOUNTNUM:
+                return EntityId.of(accountID);
+            case ALIAS:
+                var alias = DomainUtils.toBytes(accountID.getAlias());
+                return entityRepository.findByAlias(alias)
+                        .map(id -> EntityId.of(id, EntityType.ACCOUNT))
+                        .orElseThrow(() -> new InvalidDatasetException("AccountID not present for alias: " + Hex.encodeHexString(alias)));
+            default:
+                throw new InvalidDatasetException("Unsupported AccountID: " + accountID);
         }
     }
 
@@ -304,14 +333,14 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (chunkInfo.hasInitialTransactionID()) {
                 TransactionID transactionID = chunkInfo.getInitialTransactionID();
                 topicMessage.setPayerAccountId(EntityId.of(transactionID.getAccountID()));
-                topicMessage
-                        .setValidStartTimestamp(Utility.timestampInNanosMax(transactionID.getTransactionValidStart()));
+                topicMessage.setValidStartTimestamp(
+                        DomainUtils.timestampInNanosMax(transactionID.getTransactionValidStart()));
             }
         }
 
-        topicMessage.setConsensusTimestamp(Utility.timeStampInNanos(transactionRecord.getConsensusTimestamp()));
-        topicMessage.setMessage(Utility.toBytes(transactionBody.getMessage()));
-        topicMessage.setRunningHash(Utility.toBytes(receipt.getTopicRunningHash()));
+        topicMessage.setConsensusTimestamp(DomainUtils.timeStampInNanos(transactionRecord.getConsensusTimestamp()));
+        topicMessage.setMessage(DomainUtils.toBytes(transactionBody.getMessage()));
+        topicMessage.setRunningHash(DomainUtils.toBytes(receipt.getTopicRunningHash()));
         topicMessage.setRunningHashVersion(runningHashVersion);
         topicMessage.setSequenceNumber(receipt.getTopicSequenceNumber());
         topicMessage.setTopicId(EntityId.of(topicId));
@@ -320,13 +349,13 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertFileAppend(long consensusTimestamp, FileAppendTransactionBody transactionBody,
                                   int transactionType) {
-        byte[] contents = Utility.toBytes(transactionBody.getContents());
+        byte[] contents = DomainUtils.toBytes(transactionBody.getContents());
         insertFileData(consensusTimestamp, contents, transactionBody.getFileID(), transactionType);
     }
 
     private void insertFileUpdate(long consensusTimestamp, FileUpdateTransactionBody transactionBody,
                                   int transactionType) {
-        byte[] contents = Utility.toBytes(transactionBody.getContents());
+        byte[] contents = DomainUtils.toBytes(transactionBody.getContents());
         insertFileData(consensusTimestamp, contents, transactionBody.getFileID(), transactionType);
     }
 
@@ -347,7 +376,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertCryptoAddLiveHash(long consensusTimestamp,
                                          CryptoAddLiveHashTransactionBody transactionBody) {
         if (entityProperties.getPersist().isClaims()) {
-            byte[] liveHash = Utility.toBytes(transactionBody.getLiveHash().getHash());
+            byte[] liveHash = DomainUtils.toBytes(transactionBody.getLiveHash().getHash());
             entityListener.onLiveHash(new LiveHash(consensusTimestamp, liveHash));
         }
     }
@@ -577,7 +606,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 Nft nft = new Nft(serialNumbers.get(i), tokenId);
                 nft.setCreatedTimestamp(consensusTimestamp);
                 nft.setDeleted(false);
-                nft.setMetadata(Utility.toBytes(tokenMintTransactionBody.getMetadata(i)));
+                nft.setMetadata(DomainUtils.toBytes(tokenMintTransactionBody.getMetadata(i)));
                 nft.setModifiedTimestamp(consensusTimestamp);
                 entityListener.onNft(nft);
             }
@@ -888,8 +917,8 @@ public class EntityRecordItemListener implements RecordItemListener {
                 TransactionSignature transactionSignature = new TransactionSignature();
                 transactionSignature.setConsensusTimestamp(consensusTimestamp);
                 transactionSignature.setEntityId(entityId);
-                transactionSignature.setPublicKeyPrefix(Utility.toBytes(prefix));
-                transactionSignature.setSignature(Utility.toBytes(signature));
+                transactionSignature.setPublicKeyPrefix(DomainUtils.toBytes(prefix));
+                transactionSignature.setSignature(DomainUtils.toBytes(signature));
                 transactionSignature.setType(type);
                 entityListener.onTransactionSignature(transactionSignature);
             }

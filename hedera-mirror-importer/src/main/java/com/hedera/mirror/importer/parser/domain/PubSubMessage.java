@@ -28,7 +28,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import lombok.Value;
 
-import com.hedera.mirror.importer.domain.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.parser.serializer.ProtoJsonSerializer;
 
 @Value

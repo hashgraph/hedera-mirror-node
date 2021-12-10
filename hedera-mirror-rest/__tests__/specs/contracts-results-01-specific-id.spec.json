@@ -38,7 +38,6 @@
     "results": [
       {
         "amount": 30,
-        "bloom": "0x0505",
         "call_result": "0x0606",
         "contract_id": "0.0.5001",
         "created_contract_ids": ["0.0.7001"],
@@ -52,7 +51,6 @@
       },
       {
         "amount": 20,
-        "bloom": "0x0101",
         "call_result": "0x0202",
         "contract_id": "0.0.5001",
         "created_contract_ids": [],

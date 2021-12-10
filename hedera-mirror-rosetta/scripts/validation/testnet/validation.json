@@ -1,0 +1,37 @@
+{
+  "network": {
+    "blockchain": "Hedera",
+    "network": "testnet",
+    "sub_network_identifier": {
+      "network": "shard 0 realm 0"
+    }
+  },
+  "retry_elapsed_time": 5,
+  "online_url": "http://localhost:5700",
+  "data_directory": "",
+  "http_timeout": 15,
+  "tip_delay": 20,
+  "construction": {
+    "broadcast_limit": 1,
+    "clear_broadcasts": true,
+    "constructor_dsl_file": "testnet.ros",
+    "end_conditions": {
+      "transfer": 10
+    },
+    "ignore_broadcast_failures": true,
+    "offline_url": "http://localhost:5701",
+    "prefunded_accounts": [],
+    "stale_depth": 8
+  },
+  "data": {
+    "reconciliation_disabled": false,
+    "inactive_discrepancy_search_disabled": false,
+    "balance_tracking_disabled": false,
+    "bootstrap_balances": "./data_genesis_balances.json",
+    "end_conditions": {
+      "reconciliation_coverage": {
+        "coverage": 0.95
+      }
+    }
+  }
+}

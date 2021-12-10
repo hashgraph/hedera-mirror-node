@@ -43,7 +43,7 @@ var (
 	accountIdA = hedera.AccountID{Account: 9500}
 	accountIdB = hedera.AccountID{Account: 9505}
 
-	defaultSerialNumbers = []string{"1"}
+	defaultSerialNumbers = []interface{}{"1"}
 	defaultSigners       = []hedera.AccountID{accountIdA, accountIdB}
 	defaultTransfers     = []transferOperation{
 		{account: accountIdAStr, amount: -15, currency: types.CurrencyHbar},
@@ -61,7 +61,7 @@ type transferOperation struct {
 	account       string
 	amount        int64
 	currency      *rTypes.Currency
-	serialNumbers []string
+	serialNumbers []interface{}
 }
 
 func TestCryptoTransferTransactionConstructorSuite(t *testing.T) {
@@ -339,8 +339,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 		{
 			name: "InvalidNftAmount",
 			transfers: []transferOperation{
-				{account: accountIdAStr, amount: -2, currency: tokenCCurrency, serialNumbers: []string{"1", "2"}},
-				{account: accountIdBStr, amount: 2, currency: tokenCCurrency, serialNumbers: []string{"1", "2"}},
+				{account: accountIdAStr, amount: -2, currency: tokenCCurrency, serialNumbers: []interface{}{"1", "2"}},
+				{account: accountIdBStr, amount: 2, currency: tokenCCurrency, serialNumbers: []interface{}{"1", "2"}},
 			},
 			expectError: true,
 		},
@@ -493,9 +493,10 @@ func assertCryptoTransferTransaction(
 func operationTransferStringify(operation *rTypes.Operation) string {
 	serialNumber := "0"
 	amount := operation.Amount
-	if amount.Metadata[types.MetadataKeySerialNumbers] != nil {
-		if serialNumbers, ok := amount.Metadata[types.MetadataKeySerialNumbers].([]string); ok {
-			serialNumber = serialNumbers[0]
+	serialNumbersMetadata := amount.Metadata[types.MetadataKeySerialNumbers]
+	if serialNumbersMetadata != nil {
+		if serialNumbers, ok := serialNumbersMetadata.([]interface{}); ok {
+			serialNumber = serialNumbers[0].(string)
 		}
 	}
 
