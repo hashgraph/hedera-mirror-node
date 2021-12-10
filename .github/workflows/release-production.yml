@@ -15,7 +15,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           cache: 'maven'
-          distribution: 'adopt'
+          distribution: 'temurin'
           java-version: 11
 
       - name: Login to Google Container Registry
