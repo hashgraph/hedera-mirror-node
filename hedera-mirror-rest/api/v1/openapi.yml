@@ -136,6 +136,32 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
+  /api/v1/contracts/{contractId}/results/logs:
+    get:
+      summary: List contract logs from a contract on the network
+      description: Returns a list of all ContractLogs for a contract's function executions.
+      operationId: listContractLogs
+      parameters:
+        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/indexQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: '#/components/parameters/topic0QueryParam'
+        - $ref: '#/components/parameters/topic1QueryParam'
+        - $ref: '#/components/parameters/topic2QueryParam'
+        - $ref: '#/components/parameters/topic3QueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResultsResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - contracts
   /api/v1/network/supply:
     get:
       summary: Get the network supply
@@ -729,6 +755,13 @@ components:
           $ref: '#/components/schemas/ContractResults'
         links:
           $ref: '#/components/schemas/Links'
+    ContractLogsResponse:
+      type: object
+      properties:
+        contract_logs:
+          $ref: '#/components/schemas/ContractResults'
+        links:
+          $ref: '#/components/schemas/Links'
     NetworkSupplyResponse:
       type: object
       properties:
@@ -956,6 +989,36 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Contract'
+    ContractLog:
+      type: object
+      properties:
+        address:
+          description: The hex encoded ethereum address of the contract
+          example: 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+          pattern: ^0x[0-9A-Fa-f]{40}$
+          type: string
+        data:
+          description: The hex encoded data of the contract log
+          example: 0x00000000000000000000000000000000000000000000000000000000000000fa
+          nullable: true
+          type: string
+        index:
+          description: The index of the contract log in the chain of logs for an execution
+          example: 1
+          type: integer
+        root_contract_id:
+          description: The executed contract that created this contract log
+          $ref: '#/components/schemas/EntityId'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        topics:
+          description: The hex encoded Ethereum topics
+          example:
+            - 0xf4757a49b326036464bec6fe419a4ae38c8a02ce3e68bf0809674f6aab8ad300
+          items:
+            type: string
+            pattern: ^0x[0-9A-Fa-f]{64}$
+          type: array
     ContractResult:
       type: object
       properties:
@@ -1010,6 +1073,10 @@ components:
         to:
           $ref: '#/components/schemas/SolidityAddressNullable'
     ContractResults:
+      type: array
+      items:
+        $ref: '#/components/schemas/ContractResult'
+    ContractLogs:
       type: array
       items:
         $ref: '#/components/schemas/ContractResult'
@@ -1876,6 +1943,13 @@ components:
         oneOf:
           - $ref: '#/components/schemas/EntityId'
           - $ref: '#/components/schemas/SolidityAddress'
+    indexQueryParam:
+      name: index
+      in: query
+      description: Contract log index
+      schema:
+        type: integer
+        minimum: 0
     limitQueryParam:
       name: limit
       in: query
@@ -2065,6 +2139,38 @@ components:
       schema:
         type: string
         pattern: ^((eq|lt|lte):)?\d{1,10}(.\d{1,9})?$
+    topic0QueryParam:
+      name: topic0
+      in: query
+      description: The topic in topic0 of a ContractLog
+      example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
+      schema:
+        type: string
+        pattern: ^0x[0-9A-Fa-f]{64}$
+    topic1QueryParam:
+      name: topic1
+      in: query
+      description: The topic in topic1 of a ContractLog
+      example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
+      schema:
+        type: string
+        pattern: ^0x[0-9A-Fa-f]{64}$
+    topic2QueryParam:
+      name: topic2
+      in: query
+      description: The topic in topic2 of a ContractLog
+      example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
+      schema:
+        type: string
+        pattern: ^0x[0-9A-Fa-f]{64}$
+    topic3QueryParam:
+      name: topic3
+      in: query
+      description: The topic in topic3 of a ContractLog
+      example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
+      schema:
+        type: string
+        pattern: ^0x[0-9A-Fa-f]{64}$
     transactionTypeQueryParam:
       name: transactiontype
       in: query
