@@ -66,8 +66,8 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
     void verifyRootContractIdMigration() throws Exception {
 
         persistContractResult(Arrays.asList(
-                contractResult(1, Long.valueOf(1)),
-                contractResult(2, Long.valueOf(2)),
+                contractResult(1, 1L),
+                contractResult(2, 2L),
                 contractResult(3, null)
         ));
         persistContractLog(Arrays.asList(
@@ -81,11 +81,9 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
         migrate();
 
         List<MigrationContractLog> results = retrieveContractLogs();
-        assertThat(results.get(0).getRootContractId()).isNull();
-        assertThat(results.get(1).getRootContractId()).isEqualTo(1);
-        assertThat(results.get(2).getRootContractId()).isEqualTo(1);
-        assertThat(results.get(3).getRootContractId()).isEqualTo(2);
-        assertThat(results.get(4).getRootContractId()).isNull();
+        assertThat(retrieveContractLogs())
+                .hasSize(5).extracting(MigrationContractLog::getContractId)
+                .containsExactlyInAnyOrder(null, 1L, 1L, 2L, null);
     }
 
     private MigrationContractLog contractLog(long consensusTimestamp, long contractId, int index) {
