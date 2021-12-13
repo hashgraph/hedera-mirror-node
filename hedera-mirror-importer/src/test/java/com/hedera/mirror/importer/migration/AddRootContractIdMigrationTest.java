@@ -82,7 +82,7 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
 
         assertThat(retrieveContractLogs())
                 .hasSize(5).extracting(MigrationContractLog::getContractId)
-                .containsExactlyInAnyOrder(1L, 1L, 1L, 2L, 3L);
+                .containsExactly(1L, 1L, 1L, 2L, 3L);
     }
 
     private MigrationContractLog contractLog(long consensusTimestamp, long contractId, int index) {
@@ -114,8 +114,7 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
         for (MigrationContractLog contractLog : contractLogs) {
             jdbcOperations
                     .update("insert into contract_log (bloom, consensus_timestamp, contract_id, data, " +
-                                    "index, " +
-                                    "payer_account_id) " +
+                                    "index, payer_account_id) " +
                                     " values" +
                                     " (?, ?, ?, ?, ?, ?)",
                             contractLog.getBloom(), contractLog.getConsensusTimestamp(), contractLog.getContractId(),
@@ -145,12 +144,12 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
     @Data
     @NoArgsConstructor
     private static class MigrationContractLog {
-        private byte[] bloom = new byte[] {2, 2};
+        private final byte[] bloom = new byte[] {2, 2};
         private long consensusTimestamp;
         private long contractId;
-        private byte[] data = new byte[] {2, 2};
+        private final byte[] data = new byte[] {2, 2};
         private int index = 0;
-        private long payerAccountId = 100;
+        private final long payerAccountId = 100;
         private Long rootContractId;
     }
 
@@ -159,9 +158,9 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
     private static class MigrationContractResult {
         private long consensusTimestamp;
         private Long contractId;
-        private byte[] functionParameters = new byte[] {2, 2};
-        private long gasLimit = 2;
-        private long gasUsed = 2;
-        private long payerAccountId = 100;
+        private final byte[] functionParameters = new byte[] {2, 2};
+        private final long gasLimit = 2;
+        private final long gasUsed = 2;
+        private final long payerAccountId = 100;
     }
 }
