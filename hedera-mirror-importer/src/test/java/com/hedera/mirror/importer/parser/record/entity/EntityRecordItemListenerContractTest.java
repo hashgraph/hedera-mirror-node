@@ -573,7 +573,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     private void assertContractCallResult(ContractCallTransactionBody transactionBody, TransactionRecord record) {
         long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
         ContractFunctionResult result = record.getContractCallResult();
-        ContractLoginfo logInfo = result.getLogInfo(0);
 
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
                 .filteredOn(c -> c.getConsensusTimestamp().equals(consensusTimestamp))
@@ -616,10 +615,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     .returns(EntityId.of(logInfo.getContractID()), ContractLog::getContractId)
                     .returns(logInfo.getData().toByteArray(), ContractLog::getData)
                     .returns(index, ContractLog::getIndex)
-                    .returns(EntityId.of(logInfo.getContractID())
-                                    .equals(EntityId.of(result.getContractID())) ? null :
-                                    EntityId.of(result.getContractID()),
-                            ContractLog::getRootContractId)
+                    .returns(EntityId.of(result.getContractID()), ContractLog::getRootContractId)
                     .returns(Utility.getTopic(logInfo, 0), ContractLog::getTopic0)
                     .returns(Utility.getTopic(logInfo, 1), ContractLog::getTopic1)
                     .returns(Utility.getTopic(logInfo, 2), ContractLog::getTopic2)

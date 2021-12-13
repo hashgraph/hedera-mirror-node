@@ -80,10 +80,9 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
         // migration
         migrate();
 
-        List<MigrationContractLog> results = retrieveContractLogs();
         assertThat(retrieveContractLogs())
                 .hasSize(5).extracting(MigrationContractLog::getContractId)
-                .containsExactlyInAnyOrder(null, 1L, 1L, 2L, null);
+                .containsExactlyInAnyOrder(1L, 1L, 1L, 2L, 3L);
     }
 
     private MigrationContractLog contractLog(long consensusTimestamp, long contractId, int index) {
