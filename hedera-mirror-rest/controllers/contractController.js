@@ -427,7 +427,7 @@ const getContractLogs = async (req, res) => {
   // get sql filter query, params, limit and limit query from query filters
   const {conditions, params, timestampOrder, indexOrder, limit} = extractContractLogsByIdQuery(filters, contractId);
 
-  const rows = await contractService.getContractLogsByIdAndFilters(
+  const rows = await ContractService.getContractLogsByIdAndFilters(
     conditions,
     params,
     timestampOrder,
