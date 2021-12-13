@@ -81,8 +81,8 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
         migrate();
 
         assertThat(retrieveContractLogs())
-                .hasSize(5).extracting(MigrationContractLog::getContractId)
-                .containsExactly(1L, 1L, 1L, 2L, 3L);
+                .hasSize(5).extracting(MigrationContractLog::getRootContractId)
+                .containsExactly(1L, 1L, 1L, 2L, null);
     }
 
     private MigrationContractLog contractLog(long consensusTimestamp, long contractId, int index) {
