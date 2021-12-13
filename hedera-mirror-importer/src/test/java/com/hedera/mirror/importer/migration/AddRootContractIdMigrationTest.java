@@ -148,7 +148,7 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
         private long consensusTimestamp;
         private long contractId;
         private final byte[] data = new byte[] {2, 2};
-        private final int index = 0;
+        private int index = 0;
         private final long payerAccountId = 100;
         private Long rootContractId;
     }
