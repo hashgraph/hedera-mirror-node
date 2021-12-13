@@ -80,11 +80,11 @@ public class Utility {
 
     /**
      * Retrieves the nth topic from the contract log info or null if there is no such topic at that index. The topic is
-     * returned as a hex-encoded string.
+     * returned as a byte array with leading zeros removed.
      *
      * @param contractLoginfo
      * @param index
-     * @return a hex encoded topic or null
+     * @return a byte array topic with leading zeros removed or null
      */
     public static byte[] getTopic(ContractLoginfo contractLoginfo, int index) {
         var topics = contractLoginfo.getTopicList();
@@ -105,6 +105,12 @@ public class Utility {
         return Arrays.copyOfRange(topic, firstNonZero, topic.length);
     }
 
+    /**
+     * Converts a byte array into a hex encoded string
+     *
+     * @param bytes
+     * @return a hex encoded string
+     */
     public static String bytesToHexString(byte[] bytes) {
         if (bytes == null) {
             return null;
