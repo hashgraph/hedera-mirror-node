@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.Arrays;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
@@ -85,7 +86,7 @@ public class Utility {
      * @param index
      * @return a hex encoded topic or null
      */
-    public static String getTopic(ContractLoginfo contractLoginfo, int index) {
+    public static byte[] getTopic(ContractLoginfo contractLoginfo, int index) {
         var topics = contractLoginfo.getTopicList();
         ByteString byteString = Iterables.get(topics, index, null);
 
@@ -101,8 +102,14 @@ public class Utility {
                 break;
             }
         }
+        return Arrays.copyOfRange(topic, firstNonZero, topic.length);
+    }
 
-        return new String(Hex.encodeHex(topic, firstNonZero, topic.length - firstNonZero, true));
+    public static String bytesToHexString(byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
+        return new String(Hex.encodeHex(bytes));
     }
 
     /**

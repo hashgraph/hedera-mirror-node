@@ -46,13 +46,32 @@ class UtilityTest {
                 .addTopic(ByteString.copyFrom(new byte[] {0, 0, 0, 0}))
                 .addTopic(ByteString.copyFrom(new byte[0]))
                 .build();
-        assertThat(Utility.getTopic(contractLoginfo, 0)).isEqualTo("01");
-        assertThat(Utility.getTopic(contractLoginfo, 1)).isEqualTo("7f");
-        assertThat(Utility.getTopic(contractLoginfo, 2)).isEqualTo("ff");
-        assertThat(Utility.getTopic(contractLoginfo, 3)).isEqualTo("00");
-        assertThat(Utility.getTopic(contractLoginfo, 4)).isEqualTo("00");
+        assertThat(Utility.getTopic(contractLoginfo, 0)).isEqualTo(new byte[] {1});
+        assertThat(Utility.getTopic(contractLoginfo, 1)).isEqualTo(new byte[] {127});
+        assertThat(Utility.getTopic(contractLoginfo, 2)).isEqualTo(new byte[] {-1});
+        assertThat(Utility.getTopic(contractLoginfo, 3)).isEqualTo(new byte[] {0});
+        assertThat(Utility.getTopic(contractLoginfo, 4)).isEqualTo(new byte[] {0});
         assertThat(Utility.getTopic(contractLoginfo, 5)).isEmpty();
         assertThat(Utility.getTopic(contractLoginfo, 999)).isNull();
+    }
+
+    @Test
+    void bytesToHexString() {
+        ContractLoginfo contractLoginfo = ContractLoginfo.newBuilder()
+                .addTopic(ByteString.copyFrom(new byte[] {0, 0, 0, 0, 0, 0, 1}))
+                .addTopic(ByteString.copyFrom(new byte[] {0, 127}))
+                .addTopic(ByteString.copyFrom(new byte[] {-1}))
+                .addTopic(ByteString.copyFrom(new byte[] {0}))
+                .addTopic(ByteString.copyFrom(new byte[] {0, 0, 0, 0}))
+                .addTopic(ByteString.copyFrom(new byte[0]))
+                .build();
+        assertThat(Utility.bytesToHexString(new byte[] {1})).isEqualTo("01");
+        assertThat(Utility.bytesToHexString(new byte[] {127})).isEqualTo("7f");
+        assertThat(Utility.bytesToHexString(new byte[] {-1})).isEqualTo("ff");
+        assertThat(Utility.bytesToHexString(new byte[] {0})).isEqualTo("00");
+        assertThat(Utility.bytesToHexString(new byte[] {00})).isEqualTo("00");
+        assertThat(Utility.bytesToHexString(new byte[0])).isEmpty();
+        assertThat(Utility.bytesToHexString(null)).isNull();
     }
 
     @Test
