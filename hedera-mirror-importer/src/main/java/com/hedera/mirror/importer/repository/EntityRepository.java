@@ -20,9 +20,27 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ALIAS;
+import static com.hedera.mirror.importer.config.CacheConfiguration.KEY_GENERATOR_ALIAS;
+
+import java.util.Optional;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 
+@CacheConfig(cacheManager = CACHE_MANAGER_ALIAS, cacheNames = "entityAlias", keyGenerator = KEY_GENERATOR_ALIAS)
 public interface EntityRepository extends CrudRepository<Entity, Long> {
+
+    @Cacheable(unless = "#result == null")
+    @Query(value = "select id from entity where alias = ?1 and deleted <> true", nativeQuery = true)
+    Optional<Long> findByAlias(byte[] alias);
+
+    @CachePut
+    default Long storeAlias(byte[] alias, Long id) {
+        return id;
+    }
 }

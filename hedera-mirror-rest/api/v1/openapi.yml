@@ -58,7 +58,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/balanceQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
         - $ref: '#/components/parameters/accountPublicKeyQueryParam'
         - $ref: '#/components/parameters/timestampQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
@@ -81,7 +81,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/contractIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
       responses:
         200:
           description: OK
@@ -244,9 +244,10 @@ paths:
       description: Lists transactions on the network. This includes successful and unsuccessful transactions.
       operationId: listTransactions
       parameters:
-        - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/accountIdQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/timestampQueryParam'
         - $ref: '#/components/parameters/transactionTypeQueryParam'
         - name: result
           in: query
@@ -345,7 +346,7 @@ paths:
           schema:
             type: string
         - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
       responses:
         200:
           description: OK
@@ -691,7 +692,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.46.0-SNAPSHOT
+  version: 0.47.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1946,6 +1947,14 @@ components:
       schema:
         enum: [ asc, desc ]
         default: asc
+    orderQueryParamDesc:
+      name: order
+      in: query
+      description: The order in which items are listed
+      example: asc
+      schema:
+        enum: [ asc, desc ]
+        default: desc
     publicKeyQueryParam:
       name: publickey
       in: query

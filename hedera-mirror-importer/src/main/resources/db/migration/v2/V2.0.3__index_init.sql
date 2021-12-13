@@ -12,8 +12,6 @@ create index if not exists assessed_custom_fee__consensus_timestamp
 -- account_balance
 alter table account_balance
     add constraint account_balance__pk primary key (consensus_timestamp, account_id);
-create index if not exists account_balance__account_timestamp
-    on account_balance (account_id desc, consensus_timestamp desc);
 
 -- account_balance_file
 alter table account_balance_file
@@ -84,6 +82,8 @@ create index if not exists entity__id_type
     on entity (id, type);
 create index if not exists entity__public_key_type
     on entity (public_key, type) where public_key is not null;
+create index if not exists entity__alias
+    on entity (alias) where alias is not null;
 
 -- entity_history
 alter table if exists entity_history

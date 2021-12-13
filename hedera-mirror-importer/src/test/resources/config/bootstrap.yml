@@ -5,6 +5,6 @@ embedded:
       # so it is enabled only for those tests.
       enabled: false
   postgresql:
-    docker-image: postgres:9.6-alpine
+    docker-image: postgres:13.5-alpine
   redis:
     docker-image: redis:6.2.3-alpine

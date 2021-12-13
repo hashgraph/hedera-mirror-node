@@ -20,20 +20,26 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.repository.EntityRepository;
 
 @Named
 class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    CryptoCreateTransactionHandler(EntityListener entityListener) {
+    private final EntityRepository entityRepository;
+
+    CryptoCreateTransactionHandler(EntityListener entityListener, EntityRepository entityRepository) {
         super(entityListener, TransactionType.CRYPTOCREATEACCOUNT);
+        this.entityRepository = entityRepository;
     }
 
     @Override
@@ -49,6 +55,12 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
+
+        if (recordItem.getRecord().getAlias() != ByteString.EMPTY) {
+            var alias = DomainUtils.toBytes(recordItem.getRecord().getAlias());
+            entity.setAlias(alias);
+            entityRepository.storeAlias(alias, entity.getId());
+        }
 
         if (transactionBody.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());

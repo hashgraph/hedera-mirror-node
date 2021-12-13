@@ -59,7 +59,7 @@ describe('extractSqlFromContractFilters', () => {
   const defaultExpected = {
     filterQuery: '',
     params: [defaultLimit],
-    order: constants.orderFilterValues.ASC,
+    order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
     limitQuery: 'limit $1',
   };
@@ -86,17 +86,17 @@ describe('extractSqlFromContractFilters', () => {
       },
     },
     {
-      name: 'order',
+      name: 'order asc',
       input: [
         {
           key: constants.filterKeys.ORDER,
           operator: utils.opsMap.eq,
-          value: constants.orderFilterValues.DESC,
+          value: constants.orderFilterValues.ASC,
         },
       ],
       expected: {
         ...defaultExpected,
-        order: constants.orderFilterValues.DESC,
+        order: constants.orderFilterValues.ASC,
       },
     },
     {
