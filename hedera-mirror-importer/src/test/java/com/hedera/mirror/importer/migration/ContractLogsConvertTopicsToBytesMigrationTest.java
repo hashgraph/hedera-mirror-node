@@ -30,7 +30,7 @@ import javax.annotation.Resource;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,7 +53,7 @@ class ContractLogsConvertTopicsToBytesMigrationTest extends IntegrationTest {
     @Value("classpath:db/migration/v1/V1.51.2__contract_logs_convert_topics_to_bytes.sql")
     private File migrationSql;
 
-    @BeforeEach
+    @AfterEach
     void setup() {
         revertMigration();
     }
@@ -134,7 +134,13 @@ class ContractLogsConvertTopicsToBytesMigrationTest extends IntegrationTest {
 
     private void revertMigration() {
         jdbcOperations
-                .update("alter table contract_log drop column if exists root_contract_id");
+                .update("alter table contract_log alter column topic0 type varchar(64) using encode(topic0, 'hex')");
+        jdbcOperations
+                .update("alter table contract_log alter column topic1 type varchar(64) using encode(topic1, 'hex')");
+        jdbcOperations
+                .update("alter table contract_log alter column topic2 type varchar(64) using encode(topic2, 'hex')");
+        jdbcOperations
+                .update("alter table contract_log alter column topic3 type varchar(64) using encode(topic3, 'hex')");
     }
 
     @Data
