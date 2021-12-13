@@ -17,7 +17,7 @@ x-google-marketplace:
   publishedVersion: "$TAG"
   publishedVersionMetadata:
     releaseNote: >-
-      v0.37.1 fixes a critical vulnerability in the Log4j2 library. It is recommended you upgrade immediately.
+      v0.42.1 fixes a critical vulnerability in the Log4j2 library. It is recommended you upgrade immediately.
 
       For detailed release notes refer to <a href="https://github.com/hashgraph/hedera-mirror-node/releases">hedera-mirror-node releases</a>.
     # releaseTypes - Feature | BugFix | Security
