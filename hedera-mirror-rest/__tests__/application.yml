@@ -1,5 +1,7 @@
 hedera:
   mirror:
     rest:
+      maxTimestampRange: 31536000
       metrics:
         enabled: false
+
