@@ -42,13 +42,13 @@ import com.hedera.mirror.importer.IntegrationTest;
 
 @EnabledIfV1
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.50.2")
+@TestPropertySource(properties = "spring.flyway.target=1.51.0")
 class AddRootContractIdMigrationTest extends IntegrationTest {
 
     @Resource
     private JdbcOperations jdbcOperations;
 
-    @Value("classpath:db/migration/v1/V1.51.0__contract_logs_root_id.sql")
+    @Value("classpath:db/migration/v1/V1.51.1__contract_logs_root_id.sql")
     private File migrationSql;
 
     @BeforeEach
@@ -148,7 +148,7 @@ class AddRootContractIdMigrationTest extends IntegrationTest {
         private long consensusTimestamp;
         private long contractId;
         private final byte[] data = new byte[] {2, 2};
-        private int index = 0;
+        private final int index = 0;
         private final long payerAccountId = 100;
         private Long rootContractId;
     }
