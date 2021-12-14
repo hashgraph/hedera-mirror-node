@@ -1,5 +1,5 @@
 {
-  "description": "Contracts api calls with all params",
+  "description": "Contract logs api calls with topic params and invalid timestamp range too large",
   "setup": {
     "contractlogs": [
       {

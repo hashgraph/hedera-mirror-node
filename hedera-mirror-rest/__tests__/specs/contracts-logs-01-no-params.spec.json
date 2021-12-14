@@ -1,5 +1,5 @@
 {
-  "description": "Contracts api calls with all params",
+  "description": "Contract logf api calls with no params",
   "setup": {
     "contractlogs": [
       {

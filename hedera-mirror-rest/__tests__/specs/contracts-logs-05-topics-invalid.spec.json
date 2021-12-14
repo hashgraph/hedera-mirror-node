@@ -1,5 +1,5 @@
 {
-  "description": "Contracts api calls with all params",
+  "description": "Contract logs api calls with invalid topics params",
   "setup": {
     "contractlogs": [
       {
@@ -30,16 +30,19 @@
     ]
   },
   "urls": [
-    "/api/v1/contracts/0.0.1000/results/logs?topic0=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750&topic3=0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67",
-    "/api/v1/contracts/0.1000/results/logs?topic0=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750&topic3=0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67",
-    "/api/v1/contracts/1000/results/logs?topic0=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750&topic3=0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+    "/api/v1/contracts/0.0.1000/results/logs?topic1=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce6975&topic2=gt:0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+    "/api/v1/contracts/0.1000/results/logs?topic1=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce6975&topic2=gt:0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+    "/api/v1/contracts/1000/results/logs?topic1=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce6975&topic2=gt:0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750"
   ],
   "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Cannot search topics without timestamp range within 31536000 seconds"
+          "message": "Invalid parameter: topic1"
+        },
+        {
+          "message": "Invalid parameter: topic2"
         }
       ]
     }
