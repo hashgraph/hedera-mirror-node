@@ -42,8 +42,6 @@ class ContractService extends BaseService {
 
   static detailedContractResultsQuery = `select *
   from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
-  static contractResultsByIdQuery = `select *
-                                     from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
 
   static contractResultsQuery = `select
     ${ContractResult.AMOUNT},
@@ -57,63 +55,27 @@ class ContractService extends BaseService {
     ${ContractResult.GAS_USED},
     ${ContractResult.PAYER_ACCOUNT_ID}
     from ${ContractResult.tableName}`;
+
   static contractLogsByIdQuery = `select ${ContractLog.getFullName(ContractLog.CONTRACT_ID)},
-                                         ${ContractLog.getFullName(ContractLog.BLOOM)},
-                                         ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
-                                         ${ContractLog.getFullName(ContractLog.DATA)},
-                                         ${ContractLog.getFullName(ContractLog.INDEX)},
-                                         ${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)},
-                                         ${ContractLog.getFullName(ContractLog.TOPIC0)},
-                                         ${ContractLog.getFullName(ContractLog.TOPIC1)},
-                                         ${ContractLog.getFullName(ContractLog.TOPIC2)},
-                                         ${ContractLog.getFullName(ContractLog.TOPIC3)}
-                                  from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
+    ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
+    ${ContractLog.getFullName(ContractLog.DATA)},
+    ${ContractLog.getFullName(ContractLog.INDEX)},
+    ${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)},
+    ${ContractLog.getFullName(ContractLog.TOPIC0)},
+    ${ContractLog.getFullName(ContractLog.TOPIC1)},
+    ${ContractLog.getFullName(ContractLog.TOPIC2)},
+    ${ContractLog.getFullName(ContractLog.TOPIC3)}
+    from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
-  async getContractResultsByIdAndFilters(
-    whereConditions = [],
-    whereParams = [],
-    order = orderFilterValues.DESC,
-    limit = defaultLimit
-  ) {
-    const [query, params] = this.getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
-    const rows = await super.getRows(query, params, 'getContractResultsByIdAndFilters');
-    return _.isEmpty(rows) ? [] : rows.map((cr) => new ContractResult(cr));
-  }
-
-  async getContractLogsByIdAndFilters(
-    whereConditions = [],
-    whereParams = [],
-    timestampOrder = orderFilterValues.DESC,
-    indexOrder = orderFilterValues.ASC,
-    limit = defaultLimit
-  ) {
-    const [query, params] = this.getContractLogsByIdAndFiltersQuery(
-      whereConditions,
-      whereParams,
-      timestampOrder,
-      indexOrder,
-      limit
-    );
-    const rows = await super.getRows(query, params, 'getContractLogsByIdAndFilters');
-    return _.isEmpty(rows) ? [] : rows.map((cr) => new ContractLog(cr));
-  }
-
-  getContractLogsByIdAndFiltersQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit) {
+  getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
-    const orderClause = [
-      super.getOrderByQuery(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
-      `${ContractLog.getFullName(ContractLog.INDEX)} ${indexOrder}`,
-    ].join(', ');
     const query = [
-      ContractService.contractLogsByIdQuery,
+      ContractService.detailedContractResultsQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
-      orderClause,
-      super.getLimitQuery(params.length + 1),
+      super.getOrderByQuery(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order),
+      super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
     ].join('\n');
     params.push(limit);
-
-    logger.info(query);
-    logger.info(params);
 
     return [query, params];
   }
@@ -146,6 +108,64 @@ class ContractService extends BaseService {
     }
 
     return new ContractResult(rows[0]);
+  }
+
+  /**
+   * Builds a query for retrieving contract logs based on contract id and various filters
+   *
+   * @param whereConditions the conditions to build a where clause out of
+   * @param whereParams the parameters for the where clause
+   * @param timestampOrder the sorting order for field consensus_timestamp
+   * @param indexOrder the sorting order for field index
+   * @param limit the limit parameter for the query
+   * @returns {(string|*)[]} the build query and the parameters for the query
+   */
+  getContractLogsByIdAndFiltersQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit) {
+    const params = whereParams;
+    const orderClause = [
+      super.getOrderByQuery(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
+      `${ContractLog.getFullName(ContractLog.INDEX)} ${indexOrder}`,
+    ].join(', ');
+    const query = [
+      ContractService.contractLogsByIdQuery,
+      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
+      orderClause,
+      super.getLimitQuery(params.length + 1),
+    ].join('\n');
+    params.push(limit);
+
+    logger.info(query);
+    logger.info(params);
+
+    return [query, params];
+  }
+
+  /**
+   * Retrieves contract logs based on contract id and various filters
+   *
+   * @param whereConditions the conditions to build a where clause out of
+   * @param whereParams the parameters for the where clause
+   * @param timestampOrder the sorting order for field consensus_timestamp
+   * @param indexOrder the sorting order for field index
+   * @param limit the limit parameter for the query
+   * @returns {Promise<*[]|*>} the result of the getContractLogsByIdAndFilters query
+   */
+  async getContractLogsByIdAndFilters(
+    whereConditions = [],
+    whereParams = [],
+    timestampOrder = orderFilterValues.DESC,
+    indexOrder = orderFilterValues.ASC,
+    limit = defaultLimit
+  ) {
+    const [query, params] = this.getContractLogsByIdAndFiltersQuery(
+      whereConditions,
+      whereParams,
+      timestampOrder,
+      indexOrder,
+      limit
+    );
+    const rows = await super.getRows(query, params, 'getContractLogsByIdAndFilters');
+    return _.isEmpty(rows) ? [] : rows.map((cr) => new ContractLog(cr));
   }
 }
 

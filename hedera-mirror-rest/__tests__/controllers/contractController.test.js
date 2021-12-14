@@ -264,8 +264,7 @@ describe('formatContractRow', () => {
 
 describe('getContractByIdQuery', () => {
   const mainQuery = `select ${[...contractFields, 'cf.bytecode']}
-                     from contract c,
-                          contract_file cf`;
+    from contract c, contract_file cf`;
   const queryForTable = (table, extraConditions) => {
     return `select ${contractFields}
       from ${table} c
@@ -293,9 +292,9 @@ describe('getContractByIdQuery', () => {
         ${queryForTable('contract_history', timestampConditions)}
         order by timestamp_range desc
         limit 1
-      ), contract_file as (
+    ), contract_file as (
         ${contracts.fileDataQuery}
-      )
+    )
       ${mainQuery}`,
     },
   ];
@@ -317,9 +316,9 @@ describe('getContractsQuery', () => {
         order: 'asc',
       },
       expected: `select ${contractFields}
-       from contract c
-       order by c.id asc
-       limit $1`,
+        from contract c
+        order by c.id asc
+        limit $1`,
     },
     {
       name: 'non-empty whereQuery',

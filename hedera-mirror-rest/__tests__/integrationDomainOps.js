@@ -646,8 +646,7 @@ const addContractResult = async (contractResultInput) => {
       : contractResult.function_result;
 
   await sqlConnection.query(
-    `insert into contract_result (${insertFields.join(',')})
-     values (${positions})`,
+    `insert into contract_result (${insertFields.join(',')}) values (${positions})`,
     insertFields.map((name) => contractResult[name])
   );
 };
