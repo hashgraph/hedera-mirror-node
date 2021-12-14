@@ -421,14 +421,6 @@ Optional filters
 }
 ```
 
-> _Note:_ `/api/v1/contracts/{id}/results/logs` will not have links, as it requires
-> two parameters to page, `consensus_timestamp` for logs from different `contract_results`
-> and `index` for when logs from a `contract_result` go on to the next page.
-
-> _Note2:_ In order to support searching on a topic, `/api/v1/contracts/{id}/results/logs`
-> will require a timestamp equals operator or a timestamp range(greater than and less than
-> operators) be provided as well, so that indexes are not required on all four topics.
-
 Optional filters
 
 - `limit` Maximum limit will be configurable and lower than current global max limit
@@ -439,6 +431,15 @@ Optional filters
 - `topic1`
 - `topic2`
 - `topic3`
+
+> _Note:_ `/api/v1/contracts/{id}/results/logs` will not have links, as it requires
+> two parameters to page, `consensus_timestamp` for logs from different `contract_results`
+> and `index` for when logs from a `contract_result` go on to the next page.
+
+> _Note2:_ In order to support searching on a topic, `/api/v1/contracts/{id}/results/logs`
+> will require a timestamp equals operator or a timestamp range(greater than and less than
+> operators) be provided as well when searching on a topic
+> so that indexes are not required on all four topics.
 
 ## JSON-RPC
 
