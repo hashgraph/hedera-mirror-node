@@ -94,5 +94,8 @@ rest:
   service:
     type: LoadBalancer
 
+rosetta:
+  enabled: false
+
 timescaledb:
   enabled: false
