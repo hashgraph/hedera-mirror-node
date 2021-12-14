@@ -997,6 +997,8 @@ const loadPgRange = () => {
   pgRange.install(pg);
 };
 
+//Convert maxTimestampRange from milliseconds to nanoseconds
+const maxTimestampRange = config.maxTimestampRange * 1000000;
 /**
  *
  * @param timestamps a timestamp or array of timestamps directly from the req
@@ -1019,26 +1021,26 @@ const checkTimestampRange = (timestamps) => {
     if (filter.operator === 'eq') {
       return true;
     } else if (filter.operator === `gt` || filter.operator === 'gte') {
-      if (earliest == undefined) {
-        earliest = parseTimestampParam(filter.value);
-      } else {
+      if (earliest !== undefined) {
+        //Multiple greater than operators detected, not permitted
         return false;
       }
+      earliest = parseTimestampParam(filter.value);
     } else if (filter.operator === `lt` || filter.operator === 'lte') {
-      if (latest == undefined) {
-        latest = parseTimestampParam(filter.value);
-      } else {
+      if (latest !== undefined) {
+        //Multiple less than operators detected, not permitted
         return false;
       }
+      latest = parseTimestampParam(filter.value);
     }
   }
 
-  if (
-    latest === undefined ||
-    earliest === undefined ||
-    latest - earliest > config.maxTimestampRange * 1000000000 ||
-    latest - earliest < 0
-  ) {
+  if (latest === undefined || earliest === undefined) {
+    return false;
+  }
+
+  const difference = latest - earliest;
+  if (difference > maxTimestampRange || difference < 0) {
     return false;
   }
   return true;

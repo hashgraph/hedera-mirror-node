@@ -98,19 +98,6 @@ class ContractService extends BaseService {
     return _.isEmpty(rows) ? [] : rows.map((cr) => new ContractLog(cr));
   }
 
-  getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
-    const params = whereParams;
-    const query = [
-      ContractService.detailedContractResultsQuery,
-      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
-      super.getOrderByQuery(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order),
-      super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
-    ].join('\n');
-    params.push(limit);
-
-    return [query, params];
-  }
-
   getContractLogsByIdAndFiltersQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit) {
     const params = whereParams;
     const orderClause = [

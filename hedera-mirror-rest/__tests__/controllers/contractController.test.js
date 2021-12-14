@@ -32,7 +32,7 @@ const contracts = require('../../controllers/contractController');
 const {InvalidArgumentError} = require('../../errors/invalidArgumentError');
 const {formatSqlQueryString} = require('../testutils');
 const utils = require('../../utils');
-const {Contract, ContractLog} = require('../../model');
+const {Contract} = require('../../model');
 
 const contractFields = [
   Contract.AUTO_RENEW_PERIOD,
@@ -552,10 +552,11 @@ describe('validateContractIdParam', () => {
   });
 });
 
+const defaultContractLogCondition = 'cl.contract_id = $1';
 describe('extractContractLogsByIdQuery', () => {
   const defaultContractId = 1;
   const defaultExpected = {
-    conditions: ['cl.contract_id = $1'],
+    conditions: [defaultContractLogCondition],
     params: [defaultContractId],
     timestampOrder: constants.orderFilterValues.DESC,
     indexOrder: constants.orderFilterValues.ASC,
@@ -593,7 +594,7 @@ describe('extractContractLogsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['cl.contract_id = $1', 'cl.consensus_timestamp > $2', 'cl.consensus_timestamp in ($3,$4)'],
+        conditions: [defaultContractLogCondition, 'cl.consensus_timestamp > $2', 'cl.consensus_timestamp in ($3,$4)'],
         params: [defaultContractId, '1000', '1001', '1002'],
       },
     },
@@ -633,7 +634,7 @@ describe('extractContractLogsByIdQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: [
-          'cl.contract_id = $1',
+          defaultContractLogCondition,
           "cl.topic0 in (decode($2, 'hex'),decode($3, 'hex'))",
           "cl.topic1 in (decode($4, 'hex'))",
           "cl.topic2 in (decode($5, 'hex'))",
