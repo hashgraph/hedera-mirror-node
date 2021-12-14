@@ -794,7 +794,7 @@ const checkTimestampsForTopics = (timestamps, topic0, topic1, topic2, topic3) =>
   if (topic0 || topic1 || topic2 || topic3) {
     if (!utils.checkTimestampRange(timestamps)) {
       throw new InvalidArgumentError(
-        `Cannot search topics without timestamp range within ${config.maxTimestampRange} seconds`
+        `Cannot search topics without timestamp range within ${config.maxTimestampRange} milliseconds`
       );
     }
   }

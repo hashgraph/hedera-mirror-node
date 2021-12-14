@@ -26,7 +26,7 @@ const constants = require('../constants.js');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {InvalidClauseError} = require('../errors/invalidClauseError');
 const {TransactionType} = require('../model');
-const {checkTimestampRange, getLimitParamValue} = require('../utils');
+const {getLimitParamValue} = require('../utils');
 const {keyTypes} = require('../constants');
 const EntityId = require('../entityId');
 
@@ -1031,7 +1031,7 @@ describe('Utils test - utils.parseTransactionTypeParam', () => {
       expect(utils.checkTimestampRange(['gt:1638921702.000', 'eq:1638921702'])).toBeTruthy();
     });
     test('Utils test - utils.checkTimestampRange - two both sides', () => {
-      expect(checkTimestampRange(['lte:1638921702.000000000', 'gte:1638921701.000'])).toBeTruthy();
+      expect(utils.checkTimestampRange(['lte:1638921702.000000000', 'gte:1638921701.000'])).toBeTruthy();
     });
     test('Utils test - utils.checkTimestampRange - two bad range backwards', () => {
       expect(utils.checkTimestampRange(['lte:1638921701.000000000', 'gte:1638921702.000'])).toBeFalsy();

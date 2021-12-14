@@ -39,7 +39,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Cannot search topics without timestamp range within 31536000 seconds"
+          "message": "Cannot search topics without timestamp range within 31536000000 milliseconds"
         }
       ]
     }

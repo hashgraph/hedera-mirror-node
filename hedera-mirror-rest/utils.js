@@ -998,18 +998,17 @@ const loadPgRange = () => {
 };
 
 //Convert maxTimestampRange from milliseconds to nanoseconds
-const maxTimestampRange = config.maxTimestampRange * 1000000;
+const maxTimestampRange = math.multiply(config.maxTimestampRange, 1e6);
 /**
  *
  * @param timestamps a timestamp or array of timestamps directly from the req
  * @returns boolean whether or not the timestamps created a range (within the limits) or contain an equals operator
  */
 const checkTimestampRange = (timestamps) => {
-  //define the bounds
   let latest = undefined;
   let earliest = undefined;
 
-  //no timestamp param, add a lower bound
+  //no timestamp params
   if (!timestamps) {
     return false;
   }
@@ -1019,6 +1018,7 @@ const checkTimestampRange = (timestamps) => {
   for (const val of timestampsArray) {
     const filter = buildComparatorFilter(constants.filterKeys.TIMESTAMP, val);
     if (filter.operator === 'eq') {
+      //An equals operator removes the need for a range
       return true;
     } else if (filter.operator === `gt` || filter.operator === 'gte') {
       if (earliest !== undefined) {
@@ -1039,7 +1039,7 @@ const checkTimestampRange = (timestamps) => {
     return false;
   }
 
-  const difference = latest - earliest;
+  const difference = math.subtract(latest, earliest);
   if (difference > maxTimestampRange || difference < 0) {
     return false;
   }

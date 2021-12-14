@@ -318,8 +318,9 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.db.tls.cert`                         | ""                      | The path to the public key the client should use to securely connect to the database           |
 | `hedera.mirror.rest.db.tls.enabled`                      | false                   | Whether TLS should be used for the database connection                                         |
 | `hedera.mirror.rest.db.tls.key`                          | ""                      | The path to the private key the client should use to securely connect to the database          |
-| `hedera.mirror.rest.maxRepeatedQueryParameters`          | 100                     | The maximum number of times any query parameter can be repeated in the uri                     |
 | `hedera.mirror.rest.log.level`                           | debug                   | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
+| `hedera.mirror.rest.maxRepeatedQueryParameters`          | 100                     | The maximum number of times any query parameter can be repeated in the uri                     |
+| `hedera.mirror.rest.maxTimestampRange         `          | 31536000000             | The maximum number of milliseconds a timestamp range query param can span for some apis        |
 | `hedera.mirror.rest.network.unreleasedSupplyAccounts`    | [0.0.2, 0.0.42, ...]    | An array of account IDs whose aggregated balance subtracted from the total supply is the released supply |
 | `hedera.mirror.rest.port`                                | 5551                    | The REST API port                                                                              |
 | `hedera.mirror.rest.metrics.enabled`                     | true                    | Whether metrics are enabled for the REST API                                                   |
