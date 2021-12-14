@@ -82,11 +82,6 @@ const isValidTimestampParam = (timestamp) => {
   return /^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp);
 };
 
-const isValidTimestampParamAndOp = (op, timestamp) => {
-  // Accepted forms: seconds or seconds.upto 9 digits
-  return op !== 'ne' && (/^\d{1,10}$/.test(timestamp) || /^\d{1,10}\.\d{1,9}$/.test(timestamp));
-};
-
 const isValidOperatorQuery = (query) => {
   return /^(gte?|lte?|eq|ne)$/.test(query);
 };
@@ -97,9 +92,9 @@ const isValidPublicKeyQuery = (query) => {
   return publicKeyPattern.test(query);
 };
 
-const contractTopicPattern = /^0x[0-9A-Fa-f]{64}$/;
+const contractTopicPattern = /^0x[0-9A-Fa-f]{64}$/; // 0x followed by 64 hex digits
 const isValidOpAndTopic = (op, query) => {
-  return contractTopicPattern.test(query) && op === 'eq';
+  return typeof address === 'string' && contractTopicPattern.test(query) && op === 'eq';
 };
 
 const isValidOpAndAddress = (op, query) => {
@@ -1008,8 +1003,8 @@ const loadPgRange = () => {
 
 /**
  *
- * @param timestamps a value or array of values directly from the req
- * @returns {{value: string, key: string, operator: string}|*[]}
+ * @param timestamps a timestamp or array of timestamps directly from the req
+ * @returns boolean whether or not the timestamps created a range (within the limits) or contain an equals operator
  */
 const checkTimestampRange = (timestamps) => {
   //define the bounds
