@@ -116,6 +116,7 @@ create table if not exists contract_log
     data                bytea       not null,
     index               int         not null,
     payer_account_id    bigint      not null,
+    root_contract_id    bigint      null,
     topic0              varchar(64) null,
     topic1              varchar(64) null,
     topic2              varchar(64) null,

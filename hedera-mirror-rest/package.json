@@ -21,8 +21,8 @@
     "@godaddy/terminus": "^4.9.0",
     "@hashgraph/proto": "^2.0.0",
     "asn1js": "^2.1.1",
-    "aws-sdk": "^2.1043.0",
-    "body-parser": "^1.19.0",
+    "aws-sdk": "^2.1046.0",
+    "body-parser": "^1.19.1",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "express": "^4.17.1",
@@ -39,7 +39,7 @@
     "pg": "~8.7.1",
     "pg-range": "^1.1.1",
     "prom-client": "^14.0.1",
-    "qs": "^6.10.1",
+    "qs": "^6.10.2",
     "quick-lru": "^5.1.1",
     "swagger-stats": "^0.99.2",
     "swagger-ui-express": "^4.2.0"
@@ -85,7 +85,7 @@
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-security": "^1.4.0",
     "husky": "^7.0.4",
-    "jest": "^27.4.3",
+    "jest": "^27.4.4",
     "jest-circus": "^27.3.1",
     "jest-junit": "^13.0.0",
     "mock-req-res": "^1.2.0",
@@ -97,7 +97,7 @@
     "rewire": "^5.0.0",
     "sinon": "^12.0.1",
     "supertest": "^6.1.6",
-    "testcontainers": "^7.24.0"
+    "testcontainers": "^8.1.0"
   },
   "jest": {
     "collectCoverage": true,

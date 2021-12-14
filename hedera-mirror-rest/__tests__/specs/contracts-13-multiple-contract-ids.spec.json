@@ -46,26 +46,6 @@
       {
         "admin_key": {
           "_type": "ProtobufEncoded",
-          "key": "010101"
-        },
-        "auto_renew_period": null,
-        "contract_id": "0.0.8001",
-        "created_timestamp": "987654.000123456",
-        "deleted": false,
-        "expiration_timestamp": null,
-        "file_id": "0.0.5001",
-        "memo": "contract memo",
-        "obtainer_id": null,
-        "proxy_account_id": null,
-        "solidity_address": "0x0000000000000000000000000000000000001f41",
-        "timestamp": {
-          "from": "997654.000123457",
-          "to": null
-        }
-      },
-      {
-        "admin_key": {
-          "_type": "ProtobufEncoded",
           "key": "020202"
         },
         "auto_renew_period": null,
@@ -80,6 +60,26 @@
         "solidity_address": "0x0000000000000000000000000000000000001f42",
         "timestamp": {
           "from": "987654.111123456",
+          "to": null
+        }
+      },
+      {
+        "admin_key": {
+          "_type": "ProtobufEncoded",
+          "key": "010101"
+        },
+        "auto_renew_period": null,
+        "contract_id": "0.0.8001",
+        "created_timestamp": "987654.000123456",
+        "deleted": false,
+        "expiration_timestamp": null,
+        "file_id": "0.0.5001",
+        "memo": "contract memo",
+        "obtainer_id": null,
+        "proxy_account_id": null,
+        "solidity_address": "0x0000000000000000000000000000000000001f41",
+        "timestamp": {
+          "from": "997654.000123457",
           "to": null
         }
       }

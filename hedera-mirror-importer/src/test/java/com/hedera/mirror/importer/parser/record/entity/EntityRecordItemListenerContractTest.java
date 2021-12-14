@@ -66,7 +66,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
     private static final ContractID CONTRACT_ID = ContractID.newBuilder().setContractNum(1001).build();
     private static final ContractID CREATED_CONTRACT_ID = ContractID.newBuilder().setContractNum(1002).build();
-    private static final FileID FILE_ID = FileID.newBuilder().setFileNum(1003).build();
 
     @Resource
     private ContractLogRepository contractLogRepository;
@@ -559,7 +558,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     private void assertContractCreateResult(ContractCreateTransactionBody transactionBody, TransactionRecord record) {
         long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
         ContractFunctionResult result = record.getContractCreateResult();
-        ContractLoginfo logInfo = result.getLogInfo(0);
 
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
                 .hasSize(1)
@@ -569,13 +567,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(toBytes(transactionBody.getConstructorParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
-        assertContractResult(consensusTimestamp, result, logInfo, contractResult);
+        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult);
     }
 
     private void assertContractCallResult(ContractCallTransactionBody transactionBody, TransactionRecord record) {
         long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
         ContractFunctionResult result = record.getContractCallResult();
-        ContractLoginfo logInfo = result.getLogInfo(0);
 
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
                 .filteredOn(c -> c.getConsensusTimestamp().equals(consensusTimestamp))
@@ -586,10 +583,11 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(toBytes(transactionBody.getFunctionParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
-        assertContractResult(consensusTimestamp, result, logInfo, contractResult);
+        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult);
     }
 
-    private void assertContractResult(long consensusTimestamp, ContractFunctionResult result, ContractLoginfo logInfo,
+    private void assertContractResult(long consensusTimestamp, ContractFunctionResult result,
+                                      List<ContractLoginfo> logInfoList,
                                       ObjectAssert<ContractResult> contractResult) {
         List<Long> createdContractIds = result.getCreatedContractIDsList()
                 .stream()
@@ -605,19 +603,24 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(result.toByteArray(), ContractResult::getFunctionResult)
                 .returns(result.getGasUsed(), ContractResult::getGasUsed);
 
-        assertThat(contractLogRepository.findAll())
-                .filteredOn(c -> c.getConsensusTimestamp() == consensusTimestamp)
-                .hasSize(1)
-                .first()
-                .returns(logInfo.getBloom().toByteArray(), ContractLog::getBloom)
-                .returns(consensusTimestamp, ContractLog::getConsensusTimestamp)
-                .returns(EntityId.of(logInfo.getContractID()), ContractLog::getContractId)
-                .returns(logInfo.getData().toByteArray(), ContractLog::getData)
-                .returns(0, ContractLog::getIndex)
-                .returns(Utility.getTopic(logInfo, 0), ContractLog::getTopic0)
-                .returns(Utility.getTopic(logInfo, 1), ContractLog::getTopic1)
-                .returns(Utility.getTopic(logInfo, 2), ContractLog::getTopic2)
-                .returns(Utility.getTopic(logInfo, 3), ContractLog::getTopic3);
+        for (int i = 0; i < logInfoList.size(); i++) {
+            int index = i;
+            ContractLoginfo logInfo = logInfoList.get(i);
+
+            assertThat(contractLogRepository.findById(new ContractLog.Id(consensusTimestamp, index)))
+                    .isPresent()
+                    .get()
+                    .returns(logInfo.getBloom().toByteArray(), ContractLog::getBloom)
+                    .returns(consensusTimestamp, ContractLog::getConsensusTimestamp)
+                    .returns(EntityId.of(logInfo.getContractID()), ContractLog::getContractId)
+                    .returns(logInfo.getData().toByteArray(), ContractLog::getData)
+                    .returns(index, ContractLog::getIndex)
+                    .returns(EntityId.of(result.getContractID()), ContractLog::getRootContractId)
+                    .returns(Utility.getTopic(logInfo, 0), ContractLog::getTopic0)
+                    .returns(Utility.getTopic(logInfo, 1), ContractLog::getTopic1)
+                    .returns(Utility.getTopic(logInfo, 2), ContractLog::getTopic2)
+                    .returns(Utility.getTopic(logInfo, 3), ContractLog::getTopic3);
+        }
     }
 
     private TransactionRecord createOrUpdateRecord(TransactionBody transactionBody) {
@@ -652,6 +655,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         builder.addCreatedContractIDs(CREATED_CONTRACT_ID);
         builder.setErrorMessage("call error message");
         builder.setGasUsed(30);
+        builder.addLogInfo(ContractLoginfo.newBuilder()
+                .setBloom(ByteString.copyFromUtf8("bloom"))
+                .setContractID(CONTRACT_ID)
+                .setData(ByteString.copyFromUtf8("data"))
+                .addTopic(ByteString.copyFromUtf8("Topic0"))
+                .addTopic(ByteString.copyFromUtf8("Topic1"))
+                .addTopic(ByteString.copyFromUtf8("Topic2"))
+                .addTopic(ByteString.copyFromUtf8("Topic3")).build());
         builder.addLogInfo(ContractLoginfo.newBuilder()
                 .setBloom(ByteString.copyFromUtf8("bloom"))
                 .setContractID(CREATED_CONTRACT_ID)
