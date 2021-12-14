@@ -155,7 +155,7 @@ third_party/licenses/org.apache.logging.log4j.log4j-api_apache_license,_version_
 third_party/licenses/org.apache.logging.log4j.log4j-core_apache_license,_version_2.0
 third_party/licenses/org.apache.logging.log4j.log4j-jul_apache_license,_version_2.0
 third_party/licenses/org.apache.logging.log4j.log4j-slf4j-impl_apache_license,_version_2.0
-third_party/licenses/org.aspectj.aspectjweaver_eclipse_public_license_-_v_1.0.html
+third_party/licenses/org.aspectj.aspectjweaver_eclipse_public_license_-_v_2.0.txt
 third_party/licenses/org.bouncycastle.bcpkix-jdk15on_bouncy_castle_licence.html
 third_party/licenses/org.bouncycastle.bcprov-jdk15on_bouncy_castle_licence
 third_party/licenses/org.checkerframework.checker-compat-qual_gnu_general_public_license,_version_2_(gpl2),_with_the_classpath_exception.html
@@ -247,6 +247,7 @@ third_party/licenses/software.amazon.awssdk.aws-core_apache_license,_version_2.0
 third_party/licenses/software.amazon.awssdk.aws-query-protocol_apache_license,_version_2.0
 third_party/licenses/software.amazon.awssdk.aws-xml-protocol_apache_license,_version_2.0
 third_party/licenses/software.amazon.awssdk.http-client-spi_apache_license,_version_2.0
+third_party/licenses/software.amazon.awssdk.json-utils_apache_license,_version_2.0
 third_party/licenses/software.amazon.awssdk.metrics-spi_apache_license,_version_2.0
 third_party/licenses/software.amazon.awssdk.netty-nio-client_apache_license,_version_2.0
 third_party/licenses/software.amazon.awssdk.profiles_apache_license,_version_2.0
@@ -255,5 +256,6 @@ third_party/licenses/software.amazon.awssdk.regions_apache_license,_version_2.0
 third_party/licenses/software.amazon.awssdk.s3_apache_license,_version_2.0
 third_party/licenses/software.amazon.awssdk.sdk-core_apache_license,_version_2.0
 third_party/licenses/software.amazon.awssdk.sts_apache_license,_version_2.0
+third_party/licenses/software.amazon.awssdk.third-party-jackson-core_apache_license,_version_2.0
 third_party/licenses/software.amazon.awssdk.utils_apache_license,_version_2.0
 third_party/licenses/software.amazon.eventstream.eventstream_apache_license,_version_2.0
