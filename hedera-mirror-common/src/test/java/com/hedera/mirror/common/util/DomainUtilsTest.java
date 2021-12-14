@@ -245,5 +245,16 @@ class DomainUtilsTest {
                 .isEqualTo(largeArray)
                 .isNotSameAs(largeArray);
     }
+
+    @Test
+    void bytesToHex() {
+        assertThat(DomainUtils.bytesToHex(new byte[] {1})).isEqualTo("01");
+        assertThat(DomainUtils.bytesToHex(new byte[] {127})).isEqualTo("7f");
+        assertThat(DomainUtils.bytesToHex(new byte[] {-1})).isEqualTo("ff");
+        assertThat(DomainUtils.bytesToHex(new byte[] {0})).isEqualTo("00");
+        assertThat(DomainUtils.bytesToHex(new byte[] {00})).isEqualTo("00");
+        assertThat(DomainUtils.bytesToHex(new byte[0])).isEmpty();
+        assertThat(DomainUtils.bytesToHex(null)).isNull();
+    }
 }
 

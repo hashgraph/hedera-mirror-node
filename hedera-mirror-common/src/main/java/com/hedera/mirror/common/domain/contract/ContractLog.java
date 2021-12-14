@@ -65,13 +65,13 @@ public class ContractLog implements Persistable<ContractLog.Id> {
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
-    private String topic0;
+    private byte[] topic0;
 
-    private String topic1;
+    private byte[] topic1;
 
-    private String topic2;
+    private byte[] topic2;
 
-    private String topic3;
+    private byte[] topic3;
 
     @Override
     @JsonIgnore

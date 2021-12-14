@@ -112,18 +112,16 @@ create table if not exists contract_log
   contract_id         bigint      not null,
   data                bytea       not null,
   index               int         not null,
-  topic0              varchar(64) null,
-  topic1              varchar(64) null,
-  topic2              varchar(64) null,
-  topic3              varchar(64) null,
+  root_contract_id    bigint      null,
+  topic0              bytea       null,
+  topic1              bytea       null,
+  topic2              bytea       null,
+  topic3              bytea       null,
   primary key (consensus_timestamp, index)
 );
 
 create index if not exists contract_log__id_timestamp
   on contract_log (contract_id, consensus_timestamp);
-
-create index if not exists contract_log__topics_bloom
-  on contract_log using bloom (topic0, topic1, topic2, topic3);
 ```
 
 #### Contract Access List
