@@ -1000,6 +1000,8 @@ const loadPgRange = () => {
 //Convert maxTimestampRange from milliseconds to nanoseconds
 const maxTimestampRange = math.multiply(config.maxTimestampRange, 1e6);
 /**
+ * Checks that the timestamp filters contains either a valid range (greater than and less than filters that do not span beyond
+ * a configured limit), or at least one equals operator.
  *
  * @param timestamps a timestamp or array of timestamps directly from the req
  * @returns boolean whether or not the timestamps created a range (within the limits) or contain an equals operator
