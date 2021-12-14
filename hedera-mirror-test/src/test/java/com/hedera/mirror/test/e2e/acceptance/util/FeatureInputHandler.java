@@ -38,4 +38,11 @@ public class FeatureInputHandler {
 
         return refDate;
     }
+
+    public static String solidityAddress(long shard, long realm, long num) {
+        return String.format("0x%s%s%s",
+                String.format("%08X", shard),
+                String.format("%016X", realm),
+                String.format("%016X", num));
+    }
 }
