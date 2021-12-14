@@ -188,7 +188,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = EntityId.isValidEntityId(val) || EntityId.isValidSolidityAddress(val);
       break;
     case constants.filterKeys.INDEX:
-      ret = isNumeric(val) & (val > 0);
+      ret = isNumeric(val) && val > 0;
       break;
     case constants.filterKeys.LIMIT:
       ret = isPositiveLong(val);

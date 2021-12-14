@@ -102,7 +102,6 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
     );
     expect(formatSqlQueryString(query)).toEqual(
       formatSqlQueryString(`select cl.contract_id,
-                                   cl.bloom,
                                    cl.consensus_timestamp,
                                    cl.data,
                                    cl.index,
@@ -147,7 +146,6 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
     );
     expect(formatSqlQueryString(query)).toEqual(
       formatSqlQueryString(`select cl.contract_id,
-                                   cl.bloom,
                                    cl.consensus_timestamp,
                                    cl.data,
                                    cl.index,

@@ -30,7 +30,6 @@ const {
   },
 } = require('../config');
 const {orderFilterValues} = require('../constants');
-const {logger} = require('../stream/utils');
 
 /**
  * Contract retrieval business logic
@@ -134,8 +133,9 @@ class ContractService extends BaseService {
     ].join('\n');
     params.push(limit);
 
-    logger.info(query);
-    logger.info(params);
+    if (logger.isTraceEnabled()) {
+      logger.trace(`getAccounts query: ${query} ${JSON.stringify(params)}`);
+    }
 
     return [query, params];
   }
