@@ -117,10 +117,10 @@ create table if not exists contract_log
     index               int         not null,
     payer_account_id    bigint      not null,
     root_contract_id    bigint      null,
-    topic0              varchar(64) null,
-    topic1              varchar(64) null,
-    topic2              varchar(64) null,
-    topic3              varchar(64) null
+    topic0              bytea       null,
+    topic1              bytea       null,
+    topic2              bytea       null,
+    topic3              bytea       null
 );
 comment on table contract_log is 'Contract execution result logs';
 

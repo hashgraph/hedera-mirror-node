@@ -131,10 +131,10 @@ public class DomainBuilder {
                 .data(bytes(128))
                 .index((int) id())
                 .payerAccountId(entityId(ACCOUNT))
-                .topic0("0x00")
-                .topic1("0x01")
-                .topic2("0x02")
-                .topic3("0x03");
+                .topic0(bytes(64))
+                .topic1(bytes(64))
+                .topic2(bytes(64))
+                .topic3(bytes(64));
         return new DomainPersister<>(getRepository(ContractLog.class), builder, builder::build);
     }
 
