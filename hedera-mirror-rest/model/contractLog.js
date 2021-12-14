@@ -41,7 +41,6 @@ class ContractLog {
   static DATA = 'data';
   static INDEX = 'index';
   static ROOT_CONTRACT_ID = 'root_contract_id';
-  static TOPICS = 'topics';
   static TOPIC0 = 'topic0';
   static TOPIC1 = 'topic1';
   static TOPIC2 = 'topic2';
