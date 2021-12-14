@@ -54,21 +54,22 @@ class ContractLogsConvertTopicsToBytesMigrationTest extends IntegrationTest {
     private File migrationSql;
 
     @AfterEach
-    void setup() {
+    void cleanup() {
         revertMigration();
     }
 
     @Test
-    void verifyRootContractIdMigrationEmpty() throws Exception {
+    void verifyConvertTopicsToBytesMigrationEmpty() throws Exception {
         migrate();
         assertThat(retrieveContractLogs()).isEmpty();
     }
 
     @Test
-    void verifyRootContractIdMigration() throws Exception {
+    void verifyConvertTopicsToBytesMigration() throws Exception {
 
+        MigrationContractLog contractLogWithTopics = contractLog(1, 1, 0, "00", "aa", "bb", "cc");
         persistContractLog(Arrays.asList(
-                contractLog(1, 1, 0, "00", "aa", "bb", "cc"),
+                contractLogWithTopics,
                 contractLog(2, 2, 1, null, null, null, null)
         ));
         // migration
@@ -82,10 +83,14 @@ class ContractLogsConvertTopicsToBytesMigrationTest extends IntegrationTest {
                 () -> assertArrayEquals(new byte[] {-86}, contractLogs.get(0).getTopic1Bytes()),
                 () -> assertArrayEquals(new byte[] {-69}, contractLogs.get(0).getTopic2Bytes()),
                 () -> assertArrayEquals(new byte[] {-52}, contractLogs.get(0).getTopic3Bytes()),
-                () -> assertEquals("00", DomainUtils.bytesToHex(contractLogs.get(0).getTopic0Bytes())),
-                () -> assertEquals("aa", DomainUtils.bytesToHex(contractLogs.get(0).getTopic1Bytes())),
-                () -> assertEquals("bb", DomainUtils.bytesToHex(contractLogs.get(0).getTopic2Bytes())),
-                () -> assertEquals("cc", DomainUtils.bytesToHex(contractLogs.get(0).getTopic3Bytes())),
+                () -> assertEquals(contractLogWithTopics.getTopic0(), DomainUtils.bytesToHex(contractLogs.get(0)
+                        .getTopic0Bytes())),
+                () -> assertEquals(contractLogWithTopics.getTopic1(), DomainUtils.bytesToHex(contractLogs.get(0)
+                        .getTopic1Bytes())),
+                () -> assertEquals(contractLogWithTopics.getTopic2(), DomainUtils.bytesToHex(contractLogs.get(0)
+                        .getTopic2Bytes())),
+                () -> assertEquals(contractLogWithTopics.getTopic3(), DomainUtils.bytesToHex(contractLogs.get(0)
+                        .getTopic3Bytes())),
                 () -> assertEquals(2, contractLogs.get(1).consensusTimestamp),
                 () -> assertNull(contractLogs.get(1).getTopic0Bytes()),
                 () -> assertNull(contractLogs.get(1).getTopic1Bytes()),
