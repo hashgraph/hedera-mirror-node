@@ -38,7 +38,6 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 
@@ -83,14 +82,6 @@ class ContractLogsConvertTopicsToBytesMigrationTest extends IntegrationTest {
                 () -> assertArrayEquals(new byte[] {-86}, contractLogs.get(0).getTopic1Bytes()),
                 () -> assertArrayEquals(new byte[] {-69}, contractLogs.get(0).getTopic2Bytes()),
                 () -> assertArrayEquals(new byte[] {-52}, contractLogs.get(0).getTopic3Bytes()),
-                () -> assertEquals(contractLogWithTopics.getTopic0(), DomainUtils.bytesToHex(contractLogs.get(0)
-                        .getTopic0Bytes())),
-                () -> assertEquals(contractLogWithTopics.getTopic1(), DomainUtils.bytesToHex(contractLogs.get(0)
-                        .getTopic1Bytes())),
-                () -> assertEquals(contractLogWithTopics.getTopic2(), DomainUtils.bytesToHex(contractLogs.get(0)
-                        .getTopic2Bytes())),
-                () -> assertEquals(contractLogWithTopics.getTopic3(), DomainUtils.bytesToHex(contractLogs.get(0)
-                        .getTopic3Bytes())),
                 () -> assertEquals(2, contractLogs.get(1).consensusTimestamp),
                 () -> assertNull(contractLogs.get(1).getTopic0Bytes()),
                 () -> assertNull(contractLogs.get(1).getTopic1Bytes()),
