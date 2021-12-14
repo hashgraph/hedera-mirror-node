@@ -35,7 +35,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.common.util.DomainUtils;
 
@@ -104,20 +103,7 @@ public class Utility {
         }
         return Arrays.copyOfRange(topic, firstNonZero, topic.length);
     }
-
-    /**
-     * Converts a byte array into a hex encoded string
-     *
-     * @param bytes
-     * @return a hex encoded string
-     */
-    public static String bytesToHexString(byte[] bytes) {
-        if (bytes == null) {
-            return null;
-        }
-        return new String(Hex.encodeHex(bytes));
-    }
-
+    
     /**
      * Generates a TransactionID object
      *

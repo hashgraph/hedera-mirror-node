@@ -56,25 +56,6 @@ class UtilityTest {
     }
 
     @Test
-    void bytesToHexString() {
-        ContractLoginfo contractLoginfo = ContractLoginfo.newBuilder()
-                .addTopic(ByteString.copyFrom(new byte[] {0, 0, 0, 0, 0, 0, 1}))
-                .addTopic(ByteString.copyFrom(new byte[] {0, 127}))
-                .addTopic(ByteString.copyFrom(new byte[] {-1}))
-                .addTopic(ByteString.copyFrom(new byte[] {0}))
-                .addTopic(ByteString.copyFrom(new byte[] {0, 0, 0, 0}))
-                .addTopic(ByteString.copyFrom(new byte[0]))
-                .build();
-        assertThat(Utility.bytesToHexString(new byte[] {1})).isEqualTo("01");
-        assertThat(Utility.bytesToHexString(new byte[] {127})).isEqualTo("7f");
-        assertThat(Utility.bytesToHexString(new byte[] {-1})).isEqualTo("ff");
-        assertThat(Utility.bytesToHexString(new byte[] {0})).isEqualTo("00");
-        assertThat(Utility.bytesToHexString(new byte[] {00})).isEqualTo("00");
-        assertThat(Utility.bytesToHexString(new byte[0])).isEmpty();
-        assertThat(Utility.bytesToHexString(null)).isNull();
-    }
-
-    @Test
     @DisplayName("get TransactionId")
     void getTransactionID() {
         AccountID payerAccountId = AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build();
