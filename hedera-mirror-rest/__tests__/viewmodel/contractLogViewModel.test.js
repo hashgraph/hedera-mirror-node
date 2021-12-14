@@ -21,8 +21,6 @@
 'use strict';
 
 const {ContractLogViewModel} = require('../../viewmodel');
-const ContractViewModel = require('../../viewmodel/contractViewModel');
-const {Range} = require('pg-range');
 
 describe('ContractLogViewModel', () => {
   const hexArray = Array(18).fill(0x00).concat(0x12, 0x34);
@@ -46,11 +44,11 @@ describe('ContractLogViewModel', () => {
     topics: ['0x0102', '0x0102', '0x0102', '0x0102'],
   };
 
-  test('default', () => {
+  test('ContractLogViewModel - default', () => {
     expect(new ContractLogViewModel(defaultContractLog)).toEqual(defaultExpected);
   });
 
-  test('no topics', () => {
+  test('ContractLogViewModel - no topics', () => {
     expect(
       new ContractLogViewModel({
         ...defaultContractLog,
@@ -65,7 +63,7 @@ describe('ContractLogViewModel', () => {
     });
   });
 
-  test('no root contract id', () => {
+  test('ContractLogViewModel- no root contract id', () => {
     expect(
       new ContractLogViewModel({
         ...defaultContractLog,

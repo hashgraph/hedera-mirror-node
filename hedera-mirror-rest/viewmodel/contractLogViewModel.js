@@ -39,8 +39,7 @@ class ContractLogViewModel {
       address: EntityId.parse(contractLog.contractId, constants.filterKeys.CONTRACTID).toSolidityAddress(),
       data: utils.toHexString(contractLog.data, true),
       index: contractLog.index,
-      root_contract_id:
-        contractLog.rootContractId !== null ? EntityId.parse(contractLog.rootContractId).toString() : null,
+      root_contract_id: EntityId.parse(contractLog.rootContractId, true).toString(),
       timestamp: utils.nsToSecNs(contractLog.consensusTimestamp),
       topics: this._formatTopics([contractLog.topic0, contractLog.topic1, contractLog.topic2, contractLog.topic3]),
     });
