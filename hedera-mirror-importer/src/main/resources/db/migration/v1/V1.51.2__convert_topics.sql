@@ -1,8 +1,5 @@
 --TODO Remove this after merging other PR
 alter table contract_log
-    add column root_contract_id bigint;
-
-alter table contract_log
     alter column topic0 type bytea using decode(topic0, 'hex');
 alter table contract_log
     alter column topic1 type bytea using decode(topic1, 'hex');
