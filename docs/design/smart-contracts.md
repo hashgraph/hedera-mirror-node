@@ -396,8 +396,9 @@ Optional filters
   "logs": [
     {
       "address": "0x0000000000000000000000000000000000001234",
-      "bloom": "0x1513001083c899b1996ec7fa33621e2c340203f0",
       "data": "0x8f705727c88764031b98fc32c314f8f9e463fb62",
+      "index": 0,
+      "root_contract_id": "0.0.1",
       "timestamp": "12345.10002",
       "topics": [
         "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
@@ -405,28 +406,35 @@ Optional filters
       ]
     },
     {
-      "address": "0x0000000000000000000000000000000000001893",
+      "address": "0x0000000000000000000000000000000000001234",
       "bloom": "0x8f705727c88764031b98fc32c314f8f9e463fb62",
       "data": "0x1513001083c899b1996ec7fa33621e2c340203f0",
+      "index": 1,
+      "root_contract_id": "0.0.2",
       "timestamp": "12345.10002",
       "topics": [
         "af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0",
         "0000000000000000000000000000000000000000000000000000000000000765"
       ]
     }
-  ],
-  "links": {
-    "next": null
-  }
+  ]
 }
 ```
+
+> _Note:_ `/api/v1/contracts/{id}/results/logs` will not have links, as it requires
+> two parameters to page, `consensus_timestamp` for logs from different `contract_results`
+> and `index` for when logs from a `contract_result` go on to the next page.
+
+> _Note2:_ In order to support searching on a topic, `/api/v1/contracts/{id}/results/logs`
+> will require a timestamp equals operator or a timestamp range(greater than and less than
+> operators) be provided as well, so that indexes are not required on all four topics.
 
 Optional filters
 
 - `limit` Maximum limit will be configurable and lower than current global max limit
 - `order`
 - `timestamp`
-- `address`
+- `index`
 - `topic0`
 - `topic1`
 - `topic2`
