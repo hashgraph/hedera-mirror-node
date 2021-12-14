@@ -94,11 +94,7 @@ const isValidPublicKeyQuery = (query) => {
 
 const contractTopicPattern = /^0x[0-9A-Fa-f]{64}$/; // 0x followed by 64 hex digits
 const isValidOpAndTopic = (op, query) => {
-  return typeof address === 'string' && contractTopicPattern.test(query) && op === 'eq';
-};
-
-const isValidOpAndAddress = (op, query) => {
-  return EntityId.isValidSolidityAddress(query) && op === 'eq';
+  return typeof query === 'string' && contractTopicPattern.test(query) && op === 'eq';
 };
 
 const isValidUtf8Encoding = (query) => {
@@ -1072,7 +1068,6 @@ module.exports = {
   isValidPublicKeyQuery,
   isValidOperatorQuery,
   isValidOpAndTopic,
-  isValidOpAndAddress,
   isValidValueIgnoreCase,
   isValidTimestampParam,
   loadPgRange,
@@ -1090,7 +1085,6 @@ module.exports = {
   parsePublicKeyQueryParam,
   parseResultParams,
   parseTimestampParam,
-  isValidTimestampParamAndOp,
   parseTimestampQueryParam,
   parseTokenBalances,
   parseTransactionTypeParam,
