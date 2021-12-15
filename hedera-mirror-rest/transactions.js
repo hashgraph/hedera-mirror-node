@@ -86,14 +86,16 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
   // aggregate crypto transfers, token transfers, and nft transfers
   const cryptoTransferListCte = `c_list as (
       select jsonb_agg(jsonb_build_object(
-              '${CryptoTransfer.AMOUNT}', ${CryptoTransfer.AMOUNT_FULL_NAME},
-              '${CryptoTransfer.ENTITY_ID}', ${CryptoTransfer.ENTITY_ID_FULL_NAME}
-          ) order by ${CryptoTransfer.ENTITY_ID_FULL_NAME}, ${CryptoTransfer.AMOUNT_FULL_NAME}
+              '${CryptoTransfer.AMOUNT}', ${CryptoTransfer.getFullName(CryptoTransfer.AMOUNT)},
+              '${CryptoTransfer.ENTITY_ID}', ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)}
+          ) order by ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)}, ${CryptoTransfer.getFullName(
+    CryptoTransfer.AMOUNT
+  )}
         ) as ctr_list,
-        ${CryptoTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+        ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
       from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
-      join tlist on ${CryptoTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
-      group by ${CryptoTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+      join tlist on ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
+      group by ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
   )`;
 
   const tokenTransferListCte = `t_list as (

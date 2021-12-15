@@ -34,11 +34,18 @@ class CryptoTransfer {
   static tableName = 'crypto_transfer';
 
   static AMOUNT = 'amount';
-  static AMOUNT_FULL_NAME = `${this.tableAlias}.${this.AMOUNT}`;
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
-  static CONSENSUS_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.CONSENSUS_TIMESTAMP}`;
   static ENTITY_ID = 'entity_id';
-  static ENTITY_ID_FULL_NAME = `${this.tableAlias}.${this.ENTITY_ID}`;
+
+  /**
+   * Gets full column name with table alias prepended.
+   *
+   * @param {string} columnName
+   * @private
+   */
+  static getFullName(columnName) {
+    return `${this.tableAlias}.${columnName}`;
+  }
 }
 
 module.exports = CryptoTransfer;
