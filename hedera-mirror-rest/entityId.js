@@ -254,5 +254,4 @@ module.exports = {
   isValidSolidityAddress,
   of,
   parse,
-  parseFromSolidityAddress,
 };
