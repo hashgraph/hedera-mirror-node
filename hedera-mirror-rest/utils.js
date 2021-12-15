@@ -1046,7 +1046,7 @@ const checkTimestampRange = (timestamps) => {
 
   const difference = math.subtract(latest, earliest);
   if (difference > maxTimestampRange || difference < 0) {
-    throw new InvalidArgumentError(`Timestamp range must be > 0 and < ${maxTimestampRange} ns`);
+    throw new InvalidArgumentError(`Lower and upper bounds must be positive and within ${maxTimestampRange} ns`);
   }
 };
 
