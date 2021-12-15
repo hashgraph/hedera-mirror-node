@@ -685,12 +685,12 @@ const addContractLog = async (contractLogInput) => {
     ...contractLogInput,
   };
 
-  contractLog.bloom = testUtils.getBuffer(contractLogInput.bloom, null);
-  contractLog.data = testUtils.getBuffer(contractLogInput.data, null);
-  contractLog.topic0 = testUtils.getBuffer(contractLogInput.topic0, null);
-  contractLog.topic1 = testUtils.getBuffer(contractLogInput.topic1, null);
-  contractLog.topic2 = testUtils.getBuffer(contractLogInput.topic2, null);
-  contractLog.topic3 = testUtils.getBuffer(contractLogInput.topic3, null);
+  contractLog.bloom = testUtils.getBuffer(contractLogInput.bloom, contractLog.bloom);
+  contractLog.data = testUtils.getBuffer(contractLogInput.data, contractLog.data);
+  contractLog.topic0 = testUtils.getBuffer(contractLogInput.topic0, contractLog.topic0);
+  contractLog.topic1 = testUtils.getBuffer(contractLogInput.topic1, contractLog.topic1);
+  contractLog.topic2 = testUtils.getBuffer(contractLogInput.topic2, contractLog.topic2);
+  contractLog.topic3 = testUtils.getBuffer(contractLogInput.topic3, contractLog.topic3);
 
   await sqlConnection.query(
     `insert into contract_log (${insertFields.join(',')})
