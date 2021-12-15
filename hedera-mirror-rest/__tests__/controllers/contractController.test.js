@@ -708,6 +708,18 @@ describe('extractContractLogsByIdQuery', () => {
       expect(contracts.extractContractLogsByIdQuery(spec.input.filter, spec.input.contractId)).toEqual(spec.expected);
     });
   });
+  test(`timestamp not equal operator throws error`, () => {
+    const filter = [
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.ne,
+        value: '1000',
+      },
+    ];
+    expect(() => {
+      contracts.extractContractLogsByIdQuery(filter, defaultContractId);
+    }).toThrowError(InvalidArgumentError);
+  });
 });
 
 describe('checkTimestampsForTopics', () => {
