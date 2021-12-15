@@ -55,28 +55,30 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     // populate pre-clause queries where a timestamp filter is applied
     if (!_.isUndefined(modifyingQuery)) {
       timestampFilter = `timestampFilter as (${modifyingQuery}),`;
-      timestampFilterJoin = `join timestampFilter tf on ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} = tf.consensus_timestamp`;
+      timestampFilterJoin = `join timestampFilter tf on ${Transaction.getFullName(
+        Transaction.CONSENSUS_TIMESTAMP
+      )} = tf.consensus_timestamp`;
       limitQuery = '';
     }
 
     const tquery = `select
-                      ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME},
-                      ${Transaction.PAYER_ACCOUNT_ID_FULL_NAME},
-                      ${Transaction.VALID_START_NS_FULL_NAME},
-                      ${Transaction.MEMO_FULL_NAME},
-                      ${Transaction.NODE_ACCOUNT_ID_FULL_NAME},
-                      ${Transaction.CHARGED_TX_FEE_FULL_NAME},
-                      ${Transaction.VALID_DURATION_SECONDS_FULL_NAME},
-                      ${Transaction.MAX_FEE_FULL_NAME},
-                      ${Transaction.TRANSACTION_HASH_FULL_NAME},
-                      ${Transaction.SCHEDULED_FULL_NAME},
-                      ${Transaction.ENTITY_ID_FULL_NAME},
-                      ${Transaction.TRANSACTION_BYTES_FULL_NAME},
-                      ${Transaction.RESULT_FULL_NAME},
-                      ${Transaction.TYPE_FULL_NAME}
+                      ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)},
+                      ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
+                      ${Transaction.getFullName(Transaction.VALID_START_NS)},
+                      ${Transaction.getFullName(Transaction.MEMO)},
+                      ${Transaction.getFullName(Transaction.NODE_ACCOUNT_ID)},
+                      ${Transaction.getFullName(Transaction.CHARGED_TX_FEE)},
+                      ${Transaction.getFullName(Transaction.VALID_DURATION_SECONDS)},
+                      ${Transaction.getFullName(Transaction.MAX_FEE)},
+                      ${Transaction.getFullName(Transaction.TRANSACTION_HASH)},
+                      ${Transaction.getFullName(Transaction.SCHEDULED)},
+                      ${Transaction.getFullName(Transaction.ENTITY_ID)},
+                      ${Transaction.getFullName(Transaction.TRANSACTION_BYTES)},
+                      ${Transaction.getFullName(Transaction.RESULT)},
+                      ${Transaction.getFullName(Transaction.TYPE)}
                     from ${Transaction.tableName} as ${Transaction.tableAlias}
                     ${timestampFilterJoin}
-                    order by ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}
+                    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
                     ${limitQuery}`;
 
     return `${timestampFilter}
@@ -187,20 +189,20 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
   const ctes = [transactionTimeStampCte(innerQuery), cryptoTransferListCte, tokenTransferListCte];
 
   const fields = [
-    Transaction.PAYER_ACCOUNT_ID_FULL_NAME,
-    Transaction.MEMO_FULL_NAME,
-    Transaction.CONSENSUS_TIMESTAMP_FULL_NAME,
-    Transaction.VALID_START_NS_FULL_NAME,
-    Transaction.RESULT_FULL_NAME,
-    Transaction.TYPE_FULL_NAME,
-    Transaction.NODE_ACCOUNT_ID_FULL_NAME,
-    Transaction.CHARGED_TX_FEE_FULL_NAME,
-    Transaction.VALID_DURATION_SECONDS_FULL_NAME,
-    Transaction.MAX_FEE_FULL_NAME,
-    Transaction.TRANSACTION_HASH_FULL_NAME,
-    Transaction.SCHEDULED_FULL_NAME,
-    Transaction.ENTITY_ID_FULL_NAME,
-    Transaction.TRANSACTION_BYTES_FULL_NAME,
+    Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID),
+    Transaction.getFullName(Transaction.MEMO),
+    Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP),
+    Transaction.getFullName(Transaction.VALID_START_NS),
+    Transaction.getFullName(Transaction.RESULT),
+    Transaction.getFullName(Transaction.TYPE),
+    Transaction.getFullName(Transaction.NODE_ACCOUNT_ID),
+    Transaction.getFullName(Transaction.CHARGED_TX_FEE),
+    Transaction.getFullName(Transaction.VALID_DURATION_SECONDS),
+    Transaction.getFullName(Transaction.MAX_FEE),
+    Transaction.getFullName(Transaction.TRANSACTION_HASH),
+    Transaction.getFullName(Transaction.SCHEDULED),
+    Transaction.getFullName(Transaction.ENTITY_ID),
+    Transaction.getFullName(Transaction.TRANSACTION_BYTES),
     `t.ctr_list AS crypto_transfer_list`,
     `t.ttr_list AS token_transfer_list`,
   ];
@@ -351,7 +353,7 @@ const getTransactionsOuterQuery = (innerQuery, order, includeExtraInfo = false) 
   return `
     ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery, order)}
     FROM transfer_list t
-     ORDER BY ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}`;
+     ORDER BY ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}`;
 };
 
 /**
@@ -411,7 +413,9 @@ const getTransferDistinctTimestampsQuery = function (
   const namedTransferTsQuery = namedTsQuery.replace(/t\.consensus_timestamp/g, `${tableAlias}.${timestampColumn}`);
   const joinClause =
     (resultTypeQuery || transactionTypeQuery) &&
-    `JOIN ${Transaction.tableName} AS ${Transaction.tableAlias} ON ${tableAlias}.${timestampColumn} = ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME}`;
+    `JOIN ${Transaction.tableName} AS ${
+      Transaction.tableAlias
+    } ON ${tableAlias}.${timestampColumn} = ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)}`;
   const whereClause = buildWhereClause(
     namedAccountQuery,
     namedTransferTsQuery,
@@ -475,7 +479,7 @@ const getTransactionsInnerQuery = function (
     : `select ${Transaction.CONSENSUS_TIMESTAMP}
     from ${Transaction.tableName} as ${Transaction.tableAlias}
     ${transactionWhereClause}
-    order by ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}
+    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
     ${transactionOnlyLimitQuery}`;
 
   if (creditDebitQuery || namedAccountQuery) {
@@ -525,9 +529,11 @@ const getTransactionsInnerQuery = function (
       SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
       FROM (${transactionOnlyQuery}) AS ${Transaction.tableAlias}
       FULL OUTER JOIN (${ctlQuery}) AS ctl
-      ON ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} = ctl.consensus_timestamp
+      ON ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ctl.consensus_timestamp
       FULL OUTER JOIN (${ttlQuery}) AS ttl
-      ON coalesce(${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME}, ctl.consensus_timestamp) = ttl.consensus_timestamp
+      ON coalesce(${Transaction.getFullName(
+        Transaction.CONSENSUS_TIMESTAMP
+      )}, ctl.consensus_timestamp) = ttl.consensus_timestamp
       ${namedLimitQuery}`;
   }
 
@@ -543,14 +549,14 @@ const reqToSql = function (req) {
   sqlParams.push(...accountParams);
   let [tsQuery, tsParams] = utils.parseTimestampQueryParam(
     parsedQueryParams,
-    Transaction.CONSENSUS_TIMESTAMP_FULL_NAME
+    Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)
   );
   tsQuery = utils.convertMySqlStyleQueryToPostgres(tsQuery, sqlParams.length + 1);
   sqlParams.push(...tsParams);
   let [creditDebitQuery, creditDebitParams] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   creditDebitQuery = utils.convertMySqlStyleQueryToPostgres(creditDebitQuery, sqlParams.length + 1);
   sqlParams.push(...creditDebitParams);
-  const resultTypeQuery = utils.parseResultParams(req, Transaction.RESULT_FULL_NAME);
+  const resultTypeQuery = utils.parseResultParams(req, Transaction.getFullName(Transaction.RESULT));
   const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   sqlParams.push(...params);
@@ -631,7 +637,7 @@ const getScheduledQuery = (query) => {
     scheduled = scheduledValues[scheduledValues.length - 1];
   }
 
-  return `${Transaction.SCHEDULED_FULL_NAME} = ${scheduled}`;
+  return `${Transaction.getFullName(Transaction.SCHEDULED)} = ${scheduled}`;
 };
 
 /**
@@ -646,8 +652,8 @@ const getOneTransaction = async (req, res) => {
   const scheduledQuery = getScheduledQuery(req.query);
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
   const whereClause = buildWhereClause(
-    `${Transaction.PAYER_ACCOUNT_ID_FULL_NAME} = ?`,
-    `${Transaction.VALID_START_NS_FULL_NAME} = ?`,
+    `${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)} = ?`,
+    `${Transaction.getFullName(Transaction.VALID_START_NS)} = ?`,
     scheduledQuery
   );
   const includeExtraInfo = true;
@@ -660,7 +666,7 @@ const getOneTransaction = async (req, res) => {
   const sqlQuery = `
     ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery)}
     FROM transfer_list t
-    ORDER BY ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ASC`;
+    ORDER BY ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ASC`;
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
   if (logger.isTraceEnabled()) {
