@@ -100,15 +100,17 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
 
   const tokenTransferListCte = `t_list as (
     select jsonb_agg(jsonb_build_object(
-          '${TokenTransfer.ACCOUNT_ID}', ${TokenTransfer.ACCOUNT_ID_FULL_NAME},
-          '${TokenTransfer.AMOUNT}', ${TokenTransfer.AMOUNT_FULL_NAME},
-          '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.TOKEN_ID_FULL_NAME}
-        ) order by ${TokenTransfer.TOKEN_ID_FULL_NAME}, ${TokenTransfer.ACCOUNT_ID_FULL_NAME}
+          '${TokenTransfer.ACCOUNT_ID}', ${TokenTransfer.getFullName(TokenTransfer.ACCOUNT_ID)},
+          '${TokenTransfer.AMOUNT}', ${TokenTransfer.getFullName(TokenTransfer.AMOUNT)},
+          '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.getFullName(TokenTransfer.TOKEN_ID)}
+        ) order by ${TokenTransfer.getFullName(TokenTransfer.TOKEN_ID)}, ${TokenTransfer.getFullName(
+    TokenTransfer.ACCOUNT_ID
+  )}
       ) as ttr_list,
-      ${TokenTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+      ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
     from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
-    join tlist on ${TokenTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
-    group by ${TokenTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+    join tlist on ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
+    group by ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
   )`;
 
   const nftTransferListCte = `nft_list as (
