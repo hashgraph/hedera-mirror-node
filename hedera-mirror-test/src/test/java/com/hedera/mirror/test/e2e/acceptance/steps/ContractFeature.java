@@ -226,7 +226,7 @@ public class ContractFeature extends AbstractFeature {
 
         verifyContractExecutionResults(contractResult);
         assertThat(contractResult.getBlockHash()).isNotBlank();
-        assertThat(contractResult.getBlockNumber()).isGreaterThan(0);
+        assertThat(contractResult.getBlockNumber()).isPositive();
         assertThat(contractResult.getHash()).isNotBlank();
     }
 
@@ -244,7 +244,7 @@ public class ContractFeature extends AbstractFeature {
                 contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().realm,
                 contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().num));
         assertThat(contractResult.getGasLimit()).isEqualTo(maxFunctionGas);
-        assertThat(contractResult.getGasUsed()).isGreaterThan(0);
+        assertThat(contractResult.getGasUsed()).isPositive();
         assertThat(contractResult.getTo()).isEqualTo(FeatureInputHandler.solidityAddress(
                 contractId.shard, contractId.realm, contractId.num));
 
