@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.props;
+package com.hedera.mirror.test.e2e.acceptance.response;
 
 /*-
  * ‌
@@ -22,17 +22,11 @@ package com.hedera.mirror.test.e2e.acceptance.props;
 
 import lombok.Data;
 
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
+
 @Data
-public class MirrorContractResult {
-    private Integer amount;
-    private String callResult;
-    private String contractId;
-    private String[] createdContractIds;
-    private String errorMessage;
-    private String from;
-    private String functionParameters;
-    private Integer gasLimit;
-    private Integer gasUsed;
-    private String timestamp;
-    private String to;
+public class MirrorContractResultResponse extends MirrorContractResult {
+    private String blockHash;
+    private Integer blockNumber;
+    private String hash;
 }

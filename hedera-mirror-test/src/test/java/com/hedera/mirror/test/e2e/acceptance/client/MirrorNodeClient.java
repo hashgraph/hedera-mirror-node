@@ -36,6 +36,7 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
@@ -127,9 +128,9 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         return callRestEndpoint("/contracts/{contractId}/results", MirrorContractResultsResponse.class, contractId);
     }
 
-    public MirrorContractResultsResponse getContractResultsByTransactionId(String transactionId) {
+    public MirrorContractResultResponse getContractResultsByTransactionId(String transactionId) {
         log.debug("Verify contract results'{}' is returned by Mirror Node", transactionId);
-        return callRestEndpoint("/contracts/results/{transactionId}", MirrorContractResultsResponse.class,
+        return callRestEndpoint("/contracts/results/{transactionId}", MirrorContractResultResponse.class,
                 transactionId);
     }
 

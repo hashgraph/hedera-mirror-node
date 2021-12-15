@@ -27,5 +27,5 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
 
 @Data
 public class MirrorContractResultsResponse {
-    List<MirrorContractResult> contractResults;
+    List<MirrorContractResult> results;
 }

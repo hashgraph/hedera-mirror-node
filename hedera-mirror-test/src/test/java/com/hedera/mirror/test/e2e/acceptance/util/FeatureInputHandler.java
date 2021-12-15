@@ -43,6 +43,6 @@ public class FeatureInputHandler {
         return String.format("0x%s%s%s",
                 String.format("%08X", shard),
                 String.format("%016X", realm),
-                String.format("%016X", num));
+                String.format("%016X", num)).toLowerCase();
     }
 }

@@ -51,6 +51,7 @@ import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
 @Log4j2
@@ -119,13 +120,20 @@ public class ContractFeature extends AbstractFeature {
     @Then("the mirror node REST API should verify the deployed contract entity")
     public void verifyDeployedContractMirror() {
         verifyContractFromMirror(false);
-        verifyContractExecutionResultsById(ContractExecutionStage.CREATION);
+        verifyContractExecutionResultsById();
+        verifyContractExecutionResultsByTransactionId();
+    }
+
+    @Then("the mirror node REST API should verify the updated contract entity")
+    public void verifyUpdatedContractMirror() {
+        verifyContractFromMirror(false);
     }
 
     @Then("the mirror node REST API should verify the called contract function")
-    public void verifyContractFunctionCall() {
+    public void verifyContractFunctionCallMirror() {
         verifyContractFromMirror(false);
-        verifyContractExecutionResultsById(ContractExecutionStage.CALL);
+        verifyContractExecutionResultsById();
+        verifyContractExecutionResultsByTransactionId();
     }
 
     @Then("the mirror node REST API should verify the deleted contract entity")
@@ -200,50 +208,48 @@ public class ContractFeature extends AbstractFeature {
         return mirrorContract;
     }
 
-    private void verifyContractExecutionResultsById(ContractExecutionStage contractExecutionStage) {
+    private void verifyContractExecutionResultsById() {
         List<MirrorContractResult> contractResults = mirrorClient.getContractResultsById(contractId.toString())
-                .getContractResults();
+                .getResults();
 
         assertNotNull(contractResults);
         assertThat(contractResults).isNotEmpty();
 
         contractResults.forEach(result -> {
-            verifyContractExecutionResults(result, contractExecutionStage);
+            verifyContractExecutionResults(result);
         });
     }
 
-    private void verifyContractExecutionResultsByTransactionId(ContractExecutionStage contractExecutionStage) {
-        List<MirrorContractResult> contractResults = mirrorClient
-                .getContractResultsByTransactionId(contractId.toString())
-                .getContractResults();
+    private void verifyContractExecutionResultsByTransactionId() {
+        MirrorContractResultResponse contractResult = mirrorClient
+                .getContractResultsByTransactionId(networkTransactionResponse.getTransactionIdStringNoCheckSum());
 
-        assertNotNull(contractResults);
-        assertThat(contractResults).isNotEmpty();
-
-        contractResults.forEach(result -> {
-            verifyContractExecutionResults(result, contractExecutionStage);
-            assertThat(result.getBlockHash()).isNotBlank();
-            assertThat(result.getBlocNumber()).isGreaterThan(0);
-            assertThat(result.getHash()).isNotBlank();
-        });
+        verifyContractExecutionResults(contractResult);
+        assertThat(contractResult.getBlockHash()).isNotBlank();
+        assertThat(contractResult.getBlockNumber()).isGreaterThan(0);
+        assertThat(contractResult.getHash()).isNotBlank();
     }
 
-    private void verifyContractExecutionResults(MirrorContractResult contractResult,
-                                                ContractExecutionStage contractExecutionStage) {
+    private void verifyContractExecutionResults(MirrorContractResult contractResult) {
+        ContractExecutionStage contractExecutionStage = contractResult.getFunctionParameters().equals("0x") ?
+                ContractExecutionStage.CREATION : ContractExecutionStage.CALL;
+
         assertThat(contractResult.getCallResult()).isNotBlank();
         assertThat(contractResult.getContractId()).isEqualTo(contractId.toString());
         String[] createdIds = contractResult.getCreatedContractIds();
         assertThat(createdIds).isNotEmpty();
         assertThat(contractResult.getErrorMessage()).isBlank();
-        assertThat(contractResult.getFrom()).isEqualTo(
-                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toString());
+        assertThat(contractResult.getFrom()).isEqualTo(FeatureInputHandler.solidityAddress(
+                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().shard,
+                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().realm,
+                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().num));
         assertThat(contractResult.getGasLimit()).isEqualTo(maxFunctionGas);
         assertThat(contractResult.getGasUsed()).isGreaterThan(0);
         assertThat(contractResult.getTo()).isEqualTo(FeatureInputHandler.solidityAddress(
                 contractId.shard, contractId.realm, contractId.num));
 
-        int amount = 0;
-        int numCreatedIds = 1;
+        int amount = 0; // no payment in contract construction phase
+        int numCreatedIds = 2; // parent and child contract
         switch (contractExecutionStage) {
             case CREATION:
                 amount = 1000;
@@ -251,7 +257,7 @@ public class ContractFeature extends AbstractFeature {
                 assertThat(contractResult.getFunctionParameters()).isEqualTo("0x");
                 break;
             case CALL:
-                numCreatedIds = 2;
+                numCreatedIds = 1;
                 assertThat(createdIds).doesNotContain(contractId.toString());
                 assertThat(contractResult.getFunctionParameters()).isNotEqualTo("0x");
                 break;
