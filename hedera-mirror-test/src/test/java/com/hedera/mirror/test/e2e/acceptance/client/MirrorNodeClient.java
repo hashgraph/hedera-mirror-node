@@ -128,7 +128,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         return callRestEndpoint("/contracts/{contractId}/results", MirrorContractResultsResponse.class, contractId);
     }
 
-    public MirrorContractResultResponse getContractResultsByTransactionId(String transactionId) {
+    public MirrorContractResultResponse getContractResultByTransactionId(String transactionId) {
         log.debug("Verify contract results'{}' is returned by Mirror Node", transactionId);
         return callRestEndpoint("/contracts/results/{transactionId}", MirrorContractResultResponse.class,
                 transactionId);

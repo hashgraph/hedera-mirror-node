@@ -212,17 +212,12 @@ public class ContractFeature extends AbstractFeature {
         List<MirrorContractResult> contractResults = mirrorClient.getContractResultsById(contractId.toString())
                 .getResults();
 
-        assertNotNull(contractResults);
-        assertThat(contractResults).isNotEmpty();
-
-        contractResults.forEach(result -> {
-            verifyContractExecutionResults(result);
-        });
+        assertThat(contractResults).isNotEmpty().allSatisfy(this::verifyContractExecutionResults);
     }
 
     private void verifyContractExecutionResultsByTransactionId() {
         MirrorContractResultResponse contractResult = mirrorClient
-                .getContractResultsByTransactionId(networkTransactionResponse.getTransactionIdStringNoCheckSum());
+                .getContractResultByTransactionId(networkTransactionResponse.getTransactionIdStringNoCheckSum());
 
         verifyContractExecutionResults(contractResult);
         assertThat(contractResult.getBlockHash()).isNotBlank();
@@ -240,13 +235,10 @@ public class ContractFeature extends AbstractFeature {
         assertThat(createdIds).isNotEmpty();
         assertThat(contractResult.getErrorMessage()).isBlank();
         assertThat(contractResult.getFrom()).isEqualTo(FeatureInputHandler.solidityAddress(
-                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().shard,
-                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().realm,
-                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().num));
+                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId()));
         assertThat(contractResult.getGasLimit()).isEqualTo(maxFunctionGas);
         assertThat(contractResult.getGasUsed()).isPositive();
-        assertThat(contractResult.getTo()).isEqualTo(FeatureInputHandler.solidityAddress(
-                contractId.shard, contractId.realm, contractId.num));
+        assertThat(contractResult.getTo()).isEqualTo(FeatureInputHandler.solidityAddress(contractId));
 
         int amount = 0; // no payment in contract construction phase
         int numCreatedIds = 2; // parent and child contract
