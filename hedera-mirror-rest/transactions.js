@@ -140,10 +140,10 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
           '${AssessedCustomFee.TOKEN_ID}', ${AssessedCustomFee.TOKEN_ID}
         ) order by ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}, ${AssessedCustomFee.AMOUNT}
       ) as ftr_list,
-      ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME}
+      ${AssessedCustomFee.getFullName(AssessedCustomFee.CONSENSUS_TIMESTAMP)}
     from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
-    join tlist on ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
-    group by ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME}
+    join tlist on ${AssessedCustomFee.getFullName(AssessedCustomFee.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
+    group by ${AssessedCustomFee.getFullName(AssessedCustomFee.CONSENSUS_TIMESTAMP)}
   )`;
 
   const transfersListCte = (extraInfo) => {
