@@ -795,10 +795,10 @@ const paramStringBuilderBytes = (invalues, start) => {
 
 const checkTimestampsForTopics = (timestamps, topic0, topic1, topic2, topic3) => {
   if (topic0 || topic1 || topic2 || topic3) {
-    if (!utils.checkTimestampRange(timestamps)) {
-      throw new InvalidArgumentError(
-        `Cannot search topics without timestamp range within ${config.maxTimestampRange} milliseconds`
-      );
+    try {
+      utils.checkTimestampRange(timestamps);
+    } catch (e) {
+      throw new InvalidArgumentError(`Cannot search topics without timestamp range: ${e.message}`);
     }
   }
 };

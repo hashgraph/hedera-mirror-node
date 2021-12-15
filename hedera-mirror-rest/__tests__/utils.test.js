@@ -1019,36 +1019,46 @@ describe('Utils test - utils.parseTransactionTypeParam', () => {
 
   describe('Utils test - utils.checkTimestampRange', () => {
     test('Utils test - utils.checkTimestampRange - no params', () => {
-      expect(utils.checkTimestampRange()).toBeFalsy();
+      const error = () => utils.checkTimestampRange();
+      expect(error).toThrowError(InvalidArgumentError);
+      expect(error).toThrowError('No timestamp range given');
     });
     test('Utils test - utils.checkTimestampRange - one param gt', () => {
-      expect(utils.checkTimestampRange('gt:1638921702.000')).toBeFalsy();
+      const error = () => utils.checkTimestampRange('gt:1638921702.000');
+      expect(error).toThrowError(InvalidArgumentError);
+      expect(error).toThrowError('Timestamp range must have gt (or gte) and lt (or lte)');
     });
     test('Utils test - utils.checkTimestampRange - one param eq', () => {
-      expect(utils.checkTimestampRange('eq:1638921702.000')).toBeTruthy();
+      utils.checkTimestampRange('eq:1638921702.000');
     });
     test('Utils test - utils.checkTimestampRange - two params gt and eq', () => {
-      expect(utils.checkTimestampRange(['gt:1638921702.000', 'eq:1638921702'])).toBeTruthy();
+      utils.checkTimestampRange(['gt:1638921702.000', 'eq:1638921702']);
     });
     test('Utils test - utils.checkTimestampRange - two both sides', () => {
-      expect(utils.checkTimestampRange(['lte:1638921702.000000000', 'gte:1638921701.000'])).toBeTruthy();
+      utils.checkTimestampRange(['lte:1638921702.000000000', 'gte:1638921701.000']);
     });
     test('Utils test - utils.checkTimestampRange - two bad range backwards', () => {
-      expect(utils.checkTimestampRange(['lte:1638921701.000000000', 'gte:1638921702.000'])).toBeFalsy();
+      const error = () => utils.checkTimestampRange(['lte:1638921701.000000000', 'gte:1638921702.000']);
+      expect(error).toThrowError(InvalidArgumentError);
+      expect(error).toThrowError('Timestamp range must be > 0 and < 31536000000000000');
     });
     test('Utils test - utils.checkTimestampRange - two bad range too big', () => {
-      expect(utils.checkTimestampRange(['lte:1638921702.000000000', 'gte:1738921702.000'])).toBeFalsy();
+      const error = () => utils.checkTimestampRange(['lte:1638921702.000000000', 'gte:1738921702.000']);
+      expect(error).toThrowError(InvalidArgumentError);
+      expect(error).toThrowError('Timestamp range must be > 0 and < 31536000000000000');
     });
     test('Utils test - utils.checkTimestampRange - two gt and gte', () => {
-      expect(utils.checkTimestampRange(['gt:1638921702.000000000', 'gte:1738921702.000'])).toBeFalsy();
+      const error = () => utils.checkTimestampRange(['gt:1638921702.000000000', 'gte:1738921702.000']);
+      expect(error).toThrowError(InvalidArgumentError);
+      expect(error).toThrowError('Multiple greater than operators not permitted');
     });
     test('Utils test - utils.checkTimestampRange - two lt and lte', () => {
-      expect(utils.checkTimestampRange(['lt:1638921702.000000000', 'lte:1738921702.000'])).toBeFalsy();
+      const error = () => utils.checkTimestampRange(['lt:1638921702.000000000', 'lte:1738921702.000']);
+      expect(error).toThrowError(InvalidArgumentError);
+      expect(error).toThrowError('Multiple less than operators not permitted');
     });
     test('Utils test - utils.checkTimestampRange - three gt lte eq', () => {
-      expect(
-        utils.checkTimestampRange(['gt:1638921702.000000000', 'lte:1638921701.000', 'eq:1638921701.000'])
-      ).toBeTruthy();
+      utils.checkTimestampRange(['gt:1638921702.000000000', 'lte:1638921701.000', 'eq:1638921701.000']);
     });
   });
 });

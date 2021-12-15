@@ -1004,7 +1004,6 @@ const maxTimestampRange = math.multiply(config.maxTimestampRange, 1e6);
  * a configured limit), or at least one equals operator.
  *
  * @param timestamps a timestamp or array of timestamps directly from the req
- * @returns boolean whether or not the timestamps created a range (within the limits) or contain an equals operator
  */
 const checkTimestampRange = (timestamps) => {
   let latest = undefined;
@@ -1012,7 +1011,7 @@ const checkTimestampRange = (timestamps) => {
 
   //no timestamp params
   if (!timestamps) {
-    return false;
+    throw new InvalidArgumentError('No timestamp range given');
   }
 
   const timestampsArray = Array.isArray(timestamps) ? timestamps : [timestamps];
@@ -1021,37 +1020,34 @@ const checkTimestampRange = (timestamps) => {
     const filter = buildComparatorFilter(constants.filterKeys.TIMESTAMP, val);
     if (filter.operator === constants.queryParamOperators.eq) {
       //An equals operator removes the need for a range
-      return true;
+      return;
     } else if (
       filter.operator === constants.queryParamOperators.gt ||
       filter.operator === constants.queryParamOperators.gte
     ) {
       if (earliest !== undefined) {
-        //Multiple greater than operators detected, not permitted
-        return false;
+        throw new InvalidArgumentError('Multiple greater than operators not permitted');
       }
       earliest = parseTimestampParam(filter.value);
     } else if (
-      filter.operator === constants.queryParamOperators.lte ||
+      filter.operator === constants.queryParamOperators.lt ||
       filter.operator === constants.queryParamOperators.lte
     ) {
       if (latest !== undefined) {
-        //Multiple less than operators detected, not permitted
-        return false;
+        throw new InvalidArgumentError('Multiple less than operators not permitted');
       }
       latest = parseTimestampParam(filter.value);
     }
   }
 
   if (latest === undefined || earliest === undefined) {
-    return false;
+    throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte)');
   }
 
   const difference = math.subtract(latest, earliest);
   if (difference > maxTimestampRange || difference < 0) {
-    return false;
+    throw new InvalidArgumentError(`Timestamp range must be > 0 and < ${maxTimestampRange} ns`);
   }
-  return true;
 };
 
 module.exports = {

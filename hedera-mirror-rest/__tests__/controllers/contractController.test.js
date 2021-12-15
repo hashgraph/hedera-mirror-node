@@ -747,8 +747,6 @@ describe('checkTimestampsForTopics', () => {
     }).toThrow(InvalidArgumentError);
   });
   test('all topics valid timestamp', () => {
-    expect(() => {
-      contracts.checkTimestampsForTopics('e:123', '0x123', '0x123', '0x123', '0x123');
-    }).toThrow(InvalidArgumentError);
+    contracts.checkTimestampsForTopics('eq:123', '0x123', '0x123', '0x123', '0x123');
   });
 });
