@@ -812,7 +812,10 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
   let order = constants.orderFilterValues.DESC;
 
   const params = [tokenId, serialNumber];
-  const transferConditions = [`${NftTransfer.TOKEN_ID_FULL_NAME} = $1`, `${NftTransfer.SERIAL_NUMBER_FULL_NAME} = $2`];
+  const transferConditions = [
+    `${NftTransfer.getFullName(NftTransfer.TOKEN_ID)} = $1`,
+    `${NftTransfer.getFullName(NftTransfer.SERIAL_NUMBER)} = $2`,
+  ];
 
   const deleteConditions = [
     `${Transaction.ENTITY_ID_FULL_NAME} = $1`,
@@ -848,7 +851,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
   }
 
   const joinTransactionClause = `join ${Transaction.tableName} ${Transaction.tableAlias}
-    on ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME}`;
+    on ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)} = ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME}`;
 
   const transferWhereQuery = `where ${transferConditions.join('\nand ')}`;
 
@@ -861,7 +864,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, transfer
   const tokenTransactionCte = `token_transactions as (
     select ${nftTransferHistorySelectFields.join(',\n')}
     from serial_transfers ${NftTransfer.tableAlias}
-    ${joinTransactionClause} and ${NftTransfer.TOKEN_ID_FULL_NAME} = ${Transaction.ENTITY_ID_FULL_NAME}
+    ${joinTransactionClause} and ${NftTransfer.getFullName(NftTransfer.TOKEN_ID)} = ${Transaction.ENTITY_ID_FULL_NAME}
   )`;
 
   const tokenTransferCte = `token_transfers as (
@@ -896,11 +899,11 @@ const formatNftHistoryRow = (row) => {
 };
 
 const nftTransferHistorySelectFields = [
-  NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME,
+  NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP),
   Transaction.PAYER_ACCOUNT_ID_FULL_NAME,
   Transaction.VALID_START_NS_FULL_NAME,
-  NftTransfer.RECEIVER_ACCOUNT_ID_FULL_NAME,
-  NftTransfer.SENDER_ACCOUNT_ID_FULL_NAME,
+  NftTransfer.getFullName(NftTransfer.RECEIVER_ACCOUNT_ID),
+  NftTransfer.getFullName(NftTransfer.SENDER_ACCOUNT_ID),
   Transaction.TYPE_FULL_NAME,
 ];
 const nftTransferHistorySelectQuery = [
@@ -924,10 +927,10 @@ const nftDeleteHistorySelectQuery = [
 ].join('\n');
 
 const nftTransferHistoryCteSelectFields = [
-  NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME,
-  NftTransfer.RECEIVER_ACCOUNT_ID_FULL_NAME,
-  NftTransfer.SENDER_ACCOUNT_ID_FULL_NAME,
-  NftTransfer.TOKEN_ID_FULL_NAME,
+  NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP),
+  NftTransfer.getFullName(NftTransfer.RECEIVER_ACCOUNT_ID),
+  NftTransfer.getFullName(NftTransfer.SENDER_ACCOUNT_ID),
+  NftTransfer.getFullName(NftTransfer.TOKEN_ID),
 ];
 
 /**

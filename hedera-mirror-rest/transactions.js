@@ -113,16 +113,18 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
 
   const nftTransferListCte = `nft_list as (
     select jsonb_agg(jsonb_build_object(
-          '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID_FULL_NAME},
-          '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID_FULL_NAME},
-          '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER_FULL_NAME},
-          '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID_FULL_NAME}
-        ) order by ${NftTransfer.TOKEN_ID_FULL_NAME}, ${NftTransfer.SERIAL_NUMBER_FULL_NAME}
+          '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.getFullName(NftTransfer.RECEIVER_ACCOUNT_ID)},
+          '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.getFullName(NftTransfer.SENDER_ACCOUNT_ID)},
+          '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.getFullName(NftTransfer.SERIAL_NUMBER)},
+          '${NftTransfer.TOKEN_ID}', ${NftTransfer.getFullName(NftTransfer.TOKEN_ID)}
+        ) order by ${NftTransfer.getFullName(NftTransfer.TOKEN_ID)}, ${NftTransfer.getFullName(
+    NftTransfer.SERIAL_NUMBER
+  )}
       ) as ntr_list,
-      ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+      ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)}
     from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
-    join tlist on ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
-    group by ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+    join tlist on ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
+    group by ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)}
   )`;
 
   const assessedFeeListCte = `fee_list as (
