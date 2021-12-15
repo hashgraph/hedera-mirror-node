@@ -1561,6 +1561,9 @@ components:
           $ref: '#/components/schemas/Key'
         custom_fees:
           $ref: '#/components/schemas/CustomFees'
+    TopicQueryParam:
+      type: string
+      pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
     TransactionTypes:
       type: string
       enum:
@@ -2206,32 +2209,28 @@ components:
       description: The topic in topic0 of a ContractLog
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
-        type: string
-        pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
+        $ref: '#/components/schemas/TopicQueryParam'
     topic1QueryParam:
       name: topic1
       in: query
       description: The topic in topic1 of a ContractLog
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
-        type: string
-        pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
+        $ref: '#/components/schemas/TopicQueryParam'
     topic2QueryParam:
       name: topic2
       in: query
       description: The topic in topic2 of a ContractLog
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
-        type: string
-        pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
+        $ref: '#/components/schemas/TopicQueryParam'
     topic3QueryParam:
       name: topic3
       in: query
       description: The topic in topic3 of a ContractLog
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
-        type: string
-        pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
+        $ref: '#/components/schemas/TopicQueryParam'
     transactionTypeQueryParam:
       name: transactiontype
       in: query
