@@ -51,6 +51,6 @@ public class FeatureInputHandler {
     }
 
     public static String solidityAddress(long shard, long realm, long num) {
-        return String.format("0x%08x%016x%016x", shard, realm, num).toLowerCase();
+        return String.format("0x%08x%016x%016x", shard, realm, num);
     }
 }
