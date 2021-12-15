@@ -133,10 +133,6 @@ class ContractService extends BaseService {
     ].join('\n');
     params.push(limit);
 
-    if (logger.isTraceEnabled()) {
-      logger.trace(`getAccounts query: ${query} ${JSON.stringify(params)}`);
-    }
-
     return [query, params];
   }
 

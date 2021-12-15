@@ -35,14 +35,20 @@ class BaseService {
   }
 
   async getRows(query, params, functionName = '') {
-    logger.trace(`${functionName} query: ${query}, params: ${params}`);
+    if (logger.isTraceEnabled()) {
+      logger.trace(`${functionName} query: ${query}, params: ${params}`);
+    }
     const {rows} = await pool.queryQuietly(query, params);
-    logger.trace(`${functionName} ${rows.length} entries`);
+    if (logger.isTraceEnabled()) {
+      logger.trace(`${functionName} ${rows.length} entries`);
+    }
     return rows;
   }
 
   async getSingleRow(query, params, functionName = '') {
-    logger.trace(`${functionName} query: ${query}, params: ${params}`);
+    if (logger.isTraceEnabled()) {
+      logger.trace(`${functionName} query: ${query}, params: ${params}`);
+    }
     const rows = await this.getRows(query, params, functionName);
     if (_.isEmpty(rows) || rows.length > 1) {
       return null;

@@ -25,7 +25,7 @@ hedera:
       log:
         level: debug
       maxRepeatedQueryParameters: 100
-      maxTimestampRange: 31536000000
+      maxTimestampRange: 31536000000 # One year in milliseconds
       metrics:
         enabled: true
         config:

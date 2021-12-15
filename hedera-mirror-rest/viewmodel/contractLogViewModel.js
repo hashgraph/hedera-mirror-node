@@ -30,7 +30,7 @@ const utils = require('../utils');
  */
 class ContractLogViewModel {
   /**
-   * Constructs contractResult view model
+   * Constructs contractLog view model
    *
    * @param {ContractLog} contractLog
    */

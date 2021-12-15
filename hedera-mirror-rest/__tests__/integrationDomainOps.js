@@ -23,6 +23,7 @@
 const _ = require('lodash');
 const math = require('mathjs');
 const pgformat = require('pg-format');
+const testUtils = require('./testutils');
 const config = require('../config');
 const EntityId = require('../entityId');
 const constants = require('../constants');
@@ -684,12 +685,12 @@ const addContractLog = async (contractLogInput) => {
     ...contractLogInput,
   };
 
-  contractLog.bloom = contractLogInput.bloom != null ? Buffer.from(contractLogInput.bloom) : contractLog.bloom;
-  contractLog.data = contractLogInput.data != null ? Buffer.from(contractLogInput.data) : contractLog.data;
-  contractLog.topic0 = contractLogInput.topic0 != null ? Buffer.from(contractLogInput.topic0) : contractLog.topic0;
-  contractLog.topic1 = contractLogInput.topic1 != null ? Buffer.from(contractLogInput.topic1) : contractLog.topic1;
-  contractLog.topic2 = contractLogInput.topic2 != null ? Buffer.from(contractLogInput.topic2) : contractLog.topic2;
-  contractLog.topic3 = contractLogInput.topic3 != null ? Buffer.from(contractLogInput.topic3) : contractLog.topic3;
+  contractLog.bloom = testUtils.getBuffer(contractLogInput.bloom, null);
+  contractLog.data = testUtils.getBuffer(contractLogInput.data, null);
+  contractLog.topic0 = testUtils.getBuffer(contractLogInput.topic0, null);
+  contractLog.topic1 = testUtils.getBuffer(contractLogInput.topic1, null);
+  contractLog.topic2 = testUtils.getBuffer(contractLogInput.topic2, null);
+  contractLog.topic3 = testUtils.getBuffer(contractLogInput.topic3, null);
 
   await sqlConnection.query(
     `insert into contract_log (${insertFields.join(',')})

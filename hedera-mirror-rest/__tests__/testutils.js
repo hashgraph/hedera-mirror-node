@@ -227,12 +227,17 @@ const configureLogger = () => {
   global.logger = log4js.getLogger();
 };
 
+const getBuffer = (inputBytes, defaultBytes) => {
+  return inputBytes != null ? Buffer.from(inputBytes) : defaultBytes;
+};
+
 configureLogger();
 
 module.exports = {
   badParamsList,
   checkSql,
   formatSqlQueryString,
+  getBuffer,
   parseSqlQueryAndParams,
   testBadParams,
   validateAccNumInArray,
