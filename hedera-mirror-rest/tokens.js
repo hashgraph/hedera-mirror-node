@@ -902,6 +902,7 @@ const nftTransferHistorySelectFields = [
   NftTransfer.RECEIVER_ACCOUNT_ID_FULL_NAME,
   NftTransfer.SENDER_ACCOUNT_ID_FULL_NAME,
   Transaction.TYPE_FULL_NAME,
+  Transaction.NONCE_FULL_NAME,
 ];
 const nftTransferHistorySelectQuery = [
   'select',
@@ -916,6 +917,7 @@ const nftDeleteHistorySelectFields = [
   `null as ${NftTransfer.RECEIVER_ACCOUNT_ID}`,
   `null as ${NftTransfer.SENDER_ACCOUNT_ID}`,
   Transaction.TYPE_FULL_NAME,
+  Transaction.NONCE_FULL_NAME,
 ];
 const nftDeleteHistorySelectQuery = [
   'select',
@@ -1016,6 +1018,7 @@ if (utils.isTestEnv()) {
     extractSqlFromNftTokenInfoRequest,
     extractSqlFromNftTokensRequest,
     extractSqlFromTokenBalancesRequest,
+    formatNftHistoryRow,
     formatTokenBalanceRow,
     formatTokenInfoRow,
     formatTokenRow,

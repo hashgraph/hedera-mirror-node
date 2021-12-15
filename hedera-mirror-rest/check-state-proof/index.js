@@ -49,7 +49,7 @@ const logger = log4js
   .getLogger();
 
 // get user input
-const {transactionId, scheduled, url, storedFile} = startUpScreen();
+const {transactionId, nonce, scheduled, url, storedFile} = startUpScreen();
 
 const getStateProofJson = async (url, storedFile) => {
   return storedFile ? readJSONFile(storedFile) : getAPIResponse(url);
@@ -74,7 +74,7 @@ getStateProofJson(url, storedFile)
     }
 
     // instantiate stateProofHandler which will parse files and extract needed data
-    const stateProofHandler = new StateProofHandler(stateProofJson, transactionId, scheduled);
+    const stateProofHandler = new StateProofHandler(stateProofJson, transactionId, nonce, scheduled);
 
     // kick off stateProof flow
     const validated = stateProofHandler.runStateProof();

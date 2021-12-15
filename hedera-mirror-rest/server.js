@@ -155,7 +155,7 @@ app.getAsync(`${apiPrefix}/accounts/:accountId`, accounts.getOneAccount);
 app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
 
 // contracts routes
-app.useAsync('', ContractRoutes);
+app.useAsync(`${apiPrefix}/${ContractRoutes.resource}`, ContractRoutes.router);
 
 // network routes
 app.getAsync(`${apiPrefix}/network/supply`, network.getSupply);

@@ -73,6 +73,17 @@ const isPositiveLong = (num, allowZero = false) => {
   return positiveLongRegex.test(num) && long.fromValue(num).greaterThanOrEqual(min);
 };
 
+const nonNegativeInt32Regex = /^\d{1,10}$/;
+
+/**
+ * Validates that num is a non-negative int32.
+ * @param num
+ * @return {boolean}
+ */
+const isNonNegativeInt32 = (num) => {
+  return nonNegativeInt32Regex.test(num) && Number(num) <= constants.MAX_INT32;
+};
+
 const isValidBooleanOpAndValue = (op, val) => {
   return op === 'eq' && /^(true|false)$/i.test(val);
 };
@@ -184,6 +195,9 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.LIMIT:
       ret = isPositiveLong(val);
+      break;
+    case constants.filterKeys.NONCE:
+      ret = op === 'eq' && isNonNegativeInt32(val);
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
@@ -574,7 +588,10 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
         next += `${(next === '' ? '?' : '&') + q}=${v}`;
       }
     }
-    next = urlPrefix + req.path + next;
+
+    // remove the '/' at the end of req.path
+    const path = req.path.endsWith('/') ? req.path.slice(0, -1) : req.path;
+    next = urlPrefix + req.baseUrl + path + next;
   }
   return next === '' ? null : next;
 };
@@ -860,6 +877,9 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.LIMIT:
         comparator.value = Number(comparator.value);
         break;
+      case constants.filterKeys.NONCE:
+        comparator.value = Number(comparator.value);
+        break;
       case constants.filterKeys.SCHEDULED:
         comparator.value = parseBooleanValue(comparator.value);
         break;
@@ -999,6 +1019,7 @@ module.exports = {
   getPaginationLink,
   getPoolClass,
   ipMask,
+  isNonNegativeInt32,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
   isPositiveLong,

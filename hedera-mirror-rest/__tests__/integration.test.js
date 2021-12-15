@@ -40,7 +40,6 @@
  * Tests are then run in code below (find TESTS all caps) and by comparing requests/responses from the server to data
  * in the specs/ dir.
  */
-const yaml = require('js-yaml');
 // external libraries
 const S3 = require('aws-sdk/clients/s3');
 const crypto = require('crypto');
@@ -456,6 +455,7 @@ describe('DB integration test - spec based', () => {
   // process applicable .spec.json files
   fs.readdirSync(specPath)
     .filter((f) => f.indexOf('.spec.json') > 0)
+    // .filter(f => f.startsWith("stateproof-"))
     .forEach((file) => {
       const p = path.join(specPath, file);
       const specText = fs.readFileSync(p, 'utf8');

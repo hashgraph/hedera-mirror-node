@@ -1,7 +1,7 @@
 {
-  "description": "Stateproof api calls with invalid scheduled params",
+  "description": "Stateproof api calls with invalid params",
   "setup": [],
-  "url": "/api/v1/transactions/0.0.94139-1570800762-443131000/stateproof?scheduled=ne:true&scheduled=lte:true&scheduled=lt:true&scheduled=gte:true&scheduled=gt:true&scheduled=1&scheduled=",
+  "url": "/api/v1/transactions/0.0.94139-1570800762-443131000/stateproof?scheduled=ne:true&scheduled=lte:true&scheduled=lt:true&scheduled=gte:true&scheduled=gt:true&scheduled=1&scheduled=&nonce=-1&nonce=2147483648&nonce=x&nonce=lt:10",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -26,6 +26,18 @@
         },
         {
           "message": "Invalid parameter: scheduled"
+        },
+        {
+          "message": "Invalid parameter: nonce"
+        },
+        {
+          "message": "Invalid parameter: nonce"
+        },
+        {
+          "message": "Invalid parameter: nonce"
+        },
+        {
+          "message": "Invalid parameter: nonce"
         }
       ]
     }

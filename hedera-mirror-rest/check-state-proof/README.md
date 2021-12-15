@@ -67,6 +67,7 @@ Usage options include
                        value of the env if also provided.               [string]
   -e, --env            Your environment e.g. local|mainnet|previewnet|testnet
                                                                         [string]
+  -n, --nonce          The transaction ID nonce            [number] [default: 0]
   -s, --scheduled      Whether the transaction is scheduled or not     [boolean]
 ```
 

@@ -68,14 +68,14 @@ class CompactRecordFile extends RecordFile {
     return Buffer.isBuffer(buffer) && this._support(buffer);
   }
 
-  toCompactObject(transactionId, scheduled = false) {
-    if (!this.containsTransaction(transactionId, scheduled)) {
+  toCompactObject(transactionId, nonce = 0, scheduled = false) {
+    if (!this.containsTransaction(transactionId, nonce, scheduled)) {
       throw new Error(`Transaction ${transactionId} not found in the successful transactions map`);
     }
 
     if (this._recordStreamObjects) {
       // parsed from a full record file v5
-      const transactionKey = `${transactionId}-${scheduled}`;
+      const transactionKey = RecordFile._getTransactionKey(transactionId, nonce, scheduled);
       const index = this._transactionMap[transactionKey];
       this.recordStreamObject = this._recordStreamObjects[index];
 

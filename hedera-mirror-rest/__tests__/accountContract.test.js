@@ -21,11 +21,7 @@
 'use strict';
 
 const accountContract = require('../accountContract');
-const {formatSqlQueryString} = require('./testutils');
-
-const assertSqlQueryEqual = (actual, expected) => {
-  expect(formatSqlQueryString(actual)).toEqual(formatSqlQueryString(expected));
-};
+const {assertSqlQueryEqual} = require('./testutils');
 
 describe('getAccountContractUnionQueryWithOrder', () => {
   test('no order options', () => {
