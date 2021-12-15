@@ -198,7 +198,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractResultsResponse'
+                $ref: '#/components/schemas/ContractLogsResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
@@ -1057,7 +1057,6 @@ components:
             - 0xf4757a49b326036464bec6fe419a4ae38c8a02ce3e68bf0809674f6aab8ad300
           items:
             type: string
-            pattern: ^0x[0-9A-Fa-f]{64}$
           type: array
     ContractResult:
       type: object
@@ -2208,7 +2207,7 @@ components:
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         type: string
-        pattern: ^0x[0-9A-Fa-f]{64}$
+        pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
     topic1QueryParam:
       name: topic1
       in: query
@@ -2216,7 +2215,7 @@ components:
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         type: string
-        pattern: ^0x[0-9A-Fa-f]{64}$
+        pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
     topic2QueryParam:
       name: topic2
       in: query
@@ -2224,7 +2223,7 @@ components:
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         type: string
-        pattern: ^0x[0-9A-Fa-f]{64}$
+        pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
     topic3QueryParam:
       name: topic3
       in: query
@@ -2232,7 +2231,7 @@ components:
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         type: string
-        pattern: ^0x[0-9A-Fa-f]{64}$
+        pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
     transactionTypeQueryParam:
       name: transactiontype
       in: query

@@ -667,7 +667,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         break;
       case constants.filterKeys.TOPIC0:
         // handle repeated values
-        filter.value = filter.value.replace('0x', '');
+        filter.value = filter.value.replace(/^(0x)?0*/, '');
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTopic0InValues,
@@ -677,7 +677,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         );
         break;
       case constants.filterKeys.TOPIC1:
-        filter.value = filter.value.replace('0x', '');
+        filter.value = filter.value.replace(/^(0x)?0*/, '');
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTopic1InValues,
@@ -687,7 +687,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         );
         break;
       case constants.filterKeys.TOPIC2:
-        filter.value = filter.value.replace('0x', '');
+        filter.value = filter.value.replace(/^(0x)?0*/, '');
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTopic2InValues,
@@ -697,7 +697,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         );
         break;
       case constants.filterKeys.TOPIC3:
-        filter.value = filter.value.replace('0x', '');
+        filter.value = filter.value.replace(/^(0x)?0*/, '');
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTopic3InValues,

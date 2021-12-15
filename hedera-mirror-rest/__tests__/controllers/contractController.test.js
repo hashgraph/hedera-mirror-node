@@ -620,12 +620,12 @@ describe('extractContractLogsByIdQuery', () => {
           {
             key: constants.filterKeys.TOPIC2,
             operator: utils.opsMap.eq,
-            value: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
+            value: '0000ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
           },
           {
             key: constants.filterKeys.TOPIC3,
             operator: utils.opsMap.eq,
-            value: '0x59d088293f09d5119d5b55858b989ffce4d398dd',
+            value: '0x00000000000059d088293f09d5119d5b55858b989ffce4d398dd',
           },
         ],
         contractId: defaultContractId,
