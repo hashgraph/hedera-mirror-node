@@ -657,6 +657,9 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         indexOrder = filter.value;
         break;
       case constants.filterKeys.TIMESTAMP:
+        if (filter.operator === utils.opsMap.ne) {
+          throw new InvalidArgumentError('Not equals operator not supported on timestamp');
+        }
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTimestampInValues,

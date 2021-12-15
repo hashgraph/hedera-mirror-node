@@ -94,7 +94,7 @@ const isValidPublicKeyQuery = (query) => {
 
 const contractTopicPattern = /^(0x)?[0-9A-Fa-f]{1,64}$/; // optional 0x followed by up to 64 hex digits
 const isValidOpAndTopic = (op, query) => {
-  return typeof query === 'string' && contractTopicPattern.test(query) && op === 'eq';
+  return typeof query === 'string' && contractTopicPattern.test(query) && op === constants.queryParamOperators.eq;
 };
 
 const isValidUtf8Encoding = (query) => {
@@ -1019,16 +1019,22 @@ const checkTimestampRange = (timestamps) => {
 
   for (const val of timestampsArray) {
     const filter = buildComparatorFilter(constants.filterKeys.TIMESTAMP, val);
-    if (filter.operator === 'eq') {
+    if (filter.operator === constants.queryParamOperators.eq) {
       //An equals operator removes the need for a range
       return true;
-    } else if (filter.operator === `gt` || filter.operator === 'gte') {
+    } else if (
+      filter.operator === constants.queryParamOperators.gt ||
+      filter.operator === constants.queryParamOperators.gte
+    ) {
       if (earliest !== undefined) {
         //Multiple greater than operators detected, not permitted
         return false;
       }
       earliest = parseTimestampParam(filter.value);
-    } else if (filter.operator === `lt` || filter.operator === 'lte') {
+    } else if (
+      filter.operator === constants.queryParamOperators.lte ||
+      filter.operator === constants.queryParamOperators.lte
+    ) {
       if (latest !== undefined) {
         //Multiple less than operators detected, not permitted
         return false;

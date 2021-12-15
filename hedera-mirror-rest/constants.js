@@ -158,6 +158,15 @@ const httpStatusCodes = {
   SERVICE_UNAVAILABLE: new StatusCode(503, 'Service unavailable'),
 };
 
+const queryParamOperators = {
+  eq: 'eq',
+  ne: 'ne',
+  lt: 'lt',
+  lte: 'lte',
+  gt: 'gt',
+  gte: 'gte',
+};
+
 module.exports = {
   characterEncoding,
   cloudProviders,
@@ -170,6 +179,7 @@ module.exports = {
   keyTypes,
   networks,
   orderFilterValues,
+  queryParamOperators,
   recordStreamPrefix,
   requestIdLabel,
   responseDataLabel,
