@@ -20,11 +20,14 @@
 
 'use strict';
 
-class Nft {
+const BaseModel = require('./baseModel');
+
+class Nft extends BaseModel {
   /**
    * Parses nft table columns into object
    */
   constructor(nft) {
+    super();
     this.accountId = nft.account_id;
     this.createdTimestamp = nft.created_timestamp;
     this.deleted = nft.deleted;
@@ -38,19 +41,12 @@ class Nft {
   static tableName = this.tableAlias;
 
   static ACCOUNT_ID = 'account_id';
-  static ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.ACCOUNT_ID}`;
   static CREATED_TIMESTAMP = 'created_timestamp';
-  static CREATED_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.CREATED_TIMESTAMP}`;
   static DELETED = 'deleted';
-  static DELETED_FULL_NAME = `${this.tableAlias}.${this.DELETED}`;
   static METADATA = 'metadata';
-  static METADATA_FULL_NAME = `${this.tableAlias}.${this.METADATA}`;
   static MODIFIED_TIMESTAMP = 'modified_timestamp';
-  static MODIFIED_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.MODIFIED_TIMESTAMP}`;
   static SERIAL_NUMBER = 'serial_number';
-  static SERIAL_NUMBER_FULL_NAME = `${this.tableAlias}.${this.SERIAL_NUMBER}`;
   static TOKEN_ID = 'token_id';
-  static TOKEN_ID_FULL_NAME = `${this.tableAlias}.${this.TOKEN_ID}`;
 }
 
 module.exports = Nft;

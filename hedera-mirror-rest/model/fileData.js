@@ -21,12 +21,14 @@
 'use strict';
 
 const _ = require('lodash');
+const BaseModel = require('./baseModel');
 
-class FileData {
+class FileData extends BaseModel {
   /**
    * Parses file_data table columns into object
    */
   constructor(fileData) {
+    super();
     Object.assign(
       this,
       _.mapKeys(fileData, (v, k) => _.camelCase(k))
@@ -40,16 +42,6 @@ class FileData {
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
   static ENTITY_ID = 'entity_id';
   static TRANSACTION_TYPE = 'transaction_type';
-
-  /**
-   * Gets full column name with table alias prepended.
-   *
-   * @param {string} columnName
-   * @private
-   */
-  static getFullName(columnName) {
-    return `${this.tableAlias}.${columnName}`;
-  }
 }
 
 module.exports = FileData;

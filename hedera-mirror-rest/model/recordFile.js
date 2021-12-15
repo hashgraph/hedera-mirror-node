@@ -21,12 +21,14 @@
 'use strict';
 
 const _ = require('lodash');
+const BaseModel = require('./baseModel');
 
-class RecordFile {
+class RecordFile extends BaseModel {
   /**
    * Parses record_file table columns into object
    */
   constructor(recordFile) {
+    super();
     Object.assign(
       this,
       _.mapKeys(recordFile, (v, k) => _.camelCase(k))
@@ -53,16 +55,6 @@ class RecordFile {
   static NODE_ACCOUNT_ID = 'node_account_id';
   static PREV_HASH = 'prev_hash';
   static VERSION = 'version';
-
-  /**
-   * Gets full column name with table alias prepended.
-   *
-   * @param {string} columnName
-   * @private
-   */
-  static getFullName(columnName) {
-    return `${this.tableAlias}.${columnName}`;
-  }
 }
 
 module.exports = RecordFile;

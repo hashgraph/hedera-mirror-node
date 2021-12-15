@@ -20,11 +20,14 @@
 
 'use strict';
 
-class TokenTransfer {
+const BaseModel = require('./baseModel');
+
+class TokenTransfer extends BaseModel {
   /**
    * Parses token_transfer table columns into object
    */
   constructor(tokenTransfer) {
+    super();
     this.accountId = tokenTransfer.account_id;
     this.amount = tokenTransfer.amount;
     this.consensusTimestamp = tokenTransfer.consensus_timestamp;
@@ -35,13 +38,9 @@ class TokenTransfer {
   static tableName = 'token_transfer';
 
   static ACCOUNT_ID = 'account_id';
-  static ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.ACCOUNT_ID}`;
   static AMOUNT = 'amount';
-  static AMOUNT_FULL_NAME = `${this.tableAlias}.${this.AMOUNT}`;
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
-  static CONSENSUS_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.CONSENSUS_TIMESTAMP}`;
   static TOKEN_ID = 'token_id';
-  static TOKEN_ID_FULL_NAME = `${this.tableAlias}.${this.TOKEN_ID}`;
 }
 
 module.exports = TokenTransfer;

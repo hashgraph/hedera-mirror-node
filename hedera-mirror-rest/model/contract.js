@@ -21,12 +21,14 @@
 'use strict';
 
 const _ = require('lodash');
+const BaseModel = require('./baseModel');
 
-class Contract {
+class Contract extends BaseModel {
   /**
    * Parses contract table columns into object
    */
   constructor(contract) {
+    super();
     Object.assign(
       this,
       _.mapKeys(contract, (v, k) => _.camelCase(k))
@@ -53,16 +55,6 @@ class Contract {
   static SHARD = 'shard';
   static TIMESTAMP_RANGE = 'timestamp_range';
   static TYPE = 'type';
-
-  /**
-   * Gets full column name with table alias prepended.
-   *
-   * @param {string} columnName
-   * @private
-   */
-  static getFullName(columnName) {
-    return `${this.tableAlias}.${columnName}`;
-  }
 }
 
 module.exports = Contract;

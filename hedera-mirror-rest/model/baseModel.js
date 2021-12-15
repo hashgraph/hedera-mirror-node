@@ -20,25 +20,10 @@
 
 'use strict';
 
-const BaseModel = require('./baseModel');
-
-class CryptoTransfer extends BaseModel {
-  /**
-   * Parses crypto_transfer table columns into object
-   */
-  constructor(cryptoTransfer) {
-    super();
-    this.amount = cryptoTransfer.amount;
-    this.consensusTimestamp = cryptoTransfer.consensus_timestamp;
-    this.entityId = cryptoTransfer.entity_id;
+class BaseModel {
+  static getFullName(columnName) {
+    return `${this.tableAlias}.${columnName}`;
   }
-
-  static tableAlias = 'ctr';
-  static tableName = 'crypto_transfer';
-
-  static AMOUNT = 'amount';
-  static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
-  static ENTITY_ID = 'entity_id';
 }
 
-module.exports = CryptoTransfer;
+module.exports = BaseModel;

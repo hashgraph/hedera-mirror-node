@@ -20,13 +20,15 @@
 
 'use strict';
 
+const BaseModel = require('./baseModel');
 const constants = require('../constants');
 
-class CustomFee {
+class CustomFee extends BaseModel {
   /**
    * Parses custom_fee table columns into object
    */
   constructor(customFee) {
+    super();
     this.amount = customFee.amount;
     this.amountDenominator = customFee.amount_denominator;
     this.collectorAccountId = customFee.collector_account_id;
@@ -44,41 +46,20 @@ class CustomFee {
   static tableName = 'custom_fee';
 
   static AMOUNT = `amount`;
-  static AMOUNT_FULL_NAME = this._getFullName(this.AMOUNT);
   static AMOUNT_DENOMINATOR = `amount_denominator`;
-  static AMOUNT_DENOMINATOR_FULL_NAME = this._getFullName(this.AMOUNT_DENOMINATOR);
   static COLLECTOR_ACCOUNT_ID = `collector_account_id`;
-  static COLLECTOR_ACCOUNT_ID_FULL_NAME = this._getFullName(this.COLLECTOR_ACCOUNT_ID);
   static CREATED_TIMESTAMP = `created_timestamp`;
-  static CREATED_TIMESTAMP_FULL_NAME = this._getFullName(this.CREATED_TIMESTAMP);
   static DENOMINATING_TOKEN_ID = `denominating_token_id`;
-  static DENOMINATING_TOKEN_ID_FULL_NAME = this._getFullName(this.DENOMINATING_TOKEN_ID);
   static MAXIMUM_AMOUNT = `maximum_amount`;
-  static MAXIMUM_AMOUNT_FULL_NAME = this._getFullName(this.MAXIMUM_AMOUNT);
   static MINIMUM_AMOUNT = `minimum_amount`;
-  static MINIMUM_AMOUNT_FULL_NAME = this._getFullName(this.MINIMUM_AMOUNT);
   static NET_OF_TRANSFERS = `net_of_transfers`;
-  static NET_OF_TRANSFERS_FULL_NAME = this._getFullName(this.NET_OF_TRANSFERS);
   static ROYALTY_DENOMINATOR = `royalty_denominator`;
-  static ROYALTY_DENOMINATOR_FULL_NAME = this._getFullName(this.ROYALTY_DENOMINATOR);
   static ROYALTY_NUMERATOR = `royalty_numerator`;
-  static ROYALTY_NUMERATOR_FULL_NAME = this._getFullName(this.ROYALTY_NUMERATOR);
   static TOKEN_ID = `token_id`;
-  static TOKEN_ID_FULL_NAME = this._getFullName(this.TOKEN_ID);
 
   static FILTER_MAP = {
-    [constants.filterKeys.TIMESTAMP]: CustomFee.CREATED_TIMESTAMP_FULL_NAME,
+    [constants.filterKeys.TIMESTAMP]: this.getFullName(CustomFee.CREATED_TIMESTAMP),
   };
-
-  /**
-   * Gets full column name with table alias prepended.
-   *
-   * @param {string} columnName
-   * @private
-   */
-  static _getFullName(columnName) {
-    return `${this.tableAlias}.${columnName}`;
-  }
 }
 
 module.exports = CustomFee;

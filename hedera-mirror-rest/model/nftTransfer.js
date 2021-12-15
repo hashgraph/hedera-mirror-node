@@ -21,12 +21,14 @@
 'use strict';
 
 const constants = require('../constants');
+const BaseModel = require('./baseModel');
 
-class NftTransfer {
+class NftTransfer extends BaseModel {
   /**
    * Parses nft_transfer table columns into object
    */
   constructor(nftTransfer) {
+    super();
     this.consensusTimestamp = nftTransfer.consensus_timestamp;
     this.receiverAccountId = nftTransfer.receiver_account_id;
     this.senderAccountId = nftTransfer.sender_account_id;
@@ -38,18 +40,13 @@ class NftTransfer {
   static tableName = 'nft_transfer';
 
   static CONSENSUS_TIMESTAMP = `consensus_timestamp`;
-  static CONSENSUS_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.CONSENSUS_TIMESTAMP}`;
   static RECEIVER_ACCOUNT_ID = `receiver_account_id`;
-  static RECEIVER_ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.RECEIVER_ACCOUNT_ID}`;
   static SENDER_ACCOUNT_ID = `sender_account_id`;
-  static SENDER_ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.SENDER_ACCOUNT_ID}`;
   static SERIAL_NUMBER = `serial_number`;
-  static SERIAL_NUMBER_FULL_NAME = `${this.tableAlias}.${this.SERIAL_NUMBER}`;
   static TOKEN_ID = `token_id`;
-  static TOKEN_ID_FULL_NAME = `${this.tableAlias}.${this.TOKEN_ID}`;
 
   static FILTER_MAP = {
-    [constants.filterKeys.TIMESTAMP]: NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME,
+    [constants.filterKeys.TIMESTAMP]: NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP),
   };
 }
 

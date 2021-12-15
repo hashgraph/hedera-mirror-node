@@ -55,28 +55,30 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     // populate pre-clause queries where a timestamp filter is applied
     if (!_.isUndefined(modifyingQuery)) {
       timestampFilter = `timestampFilter as (${modifyingQuery}),`;
-      timestampFilterJoin = `join timestampFilter tf on ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} = tf.consensus_timestamp`;
+      timestampFilterJoin = `join timestampFilter tf on ${Transaction.getFullName(
+        Transaction.CONSENSUS_TIMESTAMP
+      )} = tf.consensus_timestamp`;
       limitQuery = '';
     }
 
     const tquery = `select
-                      ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME},
-                      ${Transaction.PAYER_ACCOUNT_ID_FULL_NAME},
-                      ${Transaction.VALID_START_NS_FULL_NAME},
-                      ${Transaction.MEMO_FULL_NAME},
-                      ${Transaction.NODE_ACCOUNT_ID_FULL_NAME},
-                      ${Transaction.CHARGED_TX_FEE_FULL_NAME},
-                      ${Transaction.VALID_DURATION_SECONDS_FULL_NAME},
-                      ${Transaction.MAX_FEE_FULL_NAME},
-                      ${Transaction.TRANSACTION_HASH_FULL_NAME},
-                      ${Transaction.SCHEDULED_FULL_NAME},
-                      ${Transaction.ENTITY_ID_FULL_NAME},
-                      ${Transaction.TRANSACTION_BYTES_FULL_NAME},
-                      ${Transaction.RESULT_FULL_NAME},
-                      ${Transaction.TYPE_FULL_NAME}
+                      ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)},
+                      ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)}
+                      ${Transaction.getFullName(Transaction.VALID_START_NS)}
+                      ${Transaction.getFullName(Transaction.MEMO)}
+                      ${Transaction.getFullName(Transaction.NODE_ACCOUNT_ID)}
+                      ${Transaction.getFullName(Transaction.CHARGED_TX_FEE)}
+                      ${Transaction.getFullName(Transaction.VALID_DURATION_SECONDS)}
+                      ${Transaction.getFullName(Transaction.MAX_FEE)}
+                      ${Transaction.getFullName(Transaction.TRANSACTION_HASH)}
+                      ${Transaction.getFullName(Transaction.SCHEDULED)}
+                      ${Transaction.getFullName(Transaction.ENTITY_ID)}
+                      ${Transaction.getFullName(Transaction.TRANSACTION_BYTES)}
+                      ${Transaction.getFullName(Transaction.RESULT)}
+                      ${Transaction.getFullName(Transaction.TYPE)}
                     from ${Transaction.tableName} as ${Transaction.tableAlias}
                     ${timestampFilterJoin}
-                    order by ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}
+                    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
                     ${limitQuery}`;
 
     return `${timestampFilter}
@@ -86,41 +88,47 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
   // aggregate crypto transfers, token transfers, and nft transfers
   const cryptoTransferListCte = `c_list as (
       select jsonb_agg(jsonb_build_object(
-              '${CryptoTransfer.AMOUNT}', ${CryptoTransfer.AMOUNT_FULL_NAME},
-              '${CryptoTransfer.ENTITY_ID}', ${CryptoTransfer.ENTITY_ID_FULL_NAME}
-          ) order by ${CryptoTransfer.ENTITY_ID_FULL_NAME}, ${CryptoTransfer.AMOUNT_FULL_NAME}
+              '${CryptoTransfer.AMOUNT}', ${CryptoTransfer.getFullName(CryptoTransfer.AMOUNT)},
+              '${CryptoTransfer.ENTITY_ID}', ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)}
+          ) order by ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)}, ${CryptoTransfer.getFullName(
+    CryptoTransfer.AMOUNT
+  )}
         ) as ctr_list,
-        ${CryptoTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+        ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
       from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
-      join tlist on ${CryptoTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
-      group by ${CryptoTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+      join tlist on ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
+      group by ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
   )`;
 
   const tokenTransferListCte = `t_list as (
     select jsonb_agg(jsonb_build_object(
-          '${TokenTransfer.ACCOUNT_ID}', ${TokenTransfer.ACCOUNT_ID_FULL_NAME},
-          '${TokenTransfer.AMOUNT}', ${TokenTransfer.AMOUNT_FULL_NAME},
-          '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.TOKEN_ID_FULL_NAME}
-        ) order by ${TokenTransfer.TOKEN_ID_FULL_NAME}, ${TokenTransfer.ACCOUNT_ID_FULL_NAME}
+          '${TokenTransfer.ACCOUNT_ID}', ${TokenTransfer.getFullName(TokenTransfer.ACCOUNT_ID)},
+          '${TokenTransfer.AMOUNT}', ${TokenTransfer.getFullName(TokenTransfer.AMOUNT)},
+          '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.getFullName(TokenTransfer.TOKEN_ID)}
+        ) order by ${TokenTransfer.getFullName(TokenTransfer.TOKEN_ID)}, ${TokenTransfer.getFullName(
+    TokenTransfer.ACCOUNT_ID
+  )}
       ) as ttr_list,
-      ${TokenTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+      ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
     from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
-    join tlist on ${TokenTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
-    group by ${TokenTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+    join tlist on ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
+    group by ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
   )`;
 
   const nftTransferListCte = `nft_list as (
     select jsonb_agg(jsonb_build_object(
-          '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID_FULL_NAME},
-          '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID_FULL_NAME},
-          '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER_FULL_NAME},
-          '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID_FULL_NAME}
-        ) order by ${NftTransfer.TOKEN_ID_FULL_NAME}, ${NftTransfer.SERIAL_NUMBER_FULL_NAME}
+          '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.getFullName(NftTransfer.RECEIVER_ACCOUNT_ID)},
+          '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.getFullName(NftTransfer.SENDER_ACCOUNT_ID)},
+          '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.getFullName(NftTransfer.SERIAL_NUMBER)},
+          '${NftTransfer.TOKEN_ID}', ${NftTransfer.getFullName(NftTransfer.TOKEN_ID)}
+        ) order by ${NftTransfer.getFullName(NftTransfer.TOKEN_ID)}, ${NftTransfer.getFullName(
+    NftTransfer.SERIAL_NUMBER
+  )}
       ) as ntr_list,
-      ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+      ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)}
     from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
-    join tlist on ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
-    group by ${NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME}
+    join tlist on ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
+    group by ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)}
   )`;
 
   const assessedFeeListCte = `fee_list as (
@@ -132,10 +140,10 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
           '${AssessedCustomFee.TOKEN_ID}', ${AssessedCustomFee.TOKEN_ID}
         ) order by ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}, ${AssessedCustomFee.AMOUNT}
       ) as ftr_list,
-      ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME}
+      ${AssessedCustomFee.getFullName(AssessedCustomFee.CONSENSUS_TIMESTAMP)}
     from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
-    join tlist on ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME} = tlist.consensus_timestamp
-    group by ${AssessedCustomFee.CONSENSUS_TIMESTAMP_FULL_NAME}
+    join tlist on ${AssessedCustomFee.getFullName(AssessedCustomFee.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
+    group by ${AssessedCustomFee.getFullName(AssessedCustomFee.CONSENSUS_TIMESTAMP)}
   )`;
 
   const transfersListCte = (extraInfo) => {
@@ -181,20 +189,20 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
   const ctes = [transactionTimeStampCte(innerQuery), cryptoTransferListCte, tokenTransferListCte];
 
   const fields = [
-    Transaction.PAYER_ACCOUNT_ID_FULL_NAME,
-    Transaction.MEMO_FULL_NAME,
-    Transaction.CONSENSUS_TIMESTAMP_FULL_NAME,
-    Transaction.VALID_START_NS_FULL_NAME,
-    Transaction.RESULT_FULL_NAME,
-    Transaction.TYPE_FULL_NAME,
-    Transaction.NODE_ACCOUNT_ID_FULL_NAME,
-    Transaction.CHARGED_TX_FEE_FULL_NAME,
-    Transaction.VALID_DURATION_SECONDS_FULL_NAME,
-    Transaction.MAX_FEE_FULL_NAME,
-    Transaction.TRANSACTION_HASH_FULL_NAME,
-    Transaction.SCHEDULED_FULL_NAME,
-    Transaction.ENTITY_ID_FULL_NAME,
-    Transaction.TRANSACTION_BYTES_FULL_NAME,
+    Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID),
+    Transaction.getFullName(Transaction.MEMO),
+    Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP),
+    Transaction.getFullName(Transaction.VALID_START_NS),
+    Transaction.getFullName(Transaction.RESULT),
+    Transaction.getFullName(Transaction.TYPE),
+    Transaction.getFullName(Transaction.NODE_ACCOUNT_ID),
+    Transaction.getFullName(Transaction.CHARGED_TX_FEE),
+    Transaction.getFullName(Transaction.VALID_DURATION_SECONDS),
+    Transaction.getFullName(Transaction.MAX_FEE),
+    Transaction.getFullName(Transaction.TRANSACTION_HASH),
+    Transaction.getFullName(Transaction.SCHEDULED),
+    Transaction.getFullName(Transaction.ENTITY_ID),
+    Transaction.getFullName(Transaction.TRANSACTION_BYTES),
     `t.ctr_list AS crypto_transfer_list`,
     `t.ttr_list AS token_transfer_list`,
   ];
@@ -345,7 +353,7 @@ const getTransactionsOuterQuery = (innerQuery, order, includeExtraInfo = false) 
   return `
     ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery, order)}
     FROM transfer_list t
-     ORDER BY ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}`;
+     ORDER BY ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}`;
 };
 
 /**
@@ -405,7 +413,9 @@ const getTransferDistinctTimestampsQuery = function (
   const namedTransferTsQuery = namedTsQuery.replace(/t\.consensus_timestamp/g, `${tableAlias}.${timestampColumn}`);
   const joinClause =
     (resultTypeQuery || transactionTypeQuery) &&
-    `JOIN ${Transaction.tableName} AS ${Transaction.tableAlias} ON ${tableAlias}.${timestampColumn} = ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME}`;
+    `JOIN ${Transaction.tableName} AS ${
+      Transaction.tableAlias
+    } ON ${tableAlias}.${timestampColumn} = ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)}`;
   const whereClause = buildWhereClause(
     namedAccountQuery,
     namedTransferTsQuery,
@@ -469,7 +479,7 @@ const getTransactionsInnerQuery = function (
     : `select ${Transaction.CONSENSUS_TIMESTAMP}
     from ${Transaction.tableName} as ${Transaction.tableAlias}
     ${transactionWhereClause}
-    order by ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ${order}
+    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
     ${transactionOnlyLimitQuery}`;
 
   if (creditDebitQuery || namedAccountQuery) {
@@ -519,9 +529,11 @@ const getTransactionsInnerQuery = function (
       SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
       FROM (${transactionOnlyQuery}) AS ${Transaction.tableAlias}
       FULL OUTER JOIN (${ctlQuery}) AS ctl
-      ON ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} = ctl.consensus_timestamp
+      ON ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ctl.consensus_timestamp
       FULL OUTER JOIN (${ttlQuery}) AS ttl
-      ON coalesce(${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME}, ctl.consensus_timestamp) = ttl.consensus_timestamp
+      ON coalesce(${Transaction.getFullName(
+        Transaction.CONSENSUS_TIMESTAMP
+      )}, ctl.consensus_timestamp) = ttl.consensus_timestamp
       ${namedLimitQuery}`;
   }
 
@@ -537,14 +549,14 @@ const reqToSql = function (req) {
   sqlParams.push(...accountParams);
   let [tsQuery, tsParams] = utils.parseTimestampQueryParam(
     parsedQueryParams,
-    Transaction.CONSENSUS_TIMESTAMP_FULL_NAME
+    Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)
   );
   tsQuery = utils.convertMySqlStyleQueryToPostgres(tsQuery, sqlParams.length + 1);
   sqlParams.push(...tsParams);
   let [creditDebitQuery, creditDebitParams] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   creditDebitQuery = utils.convertMySqlStyleQueryToPostgres(creditDebitQuery, sqlParams.length + 1);
   sqlParams.push(...creditDebitParams);
-  const resultTypeQuery = utils.parseResultParams(req, Transaction.RESULT_FULL_NAME);
+  const resultTypeQuery = utils.parseResultParams(req, Transaction.getFullName(Transaction.RESULT));
   const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
   sqlParams.push(...params);
@@ -625,7 +637,7 @@ const getScheduledQuery = (query) => {
     scheduled = scheduledValues[scheduledValues.length - 1];
   }
 
-  return `${Transaction.SCHEDULED_FULL_NAME} = ${scheduled}`;
+  return `${Transaction.getFullName(Transaction.SCHEDULED)} = ${scheduled}`;
 };
 
 /**
@@ -640,8 +652,8 @@ const getOneTransaction = async (req, res) => {
   const scheduledQuery = getScheduledQuery(req.query);
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
   const whereClause = buildWhereClause(
-    `${Transaction.PAYER_ACCOUNT_ID_FULL_NAME} = ?`,
-    `${Transaction.VALID_START_NS_FULL_NAME} = ?`,
+    `${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)} = ?`,
+    `${Transaction.getFullName(Transaction.VALID_START_NS)} = ?`,
     scheduledQuery
   );
   const includeExtraInfo = true;
@@ -654,7 +666,7 @@ const getOneTransaction = async (req, res) => {
   const sqlQuery = `
     ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery)}
     FROM transfer_list t
-    ORDER BY ${Transaction.CONSENSUS_TIMESTAMP_FULL_NAME} ASC`;
+    ORDER BY ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ASC`;
 
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
   if (logger.isTraceEnabled()) {
