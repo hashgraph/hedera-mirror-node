@@ -447,8 +447,8 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
   }, ${CustomFee.ROYALTY_NUMERATOR})
     from ${CustomFee.tableName} ${CustomFee.tableAlias}
     where ${conditions.join(' and ')}
-    group by ${CustomFee.CREATED_TIMESTAMP_FULL_NAME}
-    order by ${CustomFee.CREATED_TIMESTAMP_FULL_NAME} desc
+    group by ${CustomFee.getFullName(CustomFee.CREATED_TIMESTAMP)}
+    order by ${CustomFee.getFullName(CustomFee.CREATED_TIMESTAMP)} desc
     limit 1
   `;
 
