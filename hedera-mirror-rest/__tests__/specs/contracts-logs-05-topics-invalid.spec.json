@@ -30,9 +30,10 @@
     ]
   },
   "urls": [
-    "/api/v1/contracts/0.0.1000/results/logs?topic1=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce6975&topic2=gt:0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
-    "/api/v1/contracts/0.1000/results/logs?topic1=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce6975&topic2=gt:0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
-    "/api/v1/contracts/1000/results/logs?topic1=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce6975&topic2=gt:0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750"
+    "/api/v1/contracts/0.0.1000/results/logs?topic1=0xqqq",
+    "/api/v1/contracts/0.0.1000/results/logs?topic1=gt:0xaaaaaaa",
+    "/api/v1/contracts/0.0.1000/results/logs?topic1=00qqq",
+    "/api/v1/contracts/0.0.1000/results/logs?topic1=gt:00aaaaaaa"
   ],
   "responseStatus": 400,
   "responseJson": {
@@ -40,9 +41,6 @@
       "messages": [
         {
           "message": "Invalid parameter: topic1"
-        },
-        {
-          "message": "Invalid parameter: topic2"
         }
       ]
     }
