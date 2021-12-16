@@ -55,15 +55,15 @@ class ContractService extends BaseService {
     ${ContractResult.PAYER_ACCOUNT_ID}
     from ${ContractResult.tableName}`;
 
-  static contractLogsByIdQuery = `select ${ContractLog.getFullName(ContractLog.CONTRACT_ID)},
-    ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
-    ${ContractLog.getFullName(ContractLog.DATA)},
-    ${ContractLog.getFullName(ContractLog.INDEX)},
-    ${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)},
-    ${ContractLog.getFullName(ContractLog.TOPIC0)},
-    ${ContractLog.getFullName(ContractLog.TOPIC1)},
-    ${ContractLog.getFullName(ContractLog.TOPIC2)},
-    ${ContractLog.getFullName(ContractLog.TOPIC3)}
+  static contractLogsByIdQuery = `select ${ContractLog.CONTRACT_ID},
+    ${ContractLog.CONSENSUS_TIMESTAMP},
+    ${ContractLog.DATA},
+    ${ContractLog.INDEX},
+    ${ContractLog.ROOT_CONTRACT_ID},
+    ${ContractLog.TOPIC0},
+    ${ContractLog.TOPIC1},
+    ${ContractLog.TOPIC2},
+    ${ContractLog.TOPIC3}
     from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {

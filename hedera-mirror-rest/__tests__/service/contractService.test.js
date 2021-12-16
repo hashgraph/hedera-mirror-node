@@ -101,15 +101,15 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
       5
     );
     expect(formatSqlQueryString(query)).toEqual(
-      formatSqlQueryString(`select cl.contract_id,
-                                   cl.consensus_timestamp,
-                                   cl.data,
-                                   cl.index,
-                                   cl.root_contract_id,
-                                   cl.topic0,
-                                   cl.topic1,
-                                   cl.topic2,
-                                   cl.topic3
+      formatSqlQueryString(`select contract_id,
+                                   consensus_timestamp,
+                                   data,
+                                   index,
+                                   root_contract_id,
+                                   topic0,
+                                   topic1,
+                                   topic2,
+                                   topic3
                             from contract_log cl
                             where cl.contract_id = $1
                             order by cl.consensus_timestamp desc,
@@ -145,15 +145,15 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
       5
     );
     expect(formatSqlQueryString(query)).toEqual(
-      formatSqlQueryString(`select cl.contract_id,
-                                   cl.consensus_timestamp,
-                                   cl.data,
-                                   cl.index,
-                                   cl.root_contract_id,
-                                   cl.topic0,
-                                   cl.topic1,
-                                   cl.topic2,
-                                   cl.topic3
+      formatSqlQueryString(`select contract_id,
+                                   consensus_timestamp,
+                                   data,
+                                   index,
+                                   root_contract_id,
+                                   topic0,
+                                   topic1,
+                                   topic2,
+                                   topic3
                             from contract_log cl
                             where cl.root_contract_id = $1
                               and cl.topic0 in ($2)
