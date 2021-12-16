@@ -619,35 +619,20 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
 
   const inValues = {};
   const keyFullNames = {};
-
-  keyFullNames[constants.filterKeys.INDEX] = ContractLog.getFullName(ContractLog.INDEX);
-  inValues[constants.filterKeys.INDEX] = [];
+  const oneOperatorValues = {};
 
   keyFullNames[constants.filterKeys.TIMESTAMP] = ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP);
   inValues[constants.filterKeys.TIMESTAMP] = [];
 
-  keyFullNames[constants.filterKeys.TOPIC0] = ContractLog.getFullName(ContractLog.TOPIC0);
-  inValues[constants.filterKeys.TOPIC0] = [];
-
-  keyFullNames[constants.filterKeys.TOPIC1] = ContractLog.getFullName(ContractLog.TOPIC1);
-  inValues[constants.filterKeys.TOPIC1] = [];
-
-  keyFullNames[constants.filterKeys.TOPIC2] = ContractLog.getFullName(ContractLog.TOPIC2);
-  inValues[constants.filterKeys.TOPIC2] = [];
-
-  keyFullNames[constants.filterKeys.TOPIC3] = ContractLog.getFullName(ContractLog.TOPIC3);
-  inValues[constants.filterKeys.TOPIC3] = [];
-
   for (const filter of filters) {
     switch (filter.key) {
       case constants.filterKeys.INDEX:
-        updateConditionsAndParamsWithInValues(
-          filter,
-          inValues[filter.key],
-          params,
-          conditions,
-          keyFullNames[filter.key]
-        );
+        if (oneOperatorValues[filter.key]) {
+          throw new InvalidArgumentError(`Multiple params not allowed for ${filter.key}`);
+        }
+        params.push(filter.value);
+        conditions.push(`${ContractLog.getFullName(filter.key)}${filter.operator}$${params.length}`);
+        oneOperatorValues[filter.key] = true;
         break;
       case constants.filterKeys.LIMIT:
         limit = filter.value;
@@ -672,18 +657,17 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
       case constants.filterKeys.TOPIC1:
       case constants.filterKeys.TOPIC2:
       case constants.filterKeys.TOPIC3:
-        filter.value = filter.value.replace(/^(0x)?0*/, '');
-        if (filter.value.length % 2 !== 0) {
-          filter.value = `0${filter.value}`; //Left pad so that Buffer.from parses correctly
+        if (oneOperatorValues[filter.key]) {
+          throw new InvalidArgumentError(`Multiple params not allowed for ${filter.key}`);
         }
-        filter.value = Buffer.from(filter.value, 'hex');
-        updateConditionsAndParamsWithInValues(
-          filter,
-          inValues[filter.key],
-          params,
-          conditions,
-          keyFullNames[filter.key]
-        );
+        let topic = filter.value.replace(/^(0x)?0*/, '');
+        if (topic.length % 2 !== 0) {
+          topic = `0${topic}`; //Left pad so that Buffer.from parses correctly
+        }
+        topic = Buffer.from(topic, 'hex');
+        params.push(topic);
+        conditions.push(`${ContractLog.getFullName(filter.key)}${filter.operator}$${params.length}`);
+        oneOperatorValues[filter.key] = true;
         break;
       default:
         break;
@@ -694,38 +678,8 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   updateQueryFiltersWithInValues(
     params,
     conditions,
-    inValues[constants.filterKeys.INDEX],
-    keyFullNames[constants.filterKeys.INDEX]
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
     inValues[constants.filterKeys.TIMESTAMP],
     keyFullNames[constants.filterKeys.TIMESTAMP]
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    inValues[constants.filterKeys.TOPIC0],
-    keyFullNames[constants.filterKeys.TOPIC0]
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    inValues[constants.filterKeys.TOPIC1],
-    keyFullNames[constants.filterKeys.TOPIC1]
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    inValues[constants.filterKeys.TOPIC2],
-    keyFullNames[constants.filterKeys.TOPIC2]
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    inValues[constants.filterKeys.TOPIC3],
-    keyFullNames[constants.filterKeys.TOPIC3]
   );
 
   return {
