@@ -26,6 +26,7 @@ const path = require('path');
 const yaml = require('js-yaml');
 const _ = require('lodash');
 const {cloudProviders, defaultBucketNames, networks} = require('../constants');
+const config = require('../config');
 
 let tempDir;
 const custom = {
@@ -140,6 +141,11 @@ describe('Load environment configuration:', () => {
     process.env = {HEDERA_MIRROR_REST_SERVICE_PORT: '80'};
     const config = require('../config');
     expect(config.port).not.toBe(80);
+  });
+  test('Max Timestamp Range', () => {
+    process.env = {HEDERA_MIRROR_REST_MAX_TIMESTAMP_RANGE: '7d'};
+    const config = require('../config');
+    expect(config.maxTimestampRangeMs).toBe(604800000);
   });
 });
 

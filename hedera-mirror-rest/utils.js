@@ -1008,7 +1008,6 @@ const loadPgRange = () => {
  *
  * @param timestampFilters an array of timestamp filters
  */
-const maxTimestampRange = parseDuration(config.maxTimestampRange);
 const checkTimestampRange = (timestampFilters) => {
   let latest;
   let earliest;
@@ -1040,7 +1039,7 @@ const checkTimestampRange = (timestampFilters) => {
   }
 
   const difference = math.subtract(latest, earliest);
-  if (difference > maxTimestampRange || difference < 0) {
+  if (difference > config.maxTimestampRangeMs || difference < 0) {
     throw new InvalidArgumentError(`Lower and upper bounds must be positive and within ${config.maxTimestampRange}`);
   }
 };
