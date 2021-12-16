@@ -184,7 +184,7 @@ paths:
       operationId: listContractLogs
       parameters:
         - $ref: '#/components/parameters/entityIdPathParam'
-        - $ref: '#/components/parameters/indexQueryParam'
+        - $ref: '#/components/parameters/logIndexQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
         - $ref: '#/components/parameters/timestampQueryParam'
@@ -1998,7 +1998,7 @@ components:
         oneOf:
           - $ref: '#/components/schemas/EntityId'
           - $ref: '#/components/schemas/SolidityAddress'
-    indexQueryParam:
+    logIndexQueryParam:
       name: index
       in: query
       description: Contract log index
