@@ -240,10 +240,10 @@ const getTransactionsWithTimeAndLimitParams = async (server) => {
 };
 
 /**
- * Verify there is only one successful non-scheduled transaction for the latest successful transaction
+ * Verify there is at least one successful transaction for the latest successful transaction
  * @param {Object} server API host endpoint
  */
-const getSingleSuccessfulNonScheduledTransactionById = async (server) => {
+const getSuccessfulTransactionById = async (server) => {
   // look for the latest successful transaction
   let url = getUrl(server, transactionsPath, {limit: 1, result: 'success'});
   const transactions = await getAPIResponse(url, jsonRespKey);
@@ -269,7 +269,12 @@ const getSingleSuccessfulNonScheduledTransactionById = async (server) => {
   const singleTransactions = await getAPIResponse(url, jsonRespKey);
 
   // only verify the single successful transaction
-  result = checkRunner.run(singleTransactions.filter((tx) => tx.result === 'SUCCESS'));
+  result = checkRunner
+    .resetCheckSpec(checkRespArrayLength, {
+      func: (length) => length >= 1,
+      message: (elements) => `transactions.length of ${elements.length} was expected to be >= 1`,
+    })
+    .run(singleTransactions.filter((tx) => tx.result === 'SUCCESS'));
   if (!result.passed) {
     return {url, ...result};
   }
@@ -302,7 +307,7 @@ const runTests = async (server, testResult) => {
     runTest(getTransactionsWithOrderParam),
     runTest(getTransactionsWithLimitParams),
     runTest(getTransactionsWithTimeAndLimitParams),
-    runTest(getSingleSuccessfulNonScheduledTransactionById),
+    runTest(getSuccessfulTransactionById),
     runTest(checkTransactionFreshness),
   ]);
 };
