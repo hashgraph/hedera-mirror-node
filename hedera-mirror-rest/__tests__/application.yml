@@ -1,6 +1,6 @@
 hedera:
   mirror:
     rest:
-      maxTimestampRange: 31536000000 # One year in milliseconds
+      maxTimestampRange: 7d
       metrics:
         enabled: false

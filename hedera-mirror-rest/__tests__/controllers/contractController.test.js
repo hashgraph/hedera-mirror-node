@@ -723,6 +723,7 @@ describe('extractContractLogsByIdQuery', () => {
 });
 
 describe('checkTimestampsForTopics', () => {
+  //TODO Update with filters
   test('no topic params', () => {
     contracts.checkTimestampsForTopics(undefined, undefined, undefined, undefined, undefined);
   });

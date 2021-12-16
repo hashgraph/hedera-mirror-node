@@ -25,6 +25,7 @@ const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
 const long = require('long');
 const math = require('mathjs');
+const toTime = require('to-time');
 const util = require('util');
 
 const constants = require('./constants');
@@ -272,6 +273,10 @@ const validateReq = (req) => {
 };
 
 const isRepeatedQueryParameterValidLength = (values) => values.length <= config.maxRepeatedQueryParameters;
+
+const nsToMillis = (timestamp) => {
+  return timestamp.substr(0, timestamp.length - 6).padStart(1, '0');
+};
 
 const parseTimestampParam = (timestampParam) => {
   // Expect timestamp input as (a) just seconds,
@@ -997,46 +1002,37 @@ const loadPgRange = () => {
   pgRange.install(pg);
 };
 
-//Convert maxTimestampRange from milliseconds to nanoseconds
-const maxTimestampRange = math.multiply(config.maxTimestampRange, 1e6);
 /**
  * Checks that the timestamp filters contains either a valid range (greater than and less than filters that do not span beyond
  * a configured limit), or at least one equals operator.
  *
- * @param timestamps a timestamp or array of timestamps directly from the req
+ * @param timestampFilters an array of timestamp filters
  */
-const checkTimestampRange = (timestamps) => {
+const maxTimestampRange = toTime(config.maxTimestampRange).milliseconds();
+const checkTimestampRange = (timestampFilters) => {
   let latest = undefined;
   let earliest = undefined;
 
   //no timestamp params
-  if (!timestamps) {
+  if (!timestampFilters) {
     throw new InvalidArgumentError('No timestamp range given');
   }
 
-  const timestampsArray = Array.isArray(timestamps) ? timestamps : [timestamps];
-
-  for (const val of timestampsArray) {
-    const filter = buildComparatorFilter(constants.filterKeys.TIMESTAMP, val);
-    if (filter.operator === constants.queryParamOperators.eq) {
+  for (const filter of timestampFilters) {
+    if (filter.operator === opsMap.eq) {
       //An equals operator removes the need for a range
       return;
-    } else if (
-      filter.operator === constants.queryParamOperators.gt ||
-      filter.operator === constants.queryParamOperators.gte
-    ) {
+    } else if (filter.operator === opsMap.gt || filter.operator === opsMap.gte) {
       if (earliest !== undefined) {
         throw new InvalidArgumentError('Multiple greater than operators not permitted');
       }
-      earliest = parseTimestampParam(filter.value);
-    } else if (
-      filter.operator === constants.queryParamOperators.lt ||
-      filter.operator === constants.queryParamOperators.lte
-    ) {
+      earliest = nsToMillis(filter.value);
+      parseTimestampParam(filter.value).substring();
+    } else if (filter.operator === opsMap.lt || filter.operator === opsMap.lte) {
       if (latest !== undefined) {
         throw new InvalidArgumentError('Multiple less than operators not permitted');
       }
-      latest = parseTimestampParam(filter.value);
+      latest = nsToMillis(filter.value);
     }
   }
 
@@ -1046,7 +1042,7 @@ const checkTimestampRange = (timestamps) => {
 
   const difference = math.subtract(latest, earliest);
   if (difference > maxTimestampRange || difference < 0) {
-    throw new InvalidArgumentError(`Lower and upper bounds must be positive and within ${maxTimestampRange} ns`);
+    throw new InvalidArgumentError(`Lower and upper bounds must be positive and within ${config.maxTimestampRange} ns`);
   }
 };
 

@@ -417,12 +417,11 @@ const extractContractIdAndFiltersFromValidatedRequest = (req) => {
  * @returns {Promise<void>}
  */
 const getContractLogs = async (req, res) => {
-  utils.validateReq(req);
-
-  checkTimestampsForTopics(req.query.timestamp, req.query.topic0, req.query.topic1, req.query.topic2, req.query.topic3);
-  // extract filters from query param
   const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
   const filters = utils.buildAndValidateFilters(req.query);
+
+  checkTimestampsForTopics(filters);
+  // extract filters from query param
 
   // get sql filter query, params, limit and limit query from query filters
   const {conditions, params, timestampOrder, indexOrder, limit} = extractContractLogsByIdQuery(filters, contractId);
@@ -757,10 +756,27 @@ const updateQueryFiltersWithInValues = (existingParams, existingConditions, inva
   }
 };
 
-const checkTimestampsForTopics = (timestamps, topic0, topic1, topic2, topic3) => {
+const checkTimestampsForTopics = (filters) => {
+  let isTopic = false;
+  const timestampFilters = [];
+  for (const filter in filters) {
+    switch (filter.key) {
+      case constants.filterKeys.TOPIC0:
+      case constants.filterKeys.TOPIC1:
+      case constants.filterKeys.TOPIC2:
+      case constants.filterKeys.TOPIC3:
+        isTopic = true;
+        break;
+      case constants.filterKeys.TIMESTAMP:
+        timestampFilters.push(filter);
+        break;
+      default:
+        continue;
+    }
+  }
   if (topic0 || topic1 || topic2 || topic3) {
     try {
-      utils.checkTimestampRange(timestamps);
+      utils.checkTimestampRange(timestampFilters);
     } catch (e) {
       throw new InvalidArgumentError(`Cannot search topics without timestamp range: ${e.message}`);
     }
