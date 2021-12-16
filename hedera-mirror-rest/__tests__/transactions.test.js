@@ -26,14 +26,13 @@ const request = require('supertest');
 const constants = require('../constants');
 const server = require('../server');
 const testutils = require('./testutils');
-const utils = require('../utils');
 const {
   buildWhereClause,
   createAssessedCustomFeeList,
   createCryptoTransferList,
   createNftTransferList,
   createTransferLists,
-  extractSqlFromOneTransactionRequest,
+  extractSqlFromTransactionsByIdRequest,
 } = require('../transactions');
 
 const logger = log4js.getLogger();
@@ -277,11 +276,11 @@ const singleTests = {
   },
   result_fail: {
     urlparam: 'result=fail',
-    checks: [{field: 'result', operator: '!=', value: `${utils.TRANSACTION_RESULT_SUCCESS}`}],
+    checks: [{field: 'result', operator: '!=', value: `${constants.TRANSACTION_RESULT_SUCCESS}`}],
   },
   result_success: {
     urlparam: 'result=success',
-    checks: [{field: 'result', operator: '=', value: `${utils.TRANSACTION_RESULT_SUCCESS}`}],
+    checks: [{field: 'result', operator: '=', value: `${constants.TRANSACTION_RESULT_SUCCESS}`}],
   },
 };
 
@@ -709,7 +708,7 @@ describe('create transferLists', () => {
   });
 });
 
-describe('extractSqlFromOneTransactionRequest', () => {
+describe('extractSqlFromTransactionsByIdRequest', () => {
   describe('success', () => {
     const defaultTransactionIdStr = '0.0.200-123456789-987654321';
     const defaultParams = ['200', '123456789987654321'];
@@ -945,7 +944,7 @@ describe('extractSqlFromOneTransactionRequest', () => {
 
     for (const testSpec of testSpecs) {
       test(testSpec.name, () => {
-        const actual = extractSqlFromOneTransactionRequest(testSpec.input.transactionIdStr, testSpec.input.filters);
+        const actual = extractSqlFromTransactionsByIdRequest(testSpec.input.transactionIdStr, testSpec.input.filters);
 
         testutils.assertSqlQueryEqual(actual.query, testSpec.expected.query);
         expect(actual.params).toStrictEqual(testSpec.expected.params);
@@ -956,7 +955,7 @@ describe('extractSqlFromOneTransactionRequest', () => {
   describe('failure', () => {
     test('invalidTransactionIdStr', () => {
       expect(() => {
-        extractSqlFromOneTransactionRequest('0.1.x-1235234-5334', []);
+        extractSqlFromTransactionsByIdRequest('0.1.x-1235234-5334', []);
       }).toThrowErrorMatchingSnapshot();
     });
   });

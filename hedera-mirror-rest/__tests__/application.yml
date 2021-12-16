@@ -1,5 +1,7 @@
 hedera:
   mirror:
     rest:
+      log:
+        level: trace
       metrics:
         enabled: false

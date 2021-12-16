@@ -610,13 +610,13 @@ const getScheduledQuery = (query) => {
 };
 
 /**
- * Extracts the sql query and params for transaction request of a transaction id
+ * Extracts the sql query and params for transactions request by transaction id
  *
  * @param {String} transactionIdStr
  * @param {Array} filters
  * @return {{query: string, params: string[]}}
  */
-const extractSqlFromOneTransactionRequest = (transactionIdStr, filters) => {
+const extractSqlFromTransactionsByIdRequest = (transactionIdStr, filters) => {
   const transactionId = TransactionId.fromString(transactionIdStr);
   const params = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
   const conditions = [`${Transaction.PAYER_ACCOUNT_ID_FULL_NAME} = $1`, `${Transaction.VALID_START_NS_FULL_NAME} = $2`];
@@ -668,11 +668,11 @@ const extractSqlFromOneTransactionRequest = (transactionIdStr, filters) => {
  * @param {Request} req HTTP request object
  * @return {} None.
  */
-const getOneTransaction = async (req, res) => {
+const getTransactionsById = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query);
-  const {query, params} = extractSqlFromOneTransactionRequest(req.params.transactionId, filters);
+  const {query, params} = extractSqlFromTransactionsByIdRequest(req.params.transactionId, filters);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getOneTransaction query: ${query} ${JSON.stringify(params)}`);
+    logger.trace(`getTransactionsById query: ${query} ${JSON.stringify(params)}`);
   }
 
   // Execute query
@@ -682,7 +682,7 @@ const getOneTransaction = async (req, res) => {
   }
 
   const transferList = createTransferLists(rows);
-  logger.debug(`getOneTransaction returning ${transferList.transactions.length} entries`);
+  logger.debug(`getTransactionsById returning ${transferList.transactions.length} entries`);
   res.locals[constants.responseDataLabel] = {
     transactions: transferList.transactions,
   };
@@ -690,7 +690,7 @@ const getOneTransaction = async (req, res) => {
 
 module.exports = {
   getTransactions,
-  getOneTransaction,
+  getTransactionsById,
   createTransferLists,
   reqToSql,
   buildWhereClause,
@@ -705,6 +705,6 @@ if (utils.isTestEnv()) {
     createNftTransferList,
     createTokenTransferList,
     createTransferLists,
-    extractSqlFromOneTransactionRequest,
+    extractSqlFromTransactionsByIdRequest,
   });
 }

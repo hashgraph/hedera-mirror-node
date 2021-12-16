@@ -345,6 +345,20 @@ describe('getContractsQuery', () => {
   });
 });
 
+describe('getLastNonceParamValue', () => {
+  test('default', () => {
+    expect(contracts.getLastNonceParamValue({})).toBe(0);
+  });
+
+  test('single', () => {
+    expect(contracts.getLastNonceParamValue({[constants.filterKeys.NONCE]: 10})).toBe(10);
+  });
+
+  test('array', () => {
+    expect(contracts.getLastNonceParamValue({[constants.filterKeys.NONCE]: [1, 2, 3]})).toBe(3);
+  });
+});
+
 describe('extractContractResultsByIdQuery', () => {
   const defaultContractId = 1;
   const defaultExpected = {

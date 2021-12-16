@@ -35,11 +35,9 @@ const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
 const {TransactionType} = require('./model');
-const {keyTypes} = require('./constants');
+const {TRANSACTION_RESULT_SUCCESS, keyTypes} = require('./constants');
 
 const responseLimit = config.response.limit;
-
-const TRANSACTION_RESULT_SUCCESS = 22;
 
 const opsMap = {
   lt: ' < ',
@@ -1049,7 +1047,6 @@ module.exports = {
   secNsToNs,
   secNsToSeconds,
   toHexString,
-  TRANSACTION_RESULT_SUCCESS,
   validateReq,
 };
 

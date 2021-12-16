@@ -539,18 +539,35 @@ const getContractResultsByTimestamp = async (req, res) => {
 
   // retrieve contract result, recordFile and transaction models concurrently
   await Promise.all([
-    ContractService.getContractResultByTimestamp(timestamp),
+    ContractService.getContractResultsByTimestamps(timestamp),
     RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
-    TransactionService.getTransactionContractDetailsFromTimestamp(timestamp),
+    TransactionService.getTransactionDetailsFromTimestamp(timestamp),
   ]).then((responses) => {
-    const contractResult = responses[0];
+    const [contractResults, recordFile, transaction] = responses;
 
-    if (contractResult === null) {
+    if (contractResults.length === 0) {
       throw new NotFoundError();
     }
 
-    res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResult, responses[1], responses[2]);
+    res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResults[0], recordFile, transaction);
   });
+};
+
+/**
+ * Gets the last nonce value if exists, defaults to 0
+ * @param query
+ * @returns {Number}
+ */
+const getLastNonceParamValue = (query) => {
+  const key = constants.filterKeys.NONCE;
+  let nonce = 0; // default
+
+  if (key in query) {
+    const values = query[key];
+    nonce = Array.isArray(values) ? values[values.length - 1] : values;
+  }
+
+  return nonce;
 };
 
 /**
@@ -563,26 +580,45 @@ const getContractResultsByTransactionId = async (req, res) => {
   utils.validateReq(req);
   // extract filters from query param
   const transactionId = TransactionId.fromString(req.params.transactionId);
+  const nonce = getLastNonceParamValue(req.query);
 
-  // get transaction using id.
-  const transaction = await TransactionService.getTransactionContractDetailsFromTransactionId(transactionId);
-  if (transaction === null) {
+  // get transactions using id and nonce, only contractCreate and contractCall can have results.
+  const transactions = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(transactionId, nonce);
+  if (transactions.length === 0) {
     throw new NotFoundError('No correlating transaction');
   }
 
-  // retrieve contract result and recordFile models concurrently using transaction timestamp
-  await Promise.all([
-    ContractService.getContractResultByTimestamp(transaction.consensusTimestamp),
-    RecordFileService.getRecordFileBlockDetailsFromTimestamp(transaction.consensusTimestamp),
-  ]).then((responses) => {
-    const contractResult = responses[0];
+  // retrieve contract result, there can be at most one with contract result though there may be multiple transactions
+  // of the same transaction id and nonce reaching consensus
+  const results = await ContractService.getContractResultsByTimestamps(transactions.map((t) => t.consensusTimestamp));
+  if (results.length === 0) {
+    throw new NotFoundError();
+  } else if (results.length > 1) {
+    logger.error(
+      'Contract result invariance breached: there should be at most one contract result for contract ' +
+        'related transactions with a specific (payer + valid start timestamp + nonce) combination'
+    );
+    throw new Error('Contract result invariance breached');
+  }
+  const contractResult = results[0];
+  const consensusTimestamp = contractResult.consensusTimestamp;
 
-    if (contractResult === null) {
-      throw new NotFoundError();
+  const recordFile = await RecordFileService.getRecordFileBlockDetailsFromTimestamp(consensusTimestamp);
+  if (recordFile === null) {
+    logger.error(`No record file found for contract transaction at ${consensusTimestamp}`);
+    throw new Error('No record file found for contract transaction');
+  }
+
+  // find the transaction
+  let transaction;
+  for (const tx of transactions) {
+    if (tx.consensusTimestamp === consensusTimestamp) {
+      transaction = tx;
+      break;
     }
+  }
 
-    res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResult, responses[1], transaction);
-  });
+  res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResult, recordFile, transaction);
 };
 
 const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams, existingConditions, fullName) => {
@@ -613,6 +649,7 @@ if (utils.isTestEnv()) {
     formatContractRow,
     getContractByIdQuery,
     getContractsQuery,
+    getLastNonceParamValue,
     validateContractIdAndConsensusTimestampParam,
     validateContractIdParam,
   });

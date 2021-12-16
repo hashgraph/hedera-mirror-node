@@ -18,9 +18,21 @@
       }
     ],
     "recordFiles": [],
-    "transactions": []
+    "transactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "payerAccountId": "8001",
+        "transaction_hash": "519a008fabde4d",
+        "valid_start_timestamp": 167654000123400,
+        "nonce": 1
+      }
+    ]
   },
-  "url": "/api/v1/contracts/results/0.0.5-167654-000123401",
+  "urls": [
+    "/api/v1/contracts/results/0.0.8001-167654-000123400",
+    "/api/v1/contracts/results/0.0.8001-167654-000123400?nonce=0",
+    "/api/v1/contracts/results/0.0.8001-167654-000123400?nonce=2"
+  ],
   "responseStatus": 404,
   "responseJson": {
     "_status": {

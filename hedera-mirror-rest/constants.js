@@ -22,6 +22,8 @@
 
 const MAX_INT32 = 2147483647;
 
+const TRANSACTION_RESULT_SUCCESS = 22;
+
 // url query filer keys
 const filterKeys = {
   ACCOUNT_ID: 'account.id',
@@ -158,6 +160,7 @@ const httpStatusCodes = {
 
 module.exports = {
   MAX_INT32,
+  TRANSACTION_RESULT_SUCCESS,
   characterEncoding,
   cloudProviders,
   cryptoTransferType,
