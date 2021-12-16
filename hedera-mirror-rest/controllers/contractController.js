@@ -673,6 +673,9 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
       case constants.filterKeys.TOPIC2:
       case constants.filterKeys.TOPIC3:
         filter.value = filter.value.replace(/^(0x)?0*/, '');
+        if (filter.value.length % 2 !== 0) {
+          filter.value = `0${filter.value}`; //Left pad so that Buffer.from parses correctly
+        }
         filter.value = Buffer.from(filter.value, 'hex');
         updateConditionsAndParamsWithInValues(
           filter,

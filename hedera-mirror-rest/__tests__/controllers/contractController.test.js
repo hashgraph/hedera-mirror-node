@@ -609,7 +609,7 @@ describe('extractContractLogsByIdQuery', () => {
           {
             key: constants.filterKeys.TOPIC0,
             operator: utils.opsMap.eq,
-            value: '0012',
+            value: '012',
           },
 
           {
@@ -625,7 +625,7 @@ describe('extractContractLogsByIdQuery', () => {
           {
             key: constants.filterKeys.TOPIC3,
             operator: utils.opsMap.eq,
-            value: '15',
+            value: '0000150',
           },
         ],
         contractId: defaultContractId,
@@ -645,7 +645,7 @@ describe('extractContractLogsByIdQuery', () => {
           Buffer.from('12', 'hex'),
           Buffer.from('13', 'hex'),
           Buffer.from('14', 'hex'),
-          Buffer.from('15', 'hex'),
+          Buffer.from('0150', 'hex'),
         ],
       },
     },
