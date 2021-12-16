@@ -757,7 +757,7 @@ const updateQueryFiltersWithInValues = (existingParams, existingConditions, inva
 const checkTimestampsForTopics = (filters) => {
   let hasTopic = false;
   const timestampFilters = [];
-  for (const filter in filters) {
+  for (const filter of filters) {
     switch (filter.key) {
       case constants.filterKeys.TOPIC0:
       case constants.filterKeys.TOPIC1:
