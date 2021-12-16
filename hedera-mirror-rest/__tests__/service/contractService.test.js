@@ -122,16 +122,14 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
   test('ContractService.getContractLogsByIdAndFiltersQuery - Verify additional conditions', async () => {
     const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
       [
-        `cl.root_contract_id = $1`,
-        `cl.topic0 in ($2)`,
-        `cl.topic1 in ($3)`,
-        `cl.topic2 in ($4)`,
-        `cl.topic3 in ($5)`,
-        `cl.contract_id in ($6)`,
-        `cl.consensus_timestamp in ( $7, $8)`,
+        `cl.topic0 in ($1)`,
+        `cl.topic1 in ($2)`,
+        `cl.topic2 in ($3)`,
+        `cl.topic3 in ($4)`,
+        `cl.contract_id in ($5)`,
+        `cl.consensus_timestamp in ( $6, $7)`,
       ],
       [
-        1001,
         Buffer.from('11', 'hex'),
         Buffer.from('12', 'hex'),
         Buffer.from('13', 'hex'),
@@ -155,19 +153,17 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
                                    topic2,
                                    topic3
                             from contract_log cl
-                            where cl.root_contract_id = $1
-                              and cl.topic0 in ($2)
-                              and cl.topic1 in ($3)
-                              and cl.topic2 in ($4)
-                              and cl.topic3 in ($5)
-                              and cl.contract_id in ($6)
-                              and cl.consensus_timestamp in ($7, $8)
+                            where cl.topic0 in ($1)
+                              and cl.topic1 in ($2)
+                              and cl.topic2 in ($3)
+                              and cl.topic3 in ($4)
+                              and cl.contract_id in ($5)
+                              and cl.consensus_timestamp in ($6, $7)
                             order by cl.consensus_timestamp desc,
                                      cl.index desc
-                            limit $9`)
+                            limit $8`)
     );
     expect(params).toEqual([
-      1001,
       Buffer.from('11', 'hex'),
       Buffer.from('12', 'hex'),
       Buffer.from('13', 'hex'),
