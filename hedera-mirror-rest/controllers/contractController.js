@@ -418,12 +418,10 @@ const extractContractIdAndFiltersFromValidatedRequest = (req) => {
  */
 const getContractLogs = async (req, res) => {
   const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
-  const filters = utils.buildAndValidateFilters(req.query);
-
-  checkTimestampsForTopics(filters);
-  // extract filters from query param
-
   // get sql filter query, params, limit and limit query from query filters
+  const filters = utils.buildAndValidateFilters(req.query);
+  checkTimestampsForTopics(filters);
+
   const {conditions, params, timestampOrder, indexOrder, limit} = extractContractLogsByIdQuery(filters, contractId);
 
   const rows = await ContractService.getContractLogsByIdAndFilters(
@@ -757,7 +755,7 @@ const updateQueryFiltersWithInValues = (existingParams, existingConditions, inva
 };
 
 const checkTimestampsForTopics = (filters) => {
-  let isTopic = false;
+  let hasTopic = false;
   const timestampFilters = [];
   for (const filter in filters) {
     switch (filter.key) {
@@ -765,7 +763,7 @@ const checkTimestampsForTopics = (filters) => {
       case constants.filterKeys.TOPIC1:
       case constants.filterKeys.TOPIC2:
       case constants.filterKeys.TOPIC3:
-        isTopic = true;
+        hasTopic = true;
         break;
       case constants.filterKeys.TIMESTAMP:
         timestampFilters.push(filter);
@@ -774,7 +772,7 @@ const checkTimestampsForTopics = (filters) => {
         continue;
     }
   }
-  if (topic0 || topic1 || topic2 || topic3) {
+  if (hasTopic) {
     try {
       utils.checkTimestampRange(timestampFilters);
     } catch (e) {
