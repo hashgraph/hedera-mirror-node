@@ -26,41 +26,24 @@ class Transaction {
   static tableAlias = 't';
   static tableName = 'transaction';
   static CHARGED_TX_FEE = `charged_tx_fee`;
-  static CHARGED_TX_FEE_FULL_NAME = `${this.tableAlias}.${this.CHARGED_TX_FEE}`;
   static CONSENSUS_TIMESTAMP = `consensus_timestamp`;
-  static CONSENSUS_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.CONSENSUS_TIMESTAMP}`;
   static ENTITY_ID = `entity_id`;
-  static ENTITY_ID_FULL_NAME = `${this.tableAlias}.${this.ENTITY_ID}`;
   static INITIAL_BALANCE = `initial_balance`;
-  static INITIAL_BALANCE_FULL_NAME = `${this.tableAlias}.${this.INITIAL_BALANCE}`;
   static MAX_FEE = `max_fee`;
-  static MAX_FEE_FULL_NAME = `${this.tableAlias}.${this.MAX_FEE}`;
   static MEMO = `memo`;
-  static MEMO_FULL_NAME = `${this.tableAlias}.${this.MEMO}`;
   static NODE_ACCOUNT_ID = `node_account_id`;
-  static NODE_ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.NODE_ACCOUNT_ID}`;
   static NONCE = `nonce`;
-  static NONCE_FULL_NAME = `${this.tableAlias}.${this.NONCE}`;
   static PARENT_CONSENSUS_TIMESTAMP = `parent_consensus_timestamp`;
-  static PARENT_CONSENSUS_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.PARENT_CONSENSUS_TIMESTAMP}`;
   static PAYER_ACCOUNT_ID = `payer_account_id`;
-  static PAYER_ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.PAYER_ACCOUNT_ID}`;
   static RESULT = `result`;
-  static RESULT_FULL_NAME = `${this.tableAlias}.${this.RESULT}`;
   static SCHEDULED = `scheduled`;
-  static SCHEDULED_FULL_NAME = `${this.tableAlias}.${this.SCHEDULED}`;
   static TRANSACTION_HASH = `transaction_hash`;
-  static TRANSACTION_HASH_FULL_NAME = `${this.tableAlias}.${this.TRANSACTION_HASH}`;
   static TRANSACTION_BYTES = `transaction_bytes`;
-  static TRANSACTION_BYTES_FULL_NAME = `${this.tableAlias}.${this.TRANSACTION_BYTES}`;
   static TYPE = `type`;
-  static TYPE_FULL_NAME = `${this.tableAlias}.${this.TYPE}`;
   static VALID_DURATION_SECONDS = `valid_duration_seconds`;
-  static VALID_DURATION_SECONDS_FULL_NAME = `${this.tableAlias}.${this.VALID_DURATION_SECONDS}`;
   static VALID_START_NS = `valid_start_ns`;
-  static VALID_START_NS_FULL_NAME = `${this.tableAlias}.${this.VALID_START_NS}`;
   static FILTER_MAP = {
-    [constants.filterKeys.TIMESTAMP]: Transaction.CONSENSUS_TIMESTAMP_FULL_NAME,
+    [constants.filterKeys.TIMESTAMP]: Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP),
   };
 
   /**
@@ -87,12 +70,12 @@ class Transaction {
   }
 
   /**
-    * Gets full column name with table alias prepended.
-    *
-    * @param {string} columnName
-    * @private
-    */
-   static getFullName(columnName) {
+   * Gets full column name with table alias prepended.
+   *
+   * @param {string} columnName
+   * @private
+   */
+  static getFullName(columnName) {
     return `${this.tableAlias}.${columnName}`;
   }
 }
