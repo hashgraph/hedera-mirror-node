@@ -24,7 +24,7 @@ const _ = require('lodash');
 
 class ContractLog {
   /**
-   * Parses contract table columns into object
+   * Parses contract_log table columns into object
    */
   constructor(contractLog) {
     Object.assign(
