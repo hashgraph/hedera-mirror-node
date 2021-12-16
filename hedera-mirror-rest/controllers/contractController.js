@@ -417,9 +417,9 @@ const extractContractIdAndFiltersFromValidatedRequest = (req) => {
  * @returns {Promise<void>}
  */
 const getContractLogs = async (req, res) => {
-  const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
   // get sql filter query, params, limit and limit query from query filters
   const filters = utils.buildAndValidateFilters(req.query);
+  const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
   checkTimestampsForTopics(filters);
 
   const {conditions, params, timestampOrder, indexOrder, limit} = extractContractLogsByIdQuery(filters, contractId);
