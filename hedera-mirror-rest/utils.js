@@ -1008,13 +1008,13 @@ const loadPgRange = () => {
  *
  * @param timestampFilters an array of timestamp filters
  */
-const maxTimestampRange = parseDuration.parse(config.maxTimestampRange).milliseconds();
+const maxTimestampRange = parseDuration(config.maxTimestampRange);
 const checkTimestampRange = (timestampFilters) => {
   let latest = undefined;
   let earliest = undefined;
 
   //no timestamp params
-  if (!timestampFilters) {
+  if (!timestampFilters || timestampFilters.length === 0) {
     throw new InvalidArgumentError('No timestamp range given');
   }
 
