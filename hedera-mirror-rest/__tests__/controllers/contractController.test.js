@@ -620,7 +620,7 @@ describe('extractContractLogsByIdQuery', () => {
           {
             key: constants.filterKeys.TOPIC2,
             operator: utils.opsMap.eq,
-            value: '0x14',
+            value: '0x140',
           },
           {
             key: constants.filterKeys.TOPIC3,
@@ -644,7 +644,7 @@ describe('extractContractLogsByIdQuery', () => {
           Buffer.from('11', 'hex'),
           Buffer.from('12', 'hex'),
           Buffer.from('13', 'hex'),
-          Buffer.from('14', 'hex'),
+          Buffer.from('0140', 'hex'),
           Buffer.from('0150', 'hex'),
         ],
       },
