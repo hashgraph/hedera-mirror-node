@@ -93,7 +93,7 @@ const isValidPublicKeyQuery = (query) => {
   return publicKeyPattern.test(query);
 };
 
-const contractTopicPattern = /^(0x)?[0-9A-Fa-f]{1,64}$/; // optional 0x followed by up to 64 hex digits
+const contractTopicPattern = /^(0x)?([0-9A-Fa-f][0-9A-Fa-f]){1,32}$/; // optional 0x followed by up to 32 pairs of hex digits
 const isValidOpAndTopic = (op, query) => {
   return typeof query === 'string' && contractTopicPattern.test(query) && op === constants.queryParamOperators.eq;
 };

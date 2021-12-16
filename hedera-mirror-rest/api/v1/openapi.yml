@@ -1563,7 +1563,7 @@ components:
           $ref: '#/components/schemas/CustomFees'
     TopicQueryParam:
       type: string
-      pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
+      pattern: ^(0x)?([0-9A-Fa-f][0-9A-Fa-f]){1,32}$
     TransactionTypes:
       type: string
       enum:
