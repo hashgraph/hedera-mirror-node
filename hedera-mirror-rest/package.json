@@ -36,14 +36,14 @@
     "long": "^5.2.0",
     "mathjs": "^10.0.0",
     "mem": "^8.1.1",
+    "parse-duration": "^1.0.2",
     "pg": "~8.7.1",
     "pg-range": "^1.1.1",
     "prom-client": "^14.0.1",
     "qs": "^6.10.2",
     "quick-lru": "^5.1.1",
     "swagger-stats": "^0.99.2",
-    "swagger-ui-express": "^4.2.0",
-    "to-time": "^1.0.2"
+    "swagger-ui-express": "^4.2.0"
   },
   "bundledDependencies": [
     "asn1js",
@@ -65,6 +65,7 @@
     "long",
     "mathjs",
     "mem",
+    "parse-duration",
     "pg",
     "pg-range",
     "prom-client",

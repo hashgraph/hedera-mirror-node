@@ -25,7 +25,7 @@ const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
 const long = require('long');
 const math = require('mathjs');
-const toTime = require('to-time');
+const parseDuration = require('parse-duration');
 const util = require('util');
 
 const constants = require('./constants');
@@ -1008,7 +1008,7 @@ const loadPgRange = () => {
  *
  * @param timestampFilters an array of timestamp filters
  */
-const maxTimestampRange = toTime(config.maxTimestampRange).milliseconds();
+const maxTimestampRange = parseDuration.parse(config.maxTimestampRange).milliseconds();
 const checkTimestampRange = (timestampFilters) => {
   let latest = undefined;
   let earliest = undefined;
@@ -1027,7 +1027,6 @@ const checkTimestampRange = (timestampFilters) => {
         throw new InvalidArgumentError('Multiple greater than operators not permitted');
       }
       earliest = nsToMillis(filter.value);
-      parseTimestampParam(filter.value).substring();
     } else if (filter.operator === opsMap.lt || filter.operator === opsMap.lte) {
       if (latest !== undefined) {
         throw new InvalidArgumentError('Multiple less than operators not permitted');
