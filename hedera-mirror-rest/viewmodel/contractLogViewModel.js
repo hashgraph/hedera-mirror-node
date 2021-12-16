@@ -35,8 +35,10 @@ class ContractLogViewModel {
    * @param {ContractLog} contractLog
    */
   constructor(contractLog) {
+    const contractId = EntityId.parse(contractLog.contractId, constants.filterKeys.CONTRACTID);
     Object.assign(this, {
-      address: EntityId.parse(contractLog.contractId, constants.filterKeys.CONTRACTID).toSolidityAddress(),
+      address: contractId.toSolidityAddress(),
+      contract_id: contractId.toString(),
       data: utils.toHexString(contractLog.data, true),
       index: contractLog.index,
       root_contract_id: EntityId.parse(contractLog.rootContractId, true).toString(),

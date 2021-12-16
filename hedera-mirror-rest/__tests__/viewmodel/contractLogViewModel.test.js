@@ -37,6 +37,7 @@ describe('ContractLogViewModel', () => {
   };
   const defaultExpected = {
     address: '0x0000000000000000000000000000000000000001',
+    contract_id: '0.0.1',
     data: '0x0000000000000000000000000000000000001234',
     index: 6,
     root_contract_id: '0.0.2',

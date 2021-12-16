@@ -36,6 +36,7 @@
     "contract_logs": [
       {
         "address": "0x00000000000000000000000000000000000003e8",
+        "contract_id": "0.0.1000",
         "data": "0x0123",
         "index": 1,
         "root_contract_id": "0.0.1001",
@@ -49,6 +50,7 @@
       },
       {
         "address": "0x00000000000000000000000000000000000003e8",
+        "contract_id": "0.0.1000",
         "data": "0x0123",
         "index": 0,
         "root_contract_id": null,
@@ -62,6 +64,7 @@
       },
       {
         "address": "0x00000000000000000000000000000000000003e8",
+        "contract_id": "0.0.1000",
         "data": "0x0123",
         "index": 1,
         "root_contract_id": null,
