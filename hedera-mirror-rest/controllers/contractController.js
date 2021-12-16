@@ -433,7 +433,7 @@ const getContractLogs = async (req, res) => {
   );
 
   const response = {
-    contract_logs: rows.map((row) => new ContractLogViewModel(row)),
+    logs: rows.map((row) => new ContractLogViewModel(row)),
   };
 
   res.send(response);

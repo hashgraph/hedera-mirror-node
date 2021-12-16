@@ -33,7 +33,7 @@
   ],
   "responseStatus": 200,
   "responseJson": {
-    "contract_logs": [
+    "logs": [
       {
         "address": "0x00000000000000000000000000000000000003e8",
         "contract_id": "0.0.1000",
