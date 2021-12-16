@@ -1010,8 +1010,8 @@ const loadPgRange = () => {
  */
 const maxTimestampRange = parseDuration(config.maxTimestampRange);
 const checkTimestampRange = (timestampFilters) => {
-  let latest = undefined;
-  let earliest = undefined;
+  let latest;
+  let earliest;
 
   //no timestamp params
   if (!timestampFilters || timestampFilters.length === 0) {
