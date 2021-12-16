@@ -799,7 +799,7 @@ components:
       type: object
       properties:
         contract_logs:
-          $ref: '#/components/schemas/ContractResults'
+          $ref: '#/components/schemas/ContractLogs'
         links:
           $ref: '#/components/schemas/Links'
     NetworkSupplyResponse:
@@ -1131,7 +1131,7 @@ components:
     ContractLogs:
       type: array
       items:
-        $ref: '#/components/schemas/ContractResult'
+        $ref: '#/components/schemas/ContractLog'
     CustomFees:
       type: object
       properties:
