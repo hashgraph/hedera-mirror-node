@@ -33,8 +33,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.List;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,13 +48,16 @@ import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
 @Log4j2
 @Cucumber
 public class ContractFeature extends AbstractFeature {
-    private final static long maxFunctionGas = 1_000_000;
+    private final static long maxFunctionGas = 300_000;
     private final ObjectMapper mapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
@@ -115,12 +118,26 @@ public class ContractFeature extends AbstractFeature {
     }
 
     @Then("the mirror node REST API should verify the deployed contract entity")
-    public void verifyDeployedContractMirror() throws DecoderException {
+    public void verifyDeployedContractMirror() {
+        verifyContractFromMirror(false);
+        verifyContractExecutionResultsById();
+        verifyContractExecutionResultsByTransactionId();
+    }
+
+    @Then("the mirror node REST API should verify the updated contract entity")
+    public void verifyUpdatedContractMirror() {
         verifyContractFromMirror(false);
     }
 
+    @Then("the mirror node REST API should verify the called contract function")
+    public void verifyContractFunctionCallMirror() {
+        verifyContractFromMirror(false);
+        verifyContractExecutionResultsById();
+        verifyContractExecutionResultsByTransactionId();
+    }
+
     @Then("the mirror node REST API should verify the deleted contract entity")
-    public void verifyDeletedContractMirror() throws DecoderException {
+    public void verifyDeletedContractMirror() {
         verifyContractFromMirror(true);
     }
 
@@ -156,7 +173,7 @@ public class ContractFeature extends AbstractFeature {
         verifyCreateContractNetworkResponse();
     }
 
-    private MirrorContractResponse verifyContractFromMirror(boolean isDeleted) throws DecoderException {
+    private MirrorContractResponse verifyContractFromMirror(boolean isDeleted) {
         MirrorContractResponse mirrorContract = mirrorClient.getContractInfo(contractId.toString());
 
         assertNotNull(mirrorContract);
@@ -191,6 +208,59 @@ public class ContractFeature extends AbstractFeature {
         return mirrorContract;
     }
 
+    private void verifyContractExecutionResultsById() {
+        List<MirrorContractResult> contractResults = mirrorClient.getContractResultsById(contractId.toString())
+                .getResults();
+
+        assertThat(contractResults).isNotEmpty().allSatisfy(this::verifyContractExecutionResults);
+    }
+
+    private void verifyContractExecutionResultsByTransactionId() {
+        MirrorContractResultResponse contractResult = mirrorClient
+                .getContractResultByTransactionId(networkTransactionResponse.getTransactionIdStringNoCheckSum());
+
+        verifyContractExecutionResults(contractResult);
+        assertThat(contractResult.getBlockHash()).isNotBlank();
+        assertThat(contractResult.getBlockNumber()).isPositive();
+        assertThat(contractResult.getHash()).isNotBlank();
+    }
+
+    private void verifyContractExecutionResults(MirrorContractResult contractResult) {
+        ContractExecutionStage contractExecutionStage = contractResult.getFunctionParameters().equals("0x") ?
+                ContractExecutionStage.CREATION : ContractExecutionStage.CALL;
+
+        assertThat(contractResult.getCallResult()).isNotBlank();
+        assertThat(contractResult.getContractId()).isEqualTo(contractId.toString());
+        String[] createdIds = contractResult.getCreatedContractIds();
+        assertThat(createdIds).isNotEmpty();
+        assertThat(contractResult.getErrorMessage()).isBlank();
+        assertThat(contractResult.getFrom()).isEqualTo(FeatureInputHandler.solidityAddress(
+                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId()));
+        assertThat(contractResult.getGasLimit()).isEqualTo(maxFunctionGas);
+        assertThat(contractResult.getGasUsed()).isPositive();
+        assertThat(contractResult.getTo()).isEqualTo(FeatureInputHandler.solidityAddress(contractId));
+
+        int amount = 0; // no payment in contract construction phase
+        int numCreatedIds = 2; // parent and child contract
+        switch (contractExecutionStage) {
+            case CREATION:
+                amount = 1000;
+                assertThat(createdIds).contains(contractId.toString());
+                assertThat(contractResult.getFunctionParameters()).isEqualTo("0x");
+                break;
+            case CALL:
+                numCreatedIds = 1;
+                assertThat(createdIds).doesNotContain(contractId.toString());
+                assertThat(contractResult.getFunctionParameters()).isNotEqualTo("0x");
+                break;
+            default:
+                break;
+        }
+
+        assertThat(contractResult.getAmount()).isEqualTo(amount);
+        assertThat(createdIds).hasSize(numCreatedIds);
+    }
+
     private void executeCreateChildTransaction(int transferAmount) {
         networkTransactionResponse = contractClient.executeContract(
                 contractId,
@@ -202,5 +272,10 @@ public class ContractFeature extends AbstractFeature {
 
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    private enum ContractExecutionStage {
+        CREATION,
+        CALL
     }
 }

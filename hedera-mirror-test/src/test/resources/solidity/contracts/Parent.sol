@@ -7,18 +7,9 @@ pragma solidity ^0.8.0;
  *
  */
 contract Child {
-    function getAmount() public view returns (uint256) {
-        return address(this).balance;
+    receive() external payable {
+        emit Transfer(msg.sender, address(this), msg.value);
     }
-
-    function spend(uint256 _amount) public returns (bool) {
-        require(address(this).balance >= _amount);
-        payable(address(0)).transfer(_amount);
-        emit Transfer(address(this), address(0), _amount);
-        return true;
-    }
-
-    receive() external payable {}
 
     event Transfer(address indexed _from, address indexed _to, uint256 amount);
 }
@@ -40,47 +31,18 @@ contract Parent {
         emit ParentActivityLog("Created first child contract");
     }
 
-    function createChild(uint256 amount) public {
+    function createChild(uint256 amount) public returns (address) {
         childAddresses[1] = address(new Child());
         emit ParentActivityLog("Created second child contract");
 
         if (amount > 0) {
             payable(childAddresses[1]).transfer(amount);
         }
-    }
 
-    function donate() public payable {
-        emit Transfer(msg.sender, address(this), msg.value);
-    }
-
-    function transferToChild(uint256 amount, uint64 childIndex)
-        public
-        returns (bool)
-    {
-        require(address(this).balance >= amount);
-        require(childIndex == 0 || childIndex == 1);
-        address childAddress = childAddresses[childIndex];
-        payable(childAddress).transfer(amount);
-        emit Transfer(address(this), childAddress, amount);
-        return true;
-    }
-
-    function getBalance() public view returns (uint256) {
-        return address(this).balance;
-    }
-
-    function getChildAddress(uint64 childIndex) public view returns (address) {
-        require(childIndex == 0 || childIndex == 1);
-        return childIndex == 0 ? childAddresses[0] : childAddresses[1];
-    }
-
-    function getChildBalance(uint64 childIndex) public view returns (uint256) {
-        Child myChild = Child(payable(getChildAddress(childIndex)));
-        return myChild.getAmount();
+        return childAddresses[1];
     }
 
     receive() external payable {}
 
     event ParentActivityLog(string message);
-    event Transfer(address indexed _from, address indexed _to, uint256 amount);
 }

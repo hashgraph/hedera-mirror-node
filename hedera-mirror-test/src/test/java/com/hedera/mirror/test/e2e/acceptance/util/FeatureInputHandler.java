@@ -23,6 +23,9 @@ package com.hedera.mirror.test.e2e.acceptance.util;
 import java.time.DateTimeException;
 import java.time.Instant;
 
+import com.hedera.hashgraph.sdk.AccountId;
+import com.hedera.hashgraph.sdk.ContractId;
+
 public class FeatureInputHandler {
     public static Instant messageQueryDateStringToInstant(String date) {
         return messageQueryDateStringToInstant(date, Instant.now());
@@ -37,5 +40,17 @@ public class FeatureInputHandler {
         }
 
         return refDate;
+    }
+
+    public static String solidityAddress(AccountId accountId) {
+        return FeatureInputHandler.solidityAddress(accountId.shard, accountId.realm, accountId.num);
+    }
+
+    public static String solidityAddress(ContractId contractId) {
+        return FeatureInputHandler.solidityAddress(contractId.shard, contractId.realm, contractId.num);
+    }
+
+    public static String solidityAddress(long shard, long realm, long num) {
+        return String.format("0x%08x%016x%016x", shard, realm, num);
     }
 }
