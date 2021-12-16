@@ -617,33 +617,36 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   const conditions = [`${ContractLog.getFullName(ContractLog.CONTRACT_ID)} = $1`];
   const params = [contractId];
 
-  const contractLogIndexFullName = ContractLog.getFullName(ContractLog.INDEX);
-  const contractLogIndexInValues = [];
+  const inValues = {};
+  const keyFullNames = {};
 
-  const contractLogTimestampFullName = ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP);
-  const contractLogTimestampInValues = [];
+  keyFullNames[constants.filterKeys.INDEX] = ContractLog.getFullName(ContractLog.INDEX);
+  inValues[constants.filterKeys.INDEX] = [];
 
-  const contractLogTopic0FullName = ContractLog.getFullName(ContractLog.TOPIC0);
-  const contractLogTopic0InValues = [];
+  keyFullNames[constants.filterKeys.TIMESTAMP] = ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP);
+  inValues[constants.filterKeys.TIMESTAMP] = [];
 
-  const contractLogTopic1FullName = ContractLog.getFullName(ContractLog.TOPIC1);
-  const contractLogTopic1InValues = [];
+  keyFullNames[constants.filterKeys.TOPIC0] = ContractLog.getFullName(ContractLog.TOPIC0);
+  inValues[constants.filterKeys.TOPIC0] = [];
 
-  const contractLogTopic2FullName = ContractLog.getFullName(ContractLog.TOPIC2);
-  const contractLogTopic2InValues = [];
+  keyFullNames[constants.filterKeys.TOPIC1] = ContractLog.getFullName(ContractLog.TOPIC1);
+  inValues[constants.filterKeys.TOPIC1] = [];
 
-  const contractLogTopic3FullName = ContractLog.getFullName(ContractLog.TOPIC3);
-  const contractLogTopic3InValues = [];
+  keyFullNames[constants.filterKeys.TOPIC2] = ContractLog.getFullName(ContractLog.TOPIC2);
+  inValues[constants.filterKeys.TOPIC2] = [];
+
+  keyFullNames[constants.filterKeys.TOPIC3] = ContractLog.getFullName(ContractLog.TOPIC3);
+  inValues[constants.filterKeys.TOPIC3] = [];
 
   for (const filter of filters) {
     switch (filter.key) {
       case constants.filterKeys.INDEX:
         updateConditionsAndParamsWithInValues(
           filter,
-          contractLogIndexInValues,
+          inValues[filter.key],
           params,
           conditions,
-          contractLogIndexFullName
+          keyFullNames[filter.key]
         );
         break;
       case constants.filterKeys.LIMIT:
@@ -659,55 +662,24 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         }
         updateConditionsAndParamsWithInValues(
           filter,
-          contractLogTimestampInValues,
+          inValues[filter.key],
           params,
           conditions,
-          contractLogTimestampFullName
+          keyFullNames[filter.key]
         );
         break;
       case constants.filterKeys.TOPIC0:
-        // handle repeated values
-        filter.value = filter.value.replace(/^(0x)?0*/, '');
-        filter.value = Buffer.from(filter.value, 'hex');
-        updateConditionsAndParamsWithInValues(
-          filter,
-          contractLogTopic0InValues,
-          params,
-          conditions,
-          contractLogTopic0FullName
-        );
-        break;
       case constants.filterKeys.TOPIC1:
-        filter.value = filter.value.replace(/^(0x)?0*/, '');
-        filter.value = Buffer.from(filter.value, 'hex');
-        updateConditionsAndParamsWithInValues(
-          filter,
-          contractLogTopic1InValues,
-          params,
-          conditions,
-          contractLogTopic1FullName
-        );
-        break;
       case constants.filterKeys.TOPIC2:
-        filter.value = filter.value.replace(/^(0x)?0*/, '');
-        filter.value = Buffer.from(filter.value, 'hex');
-        updateConditionsAndParamsWithInValues(
-          filter,
-          contractLogTopic2InValues,
-          params,
-          conditions,
-          contractLogTopic2FullName
-        );
-        break;
       case constants.filterKeys.TOPIC3:
         filter.value = filter.value.replace(/^(0x)?0*/, '');
         filter.value = Buffer.from(filter.value, 'hex');
         updateConditionsAndParamsWithInValues(
           filter,
-          contractLogTopic3InValues,
+          inValues[filter.key],
           params,
           conditions,
-          contractLogTopic3FullName
+          keyFullNames[filter.key]
         );
         break;
       default:
@@ -716,12 +688,42 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   }
 
   // update query with repeated values
-  updateQueryFiltersWithInValues(params, conditions, contractLogIndexInValues, contractLogIndexFullName);
-  updateQueryFiltersWithInValues(params, conditions, contractLogTimestampInValues, contractLogTimestampFullName);
-  updateQueryFiltersWithInValues(params, conditions, contractLogTopic0InValues, contractLogTopic0FullName);
-  updateQueryFiltersWithInValues(params, conditions, contractLogTopic1InValues, contractLogTopic1FullName);
-  updateQueryFiltersWithInValues(params, conditions, contractLogTopic2InValues, contractLogTopic2FullName);
-  updateQueryFiltersWithInValues(params, conditions, contractLogTopic3InValues, contractLogTopic3FullName);
+  updateQueryFiltersWithInValues(
+    params,
+    conditions,
+    inValues[constants.filterKeys.INDEX],
+    keyFullNames[constants.filterKeys.INDEX]
+  );
+  updateQueryFiltersWithInValues(
+    params,
+    conditions,
+    inValues[constants.filterKeys.TIMESTAMP],
+    keyFullNames[constants.filterKeys.TIMESTAMP]
+  );
+  updateQueryFiltersWithInValues(
+    params,
+    conditions,
+    inValues[constants.filterKeys.TOPIC0],
+    keyFullNames[constants.filterKeys.TOPIC0]
+  );
+  updateQueryFiltersWithInValues(
+    params,
+    conditions,
+    inValues[constants.filterKeys.TOPIC1],
+    keyFullNames[constants.filterKeys.TOPIC1]
+  );
+  updateQueryFiltersWithInValues(
+    params,
+    conditions,
+    inValues[constants.filterKeys.TOPIC2],
+    keyFullNames[constants.filterKeys.TOPIC2]
+  );
+  updateQueryFiltersWithInValues(
+    params,
+    conditions,
+    inValues[constants.filterKeys.TOPIC3],
+    keyFullNames[constants.filterKeys.TOPIC3]
+  );
 
   return {
     conditions,
