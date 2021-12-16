@@ -1040,12 +1040,12 @@ describe('Utils test - utils.parseTransactionTypeParam', () => {
     test('Utils test - utils.checkTimestampRange - two bad range backwards', () => {
       const error = () => utils.checkTimestampRange(['lte:1638921701.000000000', 'gte:1638921702.000']);
       expect(error).toThrowError(InvalidArgumentError);
-      expect(error).toThrowError('Timestamp range must be > 0 and < 31536000000000000');
+      expect(error).toThrowError('Lower and upper bounds must be positive and within 31536000000000000 ns');
     });
     test('Utils test - utils.checkTimestampRange - two bad range too big', () => {
       const error = () => utils.checkTimestampRange(['lte:1638921702.000000000', 'gte:1738921702.000']);
       expect(error).toThrowError(InvalidArgumentError);
-      expect(error).toThrowError('Timestamp range must be > 0 and < 31536000000000000');
+      expect(error).toThrowError('Lower and upper bounds must be positive and within 31536000000000000 ns');
     });
     test('Utils test - utils.checkTimestampRange - two gt and gte', () => {
       const error = () => utils.checkTimestampRange(['gt:1638921702.000000000', 'gte:1738921702.000']);

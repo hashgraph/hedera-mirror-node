@@ -123,19 +123,19 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
     const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
       [
         `cl.root_contract_id = $1`,
-        `cl.topic0 in (decode($2, 'hex'))`,
-        `cl.topic1 in (decode($3, 'hex'))`,
-        `cl.topic2 in (decode($4, 'hex'))`,
-        `cl.topic3 in (decode($5, 'hex'))`,
+        `cl.topic0 in ($2)`,
+        `cl.topic1 in ($3)`,
+        `cl.topic2 in ($4)`,
+        `cl.topic3 in ($5)`,
         `cl.contract_id in ($6)`,
         `cl.consensus_timestamp in ( $7, $8)`,
       ],
       [
         1001,
-        'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
-        'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
-        'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
-        'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
+        Buffer.from('11', 'hex'),
+        Buffer.from('12', 'hex'),
+        Buffer.from('13', 'hex'),
+        Buffer.from('14', 'hex'),
         1002,
         20,
         30,
@@ -156,10 +156,10 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
                                    cl.topic3
                             from contract_log cl
                             where cl.root_contract_id = $1
-                              and cl.topic0 in (decode($2, 'hex'))
-                              and cl.topic1 in (decode($3, 'hex'))
-                              and cl.topic2 in (decode($4, 'hex'))
-                              and cl.topic3 in (decode($5, 'hex'))
+                              and cl.topic0 in ($2)
+                              and cl.topic1 in ($3)
+                              and cl.topic2 in ($4)
+                              and cl.topic3 in ($5)
                               and cl.contract_id in ($6)
                               and cl.consensus_timestamp in ($7, $8)
                             order by cl.consensus_timestamp desc,
@@ -168,10 +168,10 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
     );
     expect(params).toEqual([
       1001,
-      'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
-      'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
-      'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
-      'af846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0',
+      Buffer.from('11', 'hex'),
+      Buffer.from('12', 'hex'),
+      Buffer.from('13', 'hex'),
+      Buffer.from('14', 'hex'),
       1002,
       20,
       30,

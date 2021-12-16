@@ -671,6 +671,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
       case constants.filterKeys.TOPIC0:
         // handle repeated values
         filter.value = filter.value.replace(/^(0x)?0*/, '');
+        filter.value = Buffer.from(filter.value, 'hex');
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTopic0InValues,
@@ -681,6 +682,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         break;
       case constants.filterKeys.TOPIC1:
         filter.value = filter.value.replace(/^(0x)?0*/, '');
+        filter.value = Buffer.from(filter.value, 'hex');
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTopic1InValues,
@@ -691,6 +693,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         break;
       case constants.filterKeys.TOPIC2:
         filter.value = filter.value.replace(/^(0x)?0*/, '');
+        filter.value = Buffer.from(filter.value, 'hex');
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTopic2InValues,
@@ -701,6 +704,7 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
         break;
       case constants.filterKeys.TOPIC3:
         filter.value = filter.value.replace(/^(0x)?0*/, '');
+        filter.value = Buffer.from(filter.value, 'hex');
         updateConditionsAndParamsWithInValues(
           filter,
           contractLogTopic3InValues,
@@ -717,34 +721,10 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   // update query with repeated values
   updateQueryFiltersWithInValues(params, conditions, contractLogIndexInValues, contractLogIndexFullName);
   updateQueryFiltersWithInValues(params, conditions, contractLogTimestampInValues, contractLogTimestampFullName);
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    contractLogTopic0InValues,
-    contractLogTopic0FullName,
-    paramStringBuilderBytes
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    contractLogTopic1InValues,
-    contractLogTopic1FullName,
-    paramStringBuilderBytes
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    contractLogTopic2InValues,
-    contractLogTopic2FullName,
-    paramStringBuilderBytes
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    contractLogTopic3InValues,
-    contractLogTopic3FullName,
-    paramStringBuilderBytes
-  );
+  updateQueryFiltersWithInValues(params, conditions, contractLogTopic0InValues, contractLogTopic0FullName);
+  updateQueryFiltersWithInValues(params, conditions, contractLogTopic1InValues, contractLogTopic1FullName);
+  updateQueryFiltersWithInValues(params, conditions, contractLogTopic2InValues, contractLogTopic2FullName);
+  updateQueryFiltersWithInValues(params, conditions, contractLogTopic3InValues, contractLogTopic3FullName);
 
   return {
     conditions,
@@ -765,32 +745,16 @@ const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams,
   }
 };
 
-const updateQueryFiltersWithInValues = (
-  existingParams,
-  existingConditions,
-  invalues,
-  fullName,
-  paramStringBuilder = paramStringBuilderDefault
-) => {
+const updateQueryFiltersWithInValues = (existingParams, existingConditions, invalues, fullName) => {
   if (!_.isNil(invalues) && !_.isEmpty(invalues)) {
     // add the condition 'c.id in ()'
     const start = existingParams.length + 1; // start is the next positional index
     existingParams.push(...invalues);
-    const positions = paramStringBuilder(invalues, start);
+    const positions = _.range(invalues.length)
+      .map((position) => position + start)
+      .map((position) => `$${position}`);
     existingConditions.push(`${fullName} in (${positions})`);
   }
-};
-
-const paramStringBuilderDefault = (invalues, start) => {
-  return _.range(invalues.length)
-    .map((position) => position + start)
-    .map((position) => `$${position}`);
-};
-
-const paramStringBuilderBytes = (invalues, start) => {
-  return _.range(invalues.length)
-    .map((position) => position + start)
-    .map((position) => `decode($${position}, 'hex')`);
 };
 
 const checkTimestampsForTopics = (timestamps, topic0, topic1, topic2, topic3) => {
