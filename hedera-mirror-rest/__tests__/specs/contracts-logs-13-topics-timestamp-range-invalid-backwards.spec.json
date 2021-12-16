@@ -39,7 +39,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Cannot search topics without timestamp range: Lower and upper bounds must be positive and within 31536000000000000 ns"
+          "message": "Cannot search topics without timestamp range: Lower and upper bounds must be positive and within 7d"
         }
       ]
     }
