@@ -1003,44 +1003,88 @@ const loadPgRange = () => {
 };
 
 /**
+ * Breaks a list of filters into 4 arrays (eq, ne, gt/gte, and lt/lte) and sorts the results.
+ * @param filters
+ * @returns {{eqFilters: *[], neFilters: *[], ltFilters: *[], gtFilters: *[]}}
+ */
+const sortFilters = (filters) => {
+  const eqFilters = [];
+  const neFilters = [];
+  const gtFilters = [];
+  const ltFilters = [];
+  for (const filter of filters) {
+    switch (filter.operator) {
+      case opsMap.eq:
+        eqFilters.push(filter);
+        break;
+      case opsMap.gt:
+      case opsMap.gte:
+        gtFilters.push(filter);
+        break;
+      case opsMap.lt:
+      case opsMap.lte:
+        ltFilters.push(filter);
+        break;
+      case opsMap.ne:
+        neFilters.push(filter);
+        break;
+      default:
+        break;
+    }
+  }
+  return {
+    eqFilters: eqFilters.sort(),
+    neFilters: neFilters.sort(),
+    gtFilters: gtFilters.sort(),
+    ltFilters: ltFilters.sort(),
+  };
+};
+
+/**
  * Checks that the timestamp filters contains either a valid range (greater than and less than filters that do not span beyond
- * a configured limit), or at least one equals operator.
+ * a configured limit), or a set of equals operators within the same limit.
  *
  * @param timestampFilters an array of timestamp filters
  */
 const checkTimestampRange = (timestampFilters) => {
-  let latest;
-  let earliest;
-
-  //no timestamp params
-  if (!timestampFilters || timestampFilters.length === 0) {
-    throw new InvalidArgumentError('No timestamp range given');
+  //No timestamp params provided
+  if (timestampFilters.length === 0) {
+    throw new InvalidArgumentError('Searching on topics requires timestamp range or eq operator');
   }
+  const sortedFilters = sortFilters(timestampFilters);
+  const eqLength = sortedFilters.eqFilters.length;
+  const neLength = sortedFilters.neFilters.length;
+  const gtLength = sortedFilters.gtFilters.length;
+  const ltLength = sortedFilters.ltFilters.length;
 
-  for (const filter of timestampFilters) {
-    if (filter.operator === opsMap.eq) {
-      //An equals operator removes the need for a range
-      return;
-    } else if (filter.operator === opsMap.gt || filter.operator === opsMap.gte) {
-      if (earliest !== undefined) {
-        throw new InvalidArgumentError('Multiple greater than operators not permitted');
-      }
-      earliest = nsToMillis(filter.value);
-    } else if (filter.operator === opsMap.lt || filter.operator === opsMap.lte) {
-      if (latest !== undefined) {
-        throw new InvalidArgumentError('Multiple less than operators not permitted');
-      }
-      latest = nsToMillis(filter.value);
-    }
-  }
-
-  if (latest === undefined || earliest === undefined) {
+  if (neLength > 0) {
+    //Don't allow ne
+    throw new InvalidArgumentError('ne not permitted for timestamp param');
+  } else if (gtLength > 1) {
+    //Don't allow multiple gt/gte
+    throw new InvalidArgumentError('Multiple gt or gte operators not permitted for timestamp param');
+  } else if (ltLength > 1) {
+    //Don't allow multiple lt/lte
+    throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
+  } else if (eqLength > 0 && (gtLength === 1 || ltLength === 1)) {
+    //Combined eq with other operator
+    throw new InvalidArgumentError('Cannot combine eq with gt, gte, lt, or lte for timestamp param');
+  } else if (eqLength > 0) {
+    //Only eq provided, no range needed
+    return;
+  } else if (gtLength === 0 || ltLength === 0) {
+    //Missing range
     throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte)');
-  }
-
-  const difference = math.subtract(latest, earliest);
-  if (difference > config.maxTimestampRangeMs || difference < 0) {
-    throw new InvalidArgumentError(`Lower and upper bounds must be positive and within ${config.maxTimestampRange}`);
+  } else {
+    const earliest = nsToMillis(sortedFilters.gtFilters[0].value);
+    const latest = nsToMillis(sortedFilters.ltFilters[0].value);
+    const difference = math.subtract(latest, earliest);
+    if (difference > config.maxTimestampRangeMs || difference < 0) {
+      throw new InvalidArgumentError(
+        `Timestamp lower and upper bounds must be positive and within ${config.maxTimestampRange}`
+      );
+    }
+    return;
   }
 };
 

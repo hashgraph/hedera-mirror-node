@@ -1022,7 +1022,7 @@ describe('Utils test - utils.checkTimestampRange', () => {
   test('Utils test - utils.checkTimestampRange - no params', () => {
     const error = () => utils.checkTimestampRange([]);
     expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('No timestamp range given');
+    expect(error).toThrowError('Searching on topics requires timestamp range or eq operator');
   });
   test('Utils test - utils.checkTimestampRange - one param gt', () => {
     const filters = [
@@ -1046,6 +1046,18 @@ describe('Utils test - utils.checkTimestampRange', () => {
     ];
     utils.checkTimestampRange(filters);
   });
+  test('Utils test - utils.checkTimestampRange - one param ne', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.ne,
+        value: '1638921702000000000',
+      },
+    ];
+    const error = () => utils.checkTimestampRange(filters);
+    expect(error).toThrowError(InvalidArgumentError);
+    expect(error).toThrowError('ne not permitted for timestamp param');
+  });
   test('Utils test - utils.checkTimestampRange - two params gt and eq', () => {
     const filters = [
       {
@@ -1059,9 +1071,11 @@ describe('Utils test - utils.checkTimestampRange', () => {
         value: '1638921702000000000',
       },
     ];
-    utils.checkTimestampRange(filters);
+    const error = () => utils.checkTimestampRange(filters);
+    expect(error).toThrowError(InvalidArgumentError);
+    expect(error).toThrowError('Cannot combine eq with gt, gte, lt, or lte for timestamp param');
   });
-  test('Utils test - utils.checkTimestampRange - two both sides', () => {
+  test('Utils test - utils.checkTimestampRange - two gte and lte', () => {
     const filters = [
       {
         key: constants.filterKeys.TIMESTAMP,
@@ -1091,7 +1105,7 @@ describe('Utils test - utils.checkTimestampRange', () => {
     ];
     const error = () => utils.checkTimestampRange(filters);
     expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Lower and upper bounds must be positive and within 7d');
+    expect(error).toThrowError('Timestamp lower and upper bounds must be positive and within 7d');
   });
   test('Utils test - utils.checkTimestampRange - two bad range too big', () => {
     const filters = [
@@ -1108,7 +1122,7 @@ describe('Utils test - utils.checkTimestampRange', () => {
     ];
     const error = () => utils.checkTimestampRange(filters);
     expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Lower and upper bounds must be positive and within 7d');
+    expect(error).toThrowError('Timestamp lower and upper bounds must be positive and within 7d');
   });
   test('Utils test - utils.checkTimestampRange - two gt and gte', () => {
     const filters = [
@@ -1125,7 +1139,7 @@ describe('Utils test - utils.checkTimestampRange', () => {
     ];
     const error = () => utils.checkTimestampRange(filters);
     expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Multiple greater than operators not permitted');
+    expect(error).toThrowError('Multiple gt or gte operators not permitted');
   });
   test('Utils test - utils.checkTimestampRange - two lt and lte', () => {
     const filters = [
@@ -1142,7 +1156,22 @@ describe('Utils test - utils.checkTimestampRange', () => {
     ];
     const error = () => utils.checkTimestampRange(filters);
     expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Multiple less than operators not permitted');
+    expect(error).toThrowError('Multiple lt or lte operators not permitted');
+  });
+  test('Utils test - utils.checkTimestampRange - two eq', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.eq,
+        value: '1000000000',
+      },
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.eq,
+        value: '1638921702000000000',
+      },
+    ];
+    utils.checkTimestampRange(filters);
   });
   test('Utils test - utils.checkTimestampRange - three gt lte eq', () => {
     const filters = [
@@ -1154,14 +1183,16 @@ describe('Utils test - utils.checkTimestampRange', () => {
       {
         key: constants.filterKeys.TIMESTAMP,
         operator: utils.opsMap.gte,
-        value: '1638921702000000000',
+        value: '2000000000',
       },
       {
         key: constants.filterKeys.TIMESTAMP,
         operator: utils.opsMap.eq,
-        value: '1638921702000000000',
+        value: '1000000000',
       },
     ];
-    utils.checkTimestampRange(filters);
+    const error = () => utils.checkTimestampRange(filters);
+    expect(error).toThrowError(InvalidArgumentError);
+    expect(error).toThrowError('Cannot combine eq with gt, gte, lt, or lte for timestamp param');
   });
 });
