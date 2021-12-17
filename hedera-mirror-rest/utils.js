@@ -1059,7 +1059,7 @@ const checkTimestampRange = (timestampFilters) => {
 
   if (neLength > 0) {
     //Don't allow ne
-    throw new InvalidArgumentError('ne not permitted for timestamp param');
+    throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
   } else if (gtLength > 1) {
     //Don't allow multiple gt/gte
     throw new InvalidArgumentError('Multiple gt or gte operators not permitted for timestamp param');

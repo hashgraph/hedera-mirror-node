@@ -1056,7 +1056,7 @@ describe('Utils test - utils.checkTimestampRange', () => {
     ];
     const error = () => utils.checkTimestampRange(filters);
     expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('ne not permitted for timestamp param');
+    expect(error).toThrowError('Not equals operator not supported for timestamp param');
   });
   test('Utils test - utils.checkTimestampRange - two params gt and eq', () => {
     const filters = [

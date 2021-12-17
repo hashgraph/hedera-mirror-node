@@ -728,7 +728,7 @@ describe('extractContractLogsByIdQuery', () => {
         ],
         contractId: defaultContractId,
       },
-      errorMessage: 'Not equals operator not supported on timestamp',
+      errorMessage: 'Not equals operator not supported for timestamp param',
     },
     {
       name: 'multiple topic0',
