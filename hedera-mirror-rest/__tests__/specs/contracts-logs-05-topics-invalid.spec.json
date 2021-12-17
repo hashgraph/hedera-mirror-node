@@ -33,7 +33,7 @@
     "/api/v1/contracts/0.0.1000/results/logs?topic1=0xqqq",
     "/api/v1/contracts/0.0.1000/results/logs?topic1=gt:0xaaaaaaa",
     "/api/v1/contracts/0.0.1000/results/logs?topic1=00qqq",
-    "/api/v1/contracts/0.0.1000/results/logs?topic1=gt:00aaaaaaa"
+    "/api/v1/contracts/0.0.1000/results/logs?topic1=lte:00aaaaaaa"
   ],
   "responseStatus": 400,
   "responseJson": {
