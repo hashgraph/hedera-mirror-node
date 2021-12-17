@@ -1049,7 +1049,7 @@ const sortFilters = (filters) => {
 const checkTimestampRange = (timestampFilters) => {
   //No timestamp params provided
   if (timestampFilters.length === 0) {
-    throw new InvalidArgumentError('Searching on topics requires timestamp range or eq operator');
+    throw new InvalidArgumentError('No timestamp range or eq operator provided');
   }
   const sortedFilters = sortFilters(timestampFilters);
   const eqLength = sortedFilters.eqFilters.length;

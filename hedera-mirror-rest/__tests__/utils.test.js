@@ -1022,7 +1022,7 @@ describe('Utils test - utils.checkTimestampRange', () => {
   test('Utils test - utils.checkTimestampRange - no params', () => {
     const error = () => utils.checkTimestampRange([]);
     expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Searching on topics requires timestamp range or eq operator');
+    expect(error).toThrowError('No timestamp range or eq operator provided');
   });
   test('Utils test - utils.checkTimestampRange - one param gt', () => {
     const filters = [
