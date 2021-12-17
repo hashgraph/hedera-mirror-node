@@ -149,6 +149,8 @@ jobs:
 
       - name: Wait for Mirror Node to start syncing
         run: ./scripts/wait-for-mirror-node.sh
+        env:
+          MAX_WAIT_SECONDS: 240
 
       - name: Get Genesis Account Balances
         run: ./scripts/validation/get-genesis-balance.sh testnet
