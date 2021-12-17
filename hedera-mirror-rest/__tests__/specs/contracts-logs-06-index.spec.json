@@ -29,10 +29,7 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/contracts/0.0.1000/results/logs?index=1",
-    "/api/v1/contracts/0.0.1000/results/logs?index=lt:2&index=gte:1"
-  ],
+  "urls": ["/api/v1/contracts/0.0.1000/results/logs?index=1", "/api/v1/contracts/0.0.1000/results/logs?index=gte:1"],
   "responseStatus": 200,
   "responseJson": {
     "logs": [
