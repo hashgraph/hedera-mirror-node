@@ -1,5 +1,5 @@
 {
-  "description": "Contract logs api calls with topic params and timestamp param",
+  "description": "Contract logs api calls with multiple index params not permitted.",
   "setup": {
     "contractlogs": [
       {
