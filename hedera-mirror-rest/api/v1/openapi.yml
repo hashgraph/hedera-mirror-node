@@ -180,7 +180,10 @@ paths:
   /api/v1/contracts/{contractId}/results/logs:
     get:
       summary: List contract logs from a contract on the network
-      description: Returns a list of all ContractLogs for a single specified contract's function executions. Chained logs are not included but can be found by calling `/api/v1/contracts/{contractId}/results/{timestamp}` or `/api/v1/contracts/results/{transactionId}`
+      description: >
+        Returns a list of all ContractLogs for a single specified contract's function executions.
+        Chained logs are not included but can be found by calling `/api/v1/contracts/{contractId}/results/{timestamp}`
+        or `/api/v1/contracts/results/{transactionId}`
       operationId: listContractLogs
       parameters:
         - $ref: '#/components/parameters/entityIdPathParam'
