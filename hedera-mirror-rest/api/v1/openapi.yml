@@ -164,6 +164,7 @@ paths:
       operationId: getContractResultByTransactionId
       parameters:
         - $ref: '#/components/parameters/transactionIdPathParam'
+        - $ref: '#/components/parameters/nonceQueryParamWithDefault'
       responses:
         200:
           description: OK
@@ -277,13 +278,8 @@ paths:
       operationId: getTransactionById
       parameters:
         - $ref: '#/components/parameters/transactionIdPathParam'
-        - name: scheduled
-          in: query
-          description: >-
-            Filter transactions by the scheduled flag. If true, return only the scheduled transaction. If false, return
-            non-scheduled transactions. If not present, return all transactions matching transactionId.
-          schema:
-            type: boolean
+        - $ref: '#/components/parameters/nonceQueryParam'
+        - $ref: '#/components/parameters/scheduledQueryParam'
       responses:
         200:
           description: OK
@@ -304,14 +300,8 @@ paths:
       operationId: getStateproofInfo
       parameters:
         - $ref: '#/components/parameters/transactionIdPathParam'
-        - name: scheduled
-          in: query
-          description: >-
-            Filter stateproof by the transaction scheduled flag. If true, return stateproof for the scheduled
-            transaction. If false, return stateproof for the non-scheduled transaction.
-          schema:
-            type: boolean
-            default: false
+        - $ref: '#/components/parameters/nonceQueryParamWithDefault'
+        - $ref: '#/components/parameters/scheduledQueryParamWithDefault'
       responses:
         200:
           description: OK
@@ -1939,6 +1929,27 @@ components:
         default: 25
         minimum: 1
         maximum: 100
+    nonceQueryParam:
+      name: nonce
+      in: query
+      description: >-
+        Filter the query result by the nonce of the transaction. The filter honors the last value. If not specified,
+        all transactions with specified payer account ID and valid start timestamp match.
+      example: 0
+      schema:
+        type: integer
+        minimum: 0
+    nonceQueryParamWithDefault:
+      name: nonce
+      in: query
+      description: >-
+        Filter the query result by the nonce of the transaction. The filter honors the last value. Default is 0 when
+        not specified.
+      example: 1
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
     orderQueryParam:
       name: order
       in: query
@@ -1962,6 +1973,24 @@ components:
       example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
       schema:
         type: string
+    scheduledQueryParam:
+      name: scheduled
+      in: query
+      description: >-
+        Filter transactions by the scheduled flag. If true, return information for the scheduled transaction. If false,
+        return information for the non-scheduled transaction. If not present, return information for all transactions
+        matching transactionId.
+      schema:
+        type: boolean
+    scheduledQueryParamWithDefault:
+      name: scheduled
+      in: query
+      description: >-
+        Filter transactions by the scheduled flag. If true, return information for the scheduled transaction.
+        If false, return information for the non-scheduled transaction.
+      schema:
+        type: boolean
+        default: false
     scheduleIdQueryParam:
       name: schedule.id
       description: The ID of the schedule to return information for
