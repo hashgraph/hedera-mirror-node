@@ -28,8 +28,7 @@
   },
   "urls": [
     "/api/v1/contracts/0.0.1000/results/logs?timestamp=1639010151.000000000&timestamp=1639010141.000000000",
-    "/api/v1/contracts/0.1000/results/logs?timestamp=1639010151.000000000&timestamp=1639010141.000000000",
-    "/api/v1/contracts/1000/results/logs?timestamp=1639010151.000000000&timestamp=1639010141.000000000"
+    "/api/v1/contracts/0.0.1000/results/logs?timestamp=gte:1639010131.000000000&timestamp=lt:1669010141.000000000"
   ],
   "responseStatus": 200,
   "responseJson": {

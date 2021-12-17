@@ -28,11 +28,7 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/contracts/0.0.1000/results/logs?limit=1",
-    "/api/v1/contracts/0.1000/results/logs?limit=1",
-    "/api/v1/contracts/1000/results/logs?limit=1"
-  ],
+  "urls": ["/api/v1/contracts/0.0.1000/results/logs?limit=1"],
   "responseStatus": 200,
   "responseJson": {
     "logs": [
