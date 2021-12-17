@@ -57,7 +57,7 @@ paths:
       operationId: listAccountBalances
       parameters:
         - $ref: '#/components/parameters/accountIdQueryParam'
-        - $ref: '#/components/parameters/balanceQueryParam'
+        - $ref: '#/components/parameters/accountBalanceQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
         - $ref: '#/components/parameters/accountPublicKeyQueryParam'
         - $ref: '#/components/parameters/timestampQueryParam'
@@ -566,7 +566,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/entityIdPathParam'
         - $ref: '#/components/parameters/accountIdQueryParam'
-        - $ref: '#/components/parameters/balanceQueryParam'
+        - $ref: '#/components/parameters/accountBalanceQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
         - $ref: '#/components/parameters/accountPublicKeyQueryParam'
         - $ref: '#/components/parameters/timestampQueryParam'
