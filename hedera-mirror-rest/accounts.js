@@ -150,7 +150,7 @@ const getEntityBalanceQuery = (
   order,
   pubKeyQuery
 ) => {
-  const balanceJoinConditions = `ab.account_id = e.id and ${latestBalanceFilter}`;
+  const balanceJoinConditions = ['ab.account_id = e.id'];
   const balanceWhereConditions = [balanceQuery.query];
   let entityIdField = 'id'; // use 'id' from account / contract for inner and left outer joins
   let joinType = '';
@@ -162,13 +162,15 @@ const getEntityBalanceQuery = (
   // account_balance table
   if (balanceQuery.query && pubKeyQuery.query) {
     joinType = 'inner';
+    balanceJoinConditions.push(latestBalanceFilter);
     params = [entityAccountQuery.params, pubKeyQuery.params, balanceQuery.params];
   } else if (pubKeyQuery.query) {
     joinType = 'left outer';
+    balanceJoinConditions.push(latestBalanceFilter);
     params = [entityAccountQuery.params, pubKeyQuery.params];
   } else if (balanceQuery.query) {
     entityIdField = 'account_id';
-    balanceWhereConditions.push(balanceAccountQuery.query);
+    balanceWhereConditions.push(balanceAccountQuery.query, latestBalanceFilter);
     joinType = 'right outer';
     // no entity id filter needed for account / contract for right outer join
     params = [balanceQuery.params, balanceAccountQuery.params];
@@ -189,7 +191,7 @@ const getEntityBalanceQuery = (
       select ${entityIdField} id,${entityAndBalanceFields}
       from (${accountContractQuery}) e
       ${joinType} join account_balance ab
-        on ${balanceJoinConditions}
+        on ${balanceJoinConditions.join(' and ')}
       ${whereClause}
       order by ${entityIdField} ${order}
       ${limitQuery}
