@@ -64,7 +64,7 @@ describe('ContractLogViewModel', () => {
     });
   });
 
-  test('ContractLogViewModel- no root contract id', () => {
+  test('ContractLogViewModel - no root contract id', () => {
     expect(
       new ContractLogViewModel({
         ...defaultContractLog,
