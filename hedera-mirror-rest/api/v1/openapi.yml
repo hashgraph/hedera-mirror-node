@@ -191,10 +191,10 @@ paths:
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
         - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/topic0QueryParam'
-        - $ref: '#/components/parameters/topic1QueryParam'
-        - $ref: '#/components/parameters/topic2QueryParam'
-        - $ref: '#/components/parameters/topic3QueryParam'
+        - $ref: '#/components/parameters/logTopic0QueryParam'
+        - $ref: '#/components/parameters/logTopic1QueryParam'
+        - $ref: '#/components/parameters/logTopic2QueryParam'
+        - $ref: '#/components/parameters/logTopic3QueryParam'
       responses:
         200:
           description: OK
@@ -801,7 +801,7 @@ components:
     ContractLogsResponse:
       type: object
       properties:
-        contract_logs:
+        logs:
           $ref: '#/components/schemas/ContractLogs'
         links:
           $ref: '#/components/schemas/Links'
@@ -1040,6 +1040,8 @@ components:
           example: 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
           pattern: ^0x[0-9A-Fa-f]{40}$
           type: string
+        contract_id:
+          $ref: '#/components/schemas/EntityId'
         data:
           description: The hex encoded data of the contract log
           example: 0x00000000000000000000000000000000000000000000000000000000000000fa
@@ -1564,7 +1566,7 @@ components:
           $ref: '#/components/schemas/Key'
         custom_fees:
           $ref: '#/components/schemas/CustomFees'
-    TopicQueryParam:
+    LogTopicQueryParam:
       type: string
       pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
     TransactionTypes:
@@ -2206,34 +2208,34 @@ components:
       schema:
         type: string
         pattern: ^((eq|lt|lte):)?\d{1,10}(.\d{1,9})?$
-    topic0QueryParam:
+    logTopic0QueryParam:
       name: topic0
       in: query
       description: The topic in topic0 of a ContractLog
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
-        $ref: '#/components/schemas/TopicQueryParam'
-    topic1QueryParam:
+        $ref: '#/components/schemas/LogTopicQueryParam'
+    logTopic1QueryParam:
       name: topic1
       in: query
       description: The topic in topic1 of a ContractLog
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
-        $ref: '#/components/schemas/TopicQueryParam'
-    topic2QueryParam:
+        $ref: '#/components/schemas/LogTopicQueryParam'
+    logTopic2QueryParam:
       name: topic2
       in: query
       description: The topic in topic2 of a ContractLog
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
-        $ref: '#/components/schemas/TopicQueryParam'
-    topic3QueryParam:
+        $ref: '#/components/schemas/LogTopicQueryParam'
+    logTopic3QueryParam:
       name: topic3
       in: query
       description: The topic in topic3 of a ContractLog
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
-        $ref: '#/components/schemas/TopicQueryParam'
+        $ref: '#/components/schemas/LogTopicQueryParam'
     transactionTypeQueryParam:
       name: transactiontype
       in: query
