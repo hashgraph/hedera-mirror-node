@@ -1,6 +1,5 @@
 hedera:
   mirror:
     rest:
-      maxTimestampRange: 7d
       metrics:
         enabled: false

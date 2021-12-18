@@ -161,7 +161,7 @@ const parseMaxTimestampRange = () => {
   const conf = getConfig();
   const ms = parseDuration(conf.maxTimestampRange);
   if (!ms) {
-    throw new InvalidConfigError(`Invalid maxTimestampRange ${maxTimestampRange}`);
+    throw new InvalidConfigError(`invalid maxTimestampRange ${conf.maxTimestampRange}`);
   }
   conf[maxTimestampRangeMs] = ms;
 };

@@ -27,6 +27,7 @@ const yaml = require('js-yaml');
 const _ = require('lodash');
 const {cloudProviders, defaultBucketNames, networks} = require('../constants');
 const config = require('../config');
+const {InvalidConfigError} = require('../errors/invalidConfigError');
 
 let tempDir;
 const custom = {
@@ -143,9 +144,14 @@ describe('Load environment configuration:', () => {
     expect(config.port).not.toBe(80);
   });
   test('Max Timestamp Range', () => {
-    process.env = {HEDERA_MIRROR_REST_MAX_TIMESTAMP_RANGE: '7d'};
+    process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: '3d'};
     const config = require('../config');
-    expect(config.maxTimestampRangeMs).toBe(604800000);
+    expect(config.maxTimestampRangeMs).toBe(259200000);
+  });
+  test('Max Timestamp Range invalid', () => {
+    process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: '3x'};
+    const error = new InvalidConfigError('invalid maxTimestampRange 3x');
+    expect(() => require('../config')).toThrow(error);
   });
 });
 
