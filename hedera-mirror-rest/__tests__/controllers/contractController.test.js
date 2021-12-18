@@ -778,8 +778,7 @@ describe('extractContractLogsByIdQuery', () => {
   errorSpecs.forEach((spec) => {
     test(`error - ${spec.name}`, () => {
       const error = () => contracts.extractContractLogsByIdQuery(spec.input.filter, spec.input.contractId);
-      expect(error).toThrowError(InvalidArgumentError);
-      expect(error).toThrowError(spec.errorMessage);
+      expect(error).toThrowErrorMatchingSnapshot();
     });
   });
 });
