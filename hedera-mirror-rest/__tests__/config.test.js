@@ -153,6 +153,11 @@ describe('Load environment configuration:', () => {
     const error = new InvalidConfigError('invalid maxTimestampRange 3x');
     expect(() => require('../config')).toThrow(error);
   });
+  test('Max Timestamp Range null', () => {
+    process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: null};
+    const error = new InvalidConfigError('invalid maxTimestampRange null');
+    expect(() => require('../config')).toThrow(error);
+  });
 });
 
 describe('Custom CONFIG_NAME:', () => {
