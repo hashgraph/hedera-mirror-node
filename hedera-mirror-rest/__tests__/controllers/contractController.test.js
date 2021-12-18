@@ -880,4 +880,19 @@ describe('checkTimestampsForTopics', () => {
     ];
     contracts.checkTimestampsForTopics(filters);
   });
+  test('valid timestamp no topics', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.eq,
+        value: '123',
+      },
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.gt,
+        value: '111',
+      },
+    ];
+    contracts.checkTimestampsForTopics(filters);
+  });
 });
