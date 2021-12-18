@@ -803,8 +803,6 @@ components:
       properties:
         logs:
           $ref: '#/components/schemas/ContractLogs'
-        links:
-          $ref: '#/components/schemas/Links'
     NetworkSupplyResponse:
       type: object
       properties:
