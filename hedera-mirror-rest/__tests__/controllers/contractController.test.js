@@ -566,7 +566,7 @@ describe('extractContractLogsByIdQuery', () => {
       name: emptyFilterString,
       input: {filter: [], contractId: defaultContractId},
       expected: {
-        ...defaultExpected,
+        defaultExpected,
       },
     },
     {
