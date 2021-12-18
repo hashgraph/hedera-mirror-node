@@ -25,7 +25,6 @@ const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
 const long = require('long');
 const math = require('mathjs');
-const parseDuration = require('parse-duration');
 const util = require('util');
 
 const constants = require('./constants');
