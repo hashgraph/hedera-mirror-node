@@ -26,6 +26,6 @@ import lombok.Data;
 abstract class Web3Response {
 
     public static final String VERSION = "2.0";
-    private final String jsonrpc = VERSION;
     private Long id;
+    private final String jsonrpc = VERSION;
 }
