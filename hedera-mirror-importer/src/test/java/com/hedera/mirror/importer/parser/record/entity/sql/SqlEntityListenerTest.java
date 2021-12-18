@@ -351,7 +351,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .payerAccountId(TRANSACTION_PAYER)).get();
         NonFeeTransfer nonFeeTransfer2 = domainBuilder.nonFeeTransfer().customize(n -> n
                 .amount(2L)
-                .id(new NonFeeTransfer.Id(-2L, EntityId.of(0L, 0L, 2L, ACCOUNT)))
+                .id(new NonFeeTransfer.Id(2L, EntityId.of(0L, 0L, 2L, ACCOUNT)))
                 .payerAccountId(TRANSACTION_PAYER)).get();
 
         // when

@@ -69,7 +69,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     @ParameterizedTest
     @CsvSource({
             "0.0.65537, admin-key, submit-key, '', 1000000, 1, 30",
-            "0.0.2147483647, admin-key, '', memo, 1000001, 1, 30",
+            "0.0.21474836, admin-key, '', memo, 1000001, 1, 30",
             "0.0.1, '', '', memo, 1000002, , ,",
             "0.0.55, admin-key, submit-key, memo, 1000003, 1, 30"
     })
