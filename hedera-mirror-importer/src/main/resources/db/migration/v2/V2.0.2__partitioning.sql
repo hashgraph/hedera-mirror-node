@@ -13,15 +13,19 @@ create function add_entity_partitions(partName text, tableName text)
 $$
 begin
     execute format(
-            'create table if not exists %I_0_2019 partition of %I for values from (0) to (10000000)',
+            'create table if not exists %I_0 partition of %I for values from (0) to (10000000)',
             partName, tableName
         );
     execute format(
-            'create table if not exists %I_0_2020 partition of %I for values from (10000000) to (20000000)',
+            'create table if not exists %I_1 partition of %I for values from (10000000) to (20000000)',
             partName, tableName
         );
     execute format(
-            'create table if not exists %I_0_2021 partition of %I for values from (20000000) to (30000000)',
+            'create table if not exists %I_2 partition of %I for values from (20000000) to (30000000)',
+            partName, tableName
+        );
+    execute format(
+            'create table if not exists %I_3 partition of %I for values from (30000000) to (99999999999)',
             partName, tableName
         );
 end
@@ -58,7 +62,8 @@ begin
         );
 
     if autovacuumVacuumInsertThreshold > 0 then
-        -- set autovacuum
+        -- autovacuum insert-only tables more frequently to ensure most pages are visible for index-only scans
+        -- set autovacuum at time of partitioning creation since it can not be set on parent table
         execute format(
                 'alter table if exists %I_0_2019
                 set (
