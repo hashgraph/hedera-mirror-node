@@ -1033,10 +1033,10 @@ const sortFilters = (filters) => {
     }
   }
   return {
-    eqFilters: eqFilters.sort(),
-    neFilters: neFilters.sort(),
-    gtFilters: gtFilters.sort(),
-    ltFilters: ltFilters.sort(),
+    eqFilters,
+    neFilters,
+    gtFilters,
+    ltFilters,
   };
 };
 
