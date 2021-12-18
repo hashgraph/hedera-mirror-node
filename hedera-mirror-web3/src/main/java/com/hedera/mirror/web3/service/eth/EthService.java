@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.controller;
+package com.hedera.mirror.web3.service.eth;
 
 /*-
  * ‌
@@ -20,25 +20,8 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import com.hedera.mirror.web3.service.Web3Service;
 
-@Getter
-@RequiredArgsConstructor
-public enum Web3Method {
+public interface EthService<I, O> extends Web3Service<I, O> {
 
-    ETH_BLOCKNUMBER("eth_blockNumber");
-
-    private static final Map<String, Web3Method> NAMES = Arrays.stream(values())
-            .collect(Collectors.toMap(Web3Method::getName, Function.identity()));
-
-    private final String name;
-
-    public static Web3Method of(String name) {
-        return NAMES.get(name);
-    }
 }

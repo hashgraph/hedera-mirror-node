@@ -23,22 +23,21 @@ package com.hedera.mirror.web3.service.eth;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.web3.controller.Web3Method;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
-import com.hedera.mirror.web3.service.Web3Service;
 
 @Named
 @RequiredArgsConstructor
-public class EthBlockNumberService implements Web3Service<Object, String> {
+public class EthBlockNumberService implements EthService<Object, String> {
 
-    private static final String DEFAULT = "0";
-    private static final String PREFIX = "0x";
+    static final String DEFAULT = "0";
+    static final String METHOD = "eth_blockNumber";
+    static final String PREFIX = "0x";
 
     private final RecordFileRepository recordFileRepository;
 
     @Override
-    public Web3Method getMethod() {
-        return Web3Method.ETH_BLOCKNUMBER;
+    public String getMethod() {
+        return METHOD;
     }
 
     @Override

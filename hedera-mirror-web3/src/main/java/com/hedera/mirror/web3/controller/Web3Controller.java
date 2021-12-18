@@ -45,23 +45,23 @@ import com.hedera.mirror.web3.service.Web3ServiceFactory;
 @RestController
 public class Web3Controller {
 
-    static final String INVALID_VERSION = "jsonrpc field must be 2.0";
+    static final String INVALID_VERSION = "jsonrpc field must be " + Web3Response.VERSION;
 
     private final Web3ServiceFactory web3ServiceFactory;
 
     @PostMapping
     public Mono<Web3Response> web3(@Valid @RequestBody Web3Request request) {
-        if (!request.getJsonrpc().equals(Web3Response.VERSION)) {
-            return Mono.just(new Web3ErrorResponse(request, Web3ErrorCode.INVALID_REQUEST, INVALID_VERSION));
-        }
-
-        Web3Method method = Web3Method.of(request.getMethod());
-        if (method == null) {
-            return Mono.just(new Web3ErrorResponse(request, Web3ErrorCode.METHOD_NOT_FOUND));
-        }
-
         try {
-            Web3Service<Object, Object> web3Service = web3ServiceFactory.lookup(method);
+            if (!request.getJsonrpc().equals(Web3Response.VERSION)) {
+                return Mono.just(new Web3ErrorResponse(request, Web3ErrorCode.INVALID_REQUEST, INVALID_VERSION));
+            }
+
+            Web3Service<Object, Object> web3Service = web3ServiceFactory.lookup(request.getMethod());
+
+            if (web3Service == null) {
+                return Mono.just(new Web3ErrorResponse(request, Web3ErrorCode.METHOD_NOT_FOUND));
+            }
+
             Object result = web3Service.get(request.getParams());
 
             Web3SuccessResponse web3SuccessResponse = new Web3SuccessResponse();

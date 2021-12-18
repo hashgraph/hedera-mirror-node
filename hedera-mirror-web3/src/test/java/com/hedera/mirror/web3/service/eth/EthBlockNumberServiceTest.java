@@ -20,6 +20,9 @@ package com.hedera.mirror.web3.service.eth;
  * ‍
  */
 
+import static com.hedera.mirror.web3.service.eth.EthBlockNumberService.DEFAULT;
+import static com.hedera.mirror.web3.service.eth.EthBlockNumberService.METHOD;
+import static com.hedera.mirror.web3.service.eth.EthBlockNumberService.PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -30,7 +33,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.web3.controller.Web3Method;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,11 +59,11 @@ class EthBlockNumberServiceTest {
     @Test
     void getWhenEmptyDatabase() {
         when(recordFileRepository.findLatestIndex()).thenReturn(Optional.empty());
-        assertThat(ethBlockNumberService.get(null)).isEqualTo("0x0");
+        assertThat(ethBlockNumberService.get(null)).isEqualTo(PREFIX + DEFAULT);
     }
 
     @Test
     void getMethod() {
-        assertThat(ethBlockNumberService.getMethod()).isEqualTo(Web3Method.ETH_BLOCKNUMBER);
+        assertThat(ethBlockNumberService.getMethod()).isEqualTo(METHOD);
     }
 }

@@ -21,7 +21,6 @@ package com.hedera.mirror.web3.service.eth;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -31,12 +30,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.web3.controller.Web3Method;
 import com.hedera.mirror.web3.service.Web3Service;
 import com.hedera.mirror.web3.service.Web3ServiceFactory;
 
 @ExtendWith(MockitoExtension.class)
 class Web3ServiceFactoryTest {
+
+    private static final String METHOD = "foo";
 
     @Mock
     private Web3Service web3Service;
@@ -45,19 +45,18 @@ class Web3ServiceFactoryTest {
 
     @BeforeEach
     void setup() {
-        when(web3Service.getMethod()).thenReturn(Web3Method.ETH_BLOCKNUMBER);
+        when(web3Service.getMethod()).thenReturn(METHOD);
         serviceFactory = new Web3ServiceFactory(List.of(web3Service));
     }
 
     @Test
     void lookup() {
-        assertThat(serviceFactory.lookup(Web3Method.ETH_BLOCKNUMBER)).isEqualTo(web3Service);
+        assertThat(serviceFactory.lookup(METHOD)).isEqualTo(web3Service);
     }
 
     @Test
     void lookupNotFound() {
-        assertThatThrownBy(() -> serviceFactory.lookup(null))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("Missing implementation");
+        assertThat(serviceFactory.lookup(null)).isNull();
+        assertThat(serviceFactory.lookup("unknown")).isNull();
     }
 }

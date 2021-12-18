@@ -20,11 +20,9 @@ package com.hedera.mirror.web3.service;
  * ‍
  */
 
-import com.hedera.mirror.web3.controller.Web3Method;
-
 public interface Web3Service<I, O> {
 
-    Web3Method getMethod();
+    String getMethod();
 
     O get(I request);
 }

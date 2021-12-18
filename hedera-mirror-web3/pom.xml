@@ -19,7 +19,6 @@
         <java.version>11</java.version>
         <repackage.classifier/>
         <spring-native.version>0.11.0</spring-native.version>
-        <web3j.version>4.8.7</web3j.version>
     </properties>
 
     <dependencies>

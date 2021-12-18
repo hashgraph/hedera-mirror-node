@@ -47,7 +47,7 @@ import com.hedera.mirror.web3.service.Web3ServiceFactory;
 @WebFluxTest(controllers = Web3Controller.class)
 class Web3ControllerTest {
 
-    private static final Web3Method METHOD = Web3Method.ETH_BLOCKNUMBER;
+    private static final String METHOD = "dummy";
     private static final String RESULT = "0x1";
 
     @Resource
@@ -61,7 +61,7 @@ class Web3ControllerTest {
         Web3Request web3Request = new Web3Request();
         web3Request.setId(1L);
         web3Request.setJsonrpc(Web3Response.VERSION);
-        web3Request.setMethod(METHOD.getName());
+        web3Request.setMethod(METHOD);
 
         when(serviceFactory.lookup(METHOD)).thenReturn(new DummyWeb3Service());
 
@@ -88,7 +88,7 @@ class Web3ControllerTest {
         Web3Request web3Request = new Web3Request();
         web3Request.setId(id);
         web3Request.setJsonrpc(Web3Response.VERSION);
-        web3Request.setMethod(METHOD.getName());
+        web3Request.setMethod(METHOD);
 
         assertError(web3Request, Web3ErrorCode.INVALID_REQUEST, "id field must")
                 .jsonPath("$.id").isEmpty();
@@ -101,7 +101,7 @@ class Web3ControllerTest {
         Web3Request web3Request = new Web3Request();
         web3Request.setId(1L);
         web3Request.setJsonrpc(jsonrpc);
-        web3Request.setMethod(METHOD.getName());
+        web3Request.setMethod(METHOD);
 
         assertError(web3Request, Web3ErrorCode.INVALID_REQUEST, "jsonrpc field must")
                 .jsonPath("$.id").isEqualTo(web3Request.getId());
@@ -136,7 +136,7 @@ class Web3ControllerTest {
         Web3Request web3Request = new Web3Request();
         web3Request.setId(1L);
         web3Request.setJsonrpc(Web3Response.VERSION);
-        web3Request.setMethod(METHOD.getName());
+        web3Request.setMethod(METHOD);
 
         when(serviceFactory.lookup(METHOD)).thenThrow(new InvalidParametersException("error"));
 
@@ -149,7 +149,7 @@ class Web3ControllerTest {
         Web3Request web3Request = new Web3Request();
         web3Request.setId(1L);
         web3Request.setJsonrpc(Web3Response.VERSION);
-        web3Request.setMethod(METHOD.getName());
+        web3Request.setMethod(METHOD);
 
         when(serviceFactory.lookup(METHOD)).thenThrow(new IllegalStateException("error"));
 
@@ -184,7 +184,7 @@ class Web3ControllerTest {
     private class DummyWeb3Service implements Web3Service<Object, Object> {
 
         @Override
-        public Web3Method getMethod() {
+        public String getMethod() {
             return METHOD;
         }
 
