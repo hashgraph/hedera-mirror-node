@@ -122,19 +122,21 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
   test('ContractService.getContractLogsByIdAndFiltersQuery - Verify additional conditions', async () => {
     const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
       [
-        `cl.topic0 in ($1)`,
-        `cl.topic1 in ($2)`,
-        `cl.topic2 in ($3)`,
-        `cl.topic3 in ($4)`,
-        `cl.contract_id in ($5)`,
-        `cl.consensus_timestamp in ( $6, $7)`,
+        `cl.contract_id  = $1`,
+        `cl.topic0 = $2`,
+        `cl.topic1 = $3`,
+        `cl.topic2 = $4`,
+        `cl.topic3 = $5`,
+        'cl.index = $6',
+        `cl.consensus_timestamp in ($7, $8)`,
       ],
       [
+        1002,
         Buffer.from('11', 'hex'),
         Buffer.from('12', 'hex'),
         Buffer.from('13', 'hex'),
         Buffer.from('14', 'hex'),
-        1002,
+        0,
         20,
         30,
       ],
@@ -153,22 +155,24 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
                                    topic2,
                                    topic3
                             from contract_log cl
-                            where cl.topic0 in ($1)
-                              and cl.topic1 in ($2)
-                              and cl.topic2 in ($3)
-                              and cl.topic3 in ($4)
-                              and cl.contract_id in ($5)
-                              and cl.consensus_timestamp in ($6, $7)
+                            where cl.contract_id = $1
+                              and cl.topic0 = $2
+                              and cl.topic1 = $3
+                              and cl.topic2 = $4
+                              and cl.topic3 = $5
+                              and cl.index = $6
+                              and cl.consensus_timestamp in ($7, $8)
                             order by cl.consensus_timestamp desc,
                                      cl.index desc
-                            limit $8`)
+                            limit $9`)
     );
     expect(params).toEqual([
+      1002,
       Buffer.from('11', 'hex'),
       Buffer.from('12', 'hex'),
       Buffer.from('13', 'hex'),
       Buffer.from('14', 'hex'),
-      1002,
+      0,
       20,
       30,
       5,
@@ -392,13 +396,8 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
 
     const expectedContractLog = [
       {
-        consensusTimestamp: '3',
-        contractId: '4',
-        index: 0,
-      },
-      {
-        consensusTimestamp: '1',
-        contractId: '2',
+        consensusTimestamp: '2',
+        contractId: '3',
         index: 0,
       },
       {
@@ -409,10 +408,10 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
     ];
 
     const response = await ContractService.getContractLogsByIdAndFilters(
-      ['cl.root_contract_id = $1'],
-      ['8'],
+      ['cl.contract_id = $1'],
+      [3],
       'desc',
-      'asc',
+      'desc',
       25
     );
     expect(response).toMatchObject(expectedContractLog);
@@ -451,26 +450,26 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
     const expectedContractLog = [
       {
         consensusTimestamp: '20',
-        contractId: '2',
+        contractId: '3',
       },
     ];
     const response = await ContractService.getContractLogsByIdAndFilters(
       [
-        'cl.root_contract_id = $1',
-        'cl.topic0 in ($2)',
-        'cl.topic1 in ($3)',
-        'cl.topic2 in ($4)',
-        'cl.topic3 in ($5)',
-        'cl.contract_id in ($6)',
+        'cl.contract_id = $1',
+        'cl.topic0 = $2',
+        'cl.topic1 = $3',
+        'cl.topic2 = $4',
+        'cl.topic3 = $5',
+        'cl.index = $6',
         'cl.consensus_timestamp in ($7)',
       ],
       [
-        10,
+        3,
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
-        2,
+        1,
         20,
       ],
       'desc',
