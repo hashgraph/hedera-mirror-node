@@ -1,13 +1,18 @@
 -------------------
--- Add partitioning logic to large tables.
--- Our tables use integers representing time from epoch. This requires extra logic to support automated partitioning.
--- Automatic options would rely on pg_partman, citus UDFs or cron jobs
--- Nanoseconds are not supported at time of addition
--- As an interim solution specify ranges manually with support from 0 epoch timestamps and ids
+-- Add partitioning logic to large using time or space proxy columns based on how predictable tables are written to.
+-- Our tables use bigints for timestamps representing time from epoch or ids representing index counts.
+-- This requires extra logic to support automated partitioning sicne they are not timestamp data types.
+-- Automatic partitioning options would rely on pg_partman, citus UDFs or cron jobs
+-- Nanoseconds are not supported at the time of addition
+-- As an interim solution specify ranges manually with support for large ranges
 -------------------
 
--- id partitioning helper function
+-- drop functions if left over
 drop function if exists add_entity_partitions(text, text);
+drop function if exists add_time_partitions(text, text, int);
+
+-- id partitioning helper function
+-- coverage from id 0 -> 99_999_999_999
 create function add_entity_partitions(partName text, tableName text)
     returns void as
 $$
@@ -34,7 +39,6 @@ $$ language plpgsql;
 -- timestamp partitioning helper function
 -- endOf2018Ns: 1546300799000000000, endOf2019Ns: 1577836799000000000, endOf2020Ns: 1609459199000000000,
 -- endOf2021Ns: 1640995199000000000, endOf2022Ns: 1672531199000000000, endOf2023Ns: 1704067199000000000
-drop function if exists add_time_partitions(text, text, int);
 create function add_time_partitions(partName text, tableName text, autovacuumVacuumInsertThreshold int)
     returns void as
 $$
@@ -118,7 +122,7 @@ end
 $$ language plpgsql;
 
 
--- id (space) based partitioning for tables with unpredictable population
+-- id (space) based partitioning for entity tables with unpredictable population
 select add_entity_partitions('contract', 'contract');
 select add_entity_partitions('contract_h', 'contract_history');
 select add_entity_partitions('entity', 'entity');
@@ -126,7 +130,7 @@ select add_entity_partitions('entity_h', 'entity_history');
 select add_entity_partitions('schedule', 'schedule');
 select add_entity_partitions('token', 'token');
 
--- consensus timestamp based partitioning on tables regularly populated
+-- consensus timestamp (time) based partitioning on tables regularly populated
 select add_time_partitions('acc_bal', 'account_balance', 0);
 select add_time_partitions('contract_l', 'contract_log', 0);
 select add_time_partitions('contract_r', 'contract_result', 0);
