@@ -48,7 +48,13 @@ class ContractLogViewModel {
   }
 
   _formatTopics(topics) {
-    return topics.filter((topic) => topic !== null).map((topic) => utils.toHexString(topic, true));
+    return topics
+      .filter((topic) => topic !== null)
+      .map((topic) => {
+        const topicString = utils.toHexString(topic, false);
+        const paddedTopic = `${'0'.repeat(64)}${topicString}`.slice(-64);
+        return `0x${paddedTopic}`;
+      });
   }
 }
 

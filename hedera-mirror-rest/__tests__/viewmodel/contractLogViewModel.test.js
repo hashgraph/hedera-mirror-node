@@ -30,10 +30,10 @@ describe('ContractLogViewModel', () => {
     consensusTimestamp: '99999999000000000',
     index: 6,
     rootContractId: '2',
-    topic0: Buffer.from([0x01, 0x02]),
+    topic0: Buffer.from([0x01, 0x01]),
     topic1: Buffer.from([0x01, 0x02]),
-    topic2: Buffer.from([0x01, 0x02]),
-    topic3: Buffer.from([0x01, 0x02]),
+    topic2: Buffer.from([0x01, 0x03]),
+    topic3: Buffer.from([0x01, 0x04]),
   };
   const defaultExpected = {
     address: '0x0000000000000000000000000000000000000001',
@@ -42,7 +42,12 @@ describe('ContractLogViewModel', () => {
     index: 6,
     root_contract_id: '0.0.2',
     timestamp: '99999999.000000000',
-    topics: ['0x0102', '0x0102', '0x0102', '0x0102'],
+    topics: [
+      '0x0000000000000000000000000000000000000000000000000000000000000101',
+      '0x0000000000000000000000000000000000000000000000000000000000000102',
+      '0x0000000000000000000000000000000000000000000000000000000000000103',
+      '0x0000000000000000000000000000000000000000000000000000000000000104',
+    ],
   };
 
   test('ContractLogViewModel - default', () => {
