@@ -5,7 +5,7 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum Web3ErrorCode {
+enum JsonRpcErrorCode {
 
     INTERNAL_ERROR(-32603, "Unknown error invoking RPC"),
     INVALID_PARAMS(-32602, "Invalid params"),

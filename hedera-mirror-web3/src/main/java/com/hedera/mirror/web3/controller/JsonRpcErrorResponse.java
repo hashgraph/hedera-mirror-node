@@ -24,19 +24,19 @@ import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
 @Data
-final class Web3ErrorResponse extends Web3Response {
+final class JsonRpcErrorResponse extends JsonRpcResponse {
 
-    private final Web3Error error = new Web3Error();
+    private final JsonRpcError error = new JsonRpcError();
 
-    Web3ErrorResponse(Web3ErrorCode code) {
+    JsonRpcErrorResponse(JsonRpcErrorCode code) {
         this(null, code, null);
     }
 
-    Web3ErrorResponse(Web3Request request, Web3ErrorCode code) {
+    JsonRpcErrorResponse(JsonRpcRequest request, JsonRpcErrorCode code) {
         this(request, code, null);
     }
 
-    Web3ErrorResponse(Web3Request request, Web3ErrorCode code, String detailedMessage) {
+    JsonRpcErrorResponse(JsonRpcRequest request, JsonRpcErrorCode code, String detailedMessage) {
         String message = code.getMessage();
 
         if (StringUtils.isNotBlank(detailedMessage)) {
@@ -52,7 +52,7 @@ final class Web3ErrorResponse extends Web3Response {
     }
 
     @Data
-    public static class Web3Error {
+    public static class JsonRpcError {
         private int code;
         private Object data;
         private String message;

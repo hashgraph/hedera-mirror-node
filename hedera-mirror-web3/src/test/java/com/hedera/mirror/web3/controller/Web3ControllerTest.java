@@ -58,24 +58,24 @@ class Web3ControllerTest {
 
     @Test
     void success() {
-        Web3Request web3Request = new Web3Request();
-        web3Request.setId(1L);
-        web3Request.setJsonrpc(Web3Response.VERSION);
-        web3Request.setMethod(METHOD);
+        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
+        jsonRpcRequest.setId(1L);
+        jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
+        jsonRpcRequest.setMethod(METHOD);
 
         when(serviceFactory.lookup(METHOD)).thenReturn(new DummyWeb3Service());
 
         webClient.post()
                 .uri("/web3/v1")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(web3Request))
+                .body(BodyInserters.fromValue(jsonRpcRequest))
                 .exchange()
                 .expectStatus()
                 .isOk()
                 .expectBody()
                 .jsonPath("$.error").doesNotExist()
-                .jsonPath("$.id").isEqualTo(web3Request.getId())
-                .jsonPath("$.jsonrpc").isEqualTo(Web3Response.VERSION)
+                .jsonPath("$.id").isEqualTo(jsonRpcRequest.getId())
+                .jsonPath("$.jsonrpc").isEqualTo(JsonRpcResponse.VERSION)
                 .jsonPath("$.result").isEqualTo(RESULT);
 
         verify(serviceFactory).lookup(METHOD);
@@ -85,12 +85,12 @@ class Web3ControllerTest {
     @ValueSource(longs = {Long.MIN_VALUE, -1L})
     @ParameterizedTest
     void invalidId(Long id) {
-        Web3Request web3Request = new Web3Request();
-        web3Request.setId(id);
-        web3Request.setJsonrpc(Web3Response.VERSION);
-        web3Request.setMethod(METHOD);
+        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
+        jsonRpcRequest.setId(id);
+        jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
+        jsonRpcRequest.setMethod(METHOD);
 
-        assertError(web3Request, Web3ErrorCode.INVALID_REQUEST, "id field must")
+        assertError(jsonRpcRequest, JsonRpcErrorCode.INVALID_REQUEST, "id field must")
                 .jsonPath("$.id").isEmpty();
     }
 
@@ -98,73 +98,73 @@ class Web3ControllerTest {
     @ValueSource(strings = {"", " ", "0", "1.0", "2", "2.1"})
     @ParameterizedTest
     void invalidJsonrpc(String jsonrpc) {
-        Web3Request web3Request = new Web3Request();
-        web3Request.setId(1L);
-        web3Request.setJsonrpc(jsonrpc);
-        web3Request.setMethod(METHOD);
+        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
+        jsonRpcRequest.setId(1L);
+        jsonRpcRequest.setJsonrpc(jsonrpc);
+        jsonRpcRequest.setMethod(METHOD);
 
-        assertError(web3Request, Web3ErrorCode.INVALID_REQUEST, "jsonrpc field must")
-                .jsonPath("$.id").isEqualTo(web3Request.getId());
+        assertError(jsonRpcRequest, JsonRpcErrorCode.INVALID_REQUEST, "jsonrpc field must")
+                .jsonPath("$.id").isEqualTo(jsonRpcRequest.getId());
     }
 
     @NullSource
     @ValueSource(strings = {"", " "})
     @ParameterizedTest
     void invalidMethod(String method) {
-        Web3Request web3Request = new Web3Request();
-        web3Request.setId(1L);
-        web3Request.setJsonrpc(Web3Response.VERSION);
-        web3Request.setMethod(method);
+        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
+        jsonRpcRequest.setId(1L);
+        jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
+        jsonRpcRequest.setMethod(method);
 
-        assertError(web3Request, Web3ErrorCode.INVALID_REQUEST, "method field must")
-                .jsonPath("$.id").isEqualTo(web3Request.getId());
+        assertError(jsonRpcRequest, JsonRpcErrorCode.INVALID_REQUEST, "method field must")
+                .jsonPath("$.id").isEqualTo(jsonRpcRequest.getId());
     }
 
     @Test
     void methodNotFound() {
-        Web3Request web3Request = new Web3Request();
-        web3Request.setId(1L);
-        web3Request.setJsonrpc(Web3Response.VERSION);
-        web3Request.setMethod("unknown");
+        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
+        jsonRpcRequest.setId(1L);
+        jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
+        jsonRpcRequest.setMethod("unknown");
 
-        assertError(web3Request, Web3ErrorCode.METHOD_NOT_FOUND)
-                .jsonPath("$.id").isEqualTo(web3Request.getId());
+        assertError(jsonRpcRequest, JsonRpcErrorCode.METHOD_NOT_FOUND)
+                .jsonPath("$.id").isEqualTo(jsonRpcRequest.getId());
     }
 
     @Test
     void invalidParamsError() {
-        Web3Request web3Request = new Web3Request();
-        web3Request.setId(1L);
-        web3Request.setJsonrpc(Web3Response.VERSION);
-        web3Request.setMethod(METHOD);
+        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
+        jsonRpcRequest.setId(1L);
+        jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
+        jsonRpcRequest.setMethod(METHOD);
 
         when(serviceFactory.lookup(METHOD)).thenThrow(new InvalidParametersException("error"));
 
-        assertError(web3Request, Web3ErrorCode.INVALID_PARAMS, "error")
-                .jsonPath("$.id").isEqualTo(web3Request.getId());
+        assertError(jsonRpcRequest, JsonRpcErrorCode.INVALID_PARAMS, "error")
+                .jsonPath("$.id").isEqualTo(jsonRpcRequest.getId());
     }
 
     @Test
     void internalError() {
-        Web3Request web3Request = new Web3Request();
-        web3Request.setId(1L);
-        web3Request.setJsonrpc(Web3Response.VERSION);
-        web3Request.setMethod(METHOD);
+        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
+        jsonRpcRequest.setId(1L);
+        jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
+        jsonRpcRequest.setMethod(METHOD);
 
         when(serviceFactory.lookup(METHOD)).thenThrow(new IllegalStateException("error"));
 
-        assertError(web3Request, Web3ErrorCode.INTERNAL_ERROR)
-                .jsonPath("$.id").isEqualTo(web3Request.getId());
+        assertError(jsonRpcRequest, JsonRpcErrorCode.INTERNAL_ERROR)
+                .jsonPath("$.id").isEqualTo(jsonRpcRequest.getId());
     }
 
     @ValueSource(strings = {"", "{foo:bar,", "[]"})
     @ParameterizedTest
     void parseError(String payload) {
-        assertError(payload, Web3ErrorCode.PARSE_ERROR)
+        assertError(payload, JsonRpcErrorCode.PARSE_ERROR)
                 .jsonPath("$.id").isEmpty();
     }
 
-    private WebTestClient.BodyContentSpec assertError(Object payload, Web3ErrorCode errorCode, String... messages) {
+    private WebTestClient.BodyContentSpec assertError(Object payload, JsonRpcErrorCode errorCode, String... messages) {
         List<String> m = ImmutableList.<String>builder().add(errorCode.getMessage()).add(messages).build();
         return webClient.post()
                 .uri("/web3/v1")
@@ -175,7 +175,7 @@ class Web3ControllerTest {
                 .isOk()
                 .expectBody()
                 .jsonPath("$.error.code").isEqualTo(errorCode.getCode())
-                .jsonPath("$.jsonrpc").isEqualTo(Web3Response.VERSION)
+                .jsonPath("$.jsonrpc").isEqualTo(JsonRpcResponse.VERSION)
                 .jsonPath("$.result").doesNotExist()
                 .jsonPath("$.error.message")
                 .value(s -> assertThat(s).contains(m), String.class);

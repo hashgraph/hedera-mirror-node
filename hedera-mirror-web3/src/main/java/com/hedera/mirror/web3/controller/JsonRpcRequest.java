@@ -26,7 +26,7 @@ import javax.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
 @Data
-public class Web3Request<T> {
+class JsonRpcRequest<T> {
 
     @NotNull
     @PositiveOrZero

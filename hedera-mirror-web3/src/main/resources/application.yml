@@ -40,7 +40,7 @@ server:
     enabled: true
   netty:
     connection-timeout: 3s
-  port: 8083
+  port: 8545
   shutdown: graceful
 spring:
   application:

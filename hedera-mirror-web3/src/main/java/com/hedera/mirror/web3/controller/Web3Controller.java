@@ -43,53 +43,54 @@ import com.hedera.mirror.web3.service.Web3ServiceFactory;
 @RequestMapping("/web3/v1")
 @RequiredArgsConstructor
 @RestController
-public class Web3Controller {
+class Web3Controller {
 
-    static final String INVALID_VERSION = "jsonrpc field must be " + Web3Response.VERSION;
+    static final String INVALID_VERSION = "jsonrpc field must be " + JsonRpcResponse.VERSION;
 
     private final Web3ServiceFactory web3ServiceFactory;
 
     @PostMapping
-    public Mono<Web3Response> web3(@Valid @RequestBody Web3Request request) {
+    public Mono<JsonRpcResponse> web3(@Valid @RequestBody JsonRpcRequest request) {
         try {
-            if (!request.getJsonrpc().equals(Web3Response.VERSION)) {
-                return Mono.just(new Web3ErrorResponse(request, Web3ErrorCode.INVALID_REQUEST, INVALID_VERSION));
+            if (!request.getJsonrpc().equals(JsonRpcResponse.VERSION)) {
+                return Mono.just(new JsonRpcErrorResponse(request, JsonRpcErrorCode.INVALID_REQUEST, INVALID_VERSION));
             }
 
             Web3Service<Object, Object> web3Service = web3ServiceFactory.lookup(request.getMethod());
 
             if (web3Service == null) {
-                return Mono.just(new Web3ErrorResponse(request, Web3ErrorCode.METHOD_NOT_FOUND));
+                return Mono.just(new JsonRpcErrorResponse(request, JsonRpcErrorCode.METHOD_NOT_FOUND));
             }
 
             Object result = web3Service.get(request.getParams());
 
-            Web3SuccessResponse web3SuccessResponse = new Web3SuccessResponse();
-            web3SuccessResponse.setId(request.getId());
-            web3SuccessResponse.setResult(result);
+            JsonRpcSuccessResponse jsonRpcSuccessResponse = new JsonRpcSuccessResponse();
+            jsonRpcSuccessResponse.setId(request.getId());
+            jsonRpcSuccessResponse.setResult(result);
 
-            return Mono.just(web3SuccessResponse);
+            return Mono.just(jsonRpcSuccessResponse);
         } catch (InvalidParametersException e) {
-            return Mono.just(new Web3ErrorResponse(request, Web3ErrorCode.INVALID_PARAMS, e.getMessage()));
+            return Mono.just(new JsonRpcErrorResponse(request, JsonRpcErrorCode.INVALID_PARAMS, e.getMessage()));
         } catch (Exception e) {
-            return Mono.just(new Web3ErrorResponse(request, Web3ErrorCode.INTERNAL_ERROR));
+            return Mono.just(new JsonRpcErrorResponse(request, JsonRpcErrorCode.INTERNAL_ERROR));
         }
     }
 
     @ExceptionHandler
-    Mono<Web3Response> parseError(DecodingException e) {
+    Mono<JsonRpcResponse> parseError(DecodingException e) {
         log.warn("Parse error: {}", e.getMessage());
-        return Mono.just(new Web3ErrorResponse(Web3ErrorCode.PARSE_ERROR));
+        return Mono.just(new JsonRpcErrorResponse(JsonRpcErrorCode.PARSE_ERROR));
     }
 
     @ExceptionHandler
-    Mono<Web3Response> validationError(WebExchangeBindException e) {
+    Mono<JsonRpcResponse> validationError(WebExchangeBindException e) {
         log.warn("Validation error: {}", e.getMessage());
         String message = e.getAllErrors()
                 .stream()
                 .map(this::formatError)
                 .collect(Collectors.joining(", "));
-        return Mono.just(new Web3ErrorResponse((Web3Request) e.getTarget(), Web3ErrorCode.INVALID_REQUEST, message));
+        return Mono.just(new JsonRpcErrorResponse((JsonRpcRequest) e.getTarget(), JsonRpcErrorCode.INVALID_REQUEST,
+                message));
     }
 
     private String formatError(ObjectError error) {

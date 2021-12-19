@@ -23,7 +23,7 @@ package com.hedera.mirror.web3.controller;
 import lombok.Data;
 
 @Data
-final class Web3SuccessResponse<T> extends Web3Response {
+final class JsonRpcSuccessResponse<T> extends JsonRpcResponse {
 
     private T result;
 }

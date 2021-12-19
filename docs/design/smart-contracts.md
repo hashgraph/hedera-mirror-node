@@ -481,7 +481,7 @@ Requests are typically of the below JSON format:
 It's corresponding domain model:
 
 ```java
-public class Web3Request<T> {
+class JsonRpcRequest<T> {
   private Long id;
   private String jsonrpc;
   private String method;
@@ -519,24 +519,24 @@ Responses are typically of the standard [JSON-RPC format](https://www.jsonrpc.or
 
 An appropriate set of models would be:
 
-- `Web3Response`
+- `JsonRpcResponse`
   ```java
   @Data
-  public class Web3SuccessResponse<T> {
+  class JsonRpcSuccessResponse<T> {
     private Long id;
     private final String jsonrpc = "2.0";
     private T result;
   }
   ```
 
-- `Web3ErrorResponse`
+- `JsonRpcErrorResponse`
   ```java
-  public class Web3ErrorResponse {
+  class JsonRpcErrorResponse {
     private Long id;
     private final String jsonrpc = "2.0";
-    private Web3Error error;
+    private JsonRpcError error;
 
-    private class Web3Error {
+    private class JsonRpcError {
       private int code;
       private String data;
       private String message;

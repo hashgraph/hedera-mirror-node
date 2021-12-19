@@ -23,9 +23,10 @@ package com.hedera.mirror.web3.controller;
 import lombok.Data;
 
 @Data
-abstract class Web3Response {
+abstract class JsonRpcResponse {
 
     public static final String VERSION = "2.0";
+
     private Long id;
     private final String jsonrpc = VERSION;
 }

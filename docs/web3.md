@@ -1,9 +1,20 @@
 # Web3 API
 
-The Web3 API provides an implementation of the [Ethereum JSON-RPC API](https://eth.wiki/json-rpc/API) for the Hedera
-network. The Ethereum JSON-RPC API is a widely used standard for interacting with distributed ledgers. The aim in
-providing a Hedera implementation of this API is to ease the migration of existing dApps to Hedera and simplify the
-developer on-ramp.
+The Web3 API provides an implementation of existing JSON-RPC APIs for the Hedera network. JSON-RPC API is a widely used
+standard for interacting with distributed ledgers. The aim in providing a Hedera implementation of these APIs is to ease
+the migration of existing dApps to Hedera and simplify the developer on-ramp.
+
+## Ethereum API
+
+Currently, the Web3 module only provides a partial implementation of
+the [Ethereum JSON-RPC API](https://eth.wiki/json-rpc/API).
+
+## Technologies
+
+This module uses [Spring Boot](https://spring.io/projects/spring-boot) for its application framework. To serve the
+JSON-RPC APIs, [Spring WebFlux](https://docs.spring.io/spring-framework/docs/current/reference/html/web-reactive.html)
+is used with annotation-based controllers. [Spring Data JPA](https://spring.io/projects/spring-data-jpa) with Hibernate
+is used for the persistence layer.
 
 ## Acceptance Tests
 
