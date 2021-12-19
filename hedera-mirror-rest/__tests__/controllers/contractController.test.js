@@ -558,7 +558,7 @@ describe('extractContractLogsByIdQuery', () => {
     conditions: [defaultContractLogCondition],
     params: [defaultContractId],
     timestampOrder: constants.orderFilterValues.DESC,
-    indexOrder: constants.orderFilterValues.ASC,
+    indexOrder: constants.orderFilterValues.DESC,
     limit: defaultLimit,
   };
   const specs = [

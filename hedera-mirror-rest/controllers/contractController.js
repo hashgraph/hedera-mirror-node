@@ -613,7 +613,7 @@ const getContractResultsByTransactionId = async (req, res) => {
 const extractContractLogsByIdQuery = (filters, contractId) => {
   let limit = defaultLimit;
   let timestampOrder = constants.orderFilterValues.DESC;
-  let indexOrder = constants.orderFilterValues.ASC;
+  let indexOrder = constants.orderFilterValues.DESC;
   const conditions = [`${ContractLog.getFullName(ContractLog.CONTRACT_ID)} = $1`];
   const params = [contractId];
 
