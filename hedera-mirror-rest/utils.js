@@ -1059,31 +1059,34 @@ const checkTimestampRange = (timestampFilters) => {
   if (neLength > 0) {
     //Don't allow ne
     throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
-  } else if (gtLength > 1) {
+  }
+  if (gtLength > 1) {
     //Don't allow multiple gt/gte
     throw new InvalidArgumentError('Multiple gt or gte operators not permitted for timestamp param');
-  } else if (ltLength > 1) {
+  }
+  if (ltLength > 1) {
     //Don't allow multiple lt/lte
     throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
-  } else if (eqLength > 0 && (gtLength === 1 || ltLength === 1)) {
+  }
+  if (eqLength > 0 && (gtLength === 1 || ltLength === 1)) {
     //Combined eq with other operator
     throw new InvalidArgumentError('Cannot combine eq with gt, gte, lt, or lte for timestamp param');
-  } else if (eqLength > 0) {
+  }
+  if (eqLength > 0) {
     //Only eq provided, no range needed
     return;
-  } else if (gtLength === 0 || ltLength === 0) {
+  }
+  if (gtLength === 0 || ltLength === 0) {
     //Missing range
     throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte)');
-  } else {
-    const earliest = nsToMillis(sortedFilters.gtFilters[0].value);
-    const latest = nsToMillis(sortedFilters.ltFilters[0].value);
-    const difference = math.subtract(latest, earliest);
-    if (difference > config.maxTimestampRangeMs || difference < 0) {
-      throw new InvalidArgumentError(
-        `Timestamp lower and upper bounds must be positive and within ${config.maxTimestampRange}`
-      );
-    }
-    return;
+  }
+  const earliest = nsToMillis(sortedFilters.gtFilters[0].value);
+  const latest = nsToMillis(sortedFilters.ltFilters[0].value);
+  const difference = math.subtract(latest, earliest);
+  if (difference > config.maxTimestampRangeMs || difference < 0) {
+    throw new InvalidArgumentError(
+      `Timestamp lower and upper bounds must be positive and within ${config.maxTimestampRange}`
+    );
   }
 };
 
