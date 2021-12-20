@@ -478,7 +478,7 @@ Requests are typically of the below JSON format:
 }
 ```
 
-It's corresponding domain model:
+Its corresponding model:
 
 ```java
 class JsonRpcRequest<T> {
