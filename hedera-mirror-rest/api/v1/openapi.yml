@@ -1212,6 +1212,9 @@ components:
       properties:
         consensus_timestamp:
           $ref: '#/components/schemas/Timestamp'
+        nonce:
+          type: integer
+          minimum: 0
         transaction_id:
           type: string
         receiver_account_id:
@@ -1586,6 +1589,9 @@ components:
           type: number
         memo_base64:
           nullable: true
+        nonce:
+          type: integer
+          minimum: 0
         result:
           type: string
         name:
