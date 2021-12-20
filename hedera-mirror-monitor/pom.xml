@@ -16,8 +16,8 @@
 
     <properties>
         <commons-math3.version>3.6.1</commons-math3.version>
-        <springdoc.version>1.6.0</springdoc.version>
         <meanbean.version>3.0.0-M9</meanbean.version>
+        <springdoc.version>1.6.2</springdoc.version>
     </properties>
 
     <dependencies>
@@ -182,6 +182,9 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <skip>false</skip>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>

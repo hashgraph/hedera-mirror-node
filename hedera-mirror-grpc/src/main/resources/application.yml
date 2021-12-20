@@ -48,8 +48,10 @@ management:
         readiness:
           include: db, grpcServices, grpcChannel, ping, redis
 server:
-  shutdown: graceful
+  compression:
+    enabled: true
   port: 8081
+  shutdown: graceful
 spring:
   application:
     name: hedera-mirror-grpc
@@ -83,9 +85,6 @@ spring:
       hibernate.hbm2ddl.auto: none
   lifecycle:
     timeout-per-shutdown-phase: 40s
-  test:
-    database:
-      replace: NONE
   redis:
     lettuce:
       cluster:

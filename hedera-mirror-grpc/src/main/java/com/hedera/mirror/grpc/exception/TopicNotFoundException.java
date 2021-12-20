@@ -20,7 +20,9 @@ package com.hedera.mirror.grpc.exception;
  * ‍
  */
 
-public class TopicNotFoundException extends RuntimeException {
+import com.hedera.mirror.common.exception.MirrorNodeException;
+
+public class TopicNotFoundException extends MirrorNodeException {
 
     private static final String MESSAGE = "Topic does not exist";
     private static final long serialVersionUID = 809036847722840635L;

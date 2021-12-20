@@ -39,3 +39,6 @@ spring:
   task:
     scheduling:
       enabled: false
+  test:
+    database:
+      replace: NONE

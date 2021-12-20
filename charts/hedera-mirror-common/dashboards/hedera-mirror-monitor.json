@@ -789,7 +789,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${prometheus}",
-      "decimals": 1,
+      "decimals": 3,
       "description": "The number of errors per second when submitting transactions",
       "fieldConfig": {
         "defaults": {
@@ -2999,3 +2999,4 @@
   "uid": "pJyhBtR7k",
   "version": 1
 }
+
