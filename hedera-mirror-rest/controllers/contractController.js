@@ -582,7 +582,7 @@ const getContractResultsByTransactionId = async (req, res) => {
   const transactionId = TransactionId.fromString(req.params.transactionId);
   const nonce = getLastNonceParamValue(req.query);
 
-  // get transactions using id and nonce, only contractCreate and contractCall can have results.
+  // get transactions using id and nonce
   const transactions = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(transactionId, nonce);
   if (transactions.length === 0) {
     throw new NotFoundError('No correlating transaction');
@@ -601,7 +601,7 @@ const getContractResultsByTransactionId = async (req, res) => {
     throw new Error('Contract result invariance breached');
   }
   const contractResult = results[0];
-  const consensusTimestamp = contractResult.consensusTimestamp;
+  const {consensusTimestamp} = contractResult;
 
   const recordFile = await RecordFileService.getRecordFileBlockDetailsFromTimestamp(consensusTimestamp);
   if (recordFile === null) {
