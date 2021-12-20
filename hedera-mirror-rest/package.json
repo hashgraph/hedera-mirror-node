@@ -111,8 +111,7 @@
     "collectCoverage": true,
     "coverageDirectory": "./coverage/",
     "coveragePathIgnorePatterns": [
-      "<rootDir>/__tests__/",
-      "<rootDir>/stream/proto/"
+      "<rootDir>/__tests__/"
     ],
     "maxWorkers": "50%",
     "reporters": [

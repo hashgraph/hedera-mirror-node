@@ -33,6 +33,7 @@ const stateproof = require('../stateproof');
 const {CompositeRecordFile} = require('../stream');
 const TransactionId = require('../transactionId');
 const EntityId = require('../entityId');
+const {opsMap} = require('../utils');
 
 const logger = log4js.getLogger();
 // need to set the globals here so when __set__ them with rewire it won't throw ReferenceError 'xxx is not defined'
@@ -282,6 +283,7 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
 });
 
 describe('getQueryParamValues', () => {
+  const eq = opsMap.eq;
   const expected = {nonce: 0, scheduled: false};
   const testSpecs = [
     {
@@ -291,47 +293,47 @@ describe('getQueryParamValues', () => {
     },
     {
       name: 'nonce',
-      filters: [{key: constants.filterKeys.NONCE, op: 'eq', value: 1}],
+      filters: [{key: constants.filterKeys.NONCE, op: eq, value: 1}],
       expected: {nonce: 1, scheduled: false},
     },
     {
       name: 'repeatedNonce',
       filters: [
-        {key: constants.filterKeys.NONCE, op: 'eq', value: 1},
-        {key: constants.filterKeys.NONCE, op: 'eq', value: 2},
-        {key: constants.filterKeys.NONCE, op: 'eq', value: 1},
+        {key: constants.filterKeys.NONCE, op: eq, value: 1},
+        {key: constants.filterKeys.NONCE, op: eq, value: 2},
+        {key: constants.filterKeys.NONCE, op: eq, value: 1},
       ],
       expected: {nonce: 1, scheduled: false},
     },
     {
       name: 'scheduled',
-      filters: [{key: constants.filterKeys.SCHEDULED, op: 'eq', value: true}],
+      filters: [{key: constants.filterKeys.SCHEDULED, op: eq, value: true}],
       expected: {nonce: 0, scheduled: true},
     },
     {
       name: 'repeatedScheduled',
       filters: [
-        {key: constants.filterKeys.SCHEDULED, op: 'eq', value: true},
-        {key: constants.filterKeys.SCHEDULED, op: 'eq', value: false},
-        {key: constants.filterKeys.SCHEDULED, op: 'eq', value: false},
+        {key: constants.filterKeys.SCHEDULED, op: eq, value: true},
+        {key: constants.filterKeys.SCHEDULED, op: eq, value: false},
+        {key: constants.filterKeys.SCHEDULED, op: eq, value: false},
       ],
       expected: expected,
     },
     {
       name: 'both',
       filters: [
-        {key: constants.filterKeys.NONCE, op: 'eq', value: 1},
-        {key: constants.filterKeys.SCHEDULED, op: 'eq', value: true},
+        {key: constants.filterKeys.NONCE, op: eq, value: 1},
+        {key: constants.filterKeys.SCHEDULED, op: eq, value: true},
       ],
       expected: {nonce: 1, scheduled: true},
     },
     {
       name: 'repeatedBoth',
       filters: [
-        {key: constants.filterKeys.NONCE, op: 'eq', value: 1},
-        {key: constants.filterKeys.SCHEDULED, op: 'eq', value: true},
-        {key: constants.filterKeys.NONCE, op: 'eq', value: 2},
-        {key: constants.filterKeys.SCHEDULED, op: 'eq', value: false},
+        {key: constants.filterKeys.NONCE, op: eq, value: 1},
+        {key: constants.filterKeys.SCHEDULED, op: eq, value: true},
+        {key: constants.filterKeys.NONCE, op: eq, value: 2},
+        {key: constants.filterKeys.SCHEDULED, op: eq, value: false},
       ],
       expected: {nonce: 2, scheduled: false},
     },

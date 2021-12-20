@@ -711,7 +711,14 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
     const {name, tokenId, initialQuery, filters, expected} = spec;
     test(name, () => {
       const actual = tokens.extractSqlFromTokenBalancesRequest(tokenId, initialQuery, filters);
-      console.assert(actual.query, expected.query);
+      assertSqlQueryEqual(actual.query, expected.query);
+      expect(actual).toEqual(
+        expect.objectContaining({
+          params: spec.expected.params,
+          order: spec.expected.order,
+          limit: spec.expected.limit,
+        })
+      );
     });
   }
 });
