@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.exception;
+package com.hedera.mirror.web3.config;
 
 /*-
  * ‌
@@ -20,14 +20,22 @@ package com.hedera.mirror.grpc.exception;
  * ‍
  */
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
+import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
+import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
+import io.micrometer.core.instrument.binder.MeterBinder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-public class TopicNotFoundException extends MirrorNodeException {
+@Configuration
+class MetricsConfiguration {
 
-    private static final String MESSAGE = "Topic does not exist";
-    private static final long serialVersionUID = 809036847722840635L;
+    @Bean
+    MeterBinder processMemoryMetrics() {
+        return new ProcessMemoryMetrics();
+    }
 
-    public TopicNotFoundException() {
-        super(MESSAGE);
+    @Bean
+    MeterBinder processThreadMetrics() {
+        return new ProcessThreadMetrics();
     }
 }

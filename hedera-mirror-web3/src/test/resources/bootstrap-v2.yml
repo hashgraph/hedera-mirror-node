@@ -1,0 +1,7 @@
+embedded:
+  postgresql:
+    docker-image: citusdata/citus:10.2.2-alpine
+spring:
+  flyway:
+    baselineVersion: 1.999.999
+    locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v2"

@@ -52,3 +52,6 @@ spring:
     password: ${embedded.redis.password}
     port: ${embedded.redis.port}
     username: "" # Redis 5 does not support authentication with a username and will fail if provided
+  test:
+    database:
+      replace: NONE

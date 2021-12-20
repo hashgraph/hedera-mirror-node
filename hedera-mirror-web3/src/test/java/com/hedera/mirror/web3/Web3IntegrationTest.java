@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc;
+package com.hedera.mirror.web3;
 
 /*-
  * ‌
@@ -20,23 +20,19 @@ package com.hedera.mirror.grpc;
  * ‍
  */
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.jdbc.Sql;
 
-@TestExecutionListeners(value = {ResetCacheTestExecutionListener.class},
-        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
-// Same database is used for all tests, so clean it up before each test.
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:cleanup.sql")
 @SpringBootTest
-public abstract class GrpcIntegrationTest {
+public abstract class Web3IntegrationTest {
 
-    protected final Logger log = LogManager.getLogger(getClass());
+    protected final Logger log = LoggerFactory.getLogger(getClass());
 
     @BeforeEach
     void logTest(TestInfo testInfo) {

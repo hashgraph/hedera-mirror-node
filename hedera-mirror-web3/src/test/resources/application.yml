@@ -1,0 +1,35 @@
+hedera:
+  mirror:
+    web3:
+      db:
+        host: ${embedded.postgresql.host}
+        port: ${embedded.postgresql.port}
+        name: ${embedded.postgresql.schema}
+        username: ${embedded.postgresql.user}
+        password: ${embedded.postgresql.password}
+spring:
+  datasource:
+    name: ${hedera.mirror.web3.db.name}
+    password: ${hedera.mirror.web3.db.password}
+    url: jdbc:postgresql://${hedera.mirror.web3.db.host}:${hedera.mirror.web3.db.port}/${hedera.mirror.web3.db.name}
+    username: ${hedera.mirror.web3.db.username}
+  flyway:
+    baselineOnMigrate: true
+    connectRetries: 10
+    ignoreMissingMigrations: true
+    placeholders:
+      api-password: mirror_api_pass
+      api-user: mirror_api
+      autovacuumFreezeMaxAgeInsertOnly: 100000
+      autovacuumVacuumInsertThresholdCryptoTransfer: 18000000
+      autovacuumVacuumInsertThresholdTokenTransfer: 2000
+      autovacuumVacuumInsertThresholdTransaction: 6000000
+      chunkIdInterval: 10000
+      chunkTimeInterval: 604800000000000
+      compressionAge: 9223372036854775807 # use long max to avoid compression during test
+      db-name: ${hedera.mirror.web3.db.name}
+      db-user: ${hedera.mirror.web3.db.username}
+      topicRunningHashV2AddedTimestamp: 0
+  test:
+    database:
+      replace: NONE

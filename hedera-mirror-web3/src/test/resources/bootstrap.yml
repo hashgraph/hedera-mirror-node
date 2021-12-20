@@ -1,0 +1,9 @@
+embedded:
+  postgresql:
+    enabled: true
+    docker-image: postgres:13.5-alpine
+spring:
+  flyway:
+    baselineVersion: 0
+    locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v1"
+    target: latest

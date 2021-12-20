@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.exception;
+package com.hedera.mirror.web3.service;
 
 /*-
  * ‌
@@ -20,14 +20,22 @@ package com.hedera.mirror.grpc.exception;
  * ‍
  */
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
+import java.util.Collection;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.inject.Named;
 
-public class TopicNotFoundException extends MirrorNodeException {
+@Named
+public class Web3ServiceFactory {
 
-    private static final String MESSAGE = "Topic does not exist";
-    private static final long serialVersionUID = 809036847722840635L;
+    private final Map<String, Web3Service<?, ?>> services;
 
-    public TopicNotFoundException() {
-        super(MESSAGE);
+    public Web3ServiceFactory(Collection<Web3Service<?, ?>> services) {
+        this.services = services.stream().collect(Collectors.toMap(Web3Service::getMethod, Function.identity()));
+    }
+
+    public <I, O> Web3Service<I, O> lookup(String method) {
+        return (Web3Service<I, O>) services.get(method);
     }
 }

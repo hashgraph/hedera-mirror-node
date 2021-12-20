@@ -1,0 +1,41 @@
+name: "Web3 API"
+
+on:
+  pull_request:
+    branches: [ main, release/** ]
+  push:
+    branches: [ main, release/** ]
+    tags: [ v* ]
+
+defaults:
+  run:
+    working-directory: ./hedera-mirror-web3
+
+env:
+  MODULE: hedera-mirror-web3
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        schema: [ v1, v2 ]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Install JDK
+        uses: actions/setup-java@v2
+        with:
+          cache: 'maven'
+          distribution: 'temurin'
+          java-version: 11
+
+      - name: Maven verify
+        run: ./mvnw verify -pl "${MODULE}" --also-make -Dspring.profiles.active=${{ matrix.schema }}
+        working-directory: .
+
+      - name: Upload coverage report
+        if: always()
+        run: bash <(curl -s https://codecov.io/bash)

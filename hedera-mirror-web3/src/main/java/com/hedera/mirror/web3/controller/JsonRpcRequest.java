@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.exception;
+package com.hedera.mirror.web3.controller;
 
 /*-
  * ‌
@@ -20,14 +20,23 @@ package com.hedera.mirror.grpc.exception;
  * ‍
  */
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.PositiveOrZero;
+import lombok.Data;
 
-public class TopicNotFoundException extends MirrorNodeException {
+@Data
+class JsonRpcRequest<T> {
 
-    private static final String MESSAGE = "Topic does not exist";
-    private static final long serialVersionUID = 809036847722840635L;
+    @NotNull
+    @PositiveOrZero
+    private Long id;
 
-    public TopicNotFoundException() {
-        super(MESSAGE);
-    }
+    @NotBlank
+    private String jsonrpc;
+
+    @NotBlank
+    private String method;
+
+    private T params;
 }

@@ -1,28 +1,20 @@
 hedera:
   mirror:
-    grpc:
+    web3:
       db:
         host: 127.0.0.1
         name: mirror_node
-        password: mirror_grpc_pass
+        password: mirror_web3_pass
         port: 5432
         sslMode: DISABLE
-        username: mirror_grpc
-      port: 5600
-grpc:
-  server:
-    enableKeepAlive: true
-    keepAliveTime: 5m
-    permitKeepAliveTime: 90s
-    port: ${hedera.mirror.grpc.port}
+        username: mirror_web3
 logging:
   level:
     root: warn
-    com.hedera.mirror.grpc: info
+    com.hedera.mirror.web3: info
     org.springframework.cloud.kubernetes.fabric8.config: error
-    # io.grpc: debug
-    # org.hibernate.SQL: debug
-    # org.hibernate.type.descriptor.sql.BasicBinder: trace
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%p) %clr(%t){faint} %clr(%logger{30}){cyan} %m %rEx{30}%n"
 management:
   endpoints:
     web:
@@ -30,12 +22,6 @@ management:
         include: health, info, prometheus
   metrics:
     export:
-      elastic:
-        autoCreateIndex: false
-        enabled: false
-        index: mirror
-        indexDateFormat: yyyy-MM-dd
-        step: 30s
       prometheus:
         step: 30s
     tags:
@@ -46,15 +32,19 @@ management:
         liveness:
           include: ping
         readiness:
-          include: db, grpcServices, grpcChannel, ping, redis
+          include: db, ping
 server:
   compression:
     enabled: true
-  port: 8081
+  http2:
+    enabled: true
+  netty:
+    connection-timeout: 3s
+  port: 8545
   shutdown: graceful
 spring:
   application:
-    name: hedera-mirror-grpc
+    name: hedera-mirror-web3
   cloud:
     kubernetes:
       reload:
@@ -62,17 +52,17 @@ spring:
       secrets:
         paths: /usr/etc/${spring.application.name}
   datasource:
-    name: ${hedera.mirror.grpc.db.name}
-    password: ${hedera.mirror.grpc.db.password}
-    url: jdbc:postgresql://${hedera.mirror.grpc.db.host}:${hedera.mirror.grpc.db.port}/${hedera.mirror.grpc.db.name}
-    username: ${hedera.mirror.grpc.db.username}
+    name: ${hedera.mirror.web3.db.name}
+    password: ${hedera.mirror.web3.db.password}
+    url: jdbc:postgresql://${hedera.mirror.web3.db.host}:${hedera.mirror.web3.db.port}/${hedera.mirror.web3.db.name}
+    username: ${hedera.mirror.web3.db.username}
     hikari:
       connection-timeout: 3000
       data-source-properties:
         idle_in_transaction_session_timeout: "30000"
         lock_timeout: "10000"
         statement_timeout: "60000"
-        sslmode: ${hedera.mirror.grpc.db.sslMode}
+        sslmode: ${hedera.mirror.web3.db.sslMode}
         tcpKeepAlive: true
       maximum-pool-size: 50
       minimum-idle: 4
@@ -84,10 +74,4 @@ spring:
       hibernate.generate_statistics: true
       hibernate.hbm2ddl.auto: none
   lifecycle:
-    timeout-per-shutdown-phase: 40s
-  redis:
-    lettuce:
-      cluster:
-        refresh:
-          period: 60s
-    timeout: 5s
+    timeout-per-shutdown-phase: 20s
