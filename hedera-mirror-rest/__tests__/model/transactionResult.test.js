@@ -20,7 +20,7 @@
 
 'use strict';
 
-const proto = require('../../stream/proto');
+const proto = require('@hashgraph/proto');
 
 // models
 const {TransactionResult} = require('../../model');
