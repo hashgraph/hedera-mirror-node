@@ -91,10 +91,11 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
   });
 });
 
+const contractLogContractIdWhereClause = `cl.contract_id = $1`;
 describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
   test('ContractService.getContractLogsByIdAndFiltersQuery - Verify simple query', async () => {
     const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
-      ['cl.contract_id = $1'],
+      [contractLogContractIdWhereClause],
       [2],
       'desc',
       'asc',
@@ -408,7 +409,7 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
     ];
 
     const response = await ContractService.getContractLogsByIdAndFilters(
-      ['cl.contract_id = $1'],
+      [contractLogContractIdWhereClause],
       [3],
       'desc',
       'desc',
@@ -455,7 +456,7 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
     ];
     const response = await ContractService.getContractLogsByIdAndFilters(
       [
-        'cl.contract_id = $1',
+        contractLogContractIdWhereClause,
         'cl.topic0 = $2',
         'cl.topic1 = $3',
         'cl.topic2 = $4',
