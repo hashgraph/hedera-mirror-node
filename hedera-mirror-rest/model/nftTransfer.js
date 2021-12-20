@@ -38,19 +38,24 @@ class NftTransfer {
   static tableName = 'nft_transfer';
 
   static CONSENSUS_TIMESTAMP = `consensus_timestamp`;
-  static CONSENSUS_TIMESTAMP_FULL_NAME = `${this.tableAlias}.${this.CONSENSUS_TIMESTAMP}`;
   static RECEIVER_ACCOUNT_ID = `receiver_account_id`;
-  static RECEIVER_ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.RECEIVER_ACCOUNT_ID}`;
   static SENDER_ACCOUNT_ID = `sender_account_id`;
-  static SENDER_ACCOUNT_ID_FULL_NAME = `${this.tableAlias}.${this.SENDER_ACCOUNT_ID}`;
   static SERIAL_NUMBER = `serial_number`;
-  static SERIAL_NUMBER_FULL_NAME = `${this.tableAlias}.${this.SERIAL_NUMBER}`;
   static TOKEN_ID = `token_id`;
-  static TOKEN_ID_FULL_NAME = `${this.tableAlias}.${this.TOKEN_ID}`;
 
   static FILTER_MAP = {
-    [constants.filterKeys.TIMESTAMP]: NftTransfer.CONSENSUS_TIMESTAMP_FULL_NAME,
+    [constants.filterKeys.TIMESTAMP]: NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP),
   };
+
+  /**
+   * Gets full column name with table alias prepended.
+   *
+   * @param {string} columnName
+   * @private
+   */
+  static getFullName(columnName) {
+    return `${this.tableAlias}.${columnName}`;
+  }
 }
 
 module.exports = NftTransfer;

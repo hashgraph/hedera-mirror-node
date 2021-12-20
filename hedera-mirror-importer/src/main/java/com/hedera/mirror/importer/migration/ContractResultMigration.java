@@ -127,10 +127,10 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
                 migrationContractLog.setContractId(getContractId(contractLoginfo.getContractID()));
                 migrationContractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
                 migrationContractLog.setIndex(index);
-                migrationContractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
-                migrationContractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
-                migrationContractLog.setTopic2(Utility.getTopic(contractLoginfo, 2));
-                migrationContractLog.setTopic3(Utility.getTopic(contractLoginfo, 3));
+                migrationContractLog.setTopic0(DomainUtils.bytesToHex(Utility.getTopic(contractLoginfo, 0)));
+                migrationContractLog.setTopic1(DomainUtils.bytesToHex(Utility.getTopic(contractLoginfo, 1)));
+                migrationContractLog.setTopic2(DomainUtils.bytesToHex(Utility.getTopic(contractLoginfo, 2)));
+                migrationContractLog.setTopic3(DomainUtils.bytesToHex(Utility.getTopic(contractLoginfo, 3)));
 
                 insert(migrationContractLog);
             }

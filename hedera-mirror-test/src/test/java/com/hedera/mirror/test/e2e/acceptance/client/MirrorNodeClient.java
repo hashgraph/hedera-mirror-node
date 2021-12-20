@@ -36,6 +36,8 @@ import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
@@ -119,6 +121,17 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     public MirrorContractResponse getContractInfo(String contractId) {
         log.debug("Verify contract '{}' is returned by Mirror Node", contractId);
         return callRestEndpoint("/contracts/{contractId}", MirrorContractResponse.class, contractId);
+    }
+
+    public MirrorContractResultsResponse getContractResultsById(String contractId) {
+        log.debug("Verify contract results '{}' is returned by Mirror Node", contractId);
+        return callRestEndpoint("/contracts/{contractId}/results", MirrorContractResultsResponse.class, contractId);
+    }
+
+    public MirrorContractResultResponse getContractResultByTransactionId(String transactionId) {
+        log.debug("Verify contract result '{}' is returned by Mirror Node", transactionId);
+        return callRestEndpoint("/contracts/results/{transactionId}", MirrorContractResultResponse.class,
+                transactionId);
     }
 
     public MirrorNftResponse getNftInfo(String tokenId, long serialNumber) {

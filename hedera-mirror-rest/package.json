@@ -15,6 +15,9 @@
     "test": "jest --testPathPattern='__tests__/.*\\.test\\.js'"
   },
   "author": "Hedera Mirror Node Team",
+  "comments": {
+    "dependencies": "json-schema is a transitive dependency but we explicitly mark it as a dependency to bring in a non-vulnerable version"
+  },
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
@@ -31,6 +34,7 @@
     "extend": "^3.0.2",
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
+    "json-schema": "^0.4.0",
     "lodash": "^4.17.21",
     "log4js": "^6.3.0",
     "long": "^5.2.0",
@@ -43,7 +47,7 @@
     "qs": "^6.10.2",
     "quick-lru": "^5.1.1",
     "swagger-stats": "^0.99.2",
-    "swagger-ui-express": "^4.2.0"
+    "swagger-ui-express": "^4.3.0"
   },
   "bundledDependencies": [
     "@awaitjs/express",
@@ -60,6 +64,7 @@
     "extend",
     "ip-anonymize",
     "js-yaml",
+    "json-schema",
     "lodash",
     "log4js",
     "long",

@@ -32,9 +32,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.util.Arrays;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.common.util.DomainUtils;
 
@@ -79,13 +79,13 @@ public class Utility {
 
     /**
      * Retrieves the nth topic from the contract log info or null if there is no such topic at that index. The topic is
-     * returned as a hex-encoded string.
+     * returned as a byte array with leading zeros removed.
      *
      * @param contractLoginfo
      * @param index
-     * @return a hex encoded topic or null
+     * @return a byte array topic with leading zeros removed or null
      */
-    public static String getTopic(ContractLoginfo contractLoginfo, int index) {
+    public static byte[] getTopic(ContractLoginfo contractLoginfo, int index) {
         var topics = contractLoginfo.getTopicList();
         ByteString byteString = Iterables.get(topics, index, null);
 
@@ -101,10 +101,9 @@ public class Utility {
                 break;
             }
         }
-
-        return new String(Hex.encodeHex(topic, firstNonZero, topic.length - firstNonZero, true));
+        return Arrays.copyOfRange(topic, firstNonZero, topic.length);
     }
-
+    
     /**
      * Generates a TransactionID object
      *

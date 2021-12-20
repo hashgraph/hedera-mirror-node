@@ -714,7 +714,7 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
     const defaultParams = ['200', '123456789987654321'];
     const getQuery = (extraConditions) => {
       return `with timestampFilter as (
-      select consensus_timestamp from transaction as t
+      select consensus_timestamp from transaction t
       where t.payer_account_id = $1 and t.valid_start_ns = $2 ${(extraConditions && 'and ' + extraConditions) || ''}
       order by consensus_timestamp desc
     ), tlist as (
@@ -733,15 +733,15 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
         t.type,
         t.valid_duration_seconds,
         t.valid_start_ns
-      from transaction as t
+      from transaction t
       join timestampFilter tf
         on t.consensus_timestamp = tf.consensus_timestamp
       order by t.consensus_timestamp desc
     ), c_list as (
       select jsonb_agg(jsonb_build_object(
-          'amount', ctr.amount,
+          'amount', amount,
           'entity_id', ctr.entity_id
-        ) order by ctr.entity_id, ctr.amount) as ctr_list,
+        ) order by ctr.entity_id, amount) as ctr_list,
          ctr.consensus_timestamp
       from crypto_transfer ctr
       join tlist
@@ -749,10 +749,10 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
       group by ctr.consensus_timestamp
     ), t_list as (
       select jsonb_agg(jsonb_build_object(
-          'account_id', tk_tr.account_id,
-          'amount', tk_tr.amount,
-          'token_id', tk_tr.token_id
-        ) order by tk_tr.token_id, tk_tr.account_id) as ttr_list,
+          'account_id', account_id,
+          'amount', amount,
+          'token_id', token_id
+        ) order by token_id, account_id) as ttr_list,
         tk_tr.consensus_timestamp
       from token_transfer tk_tr
       join tlist
@@ -760,11 +760,11 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
       group by tk_tr.consensus_timestamp
     ), nft_list as (
       select jsonb_agg(jsonb_build_object(
-          'receiver_account_id', nft_tr.receiver_account_id,
-          'sender_account_id', nft_tr.sender_account_id,
-          'serial_number', nft_tr.serial_number,
-          'token_id', nft_tr.token_id
-        ) order by nft_tr.token_id, nft_tr.serial_number) as ntr_list,
+          'receiver_account_id', receiver_account_id,
+          'sender_account_id', sender_account_id,
+          'serial_number', serial_number,
+          'token_id', token_id
+        ) order by token_id, serial_number) as ntr_list,
         nft_tr.consensus_timestamp
       from nft_transfer nft_tr
       join tlist

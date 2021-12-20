@@ -26,9 +26,6 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
-
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -63,6 +60,7 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -125,12 +123,22 @@ public class RecordItemBuilder {
                 .setGasUsed(1000L)
                 .addLogInfo(ContractLoginfo.newBuilder()
                         .setBloom(bytes(256))
+                        .setContractID(contractId)
+                        .setData(bytes(128))
+                        .addTopic(bytes(32))
+                        .addTopic(bytes(32))
+                        .addTopic(bytes(32))
+                        .addTopic(bytes(32))
+                        .build())
+                .addLogInfo(ContractLoginfo.newBuilder()
+                        .setBloom(bytes(256))
                         .setContractID(contractId())
                         .setData(bytes(128))
                         .addTopic(bytes(32))
                         .addTopic(bytes(32))
                         .addTopic(bytes(32))
-                        .addTopic(bytes(32)).build());
+                        .addTopic(bytes(32))
+                        .build());
     }
 
     public Builder<TokenMintTransactionBody.Builder> tokenMint(TokenType tokenType) {
@@ -155,7 +163,7 @@ public class RecordItemBuilder {
     }
 
     private ByteString bytes(int length) {
-        final byte[] bytes = new byte[length];
+        byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return ByteString.copyFrom(bytes);
     }
