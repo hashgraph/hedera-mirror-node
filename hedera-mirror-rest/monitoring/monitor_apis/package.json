@@ -28,7 +28,7 @@
     "pretty-ms": "^7.0.1"
   },
   "devDependencies": {
-    "jest": "^27.4.4",
+    "jest": "^27.4.5",
     "nodemon": "^2.0.15"
   }
 }
