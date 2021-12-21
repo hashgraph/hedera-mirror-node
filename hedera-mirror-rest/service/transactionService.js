@@ -24,7 +24,6 @@ const _ = require('lodash');
 
 const BaseService = require('./baseService');
 const {Transaction} = require('../model');
-const {TRANSACTION_RESULT_SUCCESS} = require('../constants');
 
 /**
  * Transaction retrieval business logic
@@ -88,9 +87,9 @@ class TransactionService extends BaseService {
     if (excludeTransactionResults !== undefined) {
       if (Array.isArray(excludeTransactionResults)) {
         if (excludeTransactionResults.length > 0) {
-          const begin = params.length + 1;
+          const start = params.length + 1;
           params.push(...excludeTransactionResults);
-          const positions = _.range(begin, params.length + 1).map((p) => `$${p}`);
+          const positions = _.range(start, params.length + 1).map((p) => `$${p}`);
           query += ` and ${Transaction.RESULT} not in (${positions})`;
         }
       } else {

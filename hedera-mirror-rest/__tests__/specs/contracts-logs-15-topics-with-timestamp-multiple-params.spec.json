@@ -1,0 +1,45 @@
+{
+  "description": "Contract logs api calls with multiple topic0 params not permitted, even with timestamp param",
+  "setup": {
+    "contractlogs": [
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 0,
+        "topic0": null
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 1
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "contract_id": 1000,
+        "index": 1,
+        "root_contract_id": 1001,
+        "topic0": null
+      },
+      {
+        "consensus_timestamp": 1639010161000000002,
+        "contract_id": 1002,
+        "index": 0,
+        "root_contract_id": 1001,
+        "topic3": null
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/0.0.1000/results/logs?topic0=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750&topic0=0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67&timestamp=1639010141.000000000"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Multiple params not allowed for topic0"
+        }
+      ]
+    }
+  }
+}

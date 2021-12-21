@@ -101,6 +101,11 @@ const isValidPublicKeyQuery = (query) => {
   return publicKeyPattern.test(query);
 };
 
+const contractTopicPattern = /^(0x)?[0-9A-Fa-f]{1,64}$/; // optional 0x followed by up to 64 hex digits
+const isValidOpAndTopic = (op, query) => {
+  return typeof query === 'string' && contractTopicPattern.test(query) && op === constants.queryParamOperators.eq;
+};
+
 const isValidUtf8Encoding = (query) => {
   if (!query) {
     return false;
@@ -191,11 +196,14 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.FROM:
       ret = EntityId.isValidEntityId(val) || EntityId.isValidSolidityAddress(val);
       break;
+    case constants.filterKeys.INDEX:
+      ret = isNumeric(val) && val >= 0;
+      break;
     case constants.filterKeys.LIMIT:
       ret = isPositiveLong(val);
       break;
     case constants.filterKeys.NONCE:
-      ret = op === 'eq' && isNonNegativeInt32(val);
+      ret = op === constants.queryParamOperators.eq && isNonNegativeInt32(val);
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
@@ -213,6 +221,12 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.TOKEN_TYPE:
       ret = isValidValueIgnoreCase(val, Object.values(constants.tokenTypeFilter));
+      break;
+    case constants.filterKeys.TOPIC0:
+    case constants.filterKeys.TOPIC1:
+    case constants.filterKeys.TOPIC2:
+    case constants.filterKeys.TOPIC3:
+      ret = isValidOpAndTopic(op, val);
       break;
     case constants.filterKeys.SEQUENCE_NUMBER:
       ret = isPositiveLong(val);
@@ -662,15 +676,25 @@ const addHexPrefix = (hexString) => {
  * Converts the byte array returned by SQL queries into hex string
  * @param {Array} byteArray Array of bytes to be converted to hex string
  * @param {boolean} addPrefix Whether to add the '0x' prefix to the hex string
+ * @param {Number} padLength The length to left pad the result hex string
  * @return {String} Converted hex string
  */
-const toHexString = (byteArray, addPrefix = false) => {
+const toHexString = (byteArray, addPrefix = false, padLength = undefined) => {
   if (_.isNil(byteArray)) {
     return null;
   }
 
+  const modifiers = [];
+  if (padLength !== undefined) {
+    modifiers.push((s) => s.padStart(padLength, '0'));
+  }
+
+  if (addPrefix) {
+    modifiers.push(addHexPrefix);
+  }
+
   const encoded = Buffer.from(byteArray, 'utf8').toString('hex');
-  return addPrefix ? addHexPrefix(encoded) : encoded;
+  return modifiers.reduce((v, f) => f(v), encoded);
 };
 
 // These match protobuf encoded hex strings. The prefixes listed check if it's a primitive key, a key list with one
@@ -1001,11 +1025,75 @@ const loadPgRange = () => {
   pgRange.install(pg);
 };
 
+/**
+ * Checks that the timestamp filters contains either a valid range (greater than and less than filters that do not span
+ * beyond a configured limit), or a set of equals operators within the same limit.
+ *
+ * @param {[]}timestampFilters an array of timestamp filters
+ */
+const checkTimestampRange = (timestampFilters) => {
+  //No timestamp params provided
+  if (timestampFilters.length === 0) {
+    throw new InvalidArgumentError('No timestamp range or eq operator provided');
+  }
+
+  const valuesByOp = {};
+  Object.values(opsMap).forEach((k) => (valuesByOp[k] = []));
+  timestampFilters.forEach((filter) => valuesByOp[filter.operator].push(filter.value));
+
+  const gtGteLength = valuesByOp[opsMap.gt].length + valuesByOp[opsMap.gte].length;
+  const ltLteLength = valuesByOp[opsMap.lt].length + valuesByOp[opsMap.lte].length;
+
+  if (valuesByOp[opsMap.ne].length > 0) {
+    // Don't allow ne
+    throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
+  }
+
+  if (gtGteLength > 1) {
+    //Don't allow multiple gt/gte
+    throw new InvalidArgumentError('Multiple gt or gte operators not permitted for timestamp param');
+  }
+
+  if (ltLteLength > 1) {
+    //Don't allow multiple lt/lte
+    throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
+  }
+
+  if (valuesByOp[opsMap.eq].length > 0 && (gtGteLength > 0 || ltLteLength > 0)) {
+    //Combined eq with other operator
+    throw new InvalidArgumentError('Cannot combine eq with gt, gte, lt, or lte for timestamp param');
+  }
+
+  if (valuesByOp[opsMap.eq].length > 0) {
+    //Only eq provided, no range needed
+    return;
+  }
+
+  if (gtGteLength === 0 || ltLteLength === 0) {
+    //Missing range
+    throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte)');
+  }
+
+  // there should be exactly one gt/gte and one lt/lte at this point
+  const earliest =
+    valuesByOp[opsMap.gt].length > 0 ? BigInt(valuesByOp[opsMap.gt][0]) + 1n : BigInt(valuesByOp[opsMap.gte][0]);
+  const latest =
+    valuesByOp[opsMap.lt].length > 0 ? BigInt(valuesByOp[opsMap.lt][0]) - 1n : BigInt(valuesByOp[opsMap.lte][0]);
+  const difference = latest - earliest + 1n;
+
+  if (difference > config.maxTimestampRangeNs || difference <= 0n) {
+    throw new InvalidArgumentError(
+      `Timestamp lower and upper bounds must be positive and within ${config.maxTimestampRange}`
+    );
+  }
+};
+
 module.exports = {
   addHexPrefix,
   buildAndValidateFilters,
   buildComparatorFilter,
   buildPgSqlObject,
+  checkTimestampRange,
   createTransactionId,
   convertMySqlStyleQueryToPostgres,
   encodeBase64,

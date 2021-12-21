@@ -1,0 +1,46 @@
+{
+  "description": "Contract logs api calls with invalid index param",
+  "setup": {
+    "contractlogs": [
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 0,
+        "topic0": null
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 1
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "contract_id": 1000,
+        "index": 1,
+        "root_contract_id": 1001,
+        "topic0": null
+      },
+      {
+        "consensus_timestamp": 1639010161000000002,
+        "contract_id": 1002,
+        "index": 0,
+        "root_contract_id": 1001,
+        "topic3": null
+      }
+    ]
+  },
+  "urls": ["/api/v1/contracts/0.0.1000/results/logs?index=-1&index=a"],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: index"
+        },
+        {
+          "message": "Invalid parameter: index"
+        }
+      ]
+    }
+  }
+}

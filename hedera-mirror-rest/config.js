@@ -23,6 +23,7 @@
 const extend = require('extend');
 const fs = require('fs');
 const yaml = require('js-yaml');
+const parseDuration = require('parse-duration');
 const path = require('path');
 const {InvalidConfigError} = require('./errors/invalidConfigError');
 const {cloudProviders, networks, defaultBucketNames} = require('./constants');
@@ -155,6 +156,15 @@ function parseStateProofStreamsConfig() {
   }
 }
 
+const parseMaxTimestampRange = () => {
+  const conf = getConfig();
+  const ms = parseDuration(conf.maxTimestampRange);
+  if (!ms) {
+    throw new InvalidConfigError(`invalid maxTimestampRange ${conf.maxTimestampRange}`);
+  }
+  conf.maxTimestampRangeNs = BigInt(ms) * 1000000n;
+};
+
 if (!loaded) {
   const configName = process.env.CONFIG_NAME || defaultConfigName;
   // always load the default configuration
@@ -164,6 +174,7 @@ if (!loaded) {
   loadEnvironment();
   parseDbPoolConfig();
   parseStateProofStreamsConfig();
+  parseMaxTimestampRange();
   loaded = true;
 }
 

@@ -35,12 +35,12 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
-const {Contract, FileData, ContractResult, TransactionResult} = require('../model');
+const {Contract, ContractLog, ContractResult, FileData, TransactionResult} = require('../model');
 const {ContractService, RecordFileService, TransactionService} = require('../service');
-const {logger} = require('../stream/utils');
 const TransactionId = require('../transactionId');
 const utils = require('../utils');
-const {ContractViewModel, ContractResultViewModel} = require('../viewmodel');
+const {ContractViewModel, ContractLogViewModel, ContractResultViewModel} = require('../viewmodel');
+const {httpStatusCodes} = require('../constants');
 
 const contractSelectFields = [
   Contract.AUTO_RENEW_PERIOD,
@@ -411,16 +411,32 @@ const extractContractIdAndFiltersFromValidatedRequest = (req) => {
   };
 };
 
-const updateQueryFiltersWithInValues = (existingParams, existingConditions, invalues, fullName) => {
-  if (!_.isNil(invalues) && !_.isEmpty(invalues)) {
-    // add the condition 'c.id in ()'
-    const start = existingParams.length + 1; // start is the next positional index
-    existingParams.push(...invalues);
-    const positions = _.range(invalues.length)
-      .map((position) => position + start)
-      .map((position) => `$${position}`);
-    existingConditions.push(`${fullName} in (${positions})`);
-  }
+/**
+ * Handler function for /contracts/:contractId/results/logs API
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns {Promise<void>}
+ */
+const getContractLogs = async (req, res) => {
+  // get sql filter query, params, limit and limit query from query filters
+  const filters = utils.buildAndValidateFilters(req.query);
+  const contractId = EntityId.parse(req.params.contractId, constants.filterKeys.CONTRACTID).getEncodedId();
+  checkTimestampsForTopics(filters);
+
+  const {conditions, params, timestampOrder, indexOrder, limit} = extractContractLogsByIdQuery(filters, contractId);
+
+  const rows = await ContractService.getContractLogsByIdAndFilters(
+    conditions,
+    params,
+    timestampOrder,
+    indexOrder,
+    limit
+  );
+
+  res.locals.statusCode = rows.length !== 0 ? httpStatusCodes.OK.code : httpStatusCodes.NO_CONTENT.code;
+  res.locals[constants.responseDataLabel] = {
+    logs: rows.map((row) => new ContractLogViewModel(row)),
+  };
 };
 
 /**
@@ -540,19 +556,16 @@ const getContractResultsByTimestamp = async (req, res) => {
   const {timestamp} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
 
   // retrieve contract result, recordFile and transaction models concurrently
-  await Promise.all([
+  const [contractResults, recordFile, transaction] = await Promise.all([
     ContractService.getContractResultsByTimestamps(timestamp),
     RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
     TransactionService.getTransactionDetailsFromTimestamp(timestamp),
-  ]).then((responses) => {
-    const [contractResults, recordFile, transaction] = responses;
+  ]);
+  if (contractResults.length === 0) {
+    throw new NotFoundError();
+  }
 
-    if (contractResults.length === 0) {
-      throw new NotFoundError();
-    }
-
-    res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResults[0], recordFile, transaction);
-  });
+  res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResults[0], recordFile, transaction);
 };
 
 /**
@@ -613,6 +626,94 @@ const getContractResultsByTransactionId = async (req, res) => {
   res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResults[0], recordFile, transaction);
 };
 
+/**
+ * Extracts SQL where conditions, params, order, and limit
+ *
+ * @param {[]} filters parsed and validated filters
+ * @param {string} contractId encoded contract ID
+ * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
+ */
+const extractContractLogsByIdQuery = (filters, contractId) => {
+  let limit = defaultLimit;
+  let timestampOrder = constants.orderFilterValues.DESC;
+  let indexOrder = constants.orderFilterValues.DESC;
+  const conditions = [`${ContractLog.getFullName(ContractLog.CONTRACT_ID)} = $1`];
+  const params = [contractId];
+
+  const inValues = {};
+  const keyFullNames = {};
+  const oneOperatorValues = {};
+
+  keyFullNames[constants.filterKeys.TIMESTAMP] = ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP);
+  inValues[constants.filterKeys.TIMESTAMP] = [];
+
+  for (const filter of filters) {
+    switch (filter.key) {
+      case constants.filterKeys.INDEX:
+        if (oneOperatorValues[filter.key]) {
+          throw new InvalidArgumentError(`Multiple params not allowed for ${filter.key}`);
+        }
+        params.push(filter.value);
+        conditions.push(`${ContractLog.getFullName(filter.key)}${filter.operator}$${params.length}`);
+        oneOperatorValues[filter.key] = true;
+        break;
+      case constants.filterKeys.LIMIT:
+        limit = filter.value;
+        break;
+      case constants.filterKeys.ORDER:
+        timestampOrder = filter.value;
+        indexOrder = filter.value;
+        break;
+      case constants.filterKeys.TIMESTAMP:
+        if (filter.operator === utils.opsMap.ne) {
+          throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
+        }
+        updateConditionsAndParamsWithInValues(
+          filter,
+          inValues[filter.key],
+          params,
+          conditions,
+          keyFullNames[filter.key]
+        );
+        break;
+      case constants.filterKeys.TOPIC0:
+      case constants.filterKeys.TOPIC1:
+      case constants.filterKeys.TOPIC2:
+      case constants.filterKeys.TOPIC3:
+        if (oneOperatorValues[filter.key]) {
+          throw new InvalidArgumentError(`Multiple params not allowed for ${filter.key}`);
+        }
+        let topic = filter.value.replace(/^(0x)?0*/, '');
+        if (topic.length % 2 !== 0) {
+          topic = `0${topic}`; //Left pad so that Buffer.from parses correctly
+        }
+        topic = Buffer.from(topic, 'hex');
+        params.push(topic);
+        conditions.push(`${ContractLog.getFullName(filter.key)}${filter.operator}$${params.length}`);
+        oneOperatorValues[filter.key] = true;
+        break;
+      default:
+        break;
+    }
+  }
+
+  // update query with repeated values
+  updateQueryFiltersWithInValues(
+    params,
+    conditions,
+    inValues[constants.filterKeys.TIMESTAMP],
+    keyFullNames[constants.filterKeys.TIMESTAMP]
+  );
+
+  return {
+    conditions,
+    params,
+    timestampOrder,
+    indexOrder,
+    limit,
+  };
+};
+
 const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams, existingConditions, fullName) => {
   if (filter.operator === utils.opsMap.eq) {
     // aggregate '=' conditions and use the sql 'in' operator
@@ -623,9 +724,49 @@ const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams,
   }
 };
 
+const updateQueryFiltersWithInValues = (existingParams, existingConditions, invalues, fullName) => {
+  if (!_.isNil(invalues) && !_.isEmpty(invalues)) {
+    // add the condition 'c.id in ()'
+    const start = existingParams.length + 1; // start is the next positional index
+    existingParams.push(...invalues);
+    const positions = _.range(invalues.length)
+      .map((position) => position + start)
+      .map((position) => `$${position}`);
+    existingConditions.push(`${fullName} in (${positions})`);
+  }
+};
+
+const checkTimestampsForTopics = (filters) => {
+  let hasTopic = false;
+  const timestampFilters = [];
+  for (const filter of filters) {
+    switch (filter.key) {
+      case constants.filterKeys.TOPIC0:
+      case constants.filterKeys.TOPIC1:
+      case constants.filterKeys.TOPIC2:
+      case constants.filterKeys.TOPIC3:
+        hasTopic = true;
+        break;
+      case constants.filterKeys.TIMESTAMP:
+        timestampFilters.push(filter);
+        break;
+      default:
+        break;
+    }
+  }
+  if (hasTopic) {
+    try {
+      utils.checkTimestampRange(timestampFilters);
+    } catch (e) {
+      throw new InvalidArgumentError(`Cannot search topics without timestamp range: ${e.message}`);
+    }
+  }
+};
+
 module.exports = {
   getContractById,
   getContracts,
+  getContractLogs,
   getContractResultsById,
   getContractResultsByTimestamp,
   getContractResultsByTransactionId,
@@ -634,6 +775,8 @@ module.exports = {
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
     contractResultsByIdParamSupportMap,
+    checkTimestampsForTopics,
+    extractContractLogsByIdQuery,
     extractContractResultsByIdQuery,
     extractSqlFromContractFilters,
     extractTimestampConditionsFromContractFilters,

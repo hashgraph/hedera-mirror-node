@@ -23,6 +23,7 @@
 const _ = require('lodash');
 const math = require('mathjs');
 const pgformat = require('pg-format');
+const testUtils = require('./testutils');
 const config = require('../config');
 const EntityId = require('../entityId');
 const constants = require('../constants');
@@ -43,6 +44,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadContracts(testDataJson.contracts);
   await loadContractResults(testDataJson.contractresults);
+  await loadContractLogs(testDataJson.contractlogs);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
   await loadFileData(testDataJson.filedata);
@@ -103,6 +105,16 @@ const loadContractResults = async (contractResults) => {
 
   for (const contractResult of contractResults) {
     await addContractResult(contractResult);
+  }
+};
+
+const loadContractLogs = async (contractLogs) => {
+  if (contractLogs == null) {
+    return;
+  }
+
+  for (const contractLog of contractLogs) {
+    await addContractLog(contractLog);
   }
 };
 
@@ -623,6 +635,53 @@ const addContractResult = async (contractResultInput) => {
   await insertDomainObject('contract_result', insertFields, contractResult);
 };
 
+const addContractLog = async (contractLogInput) => {
+  const insertFields = [
+    'bloom',
+    'consensus_timestamp',
+    'contract_id',
+    'data',
+    'index',
+    'payer_account_id',
+    'root_contract_id',
+    'topic0',
+    'topic1',
+    'topic2',
+    'topic3',
+  ];
+  const positions = _.range(1, insertFields.length + 1)
+    .map((position) => `$${position}`)
+    .join(',');
+
+  const contractLog = {
+    bloom: '\\x0123',
+    consensus_timestamp: 1234510001,
+    contract_id: 1,
+    data: '\\x0123',
+    index: 0,
+    payer_account_id: 2,
+    root_contract_id: null,
+    topic0: '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+    topic1: '\\x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
+    topic2: '\\xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+    topic3: '\\xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
+    ...contractLogInput,
+  };
+
+  contractLog.bloom = testUtils.getBuffer(contractLogInput.bloom, contractLog.bloom);
+  contractLog.data = testUtils.getBuffer(contractLogInput.data, contractLog.data);
+  contractLog.topic0 = testUtils.getBuffer(contractLogInput.topic0, contractLog.topic0);
+  contractLog.topic1 = testUtils.getBuffer(contractLogInput.topic1, contractLog.topic1);
+  contractLog.topic2 = testUtils.getBuffer(contractLogInput.topic2, contractLog.topic2);
+  contractLog.topic3 = testUtils.getBuffer(contractLogInput.topic3, contractLog.topic3);
+
+  await sqlConnection.query(
+    `insert into contract_log (${insertFields.join(',')})
+     values (${positions})`,
+    insertFields.map((name) => contractLog[name])
+  );
+};
+
 const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
@@ -928,6 +987,7 @@ module.exports = {
   loadContractResults,
   loadRecordFiles,
   loadTransactions,
+  loadContractLogs,
   setAccountBalance,
   setUp,
 };

@@ -141,6 +141,24 @@ describe('Load environment configuration:', () => {
     const config = require('../config');
     expect(config.port).not.toBe(80);
   });
+  test('Max Timestamp Range 3d', () => {
+    process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: '3d'};
+    const config = require('../config');
+    expect(config.maxTimestampRangeNs).toBe(259200000000000n);
+  });
+  test('Max Timestamp Range 120d - larger than js MAX_SAFE_INTEGER', () => {
+    process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: '120d'};
+    const config = require('../config');
+    expect(config.maxTimestampRangeNs).toBe(10368000000000000n);
+  });
+  test('Max Timestamp Range invalid', () => {
+    process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: '3x'};
+    expect(() => require('../config')).toThrowErrorMatchingSnapshot();
+  });
+  test('Max Timestamp Range null', () => {
+    process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: null};
+    expect(() => require('../config')).toThrowErrorMatchingSnapshot();
+  });
 });
 
 describe('Custom CONFIG_NAME:', () => {

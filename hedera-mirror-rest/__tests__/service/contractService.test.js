@@ -91,6 +91,98 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
   });
 });
 
+const contractLogContractIdWhereClause = `cl.contract_id = $1`;
+describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
+  test('Verify simple query', async () => {
+    const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
+      [contractLogContractIdWhereClause],
+      [2],
+      'desc',
+      'asc',
+      5
+    );
+    assertSqlQueryEqual(
+      query,
+      `select contract_id,
+        consensus_timestamp,
+        data,
+        index,
+        root_contract_id,
+        topic0,
+        topic1,
+        topic2,
+        topic3
+      from contract_log cl
+      where cl.contract_id = $1
+      order by cl.consensus_timestamp desc,
+               cl.index asc
+      limit $2`
+    );
+    expect(params).toEqual([2, 5]);
+  });
+
+  test('Verify additional conditions', async () => {
+    const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
+      [
+        `cl.contract_id  = $1`,
+        `cl.topic0 = $2`,
+        `cl.topic1 = $3`,
+        `cl.topic2 = $4`,
+        `cl.topic3 = $5`,
+        'cl.index = $6',
+        `cl.consensus_timestamp in ($7, $8)`,
+      ],
+      [
+        1002,
+        Buffer.from('11', 'hex'),
+        Buffer.from('12', 'hex'),
+        Buffer.from('13', 'hex'),
+        Buffer.from('14', 'hex'),
+        0,
+        20,
+        30,
+      ],
+      'desc',
+      'desc',
+      5
+    );
+    assertSqlQueryEqual(
+      query,
+      `select contract_id,
+       consensus_timestamp,
+       data,
+       index,
+       root_contract_id,
+       topic0,
+       topic1,
+       topic2,
+       topic3
+      from contract_log cl
+      where cl.contract_id = $1
+        and cl.topic0 = $2
+        and cl.topic1 = $3
+        and cl.topic2 = $4
+        and cl.topic3 = $5
+        and cl.index = $6
+        and cl.consensus_timestamp in ($7, $8)
+      order by cl.consensus_timestamp desc,
+               cl.index desc
+      limit $9`
+    );
+    expect(params).toEqual([
+      1002,
+      Buffer.from('11', 'hex'),
+      Buffer.from('12', 'hex'),
+      Buffer.from('13', 'hex'),
+      Buffer.from('14', 'hex'),
+      0,
+      20,
+      30,
+      5,
+    ]);
+  });
+});
+
 describe('ContractService.getContractResultsByIdAndFilters tests', () => {
   test('No match', async () => {
     const response = await ContractService.getContractResultsByIdAndFilters();
@@ -296,5 +388,150 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
   test('Multiple rows match multiple timestamps', async () => {
     const actual = await ContractService.getContractResultsByTimestamps(expected.map((e) => e.consensusTimestamp));
     expect(pickContractResultFields(actual)).toIncludeSameMembers(expected);
+  });
+});
+
+describe('ContractService.getContractLogsByIdAndFilters tests', () => {
+  test('No match', async () => {
+    const response = await ContractService.getContractLogsByIdAndFilters();
+    expect(response).toEqual([]);
+  });
+
+  test('Row match', async () => {
+    await integrationDomainOps.loadContractLogs([
+      {
+        consensus_timestamp: 1,
+        contract_id: 2,
+        index: 0,
+      },
+    ]);
+
+    const expectedContractLog = [
+      {
+        consensusTimestamp: '1',
+        contractId: '2',
+      },
+    ];
+
+    const response = await ContractService.getContractLogsByIdAndFilters();
+    expect(response).toMatchObject(expectedContractLog);
+  });
+
+  test('Id match', async () => {
+    await integrationDomainOps.loadContractLogs([
+      {
+        consensus_timestamp: 1,
+        contract_id: 2,
+        index: 0,
+        root_contract_id: 8,
+      },
+      {
+        consensus_timestamp: 1,
+        contract_id: 3,
+        index: 1,
+        root_contract_id: 8,
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 3,
+        index: 0,
+        root_contract_id: 9,
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 3,
+        index: 1,
+        root_contract_id: 9,
+      },
+      {
+        consensus_timestamp: 3,
+        contract_id: 4,
+        index: 0,
+        root_contract_id: 8,
+      },
+    ]);
+
+    const expectedContractLog = [
+      {
+        consensusTimestamp: '2',
+        contractId: '3',
+        index: 1,
+      },
+      {
+        consensusTimestamp: '2',
+        contractId: '3',
+        index: 0,
+      },
+      {
+        consensusTimestamp: '1',
+        contractId: '3',
+        index: 1,
+      },
+    ];
+
+    const response = await ContractService.getContractLogsByIdAndFilters([contractLogContractIdWhereClause], [3]);
+    expect(response).toMatchObject(expectedContractLog);
+  });
+
+  test('All params match', async () => {
+    await integrationDomainOps.loadContractLogs([
+      {
+        consensus_timestamp: 20,
+        contract_id: 2,
+        index: 0,
+        root_contract_id: 10,
+        topic0: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
+        topic1: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
+        topic2: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
+        topic3: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
+      },
+      {
+        consensus_timestamp: 20,
+        contract_id: 3,
+        index: 1,
+        root_contract_id: 10,
+        topic0: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
+        topic1: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
+        topic2: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
+        topic3: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 3,
+        index: 0,
+        root_contract_id: 10,
+      },
+    ]);
+
+    const expectedContractLog = [
+      {
+        consensusTimestamp: '20',
+        contractId: '3',
+      },
+    ];
+    const response = await ContractService.getContractLogsByIdAndFilters(
+      [
+        contractLogContractIdWhereClause,
+        'cl.topic0 = $2',
+        'cl.topic1 = $3',
+        'cl.topic2 = $4',
+        'cl.topic3 = $5',
+        'cl.index = $6',
+        'cl.consensus_timestamp in ($7)',
+      ],
+      [
+        3,
+        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
+        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
+        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
+        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
+        1,
+        20,
+      ],
+      'desc',
+      'asc',
+      25
+    );
+    expect(response).toMatchObject(expectedContractLog);
   });
 });
