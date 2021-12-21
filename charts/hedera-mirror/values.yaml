@@ -181,7 +181,7 @@ postgresql:
     debug: true
   postgresqlImage:
     debug: true
-    tag: 13.4.0-debian-10-r28
+    tag: 13.5.0-debian-10-r35
   postgresql:
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
@@ -198,6 +198,7 @@ postgresql:
         cpu: 250m
         memory: 500Mi
     repmgrLogLevel: DEBUG
+    upgradeRepmgrExtension: true
   serviceAccount:
     enabled: true
 
@@ -329,7 +330,7 @@ timescaledb:
   enabled: false
   image:
     pullPolicy: IfNotPresent
-    tag: pg13.4-ts2.4.1-latest
+    tag: pg13.5-ts2.5.1-latest
   loadBalancer:
     enabled: false
   patroni:
@@ -382,3 +383,30 @@ timescaledb:
       # use the same values in resources limits
       cpus: 4
       memory: 16GB
+
+web3:
+  db:
+    password: ""  # Randomly generated if left blank
+    username: mirror_web3
+  enabled: true
+  env:
+    HEDERA_MIRROR_WEB3_DB_HOST:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_HOST
+    HEDERA_MIRROR_WEB3_DB_NAME:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_NAME
+    HEDERA_MIRROR_WEB3_DB_PASSWORD:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_WEB3_DB_PASSWORD
+    HEDERA_MIRROR_WEB3_DB_USERNAME:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_WEB3_DB_USERNAME

@@ -2,9 +2,9 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  labels: {{ include "hedera-mirror-rest.labels" . | nindent 4 }}
-  name: {{ include "hedera-mirror-rest.fullname" . }}
-  namespace: {{ include "hedera-mirror-rest.namespace" . }}
+  labels: {{ include "hedera-mirror-web3.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-web3.fullname" . }}
+  namespace: {{ include "hedera-mirror-web3.namespace" . }}
 spec:
   {{- with .Values.podDisruptionBudget.maxUnavailable }}
   maxUnavailable: {{ . }}
@@ -13,5 +13,5 @@ spec:
   minAvailable: {{ . }}
   {{- end }}
   selector:
-    matchLabels: {{ include "hedera-mirror-rest.selectorLabels" . | nindent 6 }}
+    matchLabels: {{ include "hedera-mirror-web3.selectorLabels" . | nindent 6 }}
 {{- end -}}

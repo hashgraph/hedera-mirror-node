@@ -34,9 +34,6 @@ grpc:
   serviceAccount:
     create: false
 
-rosetta:
-  enabled: false
-
 importer:
   config:
     hedera:
@@ -97,5 +94,11 @@ rest:
   service:
     type: LoadBalancer
 
+rosetta:
+  enabled: false
+
 timescaledb:
+  enabled: false
+
+web3:
   enabled: false

@@ -5,8 +5,7 @@ metadata:
   annotations:
     helm.sh/hook: test-success
     helm.sh/hook-delete-policy: before-hook-creation,hook-failed,hook-succeeded
-  labels:
-    {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
+  labels: {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-rest.fullname" . }}-test
   namespace: {{ include "hedera-mirror-rest.namespace" . }}
 data:

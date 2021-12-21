@@ -51,7 +51,7 @@ alertmanager:
               value: Importer[a-zA-Z]+Errors
           targetMatch:
             - name: alertname
-              value: ImporterLog4j2Errors
+              value: ImporterLogErrors
           equal:
             - namespace
             - pod
@@ -283,10 +283,10 @@ prometheusRules:
       application: hedera-mirror-importer
       area: resource
 
-  ImporterLog4j2Errors:
+  ImporterLogErrors:
     annotations:
       description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period"
-      summary: High rate of log4j2 errors
+      summary: High rate of log errors
     enabled: true
     expr: sum(increase(log4j2_events_total{application="hedera-mirror-importer", level="error"}[2m])) by (namespace, pod) >= 2
     for: 3m
@@ -368,6 +368,17 @@ prometheusRules:
       severity: critical
       application: hedera-mirror-importer
       area: publisher
+
+  ImporterQueryLatency:
+    annotations:
+      description: "High average database query latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Mirror Importer query latency exceeds 1s"
+    enabled: true
+    expr: sum(rate(spring_data_repository_invocations_seconds_sum{application="hedera-mirror-importer"}[5m])) by (namespace, pod) / sum(rate(spring_data_repository_invocations_seconds_count{application="hedera-mirror-importer"}[5m])) by (namespace, pod) > 1
+    for: 1m
+    labels:
+      severity: warning
+      application: hedera-mirror-importer
 
   ImporterRecordParseLatency:
     annotations:

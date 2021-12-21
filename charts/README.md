@@ -1,17 +1,18 @@
 # Helm Chart
 
-Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the four mirror node components:
+Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the mirror node components:
 
 - [Hedera Mirror Importer](hedera-mirror-importer)
 - [Hedera Mirror GRPC API](hedera-mirror-grpc)
 - [Hedera Mirror Monitor](hedera-mirror-monitor)
 - [Hedera Mirror REST API](hedera-mirror-rest)
 - [Hedera Mirror Rosetta API](hedera-mirror-rosetta)
+- [Hedera Mirror Web3 API](hedera-mirror-web3)
 
 ## Requirements
 
 - [Helm 3+](https://helm.sh)
-- [Kubernetes 1.20+](https://kubernetes.io)
+- [Kubernetes 1.21+](https://kubernetes.io)
 
 Set environment variables that will be used for the remainder of the document:
 
@@ -99,7 +100,7 @@ a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standa
        --create-subnetwork="" \
        --network=default \
        --zone=us-central1-a \
-       --cluster-version=1.18.16-gke.502 \
+       --cluster-version=1.21.5-gke.1802 \
        --machine-type=n1-standard-4
    ```
 
@@ -182,6 +183,12 @@ To access the Rosetta API:
 
 ```shell script
 curl -sL -d '{"metadata":{}}' "http://${SERVICE_IP}/network/list"
+```
+
+To access the Web3 API:
+
+```shell script
+curl -sL -H "Content-Type: application/json" -X POST -d '{"id": 1, "jsonrpc": "2.0", "method": "eth_blockNumber"}' "http://${SERVICE_IP}/web3/v1"
 ```
 
 To view the Grafana dashboard:
