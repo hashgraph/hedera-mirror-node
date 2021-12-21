@@ -198,10 +198,10 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
     expect(pickTransactionFields(actual)).toIncludeSameMembers([{consensusTimestamp: '11', payerAccountId: '5'}]);
   });
 
-  test('No match without nonce exclude all possible tranasction results', async () => {
+  test('No match without nonce exclude all possible transaction results', async () => {
     const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
       TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`),
-      0,
+      undefined,
       [duplicateTransactionResult, successTransactionResult]
     );
     expect(actual).toHaveLength(0);
