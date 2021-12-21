@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call for a transaction id with at most one contract result invariance breached",
+  "description": "Contract results api call for a transaction id with at most one transaction match invariance breached",
   "setup": {
     "contractresults": [
       {
@@ -14,20 +14,6 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001
-      },
-      {
-        "amount": 35,
-        "bloom": [8, 8],
-        "call_result": [9, 9],
-        "consensus_timestamp": "167654000123457",
-        "contract_id": 5001,
-        "created_contract_ids": [],
-        "error_message": "",
-        "function_parameters": [7, 7],
-        "function_result": [8, 8],
-        "gas_limit": 987654,
-        "gas_used": 200,
         "payer_account_id": 8001
       }
     ],
@@ -65,7 +51,7 @@
         "payerAccountId": "8001",
         "transaction_hash": "519a008fabde7d",
         "valid_start_timestamp": 167654000123400,
-        "result": 11
+        "result": 10
       }
     ]
   },

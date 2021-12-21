@@ -35,7 +35,7 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
-const {Contract, FileData, ContractResult} = require('../model');
+const {Contract, FileData, ContractResult, TransactionResult} = require('../model');
 const {ContractService, RecordFileService, TransactionService} = require('../service');
 const {logger} = require('../stream/utils');
 const TransactionId = require('../transactionId');
@@ -55,6 +55,8 @@ const contractSelectFields = [
   Contract.PROXY_ACCOUNT_ID,
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
+
+const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 
 // the query finds the file content valid at the contract's created timestamp T by aggregating the contents of all the
 // file* txs from the latest FileCreate or FileUpdate transaction before T, to T
@@ -582,43 +584,33 @@ const getContractResultsByTransactionId = async (req, res) => {
   const transactionId = TransactionId.fromString(req.params.transactionId);
   const nonce = getLastNonceParamValue(req.query);
 
-  // get transactions using id and nonce
-  const transactions = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(transactionId, nonce);
+  // get transactions using id and nonce, exclude duplicate transactions. there can be at most one
+  const transactions = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+    transactionId,
+    nonce,
+    duplicateTransactionResult
+  );
   if (transactions.length === 0) {
     throw new NotFoundError('No correlating transaction');
-  }
-
-  // retrieve contract result, there can be at most one with contract result though there may be multiple transactions
-  // of the same transaction id and nonce reaching consensus
-  const results = await ContractService.getContractResultsByTimestamps(transactions.map((t) => t.consensusTimestamp));
-  if (results.length === 0) {
-    throw new NotFoundError();
-  } else if (results.length > 1) {
+  } else if (transactions.length > 1) {
     logger.error(
-      'Contract result invariance breached: there should be at most one contract result for contract ' +
-        'related transactions with a specific (payer + valid start timestamp + nonce) combination'
+      'Transaction invariance breached: there should be at most one transaction with none-duplicate-transaction ' +
+        'result for a specific (payer + valid start timestamp + nonce) combination'
     );
-    throw new Error('Contract result invariance breached');
-  }
-  const contractResult = results[0];
-  const {consensusTimestamp} = contractResult;
-
-  const recordFile = await RecordFileService.getRecordFileBlockDetailsFromTimestamp(consensusTimestamp);
-  if (recordFile === null) {
-    logger.error(`No record file found for contract transaction at ${consensusTimestamp}`);
-    throw new Error('No record file found for contract transaction');
+    throw new Error('Transaction invariance breached');
   }
 
-  // find the transaction
-  let transaction;
-  for (const tx of transactions) {
-    if (tx.consensusTimestamp === consensusTimestamp) {
-      transaction = tx;
-      break;
-    }
+  // retrieve contract result and recordFile models concurrently using transaction timestamp
+  const transaction = transactions[0];
+  const [contractResults, recordFile] = await Promise.all([
+    ContractService.getContractResultsByTimestamps(transaction.consensusTimestamp),
+    RecordFileService.getRecordFileBlockDetailsFromTimestamp(transaction.consensusTimestamp),
+  ]);
+  if (contractResults.length === 0) {
+    throw new NotFoundError();
   }
 
-  res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResult, recordFile, transaction);
+  res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResults[0], recordFile, transaction);
 };
 
 const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams, existingConditions, fullName) => {

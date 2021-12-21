@@ -69,14 +69,34 @@ class TransactionService extends BaseService {
    *
    * @param {TransactionId} transactionId transactionId
    * @param {Number} nonce nonce of the transaction
+   * @param {Number[]|Number} excludeTransactionResults Transaction results to exclude, can be a list or a single result
    * @return {Promise<Transaction[]>} transactions subset
    */
-  async getTransactionDetailsFromTransactionIdAndNonce(transactionId, nonce = undefined) {
+  async getTransactionDetailsFromTransactionIdAndNonce(
+    transactionId,
+    nonce = undefined,
+    excludeTransactionResults = []
+  ) {
     const params = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
     let query = TransactionService.transactionDetailsFromTransactionIdQuery;
+
     if (nonce !== undefined) {
       params.push(nonce);
       query = TransactionService.transactionDetailsFromTransactionIdAndNonceQuery;
+    }
+
+    if (excludeTransactionResults !== undefined) {
+      if (Array.isArray(excludeTransactionResults)) {
+        if (excludeTransactionResults.length > 0) {
+          const begin = params.length + 1;
+          params.push(...excludeTransactionResults);
+          const positions = _.range(begin, params.length + 1).map((p) => `$${p}`);
+          query += ` and ${Transaction.RESULT} not in (${positions})`;
+        }
+      } else {
+        params.push(excludeTransactionResults);
+        query += ` and ${Transaction.RESULT} <> $${params.length}`;
+      }
     }
 
     const rows = await super.getRows(query, params, 'getTransactionDetailsFromTransactionIdAndNonce');
