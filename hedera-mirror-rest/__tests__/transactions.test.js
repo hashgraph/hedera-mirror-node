@@ -34,6 +34,7 @@ const {
   createTransferLists,
   extractSqlFromTransactionsByIdRequest,
 } = require('../transactions');
+const utils = require('../utils');
 
 const logger = log4js.getLogger();
 const timeNow = Math.floor(new Date().getTime() / 1000);
@@ -276,11 +277,11 @@ const singleTests = {
   },
   result_fail: {
     urlparam: 'result=fail',
-    checks: [{field: 'result', operator: '!=', value: `${constants.TRANSACTION_RESULT_SUCCESS}`}],
+    checks: [{field: 'result', operator: '!=', value: `${utils.resultSuccess}`}],
   },
   result_success: {
     urlparam: 'result=success',
-    checks: [{field: 'result', operator: '=', value: `${constants.TRANSACTION_RESULT_SUCCESS}`}],
+    checks: [{field: 'result', operator: '=', value: `${utils.resultSuccess}`}],
   },
 };
 

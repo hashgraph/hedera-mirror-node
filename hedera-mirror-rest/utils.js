@@ -34,10 +34,11 @@ const ed25519 = require('./ed25519');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
-const {TransactionType} = require('./model');
-const {TRANSACTION_RESULT_SUCCESS, keyTypes} = require('./constants');
+const {TransactionResult, TransactionType} = require('./model');
+const {keyTypes} = require('./constants');
 
 const responseLimit = config.response.limit;
+const resultSuccess = TransactionResult.getSuccessProtoId();
 
 const opsMap = {
   lt: ' < ',
@@ -478,9 +479,9 @@ const parseResultParams = (req, columnName) => {
   let query = '';
 
   if (resultType === constants.transactionResultFilter.SUCCESS) {
-    query = `${columnName} = ${TRANSACTION_RESULT_SUCCESS}`;
+    query = `${columnName} = ${resultSuccess}`;
   } else if (resultType === constants.transactionResultFilter.FAIL) {
-    query = `${columnName} != ${TRANSACTION_RESULT_SUCCESS}`;
+    query = `${columnName} != ${resultSuccess}`;
   }
   return query;
 };
@@ -1132,6 +1133,7 @@ module.exports = {
   parseTokenBalances,
   parseTransactionTypeParam,
   randomString,
+  resultSuccess,
   secNsToNs,
   secNsToSeconds,
   toHexString,
