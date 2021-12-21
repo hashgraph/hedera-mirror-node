@@ -163,7 +163,7 @@ class ContractService extends BaseService {
       limit
     );
     const rows = await super.getRows(query, params, 'getContractLogsByIdAndFilters');
-    return _.isEmpty(rows) ? [] : rows.map((cr) => new ContractLog(cr));
+    return rows.map((cr) => new ContractLog(cr));
   }
 }
 

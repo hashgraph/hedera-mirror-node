@@ -204,6 +204,6 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
       0,
       [duplicateTransactionResult, successTransactionResult]
     );
-    expect(pickTransactionFields(actual)).toHaveLength(0);
+    expect(actual).toHaveLength(0);
   });
 });
