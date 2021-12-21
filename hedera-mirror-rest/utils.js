@@ -665,15 +665,25 @@ const addHexPrefix = (hexString) => {
  * Converts the byte array returned by SQL queries into hex string
  * @param {Array} byteArray Array of bytes to be converted to hex string
  * @param {boolean} addPrefix Whether to add the '0x' prefix to the hex string
+ * @param {Number} padLength The length to left pad the result hex string
  * @return {String} Converted hex string
  */
-const toHexString = (byteArray, addPrefix = false) => {
+const toHexString = (byteArray, addPrefix = false, padLength = undefined) => {
   if (_.isNil(byteArray)) {
     return null;
   }
 
+  const modifiers = [];
+  if (padLength !== undefined) {
+    modifiers.push((s) => s.padStart(padLength, '0'));
+  }
+
+  if (addPrefix) {
+    modifiers.push(addHexPrefix);
+  }
+
   const encoded = Buffer.from(byteArray, 'utf8').toString('hex');
-  return addPrefix ? addHexPrefix(encoded) : encoded;
+  return modifiers.reduce((v, f) => f(v), encoded);
 };
 
 // These match protobuf encoded hex strings. The prefixes listed check if it's a primitive key, a key list with one
@@ -1002,88 +1012,64 @@ const loadPgRange = () => {
 };
 
 /**
- * Breaks a list of filters into 4 arrays (eq, ne, gt/gte, and lt/lte) and sorts the results.
- * @param filters
- * @returns {{eqFilters: *[], neFilters: *[], ltFilters: *[], gtFilters: *[]}}
- */
-const sortFilters = (filters) => {
-  const eqFilters = [];
-  const neFilters = [];
-  const gtFilters = [];
-  const ltFilters = [];
-  for (const filter of filters) {
-    switch (filter.operator) {
-      case opsMap.eq:
-        eqFilters.push(filter);
-        break;
-      case opsMap.gt:
-      case opsMap.gte:
-        gtFilters.push(filter);
-        break;
-      case opsMap.lt:
-      case opsMap.lte:
-        ltFilters.push(filter);
-        break;
-      case opsMap.ne:
-        neFilters.push(filter);
-        break;
-      default:
-        break;
-    }
-  }
-  return {
-    eqFilters,
-    neFilters,
-    gtFilters,
-    ltFilters,
-  };
-};
-
-/**
- * Checks that the timestamp filters contains either a valid range (greater than and less than filters that do not span beyond
- * a configured limit), or a set of equals operators within the same limit.
+ * Checks that the timestamp filters contains either a valid range (greater than and less than filters that do not span
+ * beyond a configured limit), or a set of equals operators within the same limit.
  *
- * @param timestampFilters an array of timestamp filters
+ * @param {[]}timestampFilters an array of timestamp filters
  */
 const checkTimestampRange = (timestampFilters) => {
   //No timestamp params provided
   if (timestampFilters.length === 0) {
     throw new InvalidArgumentError('No timestamp range or eq operator provided');
   }
-  const sortedFilters = sortFilters(timestampFilters);
-  const eqLength = sortedFilters.eqFilters.length;
-  const neLength = sortedFilters.neFilters.length;
-  const gtLength = sortedFilters.gtFilters.length;
-  const ltLength = sortedFilters.ltFilters.length;
 
-  if (neLength > 0) {
-    //Don't allow ne
+  const valuesByOp = {};
+  Object.values(opsMap).forEach((k) => (valuesByOp[k] = []));
+  timestampFilters.forEach((filter) => valuesByOp[filter.operator].push(filter.value));
+
+  // combine gt / gte, lt /lte. The check here isn't accurate as it's only up to millis, later when calculating
+  // the range, we should pay attention to false negative
+  valuesByOp[opsMap.gt].push(...valuesByOp[opsMap.gte]);
+  valuesByOp[opsMap.lt].push(...valuesByOp[opsMap.lte]);
+
+  if (valuesByOp[opsMap.ne].length > 0) {
+    // Don't allow ne
     throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
   }
-  if (gtLength > 1) {
+
+  if (valuesByOp[opsMap.gt].length > 1) {
     //Don't allow multiple gt/gte
     throw new InvalidArgumentError('Multiple gt or gte operators not permitted for timestamp param');
   }
-  if (ltLength > 1) {
+
+  if (valuesByOp[opsMap.gt].length > 1) {
     //Don't allow multiple lt/lte
     throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
   }
-  if (eqLength > 0 && (gtLength === 1 || ltLength === 1)) {
+
+  if (valuesByOp[opsMap.eq].length > 0 && (valuesByOp[opsMap.gt].length > 0 || valuesByOp[opsMap.lt].length > 0)) {
     //Combined eq with other operator
     throw new InvalidArgumentError('Cannot combine eq with gt, gte, lt, or lte for timestamp param');
   }
-  if (eqLength > 0) {
+
+  if (valuesByOp[opsMap.eq].length > 0) {
     //Only eq provided, no range needed
     return;
   }
-  if (gtLength === 0 || ltLength === 0) {
+
+  if (valuesByOp[opsMap.gt].length === 0 || valuesByOp[opsMap.lt].length === 0) {
     //Missing range
     throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte)');
   }
-  const earliest = nsToMillis(sortedFilters.gtFilters[0].value);
-  const latest = nsToMillis(sortedFilters.ltFilters[0].value);
+
+  // there should be exactly one gt/gte and one lt/lte at this point
+  const earliest = nsToMillis(valuesByOp[opsMap.gt][0]);
+  const latest = nsToMillis(valuesByOp[opsMap.lt][0]);
   const difference = math.subtract(latest, earliest);
-  if (difference > config.maxTimestampRangeMs || difference < 0) {
+
+  // the precision is in millis and we don't distinguish gt/gte, lt/lte. loosening the max range by 1ms suffices
+  // to prevent false negative
+  if (difference - 1 > config.maxTimestampRangeMs || difference < 0) {
     throw new InvalidArgumentError(
       `Timestamp lower and upper bounds must be positive and within ${config.maxTimestampRange}`
     );

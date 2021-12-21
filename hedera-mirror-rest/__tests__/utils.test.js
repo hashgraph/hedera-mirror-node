@@ -937,28 +937,48 @@ describe('Utils ipMask tests', () => {
 });
 
 describe('Utils toHexString tests', () => {
+  const byteArray = [1, 2, 0xab];
   const specs = [
     {
-      input: [1, 2, 3],
-      expected: '010203',
+      name: 'no prefix no padding',
+      args: [byteArray],
+      expected: '0102ab',
     },
     {
-      input: [0x1a, 0x1b, 0x1c],
-      expected: '1a1b1c',
+      name: 'explicit no prefix no padding',
+      args: [byteArray, false],
+      expected: '0102ab',
+    },
+    {
+      name: 'add prefix no padding',
+      args: [byteArray, true],
+      expected: '0x0102ab',
+    },
+    {
+      name: 'no prefix pad to 8',
+      args: [byteArray, false, 8],
+      expected: '000102ab',
+    },
+    {
+      name: 'add prefix pad to 8',
+      args: [byteArray, true, 8],
+      expected: '0x000102ab',
+    },
+    {
+      name: 'no prefix pad to 2',
+      args: [byteArray, false, 2],
+      expected: '0102ab',
+    },
+    {
+      name: 'add prefix pad to 2',
+      args: [byteArray, true, 2],
+      expected: '0x0102ab',
     },
   ];
 
   specs.forEach((spec) => {
-    test(`explicit addPrefix false - ${spec.input}`, () => {
-      expect(utils.toHexString(spec.input, false)).toEqual(spec.expected);
-    });
-
-    test(`implicit addPrefix false - ${spec.input}`, () => {
-      expect(utils.toHexString(spec.input)).toEqual(spec.expected);
-    });
-
-    test(`addPrefix true - ${spec.input}`, () => {
-      expect(utils.toHexString(spec.input, true)).toEqual(`0x${spec.expected}`);
+    test(spec.name, () => {
+      expect(utils.toHexString(...spec.args)).toEqual(spec.expected);
     });
   });
 });
@@ -1019,180 +1039,127 @@ describe('Utils test - utils.parseTransactionTypeParam', () => {
 });
 
 describe('Utils test - utils.checkTimestampRange', () => {
-  test('no params', () => {
-    const error = () => utils.checkTimestampRange([]);
-    expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('No timestamp range or eq operator provided');
-  });
-  test('one param gt', () => {
-    const filters = [
+  const makeTimestampFilter = (operator, value) => {
+    return {
+      key: constants.filterKeys.TIMESTAMP,
+      operator,
+      value,
+    };
+  };
+
+  describe('valid', () => {
+    const testSpecs = [
       {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.gt,
-        value: '1638921702000000000',
+        name: 'one filter eq',
+        filters: [makeTimestampFilter(utils.opsMap.eq, '1638921702000000000')],
+      },
+      {
+        name: 'two filter gte and lte',
+        filters: [
+          makeTimestampFilter(utils.opsMap.gte, '1000000000'),
+          makeTimestampFilter(utils.opsMap.lte, '2000000000'),
+        ],
+      },
+      {
+        name: 'two eq',
+        filters: [
+          makeTimestampFilter(utils.opsMap.eq, '1000000000'),
+          makeTimestampFilter(utils.opsMap.eq, '1638921702000000000'),
+        ],
+      },
+      {
+        name: '1ns range with gt and lt',
+        filters: [
+          makeTimestampFilter(utils.opsMap.gt, '1000999999'),
+          makeTimestampFilter(utils.opsMap.lt, '1001000001'),
+        ],
+      },
+      {
+        name: 'max range',
+        filters: [
+          makeTimestampFilter(utils.opsMap.gt, '1000000'),
+          makeTimestampFilter(utils.opsMap.lt, '604800001000000'),
+        ],
+      },
+      {
+        name: 'max range with ns',
+        filters: [
+          makeTimestampFilter(utils.opsMap.gte, '1999999'),
+          makeTimestampFilter(utils.opsMap.lt, '604800002000000'),
+        ],
       },
     ];
-    const error = () => utils.checkTimestampRange(filters);
-    expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Timestamp range must have gt (or gte) and lt (or lte)');
+
+    testSpecs.forEach((spec) =>
+      test(spec.name, () => {
+        expect(() => utils.checkTimestampRange(spec.filters)).not.toThrow();
+      })
+    );
   });
-  test('one param eq', () => {
-    const filters = [
+
+  describe('invalid', () => {
+    const testSpecs = [
       {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.eq,
-        value: '1638921702000000000',
+        name: 'no filters',
+        filters: [],
+      },
+      {
+        name: 'one filter gt',
+        filters: [makeTimestampFilter(utils.opsMap.gt, '1638921702000000000')],
+      },
+      {
+        name: 'one filter ne',
+        filters: [makeTimestampFilter(utils.opsMap.ne, '1638921702000000000')],
+      },
+      {
+        name: 'two filter gt and eq',
+        filters: [
+          makeTimestampFilter(utils.opsMap.gt, '1638921702000'),
+          makeTimestampFilter(utils.opsMap.eq, '1638921702000000000'),
+        ],
+      },
+      {
+        name: 'bad range lower bound > higher bound',
+        filters: [
+          makeTimestampFilter(utils.opsMap.gte, '2000000000'),
+          makeTimestampFilter(utils.opsMap.lte, '1000000000'),
+        ],
+      },
+      {
+        name: 'range exceeds configured max',
+        filters: [
+          makeTimestampFilter(utils.opsMap.gte, '1000000000'),
+          makeTimestampFilter(utils.opsMap.lte, '1638921702000000000'),
+        ],
+      },
+      {
+        name: 'two gt and get',
+        filters: [
+          makeTimestampFilter(utils.opsMap.gte, '1000000000'),
+          makeTimestampFilter(utils.opsMap.gt, '1638921702000000000'),
+        ],
+      },
+      {
+        name: 'two lt and lte',
+        filters: [
+          makeTimestampFilter(utils.opsMap.lt, '1000000000'),
+          makeTimestampFilter(utils.opsMap.lte, '1638921702000000000'),
+        ],
+      },
+      {
+        name: 'three gt lte eq',
+        filters: [
+          makeTimestampFilter(utils.opsMap.lt, '1000000000'),
+          makeTimestampFilter(utils.opsMap.gte, '2000000000'),
+          makeTimestampFilter(utils.opsMap.eq, '1000000000'),
+        ],
       },
     ];
-    utils.checkTimestampRange(filters);
-  });
-  test('one param ne', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.ne,
-        value: '1638921702000000000',
-      },
-    ];
-    const error = () => utils.checkTimestampRange(filters);
-    expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Not equals operator not supported for timestamp param');
-  });
-  test('two params gt and eq', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.gt,
-        value: '1638921702000',
-      },
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.eq,
-        value: '1638921702000000000',
-      },
-    ];
-    const error = () => utils.checkTimestampRange(filters);
-    expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Cannot combine eq with gt, gte, lt, or lte for timestamp param');
-  });
-  test('two gte and lte', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.gte,
-        value: '1000000000',
-      },
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.lte,
-        value: '2000000000',
-      },
-    ];
-    utils.checkTimestampRange(filters);
-  });
-  test('two bad range backwards', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.gte,
-        value: '2000000000',
-      },
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.lte,
-        value: '1000000000',
-      },
-    ];
-    const error = () => utils.checkTimestampRange(filters);
-    expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Timestamp lower and upper bounds must be positive and within 7d');
-  });
-  test('two bad range too big', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.gte,
-        value: '1000000000',
-      },
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.lte,
-        value: '1638921702000000000',
-      },
-    ];
-    const error = () => utils.checkTimestampRange(filters);
-    expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Timestamp lower and upper bounds must be positive and within 7d');
-  });
-  test('two gt and gte', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.gte,
-        value: '1000000000',
-      },
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.gt,
-        value: '1638921702000000000',
-      },
-    ];
-    const error = () => utils.checkTimestampRange(filters);
-    expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Multiple gt or gte operators not permitted');
-  });
-  test('two lt and lte', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.lt,
-        value: '1000000000',
-      },
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.lte,
-        value: '1638921702000000000',
-      },
-    ];
-    const error = () => utils.checkTimestampRange(filters);
-    expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Multiple lt or lte operators not permitted');
-  });
-  test('two eq', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.eq,
-        value: '1000000000',
-      },
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.eq,
-        value: '1638921702000000000',
-      },
-    ];
-    utils.checkTimestampRange(filters);
-  });
-  test('three gt lte eq', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.lt,
-        value: '1000000000',
-      },
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.gte,
-        value: '2000000000',
-      },
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.eq,
-        value: '1000000000',
-      },
-    ];
-    const error = () => utils.checkTimestampRange(filters);
-    expect(error).toThrowError(InvalidArgumentError);
-    expect(error).toThrowError('Cannot combine eq with gt, gte, lt, or lte for timestamp param');
+
+    testSpecs.forEach((spec) =>
+      test(spec.name, () => {
+        expect(() => utils.checkTimestampRange(spec.filters)).toThrowErrorMatchingSnapshot();
+      })
+    );
   });
 });

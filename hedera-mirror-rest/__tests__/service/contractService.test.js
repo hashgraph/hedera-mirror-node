@@ -53,7 +53,7 @@ beforeEach(async () => {
 });
 
 describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
-  test('ContractService.getContractResultsByIdAndFiltersQuery - Verify simple query', async () => {
+  test('Verify simple query', async () => {
     const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
       ['cr.contract_id = $1'],
       [2],
@@ -70,7 +70,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
     expect(params).toEqual([2, 5]);
   });
 
-  test('ContractService.getContractResultsByIdAndFiltersQuery - Verify additional conditions', async () => {
+  test('Verify additional conditions', async () => {
     const additionalConditions = ['cr.contract_id = $1', 'cr.consensus_timestamp > $2', 'cr.payer_account_id = $3'];
     const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
       additionalConditions,
@@ -93,7 +93,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
 
 const contractLogContractIdWhereClause = `cl.contract_id = $1`;
 describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
-  test('ContractService.getContractLogsByIdAndFiltersQuery - Verify simple query', async () => {
+  test('Verify simple query', async () => {
     const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
       [contractLogContractIdWhereClause],
       [2],
@@ -120,7 +120,7 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
     expect(params).toEqual([2, 5]);
   });
 
-  test('ContractService.getContractLogsByIdAndFiltersQuery - Verify additional conditions', async () => {
+  test('Verify additional conditions', async () => {
     const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
       [
         `cl.contract_id  = $1`,
@@ -182,12 +182,12 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
 });
 
 describe('ContractService.getContractResultsByIdAndFilters tests', () => {
-  test('ContractService.getContractResultsByIdAndFilters - No match', async () => {
+  test('No match', async () => {
     const response = await ContractService.getContractResultsByIdAndFilters();
     expect(response).toEqual([]);
   });
 
-  test('ContractService.getContractResultsByIdAndFilters - Row match', async () => {
+  test('Row match', async () => {
     await integrationDomainOps.loadContractResults([
       {
         contract_id: 2,
@@ -211,7 +211,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
     expect(response).toMatchObject(expectedContractResult);
   });
 
-  test('ContractService.getContractResultsByTimestamp - Id match', async () => {
+  test('Id match', async () => {
     await integrationDomainOps.loadContractResults([
       {
         contract_id: 1,
@@ -244,7 +244,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
     expect(response).toMatchObject(expectedContractResult);
   });
 
-  test('ContractService.getContractResultsByIdAndFilters - All params match', async () => {
+  test('All params match', async () => {
     await integrationDomainOps.loadContractResults([
       {
         contract_id: 2,
@@ -308,11 +308,11 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
 });
 
 describe('ContractService.getContractResultsByTimestamp tests', () => {
-  test('ContractService.getContractResultsByTimestamp - No match', async () => {
+  test('No match', async () => {
     await expect(ContractService.getContractResultByTimestamp(1)).resolves.toBeNull();
   });
 
-  test('ContractService.getContractResultsByTimestamp - Row match', async () => {
+  test('Row match', async () => {
     const contractResultsInput = [
       {
         contract_id: 2,
@@ -342,12 +342,12 @@ describe('ContractService.getContractResultsByTimestamp tests', () => {
 });
 
 describe('ContractService.getContractLogsByIdAndFilters tests', () => {
-  test('ContractService.getContractLogsByIdAndFilters - No match', async () => {
+  test('No match', async () => {
     const response = await ContractService.getContractLogsByIdAndFilters();
     expect(response).toEqual([]);
   });
 
-  test('ContractService.getContractLogsByIdAndFilters - Row match', async () => {
+  test('Row match', async () => {
     await integrationDomainOps.loadContractLogs([
       {
         consensus_timestamp: 1,
@@ -367,7 +367,7 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
     expect(response).toMatchObject(expectedContractLog);
   });
 
-  test('ContractService.getContractLogsByIdAndFilters - Id match', async () => {
+  test('Id match', async () => {
     await integrationDomainOps.loadContractLogs([
       {
         consensus_timestamp: 1,
@@ -388,6 +388,12 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
         root_contract_id: 9,
       },
       {
+        consensus_timestamp: 2,
+        contract_id: 3,
+        index: 1,
+        root_contract_id: 9,
+      },
+      {
         consensus_timestamp: 3,
         contract_id: 4,
         index: 0,
@@ -396,6 +402,11 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
     ]);
 
     const expectedContractLog = [
+      {
+        consensusTimestamp: '2',
+        contractId: '3',
+        index: 1,
+      },
       {
         consensusTimestamp: '2',
         contractId: '3',
@@ -408,17 +419,11 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
       },
     ];
 
-    const response = await ContractService.getContractLogsByIdAndFilters(
-      [contractLogContractIdWhereClause],
-      [3],
-      'desc',
-      'desc',
-      25
-    );
+    const response = await ContractService.getContractLogsByIdAndFilters([contractLogContractIdWhereClause], [3]);
     expect(response).toMatchObject(expectedContractLog);
   });
 
-  test('ContractService.getContractLogsByIdAndFilters - All params match', async () => {
+  test('All params match', async () => {
     await integrationDomainOps.loadContractLogs([
       {
         consensus_timestamp: 20,

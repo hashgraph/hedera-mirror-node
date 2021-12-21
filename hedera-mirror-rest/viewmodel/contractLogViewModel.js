@@ -21,7 +21,6 @@
 'use strict';
 
 const EntityId = require('../entityId');
-const ContractLog = require('../model/contractLog');
 const constants = require('../constants');
 const utils = require('../utils');
 
@@ -48,13 +47,7 @@ class ContractLogViewModel {
   }
 
   _formatTopics(topics) {
-    return topics
-      .filter((topic) => topic !== null)
-      .map((topic) => {
-        const topicString = utils.toHexString(topic, false);
-        const paddedTopic = `${'0'.repeat(64)}${topicString}`.slice(-64);
-        return `0x${paddedTopic}`;
-      });
+    return topics.filter((topic) => topic !== null).map((topic) => utils.toHexString(topic, true, 64));
   }
 }
 

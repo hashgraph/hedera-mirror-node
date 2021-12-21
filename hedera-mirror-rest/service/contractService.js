@@ -150,7 +150,7 @@ class ContractService extends BaseService {
     whereConditions = [],
     whereParams = [],
     timestampOrder = orderFilterValues.DESC,
-    indexOrder = orderFilterValues.ASC,
+    indexOrder = orderFilterValues.DESC,
     limit = defaultLimit
   ) {
     const [query, params] = this.getContractLogsByIdAndFiltersQuery(

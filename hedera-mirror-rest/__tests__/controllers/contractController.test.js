@@ -29,7 +29,6 @@ const {
 } = require('../../config');
 const constants = require('../../constants');
 const contracts = require('../../controllers/contractController');
-const {InvalidArgumentError} = require('../../errors/invalidArgumentError');
 const {formatSqlQueryString} = require('../testutils');
 const utils = require('../../utils');
 const {Contract} = require('../../model');
@@ -482,10 +481,10 @@ describe('validateContractIdAndConsensusTimestampParam', () => {
   ];
 
   validSpecs.forEach((spec) => {
-    test(`valid validateContractIdAndConsensusTimestampParam case - ${spec.name}`, () => {
+    test(`valid case - ${JSON.stringify(spec)}`, () => {
       expect(() =>
         contracts.validateContractIdAndConsensusTimestampParam(spec.consensusTimestamp, spec.contractId)
-      ).not.toThrow(InvalidArgumentError);
+      ).not.toThrow();
     });
   });
 
@@ -505,10 +504,10 @@ describe('validateContractIdAndConsensusTimestampParam', () => {
   ];
 
   inValidSpecs.forEach((spec) => {
-    test(`invalid validateContractIdAndConsensusTimestampParam case - ${spec.name}`, () => {
+    test(`invalid case - ${JSON.stringify(spec)}`, () => {
       expect(() =>
         contracts.validateContractIdAndConsensusTimestampParam(spec.consensusTimestamp, spec.contractId)
-      ).toThrow(InvalidArgumentError);
+      ).toThrowErrorMatchingSnapshot();
     });
   });
 });
@@ -527,8 +526,8 @@ describe('validateContractIdParam', () => {
   ];
 
   validSpecs.forEach((spec) => {
-    test(`valid validateContractIdParam case - ${spec.name}`, () => {
-      expect(() => contracts.validateContractIdParam(spec.contractId)).not.toThrow(InvalidArgumentError);
+    test(`valid contract ID - ${spec.contractId}`, () => {
+      expect(() => contracts.validateContractIdParam(spec.contractId)).not.toThrow();
     });
   });
 
@@ -545,8 +544,8 @@ describe('validateContractIdParam', () => {
   ];
 
   inValidSpecs.forEach((spec) => {
-    test(`invalid validateContractIdParam case - ${spec.name}`, () => {
-      expect(() => contracts.validateContractIdParam(spec.contractId)).toThrow(InvalidArgumentError);
+    test(`invalid contract ID - ${spec.contractId}`, () => {
+      expect(() => contracts.validateContractIdParam(spec.contractId)).toThrowErrorMatchingSnapshot();
     });
   });
 });
@@ -777,78 +776,16 @@ describe('extractContractLogsByIdQuery', () => {
 
   errorSpecs.forEach((spec) => {
     test(`error - ${spec.name}`, () => {
-      const error = () => contracts.extractContractLogsByIdQuery(spec.input.filter, spec.input.contractId);
-      expect(error).toThrowErrorMatchingSnapshot();
+      expect(() =>
+        contracts.extractContractLogsByIdQuery(spec.input.filter, spec.input.contractId)
+      ).toThrowErrorMatchingSnapshot();
     });
   });
 });
 
 describe('checkTimestampsForTopics', () => {
   test('no topic params', () => {
-    contracts.checkTimestampsForTopics([]);
-  });
-  test('topic0 param no timestamps', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TOPIC0,
-        operator: utils.opsMap.gte,
-        value: '0x1234',
-      },
-    ];
-    expect(() => {
-      contracts.checkTimestampsForTopics(filters);
-    }).toThrow(InvalidArgumentError);
-  });
-  test('topic1 param one timestamp gt', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TOPIC1,
-        operator: utils.opsMap.eq,
-        value: '0x1234',
-      },
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.gte,
-        value: '123',
-      },
-    ];
-    expect(() => {
-      contracts.checkTimestampsForTopics(filters);
-    }).toThrow(InvalidArgumentError);
-  });
-  test('topic2 param one timestamp lt', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TOPIC2,
-        operator: utils.opsMap.eq,
-        value: '0x1234',
-      },
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.lt,
-        value: '123',
-      },
-    ];
-    expect(() => {
-      contracts.checkTimestampsForTopics(filters);
-    }).toThrow(InvalidArgumentError);
-  });
-  test('topic0 param', () => {
-    const filters = [
-      {
-        key: constants.filterKeys.TOPIC3,
-        operator: utils.opsMap.eq,
-        value: '0x1234',
-      },
-      {
-        key: constants.filterKeys.TIMESTAMP,
-        operator: utils.opsMap.ne,
-        value: '123',
-      },
-    ];
-    expect(() => {
-      contracts.checkTimestampsForTopics(filters);
-    }).toThrow(InvalidArgumentError);
+    expect(() => contracts.checkTimestampsForTopics([])).not.toThrow();
   });
   test('all topics valid timestamp', () => {
     const filters = [
@@ -878,7 +815,7 @@ describe('checkTimestampsForTopics', () => {
         value: '123',
       },
     ];
-    contracts.checkTimestampsForTopics(filters);
+    expect(() => contracts.checkTimestampsForTopics(filters)).not.toThrow();
   });
   test('valid timestamp no topics', () => {
     const filters = [
@@ -893,6 +830,61 @@ describe('checkTimestampsForTopics', () => {
         value: '111',
       },
     ];
-    contracts.checkTimestampsForTopics(filters);
+    expect(() => contracts.checkTimestampsForTopics(filters)).not.toThrow();
+  });
+  test('topic0 param no timestamps', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TOPIC0,
+        operator: utils.opsMap.gte,
+        value: '0x1234',
+      },
+    ];
+    expect(() => contracts.checkTimestampsForTopics(filters)).toThrowErrorMatchingSnapshot();
+  });
+  test('topic1 param one timestamp gt', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TOPIC1,
+        operator: utils.opsMap.eq,
+        value: '0x1234',
+      },
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.gte,
+        value: '123',
+      },
+    ];
+    expect(() => contracts.checkTimestampsForTopics(filters)).toThrowErrorMatchingSnapshot();
+  });
+  test('topic2 param one timestamp lt', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TOPIC2,
+        operator: utils.opsMap.eq,
+        value: '0x1234',
+      },
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.lt,
+        value: '123',
+      },
+    ];
+    expect(() => contracts.checkTimestampsForTopics(filters)).toThrowErrorMatchingSnapshot();
+  });
+  test('topic0 param', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TOPIC3,
+        operator: utils.opsMap.eq,
+        value: '0x1234',
+      },
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.ne,
+        value: '123',
+      },
+    ];
+    expect(() => contracts.checkTimestampsForTopics(filters)).toThrowErrorMatchingSnapshot();
   });
 });

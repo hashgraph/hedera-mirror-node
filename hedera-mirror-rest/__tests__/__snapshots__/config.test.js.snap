@@ -1,0 +1,5 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Load environment configuration: Max Timestamp Range invalid 1`] = `"invalid maxTimestampRange 3x"`;
+
+exports[`Load environment configuration: Max Timestamp Range null 1`] = `"invalid maxTimestampRange null"`;
