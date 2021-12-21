@@ -202,6 +202,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ContractLogsResponse'
+        204:
+          description: No Content
+          content:
+            application/json:
+              schema:
+                type: object
         400:
           $ref: '#/components/responses/InvalidParameterError'
       tags:

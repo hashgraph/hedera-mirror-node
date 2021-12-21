@@ -42,6 +42,7 @@ const {logger} = require('../stream/utils');
 const TransactionId = require('../transactionId');
 const utils = require('../utils');
 const {ContractViewModel, ContractLogViewModel, ContractResultViewModel} = require('../viewmodel');
+const {httpStatusCodes} = require('../constants');
 
 const contractSelectFields = [
   Contract.AUTO_RENEW_PERIOD,
@@ -432,11 +433,10 @@ const getContractLogs = async (req, res) => {
     limit
   );
 
-  const response = {
+  res.locals.statusCode = rows.length !== 0 ? httpStatusCodes.OK.code : httpStatusCodes.NO_CONTENT.code;
+  res.locals[constants.responseDataLabel] = {
     logs: rows.map((row) => new ContractLogViewModel(row)),
   };
-
-  res.send(response);
 };
 
 /**
@@ -728,7 +728,7 @@ const checkTimestampsForTopics = (filters) => {
         timestampFilters.push(filter);
         break;
       default:
-        continue;
+        break;
     }
   }
   if (hasTopic) {
