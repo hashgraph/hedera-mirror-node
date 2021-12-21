@@ -26,7 +26,6 @@ const path = require('path');
 const yaml = require('js-yaml');
 const _ = require('lodash');
 const {cloudProviders, defaultBucketNames, networks} = require('../constants');
-const {InvalidConfigError} = require('../errors/invalidConfigError');
 
 let tempDir;
 const custom = {
@@ -153,7 +152,6 @@ describe('Load environment configuration:', () => {
   });
   test('Max Timestamp Range null', () => {
     process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: null};
-    const error = new InvalidConfigError('invalid maxTimestampRange null');
     expect(() => require('../config')).toThrowErrorMatchingSnapshot();
   });
 });
