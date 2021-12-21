@@ -1,0 +1,78 @@
+{
+  "description": "Contract logs api calls with order param desc",
+  "setup": {
+    "contractlogs": [
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 0
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 1
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "contract_id": 1000,
+        "index": 1,
+        "root_contract_id": 1001,
+        "topic3": null
+      },
+      {
+        "consensus_timestamp": 1639010161000000002,
+        "contract_id": 1002,
+        "index": 0,
+        "root_contract_id": 1001,
+        "topic3": null
+      }
+    ]
+  },
+  "urls": ["/api/v1/contracts/0.0.1000/results/logs?order=desc"],
+  "responseStatus": 200,
+  "responseJson": {
+    "logs": [
+      {
+        "address": "0x00000000000000000000000000000000000003e8",
+        "contract_id": "0.0.1000",
+        "data": "0x0123",
+        "index": 1,
+        "root_contract_id": "0.0.1001",
+        "timestamp": "1639010151.000000000",
+        "topics": [
+          "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003e8",
+        "contract_id": "0.0.1000",
+        "data": "0x0123",
+        "index": 1,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003e8",
+        "contract_id": "0.0.1000",
+        "data": "0x0123",
+        "index": 0,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      }
+    ]
+  }
+}

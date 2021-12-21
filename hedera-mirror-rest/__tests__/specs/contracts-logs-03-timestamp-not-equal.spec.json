@@ -1,0 +1,40 @@
+{
+  "description": "Contract logs api calls with not equal timestamp param",
+  "setup": {
+    "contractlogs": [
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 0
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 1
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "contract_id": 1000,
+        "index": 1,
+        "root_contract_id": 1001
+      },
+      {
+        "consensus_timestamp": 1639010161000000002,
+        "contract_id": 1002,
+        "index": 0,
+        "root_contract_id": 1001
+      }
+    ]
+  },
+  "urls": ["/api/v1/contracts/0.0.1000/results/logs?timestamp=ne:1639010141.000000000"],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not equals operator not supported for timestamp param"
+        }
+      ]
+    }
+  }
+}

@@ -32,6 +32,7 @@ const filterKeys = {
   ENCODING: 'encoding',
   FROM: 'from',
   ENTITY_PUBLICKEY: 'publickey',
+  INDEX: 'index',
   LIMIT: 'limit',
   ORDER: 'order',
   RESULT: 'result',
@@ -45,6 +46,10 @@ const filterKeys = {
   TOKEN_ID: 'token.id',
   TOKEN_TYPE: 'type',
   TOPIC_ID: 'topic.id',
+  TOPIC0: 'topic0',
+  TOPIC1: 'topic1',
+  TOPIC2: 'topic2',
+  TOPIC3: 'topic3',
   TRANSACTION_TYPE: 'transactiontype',
 };
 
@@ -153,6 +158,15 @@ const httpStatusCodes = {
   SERVICE_UNAVAILABLE: new StatusCode(503, 'Service unavailable'),
 };
 
+const queryParamOperators = {
+  eq: 'eq',
+  ne: 'ne',
+  lt: 'lt',
+  lte: 'lte',
+  gt: 'gt',
+  gte: 'gte',
+};
+
 module.exports = {
   characterEncoding,
   cloudProviders,
@@ -165,6 +179,7 @@ module.exports = {
   keyTypes,
   networks,
   orderFilterValues,
+  queryParamOperators,
   recordStreamPrefix,
   requestIdLabel,
   responseDataLabel,

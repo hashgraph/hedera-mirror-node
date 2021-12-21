@@ -31,7 +31,11 @@ const path = '/api/v1/contracts';
 router.getAsync(`${path}`, ContractController.getContracts);
 router.getAsync(`${path}/:contractId`, ContractController.getContractById);
 router.getAsync(`${path}/:contractId/results`, ContractController.getContractResultsById);
-router.getAsync(`${path}/:contractId/results/:consensusTimestamp`, ContractController.getContractResultsByTimestamp);
+router.getAsync(`${path}/:contractId/results/logs`, ContractController.getContractLogs);
+router.getAsync(
+  `${path}/:contractId/results/:consensusTimestamp([0-9.]\+)`,
+  ContractController.getContractResultsByTimestamp
+);
 router.getAsync(`${path}/results/:transactionId`, ContractController.getContractResultsByTransactionId);
 
 module.exports = router;

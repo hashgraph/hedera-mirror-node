@@ -32,7 +32,7 @@ class ContractResultViewModel {
   /**
    * Constructs contractResult view model
    *
-   * @param {ContractResult} contract
+   * @param {ContractResult} contractResult
    */
   constructor(contractResult, recordFile = undefined, transaction = undefined) {
     Object.assign(this, {

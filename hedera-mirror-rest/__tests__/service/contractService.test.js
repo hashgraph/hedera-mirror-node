@@ -53,7 +53,7 @@ beforeEach(async () => {
 });
 
 describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
-  test('ContractService.getContractResultsByIdAndFiltersQuery - Verify simple query', async () => {
+  test('Verify simple query', async () => {
     const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
       ['cr.contract_id = $1'],
       [2],
@@ -70,7 +70,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
     expect(params).toEqual([2, 5]);
   });
 
-  test('ContractService.getContractResultsByIdAndFiltersQuery - Verify additional conditions', async () => {
+  test('Verify additional conditions', async () => {
     const additionalConditions = ['cr.contract_id = $1', 'cr.consensus_timestamp > $2', 'cr.payer_account_id = $3'];
     const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
       additionalConditions,
@@ -91,13 +91,103 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
   });
 });
 
+const contractLogContractIdWhereClause = `cl.contract_id = $1`;
+describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
+  test('Verify simple query', async () => {
+    const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
+      [contractLogContractIdWhereClause],
+      [2],
+      'desc',
+      'asc',
+      5
+    );
+    expect(formatSqlQueryString(query)).toEqual(
+      formatSqlQueryString(`select contract_id,
+                                   consensus_timestamp,
+                                   data,
+                                   index,
+                                   root_contract_id,
+                                   topic0,
+                                   topic1,
+                                   topic2,
+                                   topic3
+                            from contract_log cl
+                            where cl.contract_id = $1
+                            order by cl.consensus_timestamp desc,
+                                     cl.index asc
+                            limit $2`)
+    );
+    expect(params).toEqual([2, 5]);
+  });
+
+  test('Verify additional conditions', async () => {
+    const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
+      [
+        `cl.contract_id  = $1`,
+        `cl.topic0 = $2`,
+        `cl.topic1 = $3`,
+        `cl.topic2 = $4`,
+        `cl.topic3 = $5`,
+        'cl.index = $6',
+        `cl.consensus_timestamp in ($7, $8)`,
+      ],
+      [
+        1002,
+        Buffer.from('11', 'hex'),
+        Buffer.from('12', 'hex'),
+        Buffer.from('13', 'hex'),
+        Buffer.from('14', 'hex'),
+        0,
+        20,
+        30,
+      ],
+      'desc',
+      'desc',
+      5
+    );
+    expect(formatSqlQueryString(query)).toEqual(
+      formatSqlQueryString(`select contract_id,
+                                   consensus_timestamp,
+                                   data,
+                                   index,
+                                   root_contract_id,
+                                   topic0,
+                                   topic1,
+                                   topic2,
+                                   topic3
+                            from contract_log cl
+                            where cl.contract_id = $1
+                              and cl.topic0 = $2
+                              and cl.topic1 = $3
+                              and cl.topic2 = $4
+                              and cl.topic3 = $5
+                              and cl.index = $6
+                              and cl.consensus_timestamp in ($7, $8)
+                            order by cl.consensus_timestamp desc,
+                                     cl.index desc
+                            limit $9`)
+    );
+    expect(params).toEqual([
+      1002,
+      Buffer.from('11', 'hex'),
+      Buffer.from('12', 'hex'),
+      Buffer.from('13', 'hex'),
+      Buffer.from('14', 'hex'),
+      0,
+      20,
+      30,
+      5,
+    ]);
+  });
+});
+
 describe('ContractService.getContractResultsByIdAndFilters tests', () => {
-  test('ContractService.getContractResultsByIdAndFilters - No match', async () => {
+  test('No match', async () => {
     const response = await ContractService.getContractResultsByIdAndFilters();
     expect(response).toEqual([]);
   });
 
-  test('ContractService.getContractResultsByIdAndFilters - Row match', async () => {
+  test('Row match', async () => {
     await integrationDomainOps.loadContractResults([
       {
         contract_id: 2,
@@ -121,7 +211,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
     expect(response).toMatchObject(expectedContractResult);
   });
 
-  test('ContractService.getContractResultsByTimestamp - Id match', async () => {
+  test('Id match', async () => {
     await integrationDomainOps.loadContractResults([
       {
         contract_id: 1,
@@ -154,7 +244,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
     expect(response).toMatchObject(expectedContractResult);
   });
 
-  test('ContractService.getContractResultsByIdAndFilters - All params match', async () => {
+  test('All params match', async () => {
     await integrationDomainOps.loadContractResults([
       {
         contract_id: 2,
@@ -218,11 +308,11 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
 });
 
 describe('ContractService.getContractResultsByTimestamp tests', () => {
-  test('ContractService.getContractResultsByTimestamp - No match', async () => {
+  test('No match', async () => {
     await expect(ContractService.getContractResultByTimestamp(1)).resolves.toBeNull();
   });
 
-  test('ContractService.getContractResultsByTimestamp - Row match', async () => {
+  test('Row match', async () => {
     const contractResultsInput = [
       {
         contract_id: 2,
@@ -248,5 +338,150 @@ describe('ContractService.getContractResultsByTimestamp tests', () => {
     await integrationDomainOps.loadContractResults(contractResultsInput);
 
     await expect(ContractService.getContractResultByTimestamp(2)).resolves.toMatchObject(expectedContractResult);
+  });
+});
+
+describe('ContractService.getContractLogsByIdAndFilters tests', () => {
+  test('No match', async () => {
+    const response = await ContractService.getContractLogsByIdAndFilters();
+    expect(response).toEqual([]);
+  });
+
+  test('Row match', async () => {
+    await integrationDomainOps.loadContractLogs([
+      {
+        consensus_timestamp: 1,
+        contract_id: 2,
+        index: 0,
+      },
+    ]);
+
+    const expectedContractLog = [
+      {
+        consensusTimestamp: '1',
+        contractId: '2',
+      },
+    ];
+
+    const response = await ContractService.getContractLogsByIdAndFilters();
+    expect(response).toMatchObject(expectedContractLog);
+  });
+
+  test('Id match', async () => {
+    await integrationDomainOps.loadContractLogs([
+      {
+        consensus_timestamp: 1,
+        contract_id: 2,
+        index: 0,
+        root_contract_id: 8,
+      },
+      {
+        consensus_timestamp: 1,
+        contract_id: 3,
+        index: 1,
+        root_contract_id: 8,
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 3,
+        index: 0,
+        root_contract_id: 9,
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 3,
+        index: 1,
+        root_contract_id: 9,
+      },
+      {
+        consensus_timestamp: 3,
+        contract_id: 4,
+        index: 0,
+        root_contract_id: 8,
+      },
+    ]);
+
+    const expectedContractLog = [
+      {
+        consensusTimestamp: '2',
+        contractId: '3',
+        index: 1,
+      },
+      {
+        consensusTimestamp: '2',
+        contractId: '3',
+        index: 0,
+      },
+      {
+        consensusTimestamp: '1',
+        contractId: '3',
+        index: 1,
+      },
+    ];
+
+    const response = await ContractService.getContractLogsByIdAndFilters([contractLogContractIdWhereClause], [3]);
+    expect(response).toMatchObject(expectedContractLog);
+  });
+
+  test('All params match', async () => {
+    await integrationDomainOps.loadContractLogs([
+      {
+        consensus_timestamp: 20,
+        contract_id: 2,
+        index: 0,
+        root_contract_id: 10,
+        topic0: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
+        topic1: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
+        topic2: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
+        topic3: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
+      },
+      {
+        consensus_timestamp: 20,
+        contract_id: 3,
+        index: 1,
+        root_contract_id: 10,
+        topic0: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
+        topic1: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
+        topic2: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
+        topic3: 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 3,
+        index: 0,
+        root_contract_id: 10,
+      },
+    ]);
+
+    const expectedContractLog = [
+      {
+        consensusTimestamp: '20',
+        contractId: '3',
+      },
+    ];
+    const response = await ContractService.getContractLogsByIdAndFilters(
+      [
+        contractLogContractIdWhereClause,
+        'cl.topic0 = $2',
+        'cl.topic1 = $3',
+        'cl.topic2 = $4',
+        'cl.topic3 = $5',
+        'cl.index = $6',
+        'cl.consensus_timestamp in ($7)',
+      ],
+      [
+        3,
+        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
+        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
+        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
+        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
+        1,
+        20,
+      ],
+      'desc',
+      'asc',
+      25
+    );
+    expect(response).toMatchObject(expectedContractLog);
   });
 });

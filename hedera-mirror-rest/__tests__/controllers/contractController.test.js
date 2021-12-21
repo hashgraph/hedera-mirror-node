@@ -29,7 +29,6 @@ const {
 } = require('../../config');
 const constants = require('../../constants');
 const contracts = require('../../controllers/contractController');
-const {InvalidArgumentError} = require('../../errors/invalidArgumentError');
 const {formatSqlQueryString} = require('../testutils');
 const utils = require('../../utils');
 const {Contract} = require('../../model');
@@ -292,10 +291,10 @@ describe('getContractByIdQuery', () => {
         ${queryForTable('contract_history', timestampConditions)}
         order by timestamp_range desc
         limit 1
-	    ), contract_file as (
+    ), contract_file as (
         ${contracts.fileDataQuery}
-      )
-	    ${mainQuery}`,
+    )
+      ${mainQuery}`,
     },
   ];
 
@@ -482,10 +481,10 @@ describe('validateContractIdAndConsensusTimestampParam', () => {
   ];
 
   validSpecs.forEach((spec) => {
-    test(`valid validateContractIdAndConsensusTimestampParam case - ${spec.name}`, () => {
+    test(`valid case - ${JSON.stringify(spec)}`, () => {
       expect(() =>
         contracts.validateContractIdAndConsensusTimestampParam(spec.consensusTimestamp, spec.contractId)
-      ).not.toThrow(InvalidArgumentError);
+      ).not.toThrow();
     });
   });
 
@@ -505,10 +504,10 @@ describe('validateContractIdAndConsensusTimestampParam', () => {
   ];
 
   inValidSpecs.forEach((spec) => {
-    test(`invalid validateContractIdAndConsensusTimestampParam case - ${spec.name}`, () => {
+    test(`invalid case - ${JSON.stringify(spec)}`, () => {
       expect(() =>
         contracts.validateContractIdAndConsensusTimestampParam(spec.consensusTimestamp, spec.contractId)
-      ).toThrow(InvalidArgumentError);
+      ).toThrowErrorMatchingSnapshot();
     });
   });
 });
@@ -527,8 +526,8 @@ describe('validateContractIdParam', () => {
   ];
 
   validSpecs.forEach((spec) => {
-    test(`valid validateContractIdParam case - ${spec.name}`, () => {
-      expect(() => contracts.validateContractIdParam(spec.contractId)).not.toThrow(InvalidArgumentError);
+    test(`valid contract ID - ${spec.contractId}`, () => {
+      expect(() => contracts.validateContractIdParam(spec.contractId)).not.toThrow();
     });
   });
 
@@ -545,8 +544,347 @@ describe('validateContractIdParam', () => {
   ];
 
   inValidSpecs.forEach((spec) => {
-    test(`invalid validateContractIdParam case - ${spec.name}`, () => {
-      expect(() => contracts.validateContractIdParam(spec.contractId)).toThrow(InvalidArgumentError);
+    test(`invalid contract ID - ${spec.contractId}`, () => {
+      expect(() => contracts.validateContractIdParam(spec.contractId)).toThrowErrorMatchingSnapshot();
     });
+  });
+});
+
+const defaultContractLogCondition = 'cl.contract_id = $1';
+describe('extractContractLogsByIdQuery', () => {
+  const defaultContractId = 1;
+  const defaultExpected = {
+    conditions: [defaultContractLogCondition],
+    params: [defaultContractId],
+    timestampOrder: constants.orderFilterValues.DESC,
+    indexOrder: constants.orderFilterValues.DESC,
+    limit: defaultLimit,
+  };
+  const specs = [
+    {
+      name: emptyFilterString,
+      input: {filter: [], contractId: defaultContractId},
+      expected: {
+        ...defaultExpected,
+      },
+    },
+    {
+      name: 'index',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.eq,
+            value: '2',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition, 'cl.index = $2'],
+        params: [defaultContractId, '2'],
+      },
+    },
+    {
+      name: 'timestamp',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '1001',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '1002',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gt,
+            value: '1000',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition, 'cl.consensus_timestamp > $2', 'cl.consensus_timestamp in ($3,$4)'],
+        params: [defaultContractId, '1000', '1001', '1002'],
+      },
+    },
+    {
+      name: 'topics',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TOPIC0,
+            operator: utils.opsMap.eq,
+            value: '0x0011',
+          },
+
+          {
+            key: constants.filterKeys.TOPIC1,
+            operator: utils.opsMap.eq,
+            value: '0x000013',
+          },
+          {
+            key: constants.filterKeys.TOPIC2,
+            operator: utils.opsMap.eq,
+            value: '0x140',
+          },
+          {
+            key: constants.filterKeys.TOPIC3,
+            operator: utils.opsMap.eq,
+            value: '0000150',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [
+          defaultContractLogCondition,
+          'cl.topic0 = $2',
+          'cl.topic1 = $3',
+          'cl.topic2 = $4',
+          'cl.topic3 = $5',
+        ],
+        params: [
+          defaultContractId,
+          Buffer.from('11', 'hex'),
+          Buffer.from('13', 'hex'),
+          Buffer.from('0140', 'hex'),
+          Buffer.from('0150', 'hex'),
+        ],
+      },
+    },
+    {
+      name: 'limit',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.LIMIT,
+            operator: utils.opsMap.eq,
+            value: 20,
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        limit: 20,
+      },
+    },
+    {
+      name: 'order asc',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.ORDER,
+            operator: utils.opsMap.eq,
+            value: constants.orderFilterValues.ASC,
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        timestampOrder: constants.orderFilterValues.ASC,
+        indexOrder: constants.orderFilterValues.ASC,
+      },
+    },
+    {
+      name: 'order desc',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.ORDER,
+            operator: utils.opsMap.eq,
+            value: constants.orderFilterValues.DESC,
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        timestampOrder: constants.orderFilterValues.DESC,
+        indexOrder: constants.orderFilterValues.DESC,
+      },
+    },
+  ];
+  const errorSpecs = [
+    {
+      name: 'timestamp not equal operator',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.ne,
+            value: constants.orderFilterValues.DESC,
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      errorMessage: 'Not equals operator not supported for timestamp param',
+    },
+    {
+      name: 'multiple topic0',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TOPIC0,
+            operator: utils.opsMap.eq,
+            value: '0xaaaa',
+          },
+          {
+            key: constants.filterKeys.TOPIC0,
+            operator: utils.opsMap.eq,
+            value: '0xbbbb',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      errorMessage: 'Multiple params not allowed for topic0',
+    },
+    {
+      name: 'multiple index',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.lt,
+            value: '1',
+          },
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.gt,
+            value: '2',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      errorMessage: 'Multiple params not allowed for index',
+    },
+  ];
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(contracts.extractContractLogsByIdQuery(spec.input.filter, spec.input.contractId)).toEqual(spec.expected);
+    });
+  });
+
+  errorSpecs.forEach((spec) => {
+    test(`error - ${spec.name}`, () => {
+      expect(() =>
+        contracts.extractContractLogsByIdQuery(spec.input.filter, spec.input.contractId)
+      ).toThrowErrorMatchingSnapshot();
+    });
+  });
+});
+
+describe('checkTimestampsForTopics', () => {
+  test('no topic params', () => {
+    expect(() => contracts.checkTimestampsForTopics([])).not.toThrow();
+  });
+  test('all topics valid timestamp', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TOPIC0,
+        operator: utils.opsMap.eq,
+        value: '0x1234',
+      },
+      {
+        key: constants.filterKeys.TOPIC1,
+        operator: utils.opsMap.eq,
+        value: '0x1234',
+      },
+      {
+        key: constants.filterKeys.TOPIC2,
+        operator: utils.opsMap.eq,
+        value: '0x1234',
+      },
+      {
+        key: constants.filterKeys.TOPIC3,
+        operator: utils.opsMap.eq,
+        value: '0x1234',
+      },
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.eq,
+        value: '123',
+      },
+    ];
+    expect(() => contracts.checkTimestampsForTopics(filters)).not.toThrow();
+  });
+  test('valid timestamp no topics', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.eq,
+        value: '123',
+      },
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.gt,
+        value: '111',
+      },
+    ];
+    expect(() => contracts.checkTimestampsForTopics(filters)).not.toThrow();
+  });
+  test('topic0 param no timestamps', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TOPIC0,
+        operator: utils.opsMap.gte,
+        value: '0x1234',
+      },
+    ];
+    expect(() => contracts.checkTimestampsForTopics(filters)).toThrowErrorMatchingSnapshot();
+  });
+  test('topic1 param one timestamp gt', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TOPIC1,
+        operator: utils.opsMap.eq,
+        value: '0x1234',
+      },
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.gte,
+        value: '123',
+      },
+    ];
+    expect(() => contracts.checkTimestampsForTopics(filters)).toThrowErrorMatchingSnapshot();
+  });
+  test('topic2 param one timestamp lt', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TOPIC2,
+        operator: utils.opsMap.eq,
+        value: '0x1234',
+      },
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.lt,
+        value: '123',
+      },
+    ];
+    expect(() => contracts.checkTimestampsForTopics(filters)).toThrowErrorMatchingSnapshot();
+  });
+  test('topic0 param', () => {
+    const filters = [
+      {
+        key: constants.filterKeys.TOPIC3,
+        operator: utils.opsMap.eq,
+        value: '0x1234',
+      },
+      {
+        key: constants.filterKeys.TIMESTAMP,
+        operator: utils.opsMap.ne,
+        value: '123',
+      },
+    ];
+    expect(() => contracts.checkTimestampsForTopics(filters)).toThrowErrorMatchingSnapshot();
   });
 });
