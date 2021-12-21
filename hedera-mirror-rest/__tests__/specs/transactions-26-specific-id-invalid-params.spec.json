@@ -6,7 +6,7 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/transactions/0.0.10-1234567890-000000001?scheduled=ne:true&scheduled=lte:true&scheduled=lt:true&scheduled=gte:true&scheduled=gt:true&scheduled=1&scheduled=",
+  "url": "/api/v1/transactions/0.0.10-1234567890-000000001?scheduled=ne:true&scheduled=lte:true&scheduled=lt:true&scheduled=gte:true&scheduled=gt:true&scheduled=1&scheduled=&nonce=-1&nonce=2147483648&nonce=x&nonce=lt:10",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -31,6 +31,18 @@
         },
         {
           "message": "Invalid parameter: scheduled"
+        },
+        {
+          "message": "Invalid parameter: nonce"
+        },
+        {
+          "message": "Invalid parameter: nonce"
+        },
+        {
+          "message": "Invalid parameter: nonce"
+        },
+        {
+          "message": "Invalid parameter: nonce"
         }
       ]
     }

@@ -22,7 +22,7 @@
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
     "@godaddy/terminus": "^4.9.0",
-    "@hashgraph/proto": "^2.0.0",
+    "@hashgraph/proto": "^2.1.1",
     "asn1js": "^2.1.1",
     "aws-sdk": "^2.1046.0",
     "body-parser": "^1.19.1",
@@ -50,8 +50,10 @@
     "swagger-ui-express": "^4.3.0"
   },
   "bundledDependencies": [
-    "asn1js",
     "@awaitjs/express",
+    "@godaddy/terminus",
+    "@hashgraph/proto",
+    "asn1js",
     "aws-sdk",
     "body-parser",
     "compression",
@@ -61,8 +63,6 @@
     "express-openapi-validator",
     "extend",
     "ip-anonymize",
-    "@godaddy/terminus",
-    "@hashgraph/proto",
     "js-yaml",
     "json-schema",
     "lodash",
@@ -92,8 +92,9 @@
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-security": "^1.4.0",
     "husky": "^7.0.4",
-    "jest": "^27.4.4",
-    "jest-circus": "^27.3.1",
+    "jest": "^27.4.5",
+    "jest-circus": "^27.4.5",
+    "jest-extended": "^1.2.0",
     "jest-junit": "^13.0.0",
     "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.7",
@@ -110,14 +111,7 @@
     "collectCoverage": true,
     "coverageDirectory": "./coverage/",
     "coveragePathIgnorePatterns": [
-      "<rootDir>/__tests__/integrationDbOps.js",
-      "<rootDir>/__tests__/integrationDomainOps.js",
-      "<rootDir>/__tests__/integrationS3Ops.js",
-      "<rootDir>/__tests__/integrationUtils.js",
-      "<rootDir>/__tests__/jest.setup.js",
-      "<rootDir>/__tests__/mockpool.js",
-      "<rootDir>/__tests__/testutils.js",
-      "<rootDir>/__tests__/stream/testUtils.js"
+      "<rootDir>/__tests__/"
     ],
     "maxWorkers": "50%",
     "reporters": [

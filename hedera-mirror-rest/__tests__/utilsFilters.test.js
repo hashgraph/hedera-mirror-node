@@ -537,3 +537,27 @@ describe('utils validateAndParseFilters FROM key tests', () => {
 
   verifyValidAndInvalidFilters(invalidFilters, filters);
 });
+
+describe('utils validateAndParseFilters nonce key tests', () => {
+  const key = constants.filterKeys.NONCE;
+  const invalidFilters = [
+    // erroneous data
+    utils.buildComparatorFilter(key, '-1'),
+    utils.buildComparatorFilter(key, '2147483648'),
+    // invalid format
+    utils.buildComparatorFilter(key, 'x'),
+    // invalid op
+    utils.buildComparatorFilter(key, 'ge:0'),
+    utils.buildComparatorFilter(key, 'gte:0'),
+    utils.buildComparatorFilter(key, 'le:0'),
+    utils.buildComparatorFilter(key, 'lte:0'),
+  ];
+
+  const filters = [
+    utils.buildComparatorFilter(key, '0'),
+    utils.buildComparatorFilter(key, '2147483647'),
+    utils.buildComparatorFilter(key, 'eq:0'),
+  ];
+
+  verifyValidAndInvalidFilters(invalidFilters, filters);
+});

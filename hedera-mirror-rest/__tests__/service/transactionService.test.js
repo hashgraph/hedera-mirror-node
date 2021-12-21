@@ -19,14 +19,23 @@
  */
 
 'use strict';
+
+const _ = require('lodash');
+
 const TransactionId = require('../../transactionId');
 const {TransactionService} = require('../../service');
+const {TransactionResult, TransactionType} = require('../../model');
 
 // add logger configuration support
 require('../testutils');
 
 const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
+
+const contractCallType = TransactionType.getProtoId('CONTRACTCALL');
+const contractCreateType = TransactionType.getProtoId('CONTRACTCREATEINSTANCE');
+const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
+const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
 
 jest.setTimeout(40000);
 
@@ -54,9 +63,9 @@ beforeEach(async () => {
   await integrationDbOps.cleanUp(dbConfig.sqlConnection);
 });
 
-describe('TransactionService.getTransactionContractDetailsFromTimestamp tests', () => {
-  test('TransactionService.getTransactionContractDetailsFromTimestamp - No match', async () => {
-    await expect(TransactionService.getTransactionContractDetailsFromTimestamp(1)).resolves.toBeNull();
+describe('TransactionService.getTransactionDetailsFromTimestamp tests', () => {
+  test('No match', async () => {
+    await expect(TransactionService.getTransactionDetailsFromTimestamp('1')).resolves.toBeNull();
   });
 
   const inputTransaction = [
@@ -71,44 +80,130 @@ describe('TransactionService.getTransactionContractDetailsFromTimestamp tests', 
     payerAccountId: '5',
   };
 
-  test('TransactionService.getTransactionContractDetailsFromTimestamp - Row match', async () => {
+  test('Row match', async () => {
     await integrationDomainOps.loadTransactions(inputTransaction);
 
-    await expect(TransactionService.getTransactionContractDetailsFromTimestamp(2)).resolves.toMatchObject(
+    await expect(TransactionService.getTransactionDetailsFromTimestamp('2')).resolves.toMatchObject(
       expectedTransaction
     );
   });
 });
 
-describe('TransactionService.getTransactionContractDetailsFromTransactionId tests', () => {
-  test('TransactionService.getTransactionContractDetailsFromTransactionId - No match', async () => {
-    await expect(
-      TransactionService.getTransactionContractDetailsFromTransactionId(
-        TransactionId.fromString('0.0.1010-1234567890-123456789')
-      )
-    ).resolves.toBeNull();
-  });
-
-  const inputTransaction = [
+describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce tests', () => {
+  const duplicateValidStartNs = 10;
+  const inputTransactions = [
+    {consensus_timestamp: 2, payerAccountId: '5'}, // crypto transfer, success
+    {consensus_timestamp: 6, payerAccountId: '5', type: contractCreateType}, // success
     {
-      consensus_timestamp: 2,
+      consensus_timestamp: 8,
       payerAccountId: '5',
-      valid_start_timestamp: 1,
+      type: contractCallType,
+      result: duplicateTransactionResult, // duplicate of the previous tx, though this is of different tx type
+      valid_start_timestamp: 5,
+    },
+    {
+      consensus_timestamp: 11,
+      payerAccountId: '5',
+      type: contractCallType,
+      valid_start_timestamp: duplicateValidStartNs, // success
+    },
+    {
+      consensus_timestamp: 13,
+      payerAccountId: '5',
+      type: contractCallType,
+      nonce: 1,
+      valid_start_timestamp: duplicateValidStartNs, // success, child
+    },
+    {
+      consensus_timestamp: 15,
+      payerAccountId: '5',
+      type: contractCallType,
+      result: duplicateTransactionResult,
+      valid_start_timestamp: duplicateValidStartNs, // same valid start so duplicate tx id with the 4th tx
     },
   ];
 
-  const expectedTransaction = {
-    consensusTimestamp: '2',
-    payerAccountId: '5',
+  // pick the fields of interests, otherwise expect will fail since the Transaction object has other fields
+  const pickTransactionFields = (transactions) => {
+    return transactions.map((t) => _.pick(t, ['consensusTimestamp', 'payerAccountId']));
   };
 
-  test('TransactionService.getTransactionContractDetailsFromTransactionId - Row match', async () => {
-    await integrationDomainOps.loadTransactions(inputTransaction);
+  beforeEach(async () => {
+    await integrationDomainOps.loadTransactions(inputTransactions);
+  });
 
+  test('No match', async () => {
     await expect(
-      TransactionService.getTransactionContractDetailsFromTransactionId(
-        TransactionId.fromString('0.0.5-0000000000-000000001')
+      TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+        TransactionId.fromString('0.0.1010-1234567890-123456789')
       )
-    ).resolves.toMatchObject(expectedTransaction);
+    ).resolves.toHaveLength(0);
+  });
+
+  test('Single row match', async () => {
+    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+      TransactionId.fromString('0.0.5-0-1')
+    );
+    expect(pickTransactionFields(actual)).toEqual([{consensusTimestamp: '2', payerAccountId: '5'}]);
+  });
+
+  test('Single row match nonce=1', async () => {
+    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+      TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`),
+      1
+    );
+    expect(pickTransactionFields(actual)).toEqual([{consensusTimestamp: '13', payerAccountId: '5'}]);
+  });
+
+  test('Multiple rows match with nonce', async () => {
+    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+      TransactionId.fromString('0.0.5-0-5'),
+      0
+    );
+    expect(pickTransactionFields(actual)).toIncludeSameMembers([
+      {consensusTimestamp: '6', payerAccountId: '5'},
+      {consensusTimestamp: '8', payerAccountId: '5'},
+    ]);
+  });
+
+  test('Multiple rows match without nonce', async () => {
+    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+      TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`)
+    );
+    expect(pickTransactionFields(actual)).toIncludeSameMembers([
+      {consensusTimestamp: '11', payerAccountId: '5'},
+      {consensusTimestamp: '13', payerAccountId: '5'},
+      {consensusTimestamp: '15', payerAccountId: '5'},
+    ]);
+  });
+
+  test('Tow rows match without nonce exclude duplicate transaction', async () => {
+    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+      TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`),
+      undefined,
+      duplicateTransactionResult
+    );
+    expect(pickTransactionFields(actual)).toIncludeSameMembers([
+      {consensusTimestamp: '11', payerAccountId: '5'},
+      {consensusTimestamp: '13', payerAccountId: '5'},
+    ]);
+  });
+
+  test('Single row match with nonce exclude duplicate transaction', async () => {
+    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+      TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`),
+      0,
+      duplicateTransactionResult
+    );
+    expect(pickTransactionFields(actual)).toIncludeSameMembers([{consensusTimestamp: '11', payerAccountId: '5'}]);
+  });
+
+  test('No match without nonce exclude all possible transaction results', async () => {
+    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+      TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`),
+      undefined,
+      [duplicateTransactionResult, successTransactionResult]
+    );
+    expect(actual).toHaveLength(0);
   });
 });

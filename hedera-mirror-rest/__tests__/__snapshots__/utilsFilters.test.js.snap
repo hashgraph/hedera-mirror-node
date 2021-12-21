@@ -218,6 +218,48 @@ Array [
 ]
 `;
 
+exports[`utils validateAndParseFilters nonce key tests Verify validateAndParseFilters for invalid {"key":"nonce","operator":"eq","value":"-1"} 1`] = `
+Array [
+  "Invalid parameter: nonce",
+]
+`;
+
+exports[`utils validateAndParseFilters nonce key tests Verify validateAndParseFilters for invalid {"key":"nonce","operator":"eq","value":"2147483648"} 1`] = `
+Array [
+  "Invalid parameter: nonce",
+]
+`;
+
+exports[`utils validateAndParseFilters nonce key tests Verify validateAndParseFilters for invalid {"key":"nonce","operator":"eq","value":"x"} 1`] = `
+Array [
+  "Invalid parameter: nonce",
+]
+`;
+
+exports[`utils validateAndParseFilters nonce key tests Verify validateAndParseFilters for invalid {"key":"nonce","operator":"ge","value":"0"} 1`] = `
+Array [
+  "Invalid parameter: nonce",
+]
+`;
+
+exports[`utils validateAndParseFilters nonce key tests Verify validateAndParseFilters for invalid {"key":"nonce","operator":"gte","value":"0"} 1`] = `
+Array [
+  "Invalid parameter: nonce",
+]
+`;
+
+exports[`utils validateAndParseFilters nonce key tests Verify validateAndParseFilters for invalid {"key":"nonce","operator":"le","value":"0"} 1`] = `
+Array [
+  "Invalid parameter: nonce",
+]
+`;
+
+exports[`utils validateAndParseFilters nonce key tests Verify validateAndParseFilters for invalid {"key":"nonce","operator":"lte","value":"0"} 1`] = `
+Array [
+  "Invalid parameter: nonce",
+]
+`;
+
 exports[`utils validateAndParseFilters order key tests Verify validateAndParseFilters for invalid {"key":"order","operator":"eq","value":"chronological"} 1`] = `
 Array [
   "Invalid parameter: order",

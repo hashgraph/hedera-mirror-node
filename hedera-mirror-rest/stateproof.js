@@ -36,16 +36,18 @@ const {FileDownloadError} = require('./errors/fileDownloadError');
  * Get the consensus_timestamp of the transaction. Throws exception if no such successful transaction found or multiple such
  * transactions found.
  * @param {TransactionId} transactionId
+ * @param {Number} nonce
  * @param {Boolean} scheduled
  * @returns {Promise<String>} consensus_timestamp of the successful transaction if found
  */
-let getSuccessfulTransactionConsensusNs = async (transactionId, scheduled) => {
-  const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
+let getSuccessfulTransactionConsensusNs = async (transactionId, nonce, scheduled) => {
+  const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs(), nonce, scheduled];
   const sqlQuery = `SELECT consensus_timestamp
        FROM transaction
        WHERE payer_account_id = $1
          AND valid_start_ns = $2
-         AND scheduled = ${scheduled}
+         AND nonce = $3
+         AND scheduled = $4
          AND result = 22`; // only the successful transaction
   if (logger.isTraceEnabled()) {
     logger.trace(`getSuccessfulTransactionConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
@@ -215,16 +217,26 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
 let canReachConsensus = (actualCount, totalCount) => actualCount >= Math.ceil(totalCount / 3.0);
 
 /**
- * Get scheduled param value from filters. In case there are multiple scheduled params in the filter, the last one is
- * used. The default is false if not present.
- * @param filters - the validated filters built from the HTTP request query
- * @return {Boolean}
+ * Get the value of nonce and scheduled from query filters.
+ * @param {Array} filters
+ * @returns {{nonce: number, scheduled: boolean}}
  */
-const getScheduledParamValue = (filters) => {
-  const values = filters
-    .filter((filter) => filter.key === constants.filterKeys.SCHEDULED)
-    .map((filter) => filter.value);
-  return values.length !== 0 ? values[values.length - 1] : false;
+const getQueryParamValues = (filters) => {
+  const ret = {nonce: 0, scheduled: false}; // the default
+  for (const filter of filters) {
+    switch (filter.key) {
+      case constants.filterKeys.NONCE:
+        ret.nonce = filter.value;
+        break;
+      case constants.filterKeys.SCHEDULED:
+        ret.scheduled = filter.value;
+        break;
+      default:
+        break;
+    }
+  }
+
+  return ret;
 };
 
 /**
@@ -233,10 +245,11 @@ const getScheduledParamValue = (filters) => {
  *
  * @param recordFile
  * @param transactionId
+ * @param nonce
  * @param scheduled
  * @return {{}}
  */
-const formatCompactableRecordFile = (recordFile, transactionId, scheduled) => {
+const formatCompactableRecordFile = (recordFile, transactionId, nonce, scheduled) => {
   const base64Encode = (obj) => {
     for (const [k, v] of Object.entries(obj)) {
       if (Buffer.isBuffer(v)) {
@@ -249,7 +262,7 @@ const formatCompactableRecordFile = (recordFile, transactionId, scheduled) => {
     return obj;
   };
 
-  const compactObject = recordFile.toCompactObject(transactionId, scheduled);
+  const compactObject = recordFile.toCompactObject(transactionId, nonce, scheduled);
   return _.mapKeys(base64Encode(compactObject), (v, k) => _.snakeCase(k));
 };
 
@@ -258,15 +271,16 @@ const formatCompactableRecordFile = (recordFile, transactionId, scheduled) => {
  *
  * @param {Buffer} data
  * @param {TransactionId} transactionId
+ * @param {Number} nonce
  * @param {boolean} scheduled
  * @returns {string|Object}
  */
-const formatRecordFile = (data, transactionId, scheduled) => {
+const formatRecordFile = (data, transactionId, nonce, scheduled) => {
   if (!CompositeRecordFile.canCompact(data)) {
     return data.toString('base64');
   }
 
-  return formatCompactableRecordFile(new CompositeRecordFile(data), transactionId, scheduled);
+  return formatCompactableRecordFile(new CompositeRecordFile(data), transactionId, nonce, scheduled);
 };
 
 /**
@@ -279,8 +293,8 @@ const getStateProofForTransaction = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query);
 
   const transactionId = TransactionId.fromString(req.params.transactionId);
-  const scheduled = getScheduledParamValue(filters);
-  const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId, scheduled);
+  const {nonce, scheduled} = getQueryParamValues(filters);
+  const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId, nonce, scheduled);
   const rcdFileInfo = await getRCDFileInfoByConsensusNs(consensusNs);
   const {addressBooks, nodeAccountIds} = await getAddressBooksAndNodeAccountIdsByConsensusNs(consensusNs);
 
@@ -316,7 +330,7 @@ const getStateProofForTransaction = async (req, res) => {
 
   res.locals[constants.responseDataLabel] = {
     address_books: addressBooks,
-    record_file: formatRecordFile(rcdFile, transactionId, scheduled),
+    record_file: formatRecordFile(rcdFile, transactionId, nonce, scheduled),
     signature_files: sigFilesMap,
     version: rcdFileInfo.version,
   };
@@ -328,9 +342,10 @@ module.exports = {
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
-    getSuccessfulTransactionConsensusNs,
-    getRCDFileInfoByConsensusNs,
     getAddressBooksAndNodeAccountIdsByConsensusNs,
+    getQueryParamValues,
+    getRCDFileInfoByConsensusNs,
+    getSuccessfulTransactionConsensusNs,
     downloadRecordStreamFilesFromObjectStorage,
     canReachConsensus,
     formatCompactableRecordFile,

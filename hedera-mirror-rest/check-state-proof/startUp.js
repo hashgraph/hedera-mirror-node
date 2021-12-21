@@ -63,6 +63,13 @@ const options = yargs
     type: 'string',
     demandOption: false,
   })
+  .option('nonce', {
+    alias: 'n',
+    describe: 'The transaction ID nonce',
+    type: 'number',
+    default: 0,
+    demandOption: false,
+  })
   .option('scheduled', {
     alias: 's',
     describe: 'Whether the transaction is scheduled or not',
@@ -75,7 +82,7 @@ const startUpScreen = () => {
   const msgBox = boxen(greeting, boxenOptions);
   logger.info(msgBox);
 
-  const {transactionId, scheduled} = options;
+  const {transactionId, nonce, scheduled} = options;
   const storedFile = options.file;
   let source = storedFile; // default source to filePath
   let url;
@@ -105,12 +112,15 @@ const startUpScreen = () => {
       host = options.host;
     }
 
-    url = `${host}/api/v1/transactions/${transactionId}/stateproof${scheduled ? '?scheduled=true' : ''}`;
+    const param = [(nonce !== 0 && `nonce=${nonce}`) || '', scheduled ? 'scheduled=true' : '']
+      .filter((x) => !!x)
+      .join('&');
+    url = `${host}/api/v1/transactions/${transactionId}/stateproof${(param !== '' && '?' + param) || ''}`;
     source = url;
   }
 
   logger.info(`Initializing state proof for transaction ID ${transactionId} from source: ${source}`);
-  return {transactionId, scheduled, url, storedFile};
+  return {transactionId, nonce, scheduled, url, storedFile};
 };
 
 module.exports = startUpScreen;

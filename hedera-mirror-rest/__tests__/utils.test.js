@@ -284,6 +284,26 @@ describe('Utils parseTimestampParam tests', () => {
   });
 });
 
+describe('Utils isNonNegativeInt32', () => {
+  describe('true', () => {
+    const values = ['0', '1', '2147483647'];
+    for (const value of values) {
+      test(value, () => {
+        expect(utils.isNonNegativeInt32(value)).toBe(true);
+      });
+    }
+  });
+
+  describe('false', () => {
+    const values = ['a', '-1', '1.1', '2147483648'];
+    for (const value of values) {
+      test(value, () => {
+        expect(utils.isNonNegativeInt32(value)).toBe(false);
+      });
+    }
+  });
+});
+
 describe('Utils isPositiveLong', () => {
   test('Verify invalid for null', () => {
     expect(utils.isPositiveLong(null)).toBe(false);

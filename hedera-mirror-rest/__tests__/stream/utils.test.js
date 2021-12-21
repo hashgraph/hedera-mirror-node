@@ -21,7 +21,7 @@
 'use strict';
 
 const long = require('long');
-const {proto} = require('@hashgraph/proto/lib/proto');
+const proto = require('@hashgraph/proto');
 const TransactionId = require('../../transactionId');
 const utils = require('../../stream/utils');
 

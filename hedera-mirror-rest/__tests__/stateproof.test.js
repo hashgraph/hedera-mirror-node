@@ -33,6 +33,7 @@ const stateproof = require('../stateproof');
 const {CompositeRecordFile} = require('../stream');
 const TransactionId = require('../transactionId');
 const EntityId = require('../entityId');
+const {opsMap} = require('../utils');
 
 const logger = log4js.getLogger();
 // need to set the globals here so when __set__ them with rewire it won't throw ReferenceError 'xxx is not defined'
@@ -70,11 +71,13 @@ describe('getSuccessfulTransactionConsensusNs', () => {
     const fakeQuery = sinon.fake.resolves(validQueryResult);
     global.pool = {queryQuietly: fakeQuery};
 
-    const consensusNs = await stateproof.getSuccessfulTransactionConsensusNs(transactionId);
+    const consensusNs = await stateproof.getSuccessfulTransactionConsensusNs(transactionId, 0, false);
     expect(consensusNs).toEqual(expectedValidConsensusNs);
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
       transactionId.getEntityId().getEncodedId(),
       transactionId.getValidStartNs(),
+      0,
+      false,
     ]);
   });
 
@@ -82,10 +85,12 @@ describe('getSuccessfulTransactionConsensusNs', () => {
     const fakeQuery = sinon.fake.resolves(emptyQueryResult);
     global.pool = {queryQuietly: fakeQuery};
 
-    await expect(stateproof.getSuccessfulTransactionConsensusNs(transactionId)).rejects.toThrow();
+    await expect(stateproof.getSuccessfulTransactionConsensusNs(transactionId, 0, false)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
       transactionId.getEntityId().getEncodedId(),
       transactionId.getValidStartNs(),
+      0,
+      false,
     ]);
   });
 
@@ -93,10 +98,12 @@ describe('getSuccessfulTransactionConsensusNs', () => {
     const fakeQuery = sinon.fake.rejects(new Error('db runtime error'));
     global.pool = {queryQuietly: fakeQuery};
 
-    await expect(stateproof.getSuccessfulTransactionConsensusNs(transactionId)).rejects.toThrow();
+    await expect(stateproof.getSuccessfulTransactionConsensusNs(transactionId, 0, false)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
       transactionId.getEntityId().getEncodedId(),
       transactionId.getValidStartNs(),
+      0,
+      false,
     ]);
   });
 });
@@ -273,6 +280,70 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
       throw new Error('db runtime error');
     }, false);
   });
+});
+
+describe('getQueryParamValues', () => {
+  const eq = opsMap.eq;
+  const expected = {nonce: 0, scheduled: false};
+  const testSpecs = [
+    {
+      name: 'empty',
+      filters: [],
+      expected: expected,
+    },
+    {
+      name: 'nonce',
+      filters: [{key: constants.filterKeys.NONCE, op: eq, value: 1}],
+      expected: {nonce: 1, scheduled: false},
+    },
+    {
+      name: 'repeatedNonce',
+      filters: [
+        {key: constants.filterKeys.NONCE, op: eq, value: 1},
+        {key: constants.filterKeys.NONCE, op: eq, value: 2},
+        {key: constants.filterKeys.NONCE, op: eq, value: 1},
+      ],
+      expected: {nonce: 1, scheduled: false},
+    },
+    {
+      name: 'scheduled',
+      filters: [{key: constants.filterKeys.SCHEDULED, op: eq, value: true}],
+      expected: {nonce: 0, scheduled: true},
+    },
+    {
+      name: 'repeatedScheduled',
+      filters: [
+        {key: constants.filterKeys.SCHEDULED, op: eq, value: true},
+        {key: constants.filterKeys.SCHEDULED, op: eq, value: false},
+        {key: constants.filterKeys.SCHEDULED, op: eq, value: false},
+      ],
+      expected: expected,
+    },
+    {
+      name: 'both',
+      filters: [
+        {key: constants.filterKeys.NONCE, op: eq, value: 1},
+        {key: constants.filterKeys.SCHEDULED, op: eq, value: true},
+      ],
+      expected: {nonce: 1, scheduled: true},
+    },
+    {
+      name: 'repeatedBoth',
+      filters: [
+        {key: constants.filterKeys.NONCE, op: eq, value: 1},
+        {key: constants.filterKeys.SCHEDULED, op: eq, value: true},
+        {key: constants.filterKeys.NONCE, op: eq, value: 2},
+        {key: constants.filterKeys.SCHEDULED, op: eq, value: false},
+      ],
+      expected: {nonce: 2, scheduled: false},
+    },
+  ];
+
+  for (const testSpec of testSpecs) {
+    test(testSpec.name, () => {
+      expect(stateproof.getQueryParamValues(testSpec.filters)).toEqual(testSpec.expected);
+    });
+  }
 });
 
 describe('downloadRecordStreamFilesFromObjectStorage', () => {

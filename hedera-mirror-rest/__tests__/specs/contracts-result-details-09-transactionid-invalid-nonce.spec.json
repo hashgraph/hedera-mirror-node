@@ -1,0 +1,24 @@
+{
+  "description": "Contract results api call for a transaction id with invalid nonce",
+  "setup": {},
+  "url": "/api/v1/contracts/results/0.0.5-100-123456789?nonce=-1&nonce=2147483648&nonce=x&nonce=lt:10",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: nonce"
+        },
+        {
+          "message": "Invalid parameter: nonce"
+        },
+        {
+          "message": "Invalid parameter: nonce"
+        },
+        {
+          "message": "Invalid parameter: nonce"
+        }
+      ]
+    }
+  }
+}

@@ -138,6 +138,7 @@
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
+        "nonce": 0,
         "result": "SUCCESS",
         "scheduled": false,
         "token_transfers": [
@@ -180,6 +181,7 @@
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
+        "nonce": 0,
         "result": "SUCCESS",
         "scheduled": false,
         "transaction_hash": "aGFzaA==",

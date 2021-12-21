@@ -20,11 +20,11 @@
 
 'use strict';
 
-const {proto} = require('@hashgraph/proto/lib/proto');
+const proto = require('@hashgraph/proto');
 const {TransactionType} = require('../../model');
 const {InvalidArgumentError} = require('../../errors/invalidArgumentError');
 
-const hederaFunctionalityLength = 64;
+const hederaFunctionalityLength = 67;
 const cryptoCreateAccountProtoId = 11;
 const unknownProtoId = 9999999;
 
@@ -100,7 +100,7 @@ describe('transactionType constants are up to date', () => {
   // There isn't a dedicated enum for TransactionBody values, so just check that no new HederaFunctionality exists. If
   // this test fails, ensure that new transaction types are added and update this test with the new HederaFunctionality.
   test('transactionType have new values been added', () => {
-    // Last entry is TokenFeeScheduleUpdate: 77
+    // Last entry is TokenUnpause: 80
     expect(Object.keys(proto.HederaFunctionality).length).toEqual(hederaFunctionalityLength);
   });
 });

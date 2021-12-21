@@ -34,12 +34,11 @@ const ed25519 = require('./ed25519');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
-const {TransactionType} = require('./model');
+const {TransactionResult, TransactionType} = require('./model');
 const {keyTypes} = require('./constants');
 
 const responseLimit = config.response.limit;
-
-const TRANSACTION_RESULT_SUCCESS = 22;
+const resultSuccess = TransactionResult.getSuccessProtoId();
 
 const opsMap = {
   lt: ' < ',
@@ -71,6 +70,17 @@ const positiveLongRegex = /^\d{1,19}$/;
 const isPositiveLong = (num, allowZero = false) => {
   const min = allowZero ? 0 : 1;
   return positiveLongRegex.test(num) && long.fromValue(num).greaterThanOrEqual(min);
+};
+
+const nonNegativeInt32Regex = /^\d{1,10}$/;
+
+/**
+ * Validates that num is a non-negative int32.
+ * @param num
+ * @return {boolean}
+ */
+const isNonNegativeInt32 = (num) => {
+  return nonNegativeInt32Regex.test(num) && Number(num) <= constants.MAX_INT32;
 };
 
 const isValidBooleanOpAndValue = (op, val) => {
@@ -192,6 +202,9 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.LIMIT:
       ret = isPositiveLong(val);
+      break;
+    case constants.filterKeys.NONCE:
+      ret = op === constants.queryParamOperators.eq && isNonNegativeInt32(val);
       break;
     case constants.filterKeys.ORDER:
       // Acceptable words: asc or desc
@@ -466,9 +479,9 @@ const parseResultParams = (req, columnName) => {
   let query = '';
 
   if (resultType === constants.transactionResultFilter.SUCCESS) {
-    query = `${columnName} = ${TRANSACTION_RESULT_SUCCESS}`;
+    query = `${columnName} = ${resultSuccess}`;
   } else if (resultType === constants.transactionResultFilter.FAIL) {
-    query = `${columnName} != ${TRANSACTION_RESULT_SUCCESS}`;
+    query = `${columnName} != ${resultSuccess}`;
   }
   return query;
 };
@@ -588,7 +601,10 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
         next += `${(next === '' ? '?' : '&') + q}=${v}`;
       }
     }
-    next = urlPrefix + req.path + next;
+
+    // remove the '/' at the end of req.path
+    const path = req.path.endsWith('/') ? req.path.slice(0, -1) : req.path;
+    next = urlPrefix + req.baseUrl + path + next;
   }
   return next === '' ? null : next;
 };
@@ -884,6 +900,9 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.LIMIT:
         comparator.value = Number(comparator.value);
         break;
+      case constants.filterKeys.NONCE:
+        comparator.value = Number(comparator.value);
+        break;
       case constants.filterKeys.SCHEDULED:
         comparator.value = parseBooleanValue(comparator.value);
         break;
@@ -1087,6 +1106,7 @@ module.exports = {
   getPaginationLink,
   getPoolClass,
   ipMask,
+  isNonNegativeInt32,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
   isPositiveLong,
@@ -1113,10 +1133,10 @@ module.exports = {
   parseTokenBalances,
   parseTransactionTypeParam,
   randomString,
+  resultSuccess,
   secNsToNs,
   secNsToSeconds,
   toHexString,
-  TRANSACTION_RESULT_SUCCESS,
   validateReq,
 };
 

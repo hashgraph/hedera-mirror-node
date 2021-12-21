@@ -33,8 +33,8 @@ class RecordFile {
     this._version = null;
   }
 
-  static _getTransactionKey(transactionId, scheduled) {
-    return `${transactionId}-${scheduled}`;
+  static _getTransactionKey(transactionId, nonce, scheduled) {
+    return `${transactionId}-${nonce}-${scheduled}`;
   }
 
   static _readVersion(buffer) {
@@ -53,11 +53,12 @@ class RecordFile {
    * Checks if a transaction is in the record file's successful transaction map
    *
    * @param {TransactionId} transactionId
+   * @param {Number} nonce
    * @param {boolean} scheduled
    * @returns {boolean}
    */
-  containsTransaction(transactionId, scheduled = false) {
-    return RecordFile._getTransactionKey(transactionId, scheduled) in this._transactionMap;
+  containsTransaction(transactionId, nonce = 0, scheduled = false) {
+    return RecordFile._getTransactionKey(transactionId, nonce, scheduled) in this._transactionMap;
   }
 
   /**
@@ -100,10 +101,11 @@ class RecordFile {
    * in the successful transaction map or the implementation does not support the operation.
    *
    * @param {TransactionId} transactionId
+   * @param {Number} nonce
    * @param {boolean} scheduled
    * @returns {{}}
    */
-  toCompactObject(transactionId, scheduled = false) {
+  toCompactObject(transactionId, nonce = 0, scheduled = false) {
     throw new Error('Unsupported operation');
   }
 
@@ -123,7 +125,7 @@ class RecordFile {
       return;
     }
 
-    const transactionKey = RecordFile._getTransactionKey(transactionId, scheduled);
+    const transactionKey = RecordFile._getTransactionKey(transactionId, transactionID.nonce, scheduled);
     logger.debug(`Add successful transaction ${transactionKey}`);
     this._transactionMap[transactionKey] = index;
   }

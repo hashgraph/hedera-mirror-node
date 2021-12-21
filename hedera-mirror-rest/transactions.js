@@ -38,6 +38,29 @@ const {
 } = require('./model');
 const {AssessedCustomFeeViewModel, NftTransferViewModel} = require('./viewmodel');
 
+const transactionFields = [
+  Transaction.CHARGED_TX_FEE,
+  Transaction.CONSENSUS_TIMESTAMP,
+  Transaction.ENTITY_ID,
+  Transaction.MAX_FEE,
+  Transaction.MEMO,
+  Transaction.NODE_ACCOUNT_ID,
+  Transaction.NONCE,
+  Transaction.PAYER_ACCOUNT_ID,
+  Transaction.RESULT,
+  Transaction.SCHEDULED,
+  Transaction.TRANSACTION_BYTES,
+  Transaction.TRANSACTION_HASH,
+  Transaction.TYPE,
+  Transaction.VALID_DURATION_SECONDS,
+  Transaction.VALID_START_NS,
+];
+const transactionFullFields = transactionFields.map((f) => Transaction.getFullName(f));
+// consensus_timestamp in transfer_list is a coalesce of multiple consensus timestamp columns
+const transferListFullFields = transactionFields
+  .filter((f) => f !== Transaction.CONSENSUS_TIMESTAMP)
+  .map((f) => `t.${f}`);
+
 /**
  * Gets the select clause with crypto transfers, token transfers, and nft transfers
  *
@@ -61,22 +84,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
       limitQuery = '';
     }
 
-    const tquery = `select
-                      ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)},
-                      ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
-                      ${Transaction.getFullName(Transaction.VALID_START_NS)},
-                      ${Transaction.getFullName(Transaction.MEMO)},
-                      ${Transaction.getFullName(Transaction.NODE_ACCOUNT_ID)},
-                      ${Transaction.getFullName(Transaction.CHARGED_TX_FEE)},
-                      ${Transaction.getFullName(Transaction.VALID_DURATION_SECONDS)},
-                      ${Transaction.getFullName(Transaction.MAX_FEE)},
-                      ${Transaction.getFullName(Transaction.TRANSACTION_HASH)},
-                      ${Transaction.getFullName(Transaction.SCHEDULED)},
-                      ${Transaction.getFullName(Transaction.ENTITY_ID)},
-                      ${Transaction.getFullName(Transaction.TRANSACTION_BYTES)},
-                      ${Transaction.getFullName(Transaction.RESULT)},
-                      ${Transaction.getFullName(Transaction.TYPE)}
-                    from ${Transaction.tableName} as ${Transaction.tableAlias}
+    const tquery = `select ${transactionFullFields}
+                    from ${Transaction.tableName} ${Transaction.tableAlias}
                     ${timestampFilterJoin}
                     order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
                     ${limitQuery}`;
@@ -88,11 +97,9 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
   // aggregate crypto transfers, token transfers, and nft transfers
   const cryptoTransferListCte = `c_list as (
       select jsonb_agg(jsonb_build_object(
-              '${CryptoTransfer.AMOUNT}', ${CryptoTransfer.getFullName(CryptoTransfer.AMOUNT)},
+              '${CryptoTransfer.AMOUNT}', ${CryptoTransfer.AMOUNT},
               '${CryptoTransfer.ENTITY_ID}', ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)}
-          ) order by ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)}, ${CryptoTransfer.getFullName(
-    CryptoTransfer.AMOUNT
-  )}
+          ) order by ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)}, ${CryptoTransfer.AMOUNT}
         ) as ctr_list,
         ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
       from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
@@ -102,12 +109,10 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
 
   const tokenTransferListCte = `t_list as (
     select jsonb_agg(jsonb_build_object(
-          '${TokenTransfer.ACCOUNT_ID}', ${TokenTransfer.getFullName(TokenTransfer.ACCOUNT_ID)},
-          '${TokenTransfer.AMOUNT}', ${TokenTransfer.getFullName(TokenTransfer.AMOUNT)},
-          '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.getFullName(TokenTransfer.TOKEN_ID)}
-        ) order by ${TokenTransfer.getFullName(TokenTransfer.TOKEN_ID)}, ${TokenTransfer.getFullName(
-    TokenTransfer.ACCOUNT_ID
-  )}
+          '${TokenTransfer.ACCOUNT_ID}', ${TokenTransfer.ACCOUNT_ID},
+          '${TokenTransfer.AMOUNT}', ${TokenTransfer.AMOUNT},
+          '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.TOKEN_ID}
+        ) order by ${TokenTransfer.TOKEN_ID}, ${TokenTransfer.ACCOUNT_ID}
       ) as ttr_list,
       ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
     from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
@@ -117,13 +122,11 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
 
   const nftTransferListCte = `nft_list as (
     select jsonb_agg(jsonb_build_object(
-          '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.getFullName(NftTransfer.RECEIVER_ACCOUNT_ID)},
-          '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.getFullName(NftTransfer.SENDER_ACCOUNT_ID)},
-          '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.getFullName(NftTransfer.SERIAL_NUMBER)},
-          '${NftTransfer.TOKEN_ID}', ${NftTransfer.getFullName(NftTransfer.TOKEN_ID)}
-        ) order by ${NftTransfer.getFullName(NftTransfer.TOKEN_ID)}, ${NftTransfer.getFullName(
-    NftTransfer.SERIAL_NUMBER
-  )}
+          '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID},
+          '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID},
+          '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER},
+          '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID}
+        ) order by ${NftTransfer.TOKEN_ID}, ${NftTransfer.SERIAL_NUMBER}
       ) as ntr_list,
       ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)}
     from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
@@ -147,13 +150,13 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
   )`;
 
   const transfersListCte = (extraInfo) => {
-    let nftAndFeeSelect = '';
+    const consensusTimestampFields = ['t.consensus_timestamp', 'ctrl.consensus_timestamp', 'ttrl.consensus_timestamp'];
     let nftList = '';
     let feeList = '';
     let nftJoin = '';
     let feeJoin = '';
     if (extraInfo) {
-      nftAndFeeSelect = ', ntrl.consensus_timestamp, ftrl.consensus_timestamp';
+      consensusTimestampFields.push('ntrl.consensus_timestamp', 'ftrl.consensus_timestamp');
       nftList = 'ntrl.ntr_list,';
       feeList = 'ftrl.ftr_list,';
       nftJoin = 'full outer join nft_list ntrl on t.consensus_timestamp = ntrl.consensus_timestamp';
@@ -161,24 +164,12 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     }
 
     return `transfer_list as (
-      select coalesce(t.consensus_timestamp, ctrl.consensus_timestamp, ttrl.consensus_timestamp${nftAndFeeSelect}) AS consensus_timestamp,
+      select coalesce(${consensusTimestampFields}) AS consensus_timestamp,
         ctrl.ctr_list,
         ttrl.ttr_list,
         ${nftList}
         ${feeList}
-        t.payer_account_id,
-        t.valid_start_ns,
-        t.memo,
-        t.node_account_id,
-        t.charged_tx_fee,
-        t.valid_duration_seconds,
-        t.max_fee,
-        t.transaction_hash,
-        t.scheduled,
-        t.entity_id,
-        t.transaction_bytes,
-        t.result,
-        t.type
+        ${transferListFullFields}
       from tlist t
       full outer join c_list ctrl on t.consensus_timestamp = ctrl.consensus_timestamp
       full outer join t_list ttrl on t.consensus_timestamp = ttrl.consensus_timestamp
@@ -188,24 +179,7 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
   };
   const ctes = [transactionTimeStampCte(innerQuery), cryptoTransferListCte, tokenTransferListCte];
 
-  const fields = [
-    Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID),
-    Transaction.getFullName(Transaction.MEMO),
-    Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP),
-    Transaction.getFullName(Transaction.VALID_START_NS),
-    Transaction.getFullName(Transaction.RESULT),
-    Transaction.getFullName(Transaction.TYPE),
-    Transaction.getFullName(Transaction.NODE_ACCOUNT_ID),
-    Transaction.getFullName(Transaction.CHARGED_TX_FEE),
-    Transaction.getFullName(Transaction.VALID_DURATION_SECONDS),
-    Transaction.getFullName(Transaction.MAX_FEE),
-    Transaction.getFullName(Transaction.TRANSACTION_HASH),
-    Transaction.getFullName(Transaction.SCHEDULED),
-    Transaction.getFullName(Transaction.ENTITY_ID),
-    Transaction.getFullName(Transaction.TRANSACTION_BYTES),
-    `t.ctr_list AS crypto_transfer_list`,
-    `t.ttr_list AS token_transfer_list`,
-  ];
+  const fields = [...transactionFullFields, `t.ctr_list AS crypto_transfer_list`, `t.ttr_list AS token_transfer_list`];
 
   if (includeExtraInfo) {
     ctes.push(nftTransferListCte, assessedFeeListCte);
@@ -316,6 +290,7 @@ const createTransferLists = (rows) => {
       name: TransactionType.getName(row.type),
       nft_transfers: createNftTransferList(row.nft_transfer_list),
       node: EntityId.parse(row.node_account_id, true).toString(),
+      nonce: Number(row.nonce),
       result: TransactionResult.getName(row.result),
       scheduled: row.scheduled,
       token_transfers: createTokenTransferList(row.token_transfer_list),
@@ -353,7 +328,7 @@ const getTransactionsOuterQuery = (innerQuery, order, includeExtraInfo = false) 
   return `
     ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery, order)}
     FROM transfer_list t
-     ORDER BY ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}`;
+    ORDER BY ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}`;
 };
 
 /**
@@ -620,24 +595,60 @@ const getTransactions = async (req, res) => {
 };
 
 /**
- * Gets the scheduled db query from the scheduled param in the HTTP request query. The last scheduled value is honored.
- * If not present, returns empty string.
+ * Extracts the sql query and params for transactions request by transaction id
  *
- * @param {Object} query the HTTP request query
- * @return {string}
+ * @param {String} transactionIdStr
+ * @param {Array} filters
+ * @return {{query: string, params: string[]}}
  */
-const getScheduledQuery = (query) => {
-  const scheduledValues = query[constants.filterKeys.SCHEDULED];
-  if (scheduledValues === undefined) {
-    return '';
+const extractSqlFromTransactionsByIdRequest = (transactionIdStr, filters) => {
+  const transactionId = TransactionId.fromString(transactionIdStr);
+  const params = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
+  const conditions = [
+    `${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)} = $1`,
+    `${Transaction.getFullName(Transaction.VALID_START_NS)} = $2`,
+  ];
+
+  let nonce;
+  let scheduled;
+  for (const filter of filters) {
+    // honor the last for both nonce and scheduled
+    switch (filter.key) {
+      case constants.filterKeys.NONCE:
+        nonce = filter.value;
+        break;
+      case constants.filterKeys.SCHEDULED:
+        scheduled = filter.value;
+        break;
+      default:
+        break;
+    }
   }
 
-  let scheduled = scheduledValues;
-  if (Array.isArray(scheduledValues)) {
-    scheduled = scheduledValues[scheduledValues.length - 1];
+  if (nonce !== undefined) {
+    params.push(nonce);
+    conditions.push(`${Transaction.getFullName(Transaction.NONCE)} = $${params.length}`);
   }
 
-  return `${Transaction.getFullName(Transaction.SCHEDULED)} = ${scheduled}`;
+  if (scheduled !== undefined) {
+    params.push(scheduled);
+    conditions.push(`${Transaction.getFullName(Transaction.SCHEDULED)} = $${params.length}`);
+  }
+
+  const whereClause = buildWhereClause(...conditions);
+  const innerQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}
+                      from ${Transaction.tableName} ${Transaction.tableAlias}
+                      ${whereClause}
+                      order by ${Transaction.CONSENSUS_TIMESTAMP} desc`;
+  const query = `
+    ${getSelectClauseWithTransfers(true, innerQuery)}
+    from transfer_list t
+    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} asc`;
+
+  return {
+    query,
+    params,
+  };
 };
 
 /**
@@ -645,42 +656,21 @@ const getScheduledQuery = (query) => {
  * @param {Request} req HTTP request object
  * @return {} None.
  */
-const getOneTransaction = async (req, res) => {
-  utils.validateReq(req);
-
-  const transactionId = TransactionId.fromString(req.params.transactionId);
-  const scheduledQuery = getScheduledQuery(req.query);
-  const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
-  const whereClause = buildWhereClause(
-    `${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)} = ?`,
-    `${Transaction.getFullName(Transaction.VALID_START_NS)} = ?`,
-    scheduledQuery
-  );
-  const includeExtraInfo = true;
-
-  const innerQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}
-                      from ${Transaction.tableName} AS ${Transaction.tableAlias}
-                        ${whereClause}
-                      order by ${Transaction.CONSENSUS_TIMESTAMP} desc`;
-
-  const sqlQuery = `
-    ${getSelectClauseWithTransfers(includeExtraInfo, innerQuery)}
-    FROM transfer_list t
-    ORDER BY ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ASC`;
-
-  const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
+const getTransactionsById = async (req, res) => {
+  const filters = utils.buildAndValidateFilters(req.query);
+  const {query, params} = extractSqlFromTransactionsByIdRequest(req.params.transactionId, filters);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getOneTransaction query: ${pgSqlQuery} ${JSON.stringify(sqlParams)}`);
+    logger.trace(`getTransactionsById query: ${query} ${JSON.stringify(params)}`);
   }
 
   // Execute query
-  const {rows} = await pool.queryQuietly(pgSqlQuery, sqlParams);
+  const {rows} = await pool.queryQuietly(query, params);
   if (rows.length === 0) {
     throw new NotFoundError('Not found');
   }
 
   const transferList = createTransferLists(rows);
-  logger.debug(`getOneTransaction returning ${transferList.transactions.length} entries`);
+  logger.debug(`getTransactionsById returning ${transferList.transactions.length} entries`);
   res.locals[constants.responseDataLabel] = {
     transactions: transferList.transactions,
   };
@@ -688,7 +678,7 @@ const getOneTransaction = async (req, res) => {
 
 module.exports = {
   getTransactions,
-  getOneTransaction,
+  getTransactionsById,
   createTransferLists,
   reqToSql,
   buildWhereClause,
@@ -703,5 +693,6 @@ if (utils.isTestEnv()) {
     createNftTransferList,
     createTokenTransferList,
     createTransferLists,
+    extractSqlFromTransactionsByIdRequest,
   });
 }

@@ -30,12 +30,13 @@ const {TransactionType} = require('../model');
 class NftTransactionHistoryViewModel {
   constructor(nftTransferModel, transactionModel) {
     this.consensus_timestamp = utils.nsToSecNs(nftTransferModel.consensusTimestamp);
+    this.nonce = Number(transactionModel.nonce);
+    this.receiver_account_id = EntityId.parse(nftTransferModel.receiverAccountId, true).toString();
+    this.sender_account_id = EntityId.parse(nftTransferModel.senderAccountId, true).toString();
     this.transaction_id = utils.createTransactionId(
       EntityId.parse(transactionModel.payerAccountId).toString(),
       transactionModel.validStartNs
     );
-    this.receiver_account_id = EntityId.parse(nftTransferModel.receiverAccountId, true).toString();
-    this.sender_account_id = EntityId.parse(nftTransferModel.senderAccountId, true).toString();
     this.type = TransactionType.getName(transactionModel.type);
   }
 }

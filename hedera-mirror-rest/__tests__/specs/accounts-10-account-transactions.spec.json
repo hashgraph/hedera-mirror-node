@@ -65,6 +65,7 @@
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1234567890000000006",
         "name": "CRYPTOUPDATEACCOUNT",
+        "nonce": 1,
         "type": "15",
         "entity_id": "0.0.9"
       }
@@ -101,6 +102,7 @@
         "memo_base64": null,
         "name": "CRYPTOUPDATEACCOUNT",
         "node": "0.0.3",
+        "nonce": 1,
         "result": "SUCCESS",
         "scheduled": false,
         "transaction_hash": "aGFzaA==",
@@ -131,6 +133,7 @@
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
+        "nonce": 0,
         "result": "SUCCESS",
         "scheduled": false,
         "transaction_hash": "aGFzaA==",
@@ -161,6 +164,7 @@
         "memo_base64": null,
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
+        "nonce": 0,
         "result": "SUCCESS",
         "scheduled": false,
         "transaction_hash": "aGFzaA==",

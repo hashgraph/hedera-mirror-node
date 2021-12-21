@@ -246,8 +246,15 @@ const checkRespObjDefined = (resp, option) => {
 };
 
 const checkRespArrayLength = (elements, option) => {
-  const {limit, message} = option;
-  if (elements.length !== limit) {
+  const {func, limit, message} = option;
+  if (func !== undefined) {
+    if (!func(elements.length)) {
+      return {
+        passed: false,
+        message: message(elements),
+      };
+    }
+  } else if (elements.length !== limit) {
     return {
       passed: false,
       message: message(elements, limit),

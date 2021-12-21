@@ -1,0 +1,3 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`extractSqlFromTransactionsByIdRequest failure invalidTransactionIdStr 1`] = `"Invalid Transaction id. Please use \\"shard.realm.num-sss-nnn\\" format where sss are seconds and nnn are nanoseconds"`;

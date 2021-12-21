@@ -20,6 +20,8 @@
 
 'use strict';
 
+const MAX_INT32 = 2147483647;
+
 // url query filer keys
 const filterKeys = {
   ACCOUNT_ID: 'account.id',
@@ -34,6 +36,7 @@ const filterKeys = {
   ENTITY_PUBLICKEY: 'publickey',
   INDEX: 'index',
   LIMIT: 'limit',
+  NONCE: 'nonce',
   ORDER: 'order',
   RESULT: 'result',
   SCHEDULED: 'scheduled',
@@ -168,6 +171,7 @@ const queryParamOperators = {
 };
 
 module.exports = {
+  MAX_INT32,
   characterEncoding,
   cloudProviders,
   cryptoTransferType,

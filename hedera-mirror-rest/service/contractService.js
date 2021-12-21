@@ -87,26 +87,28 @@ class ContractService extends BaseService {
   ) {
     const [query, params] = this.getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
     const rows = await super.getRows(query, params, 'getContractResultsByIdAndFilters');
-    return _.isEmpty(rows) ? [] : rows.map((cr) => new ContractResult(cr));
+    return rows.map((cr) => new ContractResult(cr));
   }
 
   /**
-   * Retrieves a contract result based on its timestamp
+   * Retrieves contract results based on the timestamps
    *
-   * @param {string} timestamp consensus timestamp
-   * @return {Promise<{ContractResult}>}
+   * @param {string|string[]} timestamps consensus timestamps
+   * @return {Promise<{ContractResult}[]>}
    */
-  async getContractResultByTimestamp(timestamp) {
-    const whereParams = [timestamp];
-    const whereConditions = [`${ContractResult.CONSENSUS_TIMESTAMP} = $1`];
-    const query = [ContractService.contractResultsQuery, `where ${whereConditions.join(' and ')}`].join('\n');
-    const rows = await super.getRows(query, whereParams, 'getContractResultsByIdAndTimestamp');
-    if (rows.length !== 1) {
-      logger.trace(`No matching contract results for timestamp: ${timestamp}`);
-      return null;
+  async getContractResultsByTimestamps(timestamps) {
+    let params = [timestamps];
+    let timestampsOpAndValue = '= $1';
+    if (Array.isArray(timestamps)) {
+      params = timestamps;
+      const positions = _.range(1, timestamps.length + 1).map((i) => `$${i}`);
+      timestampsOpAndValue = `in (${positions})`;
     }
 
-    return new ContractResult(rows[0]);
+    const whereClause = `where ${ContractResult.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
+    const query = [ContractService.contractResultsQuery, whereClause].join('\n');
+    const rows = await super.getRows(query, params, 'getContractResultsByTimestamps');
+    return rows.map((row) => new ContractResult(row));
   }
 
   /**
@@ -161,7 +163,7 @@ class ContractService extends BaseService {
       limit
     );
     const rows = await super.getRows(query, params, 'getContractLogsByIdAndFilters');
-    return _.isEmpty(rows) ? [] : rows.map((cr) => new ContractLog(cr));
+    return rows.map((cr) => new ContractLog(cr));
   }
 }
 

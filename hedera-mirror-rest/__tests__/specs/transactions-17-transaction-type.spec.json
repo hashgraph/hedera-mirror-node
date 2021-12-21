@@ -84,6 +84,7 @@
         "transaction_hash": "aGFzaA==",
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
+        "nonce": 0,
         "transaction_id": "0.0.9-1565779555-711927001",
         "valid_duration_seconds": "11",
         "max_fee": "33",

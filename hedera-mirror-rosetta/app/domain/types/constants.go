@@ -287,6 +287,7 @@ var TransactionResults = map[int32]string{
 	279: "CONSENSUS_GAS_EXHAUSTED",
 	280: "REVERTED_SUCCESS",
 	281: "MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED",
+	282: "INVALID_ALIAS_KEY",
 }
 
 var TransactionTypes = map[int32]string{

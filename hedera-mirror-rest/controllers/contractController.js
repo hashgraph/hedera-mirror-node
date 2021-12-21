@@ -35,10 +35,8 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
-const config = require('../config.js');
-const {Contract, FileData, ContractLog, ContractResult} = require('../model');
+const {Contract, ContractLog, ContractResult, FileData, TransactionResult} = require('../model');
 const {ContractService, RecordFileService, TransactionService} = require('../service');
-const {logger} = require('../stream/utils');
 const TransactionId = require('../transactionId');
 const utils = require('../utils');
 const {ContractViewModel, ContractLogViewModel, ContractResultViewModel} = require('../viewmodel');
@@ -57,6 +55,8 @@ const contractSelectFields = [
   Contract.PROXY_ACCOUNT_ID,
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
+
+const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 
 // the query finds the file content valid at the contract's created timestamp T by aggregating the contents of all the
 // file* txs from the latest FileCreate or FileUpdate transaction before T, to T
@@ -556,19 +556,33 @@ const getContractResultsByTimestamp = async (req, res) => {
   const {timestamp} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
 
   // retrieve contract result, recordFile and transaction models concurrently
-  await Promise.all([
-    ContractService.getContractResultByTimestamp(timestamp),
+  const [contractResults, recordFile, transaction] = await Promise.all([
+    ContractService.getContractResultsByTimestamps(timestamp),
     RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
-    TransactionService.getTransactionContractDetailsFromTimestamp(timestamp),
-  ]).then((responses) => {
-    const contractResult = responses[0];
+    TransactionService.getTransactionDetailsFromTimestamp(timestamp),
+  ]);
+  if (contractResults.length === 0) {
+    throw new NotFoundError();
+  }
 
-    if (contractResult === null) {
-      throw new NotFoundError();
-    }
+  res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResults[0], recordFile, transaction);
+};
 
-    res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResult, responses[1], responses[2]);
-  });
+/**
+ * Gets the last nonce value if exists, defaults to 0
+ * @param query
+ * @returns {Number}
+ */
+const getLastNonceParamValue = (query) => {
+  const key = constants.filterKeys.NONCE;
+  let nonce = 0; // default
+
+  if (key in query) {
+    const values = query[key];
+    nonce = Array.isArray(values) ? values[values.length - 1] : values;
+  }
+
+  return nonce;
 };
 
 /**
@@ -581,26 +595,35 @@ const getContractResultsByTransactionId = async (req, res) => {
   utils.validateReq(req);
   // extract filters from query param
   const transactionId = TransactionId.fromString(req.params.transactionId);
+  const nonce = getLastNonceParamValue(req.query);
 
-  // get transaction using id.
-  const transaction = await TransactionService.getTransactionContractDetailsFromTransactionId(transactionId);
-  if (transaction === null) {
+  // get transactions using id and nonce, exclude duplicate transactions. there can be at most one
+  const transactions = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+    transactionId,
+    nonce,
+    duplicateTransactionResult
+  );
+  if (transactions.length === 0) {
     throw new NotFoundError('No correlating transaction');
+  } else if (transactions.length > 1) {
+    logger.error(
+      'Transaction invariance breached: there should be at most one transaction with none-duplicate-transaction ' +
+        'result for a specific (payer + valid start timestamp + nonce) combination'
+    );
+    throw new Error('Transaction invariance breached');
   }
 
   // retrieve contract result and recordFile models concurrently using transaction timestamp
-  await Promise.all([
-    ContractService.getContractResultByTimestamp(transaction.consensusTimestamp),
+  const transaction = transactions[0];
+  const [contractResults, recordFile] = await Promise.all([
+    ContractService.getContractResultsByTimestamps(transaction.consensusTimestamp),
     RecordFileService.getRecordFileBlockDetailsFromTimestamp(transaction.consensusTimestamp),
-  ]).then((responses) => {
-    const contractResult = responses[0];
+  ]);
+  if (contractResults.length === 0) {
+    throw new NotFoundError();
+  }
 
-    if (contractResult === null) {
-      throw new NotFoundError();
-    }
-
-    res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResult, responses[1], transaction);
-  });
+  res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResults[0], recordFile, transaction);
 };
 
 /**
@@ -761,6 +784,7 @@ if (utils.isTestEnv()) {
     formatContractRow,
     getContractByIdQuery,
     getContractsQuery,
+    getLastNonceParamValue,
     validateContractIdAndConsensusTimestampParam,
     validateContractIdParam,
   });

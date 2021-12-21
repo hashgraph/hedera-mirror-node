@@ -29,7 +29,7 @@ const {
 } = require('../config');
 const {opsMap} = require('../utils');
 const utils = require('../utils');
-const {formatSqlQueryString} = require('./testutils');
+const {assertSqlQueryEqual} = require('./testutils');
 const constants = require('../constants');
 
 describe('token formatTokenRow tests', () => {
@@ -286,11 +286,71 @@ const verifyExtractSqlFromTokenRequest = (
     extraConditions
   );
 
-  expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedquery));
+  assertSqlQueryEqual(query, expectedquery);
   expect(params).toStrictEqual(expectedparams);
   expect(order).toStrictEqual(expectedorder);
   expect(limit).toStrictEqual(expectedlimit);
 };
+
+describe('token formatNftHistoryRow', () => {
+  const defaultRow = {
+    consensus_timestamp: '123456000987654',
+    nonce: 0,
+    payer_account_id: '500',
+    receiver_account_id: '2000',
+    sender_account_id: '3000',
+    type: 14,
+    valid_start_ns: '123450000111222',
+  };
+  const expected = {
+    consensus_timestamp: '123456.000987654',
+    nonce: 0,
+    receiver_account_id: '0.0.2000',
+    sender_account_id: '0.0.3000',
+    transaction_id: '0.0.500-123450-000111222',
+    type: 'CRYPTOTRANSFER',
+  };
+
+  const testSpecs = [
+    {
+      name: 'default',
+      row: defaultRow,
+      expected: expected,
+    },
+    {
+      name: 'nonce',
+      row: {
+        ...defaultRow,
+        nonce: 1,
+      },
+      expected: {
+        ...expected,
+        nonce: 1,
+      },
+    },
+    {
+      name: 'tokendeletion',
+      row: {
+        ...defaultRow,
+        receiver_account_id: null,
+        sender_account_id: null,
+        type: 35,
+      },
+      expected: {
+        ...expected,
+        receiver_account_id: null,
+        sender_account_id: null,
+        type: 'TOKENDELETION',
+      },
+    },
+  ];
+
+  for (const testSpec of testSpecs) {
+    test(testSpec.name, () => {
+      expect(tokens.formatNftHistoryRow(testSpec.row)).toEqual(testSpec.expected);
+    });
+  }
+});
 
 describe('token formatTokenBalanceRow tests', () => {
   test('Verify formatTokenBalanceRow', () => {
@@ -651,10 +711,14 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
     const {name, tokenId, initialQuery, filters, expected} = spec;
     test(name, () => {
       const actual = tokens.extractSqlFromTokenBalancesRequest(tokenId, initialQuery, filters);
-
-      actual.query = formatSqlQueryString(actual.query);
-      expected.query = formatSqlQueryString(expected.query);
-      expect(actual).toEqual(expected);
+      assertSqlQueryEqual(actual.query, expected.query);
+      expect(actual).toEqual(
+        expect.objectContaining({
+          params: spec.expected.params,
+          order: spec.expected.order,
+          limit: spec.expected.limit,
+        })
+      );
     });
   }
 });
@@ -929,7 +993,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
   ) => {
     const {query, params, order, limit} = tokens.extractSqlFromNftTokensRequest(tokenId, pgSqlQuery, filters);
 
-    expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedquery));
+    assertSqlQueryEqual(query, expectedquery);
     expect(params).toStrictEqual(expectedparams);
     expect(order).toStrictEqual(expectedorder);
     expect(limit).toStrictEqual(expectedlimit);
@@ -1108,7 +1172,7 @@ describe('token extractSqlFromNftTokenInfoRequest tests', () => {
   ) => {
     const {query, params} = tokens.extractSqlFromNftTokenInfoRequest(tokenId, serialNumber, pgSqlQuery, filters);
 
-    expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedquery));
+    assertSqlQueryEqual(query, expectedquery);
     expect(params).toStrictEqual(expectedparams);
   };
 
@@ -1193,7 +1257,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
       filters
     );
 
-    expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedQuery));
+    assertSqlQueryEqual(query, expectedQuery);
     expect(params).toStrictEqual(expectedParams);
   };
 
@@ -1218,7 +1282,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
           t.valid_start_ns,
           nft_tr.receiver_account_id,
           nft_tr.sender_account_id,
-          t.type
+          t.type,
+          t.nonce
         from serial_transfers nft_tr
         join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and nft_tr.token_id = t.entity_id
       ),
@@ -1228,7 +1293,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
           t.valid_start_ns,
           nft_tr.receiver_account_id,
           nft_tr.sender_account_id,
-          t.type
+          t.type,
+          t.nonce
         from serial_transfers nft_tr
         join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and t.entity_id is null
       )
@@ -1243,7 +1309,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
         t.valid_start_ns,
         null as receiver_account_id,
         null as sender_account_id,
-        t.type
+        t.type,
+        t.nonce
       from transaction t
       where t.entity_id = $1 and t.type = 35 and t.result = 22
       order by consensus_timestamp desc
@@ -1285,7 +1352,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
           t.valid_start_ns,
           nft_tr.receiver_account_id,
           nft_tr.sender_account_id,
-          t.type
+          t.type,
+          t.nonce
         from serial_transfers nft_tr
         join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and nft_tr.token_id = t.entity_id
       ),
@@ -1295,7 +1363,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
           t.valid_start_ns,
           nft_tr.receiver_account_id,
           nft_tr.sender_account_id,
-          t.type
+          t.type,
+          t.nonce
         from serial_transfers nft_tr
         join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and t.entity_id is null
       )
@@ -1310,7 +1379,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
         t.valid_start_ns,
         null as receiver_account_id,
         null as sender_account_id,
-        t.type
+        t.type,
+        t.nonce
       from transaction t
       where t.entity_id = $1 and t.type = 35 and t.result = 22
       order by consensus_timestamp asc
@@ -1348,7 +1418,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
           t.valid_start_ns,
           nft_tr.receiver_account_id,
           nft_tr.sender_account_id,
-          t.type
+          t.type,
+          t.nonce
         from serial_transfers nft_tr
         join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and nft_tr.token_id = t.entity_id
       ),
@@ -1358,7 +1429,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
           t.valid_start_ns,
           nft_tr.receiver_account_id,
           nft_tr.sender_account_id,
-          t.type
+          t.type,
+          t.nonce
         from serial_transfers nft_tr
         join transaction t on nft_tr.consensus_timestamp = t.consensus_timestamp and t.entity_id is null
       )
@@ -1373,7 +1445,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
         t.valid_start_ns,
         null as receiver_account_id,
         null as sender_account_id,
-        t.type
+        t.type,
+        t.nonce
       from transaction t
       where t.entity_id = $1 and t.type = 35 and t.result = 22 and t.consensus_timestamp > $3
       order by consensus_timestamp desc
@@ -1446,7 +1519,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
   const verifyExtractSqlFromTokenInfoRequest = (tokenId, filters, expectedQuery, expectedParams) => {
     const {query, params} = tokens.extractSqlFromTokenInfoRequest(tokenId, filters);
 
-    expect(formatSqlQueryString(query)).toStrictEqual(formatSqlQueryString(expectedQuery));
+    assertSqlQueryEqual(query, expectedQuery);
     expect(params).toStrictEqual(expectedParams);
   };
 

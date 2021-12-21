@@ -406,49 +406,45 @@ const setAccountBalance = async (balance) => {
 };
 
 const addTransaction = async (transaction) => {
-  transaction = {
+  const defaults = {
     charged_tx_fee: NODE_FEE + NETWORK_FEE + SERVICE_FEE,
+    consensus_timestamp: null,
+    entity_id: null,
     max_fee: 33,
-    non_fee_transfers: [],
-    transfers: [],
+    node_account_id: null,
+    nonce: 0,
+    payer_account_id: null,
     result: 22,
     scheduled: false,
+    transaction_bytes: 'bytes',
     transaction_hash: 'hash',
     type: 14,
     valid_duration_seconds: 11,
-    entity_id: null,
-    transaction_bytes: 'bytes',
+    valid_start_ns: null,
+  };
+  const insertFields = Object.keys(defaults);
+
+  transaction = {
+    ...defaults,
+    // transfer which aren't in the defaults
+    non_fee_transfers: [],
+    transfers: [],
     ...transaction,
+    entity_id: EntityId.parse(transaction.entity_id, 'entity_id', true).getEncodedId(),
+    node_account_id: EntityId.parse(transaction.nodeAccountId, 'nodeAccountId', true).getEncodedId(),
+    payer_account_id: EntityId.parse(transaction.payerAccountId).getEncodedId(),
+    valid_start_ns: transaction.valid_start_timestamp,
   };
 
-  transaction.consensus_timestamp = math.bignumber(transaction.consensus_timestamp);
-  if (transaction.valid_start_timestamp === undefined) {
-    transaction.valid_start_timestamp = transaction.consensus_timestamp.minus(1);
+  if (transaction.valid_start_ns === undefined) {
+    // set valid_start_ns to consensus_timestamp - 1 if not set
+    const consensusTimestamp = math.bignumber(transaction.consensus_timestamp);
+    transaction.valid_start_ns = consensusTimestamp.minus(1).toString();
   }
-  const payerAccount = EntityId.parse(transaction.payerAccountId).getEncodedId();
-  const nodeAccount = EntityId.parse(transaction.nodeAccountId, 'nodeAccountId', true).getEncodedId();
-  const entityId = EntityId.parse(transaction.entity_id, 'entity_id', true);
-  await sqlConnection.query(
-    `INSERT INTO transaction (consensus_timestamp, valid_start_ns, payer_account_id, node_account_id, result, type,
-                              valid_duration_seconds, max_fee, charged_tx_fee, transaction_hash, scheduled, entity_id,
-                              transaction_bytes)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);`,
-    [
-      transaction.consensus_timestamp.toString(),
-      transaction.valid_start_timestamp.toString(),
-      payerAccount,
-      nodeAccount,
-      transaction.result,
-      transaction.type,
-      transaction.valid_duration_seconds,
-      transaction.max_fee,
-      transaction.charged_tx_fee,
-      transaction.transaction_hash,
-      transaction.scheduled,
-      entityId.getEncodedId(),
-      transaction.transaction_bytes,
-    ]
-  );
+
+  const {node_account_id: nodeAccount, payer_account_id: payerAccount} = transaction;
+  await insertDomainObject('transaction', insertFields, transaction);
+
   await insertTransfers(
     'crypto_transfer',
     transaction.consensus_timestamp,
@@ -570,9 +566,6 @@ const addContract = async (contract) => {
     'type',
     'timestamp_range',
   ];
-  const positions = _.range(1, insertFields.length + 1)
-    .map((position) => `$${position}`)
-    .join(',');
   contract = {
     auto_renew_period: null,
     deleted: false,
@@ -591,11 +584,7 @@ const addContract = async (contract) => {
 
   // use 'contract' table if the range is open-ended, otherwise use 'contract_history'
   const table = contract.timestamp_range.endsWith(',)') ? 'contract' : 'contract_history';
-  await sqlConnection.query(
-    `insert into ${table} (${insertFields.join(',')})
-     values (${positions})`,
-    insertFields.map((name) => contract[name])
-  );
+  await insertDomainObject(table, insertFields, contract);
 };
 
 const addContractResult = async (contractResultInput) => {
@@ -613,9 +602,6 @@ const addContractResult = async (contractResultInput) => {
     'gas_used',
     'payer_account_id',
   ];
-  const positions = _.range(1, insertFields.length + 1)
-    .map((position) => `$${position}`)
-    .join(',');
 
   const contractResult = {
     amount: 0,
@@ -646,10 +632,7 @@ const addContractResult = async (contractResultInput) => {
       ? Buffer.from(contractResultInput.function_result)
       : contractResult.function_result;
 
-  await sqlConnection.query(
-    `insert into contract_result (${insertFields.join(',')}) values (${positions})`,
-    insertFields.map((name) => contractResult[name])
-  );
+  await insertDomainObject('contract_result', insertFields, contractResult);
 };
 
 const addContractLog = async (contractLogInput) => {
@@ -962,9 +945,6 @@ const addRecordFile = async (recordFileInput) => {
     'prev_hash',
     'version',
   ];
-  const positions = _.range(1, insertFields.length + 1)
-    .map((position) => `$${position}`)
-    .join(',');
 
   const recordFile = {
     bytes: Buffer.from([1, 1, 2, 2, 3, 3]),
@@ -987,9 +967,15 @@ const addRecordFile = async (recordFileInput) => {
     ...recordFileInput,
   };
   recordFile.bytes = recordFileInput.bytes != null ? Buffer.from(recordFileInput.bytes) : recordFile.bytes;
+
+  await insertDomainObject('record_file', insertFields, recordFile);
+};
+
+const insertDomainObject = async (table, fields, obj) => {
+  const positions = _.range(1, fields.length + 1).map((position) => `$${position}`);
   await sqlConnection.query(
-    `insert into record_file (${insertFields.join(',')}) values (${positions})`,
-    insertFields.map((name) => recordFile[name])
+    `INSERT INTO ${table} (${fields}) VALUES (${positions});`,
+    fields.map((f) => obj[f])
   );
 };
 

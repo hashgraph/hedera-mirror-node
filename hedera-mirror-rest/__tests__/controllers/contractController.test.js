@@ -29,7 +29,7 @@ const {
 } = require('../../config');
 const constants = require('../../constants');
 const contracts = require('../../controllers/contractController');
-const {formatSqlQueryString} = require('../testutils');
+const {assertSqlQueryEqual} = require('../testutils');
 const utils = require('../../utils');
 const {Contract} = require('../../model');
 
@@ -46,10 +46,6 @@ const contractFields = [
   Contract.PROXY_ACCOUNT_ID,
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
-
-const assertSqlQueryEqual = (actual, expected) => {
-  expect(formatSqlQueryString(actual)).toEqual(formatSqlQueryString(expected));
-};
 
 const emptyFilterString = 'empty filters';
 const primaryContractFilter = 'cr.contract_id = $1';
@@ -341,6 +337,20 @@ describe('getContractsQuery', () => {
         spec.expected
       );
     });
+  });
+});
+
+describe('getLastNonceParamValue', () => {
+  test('default', () => {
+    expect(contracts.getLastNonceParamValue({})).toBe(0);
+  });
+
+  test('single', () => {
+    expect(contracts.getLastNonceParamValue({[constants.filterKeys.NONCE]: 10})).toBe(10);
+  });
+
+  test('array', () => {
+    expect(contracts.getLastNonceParamValue({[constants.filterKeys.NONCE]: [1, 2, 3]})).toBe(3);
   });
 });
 

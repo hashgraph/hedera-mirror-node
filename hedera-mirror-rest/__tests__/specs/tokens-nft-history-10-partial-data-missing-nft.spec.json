@@ -133,6 +133,7 @@
     "transactions": [
       {
         "consensus_timestamp": "1234567890.000000010",
+        "nonce": 0,
         "transaction_id": "0.0.98-1234567890-000000010",
         "receiver_account_id": null,
         "sender_account_id": null,
@@ -140,6 +141,7 @@
       },
       {
         "consensus_timestamp": "1234567890.000000009",
+        "nonce": 0,
         "transaction_id": "0.0.8-1234567890-000000009",
         "receiver_account_id": null,
         "sender_account_id": "0.0.4001",
@@ -147,6 +149,7 @@
       },
       {
         "consensus_timestamp": "1234567890.000000008",
+        "nonce": 0,
         "transaction_id": "0.0.8-1234567890-000000008",
         "receiver_account_id": "0.0.4001",
         "sender_account_id": "0.0.3001",
@@ -154,6 +157,7 @@
       },
       {
         "consensus_timestamp": "1234567890.000000007",
+        "nonce": 0,
         "transaction_id": "0.0.8-1234567890-000000007",
         "receiver_account_id": "0.0.3001",
         "sender_account_id": "0.0.2001",
@@ -161,6 +165,7 @@
       },
       {
         "consensus_timestamp": "1234567890.000000006",
+        "nonce": 0,
         "transaction_id": "0.0.8-1234567890-000000006",
         "receiver_account_id": "0.0.2001",
         "sender_account_id": "0.0.1001",

@@ -20,8 +20,10 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 const {ContractService} = require('../../service');
-const {formatSqlQueryString} = require('../testutils');
+const {assertSqlQueryEqual} = require('../testutils');
 
 const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
@@ -60,13 +62,12 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    expect(formatSqlQueryString(query)).toEqual(
-      formatSqlQueryString(`select *
-                            from contract_result cr
-                            where cr.contract_id = $1
-                            order by cr.consensus_timestamp asc
-                            limit $2`)
-    );
+    const expected = `select *
+      from contract_result cr
+      where cr.contract_id = $1
+      order by cr.consensus_timestamp asc
+      limit $2`;
+    assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 5]);
   });
 
@@ -78,15 +79,14 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    expect(formatSqlQueryString(query)).toEqual(
-      formatSqlQueryString(`select *
-                            from contract_result cr
-                            where cr.contract_id = $1
-                              and cr.consensus_timestamp > $2
-                              and cr.payer_account_id = $3
-                            order by cr.consensus_timestamp asc
-                            limit $4`)
-    );
+    const expected = `select *
+      from contract_result cr
+      where cr.contract_id = $1
+        and cr.consensus_timestamp > $2
+        and cr.payer_account_id = $3
+      order by cr.consensus_timestamp asc
+      limit $4`;
+    assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 10, 20, 5]);
   });
 });
@@ -101,21 +101,22 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    expect(formatSqlQueryString(query)).toEqual(
-      formatSqlQueryString(`select contract_id,
-                                   consensus_timestamp,
-                                   data,
-                                   index,
-                                   root_contract_id,
-                                   topic0,
-                                   topic1,
-                                   topic2,
-                                   topic3
-                            from contract_log cl
-                            where cl.contract_id = $1
-                            order by cl.consensus_timestamp desc,
-                                     cl.index asc
-                            limit $2`)
+    assertSqlQueryEqual(
+      query,
+      `select contract_id,
+        consensus_timestamp,
+        data,
+        index,
+        root_contract_id,
+        topic0,
+        topic1,
+        topic2,
+        topic3
+      from contract_log cl
+      where cl.contract_id = $1
+      order by cl.consensus_timestamp desc,
+               cl.index asc
+      limit $2`
     );
     expect(params).toEqual([2, 5]);
   });
@@ -145,27 +146,28 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
       'desc',
       5
     );
-    expect(formatSqlQueryString(query)).toEqual(
-      formatSqlQueryString(`select contract_id,
-                                   consensus_timestamp,
-                                   data,
-                                   index,
-                                   root_contract_id,
-                                   topic0,
-                                   topic1,
-                                   topic2,
-                                   topic3
-                            from contract_log cl
-                            where cl.contract_id = $1
-                              and cl.topic0 = $2
-                              and cl.topic1 = $3
-                              and cl.topic2 = $4
-                              and cl.topic3 = $5
-                              and cl.index = $6
-                              and cl.consensus_timestamp in ($7, $8)
-                            order by cl.consensus_timestamp desc,
-                                     cl.index desc
-                            limit $9`)
+    assertSqlQueryEqual(
+      query,
+      `select contract_id,
+       consensus_timestamp,
+       data,
+       index,
+       root_contract_id,
+       topic0,
+       topic1,
+       topic2,
+       topic3
+      from contract_log cl
+      where cl.contract_id = $1
+        and cl.topic0 = $2
+        and cl.topic1 = $3
+        and cl.topic2 = $4
+        and cl.topic3 = $5
+        and cl.index = $6
+        and cl.consensus_timestamp in ($7, $8)
+      order by cl.consensus_timestamp desc,
+               cl.index desc
+      limit $9`
     );
     expect(params).toEqual([
       1002,
@@ -307,23 +309,25 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
   });
 });
 
-describe('ContractService.getContractResultsByTimestamp tests', () => {
-  test('No match', async () => {
-    await expect(ContractService.getContractResultByTimestamp(1)).resolves.toBeNull();
-  });
-
-  test('Row match', async () => {
-    const contractResultsInput = [
-      {
-        contract_id: 2,
-        consensus_timestamp: 2,
-        function_parameters: '\\x0D',
-        amount: 10,
-        payer_account_id: '5',
-      },
-    ];
-
-    const expectedContractResult = {
+describe('ContractService.getContractResultsByTimestamps tests', () => {
+  const input = [
+    {
+      contract_id: 2,
+      consensus_timestamp: 2,
+      function_parameters: '\\x0D',
+      amount: 10,
+      payer_account_id: '5',
+    },
+    {
+      contract_id: 3,
+      consensus_timestamp: 6,
+      function_parameters: '\\x0D',
+      amount: 15,
+      payer_account_id: '5',
+    },
+  ];
+  const expected = [
+    {
       amount: '10',
       callResult: null,
       consensusTimestamp: '2',
@@ -333,11 +337,57 @@ describe('ContractService.getContractResultsByTimestamp tests', () => {
       gasLimit: '1000',
       gasUsed: '10',
       payerAccountId: '5',
-    };
+    },
+    {
+      amount: '15',
+      callResult: null,
+      consensusTimestamp: '6',
+      contractId: '3',
+      createdContractIds: [],
+      errorMessage: '',
+      gasLimit: '1000',
+      gasUsed: '10',
+      payerAccountId: '5',
+    },
+  ];
 
-    await integrationDomainOps.loadContractResults(contractResultsInput);
+  const pickContractResultFields = (contractResults) => {
+    return contractResults.map((cr) =>
+      _.pick(cr, [
+        'amount',
+        'callResult',
+        'consensusTimestamp',
+        'contractId',
+        'createdContractIds',
+        'errorMessage',
+        'gasLimit',
+        'gasUsed',
+        'payerAccountId',
+      ])
+    );
+  };
 
-    await expect(ContractService.getContractResultByTimestamp(2)).resolves.toMatchObject(expectedContractResult);
+  beforeEach(async () => {
+    await integrationDomainOps.loadContractResults(input);
+  });
+
+  test('No match', async () => {
+    await expect(ContractService.getContractResultsByTimestamps('1')).resolves.toHaveLength(0);
+  });
+
+  test('Sing row match single timestamp', async () => {
+    const actual = await ContractService.getContractResultsByTimestamps(expected[0].consensusTimestamp);
+    expect(pickContractResultFields(actual)).toIncludeSameMembers(expected.slice(0, 1));
+  });
+
+  test('Sing row match multiple timestamps', async () => {
+    const actual = await ContractService.getContractResultsByTimestamps([expected[0].consensusTimestamp, '100']);
+    expect(pickContractResultFields(actual)).toIncludeSameMembers(expected.slice(0, 1));
+  });
+
+  test('Multiple rows match multiple timestamps', async () => {
+    const actual = await ContractService.getContractResultsByTimestamps(expected.map((e) => e.consensusTimestamp));
+    expect(pickContractResultFields(actual)).toIncludeSameMembers(expected);
   });
 });
 

@@ -158,6 +158,7 @@
     "transactions": [
       {
         "consensus_timestamp": "1234567890.000000005",
+        "nonce": 0,
         "transaction_id": "0.0.8-1234567890-000000005",
         "receiver_account_id": "0.0.1001",
         "sender_account_id": null,
@@ -165,6 +166,7 @@
       },
       {
         "consensus_timestamp": "1234567890.000000006",
+        "nonce": 0,
         "transaction_id": "0.0.8-1234567890-000000006",
         "receiver_account_id": "0.0.2001",
         "sender_account_id": "0.0.1001",

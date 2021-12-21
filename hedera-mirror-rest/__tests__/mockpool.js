@@ -207,6 +207,7 @@ class Pool {
       row.type = 14;
       row.name = 'CRYPTOTRANSFER';
       row.node_account_id = EntityId.of(0n, 0n, BigInt(i % this.NUM_NODES)).getEncodedId();
+      row.nonce = 0;
 
       const accountNumValue = this.getAccountId(accountNum, i);
 

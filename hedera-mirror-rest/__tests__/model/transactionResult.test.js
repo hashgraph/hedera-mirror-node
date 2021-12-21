@@ -20,17 +20,26 @@
 
 'use strict';
 
-const {proto} = require('@hashgraph/proto/lib/proto');
+const proto = require('@hashgraph/proto');
 
 // models
 const {TransactionResult} = require('../../model');
 
 describe('transactionResult constants are up to date', () => {
-  test('Proto ID to name', () => {
-    Object.keys(proto.ResponseCodeEnum).forEach((id) => expect(TransactionResult.getProtoId(id)).toBeTruthy());
+  describe('Name to ID', () => {
+    for (const [name, id] of Object.entries(proto.ResponseCodeEnum)) {
+      test(name, () => {
+        expect(TransactionResult.getProtoId(name)).toEqual(`${id}`);
+      });
+    }
   });
-  test('Name to Proto ID', () => {
-    Object.values(proto.ResponseCodeEnum).forEach((name) => expect(TransactionResult.getName(name)).toBeTruthy());
+
+  describe('ID to Name', () => {
+    for (const [name, id] of Object.entries(proto.ResponseCodeEnum)) {
+      test(`${id}`, () => {
+        expect(TransactionResult.getName(id)).toEqual(name);
+      });
+    }
   });
 });
 

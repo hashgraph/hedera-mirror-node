@@ -33,46 +33,73 @@ class TransactionService extends BaseService {
     super();
   }
 
-  static transactionContractDetailsFromTimestampQuery = `select 
-    ${Transaction.PAYER_ACCOUNT_ID}, ${Transaction.TRANSACTION_HASH}
-    from ${Transaction.tableName} 
+  static transactionDetailsFromTimestampQuery = `select
+      ${Transaction.PAYER_ACCOUNT_ID}, ${Transaction.TRANSACTION_HASH}
+    from ${Transaction.tableName}
     where ${Transaction.CONSENSUS_TIMESTAMP} = $1`;
 
-  static transactionContractDetailsFromTransactionIdQuery = `select 
-    ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.PAYER_ACCOUNT_ID}, ${Transaction.TRANSACTION_HASH}
-    from ${Transaction.tableName} 
-    where ${Transaction.PAYER_ACCOUNT_ID} = $1 and ${Transaction.VALID_START_NS} = $2`;
+  static transactionDetailsFromTransactionIdQuery = `select
+      ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.PAYER_ACCOUNT_ID}, ${Transaction.TRANSACTION_HASH}
+    from ${Transaction.tableName}
+    where ${Transaction.PAYER_ACCOUNT_ID} = $1
+      and ${Transaction.VALID_START_NS} = $2`;
+  static transactionDetailsFromTransactionIdAndNonceQuery = `
+    ${TransactionService.transactionDetailsFromTransactionIdQuery}
+      and ${Transaction.NONCE} = $3`;
 
   /**
    * Retrieves the transaction for the given timestamp
    *
-   * @param {string} timestamp encoded contract ID
+   * @param {string} timestamp consensus timestamp
    * @return {Promise<Transaction>} transaction subset
    */
-  async getTransactionContractDetailsFromTimestamp(timestamp) {
+  async getTransactionDetailsFromTimestamp(timestamp) {
     const row = await super.getSingleRow(
-      TransactionService.transactionContractDetailsFromTimestampQuery,
+      TransactionService.transactionDetailsFromTimestampQuery,
       [timestamp],
-      'getTransactionContractDetailsFromTimestamp'
+      'getTransactionDetailsFromTimestamp'
     );
 
     return _.isNull(row) ? null : new Transaction(row);
   }
 
   /**
-   * Retrieves the transaction based on the transaction id
+   * Retrieves the transaction based on the transaction id and its nonce
    *
    * @param {TransactionId} transactionId transactionId
-   * @return {Promise<Transaction>} transaction subset
+   * @param {Number} nonce nonce of the transaction
+   * @param {Number[]|Number} excludeTransactionResults Transaction results to exclude, can be a list or a single result
+   * @return {Promise<Transaction[]>} transactions subset
    */
-  async getTransactionContractDetailsFromTransactionId(transactionId) {
-    const row = await super.getSingleRow(
-      TransactionService.transactionContractDetailsFromTransactionIdQuery,
-      [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()],
-      'transactionContractDetailsFromTransactionId'
-    );
+  async getTransactionDetailsFromTransactionIdAndNonce(
+    transactionId,
+    nonce = undefined,
+    excludeTransactionResults = []
+  ) {
+    const params = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
+    let query = TransactionService.transactionDetailsFromTransactionIdQuery;
 
-    return _.isNull(row) ? null : new Transaction(row);
+    if (nonce !== undefined) {
+      params.push(nonce);
+      query = TransactionService.transactionDetailsFromTransactionIdAndNonceQuery;
+    }
+
+    if (excludeTransactionResults !== undefined) {
+      if (Array.isArray(excludeTransactionResults)) {
+        if (excludeTransactionResults.length > 0) {
+          const start = params.length + 1;
+          params.push(...excludeTransactionResults);
+          const positions = _.range(start, params.length + 1).map((p) => `$${p}`);
+          query += ` and ${Transaction.RESULT} not in (${positions})`;
+        }
+      } else {
+        params.push(excludeTransactionResults);
+        query += ` and ${Transaction.RESULT} <> $${params.length}`;
+      }
+    }
+
+    const rows = await super.getRows(query, params, 'getTransactionDetailsFromTransactionIdAndNonce');
+    return rows.map((row) => new Transaction(row));
   }
 }
 

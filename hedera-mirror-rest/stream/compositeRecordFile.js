@@ -46,8 +46,8 @@ class CompositeRecordFile extends RecordFile {
     }, false);
   }
 
-  containsTransaction(transactionId, scheduled = false) {
-    return this.delegate.containsTransaction(transactionId, scheduled);
+  containsTransaction(transactionId, nonce = 0, scheduled = false) {
+    return this.delegate.containsTransaction(transactionId, nonce, scheduled);
   }
 
   getFileHash() {
@@ -66,8 +66,8 @@ class CompositeRecordFile extends RecordFile {
     return this.delegate.getVersion();
   }
 
-  toCompactObject(transactionId, scheduled = false) {
-    return this.delegate.toCompactObject(transactionId, scheduled);
+  toCompactObject(transactionId, nonce = 0, scheduled = false) {
+    return this.delegate.toCompactObject(transactionId, nonce, scheduled);
   }
 }
 
