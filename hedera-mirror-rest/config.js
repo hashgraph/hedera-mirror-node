@@ -156,14 +156,13 @@ function parseStateProofStreamsConfig() {
   }
 }
 
-const maxTimestampRangeMs = 'maxTimestampRangeMs';
 const parseMaxTimestampRange = () => {
   const conf = getConfig();
   const ms = parseDuration(conf.maxTimestampRange);
   if (!ms) {
     throw new InvalidConfigError(`invalid maxTimestampRange ${conf.maxTimestampRange}`);
   }
-  conf[maxTimestampRangeMs] = ms;
+  conf.maxTimestampRangeNs = BigInt(ms) * 1000000n;
 };
 
 if (!loaded) {

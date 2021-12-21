@@ -273,10 +273,6 @@ const validateReq = (req) => {
 
 const isRepeatedQueryParameterValidLength = (values) => values.length <= config.maxRepeatedQueryParameters;
 
-const nsToMillis = (timestamp) => {
-  return timestamp.substr(0, timestamp.length - 6).padStart(1, '0');
-};
-
 const parseTimestampParam = (timestampParam) => {
   // Expect timestamp input as (a) just seconds,
   // (b) seconds.mmm (3-digit milliseconds),
@@ -1027,27 +1023,25 @@ const checkTimestampRange = (timestampFilters) => {
   Object.values(opsMap).forEach((k) => (valuesByOp[k] = []));
   timestampFilters.forEach((filter) => valuesByOp[filter.operator].push(filter.value));
 
-  // combine gt / gte, lt /lte. The check here isn't accurate as it's only up to millis, later when calculating
-  // the range, we should pay attention to false negative
-  valuesByOp[opsMap.gt].push(...valuesByOp[opsMap.gte]);
-  valuesByOp[opsMap.lt].push(...valuesByOp[opsMap.lte]);
+  const gtGteLength = valuesByOp[opsMap.gt].length + valuesByOp[opsMap.gte].length;
+  const ltLteLength = valuesByOp[opsMap.lt].length + valuesByOp[opsMap.lte].length;
 
   if (valuesByOp[opsMap.ne].length > 0) {
     // Don't allow ne
     throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
   }
 
-  if (valuesByOp[opsMap.gt].length > 1) {
+  if (gtGteLength > 1) {
     //Don't allow multiple gt/gte
     throw new InvalidArgumentError('Multiple gt or gte operators not permitted for timestamp param');
   }
 
-  if (valuesByOp[opsMap.gt].length > 1) {
+  if (ltLteLength > 1) {
     //Don't allow multiple lt/lte
     throw new InvalidArgumentError('Multiple lt or lte operators not permitted for timestamp param');
   }
 
-  if (valuesByOp[opsMap.eq].length > 0 && (valuesByOp[opsMap.gt].length > 0 || valuesByOp[opsMap.lt].length > 0)) {
+  if (valuesByOp[opsMap.eq].length > 0 && (gtGteLength > 0 || ltLteLength > 0)) {
     //Combined eq with other operator
     throw new InvalidArgumentError('Cannot combine eq with gt, gte, lt, or lte for timestamp param');
   }
@@ -1057,19 +1051,19 @@ const checkTimestampRange = (timestampFilters) => {
     return;
   }
 
-  if (valuesByOp[opsMap.gt].length === 0 || valuesByOp[opsMap.lt].length === 0) {
+  if (gtGteLength === 0 || ltLteLength === 0) {
     //Missing range
     throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte)');
   }
 
   // there should be exactly one gt/gte and one lt/lte at this point
-  const earliest = nsToMillis(valuesByOp[opsMap.gt][0]);
-  const latest = nsToMillis(valuesByOp[opsMap.lt][0]);
-  const difference = math.subtract(latest, earliest);
+  const earliest =
+    valuesByOp[opsMap.gt].length > 0 ? BigInt(valuesByOp[opsMap.gt][0]) + 1n : BigInt(valuesByOp[opsMap.gte][0]);
+  const latest =
+    valuesByOp[opsMap.lt].length > 0 ? BigInt(valuesByOp[opsMap.lt][0]) - 1n : BigInt(valuesByOp[opsMap.lte][0]);
+  const difference = latest - earliest + 1n;
 
-  // the precision is in millis and we don't distinguish gt/gte, lt/lte. loosening the max range by 1ms suffices
-  // to prevent false negative
-  if (difference - 1 > config.maxTimestampRangeMs || difference < 0) {
+  if (difference > config.maxTimestampRangeNs || difference <= 0n) {
     throw new InvalidArgumentError(
       `Timestamp lower and upper bounds must be positive and within ${config.maxTimestampRange}`
     );

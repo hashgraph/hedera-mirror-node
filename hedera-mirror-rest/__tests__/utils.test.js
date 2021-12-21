@@ -28,7 +28,6 @@ const {InvalidClauseError} = require('../errors/invalidClauseError');
 const {TransactionType} = require('../model');
 const {getLimitParamValue} = require('../utils');
 const {keyTypes} = require('../constants');
-const EntityId = require('../entityId');
 
 const ecdsaKey = '02b5ffadf88d625cd9074fa01e5280b773a60ed2de55b0d6f94460c0b5a001a258';
 const ed25519Key = '7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
@@ -1054,7 +1053,7 @@ describe('Utils test - utils.checkTimestampRange', () => {
         filters: [makeTimestampFilter(utils.opsMap.eq, '1638921702000000000')],
       },
       {
-        name: 'two filter gte and lte',
+        name: 'two filters gte and lte',
         filters: [
           makeTimestampFilter(utils.opsMap.gte, '1000000000'),
           makeTimestampFilter(utils.opsMap.lte, '2000000000'),
@@ -1075,17 +1074,35 @@ describe('Utils test - utils.checkTimestampRange', () => {
         ],
       },
       {
-        name: 'max range',
+        // [1000000, 604800001000000)
+        name: 'max range with gte and lt',
         filters: [
-          makeTimestampFilter(utils.opsMap.gt, '1000000'),
+          makeTimestampFilter(utils.opsMap.gte, '1000000'),
           makeTimestampFilter(utils.opsMap.lt, '604800001000000'),
         ],
       },
       {
-        name: 'max range with ns',
+        // effectively the same as [1000000, 604800001000000)
+        name: 'max range with gt and lt',
         filters: [
-          makeTimestampFilter(utils.opsMap.gte, '1999999'),
-          makeTimestampFilter(utils.opsMap.lt, '604800002000000'),
+          makeTimestampFilter(utils.opsMap.gt, '999999'),
+          makeTimestampFilter(utils.opsMap.lt, '604800001000000'),
+        ],
+      },
+      {
+        // effectively the same as [1000000, 604800001000000)
+        name: 'max range with gt and lte',
+        filters: [
+          makeTimestampFilter(utils.opsMap.gt, '1000000'),
+          makeTimestampFilter(utils.opsMap.lte, '604800000999999'),
+        ],
+      },
+      {
+        // effectively the same as [1000000, 604800001000000)
+        name: 'max range with gt and lt',
+        filters: [
+          makeTimestampFilter(utils.opsMap.gte, '1000000'),
+          makeTimestampFilter(utils.opsMap.lte, '604800000999999'),
         ],
       },
     ];
@@ -1112,46 +1129,74 @@ describe('Utils test - utils.checkTimestampRange', () => {
         filters: [makeTimestampFilter(utils.opsMap.ne, '1638921702000000000')],
       },
       {
-        name: 'two filter gt and eq',
+        name: 'two filters gt and eq',
         filters: [
           makeTimestampFilter(utils.opsMap.gt, '1638921702000'),
           makeTimestampFilter(utils.opsMap.eq, '1638921702000000000'),
         ],
       },
       {
-        name: 'bad range lower bound > higher bound',
-        filters: [
-          makeTimestampFilter(utils.opsMap.gte, '2000000000'),
-          makeTimestampFilter(utils.opsMap.lte, '1000000000'),
-        ],
+        name: 'bad range lower bound > higher bound gte lte',
+        filters: [makeTimestampFilter(utils.opsMap.gte, '1000'), makeTimestampFilter(utils.opsMap.lte, '999')],
       },
       {
-        name: 'range exceeds configured max',
-        filters: [
-          makeTimestampFilter(utils.opsMap.gte, '1000000000'),
-          makeTimestampFilter(utils.opsMap.lte, '1638921702000000000'),
-        ],
+        name: 'bad range lower bound > higher bound gte lt',
+        filters: [makeTimestampFilter(utils.opsMap.gte, '1000'), makeTimestampFilter(utils.opsMap.lt, '1000')],
       },
       {
-        name: 'two gt and get',
+        name: 'bad range lower bound > higher bound gt lte',
+        filters: [makeTimestampFilter(utils.opsMap.gt, '999'), makeTimestampFilter(utils.opsMap.lte, '999')],
+      },
+      {
+        name: 'two filters gt and get',
         filters: [
           makeTimestampFilter(utils.opsMap.gte, '1000000000'),
           makeTimestampFilter(utils.opsMap.gt, '1638921702000000000'),
         ],
       },
       {
-        name: 'two lt and lte',
+        name: 'two filters lt and lte',
         filters: [
           makeTimestampFilter(utils.opsMap.lt, '1000000000'),
           makeTimestampFilter(utils.opsMap.lte, '1638921702000000000'),
         ],
       },
       {
-        name: 'three gt lte eq',
+        name: 'three filters gt lte eq',
         filters: [
           makeTimestampFilter(utils.opsMap.lt, '1000000000'),
           makeTimestampFilter(utils.opsMap.gte, '2000000000'),
           makeTimestampFilter(utils.opsMap.eq, '1000000000'),
+        ],
+      },
+      {
+        name: 'bad range lower bound > higher bound gt lt',
+        filters: [makeTimestampFilter(utils.opsMap.gt, '999'), makeTimestampFilter(utils.opsMap.lt, '1000')],
+      },
+      {
+        // effectively [100, 604800000000101)
+        name: 'range exceeds configured max gt and lt',
+        filters: [makeTimestampFilter(utils.opsMap.gt, '99'), makeTimestampFilter(utils.opsMap.lt, '604800000000101')],
+      },
+      {
+        // [100, 604800000000101)
+        name: 'range exceeds configured max gte and lt',
+        filters: [
+          makeTimestampFilter(utils.opsMap.gte, '100'),
+          makeTimestampFilter(utils.opsMap.lt, '604800000000101'),
+        ],
+      },
+      {
+        // effectively [100, 604800000000101)
+        name: 'range exceeds configured max gt and lte',
+        filters: [makeTimestampFilter(utils.opsMap.gt, '99'), makeTimestampFilter(utils.opsMap.lte, '604800000000100')],
+      },
+      {
+        // [100, 604800000000101)
+        name: 'range exceeds configured max gte and lte',
+        filters: [
+          makeTimestampFilter(utils.opsMap.gte, '100'),
+          makeTimestampFilter(utils.opsMap.lte, '604800000000100'),
         ],
       },
     ];
