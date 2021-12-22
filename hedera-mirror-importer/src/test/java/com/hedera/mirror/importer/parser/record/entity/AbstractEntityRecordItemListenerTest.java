@@ -29,9 +29,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -168,24 +166,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .containsExactly(dbEntity.getShard(), dbEntity.getRealm(), dbEntity.getNum());
         assertThat(dbEntity.getType())
                 .isEqualTo(EntityType.ACCOUNT);
-    }
-
-    protected final void assertFile(FileID fileId, Entity dbEntity) {
-        assertThat(fileId)
-                .isNotEqualTo(FileID.getDefaultInstance())
-                .extracting(FileID::getShardNum, FileID::getRealmNum, FileID::getFileNum)
-                .containsExactly(dbEntity.getShard(), dbEntity.getRealm(), dbEntity.getNum());
-        assertThat(dbEntity.getType())
-                .isEqualTo(EntityType.FILE);
-    }
-
-    protected final void assertContract(ContractID contractId, Contract dbEntity) {
-        assertThat(contractId)
-                .isNotEqualTo(ContractID.getDefaultInstance())
-                .extracting(ContractID::getShardNum, ContractID::getRealmNum, ContractID::getContractNum)
-                .containsExactly(dbEntity.getShard(), dbEntity.getRealm(), dbEntity.getNum());
-        assertThat(dbEntity.getType())
-                .isEqualTo(EntityType.CONTRACT);
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem) {
