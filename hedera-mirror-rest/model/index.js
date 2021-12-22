@@ -27,6 +27,7 @@ module.exports = {
   ContractResult: require('./contractResult'),
   CryptoTransfer: require('./cryptoTransfer'),
   CustomFee: require('./customFee'),
+  Entity: require('./entity'),
   FileData: require('./fileData'),
   Nft: require('./nft'),
   NftTransfer: require('./nftTransfer'),
