@@ -518,6 +518,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     void cryptoTransferWithAlias() {
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         entityProperties.getPersist().setNonFeeTransfers(true);
+        Entity entity = domainBuilder.entity().persist();
+        assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity.getId());
+        assertThat(entityRepository.findByAlias(ALIAS_KEY.toByteArray())).isNotPresent();
 
         // Crypto create alias account
         Transaction accountCreateTransaction = cryptoCreateTransaction();
@@ -527,9 +530,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 accountCreateTransactionBody,
                 ResponseCodeEnum.SUCCESS.getNumber());
 
-        // Crypto transfer to alias account
+        // Crypto transfer to both existing alias and newly created alias accounts
         Transaction transaction = buildTransaction(builder -> builder.getCryptoTransferBuilder().getTransfersBuilder()
-                .addAccountAmounts(accountAliasAmount(ALIAS_KEY, 1003)));
+                .addAccountAmounts(accountAliasAmount(ALIAS_KEY, 1003))
+                .addAccountAmounts(accountAliasAmount(ByteString.copyFrom(entity.getAlias()), 1004)));
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord recordTransfer = transactionRecordSuccess(transactionBody);
 
@@ -538,16 +542,15 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count()),
-                () -> assertEntities(EntityId.of(accountId1)),
+                () -> assertEntities(EntityId.of(accountId1), entity.toEntityId()),
                 () -> assertEquals(8, cryptoTransferRepository.count()),
-                () -> assertEquals(additionalTransfers.length + additionalTransfers.length + 1,
-                        nonFeeTransferRepository.count()), // 2 non fee transfers * 2 transactions
+                () -> assertEquals(additionalTransfers.length * 2 + 2, nonFeeTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, recordTransfer),
                 () -> assertThat(nonFeeTransferRepository.findAll())
                         .extracting(NonFeeTransfer::getId)
                         .extracting(NonFeeTransfer.Id::getEntityId)
                         .extracting(EntityId::getEntityNum)
-                        .contains(accountId1.getAccountNum())
+                        .contains(accountId1.getAccountNum(), entity.getNum())
         );
     }
 
