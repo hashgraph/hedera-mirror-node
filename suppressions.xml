@@ -39,8 +39,8 @@
         <cve>CVE-2020-8570</cve>
     </suppress>
     <suppress>
-        <notes>Scan shows it's using 4.1.52 but dependency:tree shows only unaffected 4.1.59 in use</notes>
-        <packageUrl regex="true">^pkg:maven/io\.netty/netty\-.*@4\.1\.52\.Final$</packageUrl>
+        <notes>Conflates netty-tcnative-classes version with netty</notes>
+        <packageUrl regex="true">^pkg:maven/io\.netty/netty\-tcnative\-classes.*$</packageUrl>
         <cpe>cpe:/a:netty:netty</cpe>
     </suppress>
     <suppress>
