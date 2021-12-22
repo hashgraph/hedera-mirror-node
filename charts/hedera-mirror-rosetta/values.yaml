@@ -50,10 +50,17 @@ global:
   podAnnotations: {}
 
 hpa:
+  behavior: {}
   enabled: true
-  minReplicas: 1
   maxReplicas: 10
-  utilization: 80
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+  minReplicas: 1
 
 image:
   pullPolicy: IfNotPresent
@@ -211,12 +218,11 @@ serviceMonitor:
 terminationGracePeriodSeconds: 60
 
 test:
-  checkRecent: true
   enabled: true
   image:
     pullPolicy: IfNotPresent
-    repository: bats/bats
-    tag: v1.4.1
+    repository: postman/newman
+    tag: 5.3.0
 
 tolerations: []
 

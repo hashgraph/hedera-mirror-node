@@ -109,3 +109,20 @@ timescaledb:
     enabled: true
   replicaCount: 2
 
+web3:
+  alertmanager:
+    inhibitRules:
+      enabled: true
+  hpa:
+    enabled: true
+    minReplicas: 2
+  ingress:
+    middleware:
+      enabled: true
+  podDisruptionBudget:
+    enabled: true
+  priorityClassName: medium
+  prometheusRules:
+    enabled: true
+  serviceMonitor:
+    enabled: true

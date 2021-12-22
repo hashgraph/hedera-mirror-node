@@ -23,9 +23,19 @@ To access the REST API:
 {{- if and .Values.rosetta.enabled .Values.rosetta.service }}
 To access the Rosetta API:
 {{- if contains "LoadBalancer" .Values.rosetta.service.type }}
-  REST_IP="$(kubectl get "service/{{ .Release.Name }}-rosetta" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+  ROSETTA_IP="$(kubectl get "service/{{ .Release.Name }}-rosetta" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 {{- else if contains "ClusterIP" .Values.rosetta.service.type }}
   kubectl port-forward "service/{{ .Release.Name }}-rosetta" -n {{ include "hedera-mirror.namespace" . }} {{ .Values.rosetta.service.port }}:80 &
 {{- end }}
   curl -sL -d '{"metadata":{}}' "http://${ROSETTA_IP:-127.0.0.1}:{{.Values.rosetta.service.port}}/network/list"
+{{- end }}
+
+{{- if and .Values.web3.enabled .Values.web3.service }}
+To access the Web3 API:
+{{- if contains "LoadBalancer" .Values.web3.service.type }}
+  WEB3_IP="$(kubectl get "service/{{ .Release.Name }}-web3" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+{{- else if contains "ClusterIP" .Values.web3.service.type }}
+  kubectl port-forward "service/{{ .Release.Name }}-web3" -n {{ include "hedera-mirror.namespace" . }} {{ .Values.web3.service.port }}:80 &
+{{- end }}
+  curl -sL -H "Content-Type: application/json" -X POST -d '{"id": 1, "jsonrpc": "2.0", "method": "eth_blockNumber"}' "http://${WEB3_IP:-127.0.0.1}:{{.Values.web3.service.port}}/web3/v1"
 {{- end }}

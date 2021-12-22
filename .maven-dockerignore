@@ -1,8 +1,13 @@
 charts/**
 data/**
 db/**
+hedera-mirror-common/target/**
 hedera-mirror-grpc/target/**
 hedera-mirror-importer/target/**
+hedera-mirror-monitor/target/**
 hedera-mirror-rest/node_modules/**
+hedera-mirror-rosetta/bin/**
+hedera-mirror-rosetta/target/**
 hedera-mirror-test/target/docker/**
+hedera-mirror-web3/target/**
 target/**

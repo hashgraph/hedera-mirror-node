@@ -1,17 +1,11 @@
-# To switch db to TimescaleDB, change TIMESCALEDB=true, SPRING_PROFILES_ACTIVE=v2 and change db image
 version: "3.7"
 services:
   db:
     image: postgres:13.5-alpine
-    restart: unless-stopped
-    stop_grace_period: 2m
-    stop_signal: SIGTERM
-    tty: true
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
       POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
-      TIMESCALEDB: "false"
       # These should all be changed from the default before running in production
       GRPC_PASSWORD: mirror_grpc_pass
       IMPORTER_PASSWORD: mirror_importer_pass
@@ -19,11 +13,15 @@ services:
       POSTGRES_PASSWORD: postgres_password
       REST_PASSWORD: mirror_api_pass
       ROSETTA_PASSWORD: mirror_rosetta_pass
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+    stop_grace_period: 2m
+    stop_signal: SIGTERM
+    tty: true
     volumes:
       - ./db:/var/lib/postgresql/data
       - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
-    ports:
-      - 5432:5432
 
   grpc:
     image: gcr.io/mirrornode/hedera-mirror-grpc:main
@@ -33,10 +31,10 @@ services:
       HEDERA_MIRROR_GRPC_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-grpc/
       SPRING_REDIS_HOST: redis
-    volumes:
-      - ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
     ports:
       - 5600:5600
+    volumes:
+      - ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
 
   importer:
     image: gcr.io/mirrornode/hedera-mirror-importer:main
@@ -45,7 +43,6 @@ services:
     environment:
       HEDERA_MIRROR_IMPORTER_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-importer/
-      SPRING_PROFILES_ACTIVE: "v1"
       SPRING_REDIS_HOST: redis
     volumes:
       - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
@@ -62,32 +59,45 @@ services:
       - ./application.yml:/usr/etc/hedera-mirror-monitor/application.yml
 
   redis:
-    image: redis:6.2.3-alpine
+    image: redis:6.2.6-alpine
+    ports:
+      - 6379:6379
     restart: unless-stopped
     stop_grace_period: 2m
     stop_signal: SIGTERM
     tty: true
-    ports:
-      - 6379:6379
 
   rest:
     image: gcr.io/mirrornode/hedera-mirror-rest:main
     pull_policy: always
     environment:
       HEDERA_MIRROR_REST_DB_HOST: db
-    restart: unless-stopped
-    tty: true
     ports:
       - 5551:5551
+    restart: unless-stopped
+    tty: true
 
   rosetta:
     image: gcr.io/mirrornode/hedera-mirror-rosetta:main
     pull_policy: always
     environment:
       HEDERA_MIRROR_ROSETTA_DB_HOST: db
+    ports:
+      - 5700:5700
     restart: unless-stopped
     tty: true
     volumes:
       - ./application.yml:/src/hedera-mirror-rosetta/application.yml
+
+  web3:
+    image: gcr.io/mirrornode/hedera-mirror-web3:main
+    pull_policy: always
+    environment:
+      HEDERA_MIRROR_WEB3_DB_HOST: db
+      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-web3/
     ports:
-      - 5700:5700
+      - 8545:8545
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - ./application.yml:/usr/etc/hedera-mirror-web3/application.yml

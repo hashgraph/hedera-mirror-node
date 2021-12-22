@@ -552,7 +552,7 @@
                                     <replacements>
                                         <replacement>
                                             <token>
-                                                <![CDATA[(?<="@hashgraph/mirror-(rest|monitor)",\s{3}"version": ")[^"]+]]></token>
+                                                <![CDATA[(?<="@hashgraph/mirror-(rest|monitor)",\s{3,7}"version": ")[^"]+]]></token>
                                             <value>${release.version}</value>
                                         </replacement>
                                         <replacement>
@@ -561,7 +561,7 @@
                                         </replacement>
                                         <replacement>
                                             <token>
-                                                <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|monitor|rest|rosetta|test):)[0-9a-zA-Z.-]+]]></token>
+                                                <![CDATA[(?<=gcr.io/mirrornode/hedera-mirror-(grpc|importer|monitor|rest|rosetta|test|web3):)[0-9a-zA-Z.-]+]]></token>
                                             <value>${docker.tag.version}</value>
                                         </replacement>
                                     </replacements>

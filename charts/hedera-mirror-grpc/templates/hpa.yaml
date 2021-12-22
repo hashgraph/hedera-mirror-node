@@ -6,17 +6,12 @@ metadata:
   name: {{ include "hedera-mirror-grpc.fullname" . }}
   namespace: {{ include "hedera-mirror-grpc.namespace" . }}
 spec:
+  behavior: {{ toYaml .Values.hpa.behavior | nindent 4 }}
+  maxReplicas: {{ .Values.hpa.maxReplicas }}
+  metrics: {{ tpl (toYaml .Values.hpa.metrics) . | nindent 4 }}
+  minReplicas: {{ .Values.hpa.minReplicas }}
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ include "hedera-mirror-grpc.fullname" . }}
-  maxReplicas: {{ .Values.hpa.maxReplicas }}
-  minReplicas: {{ .Values.hpa.minReplicas }}
-  metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: {{ .Values.hpa.utilization }}
 {{- end -}}

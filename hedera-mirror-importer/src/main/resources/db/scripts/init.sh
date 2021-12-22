@@ -27,7 +27,9 @@ psql -d "user=postgres connect_timeout=3" \
   --set "restPassword=${REST_PASSWORD:-mirror_api_pass}" \
   --set "restUsername=${REST_USERNAME:-mirror_api}" \
   --set "rosettaPassword=${ROSETTA_PASSWORD:-mirror_rosetta_pass}" \
-  --set "rosettaUsername=${ROSETTA_USERNAME:-mirror_rosetta}" <<__SQL__
+  --set "rosettaUsername=${ROSETTA_USERNAME:-mirror_rosetta}" \
+  --set "web3Password=${WEB3_PASSWORD:-mirror_web3_pass}" \
+  --set "web3Username=${WEB3_USERNAME:-mirror_web3}" <<__SQL__
 
 -- Create database & owner
 create user :ownerUsername with login password :'ownerPassword';
@@ -45,6 +47,7 @@ create role readwrite in role readonly;
 create user :grpcUsername with login password :'grpcPassword' in role readonly;
 create user :importerUsername with login password :'importerPassword' in role readwrite;
 create user :rosettaUsername with login password :'rosettaPassword' in role readonly;
+create user :web3Username with login password :'web3Password' in role readonly;
 ${DB_SPECIFIC_SQL}
 
 \connect :dbName

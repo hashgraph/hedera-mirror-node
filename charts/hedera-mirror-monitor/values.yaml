@@ -140,10 +140,10 @@ prometheusRules:
       application: hedera-mirror-monitor
       area: resource
 
-  MonitorLog4j2Errors:
+  MonitorLogErrors:
     annotations:
       description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period"
-      summary: "High rate of log4j2 errors"
+      summary: "High rate of log errors"
     enabled: true
     expr: sum(increase(log4j2_events_total{application="hedera-mirror-monitor", level="error"}[2m])) by (namespace, pod) >= 2
     for: 3m

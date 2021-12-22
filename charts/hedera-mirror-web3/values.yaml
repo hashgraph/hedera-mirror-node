@@ -6,7 +6,7 @@ affinity:
           topologyKey: kubernetes.io/hostname
           labelSelector:
             matchLabels:
-              app.kubernetes.io/component: grpc
+              app.kubernetes.io/component: web3
 
 alertmanager:
   inhibitRules:
@@ -19,20 +19,7 @@ alertmanager:
               value: resource
           targetMatch:
             - name: application
-              value: hedera-mirror-grpc
-          equal:
-            - namespace
-            - pod
-
-    InhibitGrpcLogAlertWhenHighErrors:
-      enabled: true
-      matches:
-        - sourceMatch:
-            - name: alertname
-              value: GrpcErrors
-          targetMatch:
-            - name: alertname
-              value: GrpcLogErrors
+              value: hedera-mirror-web3
           equal:
             - namespace
             - pod
@@ -48,13 +35,13 @@ env:
   # FOO:
   #   valueFrom:
   #     secretKeyRef:
-  #       name: '{{ .Release.Name }}-custom'
+  #       name: "{{ .Release.Name }}-custom"
   #       key: BAR
 
 # Add config maps or secrets as environment variables. Evaluated as a template.
 envFrom: []
 # - secretRef:
-#     name: '{{ .Release.Name }}-env'
+#     name: "{{ .Release.Name }}-env"
 
 fullnameOverride: ""
 
@@ -66,7 +53,7 @@ global:
 hpa:
   behavior: {}
   enabled: false
-  maxReplicas: 3
+  maxReplicas: 8
   metrics:
     - type: Resource
       resource:
@@ -78,20 +65,19 @@ hpa:
 
 image:
   pullPolicy: IfNotPresent
-  repository: gcr.io/mirrornode/hedera-mirror-grpc
+  repository: gcr.io/mirrornode/hedera-mirror-web3
   tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []
 
 ingress:
   annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-grpc.namespace" . }}-{{ include "hedera-mirror-grpc.fullname" . }}@kubernetescrd'
+    traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-web3.namespace" . }}-{{ include "hedera-mirror-web3.fullname" . }}@kubernetescrd'
   enabled: true
   hosts:
     - host: ""
       paths:
-        - "/com.hedera.mirror.api.proto.ConsensusService"
-        - "/grpc.reflection.v1alpha.ServerReflection"
+        - "/web3"
   middleware:
     circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
     connectionsPerIP: 5
@@ -132,120 +118,120 @@ priorityClassName: ""
 
 prometheusRules:
   enabled: false
-  GrpcErrors:
+  Web3Errors:
     annotations:
-      description: '{{ $value | humanizePercentage }} gRPC {{ $labels.statusCode }} error rate for {{ $labels.namespace }}/{{ $labels.pod }}'
-      summary: "Mirror gRPC API error rate exceeds 5%"
+      description: "{{ $value | humanizePercentage }} Web3 server error rate for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Mirror Web3 API error rate exceeds 5%"
     enabled: true
-    expr: sum(rate(grpc_server_processing_duration_seconds_count{application="hedera-mirror-grpc", statusCode!~"CANCELLED|DEADLINE_EXCEEDED|INVALID_ARGUMENT|NOT_FOUND|OK"}[5m])) by (namespace, pod, statusCode) / sum(rate(grpc_server_processing_duration_seconds_count{application="hedera-mirror-grpc"}[5m])) by (namespace, pod, statusCode) > 0.05
+    expr: sum(rate(http_server_requests_seconds_count{application="hedera-mirror-web3", status="SERVER_ERROR"}[5m])) by (namespace, pod) / sum(rate(http_server_requests_seconds_count{application="hedera-mirror-web3"}[5m])) by (namespace, pod) > 0.05
     for: 2m
     labels:
+      application: hedera-mirror-web3
       severity: critical
-      application: hedera-mirror-grpc
 
-  GrpcHighCPU:
+  Web3HighCPU:
     annotations:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
-      summary: "Mirror gRPC API CPU usage exceeds 80%"
+      summary: "Mirror Web3 API CPU usage exceeds 80%"
     enabled: true
-    expr: sum(process_cpu_usage{application="hedera-mirror-grpc"}) by (namespace, pod) / sum(system_cpu_count{application="hedera-mirror-grpc"}) by (namespace, pod) > 0.8
+    expr: sum(process_cpu_usage{application="hedera-mirror-web3"}) by (namespace, pod) / sum(system_cpu_count{application="hedera-mirror-web3"}) by (namespace, pod) > 0.8
     for: 5m
     labels:
-      severity: critical
-      application: hedera-mirror-grpc
+      application: hedera-mirror-web3
       area: resource
+      severity: critical
 
-  GrpcHighDBConnections:
+  Web3HighDBConnections:
     annotations:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }} of available database connections"
-      summary: "Mirror gRPC API database connection utilization exceeds 75%"
+      summary: "Mirror Web3 API database connection utilization exceeds 75%"
     enabled: true
-    expr: sum(hikaricp_connections_active{application="hedera-mirror-grpc"}) by (namespace, pod) / sum(hikaricp_connections_max{application="hedera-mirror-grpc"}) by (namespace, pod) > 0.75
+    expr: sum(hikaricp_connections_active{application="hedera-mirror-web3"}) by (namespace, pod) / sum(hikaricp_connections_max{application="hedera-mirror-web3"}) by (namespace, pod) > 0.75
     for: 5m
     labels:
-      severity: critical
-      application: hedera-mirror-grpc
+      application: hedera-mirror-web3
       area: resource
+      severity: critical
 
-  GrpcHighFileDescriptors:
+  Web3HighFileDescriptors:
     annotations:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}"
-      summary: "Mirror gRPC API file descriptor usage exceeds 80%"
+      summary: "Mirror Web3 API file descriptor usage exceeds 80%"
     enabled: true
-    expr: sum(process_files_open_files{application="hedera-mirror-grpc"}) by (namespace, pod) / sum(process_files_max_files{application="hedera-mirror-grpc"}) by (namespace, pod) > 0.8
+    expr: sum(process_files_open_files{application="hedera-mirror-web3"}) by (namespace, pod) / sum(process_files_max_files{application="hedera-mirror-web3"}) by (namespace, pod) > 0.8
     for: 5m
     labels:
-      severity: critical
-      application: hedera-mirror-grpc
+      application: hedera-mirror-web3
       area: resource
-
-  GrpcHighLatency:
-    annotations:
-      description: 'High latency of {{ $value | humanizeDuration }} between the main nodes and {{ $labels.namespace }}/{{ $labels.pod }}'
-      summary: "Mirror gRPC API consensus to delivery (C2MD) latency exceeds 15s"
-    enabled: true
-    expr: sum(rate(hedera_mirror_publish_latency_seconds_sum{application="hedera-mirror-grpc"}[5m])) by (namespace, pod) / sum(rate(hedera_mirror_publish_latency_seconds_count{application="hedera-mirror-grpc"}[5m])) by (namespace, pod) > 15
-    for: 1m
-    labels:
       severity: critical
-      application: hedera-mirror-grpc
 
-  GrpcHighMemory:
+  Web3HighMemory:
     annotations:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}"
-      summary: "Mirror gRPC API memory usage exceeds 80%"
+      summary: "Mirror Web3 API memory usage exceeds 80%"
     enabled: true
-    expr: sum(jvm_memory_used_bytes{application="hedera-mirror-grpc"}) by (namespace, pod) / sum(jvm_memory_max_bytes{application="hedera-mirror-grpc"}) by (namespace, pod) > 0.8
+    expr: sum(jvm_memory_used_bytes{application="hedera-mirror-web3"}) by (namespace, pod) / sum(jvm_memory_max_bytes{application="hedera-mirror-web3"}) by (namespace, pod) > 0.8
     for: 5m
     labels:
-      severity: critical
-      application: hedera-mirror-grpc
+      application: hedera-mirror-web3
       area: resource
+      severity: critical
 
-  GrpcLogErrors:
+  Web3LogErrors:
     annotations:
       description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period"
       summary: "High rate of log errors"
     enabled: true
-    expr: sum(increase(log4j2_events_total{application="hedera-mirror-grpc", level="error"}[1m])) by (namespace, pod) >= 2
+    expr: sum(increase(logback_events_total{application="hedera-mirror-web3", level="error"}[1m])) by (namespace, pod) >= 2
     for: 3m
     labels:
+      application: hedera-mirror-web3
       severity: critical
-      application: hedera-mirror-grpc
 
-  GrpcNoPodsReady:
+  Web3NoPodsReady:
     annotations:
-      description: "No gRPC API instances are currently running in {{ $labels.namespace }}"
-      summary: No gRPC API instances running
+      description: "No Web3 API instances are currently running in {{ $labels.namespace }}"
+      summary: No Web3 API instances running
     enabled: true
-    expr: sum(kube_pod_status_ready{pod=~".*-grpc-.*",condition="true"}) by (namespace) < 1
+    expr: sum(kube_pod_status_ready{pod=~".*-web3-.*",condition="true"}) by (namespace) < 1
     for: 2m
     labels:
-      severity: critical
-      application: hedera-mirror-grpc
+      application: hedera-mirror-web3
       area: resource
+      severity: critical
 
-  GrpcNoSubscribers:
+  Web3NoRequests:
     annotations:
-      description: "{{ $labels.namespace }} has {{ $value }} subscribers for {{ $labels.type }}"
-      summary: "Mirror gRPC API has no subscribers"
+      description: "Web3 API has not seen any requests to {{ $labels.namespace }} for 5m"
+      summary: "No Web3 API requests seen for awhile"
     enabled: true
-    expr: sum(hedera_mirror_subscribers{application="hedera-mirror-grpc"}) by (namespace, type) <= 0
+    expr: sum(rate(http_server_requests_seconds_count{application="hedera-mirror-web3"}[3m])) by (namespace) <= 0
     for: 5m
     labels:
-      severity: critical
-      application: hedera-mirror-grpc
+      application: hedera-mirror-web3
+      severity: warning
 
-  GrpcQueryLatency:
+  Web3QueryLatency:
     annotations:
       description: "High average database query latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: "Mirror gRPC API query latency exceeds 1s"
+      summary: "Mirror Web3 API query latency exceeds 1s"
     enabled: true
-    expr: sum(rate(spring_data_repository_invocations_seconds_sum{application="hedera-mirror-grpc"}[5m])) by (namespace, pod) / sum(rate(spring_data_repository_invocations_seconds_count{application="hedera-mirror-grpc"}[5m])) by (namespace, pod) > 1
+    expr: sum(rate(spring_data_repository_invocations_seconds_sum{application="hedera-mirror-web3"}[5m])) by (namespace, pod) / sum(rate(spring_data_repository_invocations_seconds_count{application="hedera-mirror-web3"}[5m])) by (namespace, pod) > 1
     for: 1m
     labels:
+      application: hedera-mirror-web3
       severity: warning
-      application: hedera-mirror-grpc
+
+  Web3RequestLatency:
+    annotations:
+      description: "High average request latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Mirror Web3 API request latency exceeds 2s"
+    enabled: true
+    expr: sum(rate(http_server_requests_seconds_sum{application="hedera-mirror-web3"}[5m])) by (namespace, pod) / sum(rate(http_server_requests_seconds_count{application="hedera-mirror-web3"}[5m])) by (namespace, pod) > 2
+    for: 1m
+    labels:
+      application: hedera-mirror-web3
+      severity: warning
 
 rbac:
   enabled: true
@@ -279,9 +265,8 @@ securityContext:
   runAsUser: 1000
 
 service:
-  annotations:
-    traefik.ingress.kubernetes.io/service.serversscheme: h2c
-  port: 5600
+  annotations: {}
+  port: 80
   type: ClusterIP
 
 serviceAccount:
@@ -295,6 +280,13 @@ serviceMonitor:
 
 terminationGracePeriodSeconds: 60
 
+test:
+  enabled: true
+  image:
+    pullPolicy: IfNotPresent
+    repository: postman/newman
+    tag: 5.3.0
+
 tolerations: []
 
 updateStrategy:
@@ -307,14 +299,10 @@ updateStrategy:
 volumeMounts:
   config:
     mountPath: /usr/etc/hedera
-  tmp:
-    mountPath: /tmp  # Vertx needs a writable cache directory
 
 # Volume mounts to add to the container. The key is the volume name and the value is the volume definition. Evaluated as a template.
 volumes:
   config:
     secret:
       defaultMode: 420
-      secretName: '{{ include "hedera-mirror-grpc.fullname" . }}'
-  tmp:
-    emptyDir: {}
+      secretName: '{{ include "hedera-mirror-web3.fullname" . }}'
