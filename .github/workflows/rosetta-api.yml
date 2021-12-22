@@ -30,7 +30,7 @@ jobs:
           restore-keys: ${{ runner.os }}-go-
 
       - name: Maven verify
-        run: ./mvnw verify -pl "${MODULE}" --also-make
+        run: ./mvnw verify -pl "${MODULE}"
         working-directory: .
         env:
           GOPATH: ~/go
@@ -84,7 +84,7 @@ jobs:
     needs: image
     strategy:
       matrix:
-        online-only: ['true', 'false']
+        online-only: [ 'true', 'false' ]
     timeout-minutes: 15
     env:
       OFFLINE_URL: http://localhost:5700

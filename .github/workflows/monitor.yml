@@ -30,7 +30,7 @@ jobs:
           java-version: 11
 
       - name: Maven verify
-        run: ./mvnw verify -pl "${MODULE}" --also-make -Dtest='!com.hedera.mirror.importer.**' -DfailIfNoTests=false
+        run: ./mvnw verify -pl "${MODULE}" -Dtest='!com.hedera.mirror.importer.**' -DfailIfNoTests=false
         working-directory: .
 
       - name: Upload coverage report
