@@ -45,7 +45,7 @@ const dbAdminPassword = process.env.POSTGRES_PASSWORD || crypto.randomBytes(16).
 const v1SchemaConfigs = {
   docker: {
     imageName: 'postgres',
-    tagName: '13.5-alpine',
+    tagName: '9.6-alpine',
   },
   flyway: {
     baselineVersion: '0',
@@ -152,7 +152,7 @@ const flywayMigrate = async (dbSessionConfig) => {
       "url": "jdbc:postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}",
       "user": "${dbAdminUser}"
     },
-    "version": "8.0.4",
+    "version": "7.15.0",
     "downloads": {
       "storageDirectory": "${flywayDataPath}"
     }
