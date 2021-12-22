@@ -796,7 +796,7 @@ const getTokenInfo = async (query, params) => {
 
 /**
  * Extracts SQL query, params, order, and limit
- * Combine NFT TRANSFERS (mint, transfer, wipe account, burn) details from nft_transfer with DELETION details from nft
+ * Combine NFT transfers (mint, transfer, wipe account, burn) details from nft_transfer with DELETION details from nft
  *
  * @param {string} tokenId encoded token ID
  * @param {string} serialNumber nft serial number

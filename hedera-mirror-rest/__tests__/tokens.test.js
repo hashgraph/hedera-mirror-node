@@ -1298,48 +1298,24 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
     limit $${paramIndex}`;
   };
 
-  const verifyExtractSqlFromNftTransferHistoryRequest = (
-    tokenId,
-    serialNumber,
-    transferQuery,
-    deletedQuery,
-    expectedQuery,
-    expectedParams,
-    filters
-  ) => {
-    const {query, params} = tokens.extractSqlFromNftTransferHistoryRequest(
-      tokenId,
-      serialNumber,
-      transferQuery,
-      deletedQuery,
-      filters
-    );
-
-    assertSqlQueryEqual(query, expectedQuery);
-    expect(params).toStrictEqual(expectedParams);
-  };
+  const tokenId = '1009'; // encoded
+  const serialNumber = '960';
 
   test('Verify simple query', () => {
-    const tokenId = '1009'; // encoded
-    const serialNumber = '960';
-    const filters = [];
-
     const expectedQuery = getExpectedQuery();
     const expectedParams = [tokenId, serialNumber, defaultLimit];
 
-    const actual = tokens.extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
+    const actual = tokens.extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, []);
     assertSqlQueryEqual(actual.query, expectedQuery);
     expect(actual.params).toStrictEqual(expectedParams);
   });
 
   test('Verify limit and order query', () => {
-    const tokenId = '1009'; // encoded
-    const serialNumber = '960';
     const limit = '3';
     const order = orderFilterValues.ASC;
     const filters = [
-      {key: filterKeys.LIMIT, operator: ' = ', value: limit},
-      {key: filterKeys.ORDER, operator: ' = ', value: order},
+      {key: filterKeys.LIMIT, operator: utils.opsMap.eq, value: limit},
+      {key: filterKeys.ORDER, operator: utils.opsMap.eq, value: order},
     ];
 
     const expectedQuery = getExpectedQuery(order);
@@ -1351,10 +1327,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
   });
 
   test('Verify timestamp query', () => {
-    const tokenId = '1009'; // encoded
-    const serialNumber = '960';
     const timestamp = 5;
-    const filters = [{key: filterKeys.TIMESTAMP, operator: ' > ', value: timestamp}];
+    const filters = [{key: filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: timestamp}];
 
     const expectedQuery = getExpectedQuery(orderFilterValues.DESC, filters);
     const expectedParams = [tokenId, serialNumber, timestamp, defaultLimit];
