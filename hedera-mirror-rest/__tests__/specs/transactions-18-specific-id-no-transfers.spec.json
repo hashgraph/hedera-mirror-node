@@ -35,21 +35,22 @@
     "transactions": [
       {
         "bytes": "Ynl0ZXM=",
+        "charged_tx_fee": 0,
         "consensus_timestamp": "1234567890.999999999",
         "entity_id": "0.0.9",
-        "valid_start_timestamp": "1234567890.999999998",
-        "charged_tx_fee": 0,
+        "max_fee": "33",
         "memo_base64": null,
-        "result": "SUCCESS",
-        "scheduled": false,
-        "transaction_hash": "aGFzaA==",
         "name": "CRYPTOUPDATEACCOUNT",
         "node": "0.0.3",
         "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "result": "SUCCESS",
+        "scheduled": false,
+        "transaction_hash": "aGFzaA==",
         "transaction_id": "0.0.10-1234567890-999999998",
+        "transfers": [],
         "valid_duration_seconds": "11",
-        "max_fee": "33",
-        "transfers": []
+        "valid_start_timestamp": "1234567890.999999998"
       }
     ]
   }

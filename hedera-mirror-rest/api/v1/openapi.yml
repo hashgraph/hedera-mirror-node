@@ -1650,28 +1650,35 @@ components:
     Transaction:
       type: object
       properties:
-        consensus_timestamp:
-          $ref: '#/components/schemas/Timestamp'
-        entity_id:
-          $ref: '#/components/schemas/EntityId'
+        assessed_custom_fees:
+          type: array
+          items:
+            type: object
+            properties:
+              amount:
+                type: number
+              collector_account_id:
+                $ref: '#/components/schemas/EntityId'
+              effective_payer_account_ids:
+                type: array
+                items:
+                  $ref: '#/components/schemas/EntityId'
+              token_id:
+                $ref: '#/components/schemas/EntityId'
         bytes:
           type: string
           format: byte
           nullable: true
-        transaction_hash:
-          type: string
-          format: byte
-        valid_start_timestamp:
-          $ref: '#/components/schemas/Timestamp'
         charged_tx_fee:
           type: number
+        consensus_timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        entity_id:
+          $ref: '#/components/schemas/EntityId'
+        max_fee:
+          type: string
         memo_base64:
           nullable: true
-        nonce:
-          type: integer
-          minimum: 0
-        result:
-          type: string
         name:
           $ref: '#/components/schemas/TransactionTypes'
         nft_transfers:
@@ -1690,28 +1697,17 @@ components:
             required:
               - serial_number
               - token_id
-        max_fee:
-          type: string
-        valid_duration_seconds:
-          type: string
         node:
           $ref: '#/components/schemas/EntityId'
+        nonce:
+          type: integer
+          minimum: 0
+        parent_consensus_timestamp:
+          $ref: '#/components/schemas/TimestampNullable'
+        result:
+          type: string
         scheduled:
           type: boolean
-        transaction_id:
-          type: string
-        transfers:
-          type: array
-          items:
-            type: object
-            properties:
-              account:
-                $ref: '#/components/schemas/EntityId'
-              amount:
-                type: number
-            required:
-              - account
-              - amount
         token_transfers:
           type: array
           items:
@@ -1727,21 +1723,27 @@ components:
               - token_id
               - account
               - amount
-        assessed_custom_fees:
+        transaction_hash:
+          type: string
+          format: byte
+        transaction_id:
+          type: string
+        transfers:
           type: array
           items:
             type: object
             properties:
+              account:
+                $ref: '#/components/schemas/EntityId'
               amount:
                 type: number
-              collector_account_id:
-                $ref: '#/components/schemas/EntityId'
-              effective_payer_account_ids:
-                type: array
-                items:
-                  $ref: '#/components/schemas/EntityId'
-              token_id:
-                $ref: '#/components/schemas/EntityId'
+            required:
+              - account
+              - amount
+        valid_duration_seconds:
+          type: string
+        valid_start_timestamp:
+          $ref: '#/components/schemas/Timestamp'
       example:
         consensus_timestamp: "1234567890.000000007"
         transaction_hash: "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW"
