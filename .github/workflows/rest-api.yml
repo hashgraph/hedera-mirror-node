@@ -38,7 +38,7 @@ jobs:
       - name: Test
         env:
           MIRROR_NODE_SCHEMA: ${{ matrix.schema}}
-        run: ./mvnw verify -pl "${MODULE}" --also-make
+        run: ./mvnw verify -pl "${MODULE}"
         working-directory: .
 
       - name: Rename artifact

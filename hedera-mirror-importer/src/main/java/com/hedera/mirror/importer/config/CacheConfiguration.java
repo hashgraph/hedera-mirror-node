@@ -55,7 +55,7 @@ public class CacheConfiguration {
     CacheManager cacheManagerAlias() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=100000,expireAfterWrite=30m");
-        return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
+        return caffeineCacheManager;
     }
 
     @Bean(KEY_GENERATOR_ALIAS)

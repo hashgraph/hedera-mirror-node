@@ -31,7 +31,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build images
-        run: ./mvnw install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest,hedera-mirror-rosetta,hedera-mirror-web3 --also-make -Dskip.npm -DskipTests -Ddocker.tag.version=${IMAGE_TAG}
+        run: ./mvnw install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest,hedera-mirror-rosetta,hedera-mirror-web3 -Dskip.npm -DskipTests -Ddocker.tag.version=${IMAGE_TAG}
 
       - name: Create k3d cluster
         timeout-minutes: 3
