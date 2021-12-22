@@ -38,7 +38,6 @@ class NftTransactionHistoryViewModel {
       transactionModel.validStartNs
     );
     this.type = TransactionType.getName(transactionModel.type);
-    logger.trace(`type proto id - ${transactionModel.type}, type name - ${this.type}`);
   }
 }
 
