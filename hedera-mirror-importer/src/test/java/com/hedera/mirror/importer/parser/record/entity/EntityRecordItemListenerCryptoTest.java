@@ -65,18 +65,10 @@ import com.hedera.mirror.importer.util.Utility;
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId1 = AccountID.newBuilder().setAccountNum(1001).build();
-    private static final AccountID accountId2 = AccountID.newBuilder().setAccountNum(1002).build();
-    private static final String ALIAS_KEY_1 =
-            "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
-    private static final String ALIAS_KEY_2 =
-            "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
-    private static final long[] additionalTransfers = {5000, 6000};
-    private static final ByteString[] additionalAliasTransfers = {
-            ByteString.copyFromUtf8(ALIAS_KEY_1),
-            ByteString.copyFromUtf8(ALIAS_KEY_2)
-    };
+    private static final long[] additionalTransfers = {5000};
     private static final long[] additionalTransferAmounts = {1001, 1002};
-    private static final long[] additionalAliasTransferAmounts = {1003, 1004};
+    private static final ByteString ALIAS_KEY = ByteString.copyFromUtf8(
+            "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff");
 
     @BeforeEach
     void before() {
@@ -169,9 +161,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         Transaction transaction = cryptoCreateTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
-        ByteString mirrorAlias = ByteString.copyFromUtf8(ALIAS_KEY_1);
         TransactionRecord record = buildTransactionRecord(
-                recordBuilder -> recordBuilder.setAlias(mirrorAlias).getReceiptBuilder().setAccountID(accountId1),
+                recordBuilder -> recordBuilder.setAlias(ALIAS_KEY).getReceiptBuilder().setAccountID(accountId1),
                 transactionBody,
                 ResponseCodeEnum.SUCCESS.getNumber());
 
@@ -189,10 +180,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(5, cryptoTransferRepository.count()),
                 () -> assertCryptoTransaction(transactionBody, record),
                 () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp()),
-                () -> assertEquals(mirrorAlias, record.getAlias()),
                 () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance()),
                 () -> assertThat(initialBalanceTransfer).isPresent(),
-                () -> assertThat(entityRepository.findByAlias(mirrorAlias.toByteArray())).get()
+                () -> assertThat(entityRepository.findByAlias(ALIAS_KEY.toByteArray())).get()
                         .isEqualTo(accountEntityId.getId())
         );
     }
@@ -481,7 +471,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
-                () -> assertEquals(5, cryptoTransferRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, record)
         );
     }
@@ -529,44 +519,35 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         entityProperties.getPersist().setNonFeeTransfers(true);
 
-        // setup alias creates
+        // Crypto create alias account
         Transaction accountCreateTransaction = cryptoCreateTransaction();
         TransactionBody accountCreateTransactionBody = getTransactionBody(accountCreateTransaction);
-        TransactionRecord record1 = buildTransactionRecord(
-                recordBuilder -> recordBuilder.setAlias(ByteString.copyFromUtf8(ALIAS_KEY_1)).getReceiptBuilder()
-                        .setAccountID(accountId1),
-                accountCreateTransactionBody,
-                ResponseCodeEnum.SUCCESS.getNumber());
-        TransactionRecord record2 = buildTransactionRecord(
-                recordBuilder -> recordBuilder.setAlias(ByteString.copyFromUtf8(ALIAS_KEY_2)).getReceiptBuilder()
-                        .setAccountID(accountId2),
+        TransactionRecord recordCreate = buildTransactionRecord(
+                recordBuilder -> recordBuilder.setAlias(ALIAS_KEY).getReceiptBuilder().setAccountID(accountId1),
                 accountCreateTransactionBody,
                 ResponseCodeEnum.SUCCESS.getNumber());
 
-        parseRecordItemsAndCommit(List.of(
-                new RecordItem(accountCreateTransaction, record1), new RecordItem(accountCreateTransaction, record2)));
-
-        // make the transfers to alias accounts
-        Transaction transaction = cryptoTransferTransactionUsingAlias();
+        // Crypto transfer to alias account
+        Transaction transaction = buildTransaction(builder -> builder.getCryptoTransferBuilder().getTransfersBuilder()
+                .addAccountAmounts(accountAliasAmount(ALIAS_KEY, 1003)));
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = transactionRecordSuccess(transactionBody);
+        TransactionRecord recordTransfer = transactionRecordSuccess(transactionBody);
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemsAndCommit(List.of(new RecordItem(accountCreateTransaction, recordCreate),
+                new RecordItem(transaction, recordTransfer)));
 
         assertAll(
-                () -> assertEquals(3, transactionRepository.count()),
-                () -> assertEntities(EntityId.of(accountId1), EntityId.of(accountId2)),
-                () -> assertEquals(13, cryptoTransferRepository
-                        .count()), // ((5 transfers * 3 transactions) - 2 skipped alisa transfers in record test logic
-                () -> assertEquals(additionalTransfers.length + additionalTransfers.length +
-                        additionalAliasTransfers.length, nonFeeTransferRepository
-                        .count()), // 2 non fee transfers * 3 transactions
-                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertEquals(2, transactionRepository.count()),
+                () -> assertEntities(EntityId.of(accountId1)),
+                () -> assertEquals(8, cryptoTransferRepository.count()),
+                () -> assertEquals(additionalTransfers.length + additionalTransfers.length + 1,
+                        nonFeeTransferRepository.count()), // 2 non fee transfers * 2 transactions
+                () -> assertTransactionAndRecord(transactionBody, recordTransfer),
                 () -> assertThat(nonFeeTransferRepository.findAll())
                         .extracting(NonFeeTransfer::getId)
                         .extracting(NonFeeTransfer.Id::getEntityId)
                         .extracting(EntityId::getEntityNum)
-                        .contains(accountId1.getAccountNum(), accountId2.getAccountNum())
+                        .contains(accountId1.getAccountNum())
         );
     }
 
@@ -683,16 +664,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
             for (int i = 0; i < additionalTransfers.length; i++) {
                 builder.getCryptoTransferBuilder().getTransfersBuilder()
                         .addAccountAmounts(accountAmount(additionalTransfers[i], additionalTransferAmounts[i]));
-            }
-        });
-    }
-
-    private Transaction cryptoTransferTransactionUsingAlias() {
-        return buildTransaction(builder -> {
-            for (int i = 0; i < additionalTransfers.length; i++) {
-                builder.getCryptoTransferBuilder().getTransfersBuilder()
-                        .addAccountAmounts(accountAliasAmount(additionalAliasTransfers[i],
-                                additionalAliasTransferAmounts[i]));
             }
         });
     }
