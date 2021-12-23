@@ -79,6 +79,7 @@
         "amount": 30,
         "nodeAccountId": "0.0.3",
         "nonce": 1,
+        "parent_consensus_timestamp": "1234567800000000009",
         "treasuryAccountId": "0.0.98",
         "scheduled": true
       }
@@ -98,7 +99,7 @@
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "nonce": 1,
-        "parent_consensus_timestamp": null,
+        "parent_consensus_timestamp": "1234567800.000000009",
         "result": "SUCCESS",
         "scheduled": true,
         "transaction_hash": "aGFzaA==",
