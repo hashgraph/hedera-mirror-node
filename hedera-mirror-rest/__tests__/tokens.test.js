@@ -1247,7 +1247,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
       .join(' and ');
     const deleteTimestampCondition = transferTimestampCondition.replace(
       'nft_tr.consensus_timestamp',
-      't.consensus_timestamp'
+      'consensus_timestamp'
     );
     const limitQuery = `limit $${paramIndex}`;
     return `with serial_transfers as (
@@ -1275,16 +1275,17 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
       on nft_tr.consensus_timestamp = t.consensus_timestamp
     ), token_deletion as (
       select
-        t.consensus_timestamp,
-        t.nonce,
-        t.payer_account_id,
-        t.type,
-        t.valid_start_ns
-      from entity e
-      join transaction t
-        on t.consensus_timestamp = lower(e.timestamp_range)
-      where e.id = $1 and e.deleted is true
-        ${(deleteTimestampCondition && ' and ' + deleteTimestampCondition) || ''}
+        consensus_timestamp,
+        nonce,
+        payer_account_id,
+        type,
+        valid_start_ns
+      from transaction
+      where consensus_timestamp = (
+          select lower(timestamp_range)
+          from entity
+          where id = $1 and deleted is true
+        ) ${(deleteTimestampCondition && ' and ' + deleteTimestampCondition) || ''}
     )
     select * from token_transactions
     union

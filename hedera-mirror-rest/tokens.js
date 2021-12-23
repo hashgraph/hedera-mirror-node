@@ -810,10 +810,10 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
   const params = [tokenId, serialNumber];
   // if the nft token class is deleted, the lower of the timestamp_range is the consensus timestamp of the token
   // delete transaction
-  const tokenDeleteConditions = [
-    `${Entity.getFullName(Entity.ID)} = $1`,
-    `${Entity.getFullName(Entity.DELETED)} is true`,
-  ];
+  const tokenDeleteTimestampQuery = `select lower(${Entity.TIMESTAMP_RANGE})
+    from ${Entity.tableName}
+    where ${Entity.ID} = $1 and ${Entity.DELETED} is true`;
+  const tokenDeleteConditions = [`${Transaction.CONSENSUS_TIMESTAMP} = (${tokenDeleteTimestampQuery})`];
   const transferConditions = [
     `${NftTransfer.getFullName(NftTransfer.TOKEN_ID)} = $1`,
     `${NftTransfer.getFullName(NftTransfer.SERIAL_NUMBER)} = $2`,
@@ -821,7 +821,6 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
 
   // add applicable filters
   const transferTimestampColumn = NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP);
-  const transactionTimestampColumn = Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP);
   for (const filter of filters) {
     switch (filter.key) {
       case constants.filterKeys.LIMIT:
@@ -833,7 +832,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
       case constants.filterKeys.TIMESTAMP:
         const paramCount = params.push(filter.value);
         transferConditions.push(`${transferTimestampColumn} ${filter.operator} $${paramCount}`);
-        tokenDeleteConditions.push(`${transactionTimestampColumn} ${filter.operator} $${paramCount}`);
+        tokenDeleteConditions.push(`${Transaction.CONSENSUS_TIMESTAMP} ${filter.operator} $${paramCount}`);
         break;
       default:
         break;
@@ -853,7 +852,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
   )`;
 
   const joinTransactionClause = `join ${Transaction.tableName} ${Transaction.tableAlias}
-    on ${transferTimestampColumn} = ${transactionTimestampColumn}`;
+    on ${transferTimestampColumn} = ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)}`;
   const tokenTransactionCte = `token_transactions as (
     select ${nftTransferHistorySelectFields.join(',\n')}
     from serial_transfers ${NftTransfer.tableAlias}
@@ -862,14 +861,12 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
 
   const tokenDeletionCte = `token_deletion as (
     select
-      ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)},
-      ${Transaction.getFullName(Transaction.NONCE)},
-      ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
-      ${Transaction.getFullName(Transaction.TYPE)},
-      ${Transaction.getFullName(Transaction.VALID_START_NS)}
-    from ${Entity.tableName} ${Entity.tableAlias}
-    join ${Transaction.tableName} ${Transaction.tableAlias}
-      on ${transactionTimestampColumn} = lower(${Entity.getFullName(Entity.TIMESTAMP_RANGE)})
+      ${Transaction.CONSENSUS_TIMESTAMP},
+      ${Transaction.NONCE},
+      ${Transaction.PAYER_ACCOUNT_ID},
+      ${Transaction.TYPE},
+      ${Transaction.VALID_START_NS}
+    from ${Transaction.tableName}
     where ${tokenDeleteConditions.join(' and ')}
   )`;
 
