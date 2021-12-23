@@ -1249,6 +1249,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
       'nft_tr.consensus_timestamp',
       't.consensus_timestamp'
     );
+    const limitQuery = `limit $${paramIndex}`;
     return `with serial_transfers as (
       select
         consensus_timestamp,
@@ -1258,6 +1259,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
       from nft_transfer nft_tr
       where nft_tr.token_id = $1 and nft_tr.serial_number = $2
         ${(transferTimestampCondition && ' and ' + transferTimestampCondition) || ''}
+      order by consensus_timestamp ${order}
+      ${limitQuery}
     ), token_transactions as (
       select
         nft_tr.consensus_timestamp,
@@ -1295,7 +1298,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
       valid_start_ns
     from token_deletion
     order by consensus_timestamp ${order}
-    limit $${paramIndex}`;
+    ${limitQuery}`;
   };
 
   const tokenId = '1009'; // encoded

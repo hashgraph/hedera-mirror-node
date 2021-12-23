@@ -840,10 +840,16 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
     }
   }
 
+  // the query planner may not be able to push the limit in the main query to the cte, thus adding the order and limit
+  // here to optimize the performance for nfts with a lot of transfers
+  params.push(limit);
+  const limitQuery = `limit $${params.length}`;
   const serialTransferCte = `serial_transfers as (
     select ${nftTransferHistoryCteSelectFields.join(',\n')}
     from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
     where ${transferConditions.join(' and ')}
+    order by ${NftTransfer.CONSENSUS_TIMESTAMP} ${order}
+    ${limitQuery}
   )`;
 
   const joinTransactionClause = `join ${Transaction.tableName} ${Transaction.tableAlias}
@@ -880,7 +886,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
       ${Transaction.VALID_START_NS}
     from token_deletion
     order by ${Transaction.CONSENSUS_TIMESTAMP} ${order}
-    limit $${params.push(limit)}`;
+    ${limitQuery}`;
 
   return utils.buildPgSqlObject(query, params, order, limit);
 };
