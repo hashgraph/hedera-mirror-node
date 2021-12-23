@@ -139,6 +139,7 @@
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "nonce": 0,
+        "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
         "token_transfers": [
@@ -182,6 +183,7 @@
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",
         "nonce": 0,
+        "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
         "transaction_hash": "aGFzaA==",

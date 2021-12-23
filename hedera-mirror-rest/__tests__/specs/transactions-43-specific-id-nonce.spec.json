@@ -97,6 +97,7 @@
         "name": "CRYPTOTRANSFER",
         "node": "0.0.4",
         "nonce": 1,
+        "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
         "transaction_hash": "aGFzaA==",

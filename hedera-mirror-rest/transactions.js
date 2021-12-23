@@ -46,6 +46,7 @@ const transactionFields = [
   Transaction.MEMO,
   Transaction.NODE_ACCOUNT_ID,
   Transaction.NONCE,
+  Transaction.PARENT_CONSENSUS_TIMESTAMP,
   Transaction.PAYER_ACCOUNT_ID,
   Transaction.RESULT,
   Transaction.SCHEDULED,
@@ -282,6 +283,8 @@ const createTransferLists = (rows) => {
     const validStartTimestamp = row.valid_start_ns;
     const payerAccountId = EntityId.parse(row.payer_account_id).toString();
     return {
+      assessed_custom_fees: createAssessedCustomFeeList(row.assessed_custom_fees),
+      bytes: utils.encodeBase64(row.transaction_bytes),
       charged_tx_fee: Number(row.charged_tx_fee),
       consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
       entity_id: EntityId.parse(row.entity_id, true).toString(),
@@ -291,16 +294,15 @@ const createTransferLists = (rows) => {
       nft_transfers: createNftTransferList(row.nft_transfer_list),
       node: EntityId.parse(row.node_account_id, true).toString(),
       nonce: Number(row.nonce),
+      parent_consensus_timestamp: utils.nsToSecNs(row.parent_consensus_timestamp),
       result: TransactionResult.getName(row.result),
       scheduled: row.scheduled,
       token_transfers: createTokenTransferList(row.token_transfer_list),
-      bytes: utils.encodeBase64(row.transaction_bytes),
       transaction_hash: utils.encodeBase64(row.transaction_hash),
       transaction_id: utils.createTransactionId(payerAccountId, validStartTimestamp),
       transfers: createCryptoTransferList(row.crypto_transfer_list),
       valid_duration_seconds: utils.getNullableNumber(row.valid_duration_seconds),
       valid_start_timestamp: utils.nsToSecNs(validStartTimestamp),
-      assessed_custom_fees: createAssessedCustomFeeList(row.assessed_custom_fees),
     };
   });
 

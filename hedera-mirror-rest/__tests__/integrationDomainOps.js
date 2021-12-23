@@ -413,6 +413,7 @@ const addTransaction = async (transaction) => {
     max_fee: 33,
     node_account_id: null,
     nonce: 0,
+    parent_consensus_timestamp: null,
     payer_account_id: null,
     result: 22,
     scheduled: false,
