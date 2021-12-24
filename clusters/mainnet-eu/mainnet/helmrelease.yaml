@@ -46,6 +46,8 @@ spec:
       prometheusRules:
         MonitorPublishLatency:
           enabled: false
+        MonitorSubscribeLatency:
+          enabled: false
     postgresql:
       enabled: false
     redis:
