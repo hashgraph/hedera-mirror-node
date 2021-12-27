@@ -29,31 +29,27 @@ final class JsonRpcErrorResponse extends JsonRpcResponse {
     private final JsonRpcError error = new JsonRpcError();
 
     JsonRpcErrorResponse(JsonRpcErrorCode code) {
-        this(null, code, null);
+        this(code, null);
     }
 
-    JsonRpcErrorResponse(JsonRpcRequest request, JsonRpcErrorCode code) {
-        this(request, code, null);
-    }
-
-    JsonRpcErrorResponse(JsonRpcRequest request, JsonRpcErrorCode code, String detailedMessage) {
+    JsonRpcErrorResponse(JsonRpcErrorCode code, String detailedMessage) {
         String message = code.getMessage();
 
         if (StringUtils.isNotBlank(detailedMessage)) {
             message += ": " + detailedMessage;
         }
 
-        if (request != null && request.getId() != null && request.getId() >= 0) {
-            setId(request.getId());
-        }
-
-        error.setCode(code.getCode());
+        error.setCode(code);
         error.setMessage(message);
+    }
+
+    String getStatus() {
+        return error.getCode().name();
     }
 
     @Data
     public static class JsonRpcError {
-        private int code;
+        private JsonRpcErrorCode code;
         private Object data;
         private String message;
     }

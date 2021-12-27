@@ -50,6 +50,13 @@ class Web3ServiceFactoryTest {
     }
 
     @Test
+    void isValid() {
+        assertThat(serviceFactory.isValid(METHOD)).isTrue();
+        assertThat(serviceFactory.isValid(null)).isFalse();
+        assertThat(serviceFactory.isValid("unknown")).isFalse();
+    }
+
+    @Test
     void lookup() {
         assertThat(serviceFactory.lookup(METHOD)).isEqualTo(web3Service);
     }
