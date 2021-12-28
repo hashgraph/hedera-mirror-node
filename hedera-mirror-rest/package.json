@@ -30,7 +30,7 @@
     "cors": "^2.8.5",
     "express": "^4.17.2",
     "express-http-context": "^1.2.4",
-    "express-openapi-validator": "^4.13.4",
+    "express-openapi-validator": "^4.13.5",
     "extend": "^3.0.2",
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
