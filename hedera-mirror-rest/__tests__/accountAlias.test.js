@@ -49,12 +49,12 @@ describe('AccountAlias', () => {
     });
 
     describe('invalid', () => {
-      const inputs = [
+      const inputs = _.flattenDeep([
         null,
         undefined,
-        ..._.flatten(invalidBase32Strs.map((alias) => getAllAccountAliases(alias))),
+        invalidBase32Strs.map((alias) => getAllAccountAliases(alias)),
         '0.0.0.AABBCC22',
-      ];
+      ]);
 
       inputs.forEach((input) => {
         test(`${input}`, () => {
@@ -91,19 +91,12 @@ describe('isValidAccountAlias', () => {
   });
 
   describe('invalid', () => {
-    const inputs = [
+    const inputs = _.flattenDeep([
       null,
       undefined,
-      '',
-      'AABBCC',
-      '0.AABBCC',
-      '0.0.AABBCC',
-      'A=======',
-      'AAA=====',
-      'AAAAAA==',
-      'AABBCC01',
+      invalidBase32Strs.map((alias) => getAllAccountAliases(alias)),
       '0.0.0.AABBCC22',
-    ];
+    ]);
     inputs.forEach((input) => {
       test(`${input}`, () => {
         expect(isValidAccountAlias(input)).toBeFalse();

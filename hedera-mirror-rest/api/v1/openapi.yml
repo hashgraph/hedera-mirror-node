@@ -6,6 +6,7 @@ paths:
       description: Returns a list of all account entity items on the network.
       operationId: listAccounts
       parameters:
+        - $ref: '#/components/parameters/accountAliasQueryParam'
         - $ref: '#/components/parameters/accountBalanceQueryParam'
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/accountPublicKeyQueryParam'
@@ -876,6 +877,8 @@ components:
       properties:
         account:
           $ref: '#/components/schemas/EntityId'
+        alias:
+          $ref: '#/components/schemas/Alias'
         auto_renew_period:
           nullable: true
         balance:
@@ -946,6 +949,8 @@ components:
           $ref: '#/components/schemas/Balance'
         account:
           $ref: '#/components/schemas/EntityId'
+        alias:
+          $ref: '#/components/schemas/Alias'
         expiry_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         auto_renew_period:
@@ -963,6 +968,11 @@ components:
           type: boolean
         links:
           $ref: '#/components/schemas/Links'
+    Alias:
+      description: Base32 encoded account alias
+      type: string
+      pattern: ^(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$
+      nullable: true
     Balance:
       type: object
       required:
@@ -1846,6 +1856,24 @@ components:
               messages:
                 - message: Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig
   parameters:
+    accountAliasQueryParam:
+      name: account.alias
+      in: query
+      description: The optional account alias to query for. The last is hornored if there are multiple
+      explode: true
+      examples:
+        eqAliasOnly:
+          summary: Example of equals with alias only
+          value: AABBCC22
+        eqRealmAndAlias:
+          summary: Example of equals with realm.alias
+          value: 0.AABBCC22
+        eqFull:
+          summary: Example of equals with shard.realm.alias
+          value: 0.1.AABBCC22
+      schema:
+        type: string
+        pattern: ^(eq\:)?(\d{1,5}\.){0,2}(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$
     accountBalanceQueryParam:
       name: account.balance
       in: query

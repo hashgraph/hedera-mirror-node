@@ -58,7 +58,6 @@ describe('isValidBase32Str', () => {
 
   describe('invalid', () => {
     const data = [...invalidBase32Strs, null, undefined];
-
     data.forEach((value) => {
       test(`${value}`, () => {
         expect(base32.isValidBase32Str(value)).toBeFalse();

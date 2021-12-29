@@ -356,6 +356,7 @@ class Pool {
       const row = {};
 
       row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
+      row.alias = null;
       row.auto_renew_period = i * 1000;
       row.consensus_timestamp = this.toNs(this.timeNow);
       row.deleted = false;
@@ -365,7 +366,7 @@ class Pool {
       row.max_automatic_token_associations = i;
       row.memo = 'account_memo' + i;
       row.receiver_sig_required = false;
-      row.type = 'Account';
+      row.type = 'ACCOUNT';
 
       rows.push(row);
     }
