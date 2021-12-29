@@ -24,6 +24,8 @@ const _ = require('lodash');
 
 const EntityId = require('../entityId');
 const utils = require('../utils');
+const {ContractLogViewModel} = require('./contractLogViewModel');
+const constants = require('../constants');
 
 /**
  * Contract results view model
@@ -34,7 +36,7 @@ class ContractResultViewModel {
    *
    * @param {ContractResult} contractResult
    */
-  constructor(contractResult, recordFile = undefined, transaction = undefined) {
+  constructor(contractResult, recordFile = undefined, transaction = undefined, contractLogs = undefined) {
     Object.assign(this, {
       amount: Number(contractResult.amount),
       call_result: utils.toHexString(contractResult.callResult, true),
@@ -57,6 +59,30 @@ class ContractResultViewModel {
     if (!_.isNil(transaction)) {
       this.hash = utils.toHexString(transaction.transactionHash, true);
     }
+
+    if (!_.isNil(contractLogs)) {
+      this.logs = [];
+      for (const contractLog of contractLogs) {
+        const contractId = EntityId.parse(contractLog.contractId, constants.filterKeys.CONTRACTID);
+        //TODO figure out why the constructor isn't working
+        let test = {};
+        Object.assign(test, {
+          address: contractId.toSolidityAddress(),
+          contract_id: contractId.toString(),
+          data: utils.toHexString(contractLog.data, true),
+          index: contractLog.index,
+          root_contract_id: EntityId.parse(contractLog.rootContractId, true).toString(),
+          topics: this._formatTopics([contractLog.topic0, contractLog.topic1, contractLog.topic2, contractLog.topic3]),
+        });
+        // const viewModel = new ContractLogViewModel(log);
+        // delete viewModel.timestamp;
+        this.logs.push(test);
+      }
+    }
+  }
+
+  _formatTopics(topics) {
+    return topics.filter((topic) => topic !== null).map((topic) => utils.toHexString(topic, true, 64));
   }
 }
 

@@ -66,6 +66,16 @@ class ContractService extends BaseService {
     ${ContractLog.TOPIC3}
     from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
+  static contractLogsForResultsByTimestampQuery = `select ${ContractLog.CONTRACT_ID},
+    ${ContractLog.DATA},
+    ${ContractLog.INDEX},
+    ${ContractLog.ROOT_CONTRACT_ID},
+    ${ContractLog.TOPIC0},
+    ${ContractLog.TOPIC1},
+    ${ContractLog.TOPIC2},
+    ${ContractLog.TOPIC3}
+    from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
+
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
     const query = [
@@ -164,6 +174,22 @@ class ContractService extends BaseService {
     );
     const rows = await super.getRows(query, params, 'getContractLogsByIdAndFilters');
     return rows.map((cr) => new ContractLog(cr));
+  }
+
+  async getContractLogsByTimestamps(timestamps) {
+    let params = [timestamps];
+    let timestampsOpAndValue = '= $1';
+    if (Array.isArray(timestamps)) {
+      params = timestamps;
+      const positions = _.range(1, timestamps.length + 1).map((i) => `$${i}`);
+      timestampsOpAndValue = `in (${positions})`;
+    }
+
+    const whereClause = `where ${ContractLog.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
+    const orderClause = `order by ${ContractLog.CONSENSUS_TIMESTAMP}, ${ContractLog.INDEX}`;
+    const query = [ContractService.contractLogsForResultsByTimestampQuery, whereClause, orderClause].join('\n');
+    const rows = await super.getRows(query, params, 'getContractLogsByTimestamps');
+    return rows.map((row) => new ContractLog(row));
   }
 }
 
