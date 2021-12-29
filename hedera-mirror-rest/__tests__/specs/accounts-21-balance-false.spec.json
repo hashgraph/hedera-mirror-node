@@ -57,6 +57,7 @@
     "accounts": [
       {
         "account": "0.0.7",
+        "alias": null,
         "balance": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
@@ -68,6 +69,7 @@
       },
       {
         "account": "0.0.8",
+        "alias": null,
         "balance": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
@@ -79,6 +81,7 @@
       },
       {
         "account": "0.0.9",
+        "alias": null,
         "balance": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,

@@ -20,11 +20,13 @@
 
 'use strict';
 
+const _ = require('lodash');
 const sinon = require('sinon');
 
 const EntityId = require('../entityId');
 const utils = require('../utils.js');
 const constants = require('../constants.js');
+const {invalidBase32Strs, getAllAccountAliases, validBase32Strs} = require('./testutils');
 
 describe('utils buildAndValidateFilters test', () => {
   const query = {
@@ -560,4 +562,51 @@ describe('utils validateAndParseFilters nonce key tests', () => {
   ];
 
   verifyValidAndInvalidFilters(invalidFilters, filters);
+});
+
+describe('utils validateAndParseFilters account.alias tests', () => {
+  const buildFilter = (filter) => utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ALIAS, filter);
+  const invalidFilters = _.flattenDeep([
+    // erroneous data
+    invalidBase32Strs.map((alias) => getAllAccountAliases(alias)),
+    // invalid op
+    ['ge:AA', 'gte:AA', 'le:AA', 'lte:AA'],
+  ]).map((filter) => buildFilter(filter));
+
+  const filters = _.flattenDeep([validBase32Strs.map((alias) => getAllAccountAliases(alias)), 'eq:AA']).map((filter) =>
+    buildFilter(filter)
+  );
+
+  verifyValidAndInvalidFilters(invalidFilters, filters);
+});
+
+describe('utils isValidAccountAliasAndOp tests', () => {
+  describe('valid', () => {
+    const inputs = ['AABBCC22', '0.AABBCC22', '0.1.AABBCC22'];
+    inputs.forEach((input) => {
+      test(input, () => {
+        expect(utils.isValidAccountAliasAndOp('eq', input)).toBeTrue();
+      });
+    });
+  });
+
+  describe('invalid', () => {
+    const inputs = [
+      // invalid alias
+      ...invalidBase32Strs.map((alias) => ({op: 'eq', alias})),
+      {op: 'eq', alias: 'a.AABBCC22'},
+      {op: 'eq', alias: '-1.a.AABBCC22'},
+      // invalid op
+      {op: 'ne', alias: 'AABBCC22'},
+      {op: 'lt', alias: 'AABBCC22'},
+      {op: 'lte', alias: 'AABBCC22'},
+      {op: 'gt', alias: 'AABBCC22'},
+      {op: 'gte', alias: 'AABBCC22'},
+    ];
+    inputs.forEach((input) => {
+      test(JSON.stringify(input), () => {
+        expect(utils.isValidAccountAliasAndOp(input.op, input.alias)).toBeFalse();
+      });
+    });
+  });
 });

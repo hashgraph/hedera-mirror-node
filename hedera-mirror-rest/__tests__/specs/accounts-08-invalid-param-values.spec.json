@@ -1,14 +1,9 @@
 {
   "description": "Account api invalid parameters",
-  "setup": {
-    "accounts": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": []
-  },
+  "setup": {},
   "urls": [
-    "/api/v1/accounts?account.id=lte:0.1.2.3&account.balance=gt:-2&account.publickey=abcdef&timestamp=-1.2&order=any&balance=1",
-    "/api/v1/accounts?account.id=lte:0.1.2.3&account.balance=gt:9223372036854775808&account.publickey=-2&timestamp=-1.2&order=any&balance=1"
+    "/api/v1/accounts?account.id=lte:0.1.2.3&account.balance=gt:-2&account.publickey=abcdef&timestamp=-1.2&order=any&balance=1&account.alias=x",
+    "/api/v1/accounts?account.id=lte:0.1.2.3&account.balance=gt:9223372036854775808&account.publickey=-2&timestamp=-1.2&order=any&balance=1&account.alias=x"
   ],
   "responseStatus": 400,
   "responseJson": {
@@ -31,6 +26,9 @@
         },
         {
           "message": "Invalid parameter: balance"
+        },
+        {
+          "message": "Invalid parameter: account.alias"
         }
       ]
     }

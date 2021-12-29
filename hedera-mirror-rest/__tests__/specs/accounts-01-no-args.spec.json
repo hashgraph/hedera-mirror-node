@@ -27,6 +27,7 @@
         "receiver_sig_required": null
       },
       {
+        "alias": "deadbeef",
         "num": 10,
         "expiration_timestamp": "9223372036854775807",
         "receiver_sig_required": true
@@ -151,6 +152,7 @@
           ]
         },
         "account": "0.0.1",
+        "alias": null,
         "deleted": false,
         "expiry_timestamp": null,
         "auto_renew_period": null,
@@ -175,6 +177,7 @@
           ]
         },
         "account": "0.0.2",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -190,6 +193,7 @@
           "tokens": []
         },
         "account": "0.0.3",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -205,6 +209,7 @@
           "tokens": []
         },
         "account": "0.0.4",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -229,6 +234,7 @@
           ]
         },
         "account": "0.0.5",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -244,6 +250,7 @@
           "tokens": []
         },
         "account": "0.0.6",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -259,6 +266,7 @@
           "tokens": []
         },
         "account": "0.0.7",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -274,6 +282,7 @@
           "tokens": []
         },
         "account": "0.0.8",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -289,6 +298,7 @@
           "tokens": []
         },
         "account": "0.0.9",
+        "alias": null,
         "expiry_timestamp": "9223372036.854775806",
         "auto_renew_period": null,
         "key": null,
@@ -304,6 +314,7 @@
           "tokens": []
         },
         "account": "0.0.10",
+        "alias": "32W353Y",
         "expiry_timestamp": "9223372036.854775807",
         "auto_renew_period": null,
         "key": null,

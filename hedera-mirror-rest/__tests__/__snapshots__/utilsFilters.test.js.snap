@@ -44,6 +44,210 @@ Array [
 ]
 `;
 
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":""} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0."} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.0."} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.0.00"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.0.11"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.0.88"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.0.99"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.0.A"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.0.AA======"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.0.AAA"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.0.AAAAAA"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.0.aa"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.00"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.11"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.88"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.99"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.A"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.AA======"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.AAA"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.AAAAAA"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"0.aa"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"00"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"11"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"88"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"99"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"A"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"AA======"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"AAA"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"AAAAAA"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"eq","value":"aa"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"ge","value":"AA"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"gte","value":"AA"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"le","value":"AA"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
+exports[`utils validateAndParseFilters account.alias tests Verify validateAndParseFilters for invalid {"key":"account.alias","operator":"lte","value":"AA"} 1`] = `
+Array [
+  "Invalid parameter: account.alias",
+]
+`;
+
 exports[`utils validateAndParseFilters boolean key tests Verify validateAndParseFilters for invalid {"key":"scheduled","operator":"eq","value":"invalid"} 1`] = `
 Array [
   "Invalid parameter: scheduled",

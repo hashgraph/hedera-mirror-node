@@ -1,0 +1,165 @@
+{
+  "description": "Account api calls for alias match",
+  "setup": {
+    "accounts": [
+      {
+        "num": 1
+      },
+      {
+        "num": 2
+      },
+      {
+        "num": 3
+      },
+      {
+        "num": 4
+      },
+      {
+        "num": 5
+      },
+      {
+        "num": 6
+      },
+      {
+        "num": 9,
+        "expiration_timestamp": "9223372036854775806",
+        "max_automatic_token_associations": 150,
+        "receiver_sig_required": null
+      },
+      {
+        "alias": "deadbeef",
+        "num": 10,
+        "expiration_timestamp": "9223372036854775807",
+        "receiver_sig_required": true
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2000,
+        "id": 1,
+        "balance": 10,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 90000,
+            "balance": 1
+          },
+          {
+            "token_realm": 0,
+            "token_num": 90001,
+            "balance": 11
+          }
+        ]
+      },
+      {
+        "timestamp": 2000,
+        "id": 2,
+        "balance": 20,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 90001,
+            "balance": 2
+          },
+          {
+            "token_realm": 0,
+            "token_num": 90010,
+            "balance": 22
+          }
+        ]
+      },
+      {
+        "timestamp": 2000,
+        "id": 3,
+        "balance": 30
+      },
+      {
+        "timestamp": 2000,
+        "id": 4,
+        "balance": 40
+      },
+      {
+        "timestamp": 2000,
+        "id": 5,
+        "balance": 50,
+        "tokens": [
+          {
+            "token_realm": 0,
+            "token_num": 100001,
+            "balance": 5
+          },
+          {
+            "token_realm": 0,
+            "token_num": 100002,
+            "balance": 55
+          }
+        ]
+      },
+      {
+        "timestamp": 2000,
+        "id": 6,
+        "balance": 60
+      },
+      {
+        "timestamp": 2000,
+        "id": 7,
+        "balance": 70
+      },
+      {
+        "timestamp": 2000,
+        "id": 8,
+        "balance": 80
+      },
+      {
+        "timestamp": 2000,
+        "id": 9,
+        "balance": 90
+      },
+      {
+        "timestamp": 2000,
+        "id": 10,
+        "balance": 100
+      }
+    ],
+    "contracts": [
+      {
+        "num": 7
+      },
+      {
+        "num": 8
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "urls": [
+    "/api/v1/accounts?account.alias=32W353Y",
+    "/api/v1/accounts?account.alias=0.32W353Y",
+    "/api/v1/accounts?account.alias=0.0.32W353Y",
+    "/api/v1/accounts?account.alias=77777777&account.alias=32W353Y"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "accounts": [
+      {
+        "balance": {
+          "timestamp": "0.000002000",
+          "balance": 100,
+          "tokens": []
+        },
+        "account": "0.0.10",
+        "alias": "32W353Y",
+        "expiry_timestamp": "9223372036.854775807",
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "receiver_sig_required": true
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

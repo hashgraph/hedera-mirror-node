@@ -20,6 +20,8 @@
 
 'use strict';
 
+const {AccountAlias} = require('./accountAlias');
+const base32 = require('./base32');
 const {getAccountContractUnionQueryWithOrder} = require('./accountContract');
 const constants = require('./constants');
 const EntityId = require('./entityId');
@@ -44,6 +46,7 @@ const processRow = (row) => {
         };
   return {
     account: EntityId.parse(row.id).toString(),
+    alias: base32.encode(row.alias),
     auto_renew_period: row.auto_renew_period === null ? null : Number(row.auto_renew_period),
     balance,
     deleted: row.deleted,
@@ -57,6 +60,7 @@ const processRow = (row) => {
 
 // 'id' is different for different join types, so will add later when composing the query
 const entityFields = [
+  'alias',
   'auto_renew_period',
   'deleted',
   'expiration_timestamp',
@@ -130,6 +134,7 @@ const getEntityBalanceFullOuterJoinQuery = (
 /**
  * Gets the query for entity fields with hbar balance info for inner, left outer, and right outer join cases.
  *
+ * @param accountAliasQuery
  * @param accountContractQuery
  * @param balanceAccountQuery
  * @param balanceQuery
@@ -141,6 +146,7 @@ const getEntityBalanceFullOuterJoinQuery = (
  * @return {{query: string, params: *[]}}
  */
 const getEntityBalanceQuery = (
+  accountAliasQuery,
   accountContractQuery,
   balanceAccountQuery,
   balanceQuery,
@@ -150,24 +156,27 @@ const getEntityBalanceQuery = (
   order,
   pubKeyQuery
 ) => {
+  // whether there are conditions using account only fields, if so we need to make account/contract the main table or
+  // use inner join
+  const accountOnlyQuery = accountAliasQuery.query !== '' || pubKeyQuery.query !== '';
   const balanceJoinConditions = ['ab.account_id = e.id'];
   const balanceWhereConditions = [balanceQuery.query];
   let entityIdField = 'id'; // use 'id' from account / contract for inner and left outer joins
   let joinType = '';
   let params;
 
-  // use different joins for different combinations of balance query and public key query. The where conditions
-  // and the corresponding params differ too. The entity id conditions only have to apply to one table: for inner
-  // and left outer joins, apply them to the account / contract table; for right outer join, apply them to the
+  // use different joins for different combinations of balance query and account alias / public key query. The where
+  // conditions and the corresponding params differ too. The entity id conditions only have to apply to one table:
+  // for inner and left outer joins, apply them to the account / contract table; for right outer join, apply them to the
   // account_balance table
-  if (balanceQuery.query && pubKeyQuery.query) {
+  if (balanceQuery.query && accountOnlyQuery) {
     joinType = 'inner';
     balanceJoinConditions.push(latestBalanceFilter);
-    params = [entityAccountQuery.params, pubKeyQuery.params, balanceQuery.params];
-  } else if (pubKeyQuery.query) {
+    params = [entityAccountQuery.params, accountAliasQuery.params, pubKeyQuery.params, balanceQuery.params];
+  } else if (accountOnlyQuery) {
     joinType = 'left outer';
     balanceJoinConditions.push(latestBalanceFilter);
-    params = [entityAccountQuery.params, pubKeyQuery.params];
+    params = [entityAccountQuery.params, accountAliasQuery.params, pubKeyQuery.params];
   } else if (balanceQuery.query) {
     entityIdField = 'account_id';
     balanceWhereConditions.push(balanceAccountQuery.query, latestBalanceFilter);
@@ -179,6 +188,7 @@ const getEntityBalanceQuery = (
   const whereCondition = [
     // no entity id filter needed for account / contract for right outer join
     joinType !== 'right outer' ? entityAccountQuery.query : '',
+    accountAliasQuery.query,
     pubKeyQuery.query,
     ...balanceWhereConditions,
   ]
@@ -202,8 +212,9 @@ const getEntityBalanceQuery = (
 /**
  * Creates account query and params from filters with limit and order
  *
- * @param entityAccountQuery optional entity id query
- * @param balanceAccountQuery optional account balance account id query
+ * @param entityAccountQuery entity id query
+ * @param balanceAccountQuery account balance account id query
+ * @param accountAliasQuery optional account alias query
  * @param balanceQuery optional account balance query
  * @param limitAndOrderQuery optional limit and order query
  * @param pubKeyQuery optional entity public key query
@@ -213,6 +224,7 @@ const getEntityBalanceQuery = (
 const getAccountQuery = (
   entityAccountQuery,
   balanceAccountQuery,
+  accountAliasQuery = {query: '', params: []},
   balanceQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: constants.orderFilterValues.ASC},
   pubKeyQuery = {query: '', params: []},
@@ -239,8 +251,8 @@ const getAccountQuery = (
   }
 
   const {query: entityBalanceQuery, params} =
-    balanceQuery.query === '' && pubKeyQuery.query === ''
-      ? // use full outer join when no balance query and public key query
+    accountAliasQuery.query === '' && balanceQuery.query === '' && pubKeyQuery.query === ''
+      ? // use full outer join when no account alias, balance, and public key query
         getEntityBalanceFullOuterJoinQuery(
           accountContractQuery,
           balanceAccountQuery,
@@ -251,6 +263,7 @@ const getAccountQuery = (
           order
         )
       : getEntityBalanceQuery(
+          accountAliasQuery,
           accountContractQuery,
           balanceAccountQuery,
           balanceQuery,
@@ -294,6 +307,40 @@ const toQueryObject = (queryAndParams) => {
   };
 };
 
+/**
+ * Gets the mysql style query and params from the last account.alias query param.
+ * @param query the http request query object
+ * @return {{query: string, params: *[]}}
+ */
+const getAccountAliasQuery = (query) => {
+  const res = {query: '', params: []};
+  const values = query[constants.filterKeys.ACCOUNT_ALIAS];
+  if (values === undefined) {
+    return res;
+  }
+
+  const lastValue = typeof values === 'string' ? values : values[values.length - 1];
+  const accountAlias = AccountAlias.fromString(lastValue);
+  const columns = ['shard', 'realm', 'alias'];
+  return columns
+    .map((column) => {
+      const value = accountAlias[column];
+      return value !== null ? [`${column} = ?`, value] : null;
+    })
+    .filter((t) => t !== null)
+    .reduce((res, t) => {
+      const [query, value] = t;
+      res.query = res.query !== '' ? `${res.query} and ${query}` : query;
+      res.params.push(value);
+      return res;
+    }, res);
+};
+
+/**
+ * Gets the balance param value from the last balance query param. Defaults to true if not found.
+ * @param query the http request query object
+ * @return {boolean}
+ */
 const getBalanceParamValue = (query) => {
   const values = query[constants.filterKeys.BALANCE] || 'true';
   const lastValue = typeof values === 'string' ? values : values[values.length - 1];
@@ -312,6 +359,7 @@ const getAccounts = async (req, res) => {
   utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
+  const accountAliasQuery = getAccountAliasQuery(req.query);
   const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'id'));
   const balanceAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'ab.account_id'));
   const balanceQuery = toQueryObject(utils.parseBalanceQueryParam(req.query, 'ab.balance'));
@@ -322,6 +370,7 @@ const getAccounts = async (req, res) => {
   const {query, params} = getAccountQuery(
     entityAccountQuery,
     balanceAccountQuery,
+    accountAliasQuery,
     balanceQuery,
     limitAndOrderQuery,
     pubKeyQuery,
@@ -420,7 +469,7 @@ const getOneAccount = async (req, res) => {
   );
 
   const innerParams = utils.mergeParams(accountParams, tsParams, params);
-  const transactionsQuery = await transactions.getTransactionsOuterQuery(innerQuery, order);
+  const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
   const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
 
   if (logger.isTraceEnabled()) {
@@ -431,52 +480,44 @@ const getOneAccount = async (req, res) => {
   const transactionsPromise = pool.query(pgTransactionsQuery, innerParams);
 
   // After all promises (for all of the above queries) have been resolved...
-  return Promise.all([entityPromise, transactionsPromise])
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((values) => {
-      const entityResults = values[0];
-      const transactionsResults = values[1];
+  const [entityResults, transactionsResults] = await Promise.all([entityPromise, transactionsPromise]);
+  // Process the results of entities query
+  if (entityResults.rows.length === 0) {
+    throw new NotFoundError();
+  }
 
-      // Process the results of entities query
-      if (entityResults.rows.length === 0) {
-        throw new NotFoundError();
-      }
+  if (entityResults.rows.length !== 1) {
+    throw new NotFoundError('Error: Could not get entity information');
+  }
 
-      if (entityResults.rows.length !== 1) {
-        throw new NotFoundError('Error: Could not get entity information');
-      }
+  Object.assign(ret, processRow(entityResults.rows[0]));
 
-      Object.assign(ret, processRow(entityResults.rows[0]));
+  if (utils.isTestEnv()) {
+    ret.entitySqlQuery = entityResults.sqlQuery;
+  }
 
-      if (utils.isTestEnv()) {
-        ret.entitySqlQuery = entityResults.sqlQuery;
-      }
+  // Process the results of transaction query
+  const transferList = transactions.createTransferLists(transactionsResults.rows);
+  ret.transactions = transferList.transactions;
+  const {anchorSecNs} = transferList;
 
-      // Process the results of transaction query
-      const transferList = transactions.createTransferLists(transactionsResults.rows);
-      ret.transactions = transferList.transactions;
-      const {anchorSecNs} = transferList;
+  if (utils.isTestEnv()) {
+    ret.transactionsSqlQuery = transactionsResults.sqlQuery;
+  }
 
-      if (utils.isTestEnv()) {
-        ret.transactionsSqlQuery = transactionsResults.sqlQuery;
-      }
+  // Pagination links
+  ret.links = {
+    next: utils.getPaginationLink(
+      req,
+      ret.transactions.length !== limit,
+      constants.filterKeys.TIMESTAMP,
+      anchorSecNs,
+      order
+    ),
+  };
 
-      // Pagination links
-      ret.links = {
-        next: utils.getPaginationLink(
-          req,
-          ret.transactions.length !== limit,
-          constants.filterKeys.TIMESTAMP,
-          anchorSecNs,
-          order
-        ),
-      };
-
-      logger.debug(`getOneAccount returning ${ret.transactions.length} transactions entries`);
-      res.locals[constants.responseDataLabel] = ret;
-    });
+  logger.debug(`getOneAccount returning ${ret.transactions.length} transactions entries`);
+  res.locals[constants.responseDataLabel] = ret;
 };
 
 module.exports = {
@@ -486,6 +527,8 @@ module.exports = {
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
+    getAccountAliasQuery,
+    getBalanceParamValue,
     processRow,
   });
 }

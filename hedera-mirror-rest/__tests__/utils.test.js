@@ -177,37 +177,37 @@ describe('Utils encodeKey', () => {
 });
 
 describe('Utils isValidPublicKeyQuery', () => {
-  test('Null', () => expect(utils.isValidPublicKeyQuery(null)).toBe(false));
-  test('Empty', () => expect(utils.isValidPublicKeyQuery('')).toBe(false));
-  test('Valid ECDSA(secp256k1)', () => expect(utils.isValidPublicKeyQuery(ecdsaKey)).toBe(true));
-  test('Valid ED25519', () => expect(utils.isValidPublicKeyQuery(ed25519Key)).toBe(true));
-  test('Valid ED25519 DER', () => expect(utils.isValidPublicKeyQuery(ed25519Der)).toBe(true));
-  test('0x ECDSA', () => expect(utils.isValidPublicKeyQuery(`0x${ed25519Key}`)).toBe(true));
-  test('0x ED25519', () => expect(utils.isValidPublicKeyQuery(`0x${ecdsaKey}`)).toBe(true));
-  test('Invalid', () => expect(utils.isValidPublicKeyQuery(`${ed25519Key}F`)).toBe(false));
+  test('Null', () => expect(utils.isValidPublicKeyQuery(null)).toBeFalse());
+  test('Empty', () => expect(utils.isValidPublicKeyQuery('')).toBeFalse());
+  test('Valid ECDSA(secp256k1)', () => expect(utils.isValidPublicKeyQuery(ecdsaKey)).toBeTrue());
+  test('Valid ED25519', () => expect(utils.isValidPublicKeyQuery(ed25519Key)).toBeTrue());
+  test('Valid ED25519 DER', () => expect(utils.isValidPublicKeyQuery(ed25519Der)).toBeTrue());
+  test('0x ECDSA', () => expect(utils.isValidPublicKeyQuery(`0x${ed25519Key}`)).toBeTrue());
+  test('0x ED25519', () => expect(utils.isValidPublicKeyQuery(`0x${ecdsaKey}`)).toBeTrue());
+  test('Invalid', () => expect(utils.isValidPublicKeyQuery(`${ed25519Key}F`)).toBeFalse());
 });
 
 describe('Utils isValidTimestampParam tests', () => {
   test('Verify invalid for null', () => {
-    expect(utils.isValidTimestampParam(null)).toBe(false);
+    expect(utils.isValidTimestampParam(null)).toBeFalse();
   });
   test('Verify invalid for empty input', () => {
-    expect(utils.isValidTimestampParam('')).toBe(false);
+    expect(utils.isValidTimestampParam('')).toBeFalse();
   });
   test('Verify invalid for invalid input', () => {
-    expect(utils.isValidTimestampParam('0.0.1')).toBe(false);
+    expect(utils.isValidTimestampParam('0.0.1')).toBeFalse();
   });
   test('Verify invalid for invalid seconds', () => {
-    expect(utils.isValidTimestampParam('12345678901')).toBe(false);
+    expect(utils.isValidTimestampParam('12345678901')).toBeFalse();
   });
   test('Verify invalid for invalid nanoseconds', () => {
-    expect(utils.isValidTimestampParam('1234567890.0000000012')).toBe(false);
+    expect(utils.isValidTimestampParam('1234567890.0000000012')).toBeFalse();
   });
   test('Verify valid for seconds only', () => {
-    expect(utils.isValidTimestampParam('1234567890')).toBe(true);
+    expect(utils.isValidTimestampParam('1234567890')).toBeTrue();
   });
   test('Verify valid for seconds and nanoseconds', () => {
-    expect(utils.isValidTimestampParam('1234567890.000000001')).toBe(true);
+    expect(utils.isValidTimestampParam('1234567890.000000001')).toBeTrue();
   });
 });
 
@@ -289,7 +289,7 @@ describe('Utils isNonNegativeInt32', () => {
     const values = ['0', '1', '2147483647'];
     for (const value of values) {
       test(value, () => {
-        expect(utils.isNonNegativeInt32(value)).toBe(true);
+        expect(utils.isNonNegativeInt32(value)).toBeTrue();
       });
     }
   });
@@ -298,7 +298,7 @@ describe('Utils isNonNegativeInt32', () => {
     const values = ['a', '-1', '1.1', '2147483648'];
     for (const value of values) {
       test(value, () => {
-        expect(utils.isNonNegativeInt32(value)).toBe(false);
+        expect(utils.isNonNegativeInt32(value)).toBeFalse();
       });
     }
   });
@@ -306,37 +306,37 @@ describe('Utils isNonNegativeInt32', () => {
 
 describe('Utils isPositiveLong', () => {
   test('Verify invalid for null', () => {
-    expect(utils.isPositiveLong(null)).toBe(false);
+    expect(utils.isPositiveLong(null)).toBeFalse();
   });
   test('Verify invalid for empty input', () => {
-    expect(utils.isPositiveLong('')).toBe(false);
+    expect(utils.isPositiveLong('')).toBeFalse();
   });
   test('Verify invalid for invalid input', () => {
-    expect(utils.isPositiveLong('1234567890.000000001')).toBe(false);
+    expect(utils.isPositiveLong('1234567890.000000001')).toBeFalse();
   });
   test('Verify invalid for entity format shard', () => {
-    expect(utils.isPositiveLong('1.0.1')).toBe(false);
+    expect(utils.isPositiveLong('1.0.1')).toBeFalse();
   });
   test('Verify invalid for negative num', () => {
-    expect(utils.isPositiveLong(-1)).toBe(false);
+    expect(utils.isPositiveLong(-1)).toBeFalse();
   });
   test('Verify invalid for 0', () => {
-    expect(utils.isPositiveLong(0)).toBe(false);
+    expect(utils.isPositiveLong(0)).toBeFalse();
   });
   test(`Verify invalid for unsigned long 9223372036854775808`, () => {
-    expect(utils.isPositiveLong('9223372036854775808')).toBe(false);
+    expect(utils.isPositiveLong('9223372036854775808')).toBeFalse();
   });
   test('Verify invalid for 0 with allowZero=true', () => {
-    expect(utils.isPositiveLong(0, true)).toBe(true);
+    expect(utils.isPositiveLong(0, true)).toBeTrue();
   });
   test('Verify valid for valid number string', () => {
-    expect(utils.isPositiveLong('123')).toBe(true);
+    expect(utils.isPositiveLong('123')).toBeTrue();
   });
   test('Verify valid for valid number', () => {
-    expect(utils.isPositiveLong(123)).toBe(true);
+    expect(utils.isPositiveLong(123)).toBeTrue();
   });
   test(`Verify valid for max unsigned long: 9223372036854775807`, () => {
-    expect(utils.isPositiveLong('9223372036854775807')).toBe(true);
+    expect(utils.isPositiveLong('9223372036854775807')).toBeTrue();
   });
 });
 
@@ -344,19 +344,19 @@ describe('Utils isValidValueIgnoreCase tokenTypeFilter tests', () => {
   const tokenTypeObjectValues = Object.values(constants.tokenTypeFilter);
 
   test('Verify invalid for empty input', () => {
-    expect(utils.isValidValueIgnoreCase('', tokenTypeObjectValues)).toBe(false);
+    expect(utils.isValidValueIgnoreCase('', tokenTypeObjectValues)).toBeFalse();
   });
   test('Verify invalid for invalid input', () => {
-    expect(utils.isValidValueIgnoreCase('1234567890.000000001', tokenTypeObjectValues)).toBe(false);
+    expect(utils.isValidValueIgnoreCase('1234567890.000000001', tokenTypeObjectValues)).toBeFalse();
   });
   test('Verify invalid for entity format shard', () => {
-    expect(utils.isValidValueIgnoreCase('1.0.1', tokenTypeObjectValues)).toBe(false);
+    expect(utils.isValidValueIgnoreCase('1.0.1', tokenTypeObjectValues)).toBeFalse();
   });
   test(`Verify valid for tokenType: ${constants.tokenTypeFilter.ALL}`, () => {
-    expect(utils.isValidValueIgnoreCase(constants.tokenTypeFilter.ALL, tokenTypeObjectValues)).toBe(true);
+    expect(utils.isValidValueIgnoreCase(constants.tokenTypeFilter.ALL, tokenTypeObjectValues)).toBeTrue();
   });
   test(`Verify valid for tokenType: ${constants.tokenTypeFilter.FUNGIBLE_COMMON}`, () => {
-    expect(utils.isValidValueIgnoreCase(constants.tokenTypeFilter.FUNGIBLE_COMMON, tokenTypeObjectValues)).toBe(true);
+    expect(utils.isValidValueIgnoreCase(constants.tokenTypeFilter.FUNGIBLE_COMMON, tokenTypeObjectValues)).toBeTrue();
   });
   test(`Verify valid for tokenType: ${constants.tokenTypeFilter.NON_FUNGIBLE_UNIQUE}`, () => {
     expect(utils.isValidValueIgnoreCase(constants.tokenTypeFilter.NON_FUNGIBLE_UNIQUE, tokenTypeObjectValues)).toBe(
@@ -364,17 +364,17 @@ describe('Utils isValidValueIgnoreCase tokenTypeFilter tests', () => {
     );
   });
   test(`Verify valid for tokenType: ${constants.tokenTypeFilter.ALL.toUpperCase()}`, () => {
-    expect(utils.isValidValueIgnoreCase(constants.tokenTypeFilter.ALL.toUpperCase(), tokenTypeObjectValues)).toBe(true);
+    expect(utils.isValidValueIgnoreCase(constants.tokenTypeFilter.ALL.toUpperCase(), tokenTypeObjectValues)).toBeTrue();
   });
   test(`Verify valid for tokenType: ${constants.tokenTypeFilter.FUNGIBLE_COMMON.toUpperCase()}`, () => {
     expect(
       utils.isValidValueIgnoreCase(constants.tokenTypeFilter.FUNGIBLE_COMMON.toUpperCase(), tokenTypeObjectValues)
-    ).toBe(true);
+    ).toBeTrue();
   });
   test(`Verify valid for tokenType: ${constants.tokenTypeFilter.NON_FUNGIBLE_UNIQUE.toUpperCase()}`, () => {
     expect(
       utils.isValidValueIgnoreCase(constants.tokenTypeFilter.NON_FUNGIBLE_UNIQUE.toUpperCase(), tokenTypeObjectValues)
-    ).toBe(true);
+    ).toBeTrue();
   });
 });
 
@@ -454,9 +454,9 @@ describe('Utils randomString tests', () => {
   });
 });
 
-const parseQueryParamTest = (testPrefix, testSpecs, parseParam) => {
+const parseQueryParamTest = (testSpecs, parseParam) => {
   testSpecs.forEach((testSpec) => {
-    test(`Utils parseAccountIdQueryParam - ${testSpec.name}`, () => {
+    test(testSpec.name, () => {
       const clauseAndValues = parseParam(testSpec);
       expect(clauseAndValues[0]).toEqual(testSpec.expectedClause);
       expect(clauseAndValues[1]).toEqual(testSpec.expectedValues);
@@ -494,7 +494,7 @@ describe('Utils parseParams tests', () => {
       expectedValues: ['1'],
     },
   ];
-  parseQueryParamTest('Utils parseParams - ', testSpecs, (spec) =>
+  parseQueryParamTest(testSpecs, (spec) =>
     utils.parseParams(
       spec.parsedQueryParams,
       (value) => value,
@@ -503,7 +503,7 @@ describe('Utils parseParams tests', () => {
     )
   );
 
-  test('Utils parseParams - Invalid clause', () => {
+  test('Invalid clause', () => {
     expect(() =>
       utils.parseParams(
         'gte:1',
@@ -575,9 +575,7 @@ describe('Utils parseAccountIdQueryParam tests', () => {
       expectedValues: ['3', '4'],
     },
   ];
-  parseQueryParamTest('Utils parseAccountIdQueryParam - ', testSpecs, (spec) =>
-    utils.parseAccountIdQueryParam(spec.parsedQueryParams, 'account.id')
-  );
+  parseQueryParamTest(testSpecs, (spec) => utils.parseAccountIdQueryParam(spec.parsedQueryParams, 'account.id'));
 });
 
 describe('utils parsePublicKey tests', () => {
@@ -654,7 +652,7 @@ describe('Utils parseTimestampQueryParam tests', () => {
       },
     },
   ];
-  parseQueryParamTest('Utils parseTimestampQueryParam - ', testSpecs, (spec) =>
+  parseQueryParamTest(testSpecs, (spec) =>
     utils.parseTimestampQueryParam(spec.parsedQueryParams, 'timestamp', spec.opOverride)
   );
 });
@@ -753,9 +751,7 @@ describe('Utils parseBalanceQueryParam tests', () => {
       expectedValues: [],
     },
   ];
-  parseQueryParamTest('Utils parseBalanceQueryParam - ', testSpecs, (spec) =>
-    utils.parseBalanceQueryParam(spec.parsedQueryParams, 'account.balance')
-  );
+  parseQueryParamTest(testSpecs, (spec) => utils.parseBalanceQueryParam(spec.parsedQueryParams, 'account.balance'));
 });
 
 describe('Utils parsePublicKeyQueryParam tests', () => {
@@ -817,9 +813,7 @@ describe('Utils parsePublicKeyQueryParam tests', () => {
       expectedValues: [ecdsaKey],
     },
   ];
-  parseQueryParamTest('Utils parsePublicKeyQueryParam - ', testSpecs, (spec) =>
-    utils.parsePublicKeyQueryParam(spec.parsedQueryParams, 'account.publickey')
-  );
+  parseQueryParamTest(testSpecs, (spec) => utils.parsePublicKeyQueryParam(spec.parsedQueryParams, 'account.publickey'));
 });
 
 describe('Utils parseCreditDebitParams tests', () => {
@@ -861,30 +855,19 @@ describe('Utils parseCreditDebitParams tests', () => {
       expectedValues: [],
     },
   ];
-  parseQueryParamTest('Utils parseCreditDebitParams - ', testSpecs, (spec) =>
-    utils.parseCreditDebitParams(spec.parsedQueryParams, 'type')
-  );
+  parseQueryParamTest(testSpecs, (spec) => utils.parseCreditDebitParams(spec.parsedQueryParams, 'type'));
 });
 
 describe('utils isRepeatedQueryParameterValidLength', () => {
-  test(`utils isRepeatedQueryParameterValidLength verify account.id with valid amount ${
-    config.maxRepeatedQueryParameters - 1
-  } `, () => {
-    expect(
-      utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters - 1).fill('0.0.3'))
-    ).toBeTruthy();
+  const {maxRepeatedQueryParameters} = config;
+  test(`verify account.id with valid amount ${maxRepeatedQueryParameters - 1}`, () => {
+    expect(utils.isRepeatedQueryParameterValidLength(Array(maxRepeatedQueryParameters - 1).fill('0.0.3'))).toBeTrue();
   });
-  test(`utils isRepeatedQueryParameterValidLength verify account.id with invalid amount ${
-    config.maxRepeatedQueryParameters + 1
-  }`, () => {
-    expect(
-      utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters + 1).fill('0.0.3'))
-    ).toBeFalsy();
+  test(`verify account.id with invalid amount ${maxRepeatedQueryParameters + 1}`, () => {
+    expect(utils.isRepeatedQueryParameterValidLength(Array(maxRepeatedQueryParameters + 1).fill('0.0.3'))).toBeFalse();
   });
-  test(`utils isRepeatedQueryParameterValidLength verify account.id with valid amount ${config.maxRepeatedQueryParameters} `, () => {
-    expect(
-      utils.isRepeatedQueryParameterValidLength(Array(config.maxRepeatedQueryParameters).fill('0.0.3'))
-    ).toBeTruthy();
+  test(`verify account.id with valid amount ${maxRepeatedQueryParameters}`, () => {
+    expect(utils.isRepeatedQueryParameterValidLength(Array(maxRepeatedQueryParameters).fill('0.0.3'))).toBeTrue();
   });
 });
 
@@ -926,7 +909,7 @@ describe('utils validateReq', () => {
   ];
 
   specs.forEach((spec) => {
-    test(`utils validateReq - ${spec.name}`, () => {
+    test(spec.name, () => {
       expect(() => utils.validateReq(spec.req)).toThrow(InvalidArgumentError);
     });
   });
@@ -1021,36 +1004,36 @@ describe('Utils getLimitParamValue', () => {
 });
 
 describe('Utils test - utils.parseTransactionTypeParam', () => {
-  test('Utils test - utils.parseTransactionTypeParam - Verify null query params', () => {
+  test('Verify null query params', () => {
     expect(utils.parseTransactionTypeParam(null)).toBe('');
   });
-  test('Utils test - utils.parseTransactionTypeParam - Verify undefined query params', () => {
+  test('Verify undefined query params', () => {
     expect(utils.parseTransactionTypeParam(undefined)).toBe('');
   });
-  test('Utils test - utils.parseTransactionTypeParam - Verify empty query params', () => {
+  test('Verify empty query params', () => {
     expect(utils.parseTransactionTypeParam({})).toBe('');
   });
-  test('Utils test - utils.parseTransactionTypeParam - Verify empty transaction type query', () => {
+  test('Verify empty transaction type query', () => {
     expect(() => utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: ''})).toThrowError(
       InvalidArgumentError
     );
   });
-  test('Utils test - utils.parseTransactionTypeParam - Verify non applicable transaction type query', () => {
+  test('Verify non applicable transaction type query', () => {
     expect(() =>
       utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'newtransaction'})
     ).toThrowError(InvalidArgumentError);
   });
-  test('Utils test - utils.parseTransactionTypeParam - Verify applicable TOKENCREATION transaction type query', () => {
+  test('Verify applicable TOKENCREATION transaction type query', () => {
     expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
       `type = ${TransactionType.getProtoId('TOKENCREATION')}`
     );
   });
-  test('Utils test - utils.parseTransactionTypeParam - Verify applicable TOKENASSOCIATE transaction type query', () => {
+  test('Verify applicable TOKENASSOCIATE transaction type query', () => {
     expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
       `type = ${TransactionType.getProtoId('TOKENASSOCIATE')}`
     );
   });
-  test('Utils test - utils.parseTransactionTypeParam - Verify applicable consensussubmitmessage transaction type query', () => {
+  test('Verify applicable consensussubmitmessage transaction type query', () => {
     expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
       `type = ${TransactionType.getProtoId('CONSENSUSSUBMITMESSAGE')}`
     );

@@ -216,6 +216,7 @@
       ]
     },
     "account": "0.0.8",
+    "alias": null,
     "expiry_timestamp": null,
     "auto_renew_period": null,
     "key": null,

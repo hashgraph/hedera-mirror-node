@@ -27,6 +27,7 @@ const long = require('long');
 const math = require('mathjs');
 const util = require('util');
 
+const {AccountAlias, isValidAccountAlias} = require('./accountAlias');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const config = require('./config');
@@ -83,8 +84,18 @@ const isNonNegativeInt32 = (num) => {
   return nonNegativeInt32Regex.test(num) && Number(num) <= constants.MAX_INT32;
 };
 
+/**
+ * Checks if the op is eq and the value is a valid account alias.
+ * @param op
+ * @param val
+ * @return {boolean}
+ */
+const isValidAccountAliasAndOp = (op, val) => {
+  return op === constants.queryParamOperators.eq && isValidAccountAlias(val);
+};
+
 const isValidBooleanOpAndValue = (op, val) => {
-  return op === 'eq' && /^(true|false)$/i.test(val);
+  return op === constants.queryParamOperators.eq && /^(true|false)$/i.test(val);
 };
 
 const isValidTimestampParam = (timestamp) => {
@@ -168,6 +179,9 @@ const filterValidityChecks = (param, op, val) => {
 
   // Validate the value
   switch (param) {
+    case constants.filterKeys.ACCOUNT_ALIAS:
+      ret = isValidAccountAliasAndOp(op, val);
+      break;
     case constants.filterKeys.ACCOUNT_BALANCE:
       ret = isPositiveLong(val, true);
       break;
@@ -881,6 +895,9 @@ const formatComparator = (comparator) => {
 
     // format value
     switch (comparator.key) {
+      case constants.filterKeys.ACCOUNT_ALIAS:
+        comparator.value = AccountAlias.fromString(comparator.value);
+        break;
       case constants.filterKeys.ACCOUNT_ID:
         // Accepted forms: shard.realm.num or encoded ID string
         comparator.value = EntityId.parse(comparator.value).getEncodedId();
@@ -1146,6 +1163,7 @@ if (isTestEnv()) {
     formatComparator,
     formatFilters,
     getLimitParamValue,
+    isValidAccountAliasAndOp,
     validateAndParseFilters,
     validateFilters,
   });

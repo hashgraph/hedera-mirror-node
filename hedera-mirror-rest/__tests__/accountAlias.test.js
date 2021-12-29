@@ -1,0 +1,113 @@
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+const _ = require('lodash');
+
+const {AccountAlias, isValidAccountAlias} = require('../accountAlias');
+const {invalidBase32Strs, getAllAccountAliases, validBase32Strs} = require('./testutils');
+
+describe('AccountAlias', () => {
+  describe('fromString', () => {
+    describe('valid', () => {
+      const testSpecs = [
+        {
+          input: 'AABBCC22',
+          expected: new AccountAlias(null, null, 'AABBCC22'),
+        },
+        {
+          input: '0.AABBCC22',
+          expected: new AccountAlias(null, '0', 'AABBCC22'),
+        },
+        {
+          input: '0.1.AABBCC22',
+          expected: new AccountAlias('0', '1', 'AABBCC22'),
+        },
+      ];
+
+      testSpecs.forEach((spec) => {
+        test(spec.input, () => {
+          expect(AccountAlias.fromString(spec.input)).toEqual(spec.expected);
+        });
+      });
+    });
+
+    describe('invalid', () => {
+      const inputs = [
+        null,
+        undefined,
+        ..._.flatten(invalidBase32Strs.map((alias) => getAllAccountAliases(alias))),
+        '0.0.0.AABBCC22',
+      ];
+
+      inputs.forEach((input) => {
+        test(`${input}`, () => {
+          expect(() => AccountAlias.fromString(input)).toThrowErrorMatchingSnapshot();
+        });
+      });
+    });
+  });
+
+  describe('toString', () => {
+    test('only alias', () => {
+      const accountAlias = new AccountAlias(null, null, 'AABBCC22');
+      expect(accountAlias.toString()).toBe('AABBCC22');
+    });
+    test('realm and alias', () => {
+      const accountAlias = new AccountAlias(null, '0', 'AABBCC22');
+      expect(accountAlias.toString()).toBe('0.AABBCC22');
+    });
+    test('shard, realm and alias', () => {
+      const accountAlias = new AccountAlias('0', '1', 'AABBCC22');
+      expect(accountAlias.toString()).toBe('0.1.AABBCC22');
+    });
+  });
+});
+
+describe('isValidAccountAlias', () => {
+  describe('valid', () => {
+    const inputs = _.flatten(validBase32Strs.map((alias) => getAllAccountAliases(alias)));
+    inputs.forEach((input) => {
+      test(input, () => {
+        expect(isValidAccountAlias(input)).toBeTrue();
+      });
+    });
+  });
+
+  describe('invalid', () => {
+    const inputs = [
+      null,
+      undefined,
+      '',
+      'AABBCC',
+      '0.AABBCC',
+      '0.0.AABBCC',
+      'A=======',
+      'AAA=====',
+      'AAAAAA==',
+      'AABBCC01',
+      '0.0.0.AABBCC22',
+    ];
+    inputs.forEach((input) => {
+      test(`${input}`, () => {
+        expect(isValidAccountAlias(input)).toBeFalse();
+      });
+    });
+  });
+});
