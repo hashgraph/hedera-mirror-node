@@ -969,7 +969,7 @@ components:
         links:
           $ref: '#/components/schemas/Links'
     Alias:
-      description: Base32 encoded account alias
+      description: RFC4648 no-padding base32 encoded account alias
       type: string
       pattern: ^(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$
       nullable: true
@@ -1872,6 +1872,9 @@ components:
           summary: Example of equals with shard.realm.alias
           value: 0.1.AABBCC22
       schema:
+        description: >-
+          Account alias in the format of 'shard.realm.alias', 'realm.alias', or 'alias'. 'alias' is the RFC4648
+          no-padding base32 encoded string of the account's alias.
         type: string
         pattern: ^(eq\:)?(\d{1,5}\.){0,2}(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$
     accountBalanceQueryParam:

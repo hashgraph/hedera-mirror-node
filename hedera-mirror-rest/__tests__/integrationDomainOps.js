@@ -23,10 +23,12 @@
 const _ = require('lodash');
 const math = require('mathjs');
 const pgformat = require('pg-format');
-const testUtils = require('./testutils');
+
+const base32 = require('../base32');
 const config = require('../config');
-const EntityId = require('../entityId');
 const constants = require('../constants');
+const EntityId = require('../entityId');
+const testUtils = require('./testutils');
 
 const NETWORK_FEE = 1;
 const NODE_FEE = 2;
@@ -262,7 +264,7 @@ const addEntity = async (defaults, entity) => {
     ...entity,
   };
   entity.id = EntityId.of(BigInt(entity.shard), BigInt(entity.realm), BigInt(entity.num)).getEncodedId();
-  entity.alias = entity.alias !== null ? Buffer.from(entity.alias, 'hex') : null;
+  entity.alias = base32.decode(entity.alias);
 
   await insertDomainObject('entity', insertFields, entity);
 };

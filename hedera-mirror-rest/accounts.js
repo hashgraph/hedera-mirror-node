@@ -328,11 +328,11 @@ const getAccountAliasQuery = (query) => {
       return value !== null ? [`${column} = ?`, value] : null;
     })
     .filter((t) => t !== null)
-    .reduce((res, t) => {
-      const [query, value] = t;
-      res.query = res.query !== '' ? `${res.query} and ${query}` : query;
-      res.params.push(value);
-      return res;
+    .reduce((previous, tuple) => {
+      const [sqlQuery, value] = tuple;
+      previous.query = res.query !== '' ? `${res.query} and ${sqlQuery}` : sqlQuery;
+      previous.params.push(value);
+      return previous;
     }, res);
 };
 
@@ -352,7 +352,7 @@ const getBalanceParamValue = (query) => {
  *
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
- * @return {Promise} Promise for PostgreSQL query
+ * @return {Promise}
  */
 const getAccounts = async (req, res) => {
   // Validate query parameters first
@@ -422,7 +422,7 @@ const getAccounts = async (req, res) => {
  * Handler function for /account/:accountId API.
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
- * @return {} None.
+ * @return {Promise}
  */
 const getOneAccount = async (req, res) => {
   // Validate query parameters first
@@ -434,10 +434,6 @@ const getOneAccount = async (req, res) => {
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_timestamp');
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-
-  const ret = {
-    transactions: [],
-  };
 
   const accountIdParams = [accountId];
   const {query: entityQuery, params: entityParams} = getAccountQuery(
@@ -490,7 +486,7 @@ const getOneAccount = async (req, res) => {
     throw new NotFoundError('Error: Could not get entity information');
   }
 
-  Object.assign(ret, processRow(entityResults.rows[0]));
+  const ret = processRow(entityResults.rows[0]);
 
   if (utils.isTestEnv()) {
     ret.entitySqlQuery = entityResults.sqlQuery;
