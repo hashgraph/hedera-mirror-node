@@ -287,6 +287,18 @@ func (suite *blockRepositorySuite) TestFindByIdentifierNoRecordFile() {
 	assert.Nil(suite.T(), actual)
 }
 
+func (suite *blockRepositorySuite) TestFindByIdentifierNotFound() {
+	// given
+	repo := NewBlockRepository(dbClient)
+
+	// when
+	actual, err := repo.FindByIdentifier(defaultContext, 1000, "foobar")
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
+}
+
 func (suite *blockRepositorySuite) TestFindByIdentifierDbConnectionError() {
 	// given
 	repo := NewBlockRepository(invalidDbClient)
@@ -358,6 +370,18 @@ func (suite *blockRepositorySuite) TestFindByIndexNoRecordFile() {
 
 	// then
 	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestFindByIndexNotFound() {
+	// given
+	repo := NewBlockRepository(dbClient)
+
+	// when
+	actual, err := repo.FindByIndex(defaultContext, 1000)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
 	assert.Nil(suite.T(), actual)
 }
 
@@ -491,7 +515,35 @@ func (suite *blockRepositorySuite) TestRetrieveLatestNoRecordFile() {
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *blockRepositorySuite) TestetrieveSecondLatestDbConnectionError() {
+func (suite *blockRepositorySuite) TestRetrieveLatestRecordFileTableInconsistent() {
+	// given
+	repo := NewBlockRepository(dbClient)
+
+	// when
+	actual, err := repo.RetrieveLatest(defaultContext)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectedSecondBlock, actual)
+
+	// when
+	db.ExecSql(dbClient, truncateRecordFileSql)
+	actual, err = repo.RetrieveLatest(defaultContext)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
+
+	// when
+	db.CreateDbRecords(dbClient, recordFileBeforeGenesis)
+	actual, err = repo.RetrieveLatest(defaultContext)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveLatestDbConnectionError() {
 	// given
 	repo := NewBlockRepository(invalidDbClient)
 
