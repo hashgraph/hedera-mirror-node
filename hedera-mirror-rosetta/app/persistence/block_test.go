@@ -102,15 +102,6 @@ var (
 		NodeAccountID:  nodeAccountId,
 		PrevHash:       "some_hash",
 	}
-	// thirdRecordFile = &domain.RecordFile{
-	// 	ConsensusStart: 121,
-	// 	ConsensusEnd:   130,
-	// 	Hash:           "third_record_file_hash",
-	// 	Index:          5,
-	// 	Name:           "third_record_file",
-	// 	NodeAccountID:  nodeAccountId,
-	// 	PrevHash:       "second_record_file_hash",
-	// }
 )
 
 // run the suite

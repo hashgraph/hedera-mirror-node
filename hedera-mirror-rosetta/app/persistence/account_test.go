@@ -557,8 +557,6 @@ func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlock() {
 	currentBlockStart := recordFile.ConsensusStart
 	currentBlockEnd := recordFile.ConsensusEnd
 	nextBlockStart := currentBlockEnd + 1
-	// nextBlockStart := recordFile.ConsensusStart
-	// nextBlockEnd := recordFile.ConsensusEnd
 	db.CreateDbRecords(dbClient, recordFile, token1, token2, token3)
 	db.CreateDbRecords(
 		dbClient,
