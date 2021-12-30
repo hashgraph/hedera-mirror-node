@@ -1,6 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
+ROSETTA_CLI_VERSION=${ROSETTA_CLI_VERSION:-}
+
 parent_path="$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )"
 cd "${parent_path}"
 network=${1:-demo}
