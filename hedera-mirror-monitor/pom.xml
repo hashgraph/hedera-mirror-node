@@ -17,7 +17,7 @@
     <properties>
         <commons-math3.version>3.6.1</commons-math3.version>
         <meanbean.version>3.0.0-M9</meanbean.version>
-        <springdoc.version>1.6.2</springdoc.version>
+        <springdoc.version>1.6.3</springdoc.version>
     </properties>
 
     <dependencies>
