@@ -433,20 +433,8 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockForDeletedAccount() {
 	// given
-	db.CreateDbRecords(dbClient, getAccountEntity(account, true, accountDeleteTimestamp), token1, token2, token3)
-	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances)
-	// transfers before or at the snapshot timestamp should not affect balance calculation
-	db.CreateDbRecords(dbClient, cryptoTransfersLTESnapshot, tokenTransfersLTESnapshot, nftTransfersLTESnapshot)
-	db.CreateDbRecords(dbClient, cryptoTransfers, tokenTransfers, nftTransfers)
-
+	expected := suite.setupTestForDeletedAccount()
 	repo := NewAccountRepository(dbClient)
-
-	token1Amount := types.NewTokenAmount(*token1, initialTokenBalances[0].Balance+sum(token1TransferAmounts))
-	token2Amount := types.NewTokenAmount(*token2, initialTokenBalances[1].Balance+sum(token2TransferAmounts))
-	token3Amount := types.NewTokenAmount(*token3, initialTokenBalances[2].Balance+2).
-		SetSerialNumbers([]int64{1, 2, 3, 4})
-
-	expected := []types.Amount{&types.HbarAmount{}, token1Amount, token2Amount, token3Amount}
 
 	// when
 	// account is deleted before the second account balance file, so there is no balance info in the file. querying the
@@ -461,20 +449,8 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockForDeletedAccount
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAtAccountDeletionTime() {
 	// given
-	db.CreateDbRecords(dbClient, getAccountEntity(account, true, accountDeleteTimestamp), token1, token2, token3)
-	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances)
-	// transfers before or at the snapshot timestamp should not affect balance calculation
-	db.CreateDbRecords(dbClient, cryptoTransfersLTESnapshot, tokenTransfersLTESnapshot, nftTransfersLTESnapshot)
-	db.CreateDbRecords(dbClient, cryptoTransfers, tokenTransfers, nftTransfers)
-
+	expected := suite.setupTestForDeletedAccount()
 	repo := NewAccountRepository(dbClient)
-
-	token1Amount := types.NewTokenAmount(*token1, initialTokenBalances[0].Balance+sum(token1TransferAmounts))
-	token2Amount := types.NewTokenAmount(*token2, initialTokenBalances[1].Balance+sum(token2TransferAmounts))
-	token3Amount := types.NewTokenAmount(*token3, initialTokenBalances[2].Balance+2).
-		SetSerialNumbers([]int64{1, 2, 3, 4})
-
-	expected := []types.Amount{&types.HbarAmount{}, token1Amount, token2Amount, token3Amount}
 
 	// when
 	actual, err := repo.RetrieveBalanceAtBlock(defaultContext, account.EncodedId, accountDeleteTimestamp)
@@ -554,22 +530,8 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockDbConnectionError
 
 func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlock() {
 	// given
-	currentBlockStart := recordFile.ConsensusStart
-	currentBlockEnd := recordFile.ConsensusEnd
-	nextBlockStart := currentBlockEnd + 1
 	db.CreateDbRecords(dbClient, recordFile, token1, token2, token3)
-	db.CreateDbRecords(
-		dbClient,
-		// account1's token associations
-		getTokenAccount(account, true, currentBlockStart-1, currentBlockStart-1, token1.TokenId),
-		getTokenAccount(account, false, currentBlockStart-1, currentBlockStart, token1.TokenId),
-		getTokenAccount(account, true, currentBlockEnd, currentBlockEnd, token2.TokenId),
-		getTokenAccount(account, false, currentBlockEnd, nextBlockStart, token2.TokenId),
-		getTokenAccount(account, true, nextBlockStart+1, nextBlockStart+1, token3.TokenId),
-		// account2's token associations
-		getTokenAccount(account2, true, currentBlockEnd-6, currentBlockEnd-6, token3.TokenId),
-		getTokenAccount(account2, true, currentBlockEnd-5, currentBlockEnd-5, token4.TokenId),
-	)
+	suite.createTokenAssociations()
 	expected := []domain.Token{
 		{
 			Decimals: token1.Decimals,
@@ -585,7 +547,7 @@ func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlock() {
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	actual, err := repo.RetrieveEverOwnedTokensByBlock(defaultContext, account.EncodedId, currentBlockEnd)
+	actual, err := repo.RetrieveEverOwnedTokensByBlock(defaultContext, account.EncodedId, recordFile.ConsensusEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -594,26 +556,12 @@ func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlock() {
 
 func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockNoTokenEntity() {
 	// given
-	currentBlockStart := recordFile.ConsensusStart
-	currentBlockEnd := recordFile.ConsensusEnd
-	nextBlockStart := currentBlockEnd + 1
 	db.CreateDbRecords(dbClient, recordFile)
-	db.CreateDbRecords(
-		dbClient,
-		// account1's token associations
-		getTokenAccount(account, true, currentBlockStart-1, currentBlockStart-1, token1.TokenId),
-		getTokenAccount(account, false, currentBlockStart-1, currentBlockStart, token1.TokenId),
-		getTokenAccount(account, true, currentBlockEnd, currentBlockEnd, token2.TokenId),
-		getTokenAccount(account, false, currentBlockEnd, nextBlockStart, token2.TokenId),
-		getTokenAccount(account, true, nextBlockStart+1, nextBlockStart+1, token3.TokenId),
-		// account2's token associations
-		getTokenAccount(account2, true, currentBlockEnd-6, currentBlockEnd-6, token3.TokenId),
-		getTokenAccount(account2, true, currentBlockEnd-5, currentBlockEnd-5, token4.TokenId),
-	)
+	suite.createTokenAssociations()
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	actual, err := repo.RetrieveEverOwnedTokensByBlock(defaultContext, account.EncodedId, currentBlockEnd)
+	actual, err := repo.RetrieveEverOwnedTokensByBlock(defaultContext, account.EncodedId, recordFile.ConsensusEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -630,6 +578,39 @@ func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockDbConnect
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
 	assert.Nil(suite.T(), actual)
+}
+
+func (suite *accountRepositorySuite) createTokenAssociations() {
+	currentBlockStart := recordFile.ConsensusStart
+	currentBlockEnd := recordFile.ConsensusEnd
+	nextBlockStart := currentBlockEnd + 1
+	db.CreateDbRecords(
+		dbClient,
+		// account1's token associations
+		getTokenAccount(account, true, currentBlockStart-1, currentBlockStart-1, token1.TokenId),
+		getTokenAccount(account, false, currentBlockStart-1, currentBlockStart, token1.TokenId),
+		getTokenAccount(account, true, currentBlockEnd, currentBlockEnd, token2.TokenId),
+		getTokenAccount(account, false, currentBlockEnd, nextBlockStart, token2.TokenId),
+		getTokenAccount(account, true, nextBlockStart+1, nextBlockStart+1, token3.TokenId),
+		// account2's token associations
+		getTokenAccount(account2, true, currentBlockEnd-6, currentBlockEnd-6, token3.TokenId),
+		getTokenAccount(account2, true, currentBlockEnd-5, currentBlockEnd-5, token4.TokenId),
+	)
+}
+
+func (suite *accountRepositorySuite) setupTestForDeletedAccount() []types.Amount {
+	db.CreateDbRecords(dbClient, getAccountEntity(account, true, accountDeleteTimestamp), token1, token2, token3)
+	db.CreateDbRecords(dbClient, initialAccountBalance, initialTokenBalances)
+	// transfers before or at the snapshot timestamp should not affect balance calculation
+	db.CreateDbRecords(dbClient, cryptoTransfersLTESnapshot, tokenTransfersLTESnapshot, nftTransfersLTESnapshot)
+	db.CreateDbRecords(dbClient, cryptoTransfers, tokenTransfers, nftTransfers)
+
+	token1Amount := types.NewTokenAmount(*token1, initialTokenBalances[0].Balance+sum(token1TransferAmounts))
+	token2Amount := types.NewTokenAmount(*token2, initialTokenBalances[1].Balance+sum(token2TransferAmounts))
+	token3Amount := types.NewTokenAmount(*token3, initialTokenBalances[2].Balance+2).
+		SetSerialNumbers([]int64{1, 2, 3, 4})
+
+	return []types.Amount{&types.HbarAmount{}, token1Amount, token2Amount, token3Amount}
 }
 
 func TestGetUpdatedTokenAmounts(t *testing.T) {
