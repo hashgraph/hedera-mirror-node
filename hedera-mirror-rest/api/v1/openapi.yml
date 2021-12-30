@@ -1031,19 +1031,19 @@ components:
       properties:
         address:
           description: The hex encoded ethereum address of the contract
-          example: 0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+          example: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
           pattern: ^0x[0-9A-Fa-f]{40}$
           type: string
         contract_id:
           $ref: '#/components/schemas/EntityId'
         data:
           description: The hex encoded data of the contract log
-          example: 0x00000000000000000000000000000000000000000000000000000000000000fa
+          example: '0x00000000000000000000000000000000000000000000000000000000000000fa'
           nullable: true
           type: string
         index:
           description: The index of the contract log in the chain of logs for an execution
-          example: 1
+          example: 0
           type: integer
         root_contract_id:
           description: The executed contract that created this contract log
@@ -1053,7 +1053,7 @@ components:
         topics:
           description: The hex encoded Ethereum topics
           example:
-            - 0xf4757a49b326036464bec6fe419a4ae38c8a02ce3e68bf0809674f6aab8ad300
+            - '0xf4757a49b326036464bec6fe419a4ae38c8a02ce3e68bf0809674f6aab8ad300'
           items:
             type: string
           type: array
@@ -1123,6 +1123,38 @@ components:
               description: The hex encoded transaction hash
               example: "0x3531396130303866616264653464"
               type: string
+            logs:
+              $ref: '#/components/schemas/ContractResultLogs'
+    ContractResultLog:
+      type: object
+      properties:
+        address:
+          description: The hex encoded ethereum address of the contract
+          example: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+          pattern: ^0x[0-9A-Fa-f]{40}$
+          type: string
+        contract_id:
+          $ref: '#/components/schemas/EntityId'
+        data:
+          description: The hex encoded data of the contract log
+          example: '0x00000000000000000000000000000000000000000000000000000000000000fa'
+          nullable: true
+          type: string
+        index:
+          description: The index of the contract log in the chain of logs for an execution
+          example: 0
+          type: integer
+        topics:
+          description: The hex encoded Ethereum topics
+          example:
+            - '0xf4757a49b326036464bec6fe419a4ae38c8a02ce3e68bf0809674f6aab8ad300'
+          items:
+            type: string
+          type: array
+    ContractResultLogs:
+      type: array
+      items:
+        $ref: '#/components/schemas/ContractResultLog'
     ContractResults:
       type: array
       items:
