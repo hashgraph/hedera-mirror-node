@@ -92,7 +92,6 @@
         "contract_id": "0.0.5001",
         "data": "0x0123",
         "index": 0,
-        "root_contract_id": "0.0.5001",
         "topics": [
           "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
           "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
@@ -105,7 +104,6 @@
         "contract_id": "0.0.5002",
         "data": "0x0123",
         "index": 1,
-        "root_contract_id": "0.0.5001",
         "topics": [
           "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
           "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"

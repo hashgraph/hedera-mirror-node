@@ -64,6 +64,8 @@ class ContractResultViewModel {
         const logViewModel = new ContractLogViewModel(contractLog);
         //Timestamp already in the ContractResult, no need to show for each ContractLog
         delete logViewModel.timestamp;
+        //root_contract_id will always match the ContractResult contract_id
+        delete logViewModel.root_contract_id;
         this.logs.push(logViewModel);
       }
     }
