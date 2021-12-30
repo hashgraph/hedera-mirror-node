@@ -347,21 +347,25 @@ describe('ContractService.getContractLogsByTimestamps tests', () => {
   ];
   const expected = [
     {
+      consensusTimestamp: '1',
       contractId: '1',
       index: 0,
       rootContractId: '1',
     },
     {
+      consensusTimestamp: '1',
       contractId: '2',
       index: 1,
       rootContractId: '1',
     },
     {
+      consensusTimestamp: '2',
       contractId: '1',
       index: 0,
       rootContractId: '1',
     },
     {
+      consensusTimestamp: '2',
       contractId: '3',
       index: 1,
       rootContractId: '1',
@@ -369,7 +373,7 @@ describe('ContractService.getContractLogsByTimestamps tests', () => {
   ];
 
   const pickContractLogFields = (contractLogs) => {
-    return contractLogs.map((cr) => _.pick(cr, ['contractId', 'index', 'rootContractId']));
+    return contractLogs.map((cr) => _.pick(cr, ['consensusTimestamp', 'contractId', 'index', 'rootContractId']));
   };
 
   beforeEach(async () => {
