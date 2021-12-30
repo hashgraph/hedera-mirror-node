@@ -115,9 +115,8 @@ alter table nft
 create index if not exists nft__account_token on nft (account_id, token_id);
 
 -- nft_transfer
-create unique index if not exists nft_transfer__timestamp_token_id_serial_num
-    on nft_transfer (consensus_timestamp desc, token_id desc, serial_number desc);
-create index if not exists nft_transfer__token_id_serial_num_timestamp
+create index if not exists nft_transfer__timestamp on nft_transfer (consensus_timestamp desc);
+create unique index if not exists nft_transfer__token_id_serial_num_timestamp
     on nft_transfer(token_id desc, serial_number desc, consensus_timestamp desc);
 
 -- non_fee_transfer
