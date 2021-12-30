@@ -24,15 +24,17 @@ const log4js = require('log4js');
 const config = require('../config');
 
 const invalidBase32Strs = [
+  // A base32 group without padding can have 2, 4, 5, 7 or 8 characters from its alphabet
   '',
   'A',
   'AAA',
-  'AAAAAA', // A base32 group without padding can have 2, 4, 5, 7 or 8 characters from its alphabet
+  'AAAAAA',
+  // non-base32 characters
   '00',
   '11',
   '88',
   '99',
-  'aa', // non-base32 characters
+  'aa',
   'AA======', // padding not accepted
 ];
 

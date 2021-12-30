@@ -24,6 +24,7 @@ const log4js = require('log4js');
 const request = require('supertest');
 
 const {getAccountAliasQuery, getBalanceParamValue, processRow} = require('../accounts');
+const base32 = require('../base32');
 const constants = require('../constants');
 const server = require('../server');
 const testutils = require('./testutils.js');
@@ -340,7 +341,7 @@ describe('Accounts tests', () => {
 describe('processRow', () => {
   const input = {
     account_balance: '123456789',
-    alias: Buffer.from('b586e336fb9dce3d', 'hex'),
+    alias: base32.decode('WWDOGNX3TXHD2'),
     auto_renew_period: 7890000,
     consensus_timestamp: '9876500123456789',
     deleted: false,
@@ -434,7 +435,7 @@ describe('processRow', () => {
 describe('getAccountAliasQuery', () => {
   const key = constants.filterKeys.ACCOUNT_ALIAS;
   const aliasStr = 'AABBCC22';
-  const aliasBuf = Buffer.from('0002110b5a', 'hex');
+  const aliasBuf = base32.decode(aliasStr);
   const testSpecs = [
     {
       query: {},
