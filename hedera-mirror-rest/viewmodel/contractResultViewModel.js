@@ -21,11 +21,9 @@
 'use strict';
 
 const _ = require('lodash');
-
+const ContractLogViewModel = require('./contractLogViewModel');
 const EntityId = require('../entityId');
 const utils = require('../utils');
-const {ContractLogViewModel} = require('./contractLogViewModel');
-const constants = require('../constants');
 
 /**
  * Contract results view model
@@ -63,26 +61,12 @@ class ContractResultViewModel {
     if (!_.isNil(contractLogs)) {
       this.logs = [];
       for (const contractLog of contractLogs) {
-        const contractId = EntityId.parse(contractLog.contractId, constants.filterKeys.CONTRACTID);
-        //TODO figure out why the constructor isn't working
-        let test = {};
-        Object.assign(test, {
-          address: contractId.toSolidityAddress(),
-          contract_id: contractId.toString(),
-          data: utils.toHexString(contractLog.data, true),
-          index: contractLog.index,
-          root_contract_id: EntityId.parse(contractLog.rootContractId, true).toString(),
-          topics: this._formatTopics([contractLog.topic0, contractLog.topic1, contractLog.topic2, contractLog.topic3]),
-        });
-        // const viewModel = new ContractLogViewModel(log);
-        // delete viewModel.timestamp;
-        this.logs.push(test);
+        const logViewModel = new ContractLogViewModel(contractLog);
+        //Timestamp already in the ContractResult, no need to show for each ContractLog
+        delete logViewModel.timestamp;
+        this.logs.push(logViewModel);
       }
     }
-  }
-
-  _formatTopics(topics) {
-    return topics.filter((topic) => topic !== null).map((topic) => utils.toHexString(topic, true, 64));
   }
 }
 
