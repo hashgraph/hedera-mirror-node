@@ -97,18 +97,11 @@ const (
                           from contract
                           where id = @entity_id`
 	// #nosec
-	selectEverOwnedTokensByBlockAfter = `with next_rf as (
-                                          select consensus_end
-                                          from record_file
-                                          where consensus_end > @consensus_timestamp
-                                          order by consensus_end
-                                          limit 1
-                                        )
-                                        select distinct on (t.token_id) t.decimals, t.token_id, t.type
-                                        from token_account ta
-                                        join next_rf on ta.modified_timestamp <= consensus_end
-                                        join token t on t.token_id = ta.token_id
-                                        where account_id = @account_id`
+	selectEverOwnedTokensByBlock = `select distinct on (t.token_id) t.decimals, t.token_id, t.type
+                                    from token_account ta
+                                    join token t
+                                      on t.token_id = ta.token_id
+                                    where account_id = @account_id and ta.modified_timestamp <= @consensus_timestamp`
 	selectNftTransfersForAccount = `select *
                                     from nft_transfer
                                     where consensus_timestamp <= @consensus_end and
@@ -193,7 +186,7 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 	return amounts, nil
 }
 
-func (ar *accountRepository) RetrieveEverOwnedTokensByBlockAfter(
+func (ar *accountRepository) RetrieveEverOwnedTokensByBlock(
 	ctx context.Context,
 	accountId int64,
 	consensusEnd int64,
@@ -205,7 +198,7 @@ func (ar *accountRepository) RetrieveEverOwnedTokensByBlockAfter(
 
 	tokens := make([]domain.Token, 0)
 	if err := db.Raw(
-		selectEverOwnedTokensByBlockAfter,
+		selectEverOwnedTokensByBlock,
 		sql.Named("account_id", accountId),
 		sql.Named("consensus_timestamp", consensusEnd),
 	).Scan(&tokens).Error; err != nil {

@@ -374,7 +374,7 @@ var (
 			TokenId:            token3.TokenId,
 		},
 	}
-	nextRecordFile = &domain.RecordFile{
+	recordFile = &domain.RecordFile{
 		ConsensusStart: consensusTimestamp + 1,
 		ConsensusEnd:   consensusTimestamp + 10,
 		Count:          5,
@@ -552,18 +552,23 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockDbConnectionError
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockAfter() {
+func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlock() {
 	// given
-	currentBlockEnd := nextRecordFile.ConsensusStart - 1
-	nextBlockStart := nextRecordFile.ConsensusStart
-	nextBlockEnd := nextRecordFile.ConsensusEnd
-	db.CreateDbRecords(dbClient, nextRecordFile, token1, token2, token3)
+	currentBlockStart := recordFile.ConsensusStart
+	currentBlockEnd := recordFile.ConsensusEnd
+	nextBlockStart := currentBlockEnd + 1
+	// nextBlockStart := recordFile.ConsensusStart
+	// nextBlockEnd := recordFile.ConsensusEnd
+	db.CreateDbRecords(dbClient, recordFile, token1, token2, token3)
 	db.CreateDbRecords(
 		dbClient,
-		getTokenAccount(account, true, currentBlockEnd-5, currentBlockEnd-5, token1.TokenId),
-		getTokenAccount(account, false, currentBlockEnd-5, currentBlockEnd-4, token1.TokenId),
-		getTokenAccount(account, true, nextBlockStart+1, nextBlockStart+1, token2.TokenId),
-		getTokenAccount(account, true, nextBlockEnd+1, nextBlockEnd+1, token3.TokenId),
+		// account1's token associations
+		getTokenAccount(account, true, currentBlockStart-1, currentBlockStart-1, token1.TokenId),
+		getTokenAccount(account, false, currentBlockStart-1, currentBlockStart, token1.TokenId),
+		getTokenAccount(account, true, currentBlockEnd, currentBlockEnd, token2.TokenId),
+		getTokenAccount(account, false, currentBlockEnd, nextBlockStart, token2.TokenId),
+		getTokenAccount(account, true, nextBlockStart+1, nextBlockStart+1, token3.TokenId),
+		// account2's token associations
 		getTokenAccount(account2, true, currentBlockEnd-6, currentBlockEnd-6, token3.TokenId),
 		getTokenAccount(account2, true, currentBlockEnd-5, currentBlockEnd-5, token4.TokenId),
 	)
@@ -582,44 +587,47 @@ func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockAfter() {
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	actual, err := repo.RetrieveEverOwnedTokensByBlockAfter(defaultContext, account.EncodedId, currentBlockEnd)
+	actual, err := repo.RetrieveEverOwnedTokensByBlock(defaultContext, account.EncodedId, currentBlockEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), expected, actual)
 }
 
-func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockAfterNoTokenEntity() {
+func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockNoTokenEntity() {
 	// given
-	currentBlockEnd := nextRecordFile.ConsensusStart - 1
-	nextBlockStart := nextRecordFile.ConsensusStart
-	nextBlockEnd := nextRecordFile.ConsensusEnd
-	db.CreateDbRecords(dbClient, nextRecordFile)
+	currentBlockStart := recordFile.ConsensusStart
+	currentBlockEnd := recordFile.ConsensusEnd
+	nextBlockStart := currentBlockEnd + 1
+	db.CreateDbRecords(dbClient, recordFile)
 	db.CreateDbRecords(
 		dbClient,
-		getTokenAccount(account, true, currentBlockEnd-5, currentBlockEnd-5, token1.TokenId),
-		getTokenAccount(account, false, currentBlockEnd-5, currentBlockEnd-4, token1.TokenId),
-		getTokenAccount(account, true, nextBlockStart+1, nextBlockStart+1, token2.TokenId),
-		getTokenAccount(account, true, nextBlockEnd+1, nextBlockEnd+1, token3.TokenId),
+		// account1's token associations
+		getTokenAccount(account, true, currentBlockStart-1, currentBlockStart-1, token1.TokenId),
+		getTokenAccount(account, false, currentBlockStart-1, currentBlockStart, token1.TokenId),
+		getTokenAccount(account, true, currentBlockEnd, currentBlockEnd, token2.TokenId),
+		getTokenAccount(account, false, currentBlockEnd, nextBlockStart, token2.TokenId),
+		getTokenAccount(account, true, nextBlockStart+1, nextBlockStart+1, token3.TokenId),
+		// account2's token associations
 		getTokenAccount(account2, true, currentBlockEnd-6, currentBlockEnd-6, token3.TokenId),
 		getTokenAccount(account2, true, currentBlockEnd-5, currentBlockEnd-5, token4.TokenId),
 	)
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	actual, err := repo.RetrieveEverOwnedTokensByBlockAfter(defaultContext, account.EncodedId, currentBlockEnd)
+	actual, err := repo.RetrieveEverOwnedTokensByBlock(defaultContext, account.EncodedId, currentBlockEnd)
 
 	// then
 	assert.Nil(suite.T(), err)
 	assert.Empty(suite.T(), actual)
 }
 
-func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockAfterDbConnectionError() {
+func (suite *accountRepositorySuite) TestRetrieveEverOwnedTokensByBlockDbConnectionError() {
 	// given
 	repo := NewAccountRepository(invalidDbClient)
 
 	// when
-	actual, err := repo.RetrieveEverOwnedTokensByBlockAfter(defaultContext, account.EncodedId, consensusEnd)
+	actual, err := repo.RetrieveEverOwnedTokensByBlock(defaultContext, account.EncodedId, consensusEnd)
 
 	// then
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)

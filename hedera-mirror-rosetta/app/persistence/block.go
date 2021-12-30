@@ -37,27 +37,24 @@ import (
 const (
 	genesisConsensusStartUnset = -1
 
-	// selectSecondLatestWithIndex - Selects the second latest record block
-	selectSecondLatestWithIndex string = `select consensus_start,
+	// selectLatestWithIndex - Selects the latest record block
+	selectLatestWithIndex string = `select consensus_start,
                                            consensus_end,
                                            hash,
                                            index,
-                                           prev_hash,
-                                           (index + 1) latest_index
+                                           prev_hash
                                     from record_file
-                                    where index < (select max(index) from record_file)
                                     order by index desc
                                     limit 1`
 
 	// selectByHashWithIndex - Selects the row by given hash
-	selectByHashWithIndex string = `SELECT consensus_start,
+	selectByHashWithIndex string = `select consensus_start,
                                            consensus_end,
                                            hash,
                                            index,
-                                           prev_hash,
-                                            (select max(index) from record_file) latest_index
-                                    FROM record_file
-                                    WHERE hash = @hash`
+                                           prev_hash
+                                    from record_file
+                                    where hash = @hash`
 
 	// selectGenesis - Selects the first block whose consensus_end is after the genesis account balance
 	// timestamp. Return the record file with adjusted consensus start
@@ -75,14 +72,13 @@ const (
                             limit 1`
 
 	// selectRecordBlockByIndex - Selects the record block by its index
-	selectRecordBlockByIndex string = `SELECT consensus_start,
+	selectRecordBlockByIndex string = `select consensus_start,
                                              consensus_end,
                                              hash,
                                              index,
-                                             prev_hash,
-                                             (select max(index) from record_file) latest_index
-                                      FROM record_file
-                                      WHERE index = @index`
+                                             prev_hash
+                                      from record_file
+                                      where index = @index`
 )
 
 type recordBlock struct {
@@ -90,7 +86,6 @@ type recordBlock struct {
 	ConsensusEnd   int64
 	Hash           string
 	Index          int64
-	LatestIndex    int64
 	PrevHash       string
 }
 
@@ -110,7 +105,6 @@ func (rb *recordBlock) ToBlock(genesisConsensusStart int64, genesisIndex int64) 
 	return &types.Block{
 		Index:               index,
 		Hash:                rb.Hash,
-		LatestIndex:         rb.LatestIndex - genesisIndex,
 		ParentIndex:         parentIndex,
 		ParentHash:          parentHash,
 		ConsensusStartNanos: consensusStart,
@@ -196,7 +190,7 @@ func (br *blockRepository) RetrieveLatest(ctx context.Context) (*types.Block, *r
 	defer cancel()
 
 	rb := &recordBlock{}
-	if err := db.Raw(selectSecondLatestWithIndex).First(rb).Error; err != nil {
+	if err := db.Raw(selectLatestWithIndex).First(rb).Error; err != nil {
 		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
 

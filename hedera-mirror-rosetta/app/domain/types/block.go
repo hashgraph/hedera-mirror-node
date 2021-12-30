@@ -33,7 +33,6 @@ type Block struct {
 	ConsensusStartNanos int64
 	Hash                string
 	Index               int64
-	LatestIndex         int64
 	ParentHash          string
 	ParentIndex         int64
 	Transactions        []*Transaction

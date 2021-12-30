@@ -43,7 +43,7 @@ func (m *MockAccountRepository) RetrieveBalanceAtBlock(ctx context.Context, acco
 	return args.Get(0).([]types.Amount), args.Get(1).(*rTypes.Error)
 }
 
-func (m *MockAccountRepository) RetrieveEverOwnedTokensByBlockAfter(
+func (m *MockAccountRepository) RetrieveEverOwnedTokensByBlock(
 	ctx context.Context,
 	accountId int64,
 	consensusEnd int64,

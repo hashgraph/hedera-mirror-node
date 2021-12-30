@@ -67,11 +67,6 @@ func (a *AccountAPIService) AccountBalance(
 		return nil, err
 	}
 
-	if block.LatestIndex-block.Index < 1 {
-		// only show info up to the second latest block
-		return nil, errors.ErrBlockNotFound
-	}
-
 	balances, err := a.accountRepo.RetrieveBalanceAtBlock(ctx, account.EncodedId, block.ConsensusEndNanos)
 	if err != nil {
 		return nil, err
@@ -107,14 +102,15 @@ func (a *AccountAPIService) AccountCoins(
 }
 
 // getAdditionalTokenBalances get the additional token balances with 0 amount for tokens the account has ever owned by
-// the end of the next block and not in the tokenSet
+// the end of the current block and not in the tokenSet, i.e., tokens the account has dissociated with while rosetta
+// validation requires an implementation to still show the 0 balance
 func (a *AccountAPIService) getAdditionalTokenBalances(
 	ctx context.Context,
 	accountId int64,
 	consensusEnd int64,
 	tokenSet map[int64]bool,
 ) ([]types.Amount, *rTypes.Error) {
-	tokens, err := a.accountRepo.RetrieveEverOwnedTokensByBlockAfter(ctx, accountId, consensusEnd)
+	tokens, err := a.accountRepo.RetrieveEverOwnedTokensByBlock(ctx, accountId, consensusEnd)
 	if err != nil {
 		return nil, err
 	}
