@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call using contract id and timestamp",
+  "description": "Contract results api call using contract id and timestamp with no contract logs",
   "setup": {
     "contractresults": [
       {
