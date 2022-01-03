@@ -902,6 +902,7 @@ components:
           type: boolean
       example:
         account: 0.0.8
+        alias: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
         auto_renew_period: null
         balance:
           timestamp: "0.000002345"
@@ -973,6 +974,7 @@ components:
       type: string
       pattern: ^(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$
       nullable: true
+      example: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
     Balance:
       type: object
       required:
@@ -1864,13 +1866,13 @@ components:
       examples:
         eqAliasOnly:
           summary: Example of equals with alias only
-          value: AABBCC22
+          value: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
         eqRealmAndAlias:
           summary: Example of equals with realm.alias
-          value: 0.AABBCC22
+          value: 0.HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
         eqFull:
           summary: Example of equals with shard.realm.alias
-          value: 0.1.AABBCC22
+          value: 0.1.HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
       schema:
         description: >-
           Account alias in the format of 'shard.realm.alias', 'realm.alias', or 'alias'. 'alias' is the RFC4648
