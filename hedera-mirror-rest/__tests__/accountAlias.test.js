@@ -39,6 +39,10 @@ describe('AccountAlias', () => {
           input: '0.1.AABBCC22',
           expected: new AccountAlias('0', '1', 'AABBCC22'),
         },
+        {
+          input: '99999.99999.AABBCC22',
+          expected: new AccountAlias('99999', '99999', 'AABBCC22'),
+        },
       ];
 
       testSpecs.forEach((spec) => {
@@ -53,6 +57,7 @@ describe('AccountAlias', () => {
         null,
         undefined,
         invalidBase32Strs.map((alias) => getAllAccountAliases(alias)),
+        '100000.100000.AABBCC22',
         '0.0.0.AABBCC22',
       ]);
 
@@ -91,12 +96,7 @@ describe('isValidAccountAlias', () => {
   });
 
   describe('invalid', () => {
-    const inputs = _.flattenDeep([
-      null,
-      undefined,
-      invalidBase32Strs.map((alias) => getAllAccountAliases(alias)),
-      '0.0.0.AABBCC22',
-    ]);
+    const inputs = _.flattenDeep([null, undefined, invalidBase32Strs.map((alias) => getAllAccountAliases(alias))]);
     inputs.forEach((input) => {
       test(`${input}`, () => {
         expect(isValidAccountAlias(input)).toBeFalse();

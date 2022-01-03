@@ -28,7 +28,6 @@ const EntityId = require('./entityId');
 const utils = require('./utils');
 const transactions = require('./transactions');
 const {NotFoundError} = require('./errors/notFoundError');
-const {DbError} = require('./errors/dbError');
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -158,7 +157,7 @@ const getEntityBalanceQuery = (
 ) => {
   // whether there are conditions using account only fields, if so we need to make account/contract the main table or
   // use inner join
-  const accountOnlyQuery = accountAliasQuery.query !== '' || pubKeyQuery.query !== '';
+  const accountOnlyFieldsQuery = accountAliasQuery.query !== '' || pubKeyQuery.query !== '';
   const balanceJoinConditions = ['ab.account_id = e.id'];
   const balanceWhereConditions = [balanceQuery.query];
   let entityIdField = 'id'; // use 'id' from account / contract for inner and left outer joins
@@ -169,11 +168,11 @@ const getEntityBalanceQuery = (
   // conditions and the corresponding params differ too. The entity id conditions only have to apply to one table:
   // for inner and left outer joins, apply them to the account / contract table; for right outer join, apply them to the
   // account_balance table
-  if (balanceQuery.query && accountOnlyQuery) {
+  if (balanceQuery.query && accountOnlyFieldsQuery) {
     joinType = 'inner';
     balanceJoinConditions.push(latestBalanceFilter);
     params = [entityAccountQuery.params, accountAliasQuery.params, pubKeyQuery.params, balanceQuery.params];
-  } else if (accountOnlyQuery) {
+  } else if (accountOnlyFieldsQuery) {
     joinType = 'left outer';
     balanceJoinConditions.push(latestBalanceFilter);
     params = [entityAccountQuery.params, accountAliasQuery.params, pubKeyQuery.params];

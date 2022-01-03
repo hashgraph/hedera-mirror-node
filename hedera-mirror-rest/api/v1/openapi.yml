@@ -1859,7 +1859,7 @@ components:
     accountAliasQueryParam:
       name: account.alias
       in: query
-      description: The optional account alias to query for. The last is hornored if there are multiple
+      description: The account alias to query for. The last is honored if there are multiple
       explode: true
       examples:
         eqAliasOnly:

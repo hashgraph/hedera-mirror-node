@@ -52,6 +52,8 @@ exports[`AccountAlias fromString invalid 88 1`] = `"Invalid accountAlias string 
 
 exports[`AccountAlias fromString invalid 99 1`] = `"Invalid accountAlias string 99"`;
 
+exports[`AccountAlias fromString invalid 100000.100000.AABBCC22 1`] = `"Invalid accountAlias string 100000.100000.AABBCC22"`;
+
 exports[`AccountAlias fromString invalid A 1`] = `"Invalid accountAlias string A"`;
 
 exports[`AccountAlias fromString invalid AA====== 1`] = `"Invalid accountAlias string AA======"`;
