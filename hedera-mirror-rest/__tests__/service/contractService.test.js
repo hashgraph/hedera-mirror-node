@@ -387,15 +387,15 @@ describe('ContractService.getContractLogsByTimestamps tests', () => {
     const results = pickContractLogFields(
       await ContractService.getContractLogsByTimestamps([timestamps[0], timestamps[1]])
     );
-    expect(results).toIncludeAllMembers(expected);
+    expect(results).toIncludeSameMembers(expected);
   });
   test('Match one timestamp with additional umatched timestamp', async () => {
     const results = pickContractLogFields(await ContractService.getContractLogsByTimestamps([timestamps[0], '3']));
-    expect(results).toIncludeAllMembers(expected.slice(0, 1));
+    expect(results).toIncludeSameMembers(expected.slice(0, 2));
   });
   test('Match one timestamp', async () => {
     const results = pickContractLogFields(await ContractService.getContractLogsByTimestamps([timestamps[1]]));
-    expect(results).toIncludeAllMembers(expected.slice(2));
+    expect(results).toIncludeSameMembers(expected.slice(2));
   });
 });
 
