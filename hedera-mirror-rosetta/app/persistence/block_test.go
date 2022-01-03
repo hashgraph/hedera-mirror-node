@@ -449,7 +449,6 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisDbConnectionError() {
 
 func (suite *blockRepositorySuite) TestRetrieveLatestNonGenesisBlock() {
 	// given
-	// db.CreateDbRecords(dbClient, thirdRecordFile)
 	expected := *expectedSecondBlock
 	repo := NewBlockRepository(dbClient)
 
