@@ -16,6 +16,8 @@
       },
       {
         "num": 1500,
+        "deleted": true,
+        "timestamp_range": "[1234567890000000009,)",
         "type": "TOKEN"
       },
       {
@@ -113,7 +115,7 @@
         ]
       },
       {
-        "name": "TOKENDELETE",
+        "name": "TOKENDELETION",
         "type": "35",
         "valid_start_timestamp": "1234567890000000009",
         "consensus_timestamp": "1234567890000000009",

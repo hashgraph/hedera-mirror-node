@@ -16,6 +16,8 @@
       },
       {
         "num": 1500,
+        "deleted": true,
+        "timestamp_range": "[1234567890000000010,)",
         "type": "TOKEN"
       },
       {
