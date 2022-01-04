@@ -38,9 +38,8 @@ type AccountRepository interface {
 	// balance = balanceAtLatestBalanceSnapshotBeforeT1 + balanceChangeBetweenSnapshotAndT1
 	RetrieveBalanceAtBlock(ctx context.Context, accountId, consensusEnd int64) ([]types.Amount, *rTypes.Error)
 
-	// RetrieveEverOwnedTokensByBlockAfter returns the tokens the account has ever owned by the end of the block after
-	// consensusEnd
-	RetrieveEverOwnedTokensByBlockAfter(ctx context.Context, accountId, consensusEnd int64) (
+	// RetrieveEverOwnedTokensByBlock returns the tokens the account has ever owned by the block's consensusEnd
+	RetrieveEverOwnedTokensByBlock(ctx context.Context, accountId, consensusEnd int64) (
 		[]domain.Token,
 		*rTypes.Error,
 	)

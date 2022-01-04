@@ -60,7 +60,6 @@ var (
 		ConsensusEndNanos:   100,
 		Hash:                "genesis_record_file_hash",
 		Index:               0,
-		LatestIndex:         1,
 		ParentHash:          "genesis_record_file_hash",
 		ParentIndex:         0,
 	}
@@ -69,7 +68,6 @@ var (
 		ConsensusEndNanos:   120,
 		Hash:                "second_record_file_hash",
 		Index:               1,
-		LatestIndex:         1,
 		ParentHash:          "genesis_record_file_hash",
 		ParentIndex:         0,
 	}
@@ -103,15 +101,6 @@ var (
 		Name:           "previous_record_file",
 		NodeAccountID:  nodeAccountId,
 		PrevHash:       "some_hash",
-	}
-	thirdRecordFile = &domain.RecordFile{
-		ConsensusStart: 121,
-		ConsensusEnd:   130,
-		Hash:           "third_record_file_hash",
-		Index:          5,
-		Name:           "third_record_file",
-		NodeAccountID:  nodeAccountId,
-		PrevHash:       "second_record_file_hash",
 	}
 )
 
@@ -298,6 +287,18 @@ func (suite *blockRepositorySuite) TestFindByIdentifierNoRecordFile() {
 	assert.Nil(suite.T(), actual)
 }
 
+func (suite *blockRepositorySuite) TestFindByIdentifierNotFound() {
+	// given
+	repo := NewBlockRepository(dbClient)
+
+	// when
+	actual, err := repo.FindByIdentifier(defaultContext, 1000, "foobar")
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
+}
+
 func (suite *blockRepositorySuite) TestFindByIdentifierDbConnectionError() {
 	// given
 	repo := NewBlockRepository(invalidDbClient)
@@ -372,6 +373,18 @@ func (suite *blockRepositorySuite) TestFindByIndexNoRecordFile() {
 	assert.Nil(suite.T(), actual)
 }
 
+func (suite *blockRepositorySuite) TestFindByIndexNotFound() {
+	// given
+	repo := NewBlockRepository(dbClient)
+
+	// when
+	actual, err := repo.FindByIndex(defaultContext, 1000)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
+}
+
 func (suite *blockRepositorySuite) TestFindByIndexDbConnectionError() {
 	// given
 	repo := NewBlockRepository(invalidDbClient)
@@ -434,23 +447,9 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisDbConnectionError() {
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *blockRepositorySuite) TestRetrieveSecondLatestGenesisBlock() {
-	// given
-	repo := NewBlockRepository(dbClient)
-
-	// when
-	actual, err := repo.RetrieveLatest(defaultContext)
-
-	// then
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), expectedGenesisBlock, actual)
-}
-
 func (suite *blockRepositorySuite) TestRetrieveLatestNonGenesisBlock() {
 	// given
-	db.CreateDbRecords(dbClient, thirdRecordFile)
 	expected := *expectedSecondBlock
-	expected.LatestIndex = 2
 	repo := NewBlockRepository(dbClient)
 
 	// when
@@ -471,21 +470,21 @@ func (suite *blockRepositorySuite) TestRetrieveLatestWithOnlyGenesisBlock() {
 	actual, err := repo.RetrieveLatest(defaultContext)
 
 	// then
-	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
-	assert.Nil(suite.T(), actual)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), actual, expectedGenesisBlock)
 }
 
 func (suite *blockRepositorySuite) TestRetrieveLatestWithBlockBeforeGenesis() {
 	// given
 	db.ExecSql(dbClient, truncateRecordFileSql)
-	db.CreateDbRecords(dbClient, recordFileBeforeGenesis, genesisRecordFile)
+	db.CreateDbRecords(dbClient, recordFileBeforeGenesis)
 	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.RetrieveLatest(defaultContext)
 
 	// then
-	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Equal(suite.T(), errors.ErrNodeIsStarting, err)
 	assert.Nil(suite.T(), actual)
 }
 
@@ -515,7 +514,35 @@ func (suite *blockRepositorySuite) TestRetrieveLatestNoRecordFile() {
 	assert.Nil(suite.T(), actual)
 }
 
-func (suite *blockRepositorySuite) TestetrieveSecondLatestDbConnectionError() {
+func (suite *blockRepositorySuite) TestRetrieveLatestRecordFileTableInconsistent() {
+	// given
+	repo := NewBlockRepository(dbClient)
+
+	// when
+	actual, err := repo.RetrieveLatest(defaultContext)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectedSecondBlock, actual)
+
+	// when
+	db.ExecSql(dbClient, truncateRecordFileSql)
+	actual, err = repo.RetrieveLatest(defaultContext)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
+
+	// when
+	db.CreateDbRecords(dbClient, recordFileBeforeGenesis)
+	actual, err = repo.RetrieveLatest(defaultContext)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveLatestDbConnectionError() {
 	// given
 	repo := NewBlockRepository(invalidDbClient)
 
@@ -542,13 +569,11 @@ func TestRecordFileToBlock(t *testing.T) {
 				ConsensusEnd:   200,
 				Hash:           "hash",
 				Index:          5,
-				LatestIndex:    9,
 				PrevHash:       "prev_hash",
 			},
 			&types.Block{
 				Index:               0,
 				Hash:                "hash",
-				LatestIndex:         4,
 				ParentIndex:         0,
 				ParentHash:          "hash",
 				ConsensusStartNanos: genesisConsensusStart,
@@ -562,13 +587,11 @@ func TestRecordFileToBlock(t *testing.T) {
 				ConsensusEnd:   300,
 				Hash:           "hash",
 				Index:          8,
-				LatestIndex:    9,
 				PrevHash:       "prev_hash",
 			},
 			&types.Block{
 				Index:               3,
 				Hash:                "hash",
-				LatestIndex:         4,
 				ParentIndex:         2,
 				ParentHash:          "prev_hash",
 				ConsensusStartNanos: 201,

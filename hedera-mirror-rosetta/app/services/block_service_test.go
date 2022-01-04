@@ -43,7 +43,6 @@ func block() *types.Block {
 	return &types.Block{
 		Index:               1,
 		Hash:                "12345",
-		LatestIndex:         5,
 		ConsensusStartNanos: 1000000,
 		ConsensusEndNanos:   20000000,
 		ParentIndex:         2,

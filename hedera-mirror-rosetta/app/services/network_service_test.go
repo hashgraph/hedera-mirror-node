@@ -38,7 +38,6 @@ func dummyGenesisBlock() *types.Block {
 	return &types.Block{
 		Index:               1,
 		Hash:                "0x123jsjs",
-		LatestIndex:         3,
 		ConsensusStartNanos: 1000000,
 		ConsensusEndNanos:   20000000,
 		ParentIndex:         0,
@@ -50,7 +49,6 @@ func dummySecondLatestBlock() *types.Block {
 	return &types.Block{
 		Index:               2,
 		Hash:                "0x1323jsjs",
-		LatestIndex:         3,
 		ConsensusStartNanos: 40000000,
 		ConsensusEndNanos:   70000000,
 		ParentIndex:         1,
