@@ -8,6 +8,12 @@
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
+        "target": {
+          "limit": 100,
+          "matchAny": false,
+          "tags": [],
+          "type": "dashboard"
+        },
         "type": "dashboard"
       }
     ]
@@ -15,8 +21,8 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
-  "id": 34,
-  "iteration": 1623862754049,
+  "id": 35,
+  "iteration": 1640730470193,
   "links": [],
   "panels": [
     {
@@ -77,11 +83,11 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(kube_pod_status_ready{cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",pod=~\".*-monitor-.*\",condition=\"true\"})",
+          "expr": "sum(kube_pod_status_ready{cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",pod=~\".*-web3-.*\",condition=\"true\"})",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -95,7 +101,7 @@
     {
       "cacheTimeout": null,
       "datasource": "${prometheus}",
-      "description": "The average publish TPS",
+      "description": "The current number of requests per second",
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -118,12 +124,12 @@
                 "value": null
               },
               {
-                "color": "yellow",
-                "value": 0.01
-              },
-              {
                 "color": "green",
                 "value": 1
+              },
+              {
+                "color": "#EAB839",
+                "value": 2
               }
             ]
           },
@@ -137,7 +143,7 @@
         "x": 3,
         "y": 0
       },
-      "id": 84,
+      "id": 30,
       "links": [],
       "options": {
         "colorMode": "background",
@@ -154,10 +160,11 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "exemplar": true,
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -165,13 +172,13 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Publish TPS",
+      "title": "Request Rate",
       "type": "stat"
     },
     {
       "cacheTimeout": null,
       "datasource": "${prometheus}",
-      "description": "The average gRPC subscribe TPS",
+      "description": "The max number of overall requests per second",
       "fieldConfig": {
         "defaults": {
           "mappings": [
@@ -190,16 +197,20 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "green",
                 "value": null
               },
               {
-                "color": "yellow",
-                "value": 0.01
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 2
               },
               {
                 "color": "green",
-                "value": 1
+                "value": 4
               }
             ]
           },
@@ -213,7 +224,7 @@
         "x": 6,
         "y": 0
       },
-      "id": 74,
+      "id": 31,
       "links": [],
       "options": {
         "colorMode": "background",
@@ -222,7 +233,7 @@
         "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
-            "lastNotNull"
+            "max"
           ],
           "fields": "",
           "values": false
@@ -230,10 +241,11 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
+          "exemplar": true,
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -241,16 +253,15 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Subscribe TPS",
+      "title": "Max Response Rate",
       "type": "stat"
     },
     {
       "cacheTimeout": null,
       "datasource": "${prometheus}",
-      "description": "The average amount of time all scenarios have been actively publishing transactions",
+      "description": "The percentage of requests with errors",
       "fieldConfig": {
         "defaults": {
-          "decimals": 2,
           "mappings": [
             {
               "options": {
@@ -267,16 +278,24 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "green",
                 "value": null
               },
               {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "#EAB839",
+                "value": 2
+              },
+              {
                 "color": "green",
-                "value": 0.1
+                "value": 4
               }
             ]
           },
-          "unit": "s"
+          "unit": "none"
         },
         "overrides": []
       },
@@ -286,7 +305,7 @@
         "x": 9,
         "y": 0
       },
-      "id": 58,
+      "id": 76,
       "links": [],
       "options": {
         "colorMode": "background",
@@ -303,10 +322,11 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "targets": [
         {
-          "expr": "avg(hedera_mirror_monitor_publish_duration_seconds{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "exemplar": true,
+          "expr": "sum(rate(hedera_mirror_web3_requests_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",status!=\"SUCCESS\"}[$__rate_interval])) / sum(rate(hedera_mirror_web3_requests_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
           "interval": "1m",
           "legendFormat": "",
           "refId": "A"
@@ -314,258 +334,550 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "Publish Duration",
-      "type": "stat"
-    },
-    {
-      "cacheTimeout": null,
-      "datasource": "${prometheus}",
-      "description": "The average amount of time all clients have been subscribed",
-      "fieldConfig": {
-        "defaults": {
-          "decimals": 2,
-          "mappings": [
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "color": "red",
-                  "text": "0"
-                }
-              },
-              "type": "special"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 0.1
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 12,
-        "y": 0
-      },
-      "id": 73,
-      "links": [],
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
-      },
-      "pluginVersion": "8.0.1",
-      "targets": [
-        {
-          "expr": "avg(hedera_mirror_monitor_subscribe_duration_seconds{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
-          "interval": "1m",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Subscribe Duration",
-      "type": "stat"
-    },
-    {
-      "cacheTimeout": null,
-      "datasource": "${prometheus}",
-      "description": "The average time from submit to handle transaction",
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "color": "green",
-                  "text": "0"
-                }
-              },
-              "type": "special"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 6
-              },
-              {
-                "color": "orange",
-                "value": 8
-              },
-              {
-                "color": "red",
-                "value": 10
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 15,
-        "y": 0
-      },
-      "id": 82,
-      "links": [],
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
-      },
-      "pluginVersion": "8.0.1",
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_monitor_publish_handle_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) / sum(rate(hedera_mirror_monitor_publish_handle_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
-          "interval": "1m",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Submit to Handle",
-      "type": "stat"
-    },
-    {
-      "cacheTimeout": null,
-      "datasource": "${prometheus}",
-      "description": "The average end to end latency of the entire system",
-      "fieldConfig": {
-        "defaults": {
-          "mappings": [
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "color": "green",
-                  "text": "0"
-                }
-              },
-              "type": "special"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 8
-              },
-              {
-                "color": "orange",
-                "value": 10
-              },
-              {
-                "color": "red",
-                "value": 15
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 3,
-        "x": 18,
-        "y": 0
-      },
-      "id": 83,
-      "links": [],
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
-      },
-      "pluginVersion": "8.0.1",
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",protocol=\"GRPC\"}[$__rate_interval])) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",protocol=\"GRPC\"}[$__rate_interval]))",
-          "interval": "1m",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "E2E",
+      "title": "Errors",
       "type": "stat"
     },
     {
       "collapsed": false,
       "datasource": null,
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 4
       },
+      "id": 79,
+      "panels": [],
+      "title": "HTTP",
+      "type": "row"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${prometheus}",
+      "decimals": 1,
+      "description": "The number of HTTP requests received per second",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "hiddenSeries": false,
+      "id": 27,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sideWidth": null,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": true,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.1.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method, uri)",
+          "interval": "1m",
+          "legendFormat": "{{ method}} {{uri}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Request Rate",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${prometheus}",
+      "decimals": 1,
+      "description": "The size of the HTTP requests in bytes",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "hiddenSeries": false,
+      "id": 81,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sideWidth": null,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": true,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.1.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(rate(reactor_netty_http_server_data_received_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (uri) / sum(rate(reactor_netty_http_server_data_received_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (uri)",
+          "interval": "1m",
+          "legendFormat": "{{uri}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Request Size",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${prometheus}",
+      "decimals": 1,
+      "description": "The amount of time it takes to process the HTTP request",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 21
+      },
+      "hiddenSeries": false,
+      "id": 77,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sideWidth": null,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": true,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.1.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(rate(http_server_requests_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method, uri) / sum(rate(http_server_requests_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method, uri)",
+          "interval": "1m",
+          "legendFormat": "{{ method}} {{uri}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Request Latency",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${prometheus}",
+      "decimals": 1,
+      "description": "The size of the HTTP response in bytes",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "hiddenSeries": false,
+      "id": 82,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sideWidth": null,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": true,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.1.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(rate(reactor_netty_http_server_data_sent_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (uri) / sum(rate(reactor_netty_http_server_data_sent_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (uri)",
+          "interval": "1m",
+          "legendFormat": "{{uri}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Response Size",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${prometheus}",
+      "decimals": 1,
+      "description": "The number of errors received per second",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 37
+      },
+      "hiddenSeries": false,
+      "id": 80,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "sideWidth": null,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": true,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.1.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "sum(rate(http_server_requests_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",status!~\"^2.+\"}[$__rate_interval])) by (status)",
+          "interval": "1m",
+          "legendFormat": "{{ status }}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Error Rate",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 45
+      },
       "id": 21,
       "panels": [],
-      "title": "Publish",
+      "title": "JSON-RPC",
       "type": "row"
     },
     {
@@ -578,7 +890,7 @@
       "dashes": false,
       "datasource": "${prometheus}",
       "decimals": 1,
-      "description": "The number of transactions per second published broken down by type",
+      "description": "The rate of JSON-RPC requests received per second",
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -591,16 +903,16 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 46
       },
       "hiddenSeries": false,
-      "id": 56,
+      "id": 70,
       "legend": {
         "alignAsTable": true,
         "avg": true,
-        "current": true,
+        "current": false,
         "max": true,
-        "min": false,
+        "min": true,
         "rightSide": true,
         "show": true,
         "sideWidth": null,
@@ -616,7 +928,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -626,17 +938,26 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (type)",
+          "exemplar": true,
+          "expr": "sum(rate(hedera_mirror_web3_requests_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval]))",
           "interval": "1m",
-          "legendFormat": "{{ type }}",
+          "legendFormat": "Total",
           "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "sum(rate(hedera_mirror_web3_requests_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method)",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "{{ method }}",
+          "refId": "B"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Publish TPS",
+      "title": "Request Rate",
       "tooltip": {
         "shared": true,
         "sort": 2,
@@ -654,7 +975,7 @@
         {
           "decimals": null,
           "format": "none",
-          "label": "",
+          "label": "Requests per second",
           "logBase": 1,
           "max": null,
           "min": "0",
@@ -684,11 +1005,10 @@
       "dashes": false,
       "datasource": "${prometheus}",
       "decimals": 1,
-      "description": "How long the publish scenario has been active",
+      "description": "The time it takes for a JSON-RPC request to be processed",
       "fieldConfig": {
         "defaults": {
-          "links": [],
-          "unit": "s"
+          "links": []
         },
         "overrides": []
       },
@@ -698,16 +1018,16 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 13
+        "y": 54
       },
       "hiddenSeries": false,
-      "id": 76,
+      "id": 57,
       "legend": {
         "alignAsTable": true,
         "avg": true,
-        "current": true,
+        "current": false,
         "max": true,
-        "min": false,
+        "min": true,
         "rightSide": true,
         "show": true,
         "sideWidth": null,
@@ -723,7 +1043,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -733,9 +1053,10 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(hedera_mirror_monitor_publish_duration_seconds{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (scenario)",
+          "exemplar": true,
+          "expr": "sum(rate(hedera_mirror_web3_requests_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method) / sum(rate(hedera_mirror_web3_requests_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method)",
           "interval": "1m",
-          "legendFormat": "{{ scenario }}",
+          "legendFormat": "{{method}}",
           "refId": "A"
         }
       ],
@@ -743,7 +1064,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Publish Duration",
+      "title": "Request Latency",
       "tooltip": {
         "shared": true,
         "sort": 2,
@@ -790,7 +1111,7 @@
       "dashes": false,
       "datasource": "${prometheus}",
       "decimals": 3,
-      "description": "The number of errors per second when submitting transactions",
+      "description": "The JSON-RPC error rate",
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -803,7 +1124,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 21
+        "y": 62
       },
       "hiddenSeries": false,
       "id": 71,
@@ -818,7 +1139,7 @@
         "sideWidth": null,
         "sort": "avg",
         "sortDesc": true,
-        "total": false,
+        "total": true,
         "values": true
       },
       "lines": true,
@@ -828,7 +1149,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -838,7 +1159,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",status!=\"SUCCESS\"}[$__rate_interval])) by (status)",
+          "exemplar": true,
+          "expr": "sum(rate(hedera_mirror_web3_requests_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\",status!=\"SUCCESS\"}[$__rate_interval])) by (status)",
           "interval": "1m",
           "legendFormat": "{{ status }}",
           "refId": "A"
@@ -848,7 +1170,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Publish Error Rate",
+      "title": "Error Rate",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -888,558 +1210,15 @@
       }
     },
     {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${prometheus}",
-      "description": "How long it took to submit the transaction to the main node",
-      "fieldConfig": {
-        "defaults": {
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 29
-      },
-      "hiddenSeries": false,
-      "id": 29,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.0.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario)",
-          "interval": "1m",
-          "legendFormat": "{{scenario}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Publish Latency",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "s",
-          "label": "Time",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "dtdurationms",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${prometheus}",
-      "description": "The time it takes from submit to being handled by the main nodes",
-      "fieldConfig": {
-        "defaults": {
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 37
-      },
-      "hiddenSeries": false,
-      "id": 75,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.0.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_monitor_publish_handle_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario) / sum(rate(hedera_mirror_monitor_publish_handle_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario)",
-          "interval": "1m",
-          "legendFormat": "{{scenario}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Publish to Handled Latency",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "s",
-          "label": "Time",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "dtdurationms",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "collapsed": false,
-      "datasource": null,
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 45
-      },
-      "id": 78,
-      "panels": [],
-      "title": "Subscribe",
-      "type": "row"
-    },
-    {
-      "aliasColors": {
-        "success=false": "semi-dark-red",
-        "success=true": "green"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${prometheus}",
-      "decimals": 1,
-      "description": "The number of transactions per second received broken down by scenario",
-      "fieldConfig": {
-        "defaults": {
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 2,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 46
-      },
-      "hiddenSeries": false,
-      "id": 79,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.0.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario)",
-          "interval": "1m",
-          "legendFormat": "{{ scenario }}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Subscribe TPS",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "none",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "s",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        "success=false": "semi-dark-red",
-        "success=true": "green"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${prometheus}",
-      "decimals": 1,
-      "description": "How long it took to submit the transaction to the main node and receive it back from the mirror node",
-      "fieldConfig": {
-        "defaults": {
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 2,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 54
-      },
-      "hiddenSeries": false,
-      "id": 80,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.0.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (scenario)",
-          "interval": "1m",
-          "legendFormat": "{{ scenario }}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "End to End Latency",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "none",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "s",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {
-        "success=false": "semi-dark-red",
-        "success=true": "green"
-      },
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${prometheus}",
-      "decimals": 1,
-      "description": "How long the subscribe scenario has been active",
-      "fieldConfig": {
-        "defaults": {
-          "links": [],
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "fill": 2,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 62
-      },
-      "hiddenSeries": false,
-      "id": 81,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "sideWidth": null,
-        "sort": "avg",
-        "sortDesc": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "8.0.1",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum(hedera_mirror_monitor_subscribe_duration_seconds{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}) by (scenario)",
-          "interval": "1m",
-          "legendFormat": "{{ scenario }}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Subscribe Duration",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "s",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "s",
-          "label": "",
-          "logBase": 1,
-          "max": null,
-          "min": "0",
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
       "collapsed": true,
-      "datasource": "${prometheus}",
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
+      "datasource": null,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 70
       },
-      "id": 61,
+      "id": 75,
       "panels": [
         {
           "aliasColors": {},
@@ -1447,299 +1226,6 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "${prometheus}",
-          "decimals": 1,
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "unit": "none"
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 71
-          },
-          "hiddenSeries": false,
-          "id": 69,
-          "legend": {
-            "alignAsTable": true,
-            "avg": true,
-            "current": false,
-            "max": true,
-            "min": true,
-            "rightSide": true,
-            "show": true,
-            "sideWidth": null,
-            "sort": "avg",
-            "sortDesc": true,
-            "total": false,
-            "values": true
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "8.0.1",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(rate(reactor_subscribed_subscribers_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow)",
-              "interval": "1m",
-              "legendFormat": "{{ flow }}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Subscription Rate",
-          "tooltip": {
-            "shared": true,
-            "sort": 2,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "decimals": null,
-              "format": "none",
-              "label": "",
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": false
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "${prometheus}",
-          "description": "The number of requests per second for more data",
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 79
-          },
-          "hiddenSeries": false,
-          "id": 63,
-          "legend": {
-            "alignAsTable": true,
-            "avg": true,
-            "current": false,
-            "max": true,
-            "min": true,
-            "rightSide": true,
-            "show": true,
-            "sort": "avg",
-            "sortDesc": true,
-            "total": false,
-            "values": true
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "8.0.1",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(rate(reactor_requested_requested_amount_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow)",
-              "interval": "1m",
-              "legendFormat": "{{ flow }}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Request Rate",
-          "tooltip": {
-            "shared": true,
-            "sort": 2,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "${prometheus}",
-          "decimals": 0,
-          "description": "Times the duration elapsed between a subscription and the termination or cancellation of the sequence",
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 87
-          },
-          "hiddenSeries": false,
-          "id": 64,
-          "legend": {
-            "alignAsTable": true,
-            "avg": true,
-            "current": false,
-            "max": true,
-            "min": true,
-            "rightSide": true,
-            "show": true,
-            "sort": "avg",
-            "sortDesc": true,
-            "total": false,
-            "values": true
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "8.0.1",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(rate(reactor_flow_duration_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow) / sum(rate(reactor_flow_duration_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow)",
-              "interval": "1m",
-              "legendFormat": "{{ flow }}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Flow Duration",
-          "tooltip": {
-            "shared": true,
-            "sort": 2,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "decimals": null,
-              "format": "s",
-              "label": "",
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": false
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "${prometheus}",
           "decimals": 0,
           "description": "",
           "fill": 1,
@@ -1748,7 +1234,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 95
+            "y": 46
           },
           "hiddenSeries": false,
           "id": 65,
@@ -1773,7 +1259,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "8.0.1",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -1845,7 +1331,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 103
+            "y": 54
           },
           "hiddenSeries": false,
           "id": 66,
@@ -1870,7 +1356,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "8.0.1",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -1942,7 +1428,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 111
+            "y": 62
           },
           "hiddenSeries": false,
           "id": 67,
@@ -1967,7 +1453,7 @@
             "alertThreshold": true
           },
           "percentage": false,
-          "pluginVersion": "8.0.1",
+          "pluginVersion": "8.1.2",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2024,115 +1510,14 @@
             "align": false,
             "alignLevel": null
           }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "${prometheus}",
-          "decimals": 0,
-          "description": "Measures delays between onNext signals (or between onSubscribe and first onNext)",
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 119
-          },
-          "hiddenSeries": false,
-          "id": 68,
-          "legend": {
-            "alignAsTable": true,
-            "avg": true,
-            "current": false,
-            "max": true,
-            "min": true,
-            "rightSide": true,
-            "show": true,
-            "sideWidth": null,
-            "sort": "avg",
-            "sortDesc": true,
-            "total": false,
-            "values": true
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "8.0.1",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(rate(reactor_onNext_delay_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow) / sum(rate(reactor_onNext_delay_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])) by (flow)",
-              "interval": "1m",
-              "legendFormat": "{{ flow }}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "onNext Delay",
-          "tooltip": {
-            "shared": true,
-            "sort": 2,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "decimals": null,
-              "format": "s",
-              "label": "",
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": false
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
         }
       ],
-      "title": "Reactor",
+      "title": "Executor",
       "type": "row"
     },
     {
       "collapsed": false,
       "datasource": null,
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -2183,7 +1568,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2293,7 +1678,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2402,7 +1787,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2503,7 +1888,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2567,13 +1952,13 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "idle": "super-light-orange"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
       "datasource": "${prometheus}",
-      "decimals": 1,
-      "description": "",
       "fieldConfig": {
         "defaults": {
           "links": []
@@ -2589,19 +1974,19 @@
         "y": 89
       },
       "hiddenSeries": false,
-      "id": 27,
+      "id": 15,
+      "interval": "1m",
       "legend": {
         "alignAsTable": true,
         "avg": true,
         "current": true,
         "max": true,
-        "min": false,
-        "rightSide": false,
+        "min": true,
+        "rightSide": true,
         "show": true,
-        "sideWidth": null,
         "sort": "avg",
         "sortDesc": true,
-        "total": true,
+        "total": false,
         "values": true
       },
       "lines": true,
@@ -2611,7 +1996,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2621,20 +2006,162 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(http_server_requests_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (method, uri)",
+          "expr": "sum(hikaricp_connections_active{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
           "interval": "1m",
-          "legendFormat": "{{ method}} {{uri}}",
+          "legendFormat": "active",
           "refId": "A"
+        },
+        {
+          "expr": "sum(hikaricp_connections_idle{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "interval": "1m",
+          "legendFormat": "idle",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(hikaricp_connections_max{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "max",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(hikaricp_connections_pending{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "pending",
+          "refId": "E"
         }
       ],
       "thresholds": [],
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "HTTP Requests",
+      "title": "Connection Pool",
       "tooltip": {
         "shared": true,
-        "sort": 2,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "idle": "super-light-orange"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${prometheus}",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 89
+      },
+      "hiddenSeries": false,
+      "id": 72,
+      "interval": "1m",
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "sort": "avg",
+        "sortDesc": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "8.1.2",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(jdbc_connections_active{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "interval": "1m",
+          "legendFormat": "active",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(jdbc_connections_idle{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "interval": "1m",
+          "legendFormat": "idle",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(jdbc_connections_max{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"})",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "max",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(jdbc_connections_min{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=\"$pod\"})",
+          "hide": false,
+          "interval": "1m",
+          "legendFormat": "min",
+          "refId": "E"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "JDBC Connections",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
         "value_type": "individual"
       },
       "type": "graph",
@@ -2671,10 +2198,6 @@
     {
       "collapsed": false,
       "datasource": null,
-      "fieldConfig": {
-        "defaults": {},
-        "overrides": []
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -2733,7 +2256,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.0.1",
+      "pluginVersion": "8.1.2",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2743,7 +2266,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(log4j2_events_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (level)",
+          "expr": "sum(rate(logback_events_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}[$__rate_interval])) by (level)",
           "interval": "1m",
           "legendFormat": "{{ level }}",
           "refId": "A"
@@ -2803,6 +2326,8 @@
       "options": {
         "dedupStrategy": "none",
         "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
         "showLabels": false,
         "showTime": false,
         "sortOrder": "Descending",
@@ -2810,7 +2335,7 @@
       },
       "targets": [
         {
-          "expr": "{component=\"monitor\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}",
+          "expr": "{component=\"web3\",cluster=~\"$cluster\",namespace=~\"$namespace\",pod=~\"$pod\"}",
           "legendFormat": "",
           "refId": "A"
         }
@@ -2828,7 +2353,8 @@
     "hedera",
     "mirror",
     "application",
-    "monitor"
+    "web3",
+    "api"
   ],
   "templating": {
     "list": [
@@ -2838,15 +2364,15 @@
         "hide": 2,
         "label": null,
         "name": "application",
-        "query": "hedera-mirror-monitor",
+        "query": "hedera-mirror-web3",
         "skipUrlSync": false,
         "type": "constant"
       },
       {
         "current": {
-          "selected": true,
-          "text": "",
-          "value": ""
+          "selected": false,
+          "text": "Loki",
+          "value": "Loki"
         },
         "description": "Name of the Loki datasource to use",
         "error": null,
@@ -2866,8 +2392,8 @@
       {
         "current": {
           "selected": false,
-          "text": "",
-          "value": ""
+          "text": "Prometheus",
+          "value": "Prometheus"
         },
         "description": "Name of the Prometheus datasource to use",
         "error": null,
@@ -2918,9 +2444,13 @@
       {
         "allValue": null,
         "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
         },
         "datasource": "${prometheus}",
         "definition": "label_values(system_cpu_count{application=\"$application\",cluster=~\"$cluster\"},namespace)",
@@ -2939,7 +2469,7 @@
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 5,
+        "sort": 1,
         "tagValuesQuery": "",
         "tagsQuery": "",
         "type": "query",
@@ -2969,7 +2499,7 @@
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 5,
+        "sort": 1,
         "tagValuesQuery": "",
         "tagsQuery": "",
         "type": "query",
@@ -2995,8 +2525,7 @@
     ]
   },
   "timezone": "",
-  "title": "Hedera / Mirror / Monitor",
-  "uid": "pJyhBtR7k",
-  "version": 1
+  "title": "Hedera / Mirror / Web3 API",
+  "uid": "Si3C9zAnk",
+  "version": 5
 }
-

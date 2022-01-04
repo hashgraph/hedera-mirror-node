@@ -1,5 +1,6 @@
 package com.hedera.mirror.web3.controller;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -13,6 +14,7 @@ enum JsonRpcErrorCode {
     METHOD_NOT_FOUND(-32601, "Unsupported JSON-RPC method"),
     PARSE_ERROR(-32700, "Unable to parse JSON");
 
+    @JsonValue
     private final int code;
     private final String message;
 }

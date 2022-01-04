@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.PositiveOrZero;
@@ -39,4 +40,7 @@ class JsonRpcRequest<T> {
     private String method;
 
     private T params;
+
+    @JsonIgnore
+    private final long startTime = System.nanoTime();
 }
