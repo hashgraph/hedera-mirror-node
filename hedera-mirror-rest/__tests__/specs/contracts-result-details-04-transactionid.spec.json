@@ -19,13 +19,13 @@
     ],
     "contractlogs": [
       {
-        "consensus_timestamp": 167654000123456,
+        "consensus_timestamp": "167654000123456",
         "contract_id": 5001,
         "index": 0,
         "root_contract_id": 5001
       },
       {
-        "consensus_timestamp": 167654000123456,
+        "consensus_timestamp": "167654000123456",
         "contract_id": 5002,
         "index": 1,
         "root_contract_id": 5001,
@@ -33,7 +33,7 @@
         "topic3": null
       },
       {
-        "consensus_timestamp": 167654000123457,
+        "consensus_timestamp": "167654000123457",
         "contract_id": 5001,
         "index": 0
       }
