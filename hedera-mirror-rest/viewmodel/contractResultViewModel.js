@@ -21,7 +21,6 @@
 'use strict';
 
 const _ = require('lodash');
-const ContractLogViewModel = require('./contractLogViewModel');
 const EntityId = require('../entityId');
 const utils = require('../utils');
 
@@ -34,7 +33,7 @@ class ContractResultViewModel {
    *
    * @param {ContractResult} contractResult
    */
-  constructor(contractResult, recordFile = undefined, transaction = undefined, contractLogs = undefined) {
+  constructor(contractResult) {
     Object.assign(this, {
       amount: Number(contractResult.amount),
       call_result: utils.toHexString(contractResult.callResult, true),
@@ -48,27 +47,6 @@ class ContractResultViewModel {
       timestamp: utils.nsToSecNs(contractResult.consensusTimestamp),
       to: EntityId.parse(contractResult.contractId, true).toSolidityAddress(),
     });
-
-    if (!_.isNil(recordFile)) {
-      this.block_hash = utils.addHexPrefix(recordFile.hash);
-      this.block_number = Number(recordFile.index);
-    }
-
-    if (!_.isNil(transaction)) {
-      this.hash = utils.toHexString(transaction.transactionHash, true);
-    }
-
-    if (!_.isNil(contractLogs)) {
-      this.logs = [];
-      for (const contractLog of contractLogs) {
-        const logViewModel = new ContractLogViewModel(contractLog);
-        //Timestamp already in the ContractResult, no need to show for each ContractLog
-        delete logViewModel.timestamp;
-        //root_contract_id will always match the ContractResult contract_id
-        delete logViewModel.root_contract_id;
-        this.logs.push(logViewModel);
-      }
-    }
   }
 }
 

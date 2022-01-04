@@ -20,27 +20,24 @@
 
 'use strict';
 
-const ContractLogResultsViewModel = require('./contractLogResultsViewModel');
-const EntityId = require('../entityId');
-const constants = require('../constants');
+const ContractResultViewModel = require('./contractResultViewModel');
 const utils = require('../utils');
+const ContractLogResultsViewModel = require('./contractLogResultsViewModel');
 
-/**
- * Contract logs view model
- */
-class ContractLogViewModel extends ContractLogResultsViewModel {
-  /**
-   * Constructs contractLog view model
-   *
-   * @param {ContractLog} contractLog
-   */
-  constructor(contractLog) {
-    super(contractLog);
+class ContractResultDetailsViewModel extends ContractResultViewModel {
+  constructor(contractResult, recordFile, transaction, contractLogs) {
+    super(contractResult);
     Object.assign(this, {
-      root_contract_id: EntityId.parse(contractLog.rootContractId, true).toString(),
-      timestamp: utils.nsToSecNs(contractLog.consensusTimestamp),
+      block_hash: utils.addHexPrefix(recordFile.hash),
+      block_number: Number(recordFile.index),
+      hash: utils.toHexString(transaction.transactionHash, true),
     });
+
+    this.logs = [];
+    for (const contractLog of contractLogs) {
+      this.logs.push(new ContractLogResultsViewModel(contractLog));
+    }
   }
 }
 
-module.exports = ContractLogViewModel;
+module.exports = ContractResultDetailsViewModel;

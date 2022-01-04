@@ -39,7 +39,12 @@ const {Contract, ContractLog, ContractResult, FileData, TransactionResult} = req
 const {ContractService, RecordFileService, TransactionService} = require('../service');
 const TransactionId = require('../transactionId');
 const utils = require('../utils');
-const {ContractViewModel, ContractLogViewModel, ContractResultViewModel} = require('../viewmodel');
+const {
+  ContractViewModel,
+  ContractLogViewModel,
+  ContractResultViewModel,
+  ContractResultDetailsViewModel,
+} = require('../viewmodel');
 const {httpStatusCodes} = require('../constants');
 
 const contractSelectFields = [
@@ -566,7 +571,7 @@ const getContractResultsByTimestamp = async (req, res) => {
     throw new NotFoundError();
   }
 
-  res.locals[constants.responseDataLabel] = new ContractResultViewModel(
+  res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
     contractResults[0],
     recordFile,
     transaction,
@@ -630,7 +635,7 @@ const getContractResultsByTransactionId = async (req, res) => {
     throw new NotFoundError();
   }
 
-  res.locals[constants.responseDataLabel] = new ContractResultViewModel(
+  res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
     contractResults[0],
     recordFile,
     transaction,
