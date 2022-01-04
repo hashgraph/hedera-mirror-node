@@ -20,13 +20,12 @@
 
 'use strict';
 
-const ContractLogResultsViewModel = require('./contractLogResultsViewModel');
+const ContractLogResultsViewModel = require('./contractResultLogViewModel');
 const EntityId = require('../entityId');
-const constants = require('../constants');
 const utils = require('../utils');
 
 /**
- * Contract logs view model
+ * Contract log view model
  */
 class ContractLogViewModel extends ContractLogResultsViewModel {
   /**

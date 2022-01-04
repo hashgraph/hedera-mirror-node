@@ -22,21 +22,28 @@
 
 const ContractResultViewModel = require('./contractResultViewModel');
 const utils = require('../utils');
-const ContractLogResultsViewModel = require('./contractLogResultsViewModel');
+const ContractLogResultsViewModel = require('./contractResultLogViewModel');
 
+/**
+ * Contract result details view model
+ */
 class ContractResultDetailsViewModel extends ContractResultViewModel {
+  /**
+   * Constructs contractResultDetails view model
+   *
+   * @param {ContractResult} contractResult
+   * @param {RecordFile} recordFile
+   * @param {Transaction} transaction
+   * @param {ContractLog[]} contractLogs
+   */
   constructor(contractResult, recordFile, transaction, contractLogs) {
     super(contractResult);
     Object.assign(this, {
       block_hash: utils.addHexPrefix(recordFile.hash),
       block_number: Number(recordFile.index),
       hash: utils.toHexString(transaction.transactionHash, true),
+      logs: contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog)),
     });
-
-    this.logs = [];
-    for (const contractLog of contractLogs) {
-      this.logs.push(new ContractLogResultsViewModel(contractLog));
-    }
   }
 }
 

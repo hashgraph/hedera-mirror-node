@@ -25,11 +25,11 @@ const constants = require('../constants');
 const utils = require('../utils');
 
 /**
- * Contract logs view model
+ * Contract results log view model
  */
-class ContractLogResultsViewModel {
+class ContractResultLogViewModel {
   /**
-   * Constructs contractLog view model
+   * Constructs contractResultLogs view model
    *
    * @param {ContractLog} contractLog
    */
@@ -49,4 +49,4 @@ class ContractLogResultsViewModel {
   }
 }
 
-module.exports = ContractLogResultsViewModel;
+module.exports = ContractResultLogViewModel;
