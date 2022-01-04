@@ -309,6 +309,96 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
   });
 });
 
+describe('ContractService.getContractLogsByTimestamps tests', () => {
+  const timestamps = [1, 2];
+  const input = [
+    {
+      consensus_timestamp: 1,
+      contract_id: 1,
+      data: '\\x0012',
+      index: 0,
+      root_contract_id: 1,
+      topic0: '\\x000a',
+    },
+    {
+      consensus_timestamp: 1,
+      contract_id: 2,
+      data: '\\x0013',
+      index: 1,
+      root_contract_id: 1,
+      topic0: '\\x000b',
+    },
+    {
+      consensus_timestamp: 2,
+      contract_id: 1,
+      data: '\\x0014',
+      index: 0,
+      root_contract_id: 1,
+      topic0: '\\x000c',
+    },
+    {
+      consensus_timestamp: 2,
+      contract_id: 3,
+      data: '\\x0015',
+      index: 1,
+      root_contract_id: 1,
+      topic0: '\\x000d',
+    },
+  ];
+  const expected = [
+    {
+      consensusTimestamp: '1',
+      contractId: '1',
+      index: 0,
+      rootContractId: '1',
+    },
+    {
+      consensusTimestamp: '1',
+      contractId: '2',
+      index: 1,
+      rootContractId: '1',
+    },
+    {
+      consensusTimestamp: '2',
+      contractId: '1',
+      index: 0,
+      rootContractId: '1',
+    },
+    {
+      consensusTimestamp: '2',
+      contractId: '3',
+      index: 1,
+      rootContractId: '1',
+    },
+  ];
+
+  const pickContractLogFields = (contractLogs) => {
+    return contractLogs.map((cr) => _.pick(cr, ['consensusTimestamp', 'contractId', 'index', 'rootContractId']));
+  };
+
+  beforeEach(async () => {
+    await integrationDomainOps.loadContractLogs(input);
+  });
+
+  test('No match', async () => {
+    await expect(ContractService.getContractLogsByTimestamps('3')).resolves.toHaveLength(0);
+  });
+  test('Match both timestamps', async () => {
+    const results = pickContractLogFields(
+      await ContractService.getContractLogsByTimestamps([timestamps[0], timestamps[1]])
+    );
+    expect(results).toIncludeSameMembers(expected);
+  });
+  test('Match one timestamp with additional umatched timestamp', async () => {
+    const results = pickContractLogFields(await ContractService.getContractLogsByTimestamps([timestamps[0], '3']));
+    expect(results).toIncludeSameMembers(expected.slice(0, 2));
+  });
+  test('Match one timestamp', async () => {
+    const results = pickContractLogFields(await ContractService.getContractLogsByTimestamps([timestamps[1]]));
+    expect(results).toIncludeSameMembers(expected.slice(2));
+  });
+});
+
 describe('ContractService.getContractResultsByTimestamps tests', () => {
   const input = [
     {

@@ -39,7 +39,12 @@ const {Contract, ContractLog, ContractResult, FileData, TransactionResult} = req
 const {ContractService, RecordFileService, TransactionService} = require('../service');
 const TransactionId = require('../transactionId');
 const utils = require('../utils');
-const {ContractViewModel, ContractLogViewModel, ContractResultViewModel} = require('../viewmodel');
+const {
+  ContractViewModel,
+  ContractLogViewModel,
+  ContractResultViewModel,
+  ContractResultDetailsViewModel,
+} = require('../viewmodel');
 const {httpStatusCodes} = require('../constants');
 
 const contractSelectFields = [
@@ -556,16 +561,22 @@ const getContractResultsByTimestamp = async (req, res) => {
   const {timestamp} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
 
   // retrieve contract result, recordFile and transaction models concurrently
-  const [contractResults, recordFile, transaction] = await Promise.all([
+  const [contractResults, recordFile, transaction, contractLogs] = await Promise.all([
     ContractService.getContractResultsByTimestamps(timestamp),
     RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
     TransactionService.getTransactionDetailsFromTimestamp(timestamp),
+    ContractService.getContractLogsByTimestamps(timestamp),
   ]);
   if (contractResults.length === 0) {
     throw new NotFoundError();
   }
 
-  res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResults[0], recordFile, transaction);
+  res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
+    contractResults[0],
+    recordFile,
+    transaction,
+    contractLogs
+  );
 };
 
 /**
@@ -615,15 +626,21 @@ const getContractResultsByTransactionId = async (req, res) => {
 
   // retrieve contract result and recordFile models concurrently using transaction timestamp
   const transaction = transactions[0];
-  const [contractResults, recordFile] = await Promise.all([
+  const [contractResults, recordFile, contractLogs] = await Promise.all([
     ContractService.getContractResultsByTimestamps(transaction.consensusTimestamp),
     RecordFileService.getRecordFileBlockDetailsFromTimestamp(transaction.consensusTimestamp),
+    ContractService.getContractLogsByTimestamps(transaction.consensusTimestamp),
   ]);
   if (contractResults.length === 0) {
     throw new NotFoundError();
   }
 
-  res.locals[constants.responseDataLabel] = new ContractResultViewModel(contractResults[0], recordFile, transaction);
+  res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
+    contractResults[0],
+    recordFile,
+    transaction,
+    contractLogs
+  );
 };
 
 /**
