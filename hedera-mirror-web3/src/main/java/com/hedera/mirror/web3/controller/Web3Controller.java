@@ -60,7 +60,7 @@ class Web3Controller {
     private final Web3ServiceFactory web3ServiceFactory;
 
     @PostMapping
-    public Mono<JsonRpcResponse> web3(@Valid @RequestBody JsonRpcRequest request) {
+    public Mono<JsonRpcResponse> web3(@Valid @RequestBody JsonRpcRequest<?> request) {
         try {
             if (!request.getJsonrpc().equals(JsonRpcResponse.VERSION)) {
                 return response(request, new JsonRpcErrorResponse(JsonRpcErrorCode.INVALID_REQUEST, INVALID_VERSION));
@@ -86,7 +86,7 @@ class Web3Controller {
         }
     }
 
-    private Mono<JsonRpcResponse> response(JsonRpcRequest request, JsonRpcResponse response) {
+    private Mono<JsonRpcResponse> response(JsonRpcRequest<?> request, JsonRpcResponse response) {
         if (request.getId() != null && request.getId() >= 0) {
             response.setId(request.getId());
         }
@@ -133,8 +133,14 @@ class Web3Controller {
                 .stream()
                 .map(this::formatError)
                 .collect(Collectors.joining(", "));
-        var request = (JsonRpcRequest) e.getTarget();
-        return response(request, new JsonRpcErrorResponse(JsonRpcErrorCode.INVALID_REQUEST, message));
+        var errorResponse = new JsonRpcErrorResponse(JsonRpcErrorCode.INVALID_REQUEST, message);
+        var target = e.getTarget();
+
+        if (target instanceof JsonRpcRequest) {
+            return response((JsonRpcRequest<?>) target, errorResponse);
+        } else {
+            return response(errorResponse);
+        }
     }
 
     private String formatError(ObjectError error) {
