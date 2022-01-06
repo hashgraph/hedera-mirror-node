@@ -57,13 +57,13 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void verifyRootContractIdMigrationEmpty() throws Exception {
+    void verifyTopicMessagePayerAccountIdMigrationEmpty() throws Exception {
         migrate();
         assertThat(retrieveTopicMessages()).isEmpty();
     }
 
     @Test
-    void verifyRootContractIdMigration() throws Exception {
+    void verifyTopicMessagePayerAccountIdMigration() throws Exception {
 
         persistTopicMessage(Arrays.asList(
                 topicMessage(1, null, 1),
