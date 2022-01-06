@@ -390,9 +390,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     @ParameterizedTest
     @CsvSource({
             "0.0.9000, test-message0, 9000000, runninghash, 1, 1, , , 9999, ",
-            "0.0.9001, test-message1, 9000001, runninghash1, 9223372036854775807, 2, 1, 1, 7, 89999999",
-            "0.0.9001, test-message2, 9000001, runninghash2, 9223372036854775807, 2, 2, 4, 7, 89999999",
-            "0.0.9001, test-message3, 9000001, runninghash3, 9223372036854775807, 2, 4, 4, 7, 89999999",
+            "0.0.9001, test-message1, 9000001, runninghash1, 9223372036854775807, 2, 1, 1, 9999, 89999999",
+            "0.0.9001, test-message2, 9000001, runninghash2, 9223372036854775807, 2, 2, 4, 9999, 89999999",
+            "0.0.9001, test-message3, 9000001, runninghash3, 9223372036854775807, 2, 4, 4, 9999, 89999999",
     })
     void submitMessageTest(@ConvertWith(TopicIdArgumentConverter.class) TopicID topicId, String message,
                            long consensusTimestamp, String runningHash, long sequenceNumber, int runningHashVersion,
@@ -453,7 +453,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var runningHashVersion = 2;
         var chunkNum = 3;
         var chunkTotal = 5;
-        var payerAccountIdNum = 6L;
+        var payerAccountIdNum = 9999L;
         var validStartNs = 7L;
 
         var topicMessage = createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
@@ -521,7 +521,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         assertThat(topicMessageRepository.findById(id))
                 .get()
                 .extracting(TopicMessage::getValidStartTimestamp, TopicMessage::getPayerAccountId)
-                .containsExactly(Long.MAX_VALUE, null);
+                .containsExactly(Long.MAX_VALUE, EntityId.of("0.0.9999", EntityType.ACCOUNT));
     }
 
     @Test
