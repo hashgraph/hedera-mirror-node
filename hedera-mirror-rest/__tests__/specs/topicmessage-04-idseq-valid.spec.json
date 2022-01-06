@@ -33,7 +33,7 @@
   "urls": ["/api/v1/topics/0.7/messages/3", "/api/v1/topics/7/messages/3"],
   "responseStatus": 200,
   "responseJson": {
-    "chunk_num": 1,
+    "chunk_number": 1,
     "chunk_total": 1,
     "consensus_timestamp": "1234567890.000000003",
     "message": "eyJhIiwiYiIsImMifQ==",

@@ -132,7 +132,7 @@ describe('topicmessage formatTopicMessageRow tests', () => {
   const formattedInput = topicmessage.formatTopicMessageRow(topicMessageModel);
 
   const expectedFormat = {
-    chunk_num: 1,
+    chunk_number: 1,
     chunk_total: 2,
     consensus_timestamp: '1234567890.000000003',
     topic_id: `${config.shard}.1.7`,

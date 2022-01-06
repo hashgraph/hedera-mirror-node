@@ -35,7 +35,7 @@ class TopicMessageViewModel {
    */
   constructor(topicMessage, messageEncoding) {
     Object.assign(this, {
-      chunk_num: topicMessage.chunkNum,
+      chunk_number: topicMessage.chunkNum,
       chunk_total: topicMessage.chunkTotal,
       consensus_timestamp: utils.nsToSecNs(topicMessage.consensusTimestamp),
       topic_id: EntityId.parse(topicMessage.topicId).toString(),

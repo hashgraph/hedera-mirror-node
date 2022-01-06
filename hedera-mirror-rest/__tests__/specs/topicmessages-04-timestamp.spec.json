@@ -33,7 +33,7 @@
   "responseJson": {
     "messages": [
       {
-        "chunk_num": 1,
+        "chunk_number": 1,
         "chunk_total": 1,
         "consensus_timestamp": "1234567890.000000003",
         "topic_id": "0.0.7",
