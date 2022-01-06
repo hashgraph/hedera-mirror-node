@@ -9,5 +9,6 @@ and tm.payer_account_id is null;
 alter table topic_message
 alter column payer_account_id set not null;
 
+-- Add a column for the protobuf initial transaction id
 alter table topic_message
 add column initial_transaction_id bytea null;

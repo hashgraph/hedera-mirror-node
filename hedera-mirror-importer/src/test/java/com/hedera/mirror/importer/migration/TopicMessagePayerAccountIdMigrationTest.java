@@ -48,7 +48,7 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
     @Resource
     private JdbcOperations jdbcOperations;
 
-    @Value("classpath:db/migration/v1/v1.52.0__topic_message_add_payer_account_id.sql")
+    @Value("classpath:db/migration/v1/V1.52.1__topic_message_add_payer_account_id_and_initial_transaction_id.sql")
     private File migrationSql;
 
     @AfterEach
@@ -143,6 +143,8 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
                 .update("delete from transaction");
         jdbcOperations
                 .update("alter table topic_message alter column payer_account_id drop not null");
+        jdbcOperations
+                .update("alter table topic_message drop column initial_transaction_id");
     }
 
     @Data
