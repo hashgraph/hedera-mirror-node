@@ -20,6 +20,7 @@
 
 'use strict';
 
+const _ = require('lodash');
 const log4js = require('log4js');
 const request = require('supertest');
 
@@ -27,7 +28,7 @@ const {getAccountAliasQuery, getBalanceParamValue, processRow} = require('../acc
 const base32 = require('../base32');
 const constants = require('../constants');
 const server = require('../server');
-const testutils = require('./testutils.js');
+const testutils = require('./testutils');
 
 const logger = log4js.getLogger();
 
@@ -433,35 +434,47 @@ describe('processRow', () => {
 });
 
 describe('getAccountAliasQuery', () => {
-  const key = constants.filterKeys.ACCOUNT_ALIAS;
-  const aliasStr = 'AABBCC22';
-  const aliasBuf = base32.decode(aliasStr);
-  const testSpecs = [
-    {
-      query: {},
-      expected: {query: '', params: []},
-    },
-    {
-      query: {[key]: aliasStr},
-      expected: {query: 'alias = ?', params: [aliasBuf]},
-    },
-    {
-      query: {[key]: `0.${aliasStr}`},
-      expected: {query: 'realm = ? and alias = ?', params: ['0', aliasBuf]},
-    },
-    {
-      query: {[key]: `0.1.${aliasStr}`},
-      expected: {query: 'shard = ? and realm = ? and alias = ?', params: ['0', '1', aliasBuf]},
-    },
-    {
-      query: {[key]: [`10.200.${aliasStr}`, `0.1.${aliasStr}`]},
-      expected: {query: 'shard = ? and realm = ? and alias = ?', params: ['0', '1', aliasBuf]},
-    },
-  ];
+  const alias = 'AABBCC22';
 
-  testSpecs.forEach((spec) => {
-    test(JSON.stringify(spec.query), () => {
-      expect(getAccountAliasQuery(spec.query)).toEqual(spec.expected);
+  describe('valid', () => {
+    const aliasArray = base32.decode(alias);
+    const query = 'select id from entity where deleted <> true';
+    const getExpectedQuery = (...columns) => [query, ...columns.map((column) => `${column} = ?`)].join(' and ');
+    const testSpecs = [
+      {
+        alias,
+        expected: {query: getExpectedQuery('alias'), params: [aliasArray]},
+      },
+      {
+        alias: `0.${alias}`,
+        expected: {query: getExpectedQuery('realm', 'alias'), params: ['0', aliasArray]},
+      },
+      {
+        alias: `0.1.${alias}`,
+        expected: {query: getExpectedQuery('shard', 'realm', 'alias'), params: ['0', '1', aliasArray]},
+      },
+    ];
+
+    testSpecs.forEach((spec) => {
+      test(JSON.stringify(spec.alias), () => {
+        expect(getAccountAliasQuery(spec.alias)).toEqual(spec.expected);
+      });
+    });
+  });
+
+  describe('invalid', () => {
+    const invalidAccountAlias = _.flattenDeep([
+      null,
+      undefined,
+      testutils.invalidBase32Strs.map((alias) => testutils.getAllAccountAliases(alias)),
+      `100000.${alias}`,
+      `100000.0.${alias}`,
+    ]);
+
+    invalidAccountAlias.forEach((invalidAccountAlias) => {
+      test(`${invalidAccountAlias}`, () => {
+        expect(() => getAccountAliasQuery(invalidAccountAlias)).toThrowErrorMatchingSnapshot();
+      });
     });
   });
 });

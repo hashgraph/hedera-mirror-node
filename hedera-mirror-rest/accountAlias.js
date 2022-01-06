@@ -55,32 +55,30 @@ class AccountAlias {
    * @return {AccountAlias}
    */
   static fromString(str) {
-    if (!isValidAccountAlias(str)) {
+    if (!isValid(str)) {
       throw new InvalidArgumentError(`Invalid accountAlias string ${str}`);
     }
 
     const parts = str.split('.');
     parts.unshift(...[null, null].slice(0, 3 - parts.length));
-    return new AccountAlias(...parts);
+
+    try {
+      return new AccountAlias(...parts);
+    } catch (err) {
+      throw new InvalidArgumentError(`Invalid accountAlias string ${str}`);
+    }
   }
 }
 
-const accountAliasRegex = /^(\d{1,5}\.){0,2}[^.]+$/;
+// just limit the alias to the base32 alphabet excluding padding, other checks will be done in base32.decode. We need
+// the check here because base32.decode allows lower case letters, padding, and auto corrects some typos.
+const accountAliasRegex = /^(\d{1,5}\.){0,2}[A-Z2-7]+$/;
 
 /**
  * Checks if the accountAlias string is valid
  * @param {string} accountAlias
  * @return {boolean}
  */
-const isValidAccountAlias = (accountAlias) => {
-  if (typeof accountAlias !== 'string' || !accountAliasRegex.test(accountAlias)) {
-    return false;
-  }
+const isValid = (accountAlias) => typeof accountAlias == 'string' && accountAliasRegex.test(accountAlias);
 
-  return base32.isValidBase32Str(accountAlias.split('.').slice(-1)[0]);
-};
-
-module.exports = {
-  AccountAlias,
-  isValidAccountAlias,
-};
+module.exports = AccountAlias;

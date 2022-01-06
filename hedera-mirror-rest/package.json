@@ -25,8 +25,6 @@
     "@hashgraph/proto": "^2.1.1",
     "asn1js": "^2.2.0",
     "aws-sdk": "^2.1048.0",
-    "base32-decode": "^1.0.0",
-    "base32-encode": "^1.2.0",
     "body-parser": "^1.19.1",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -48,6 +46,7 @@
     "prom-client": "^14.0.1",
     "qs": "^6.10.2",
     "quick-lru": "^5.1.1",
+    "rfc4648": "^1.5.1",
     "swagger-stats": "^0.99.2",
     "swagger-ui-express": "^4.3.0"
   },
@@ -57,8 +56,6 @@
     "@hashgraph/proto",
     "asn1js",
     "aws-sdk",
-    "base32-decode",
-    "base32-encode",
     "body-parser",
     "compression",
     "cors",
@@ -80,6 +77,7 @@
     "prom-client",
     "qs",
     "quick-lru",
+    "rfc4648",
     "swagger-stats",
     "swagger-ui-express"
   ],

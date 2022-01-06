@@ -38,8 +38,6 @@ const invalidBase32Strs = [
   'AA======', // padding not accepted
 ];
 
-const validBase32Strs = ['AA', 'AAAA', 'AAAAA', 'AAAAAAA', 'AABBCC22', 'ABCDEFGH22'];
-
 const assertSqlQueryEqual = (actual, expected) => {
   expect(formatSqlQueryString(actual)).toEqual(formatSqlQueryString(expected));
 };
@@ -274,5 +272,4 @@ module.exports = {
   parseSqlQueryAndParams,
   testBadParams,
   validateAccNumInArray,
-  validBase32Strs,
 };

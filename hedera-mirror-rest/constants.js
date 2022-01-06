@@ -24,7 +24,6 @@ const MAX_INT32 = 2147483647;
 
 // url query filer keys
 const filterKeys = {
-  ACCOUNT_ALIAS: 'account.alias',
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_ID: 'account.id',
   ACCOUNT_PUBLICKEY: 'account.publickey',

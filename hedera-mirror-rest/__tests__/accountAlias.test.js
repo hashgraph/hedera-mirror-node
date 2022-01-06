@@ -20,8 +20,8 @@
 
 const _ = require('lodash');
 
-const {AccountAlias, isValidAccountAlias} = require('../accountAlias');
-const {invalidBase32Strs, getAllAccountAliases, validBase32Strs} = require('./testutils');
+const AccountAlias = require('../accountAlias');
+const {getAllAccountAliases, invalidBase32Strs} = require('./testutils');
 
 describe('AccountAlias', () => {
   describe('fromString', () => {
@@ -81,26 +81,6 @@ describe('AccountAlias', () => {
     test('shard, realm and alias', () => {
       const accountAlias = new AccountAlias('0', '1', 'AABBCC22');
       expect(accountAlias.toString()).toBe('0.1.AABBCC22');
-    });
-  });
-});
-
-describe('isValidAccountAlias', () => {
-  describe('valid', () => {
-    const inputs = _.flatten(validBase32Strs.map((alias) => getAllAccountAliases(alias)));
-    inputs.forEach((input) => {
-      test(input, () => {
-        expect(isValidAccountAlias(input)).toBeTrue();
-      });
-    });
-  });
-
-  describe('invalid', () => {
-    const inputs = _.flattenDeep([null, undefined, invalidBase32Strs.map((alias) => getAllAccountAliases(alias))]);
-    inputs.forEach((input) => {
-      test(`${input}`, () => {
-        expect(isValidAccountAlias(input)).toBeFalse();
-      });
     });
   });
 });

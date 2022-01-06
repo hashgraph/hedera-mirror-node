@@ -20,49 +20,27 @@
 
 'use strict';
 
-const base32Decode = require('base32-decode');
-const base32Encode = require('base32-encode');
+const {base32} = require('rfc4648');
 
-const variant = 'RFC4648';
+const decodeOpts = {loose: true};
+const encodeOpts = {pad: false};
 
 /**
  * Decodes the rfc4648 base32 string into a buffer. If the input string is null, returns null.
  * @param str the base32 string.
- * @return {Buffer}
+ * @return {Uint8Array}
  */
-const decode = (str) => {
-  return str && Buffer.from(base32Decode(str, variant));
-};
+const decode = (str) => str && base32.parse(str, decodeOpts);
 
 /**
- * Encodes the byte array into a rfc4648 base32 string without padding. If the input is null, returns null.
- * @param {Buffer} data
+ * Encodes the byte array into a rfc4648 base32 string without padding. If the input is null, returns null. Note wit
+ * the rfc4648 loose = true options, it allows lower case letters, padding, and auto corrects 0 -> O, 1 -> L.
+ * @param {Buffer|Uint8Array} data
  * @return {string}
  */
-const encode = (data) => {
-  return data && base32Encode(data, variant, {padding: false});
-};
-
-// regex for RFC4648 base32 string without padding. The base32 alphabet is [A-Z2-7] and '=' is the padding.
-// Input is split into 40-bit groups. For every group, each 5-bit input is encoded to one of the 32 characters.
-// Fewer than 40 bits groups are treated as 0-bit appended to the next multiples of 5 bits , so
-// 1. if the final group is 8 bits, the output will be 2 characters
-// 2. if the final group is 16 bits, the output will be 4 characters
-// 3. if the final group is 24 bits, the output will be 5 characters
-// 4. if the final group is 32 bits, the output will be 7 characters
-const base32Regex = /^(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$/;
-
-/**
- * Checks if the input is a valid rfc4648 base32 string.
- * @param {string} str
- * @return {boolean}
- */
-const isValidBase32Str = (str) => {
-  return typeof str === 'string' && base32Regex.test(str);
-};
+const encode = (data) => data && base32.stringify(data, encodeOpts);
 
 module.exports = {
   decode,
   encode,
-  isValidBase32Str,
 };

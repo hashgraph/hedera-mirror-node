@@ -21,17 +21,35 @@
 'use strict';
 
 const base32 = require('../base32');
-const {invalidBase32Strs, validBase32Strs} = require('./testutils');
 
 describe('decode', () => {
-  test('32W35LY', () => {
-    expect(base32.decode('32W353Y')).toEqual(Buffer.from('deadbeef', 'hex'));
+  describe('valid', () => {
+    test('32W35LY', () => {
+      expect(base32.decode('32W353Y')).toEqual(Uint8Array.from(Buffer.from('deadbeef', 'hex')));
+    });
+    test('32W35366', () => {
+      expect(base32.decode('32W35366')).toEqual(Uint8Array.from(Buffer.from('deadbeefde', 'hex')));
+    });
+    test('null', () => {
+      expect(base32.decode(null)).toBeNull();
+    });
   });
-  test('32W35366', () => {
-    expect(base32.decode('32W35366')).toEqual(Buffer.from('deadbeefde', 'hex'));
-  });
-  test('null', () => {
-    expect(base32.decode(null)).toBeNull();
+
+  describe('invalid', () => {
+    const invalidBase32Strs = [
+      // A base32 group without padding can have 2, 4, 5, 7 or 8 characters from its alphabet
+      'A',
+      'AAA',
+      'AAAAAA',
+      // non-base32 characters
+      '8',
+      '9',
+    ];
+    invalidBase32Strs.forEach((invalidBase32Str) => {
+      test(`${invalidBase32Str}`, () => {
+        expect(() => base32.decode(invalidBase32Str)).toThrowErrorMatchingSnapshot();
+      });
+    });
   });
 });
 
@@ -44,24 +62,5 @@ describe('encode', () => {
   });
   test('null', () => {
     expect(base32.encode(null)).toBeNull();
-  });
-});
-
-describe('isValidBase32Str', () => {
-  describe('valid', () => {
-    validBase32Strs.forEach((str) => {
-      test(str, () => {
-        expect(base32.isValidBase32Str(str)).toBeTrue();
-      });
-    });
-  });
-
-  describe('invalid', () => {
-    const data = [...invalidBase32Strs, null, undefined];
-    data.forEach((value) => {
-      test(`${value}`, () => {
-        expect(base32.isValidBase32Str(value)).toBeFalse();
-      });
-    });
   });
 });
