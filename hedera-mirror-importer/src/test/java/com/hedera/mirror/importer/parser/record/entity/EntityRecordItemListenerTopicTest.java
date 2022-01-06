@@ -402,7 +402,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp,
                 runningHashVersion, chunkNum, chunkTotal, payerAccountIdNum, validStartNs);
         var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, payerAccountIdNum,
-                TestUtils.toTimestamp(validStartNs));
+                TestUtils.toTimestamp(validStartNs), true);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -459,7 +459,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var topicMessage = createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
                 runningHashVersion, chunkNum, chunkTotal, payerAccountIdNum, validStartNs);
         var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, payerAccountIdNum,
-                TestUtils.toTimestamp(validStartNs));
+                TestUtils.toTimestamp(validStartNs), true);
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -489,7 +489,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var validStartNs = 7L;
 
         var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, payerAccountIdNum,
-                TestUtils.toTimestamp(validStartNs));
+                TestUtils.toTimestamp(validStartNs), true);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -508,7 +508,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var id = 10_000_000L;
         var topicId = TopicID.newBuilder().setTopicNum(9000).build();
         var transaction = createSubmitMessageTransaction(topicId, "message", 3, 5, null,
-                TestUtils.toTimestamp(Long.MAX_VALUE, Integer.MAX_VALUE));
+                TestUtils.toTimestamp(Long.MAX_VALUE, Integer.MAX_VALUE), true);
         var transactionRecord = createTransactionRecord(topicId, 10_000L, "running-hash"
                 .getBytes(), 2, id, SUCCESS);
 
@@ -537,7 +537,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var validStartNs = 7L;
 
         var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, PAYER.getAccountNum(),
-                TestUtils.toTimestamp(validStartNs));
+                TestUtils.toTimestamp(validStartNs), true);
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash.getBytes(),
                 runningHashVersion, consensusTimestamp, responseCode);
 
@@ -567,7 +567,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
                 runningHashVersion, chunkNum, chunkTotal, payerAccountIdNum, validStartNs);
         var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, payerAccountIdNum,
-                TestUtils.toTimestamp(validStartNs));
+                TestUtils.toTimestamp(validStartNs), true);
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -721,13 +721,6 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build()
                         .toByteString())
                 .build();
-    }
-
-    private com.hederahashgraph.api.proto.java.Transaction createSubmitMessageTransaction(
-            TopicID topicId, String message, Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum,
-            Timestamp validStartNs) {
-        return createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, payerAccountIdNum,
-                validStartNs, true);
     }
 
     private com.hederahashgraph.api.proto.java.Transaction createSubmitMessageTransaction(
