@@ -25,6 +25,7 @@ const constants = require('../constants.js');
 const config = require('../config.js');
 const EntityId = require('../entityId');
 const {assertSqlQueryEqual} = require('./testutils');
+const {TopicMessage} = require('../model');
 
 describe('topicmessage validateConsensusTimestampParam tests', () => {
   test('Verify validateConsensusTimestampParam throws error for -1234567890.000000001', () => {
@@ -126,7 +127,9 @@ describe('topicmessage formatTopicMessageRow tests', () => {
     valid_start_timestamp: '1234567890000000002',
   };
 
-  const formattedInput = topicmessage.formatTopicMessageRow(rowInput);
+  const topicMessageModel = new TopicMessage(rowInput);
+
+  const formattedInput = topicmessage.formatTopicMessageRow(topicMessageModel);
 
   const expectedFormat = {
     chunk_num: 1,

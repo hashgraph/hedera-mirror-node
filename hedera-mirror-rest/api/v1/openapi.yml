@@ -1631,8 +1631,10 @@ components:
       properties:
         chunk_num:
           type: integer
+          nullable: true
         chunk_total:
           type: integer
+          nullable: true
         consensus_timestamp:
           $ref: '#/components/schemas/Timestamp'
         topic_id:
@@ -1649,21 +1651,26 @@ components:
         sequence_number:
           type: number
         valid_start_timestamp:
-          $ref: '#/components/schemas/Timestamp'
+          $ref: '#/components/schemas/TimestampNullable'
       required:
         - consensus_timestamp
         - topic_id
         - message
+        - payer_account_id
         - running_hash
         - running_hash_version
         - sequence_number
       example:
+        chunk_num: 1
+        chunk_total: 1
         consensus_timestamp: "1234567890.000000001"
         topic_id: 0.0.7
         message: bWVzc2FnZQ==
+        payer_account_id: 0.0.10
         running_hash: cnVubmluZ19oYXNo
         running_hash_version: 2
         sequence_number: 1
+        valid_start_timestamp: "1234567890.000000002"
     TopicMessages:
       type: array
       items:
