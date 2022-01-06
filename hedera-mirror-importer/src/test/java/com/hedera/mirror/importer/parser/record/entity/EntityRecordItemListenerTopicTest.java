@@ -11,7 +11,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * You may obtain a copy of the License at
  *
  *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ **-
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -389,7 +389,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.9000, test-message0, 9000000, runninghash, 1, 1, , , , ",
+            "0.0.9000, test-message0, 9000000, runninghash, 1, 1, , ,9999, ",
             "0.0.9001, test-message1, 9000001, runninghash1, 9223372036854775807, 2, 1, 1, 7, 89999999",
             "0.0.9001, test-message2, 9000001, runninghash2, 9223372036854775807, 2, 2, 4, 7, 89999999",
             "0.0.9001, test-message3, 9000001, runninghash3, 9223372036854775807, 2, 4, 4, 7, 89999999",
@@ -403,6 +403,33 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 runningHashVersion, chunkNum, chunkTotal, payerAccountIdNum, validStartNs);
         var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, payerAccountIdNum,
                 TestUtils.toTimestamp(validStartNs));
+        var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
+                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
+
+        parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
+
+        assertTransactionInRepository(responseCode, consensusTimestamp, topicId.getTopicNum());
+        assertEquals(0L, entityRepository.count());
+        assertThat(topicMessageRepository.findById(consensusTimestamp)).get()
+                .isEqualTo(topicMessage);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0.0.9001, test-message1, 9000001, runninghash1, 9223372036854775807, 2, 1, 1, 7, 89999999"
+    })
+    void submitMessageTestNoInitialTransactionId(@ConvertWith(TopicIdArgumentConverter.class) TopicID topicId,
+                                                 String message,
+                                                 long consensusTimestamp, String runningHash, long sequenceNumber,
+                                                 int runningHashVersion,
+                                                 Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum,
+                                                 Long validStartNs) {
+        var responseCode = SUCCESS;
+
+        var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp,
+                runningHashVersion, chunkNum, chunkTotal, 9999L, null);
+        var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, payerAccountIdNum,
+                TestUtils.toTimestamp(validStartNs), false);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -697,6 +724,13 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     private com.hederahashgraph.api.proto.java.Transaction createSubmitMessageTransaction(
             TopicID topicId, String message, Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum,
             Timestamp validStartNs) {
+        return createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, payerAccountIdNum,
+                validStartNs, true);
+    }
+
+    private com.hederahashgraph.api.proto.java.Transaction createSubmitMessageTransaction(
+            TopicID topicId, String message, Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum,
+            Timestamp validStartNs, boolean hasInitialTransactionId) {
         var submitMessageTransactionBodyBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .setTopicID(topicId)
                 .setMessage(ByteString.copyFrom(message.getBytes()));
@@ -712,8 +746,10 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             submitMessageTransactionBodyBuilder
                     .setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
                             .setNumber(chunkNum)
-                            .setTotal(chunkTotal)
-                            .setInitialTransactionID(transactionId));
+                            .setTotal(chunkTotal));
+            if (hasInitialTransactionId) {
+                submitMessageTransactionBodyBuilder.getChunkInfo().toBuilder().setInitialTransactionID(transactionId);
+            }
         }
 
         var innerBody = submitMessageTransactionBodyBuilder.build();
