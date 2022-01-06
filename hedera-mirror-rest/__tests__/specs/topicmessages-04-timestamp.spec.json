@@ -33,12 +33,16 @@
   "responseJson": {
     "messages": [
       {
+        "chunk_num": 1,
+        "chunk_total": 1,
         "consensus_timestamp": "1234567890.000000003",
         "topic_id": "0.0.7",
         "message": "bWVzc2FnZQ==",
+        "payer_account_id": "0.0.3",
         "running_hash": "cnVubmluZ19oYXNo",
         "running_hash_version": 2,
-        "sequence_number": 3
+        "sequence_number": 3,
+        "valid_start_timestamp": "1628751573.995691000"
       }
     ],
     "links": {

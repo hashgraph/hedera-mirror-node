@@ -33,12 +33,16 @@ const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 const topicMessageColumns = {
+  CHUNK_NUM: 'chunk_num',
+  CHUNK_TOTAL: 'chunk_total',
   CONSENSUS_TIMESTAMP: 'consensus_timestamp',
   MESSAGE: 'message',
+  PAYER_ACCOUNT_ID: 'payer_account_id',
   RUNNING_HASH: 'running_hash',
   RUNNING_HASH_VERSION: 'running_hash_version',
   SEQUENCE_NUMBER: 'sequence_number',
   TOPIC_ID: 'topic_id',
+  VALID_START_TIMESTAMP: 'valid_start_timestamp',
 };
 
 const columnMap = {
@@ -87,12 +91,16 @@ const validateGetTopicMessagesParams = (topicId) => {
  */
 const formatTopicMessageRow = (row, messageEncoding) => {
   return {
+    chunk_num: row[topicMessageColumns.CHUNK_NUM],
+    chunk_total: row[topicMessageColumns.CHUNK_TOTAL],
     consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
     topic_id: EntityId.parse(row[topicMessageColumns.TOPIC_ID]).toString(),
     message: utils.encodeBinary(row[topicMessageColumns.MESSAGE], messageEncoding),
+    payer_account_id: EntityId.parse(row[topicMessageColumns.PAYER_ACCOUNT_ID]).toString(),
     running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
     running_hash_version: parseInt(row[topicMessageColumns.RUNNING_HASH_VERSION]),
     sequence_number: parseInt(row[topicMessageColumns.SEQUENCE_NUMBER]),
+    valid_start_timestamp: utils.nsToSecNs(row[topicMessageColumns.VALID_START_TIMESTAMP]),
   };
 };
 

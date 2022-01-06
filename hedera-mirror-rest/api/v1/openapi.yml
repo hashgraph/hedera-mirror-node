@@ -1629,12 +1629,18 @@ components:
     TopicMessage:
       type: object
       properties:
+        chunk_num:
+          type: integer
+        chunk_total:
+          type: integer
         consensus_timestamp:
           $ref: '#/components/schemas/Timestamp'
         topic_id:
           $ref: '#/components/schemas/EntityId'
         message:
           type: string
+        payer_account_id:
+          $ref: '#/components/schemas/EntityId'
         running_hash:
           type: string
           format: byte
@@ -1642,6 +1648,8 @@ components:
           type: number
         sequence_number:
           type: number
+        valid_start_timestamp:
+          $ref: '#/components/schemas/Timestamp'
       required:
         - consensus_timestamp
         - topic_id

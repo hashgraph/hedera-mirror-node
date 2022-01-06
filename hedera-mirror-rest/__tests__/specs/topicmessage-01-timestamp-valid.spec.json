@@ -12,9 +12,13 @@
         "seq_num": 1
       },
       {
+        "chunk_num": 2,
+        "chunk_total": 3,
+        "payer_account_id": 10,
         "timestamp": "1234567890000000002",
         "topic_id": 7,
-        "seq_num": 2
+        "seq_num": 2,
+        "valid_start_timestamp": "1234567890000000000"
       },
       {
         "timestamp": "1234567890000000003",
@@ -26,11 +30,15 @@
   "url": "/api/v1/topics/messages/1234567890.000000002",
   "responseStatus": 200,
   "responseJson": {
+    "chunk_num": 2,
+    "chunk_total": 3,
     "consensus_timestamp": "1234567890.000000002",
     "topic_id": "0.0.7",
     "message": "bWVzc2FnZQ==",
+    "payer_account_id": "0.0.10",
     "running_hash": "cnVubmluZ19oYXNo",
     "running_hash_version": 2,
-    "sequence_number": 2
+    "sequence_number": 2,
+    "valid_start_timestamp": "1234567890.000000000"
   }
 }
