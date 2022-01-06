@@ -29,7 +29,7 @@ import javax.annotation.Resource;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.io.FileUtils;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,8 +51,8 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
     @Value("classpath:db/migration/v1/v1.52.0__topic_message_add_payer_account_id.sql")
     private File migrationSql;
 
-    @BeforeEach
-    void setup() {
+    @AfterEach
+    void cleanup() {
         revertMigration();
     }
 
