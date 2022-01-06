@@ -146,11 +146,11 @@ Create a new table to store the state changes of a contract execution
 ```sql
 create table if not exists contract_state_change
 (
-  after               bytea  not null,
-  before              bytea  not null,
   consensus_timestamp bigint not null,
   contract_id         bigint not null,
   slot                bytea  not null,
+  value_read          bytea  not null,
+  value_written       bytea  null,
   primary key (consensus_timestamp, contract_id, slot)
 );
 ```
@@ -316,7 +316,6 @@ Optional filters
   "bloom": "0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398",
   "call_result": "0x2b048531b38d2882e86044bc972e940ee0a01938",
   "contract_id": "0.0.1002",
-  "child_transactions": 0,
   "created_contract_ids": [
     "0.0.1003"
   ],
@@ -350,18 +349,18 @@ Optional filters
   ],
   "state_changes": [
     {
-      "after": "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0",
-      "before": "0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5",
       "address": "0x0000000000000000000000000000000000001f41",
+      "contract_id": "0.0.8001",
       "slot": "0x0000000000000000000000000000000000000000000000000000000000000002",
-      "timestamp": "12345.10001"
+      "value_read": "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0",
+      "value_written": "0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5"
     },
     {
-      "after": "0x000000000000000000000000000000000000000000000001eafa3aaed1d27246",
-      "before": "0x0000000000000000000000000000000000000000000000000000000000000000",
       "address": "0x0000000000000000000000000000000000001f42",
+      "contract_id": "0.0.8002",
       "slot": "0xe1b094dec1b7d360498fa8130bf1944104b7b5d8a48f9ca88c3fc0f96c2d7225",
-      "timestamp": "12345.10001"
+      "value_read": "0x000000000000000000000000000000000000000000000001eafa3aaed1d27246",
+      "value_written": null
     }
   ],
   "timestamp": "12345.10001",
@@ -373,19 +372,11 @@ Optional filters
 - `block_hash` should be retrieved by a join with the `record_file` table to find the `hash` of the file containing the
   transaction.
 - `hash` should be retrieved by a join with the `transaction` table
-- `hedera_child_transactions` (when added) will be retrieved by a join between the `contract_result` and transfer tables
-  (`assessed_custom_fee`, `crypto_transfer`, `token_transfer`, `nft_transfer`) tables based on child timestamps.
 - `logs` should be retrieved by a join between the `contract_result` and `contract_log` tables.
 - `state-changes` should be retrieved by a join between the `contract_result` and `contract_state_change` tables.
 
 > _Note:_ `/api/v1/contracts/results/{transactionId}` will have to extract the correlating contractId and timestamp to
 > retrieve the correct contract_result row
-
-> _Note 2:_ Child Hedera transactions issued by HTS precompiled transactions will produce regular HTS transactions.
-> These differ from EVM internal transactions between contracts.
-> The HTS transactions will contain the transferList that describes the internal transfers to be extracted. The parent
-> transactions `transaction.child_transactions` will denote the range of consensusTimestamps for child transactions
-> i.e. `[parent_timestamp, parent_timestamp + transaction.child_transactions)`
 
 ### Get Contract Logs
 
@@ -853,33 +844,6 @@ The Mirror Node should additional provide support for this.
         }
       ]
     ```
-4. How should we expose Hedera child transactions under `/api/v1/contracts/{id}/results/{timestamp}`
-   & `/api/v1/contracts/results/{transactionId}`? Still being designed. Two suggestions are
-    ```json
-    "links": {
-      "hedera_child_transactions": [
-        "api/v1/transactions/0.0.11943-1637100159-861284000",
-        "api/v1/transactions/0.0.10459-1637099842-891982153"
-      ]
-    }
-    ```
-   or
-    ```json
-    "links": {
-      "related": {
-        "hedera_child_transactions": [
-          {
-            "timestamp": "1637100159.961284000",
-            "endpoint": "api/v1/transactions/0.0.11943-1637100159-861284000"
-          },
-          {
-            "timestamp": "1637099842.991982153",
-            "endpoint": "api/v1/transactions/0.0.10459-1637099842-891982153"
-          }
-        ]
-      }
-    }
-    ```
 
 ## Answered Questions
 
@@ -900,3 +864,6 @@ The Mirror Node should additional provide support for this.
 6. With the use of `transaction_id` to retrieve entity metadata rows should we consider a caching and or db mapping to
    extract the entityId and timestamp? Ans: For now caching and internal db mapping not needed. We'll simply do 2 calls
    to get transaction info and then contract details.
+7. How should we expose Hedera child transactions under `/api/v1/contracts/{id}/results/{timestamp}`
+   and `/api/v1/contracts/results/{transactionId}`? Users can get a flattened list of parent and child transactions
+   via `/api/v1/transaction/{transactionId}` and use that to query the contract results.
