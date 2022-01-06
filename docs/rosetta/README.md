@@ -13,15 +13,15 @@ mirror node database.
 
 ![Architecture](rosetta-architecture.png)
 
-The rosetta-sdk-go takes care of a significant part of the entity model definitions and API work. The Rosetta API server
+The rosetta-sdk-go takes care of a significant part of the entity model definitions and API work. The rosetta API server
 has four main components:
 
 ### Domain models
 
 These are models internal to the system allowing for safe and easy serialization and passing off information. These are
-ultimately converted to/from Rosetta models or are marshaled from database records.
+ultimately converted to/from rosetta models or are marshaled from database records.
 
-### Domain Repositories
+### Repositories
 
 These are repositories used for fetching data from the mirror node database and marshaling it into the domain models.
 They provide an abstraction from the persistence layer and allow the services to request the necessary data.
@@ -32,7 +32,7 @@ These services execute business logic in response to requests from client applic
 repositories to gather the necessary domain models, convert them to the rosetta types, and return them back to the
 client.
 
-### Rosetta API Controllers
+### API Controllers
 
 These are structures coming out of the box with rosetta-sdk-go. These handle the raw requests, marshaling/unmarshaling
 the data, and triggering the business logic services.

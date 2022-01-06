@@ -12,19 +12,17 @@ Mirror nodes receive information from the Hedera nodes and can provide value-add
 analytics, visibility services, security threat modeling, data monetization services, etc. Mirror nodes can also run
 additional business logic to support applications built using the Hedera network.
 
-While mirror nodes receive information from the mainnet nodes, they do not contribute to consensus on the network, and
-their votes are not counted. Only the votes from the main nodes are counted for determining consensus. The trust of
+While mirror nodes receive information from the main nodes, they do not contribute to consensus on the network, and
+their votes are not counted. Only the votes from the main nodes are counted for determining consensus. The trust of the
 Hedera network is derived based on the consensus reached by the main nodes. That trust is transferred to the mirror
 nodes using cryptographic signatures on a chain of files.
 
-Eventually, the mirror nodes will be able to run the same code as the Hedera main nodes so that they can see the
-transactions in real time. To make the initial deployments easier, the mirror node strives to take away the burden of
-running a full Hedera node through creation of periodic files that contain processed information (such as account
-balances or transaction records), and have the full trust of the Hedera main nodes. The mirror node software reduces the
-processing burden by receiving pre-constructed files from the network, validating those, populating a database, and
-providing APIs to expose the data.
-
-### Advantages
+Eventually, the mirror nodes will be able to run the same code as the Hedera nodes so that they can see the transactions
+in real time. To make the initial deployments easier, the mirror node strives to take away the burden of running a full
+Hedera node through creation of periodic files that contain processed information (such as account balances or
+transaction records), and have the full trust of the main nodes. The mirror node software reduces the processing burden
+by receiving pre-constructed files from the network, validating those, populating a database, and providing APIs to
+expose the data. This approach provides the following advantages:
 
 - Lower compute and bandwidth requirements
 - It allows users to only save what they care about, and discard what they don’t (lower storage requirement)
@@ -44,10 +42,13 @@ providing APIs to expose the data.
 
 ### Mirror Nodes
 
-- This mirror node software downloads signature files from either S3 or Google File Storage.
+- This mirror node software downloads signature files from cloud storage.
 - The signature files are validated to ensure at least 1/3 of the nodes in the address book (stored in a `0.0.102` file)
   have the same signature.
-- For each valid signature file, the corresponding record file is then downloaded from the cloud.
+- For each valid signature file, the corresponding record file is then downloaded from the cloud and its hash verified
+  against the hash contained in the signature file.
+- The downloaded record file contains a previous hash that is validated against the last processed file to verify the
+  hash chain.
 - Record files can then be processed and transactions and records processed for long term storage.
 
 In addition, nodes regularly generate
@@ -71,7 +72,7 @@ to understanding the mirror node operations.
 - [Maven](https://maven.apache.org/guides/getting-started/index.html)
 - [NodeJS](https://nodejs.org/en/about/)
 - [PostgreSQL](https://www.postgresql.org/docs)
-- [Spring](https://spring.io/quickstart)
+- [Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/getting-started.html#getting-started)
 
 ### Prerequisite Tools
 
