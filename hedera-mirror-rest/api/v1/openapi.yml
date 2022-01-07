@@ -99,7 +99,7 @@ paths:
       description: Return the contract information given an id
       operationId: getContractById
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/contractIdPathParam'
         - $ref: '#/components/parameters/timestampQueryParam'
       responses:
         200:
@@ -120,7 +120,7 @@ paths:
       description: Returns a list of all ContractResults for a contract's function executions.
       operationId: listContractResults
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/contractIdPathParam'
         - $ref: '#/components/parameters/fromQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
@@ -142,7 +142,7 @@ paths:
       description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
       operationId: getContractResultByIdAndTimestamp
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/contractIdPathParam'
         - $ref: '#/components/parameters/timestampPathParam'
       responses:
         200:
@@ -187,7 +187,7 @@ paths:
         or `/api/v1/contracts/results/{transactionId}`
       operationId: listContractLogs
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/contractIdPathParam'
         - $ref: '#/components/parameters/logIndexQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
@@ -260,7 +260,7 @@ paths:
       description: Returns schedule information based on the given schedule id
       operationId: getScheduleById
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/scheduleIdPathParam'
       responses:
         200:
           description: OK
@@ -590,7 +590,7 @@ paths:
       description: Returns a list of token balances given the id. This represents the Token supply distribution across the network
       operationId: listTokenBalancesById
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/tokenIdPathParam'
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/accountBalanceQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
@@ -618,7 +618,7 @@ paths:
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/tokenIdPathParam'
       responses:
         200:
           description: OK
@@ -645,7 +645,7 @@ paths:
       operationId: listNftBySerialnumber
       parameters:
         - $ref: '#/components/parameters/serialNumberPathParam'
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/tokenIdPathParam'
       responses:
         200:
           description: OK
@@ -666,7 +666,7 @@ paths:
       operationId: listNftTransactions
       parameters:
         - $ref: '#/components/parameters/serialNumberPathParam'
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/tokenIdPathParam'
       responses:
         200:
           description: OK
@@ -1862,7 +1862,7 @@ components:
     accountBalanceQueryParam:
       name: account.balance
       in: query
-      description: The optional balance value to compare against
+      description: The optional account balance value to compare against
       explode: true
       examples:
         noOperator:
@@ -1893,46 +1893,47 @@ components:
       name: account.id
       in: query
       description: The ID of the account to return information for
+      example: 0.0.10 or 10
       explode: true
       examples:
         entityNumNoOperator:
-          summary: Example of entityNum equals with no operator
+          summary: Example of accountNum equals with no operator
           value: 100
         idNoOperator:
           summary: Example of id equals with no operator
           value: 0.0.100
         entityNumEqOperator:
-          summary: Example of entityNum equals operator
+          summary: Example of accountNum equals operator
           value: eq:200
         idEqOperator:
           summary: Example of id equals operator
           value: eq:0.0.200
         entityNumNeOperator:
-          summary: Example of entityNum not equals operator
+          summary: Example of accountNum not equals operator
           value: ne:300
         idNeOperator:
           summary: Example of id not equals operator
           value: ne:0.0.300
         entityNumGtOperator:
-          summary: Example of entityNum greater than operator
+          summary: Example of accountNum greater than operator
           value: gt:400
         idGtOperator:
           summary: Example of id greater than operator
           value: gt:0.0.400
         entityNumGteOperator:
-          summary: Example of entityNum greater than or equals operator
+          summary: Example of accountNum greater than or equals operator
           value: gte:500
         idGteOperator:
           summary: Example of id greater than or equals operator
           value: gte:0.0.500
         entityNumLtOperator:
-          summary: Example of entityNum less than operator
+          summary: Example of accountNum less than operator
           value: lt:600
         idLtOperator:
           summary: Example of id less than operator
           value: lt:0.0.600
         entityNumLteOperator:
-          summary: Example of entityNum less than or equals operator
+          summary: Example of accountNum less than or equals operator
           value: lte:700
         idLteOperator:
           summary: Example of id less than or equals operator
@@ -1954,49 +1955,56 @@ components:
       schema:
         type: boolean
         default: true
+    contractIdPathParam:
+      name: contractId
+      description: The ID of the contract to return information for
+      example: 0.0.10 or 10
+      in: path
+      schema:
+        $ref: '#/components/schemas/EntityId'
     contractIdQueryParam:
-      name: contract.id
+      name: contractId
       description: The ID of the contract to return information for
       in: query
       examples:
         entityNumNoOperator:
-          summary: Example of entityNum equals with no operator
+          summary: Example of contractNum equals with no operator
           value: 100
         idNoOperator:
           summary: Example of id equals with no operator
           value: 0.0.100
         entityNumEqOperator:
-          summary: Example of entityNum equals operator
+          summary: Example of contractNum equals operator
           value: eq:200
         idEqOperator:
           summary: Example of id equals operator
           value: eq:0.0.200
         entityNumNeOperator:
-          summary: Example of entityNum not equals operator
+          summary: Example of contractNum not equals operator
           value: ne:300
         idNeOperator:
           summary: Example of id not equals operator
           value: ne:0.0.300
         entityNumGtOperator:
-          summary: Example of entityNum greater than operator
+          summary: Example of contractNum greater than operator
           value: gt:400
         idGtOperator:
           summary: Example of id greater than operator
           value: gt:0.0.400
         entityNumGteOperator:
-          summary: Example of entityNum greater than or equals operator
+          summary: Example of contractNum greater than or equals operator
           value: gte:500
         idGteOperator:
           summary: Example of id greater than or equals operator
           value: gte:0.0.500
         entityNumLtOperator:
-          summary: Example of entityNum less than operator
+          summary: Example of contractNum less than operator
           value: lt:600
         idLtOperator:
           summary: Example of id less than operator
           value: lt:0.0.600
         entityNumLteOperator:
-          summary: Example of entityNum less than or equals operator
+          summary: Example of contractNum less than or equals operator
           value: lte:700
         idLteOperator:
           summary: Example of id less than or equals operator
@@ -2097,49 +2105,58 @@ components:
       schema:
         type: boolean
         default: false
+    scheduleIdPathParam:
+      name: scheduleId
+      description: The ID of the schedule to return information for
+      example: 0.0.10 or 10
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/EntityId'
     scheduleIdQueryParam:
       name: schedule.id
       description: The ID of the schedule to return information for
+      example: 0.0.10 or 10
       in: query
       examples:
         entityNumNoOperator:
-          summary: Example of entityNum equals with no operator
+          summary: Example of scheduleNum equals with no operator
           value: 100
         idNoOperator:
           summary: Example of id equals with no operator
           value: 0.0.100
         entityNumEqOperator:
-          summary: Example of entityNum equals operator
+          summary: Example of scheduleNum equals operator
           value: eq:200
         idEqOperator:
           summary: Example of id equals operator
           value: eq:0.0.200
         entityNumNeOperator:
-          summary: Example of entityNum not equals operator
+          summary: Example of scheduleNum not equals operator
           value: ne:300
         idNeOperator:
           summary: Example of id not equals operator
           value: ne:0.0.300
         entityNumGtOperator:
-          summary: Example of entityNum greater than operator
+          summary: Example of scheduleNum greater than operator
           value: gt:400
         idGtOperator:
           summary: Example of id greater than operator
           value: gt:0.0.400
         entityNumGteOperator:
-          summary: Example of entityNum greater than or equals operator
+          summary: Example of scheduleNum greater than or equals operator
           value: gte:500
         idGteOperator:
           summary: Example of id greater than or equals operator
           value: gte:0.0.500
         entityNumLtOperator:
-          summary: Example of entityNum less than operator
+          summary: Example of scheduleNum less than operator
           value: lt:600
         idLtOperator:
           summary: Example of id less than operator
           value: lt:0.0.600
         entityNumLteOperator:
-          summary: Example of entityNum less than or equals operator
+          summary: Example of scheduleNum less than or equals operator
           value: lte:700
         idLteOperator:
           summary: Example of id less than or equals operator
@@ -2159,7 +2176,7 @@ components:
         minimum: 1
         maximum: 9223372036854775807
     serialNumberQueryParam:
-      name: serialnumber
+      name: serial.number
       in: query
       description: The nft serial number (64 bit type)
       example: 2
@@ -2171,6 +2188,7 @@ components:
         maximum: 9223372036854775807
     timestampQueryParam:
       name: timestamp
+      example: 1234567890.000000100
       in: query
       explode: true
       examples:
@@ -2230,9 +2248,28 @@ components:
       schema:
         type: string
         pattern: ^\d{1,10}(.\d{1,9})?$
+    tokenIdPathParam:
+      name: tokenId
+      in: path
+      description: The ID of the token
+      example: 0.0.10 or 10
+      required: true
+      schema:
+        type: string
+        $ref: '#/components/schemas/EntityId'
+    tokpicIdPathParam:
+      name: topicId
+      in: path
+      description: The ID of the topic
+      example: 0.0.10 or 10
+      required: true
+      schema:
+        type: string
+        $ref: '#/components/schemas/EntityId'
     tokenInfoTimestampQueryParam:
       name: timestamp
       in: query
+      example: 1234567890.000000100 
       explode: true
       examples:
         secondsNoOperator:
