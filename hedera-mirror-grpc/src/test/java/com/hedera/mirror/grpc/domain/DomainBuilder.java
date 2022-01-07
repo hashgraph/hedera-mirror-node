@@ -92,6 +92,7 @@ public class DomainBuilder {
         TopicMessage.TopicMessageBuilder builder = TopicMessage.builder()
                 .consensusTimestamp(now.plus(sequenceNumber, ChronoUnit.NANOS))
                 .message(new byte[] {0, 1, 2})
+                .payerAccountId(10L)
                 .runningHash(new byte[] {3, 4, 5})
                 .sequenceNumber(++sequenceNumber)
                 .topicId(0)
