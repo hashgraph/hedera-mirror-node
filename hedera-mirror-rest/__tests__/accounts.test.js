@@ -463,15 +463,15 @@ describe('getAccountAliasQuery', () => {
   });
 
   describe('invalid', () => {
-    const invalidAccountAlias = _.flattenDeep([
+    const invalidAccountAliases = _.flattenDeep([
       null,
       undefined,
-      testutils.invalidBase32Strs.map((alias) => testutils.getAllAccountAliases(alias)),
+      testutils.invalidBase32Strs.map((invalidAlias) => testutils.getAllAccountAliases(invalidAlias)),
       `100000.${alias}`,
       `100000.0.${alias}`,
     ]);
 
-    invalidAccountAlias.forEach((invalidAccountAlias) => {
+    invalidAccountAliases.forEach((invalidAccountAlias) => {
       test(`${invalidAccountAlias}`, () => {
         expect(() => getAccountAliasQuery(invalidAccountAlias)).toThrowErrorMatchingSnapshot();
       });
