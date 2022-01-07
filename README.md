@@ -43,10 +43,11 @@ expose the data. This approach provides the following advantages:
 ### Mirror Nodes
 
 - This mirror node software downloads signature files from cloud storage.
-- The signature files are validated to ensure at least 1/3 of the nodes in the address book (stored in a `0.0.102` file)
-  have the same signature.
-- For each valid signature file, the corresponding record file is then downloaded from the cloud and its hash verified
-  against the hash contained in the signature file.
+- The signature files are verified using the corresponding node's public key from the address book (stored in
+  a `0.0.102` file)
+- The verified signature files are checked to ensure at least 1/3 have the same record file hash
+- For each valid signature file, the corresponding record file is then downloaded from cloud storage and its hash
+  verified against the hash contained in the signature file.
 - The downloaded record file contains a previous hash that is validated against the last processed file to verify the
   hash chain.
 - Record files can then be processed and transactions and records processed for long term storage.
@@ -70,7 +71,7 @@ to understanding the mirror node operations.
 - [Docker](https://docs.docker.com/engine/reference/commandline/docker/)
 - [Helm](https://helm.sh)
 - [Maven](https://maven.apache.org/guides/getting-started/index.html)
-- [NodeJS](https://nodejs.org/en/about/)
+- [Node.js](https://nodejs.org/en/about/)
 - [PostgreSQL](https://www.postgresql.org/docs)
 - [Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/getting-started.html#getting-started)
 

@@ -197,7 +197,7 @@ docker run -e NETWORK=TESTNET \
 Docker Compose scripts are provided and can run all the mirror node components. Containers use the following persistent
 volumes:
 
-- `./db` on your local machine maps to `/var/lib/postgresql/data` in the containers. This contains the files for the
+- `./db` on your local machine maps to `/var/lib/postgresql/data` in the db container. This contains the files for the
   PostgreSQL database. If the database container fails to initialise properly and the database fails to run, you will
   have to delete this folder prior to attempting a restart otherwise the database initialisation scripts will not be
   run.
@@ -307,8 +307,8 @@ c.h.m.web3.Web3Application Started Web3Application in 27.808 seconds
 c.h.m.w.config.LoggingFilter /10.0.0.43 POST http://localhost:8545/web3/v1 in 8 ms: 200 OK
 ```
 
-To manually verify the Rosetta API endpoints follow the [operations](/docs/operations.md#verifying-2) details.
+To manually verify the Web3 API endpoints run the [acceptance tests](/docs/web3/README.md#acceptance-tests).
 
 ### Stopping
 
-Shut down the database container via `docker compose down`.
+Shut down the containers via `docker compose down`.
