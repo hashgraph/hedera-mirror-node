@@ -373,7 +373,7 @@ Optional filters
   transaction.
 - `hash` should be retrieved by a join with the `transaction` table
 - `logs` should be retrieved by a join between the `contract_result` and `contract_log` tables.
-- `state-changes` should be retrieved by a join between the `contract_result` and `contract_state_change` tables.
+- `state_changes` should be retrieved by a join between the `contract_result` and `contract_state_change` tables.
 
 > _Note:_ `/api/v1/contracts/results/{transactionId}` will have to extract the correlating contractId and timestamp to
 > retrieve the correct contract_result row
