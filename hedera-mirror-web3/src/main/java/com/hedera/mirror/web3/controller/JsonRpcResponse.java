@@ -29,4 +29,6 @@ abstract class JsonRpcResponse {
 
     private Long id;
     private final String jsonrpc = VERSION;
+
+    abstract String getStatus();
 }

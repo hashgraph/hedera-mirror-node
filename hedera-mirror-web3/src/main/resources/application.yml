@@ -38,6 +38,7 @@ server:
     enabled: true
   http2:
     enabled: true
+  max-http-header-size: 512B
   netty:
     connection-timeout: 3s
   port: 8545

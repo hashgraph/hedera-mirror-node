@@ -20,20 +20,26 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
+import static com.hedera.mirror.web3.controller.Web3Controller.METRIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.ImmutableList;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import javax.annotation.Resource;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
@@ -53,8 +59,21 @@ class Web3ControllerTest {
     @Resource
     private WebTestClient webClient;
 
+    @Resource
+    private MeterRegistry meterRegistry;
+
     @MockBean
     private Web3ServiceFactory serviceFactory;
+
+    @Resource
+    private Web3Controller web3Controller;
+
+    @BeforeEach
+    void setup() {
+        meterRegistry.clear();
+        web3Controller.timers.clear();
+        when(serviceFactory.isValid(METHOD)).thenReturn(true);
+    }
 
     @Test
     void success() {
@@ -79,6 +98,11 @@ class Web3ControllerTest {
                 .jsonPath("$.result").isEqualTo(RESULT);
 
         verify(serviceFactory).lookup(METHOD);
+        assertThat(meterRegistry.find(METRIC).timers())
+                .hasSize(1)
+                .first()
+                .returns(METHOD, t -> t.getId().getTag("method"))
+                .returns(JsonRpcSuccessResponse.SUCCESS, t -> t.getId().getTag("status"));
     }
 
     @NullSource
@@ -125,7 +149,7 @@ class Web3ControllerTest {
         JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
         jsonRpcRequest.setId(1L);
         jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
-        jsonRpcRequest.setMethod("unknown");
+        jsonRpcRequest.setMethod("invalid");
 
         assertError(jsonRpcRequest, JsonRpcErrorCode.METHOD_NOT_FOUND)
                 .jsonPath("$.id").isEqualTo(jsonRpcRequest.getId());
@@ -166,7 +190,7 @@ class Web3ControllerTest {
 
     private WebTestClient.BodyContentSpec assertError(Object payload, JsonRpcErrorCode errorCode, String... messages) {
         List<String> m = ImmutableList.<String>builder().add(errorCode.getMessage()).add(messages).build();
-        return webClient.post()
+        var bodyContentSpec = webClient.post()
                 .uri("/web3/v1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(payload))
@@ -179,6 +203,24 @@ class Web3ControllerTest {
                 .jsonPath("$.result").doesNotExist()
                 .jsonPath("$.error.message")
                 .value(s -> assertThat(s).contains(m), String.class);
+
+        String method = payload instanceof JsonRpcRequest && METHOD.equals(((JsonRpcRequest) payload).getMethod()) ?
+                METHOD : "unknown";
+        assertThat(meterRegistry.find(METRIC).timers())
+                .hasSize(1)
+                .first()
+                .returns(method, t -> t.getId().getTag("method"))
+                .returns(errorCode.name(), t -> t.getId().getTag("status"));
+
+        return bodyContentSpec;
+    }
+
+    @TestConfiguration
+    static class Config {
+        @Bean
+        MeterRegistry meterRegistry() {
+            return new SimpleMeterRegistry();
+        }
     }
 
     private class DummyWeb3Service implements Web3Service<Object, Object> {

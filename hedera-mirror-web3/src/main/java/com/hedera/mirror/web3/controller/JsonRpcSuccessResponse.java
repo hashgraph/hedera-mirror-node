@@ -25,5 +25,11 @@ import lombok.Data;
 @Data
 final class JsonRpcSuccessResponse<T> extends JsonRpcResponse {
 
+    static final String SUCCESS = "SUCCESS";
+
     private T result;
+
+    String getStatus() {
+        return SUCCESS;
+    }
 }

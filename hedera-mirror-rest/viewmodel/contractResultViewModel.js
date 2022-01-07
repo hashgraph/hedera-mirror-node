@@ -21,7 +21,6 @@
 'use strict';
 
 const _ = require('lodash');
-
 const EntityId = require('../entityId');
 const utils = require('../utils');
 
@@ -34,7 +33,7 @@ class ContractResultViewModel {
    *
    * @param {ContractResult} contractResult
    */
-  constructor(contractResult, recordFile = undefined, transaction = undefined) {
+  constructor(contractResult) {
     Object.assign(this, {
       amount: Number(contractResult.amount),
       call_result: utils.toHexString(contractResult.callResult, true),
@@ -48,15 +47,6 @@ class ContractResultViewModel {
       timestamp: utils.nsToSecNs(contractResult.consensusTimestamp),
       to: EntityId.parse(contractResult.contractId, true).toSolidityAddress(),
     });
-
-    if (!_.isNil(recordFile)) {
-      this.block_hash = utils.addHexPrefix(recordFile.hash);
-      this.block_number = Number(recordFile.index);
-    }
-
-    if (!_.isNil(transaction)) {
-      this.hash = utils.toHexString(transaction.transactionHash, true);
-    }
   }
 }
 

@@ -35,6 +35,10 @@ public class Web3ServiceFactory {
         this.services = services.stream().collect(Collectors.toMap(Web3Service::getMethod, Function.identity()));
     }
 
+    public boolean isValid(String method) {
+        return services.containsKey(method);
+    }
+
     public <I, O> Web3Service<I, O> lookup(String method) {
         return (Web3Service<I, O>) services.get(method);
     }

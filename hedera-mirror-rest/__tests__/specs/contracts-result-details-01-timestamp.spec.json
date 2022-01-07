@@ -17,6 +17,27 @@
         "payer_account_id": 8001
       }
     ],
+    "contractlogs": [
+      {
+        "consensus_timestamp": "167654000123456",
+        "contract_id": 5001,
+        "index": 0,
+        "root_contract_id": 5001
+      },
+      {
+        "consensus_timestamp": "167654000123456",
+        "contract_id": 5002,
+        "index": 1,
+        "root_contract_id": 5001,
+        "topic2": null,
+        "topic3": null
+      },
+      {
+        "consensus_timestamp": "167654000123457",
+        "contract_id": 5001,
+        "index": 0
+      }
+    ],
     "recordFiles": [
       {
         "index": 16,
@@ -65,6 +86,30 @@
     "gas_limit": 987654,
     "gas_used": 123,
     "hash": "0x3531396130303866616264653464",
+    "logs": [
+      {
+        "address": "0x0000000000000000000000000000000000001389",
+        "contract_id": "0.0.5001",
+        "data": "0x0123",
+        "index": 0,
+        "topics": [
+          "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x000000000000000000000000000000000000138a",
+        "contract_id": "0.0.5002",
+        "data": "0x0123",
+        "index": 1,
+        "topics": [
+          "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+        ]
+      }
+    ],
     "timestamp": "167654.000123456",
     "to": "0x0000000000000000000000000000000000001389"
   }

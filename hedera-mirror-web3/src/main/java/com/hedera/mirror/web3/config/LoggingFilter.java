@@ -23,7 +23,7 @@ package com.hedera.mirror.web3.config;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import javax.inject.Named;
-import lombok.extern.slf4j.Slf4j;
+import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.util.CollectionUtils;
@@ -32,7 +32,7 @@ import org.springframework.web.server.WebFilter;
 import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
-@Slf4j
+@CustomLog
 @Named
 class LoggingFilter implements WebFilter {
 
