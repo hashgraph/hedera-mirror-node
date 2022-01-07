@@ -33,8 +33,8 @@ const encodeOpts = {pad: false};
 const decode = (str) => str && base32.parse(str, decodeOpts);
 
 /**
- * Encodes the byte array into a rfc4648 base32 string without padding. If the input is null, returns null. Note wit
- * the rfc4648 loose = true options, it allows lower case letters, padding, and auto corrects 0 -> O, 1 -> L.
+ * Encodes the byte array into a rfc4648 base32 string without padding. If the input is null, returns null. Note with
+ * the rfc4648 loose = true option, it allows lower case letters, padding, and auto corrects 0 -> O, 1 -> L.
  * @param {Buffer|Uint8Array} data
  * @return {string}
  */

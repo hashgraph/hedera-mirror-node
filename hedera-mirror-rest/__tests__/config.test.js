@@ -52,9 +52,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  // (node:32166) [DEP0147] DeprecationWarning: In future versions of Node.js, fs.rmdir(path, { recursive: true }) will be removed. Use fs.rm(path, { recursive: true }) instead
   fs.rmSync(tempDir, {recursive: true});
-  // fs.rmdirSync(tempDir, {recursive: true});
   cleanup();
 });
 

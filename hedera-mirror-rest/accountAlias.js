@@ -70,7 +70,7 @@ class AccountAlias {
   }
 }
 
-// just limit the alias to the base32 alphabet excluding padding, other checks will be done in base32.decode. We need
+// limit the alias to the base32 alphabet excluding padding, other checks will be done in base32.decode. We need
 // the check here because base32.decode allows lower case letters, padding, and auto corrects some typos.
 const accountAliasRegex = /^(\d{1,5}\.){0,2}[A-Z2-7]+$/;
 
