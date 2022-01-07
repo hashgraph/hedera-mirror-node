@@ -1874,6 +1874,7 @@ components:
       name: accountAliasOrAccountId
       in: path
       description: Account alias or account id
+      required: true
       examples:
         aliasOnly:
           value: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
