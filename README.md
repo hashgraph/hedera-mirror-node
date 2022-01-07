@@ -25,7 +25,7 @@ by receiving pre-constructed files from the network, validating those, populatin
 expose the data. This approach provides the following advantages:
 
 - Lower compute and bandwidth requirements
-- It allows users to only save what they care about, and discard what they don’t (lower storage requirement)
+- Allows users to only save the data that they care about (lower storage requirement)
 - Easy searchable database so the users can add value quickly
 - Easy to consume APIs to make integrations faster
 
@@ -84,8 +84,8 @@ Ensure these tools are installed (note minimum versions) prior to running the mi
 ### Running
 
 For production use, we recommend using Kubernetes and to deploy using our Helm [chart](charts). Hedera managed mirror
-nodes use Kubernetes and Helm for its deployments and is considered the most production-ready. As an alternative for
-local development, Docker Compose can be used to run the mirror node. See
+nodes use Kubernetes and Helm for their deployments, and this process is considered the most production-ready. As an
+alternative for local development, Docker Compose can be used to run the mirror node. See
 the [installation](docs/installation.md#running-via-docker-compose) document for more details on configuring and running
 with Docker Compose. To get up and running quickly with Docker Compose execute the following commands in your terminal:
 

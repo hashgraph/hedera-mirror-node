@@ -257,7 +257,7 @@ Verify all ports:
 for port in {6551..6560}; do curl -s "http://127.0.0.1:${port}/api/v1/transactions?limit=1" && echo; done
 ```
 
-To setup live monitoring, see [monitoring](/hedera-mirror-rest/monitoring/README.md) documentation.
+To set up live monitoring, see [monitoring](/hedera-mirror-rest/monitoring/README.md) documentation.
 
 ### Open API Spec
 

@@ -4,8 +4,8 @@ The Mirror Node can be run [locally](#running-locally) or via [Docker](#running-
 
 ## Building
 
-To run locally, it'll first need to be built using Java. Ensure you have OpenJDK 11 installed, then run the following
-command from the top level directory. This will compile a runnable mirror node JAR file in the `target` directory.
+To run locally, first build the project using Java. Ensure you have OpenJDK 11 installed, then run the following command
+from the top level directory. This will compile a runnable mirror node JAR file in the `target` directory.
 
 ```console
 ./mvnw clean package -DskipTests
@@ -19,7 +19,7 @@ In addition to OpenJDK 11, you will need to install a [PostgreSQL](https://postg
 
 Since [Flyway](https://flywaydb.org) will manage the database schema, the only required step is to run the database
 initialization script. Locate the SQL script at `hedera-mirror-importer/src/main/resources/db/scripts/init.sh` and edit
-the file to change the name and password variables at the top of the file as appropriate. Then make sure the
+the file to change the name and password variables at the top of the file to the desired values. Then make sure the
 application [configuration](configuration.md)
 matches the values in the script. Run the SQL script as a super user and check the output carefully to ensure no errors
 occurred.
@@ -207,7 +207,7 @@ volumes:
 Before starting, [configure](configuration.md) the application by updating the [application.yml](/application.yml)
 file with the desired custom values. This file is passed to Docker Compose and allows customized configuration for each
 of the mirror node components. The `application.yml` file contents represent the minimal set of fields required to
-configure requester pays and must all be uncommented and filled in.
+configure requester pays and must be uncommented and filled in.
 
 ### Starting
 
