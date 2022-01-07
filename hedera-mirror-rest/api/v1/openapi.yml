@@ -744,7 +744,7 @@ components:
         Account alias in the format of 'shard.realm.alias', 'realm.alias', or 'alias'. 'alias' is the RFC4648
         no-padding base32 encoded string of the account's alias.
       type: string
-      pattern: ^(eq\:)?(\d{1,5}\.){0,2}(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$
+      pattern: ^(\d{1,5}\.){0,2}(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$
     # API call responses.
     AccountsResponse:
       type: object
