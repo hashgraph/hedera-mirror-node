@@ -392,8 +392,8 @@ const getAccountAliasQuery = (accountAliasStr) => {
   columns
     .filter((column) => accountAlias[column] !== null)
     .forEach((column) => {
-      conditions.push(`${column} = ?`);
-      params.push(accountAlias[column]);
+      const length = params.push(accountAlias[column]);
+      conditions.push(`${column} = $${length}`);
     });
 
   const query = `select id from entity where ${conditions.join(' and ')}`;
@@ -408,13 +408,12 @@ const getAccountAliasQuery = (accountAliasStr) => {
  */
 const getAccountIdFromAccountAlias = async (accountAlias) => {
   const {query, params} = getAccountAliasQuery(accountAlias);
-  const pgQuery = utils.convertMySqlStyleQueryToPostgres(query);
 
   if (logger.isTraceEnabled()) {
-    logger.trace(`getAccountIdFromAccountAlias query: ${pgQuery} ${JSON.stringify(params)}`);
+    logger.trace(`getAccountIdFromAccountAlias query: ${query} ${JSON.stringify(params)}`);
   }
 
-  const {rows} = await pool.queryQuietly(pgQuery, params);
+  const {rows} = await pool.queryQuietly(query, params);
   if (rows.length === 0) {
     throw new NotFoundError();
   } else if (rows.length > 1) {

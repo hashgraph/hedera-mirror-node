@@ -439,7 +439,8 @@ describe('getAccountAliasQuery', () => {
   describe('valid', () => {
     const aliasArray = base32.decode(alias);
     const query = 'select id from entity where deleted <> true';
-    const getExpectedQuery = (...columns) => [query, ...columns.map((column) => `${column} = ?`)].join(' and ');
+    const getExpectedQuery = (...columns) =>
+      [query, ...columns.map((column, index) => `${column} = $${index + 1}`)].join(' and ');
     const testSpecs = [
       {
         alias,

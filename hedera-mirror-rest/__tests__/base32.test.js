@@ -41,8 +41,7 @@ describe('decode', () => {
       'A',
       'AAA',
       'AAAAAA',
-      // non-base32 characters
-      '8',
+      // non-base32 characters, note due to the loose option, 0, 1, and 8 will be auto corrected to O, L, and B
       '9',
     ];
     invalidBase32Strs.forEach((invalidBase32Str) => {

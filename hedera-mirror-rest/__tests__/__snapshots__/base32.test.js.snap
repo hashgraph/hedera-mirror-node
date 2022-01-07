@@ -1,7 +1,5 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`decode invalid 8 1`] = `"Unexpected end of data"`;
-
 exports[`decode invalid 9 1`] = `"Invalid character 9"`;
 
 exports[`decode invalid A 1`] = `"Unexpected end of data"`;
