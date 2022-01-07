@@ -244,7 +244,7 @@ const getAccountQuery = (
 
   const {query: entityBalanceQuery, params} =
     balanceQuery.query === '' && pubKeyQuery.query === ''
-      ? // use full outer join when no account alias, balance, and public key query
+      ? // use full outer join when no balance query and public key query
         getEntityBalanceFullOuterJoinQuery(
           accountContractQuery,
           balanceAccountQuery,
@@ -391,11 +391,9 @@ const getAccountAliasQuery = (accountAliasStr) => {
 
   columns
     .filter((column) => accountAlias[column] !== null)
-    .map((column) => [`${column} = ?`, accountAlias[column]])
-    .forEach((tuple) => {
-      const [condition, value] = tuple;
-      conditions.push(condition);
-      params.push(value);
+    .forEach((column) => {
+      conditions.push(`${column} = ?`);
+      params.push(accountAlias[column]);
     });
 
   const query = `select id from entity where ${conditions.join(' and ')}`;
