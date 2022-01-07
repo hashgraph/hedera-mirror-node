@@ -34,7 +34,7 @@ import (
 
 const (
 	configName     = "application"
-	configPrefix   = "hedera.mirror.rosetta.test"
+	configPrefix   = "hedera::mirror::rosetta::test" // use '::' since it's the delimiter set for viper
 	configTypeYaml = "yml"
 	defaultConfig  = `
 hedera:
@@ -57,6 +57,7 @@ hedera:
              backOff: 200ms
              max: 5
 `
+	keyDelimiter = "::"
 )
 
 type config struct {
@@ -70,26 +71,26 @@ type logConfig struct {
 }
 
 func loadConfig() (*config, error) {
-	viper.SetConfigType(configTypeYaml)
+	// the nodes map's key has '.', set viper key delimiter to avoid parsing it as a nested key
+	v := viper.NewWithOptions(viper.KeyDelimiter(keyDelimiter))
+	v.SetConfigType(configTypeYaml)
 
 	// read the default
-	if err := viper.ReadConfig(bytes.NewBuffer([]byte(defaultConfig))); err != nil {
+	if err := v.ReadConfig(bytes.NewBuffer([]byte(defaultConfig))); err != nil {
 		return nil, err
 	}
 
 	// load configuration file from the current director
-	viper.SetConfigName(configName)
-	viper.AddConfigPath(".")
-	if err := viper.MergeInConfig(); err != nil {
+	v.SetConfigName(configName)
+	v.AddConfigPath(".")
+	if err := v.MergeInConfig(); err != nil {
 		log.Infof("Failed to load external configuration file not found: %v", err)
 		return nil, err
 	}
-	log.Infof("Loaded external configuration file %s", viper.ConfigFileUsed())
-
-	v := viper.Sub(configPrefix)
+	log.Infof("Loaded external configuration file %s", v.ConfigFileUsed())
 
 	config := &config{}
-	if err := v.Unmarshal(config, addDecodeHooks); err != nil {
+	if err := v.UnmarshalKey(configPrefix, config, addDecodeHooks); err != nil {
 		log.Errorf("Failed to unmarshal config %v", err)
 		return nil, err
 	}

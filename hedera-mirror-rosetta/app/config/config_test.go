@@ -218,8 +218,16 @@ func createYamlConfigFile(content string, t *testing.T) (string, string) {
 	return tempDir, customConfig
 }
 
-func getDefaultConfig() *Rosetta {
-	config := Config{}
+type FullConfig struct {
+	Hedera struct {
+		Mirror struct {
+			Rosetta Config
+		}
+	}
+}
+
+func getDefaultConfig() *Config {
+	config := FullConfig{}
 	yaml.Unmarshal([]byte(defaultConfig), &config)
 	return &config.Hedera.Mirror.Rosetta
 }

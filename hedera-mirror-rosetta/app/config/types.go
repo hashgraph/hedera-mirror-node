@@ -27,18 +27,6 @@ import (
 )
 
 type Config struct {
-	Hedera Hedera
-}
-
-type Hedera struct {
-	Mirror Mirror
-}
-
-type Mirror struct {
-	Rosetta Rosetta
-}
-
-type Rosetta struct {
 	Db          Db
 	Log         Log
 	Network     string

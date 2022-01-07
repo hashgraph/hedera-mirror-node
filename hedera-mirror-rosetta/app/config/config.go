@@ -62,12 +62,13 @@ hedera:
 	apiConfigEnvKey = "HEDERA_MIRROR_ROSETTA_API_CONFIG"
 	configName      = "application"
 	configTypeYaml  = "yml"
+	configPrefix    = "hedera::mirror::rosetta" // use "::" since it's the delimiter set for viper
 	envKeyDelimiter = "_"
 	keyDelimiter    = "::"
 )
 
 // LoadConfig loads configuration from yaml files and env variables
-func LoadConfig() (*Rosetta, error) {
+func LoadConfig() (*Config, error) {
 	// NodeMap's key has '.', set viper key delimiter to avoid parsing it as a nested key
 	v := viper.NewWithOptions(viper.KeyDelimiter(keyDelimiter))
 	v.SetConfigType(configTypeYaml)
@@ -97,16 +98,16 @@ func LoadConfig() (*Rosetta, error) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(keyDelimiter, envKeyDelimiter))
 
 	var config Config
-	if err := v.Unmarshal(&config, viper.DecodeHook(nodeMapDecodeHookFunc)); err != nil {
+	if err := v.UnmarshalKey(configPrefix, &config, viper.DecodeHook(nodeMapDecodeHookFunc)); err != nil {
 		return nil, err
 	}
 
-	var password = config.Hedera.Mirror.Rosetta.Db.Password
-	config.Hedera.Mirror.Rosetta.Db.Password = "<omitted>"
-	log.Infof("Using configuration: %+v", config.Hedera.Mirror.Rosetta)
-	config.Hedera.Mirror.Rosetta.Db.Password = password
+	var password = config.Db.Password
+	config.Db.Password = "<omitted>"
+	log.Infof("Using configuration: %+v", config)
+	config.Db.Password = password
 
-	return &config.Hedera.Mirror.Rosetta, nil
+	return &config, nil
 }
 
 func mergeExternalConfigFile(v *viper.Viper) error {
