@@ -26,7 +26,7 @@ const decodeOpts = {loose: true};
 const encodeOpts = {pad: false};
 
 /**
- * Decodes the rfc4648 base32 string into a buffer. If the input string is null, returns null.
+ * Decodes the rfc4648 base32 string into a {@link Uint8Array}. If the input string is null, returns null.
  * @param str the base32 string.
  * @return {Uint8Array}
  */
