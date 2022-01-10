@@ -13,7 +13,7 @@ Create a standard GKE cluster with at least Kubernetes 1.19.
 ### Sealed Secrets
 
 ```bash
-brew install kubeseal
+brew install kubeseal ksd yq
 helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
 kubectl create namespace flux-system
 helm upgrade -i --wait -n flux-system sealed-secrets sealed-secrets/sealed-secrets
@@ -30,6 +30,12 @@ flux bootstrap github --owner=hashgraph --repository=hedera-mirror-node --branch
 ```
 
 ## Configure
+
+If you're adding a new secret, skip to the next step. If you're updating an existing sealed secret, first retrieve the unecrypted secret from the cluster:
+
+```bash
+kubectl get secret mirror -o yaml | ksd | yq 'del(.metadata.ownerReferences, .metadata.resourceVersion, .metadata.uid, .metadata.creationTimestamp)' > secret.yaml
+```
 
 Use the `kubseal` command to connect to the in-cluster sealed-secrets controller to encrypt local secrets, then commit the sealed secret to git.
 
