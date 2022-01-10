@@ -50,7 +50,7 @@ class TopicMessageTest {
         topicMessage.setValidStartTimestamp(1594401416000000000L);
 
         TransactionID transactionID = TransactionID.newBuilder()
-                .setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10).build())
+                .setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10))
                 .setTransactionValidStart(Timestamp.newBuilder().setSeconds(20).setNanos(20))
                 .setNonce(1)
                 .setScheduled(true)
