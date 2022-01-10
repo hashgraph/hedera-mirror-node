@@ -23,19 +23,13 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - accounts
-  /api/v1/accounts/{accountId}:
+  /api/v1/accounts/{accountAliasOrAccountId}:
     get:
-      summary: Get account by id
-      description: Return the account transactions and balance information given an id
-      operationId: getAccountById
+      summary: Get account by alias or id
+      description: Return the account transactions and balance information given an account alias or an account id
+      operationId: getAccountByAliasOrId
       parameters:
-        - name: accountId
-          in: path
-          required: true
-          description: Account entity id
-          example: 0.0.8
-          schema:
-            type: string
+        - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
         - $ref: '#/components/parameters/transactionTypeQueryParam'
       responses:
         200:
@@ -745,6 +739,12 @@ servers:
         enum: [ mainnet, previewnet, testnet ]
 components:
   schemas:
+    AccountAlias:
+      description: >-
+        Account alias in the format of 'shard.realm.alias', 'realm.alias', or 'alias'. 'alias' is the RFC4648
+        no-padding base32 encoded string of the account's alias.
+      type: string
+      pattern: ^(\d{1,5}\.){0,2}(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$
     # API call responses.
     AccountsResponse:
       type: object
@@ -876,6 +876,8 @@ components:
       properties:
         account:
           $ref: '#/components/schemas/EntityId'
+        alias:
+          $ref: '#/components/schemas/Alias'
         auto_renew_period:
           nullable: true
         balance:
@@ -899,6 +901,7 @@ components:
           type: boolean
       example:
         account: 0.0.8
+        alias: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
         auto_renew_period: null
         balance:
           timestamp: "0.000002345"
@@ -946,6 +949,8 @@ components:
           $ref: '#/components/schemas/Balance'
         account:
           $ref: '#/components/schemas/EntityId'
+        alias:
+          $ref: '#/components/schemas/Alias'
         expiry_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         auto_renew_period:
@@ -963,6 +968,12 @@ components:
           type: boolean
         links:
           $ref: '#/components/schemas/Links'
+    Alias:
+      description: RFC4648 no-padding base32 encoded account alias
+      type: string
+      pattern: ^(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$
+      nullable: true
+      example: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
     Balance:
       type: object
       required:
@@ -1859,6 +1870,28 @@ components:
               messages:
                 - message: Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig
   parameters:
+    accountAliasOrAccountIdPathParam:
+      name: accountAliasOrAccountId
+      in: path
+      description: Account alias or account id
+      required: true
+      examples:
+        aliasOnly:
+          value: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
+        realmAlias:
+          value: 0.HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
+        shardRealmAlias:
+          value: 0.1.HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
+        accountNumOnly:
+          value: 8
+        realmAccountNum:
+          value: 0.8
+        shardRealmAccountNum:
+          value: 0.0.8
+      schema:
+        oneOf:
+          - $ref: '#/components/schemas/AccountAlias'
+          - $ref: '#/components/schemas/EntityId'
     accountBalanceQueryParam:
       name: account.balance
       in: query

@@ -161,6 +161,7 @@
           ]
         },
         "account": "0.0.1",
+        "alias": null,
         "deleted": false,
         "expiry_timestamp": null,
         "auto_renew_period": null,
@@ -185,6 +186,7 @@
           ]
         },
         "account": "0.0.2",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -200,6 +202,7 @@
           "tokens": []
         },
         "account": "0.0.3",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -215,6 +218,7 @@
           "tokens": []
         },
         "account": "0.0.4",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -239,6 +243,7 @@
           ]
         },
         "account": "0.0.5",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -254,6 +259,7 @@
           "tokens": []
         },
         "account": "0.0.6",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
