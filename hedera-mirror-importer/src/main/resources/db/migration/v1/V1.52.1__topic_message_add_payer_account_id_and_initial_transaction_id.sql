@@ -1,5 +1,9 @@
--- Set topic_message.payer_account_id for non-chunked messages (chunked messages already handled by importer)
+-------------------
+-- Set topic_message payer_account_id where null, set payer_account_id to not null, and add a new column for
+-- initial_transaction_id to hold the TransactionID protobuf bytes
+-------------------
 
+-- Set topic_message.payer_account_id for non-chunked messages (chunked messages already handled by importer)
 update topic_message tm
 set payer_account_id = t.payer_account_id
 from transaction t
