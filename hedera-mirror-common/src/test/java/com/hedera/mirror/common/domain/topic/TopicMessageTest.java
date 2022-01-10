@@ -24,6 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -46,6 +49,14 @@ class TopicMessageTest {
         topicMessage.setTopicId(EntityId.of("0.0.1001", EntityType.TOPIC));
         topicMessage.setValidStartTimestamp(1594401416000000000L);
 
+        TransactionID transactionID = TransactionID.newBuilder()
+                .setAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(10).build())
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(20).setNanos(20))
+                .setNonce(1)
+                .setScheduled(true)
+                .build();
+        topicMessage.setInitialTransactionId(transactionID.toByteArray());
+
         ObjectMapper objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
         String json = objectMapper.writeValueAsString(topicMessage);
         assertThat(json).isEqualTo("{" +
@@ -53,6 +64,7 @@ class TopicMessageTest {
                 "\"chunk_num\":1," +
                 "\"chunk_total\":2," +
                 "\"consensus_timestamp\":1594401417000000000," +
+                "\"initial_transaction_id\":\"CgQIFBAUEgIYChgBIAE=\"," +
                 "\"message\":\"AQID\"," +
                 "\"payer_account_id\":4294968296," +
                 "\"running_hash\":\"BAUG\"," +

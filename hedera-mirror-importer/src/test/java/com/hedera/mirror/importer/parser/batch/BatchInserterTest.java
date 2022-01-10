@@ -45,16 +45,16 @@ import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
-import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
-import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
-import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
+import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
+import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -245,6 +245,7 @@ class BatchInserterTest extends IntegrationTest {
     private TopicMessage topicMessage(long consensusNs, int messageSize) {
         TopicMessage topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusNs);
+        topicMessage.setPayerAccountId(EntityId.of("0.0.1002", ACCOUNT));
         topicMessage.setMessage(RandomUtils.nextBytes(messageSize)); // Just exceeds 8000B
         topicMessage.setRunningHash(Strings.toByteArray("running hash"));
         topicMessage.setRunningHashVersion(2);
