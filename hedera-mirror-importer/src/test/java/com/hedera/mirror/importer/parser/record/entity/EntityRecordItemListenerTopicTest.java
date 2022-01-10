@@ -694,15 +694,13 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         }
         topicMessage.setTopicId(EntityId.of("0.0." + topicId.getTopicNum(), EntityType.TOPIC));
         topicMessage.setMessage(message.getBytes());
+        topicMessage.setPayerAccountId(payerAccountId);
         topicMessage.setSequenceNumber(sequenceNumber);
         topicMessage.setRunningHash(runningHash.getBytes());
         topicMessage.setRunningHashVersion(runningHashVersion);
         topicMessage.setChunkNum(chunkNum);
         topicMessage.setChunkTotal(chunkTotal);
         topicMessage.setValidStartTimestamp(validStartNs);
-
-        EntityId payerAccountEntityId = payerAccountId == null ? null : payerAccountId;
-        topicMessage.setPayerAccountId(payerAccountEntityId);
 
         return topicMessage;
     }
