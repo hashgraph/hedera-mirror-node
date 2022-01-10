@@ -91,7 +91,6 @@ public class DomainBuilder {
     public Mono<TopicMessage> topicMessage(Consumer<TopicMessage.TopicMessageBuilder> customizer) {
         TopicMessage.TopicMessageBuilder builder = TopicMessage.builder()
                 .consensusTimestamp(now.plus(sequenceNumber, ChronoUnit.NANOS))
-                .payerAccountId(10L)
                 .message(new byte[] {0, 1, 2})
                 .runningHash(new byte[] {3, 4, 5})
                 .sequenceNumber(++sequenceNumber)
