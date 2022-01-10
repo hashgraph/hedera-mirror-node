@@ -373,7 +373,7 @@ create table if not exists topic_message
     chunk_total           integer,
     consensus_timestamp   bigint   not null,
     message               bytea    not null,
-    payer_account_id      bigint,
+    payer_account_id      bigint   not null,
     running_hash          bytea    not null,
     running_hash_version  smallint not null,
     sequence_number       bigint   not null,
