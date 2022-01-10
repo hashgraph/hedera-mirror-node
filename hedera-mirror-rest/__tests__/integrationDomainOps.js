@@ -707,19 +707,21 @@ const addCryptoTransaction = async (cryptoTransfer) => {
 const addTopicMessage = async (message) => {
   message = {
     message: 'message', // Base64 encoding: bWVzc2FnZQ==
+    payer_account_id: 3,
     running_hash: 'running_hash', // Base64 encoding: cnVubmluZ19oYXNo
     running_hash_version: 2,
     ...message,
   };
 
   await sqlConnection.query(
-    `INSERT INTO topic_message (consensus_timestamp, topic_id, message, running_hash, sequence_number,
+    `INSERT INTO topic_message (consensus_timestamp, topic_id, message, payer_account_id, running_hash, sequence_number,
                                 running_hash_version)
-     VALUES ($1, $2, $3, $4, $5, $6);`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7);`,
     [
       message.timestamp,
       message.topic_id,
       message.message,
+      message.payer_account_id,
       message.running_hash,
       message.seq_num,
       message.running_hash_version,
