@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/coinbase/rosetta-sdk-go v0.7.2
-	github.com/cucumber/godog v0.12.2
+	github.com/cucumber/godog v0.12.3
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20211111073741-479b2c5befce
 	github.com/hashgraph/hedera-sdk-go/v2 v2.6.0
