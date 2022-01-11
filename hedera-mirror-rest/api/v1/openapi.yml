@@ -665,8 +665,6 @@ paths:
                 $ref: '#/components/schemas/NftTransactionHistory'
         400:
           $ref: '#/components/responses/InvalidParameterError'
-        404:
-          $ref: '#/components/responses/NotFoundError'
       tags:
         - tokens
 tags:

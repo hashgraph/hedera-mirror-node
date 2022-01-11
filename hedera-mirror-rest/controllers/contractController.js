@@ -66,36 +66,30 @@ const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANS
 // the query finds the file content valid at the contract's created timestamp T by aggregating the contents of all the
 // file* txs from the latest FileCreate or FileUpdate transaction before T, to T
 // Note the 'contract' relation is the cte not the 'contract' table
-const fileDataQuery = `select string_agg(
-                                ${FileData.getFullName(FileData.FILE_DATA)}, ''
-                                order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
-                                ) bytecode
-                       from ${FileData.tableName} ${FileData.tableAlias}
-                              join ${Contract.tableName} ${Contract.tableAlias}
-                                   on ${Contract.getFullName(Contract.FILE_ID)} = ${FileData.getFullName(
-  FileData.ENTITY_ID
-)}
-                       where ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} >= (
-                         select ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
-                         from ${FileData.tableName} ${FileData.tableAlias}
-                                join ${Contract.tableName} ${Contract.tableAlias}
-                                     on ${Contract.getFullName(Contract.FILE_ID)} =
-                                        ${FileData.getFullName(FileData.ENTITY_ID)}
-                                       and
-                                        ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${Contract.getFullName(
+const fileDataQuery = `select
+      string_agg(
+          ${FileData.getFullName(FileData.FILE_DATA)}, ''
+          order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
+      ) bytecode
+    from ${FileData.tableName} ${FileData.tableAlias}
+    join ${Contract.tableName} ${Contract.tableAlias}
+      on ${Contract.getFullName(Contract.FILE_ID)} = ${FileData.getFullName(FileData.ENTITY_ID)}
+    where ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} >= (
+      select ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
+      from ${FileData.tableName} ${FileData.tableAlias}
+      join ${Contract.tableName} ${Contract.tableAlias}
+        on ${Contract.getFullName(Contract.FILE_ID)} = ${FileData.getFullName(FileData.ENTITY_ID)}
+          and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${Contract.getFullName(
   Contract.CREATED_TIMESTAMP
 )}
-                         where ${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 17
-                            or (${FileData.getFullName(
-                              FileData.TRANSACTION_TYPE
-                            )} = 19 and length(${FileData.getFullName(FileData.FILE_DATA)}) <> 0)
-                         order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} desc
-                         limit 1
-                       )
-                         and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${Contract.getFullName(
-  Contract.CREATED_TIMESTAMP
-)}
-                         and ${Contract.getFullName(Contract.FILE_ID)} is not null`;
+      where ${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 17
+        or (${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 19 and length(${FileData.getFullName(
+  FileData.FILE_DATA
+)}) <> 0)
+      order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} desc
+      limit 1
+    ) and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${Contract.getFullName(Contract.CREATED_TIMESTAMP)}
+      and ${Contract.getFullName(Contract.FILE_ID)} is not null`;
 
 /**
  * Extracts the sql where clause, params, order and limit values to be used from the provided contract query
@@ -260,9 +254,9 @@ const getContractByIdQuery = (timestampConditions) => {
   const cte = `with contract as (
     ${tableUnionQueries.join('\n')}
   ),
-                    contract_file as (
-                      ${fileDataQuery}
-                    )`;
+  contract_file as (
+    ${fileDataQuery}
+  )`;
 
   return [
     cte,
@@ -445,7 +439,6 @@ const getContractLogs = async (req, res) => {
     limit
   );
 
-  res.locals.statusCode = httpStatusCodes.OK.code;
   res.locals[constants.responseDataLabel] = {
     logs: rows.map((row) => new ContractLogViewModel(row)),
   };

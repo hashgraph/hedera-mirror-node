@@ -929,10 +929,6 @@ const getNftTransferHistoryRequest = async (req, res) => {
     },
   };
 
-  if (_.isEmpty(rows) && _.isEmpty(filters)) {
-    throw new NotFoundError(); // 404 if no transactions are present
-  }
-
   response.transactions = rows.map((row) => formatNftHistoryRow(row));
 
   // Pagination links
@@ -949,12 +945,14 @@ const getNftTransferHistoryRequest = async (req, res) => {
   logger.debug(`getNftTransferHistory returning ${response.transactions.length} entries`);
   res.locals[constants.responseDataLabel] = response;
 
-  // check if nft exists
-  const nft = await NftService.getNft(tokenId, serialNumber);
-  if (nft === null) {
-    // set 206 partial response
-    res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
-    logger.debug(`getNftTransferHistory returning partial content`);
+  if (response.transactions.length > 0) {
+    // check if nft exists
+    const nft = await NftService.getNft(tokenId, serialNumber);
+    if (nft === null) {
+      // set 206 partial response
+      res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
+      logger.debug(`getNftTransferHistory returning partial content`);
+    }
   }
 };
 
