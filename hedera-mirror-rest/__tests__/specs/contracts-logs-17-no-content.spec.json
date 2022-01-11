@@ -2,6 +2,8 @@
   "description": "Contract logs api calls with no content found",
   "setup": {},
   "urls": ["/api/v1/contracts/0.0.1000/results/logs"],
-  "responseStatus": 204,
-  "responseJson": {}
+  "responseStatus": 200,
+  "responseJson": {
+    "logs": []
+  }
 }
