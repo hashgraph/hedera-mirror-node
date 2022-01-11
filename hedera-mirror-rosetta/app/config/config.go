@@ -109,13 +109,13 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
-	rosettaConfig := config.Hedera.Mirror.Rosetta
+	rosettaConfig := &config.Hedera.Mirror.Rosetta
 	var password = rosettaConfig.Db.Password
 	rosettaConfig.Db.Password = "<omitted>"
 	log.Infof("Using configuration: %+v", rosettaConfig)
 	rosettaConfig.Db.Password = password
 
-	return &rosettaConfig, nil
+	return rosettaConfig, nil
 }
 
 func mergeExternalConfigFile(v *viper.Viper) error {
