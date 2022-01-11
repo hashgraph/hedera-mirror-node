@@ -112,9 +112,8 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
     private void persistTopicMessage(List<MigrationTopicMessage> topicMessages) {
         for (MigrationTopicMessage topicMessage : topicMessages) {
             jdbcOperations
-                    .update("insert into topic_message (consensus_timestamp, message, payer_account_id, running_hash," +
-                                    " " +
-                                    "running_hash_version, sequence_number, topic_id) " +
+                    .update("insert into topic_message (consensus_timestamp, message, payer_account_id, " +
+                                    "running_hash, running_hash_version, sequence_number, topic_id) " +
                                     " values" +
                                     " (?, ?, ?, ?, ?, ?, ?)",
                             topicMessage.getConsensusTimestamp(), topicMessage.getMessage(),
