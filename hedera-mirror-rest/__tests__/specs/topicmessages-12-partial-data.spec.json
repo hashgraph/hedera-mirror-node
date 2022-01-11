@@ -7,9 +7,9 @@
     "cryptotransfers": [],
     "topicmessages": [
       {
-        "timestamp": "1234567890000000001",
+        "consensus_timestamp": "1234567890000000001",
         "topic_id": 7,
-        "seq_num": 1
+        "sequence_number": 1
       }
     ]
   },

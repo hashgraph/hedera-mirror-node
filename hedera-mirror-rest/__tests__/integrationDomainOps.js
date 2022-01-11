@@ -705,6 +705,20 @@ const addCryptoTransaction = async (cryptoTransfer) => {
 };
 
 const addTopicMessage = async (message) => {
+  const insertFields = [
+    'consensus_timestamp',
+    'topic_id',
+    'message',
+    'payer_account_id',
+    'running_hash',
+    'sequence_number',
+    'running_hash_version',
+  ];
+
+  const table = 'topic_message';
+
+  console.log(`Start is ${message.toString()}`);
+
   message = {
     message: 'message', // Base64 encoding: bWVzc2FnZQ==
     payer_account_id: 3,
@@ -713,20 +727,9 @@ const addTopicMessage = async (message) => {
     ...message,
   };
 
-  await sqlConnection.query(
-    `INSERT INTO topic_message (consensus_timestamp, topic_id, message, payer_account_id, running_hash, sequence_number,
-                                running_hash_version)
-     VALUES ($1, $2, $3, $4, $5, $6, $7);`,
-    [
-      message.timestamp,
-      message.topic_id,
-      message.message,
-      message.payer_account_id,
-      message.running_hash,
-      message.seq_num,
-      message.running_hash_version,
-    ]
-  );
+  console.log(`Result is ${message.toString()}`);
+
+  await insertDomainObject(table, insertFields, message);
 };
 
 const addSchedule = async (schedule) => {
