@@ -717,8 +717,6 @@ const addTopicMessage = async (message) => {
 
   const table = 'topic_message';
 
-  console.log(`Start is ${message.toString()}`);
-
   message = {
     message: 'message', // Base64 encoding: bWVzc2FnZQ==
     payer_account_id: 3,
@@ -726,8 +724,6 @@ const addTopicMessage = async (message) => {
     running_hash_version: 2,
     ...message,
   };
-
-  console.log(`Result is ${message.toString()}`);
 
   await insertDomainObject(table, insertFields, message);
 };
