@@ -1893,7 +1893,6 @@ components:
       name: account.id
       in: query
       description: The ID of the account to return information for
-      example: 0.0.10 or 10
       explode: true
       examples:
         entityNumNoOperator:
@@ -2116,7 +2115,6 @@ components:
     scheduleIdQueryParam:
       name: schedule.id
       description: The ID of the schedule to return information for
-      example: 0.0.10 or 10
       in: query
       examples:
         entityNumNoOperator:
@@ -2188,7 +2186,6 @@ components:
         maximum: 9223372036854775807
     timestampQueryParam:
       name: timestamp
-      example: 1234567890.000000100
       in: query
       explode: true
       examples:
