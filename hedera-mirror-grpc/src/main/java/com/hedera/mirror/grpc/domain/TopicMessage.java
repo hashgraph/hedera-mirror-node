@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.UnsafeByteOperations;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
@@ -41,6 +42,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.Value;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
@@ -54,6 +56,7 @@ import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 @JsonIgnoreProperties(ignoreUnknown = true, value = {"consensusTimestampInstant", "response"})
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
 @JsonTypeName("TopicMessage")
+@Log4j2
 @NoArgsConstructor(force = true)
 @Value
 public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>, StreamMessage {
@@ -69,6 +72,14 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     @Getter(lazy = true)
     @Transient
     private Instant consensusTimestampInstant = LongToInstantConverter.INSTANCE.convert(consensusTimestamp);
+
+    @ToString.Exclude
+    private byte[] initialTransactionId;
+
+    @JsonIgnore
+    @Getter(lazy = true)
+    @Transient
+    private TransactionID initialTransactionIdObject = parseTransactionID(initialTransactionId);
 
     @ToString.Exclude
     private byte[] message;
@@ -123,7 +134,9 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
                     .setNumber(getChunkNum())
                     .setTotal(getChunkTotal());
 
-            if (getPayerAccountEntity() != null && getValidStartTimestamp() != null) {
+            if (getInitialTransactionIdObject() != null) {
+                chunkBuilder.setInitialTransactionID(getInitialTransactionIdObject());
+            } else if (getPayerAccountEntity() != null && getValidStartTimestamp() != null) {
                 chunkBuilder.setInitialTransactionID(TransactionID.newBuilder()
                         .setAccountID(AccountID.newBuilder()
                                 .setShardNum(getPayerAccountEntity().getShard())
@@ -167,6 +180,18 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
         public TopicMessageBuilder validStartTimestamp(Instant validStartTimestamp) {
             this.validStartTimestamp = InstantToLongConverter.INSTANCE.convert(validStartTimestamp);
             return this;
+        }
+    }
+
+    private TransactionID parseTransactionID(byte[] transactionIdBytes) {
+        if (transactionIdBytes == null) {
+            return null;
+        }
+        try {
+            return TransactionID.parseFrom(transactionIdBytes);
+        } catch (InvalidProtocolBufferException e) {
+            log.error("Failed to parse TransactionID for topic {} sequence number {}", topicId, sequenceNumber);
+            return null;
         }
     }
 }
