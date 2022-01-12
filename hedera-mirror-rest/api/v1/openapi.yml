@@ -2254,7 +2254,7 @@ components:
       schema:
         type: string
         $ref: '#/components/schemas/EntityId'
-    tokpicIdPathParam:
+    topicIdPathParam:
       name: topicId
       in: path
       description: The ID of the topic
