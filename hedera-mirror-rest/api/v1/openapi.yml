@@ -99,7 +99,7 @@ paths:
       description: Return the contract information given an id
       operationId: getContractById
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/contractIdPathParam'
         - $ref: '#/components/parameters/timestampQueryParam'
       responses:
         200:
@@ -120,7 +120,7 @@ paths:
       description: Returns a list of all ContractResults for a contract's function executions.
       operationId: listContractResults
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/contractIdPathParam'
         - $ref: '#/components/parameters/fromQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
@@ -142,7 +142,7 @@ paths:
       description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
       operationId: getContractResultByIdAndTimestamp
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/contractIdPathParam'
         - $ref: '#/components/parameters/timestampPathParam'
       responses:
         200:
@@ -188,7 +188,7 @@ paths:
         and span a time range of at most seven days.
       operationId: listContractLogs
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/contractIdPathParam'
         - $ref: '#/components/parameters/logIndexQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
@@ -255,7 +255,7 @@ paths:
       description: Returns schedule information based on the given schedule id
       operationId: getScheduleById
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/scheduleIdPathParam'
       responses:
         200:
           description: OK
@@ -353,7 +353,7 @@ paths:
       description: Returns the list of topic messages for the given topic id.
       operationId: listTopicMessagesById
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/topicIdPathParam'
         - name: sequencenumber
           in: query
           example: 2
@@ -386,7 +386,7 @@ paths:
       description: Returns a single topic message the given topic id and sequence number.
       operationId: getTopicMessageByIdAndSequenceNumber
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/topicIdPathParam'
         - name: sequencenumber
           in: path
           required: true
@@ -456,7 +456,7 @@ paths:
       description: Returns token entity information given the id
       operationId: getTokenById
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/tokenIdPathParam'
         - $ref: '#/components/parameters/tokenInfoTimestampQueryParam'
       responses:
         200:
@@ -585,7 +585,7 @@ paths:
       description: Returns a list of token balances given the id. This represents the Token supply distribution across the network
       operationId: listTokenBalancesById
       parameters:
-        - $ref: '#/components/parameters/entityIdPathParam'
+        - $ref: '#/components/parameters/tokenIdPathParam'
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/accountBalanceQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
@@ -610,10 +610,10 @@ paths:
       description: Returns a list of non-fungible tokens
       operationId: listNfts
       parameters:
+        - $ref: '#/components/parameters/tokenIdPathParam'
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
-        - $ref: '#/components/parameters/entityIdPathParam'
       responses:
         200:
           description: OK
@@ -633,8 +633,8 @@ paths:
       description: Returns information for a non-fungible token
       operationId: listNftBySerialnumber
       parameters:
+        - $ref: '#/components/parameters/tokenIdPathParam'
         - $ref: '#/components/parameters/serialNumberPathParam'
-        - $ref: '#/components/parameters/entityIdPathParam'
       responses:
         200:
           description: OK
@@ -654,8 +654,8 @@ paths:
       description: Returns a list of transactions for a given non-fungible token
       operationId: listNftTransactions
       parameters:
+        - $ref: '#/components/parameters/tokenIdPathParam'
         - $ref: '#/components/parameters/serialNumberPathParam'
-        - $ref: '#/components/parameters/entityIdPathParam'
       responses:
         200:
           description: OK
@@ -1993,11 +1993,40 @@ components:
           value: lte:0.0.700
       schema:
         $ref: '#/components/schemas/EntityIdQuery'
+    # Path parameters for different IDs.
+    contractIdPathParam:
+      name: contractId
+      in: path
+      required: true
+      description: Contract id
+      schema:
+        $ref: '#/components/schemas/EntityId'
     entityIdPathParam:
       name: entityId
       in: path
       required: true
       description: Entity id
+      schema:
+        $ref: '#/components/schemas/EntityId'
+    scheduleIdPathParam:
+      name: scheduleId
+      in: path
+      required: true
+      description: Schedule id
+      schema:
+        $ref: '#/components/schemas/EntityId'
+    tokenIdPathParam:
+      name: tokenId
+      in: path
+      required: true
+      description: Token id
+      schema:
+        $ref: '#/components/schemas/EntityId'
+    topicIdPathParam:
+      name: topicId
+      in: path
+      required: true
+      description: Topic id
       schema:
         $ref: '#/components/schemas/EntityId'
     fromQueryParam:
