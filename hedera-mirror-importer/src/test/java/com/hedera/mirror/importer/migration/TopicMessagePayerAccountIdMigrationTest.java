@@ -114,8 +114,7 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
             jdbcOperations
                     .update("insert into topic_message (consensus_timestamp, message, payer_account_id, " +
                                     "running_hash, running_hash_version, sequence_number, topic_id) " +
-                                    " values" +
-                                    " (?, ?, ?, ?, ?, ?, ?)",
+                                    " values (?, ?, ?, ?, ?, ?, ?)",
                             topicMessage.getConsensusTimestamp(), topicMessage.getMessage(),
                             topicMessage.getPayerAccountId(), topicMessage.getRunninghHash(),
                             topicMessage.getRunningHashVersion(), topicMessage.getSequenceNumber(),
