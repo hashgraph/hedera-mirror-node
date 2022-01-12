@@ -50,7 +50,6 @@ import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.HashSet;
@@ -333,10 +332,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             topicMessage.setChunkTotal(chunkInfo.getTotal());
 
             if (chunkInfo.hasInitialTransactionID()) {
-                TransactionID transactionID = chunkInfo.getInitialTransactionID();
-                topicMessage.setInitialTransactionId(transactionID.toByteArray());
-                topicMessage.setValidStartTimestamp(
-                        DomainUtils.timestampInNanosMax(transactionID.getTransactionValidStart()));
+                topicMessage.setInitialTransactionId(chunkInfo.getInitialTransactionID().toByteArray());
             }
         }
 
