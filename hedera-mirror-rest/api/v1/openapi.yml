@@ -1966,7 +1966,7 @@ components:
       description: The ID of the contract to return information for
       in: query
       examples:
-        entityNumNoOperator:
+        contractNumNoOperator:
           summary: Example of contractNum equals with no operator
           value: 100
         idNoOperator:
