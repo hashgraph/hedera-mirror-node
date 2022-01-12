@@ -20,12 +20,15 @@
 
 'use strict';
 
+const _ = require('lodash');
 const log4js = require('log4js');
 const request = require('supertest');
 
-const {processRow} = require('../accounts');
+const {getAccountAliasQuery, getBalanceParamValue, processRow} = require('../accounts');
+const base32 = require('../base32');
+const constants = require('../constants');
 const server = require('../server');
-const testutils = require('./testutils.js');
+const testutils = require('./testutils');
 
 const logger = log4js.getLogger();
 
@@ -339,6 +342,7 @@ describe('Accounts tests', () => {
 describe('processRow', () => {
   const input = {
     account_balance: '123456789',
+    alias: base32.decode('WWDOGNX3TXHD2'),
     auto_renew_period: 7890000,
     consensus_timestamp: '9876500123456789',
     deleted: false,
@@ -357,6 +361,7 @@ describe('processRow', () => {
   };
   const expected = {
     account: '0.0.1250',
+    alias: 'WWDOGNX3TXHD2',
     auto_renew_period: 7890000,
     balance: {
       balance: 123456789,
@@ -421,5 +426,75 @@ describe('processRow', () => {
 
   test('null key', () => {
     expect(processRow({...input, key: null})).toEqual({...expected, key: null});
+  });
+
+  test('null alias', () => {
+    expect(processRow({...input, alias: null})).toEqual({...expected, alias: null});
+  });
+});
+
+describe('getAccountAliasQuery', () => {
+  const alias = 'AABBCC22';
+
+  describe('valid', () => {
+    const aliasArray = base32.decode(alias);
+    const query = 'select id from entity where deleted <> true';
+    const getExpectedQuery = (...columns) =>
+      [query, ...columns.map((column, index) => `${column} = $${index + 1}`)].join(' and ');
+    const testSpecs = [
+      {
+        alias,
+        expected: {query: getExpectedQuery('alias'), params: [aliasArray]},
+      },
+      {
+        alias: `0.${alias}`,
+        expected: {query: getExpectedQuery('realm', 'alias'), params: ['0', aliasArray]},
+      },
+      {
+        alias: `0.1.${alias}`,
+        expected: {query: getExpectedQuery('shard', 'realm', 'alias'), params: ['0', '1', aliasArray]},
+      },
+    ];
+
+    testSpecs.forEach((spec) => {
+      test(JSON.stringify(spec.alias), () => {
+        expect(getAccountAliasQuery(spec.alias)).toEqual(spec.expected);
+      });
+    });
+  });
+
+  describe('invalid', () => {
+    const invalidAccountAliases = _.flattenDeep([
+      null,
+      undefined,
+      testutils.invalidBase32Strs.map((invalidAlias) => testutils.getAllAccountAliases(invalidAlias)),
+      `100000.${alias}`,
+      `100000.0.${alias}`,
+    ]);
+
+    invalidAccountAliases.forEach((invalidAccountAlias) => {
+      test(`${invalidAccountAlias}`, () => {
+        expect(() => getAccountAliasQuery(invalidAccountAlias)).toThrowErrorMatchingSnapshot();
+      });
+    });
+  });
+});
+
+describe('getBalanceParamValue', () => {
+  const key = constants.filterKeys.BALANCE;
+  test('default', () => {
+    expect(getBalanceParamValue({})).toBeTrue();
+  });
+  test('single value true', () => {
+    expect(getBalanceParamValue({[key]: 'true'})).toBeTrue();
+  });
+  test('single value false', () => {
+    expect(getBalanceParamValue({[key]: 'false'})).toBeFalse();
+  });
+  test('array last value true', () => {
+    expect(getBalanceParamValue({[key]: ['false', 'true']})).toBeTrue();
+  });
+  test('array last value false', () => {
+    expect(getBalanceParamValue({[key]: ['true', 'false']})).toBeFalse();
   });
 });

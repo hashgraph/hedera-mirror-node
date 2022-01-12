@@ -1,0 +1,41 @@
+{
+  "description": "Account api calls for specific alias matching multiple alive accounts",
+  "setup": {
+    "accounts": [
+      {
+        "num": 3
+      },
+      {
+        "num": 7
+      },
+      {
+        "num": 8,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
+      },
+      {
+        "num": 9,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
+      },
+      {
+        "num": 98
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
+  ],
+  "responseStatus": 500,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Internal error"
+        }
+      ]
+    }
+  }
+}

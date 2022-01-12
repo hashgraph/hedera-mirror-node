@@ -288,6 +288,7 @@ var TransactionResults = map[int32]string{
 	280: "REVERTED_SUCCESS",
 	281: "MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED",
 	282: "INVALID_ALIAS_KEY",
+	283: "UNEXPECTED_TOKEN_DECIMALS",
 }
 
 var TransactionTypes = map[int32]string{
