@@ -76,11 +76,6 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     @ToString.Exclude
     private byte[] initialTransactionId;
 
-    @JsonIgnore
-    @Getter(lazy = true)
-    @Transient
-    private TransactionID initialTransactionIdObject = parseTransactionID(initialTransactionId);
-
     @ToString.Exclude
     private byte[] message;
 
@@ -134,8 +129,9 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
                     .setNumber(getChunkNum())
                     .setTotal(getChunkTotal());
 
-            if (getInitialTransactionIdObject() != null) {
-                chunkBuilder.setInitialTransactionID(getInitialTransactionIdObject());
+            TransactionID transactionID = parseTransactionID(initialTransactionId);
+            if (transactionID != null) {
+                chunkBuilder.setInitialTransactionID(transactionID);
             } else if (getPayerAccountEntity() != null && getValidStartTimestamp() != null) {
                 chunkBuilder.setInitialTransactionID(TransactionID.newBuilder()
                         .setAccountID(AccountID.newBuilder()
