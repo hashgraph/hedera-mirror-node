@@ -722,14 +722,6 @@ const getNftTokensRequest = async (req, res) => {
     },
   };
 
-  // handle filter case with no returns
-  if (_.isEmpty(rows) && !_.isEmpty(filters)) {
-    res.locals.statusCode = httpStatusCodes.NO_CONTENT.code;
-    res.locals[constants.responseDataLabel] = response;
-    logger.debug(`getNftTokens returning no content`);
-    return;
-  }
-
   response.nfts = rows.map((row) => {
     const nftModel = new Nft(row);
     return new NftViewModel(nftModel);
@@ -811,8 +803,9 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
   // if the nft token class is deleted, the lower of the timestamp_range is the consensus timestamp of the token
   // delete transaction
   const tokenDeleteTimestampQuery = `select lower(${Entity.TIMESTAMP_RANGE})
-    from ${Entity.tableName}
-    where ${Entity.ID} = $1 and ${Entity.DELETED} is true`;
+                                     from ${Entity.tableName}
+                                     where ${Entity.ID} = $1
+                                       and ${Entity.DELETED} is true`;
   const tokenDeleteConditions = [`${Transaction.CONSENSUS_TIMESTAMP} = (${tokenDeleteTimestampQuery})`];
   const transferConditions = [
     `${NftTransfer.getFullName(NftTransfer.TOKEN_ID)} = $1`,
@@ -936,18 +929,6 @@ const getNftTransferHistoryRequest = async (req, res) => {
     },
   };
 
-  if (_.isEmpty(rows)) {
-    if (_.isEmpty(filters)) {
-      throw new NotFoundError(); // 404 if no transactions are present
-    } else {
-      // 204 if no transactions are present but filters were applied
-      res.locals.statusCode = httpStatusCodes.NO_CONTENT.code;
-      res.locals[constants.responseDataLabel] = response;
-      logger.debug(`getNftTransferHistory returning no content`);
-      return;
-    }
-  }
-
   response.transactions = rows.map((row) => formatNftHistoryRow(row));
 
   // Pagination links
@@ -964,12 +945,14 @@ const getNftTransferHistoryRequest = async (req, res) => {
   logger.debug(`getNftTransferHistory returning ${response.transactions.length} entries`);
   res.locals[constants.responseDataLabel] = response;
 
-  // check if nft exists
-  const nft = await NftService.getNft(tokenId, serialNumber);
-  if (nft === null) {
-    // set 206 partial response
-    res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
-    logger.debug(`getNftTransferHistory returning partial content`);
+  if (response.transactions.length > 0) {
+    // check if nft exists
+    const nft = await NftService.getNft(tokenId, serialNumber);
+    if (nft === null) {
+      // set 206 partial response
+      res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
+      logger.debug(`getNftTransferHistory returning partial content`);
+    }
   }
 };
 
