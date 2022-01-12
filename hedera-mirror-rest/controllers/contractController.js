@@ -253,7 +253,8 @@ const getContractByIdQuery = (timestampConditions) => {
 
   const cte = `with contract as (
     ${tableUnionQueries.join('\n')}
-  ), contract_file as (
+  ),
+  contract_file as (
     ${fileDataQuery}
   )`;
 
@@ -438,7 +439,6 @@ const getContractLogs = async (req, res) => {
     limit
   );
 
-  res.locals.statusCode = rows.length !== 0 ? httpStatusCodes.OK.code : httpStatusCodes.NO_CONTENT.code;
   res.locals[constants.responseDataLabel] = {
     logs: rows.map((row) => new ContractLogViewModel(row)),
   };

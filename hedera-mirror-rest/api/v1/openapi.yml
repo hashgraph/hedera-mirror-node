@@ -123,7 +123,7 @@ paths:
         - $ref: '#/components/parameters/entityIdPathParam'
         - $ref: '#/components/parameters/fromQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
         - $ref: '#/components/parameters/timestampQueryParam'
       responses:
         200:
@@ -182,9 +182,10 @@ paths:
     get:
       summary: List contract logs from a contract on the network
       description: >
-        Returns a list of all ContractLogs for a single specified contract's function executions.
-        Chained logs are not included but can be found by calling `/api/v1/contracts/{contractId}/results/{timestamp}`
-        or `/api/v1/contracts/results/{transactionId}`
+        Search the logs of a specific contract across multiple contract calls. Chained logs are not
+        included but can be found by calling `/api/v1/contracts/{contractId}/results/{timestamp}`
+        or `/api/v1/contracts/results/{transactionId}`. When searching by topic a timestamp parameter must be supplied
+        and span a time range of at most seven days.
       operationId: listContractLogs
       parameters:
         - $ref: '#/components/parameters/entityIdPathParam'
@@ -203,12 +204,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ContractLogsResponse'
-        204:
-          description: No Content
-          content:
-            application/json:
-              schema:
-                type: object
         400:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
@@ -626,12 +621,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Nfts'
-        204:
-          description: No Content
-          content:
-            application/json:
-              schema:
-                type: object
         400:
           $ref: '#/components/responses/InvalidParameterError'
         404:
@@ -674,12 +663,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NftTransactionHistory'
-        204:
-          description: No Content
-          content:
-            application/json:
-              schema:
-                type: object
         206:
           description: Partial Content
           content:
@@ -688,8 +671,6 @@ paths:
                 $ref: '#/components/schemas/NftTransactionHistory'
         400:
           $ref: '#/components/responses/InvalidParameterError'
-        404:
-          $ref: '#/components/responses/NotFoundError'
       tags:
         - tokens
 tags:
@@ -1385,7 +1366,7 @@ components:
       format: binary
       minLength: 42
       maxLength: 42
-      pattern: '^0x[A-Fa-f0-9]{40}$'
+      pattern: '^(0x)?[A-Fa-f0-9]{40}$'
       example: "0x0000000000000000000000000000000000001f41"
     SolidityAddressNullable:
       type: string
@@ -1865,6 +1846,9 @@ components:
       description: The optional balance value to compare against
       explode: true
       examples:
+        noValue:
+          summary: --
+          value: ""
         noOperator:
           summary: Example of equals with no operator
           value: 100
@@ -1895,6 +1879,9 @@ components:
       description: The ID of the account to return information for
       explode: true
       examples:
+        noValue:
+          summary: --
+          value: ""
         entityNumNoOperator:
           summary: Example of entityNum equals with no operator
           value: 100
@@ -1956,9 +1943,12 @@ components:
         default: true
     contractIdQueryParam:
       name: contract.id
-      description: The ID of the contract to return information for
+      description: The ID of the smart contract
       in: query
       examples:
+        noValue:
+          summary: --
+          value: ""
         entityNumNoOperator:
           summary: Example of entityNum equals with no operator
           value: 100
@@ -2011,9 +2001,9 @@ components:
       schema:
         $ref: '#/components/schemas/EntityId'
     fromQueryParam:
-      name: contractId
+      name: from
       in: query
-      description: Contract entity id or address
+      description: Account ID or solidity address executing the contract
       schema:
         oneOf:
           - $ref: '#/components/schemas/EntityId'
@@ -2028,7 +2018,7 @@ components:
     limitQueryParam:
       name: limit
       in: query
-      description: The limit of items to return
+      description: The maximimum number of items to return
       example: 2
       schema:
         type: integer
@@ -2039,7 +2029,8 @@ components:
       name: nonce
       in: query
       description: >-
-        Filter the query result by the nonce of the transaction. The filter honors the last value. If not specified,
+        Filter the query result by the nonce of the transaction. A zero nonce represents user submitted transactions
+        while a non-zero nonce is generated by main nodes. The filter honors the last value. If not specified,
         all transactions with specified payer account ID and valid start timestamp match.
       example: 0
       schema:
@@ -2049,7 +2040,8 @@ components:
       name: nonce
       in: query
       description: >-
-        Filter the query result by the nonce of the transaction. The filter honors the last value. Default is 0 when
+        Filter the query result by the nonce of the transaction. A zero nonce represents user submitted transactions
+        while a non-zero nonce is generated by main nodes. The filter honors the last value. Default is 0 when
         not specified.
       example: 1
       schema:
@@ -2102,6 +2094,9 @@ components:
       description: The ID of the schedule to return information for
       in: query
       examples:
+        noValue:
+          summary: --
+          value: ""
         entityNumNoOperator:
           summary: Example of entityNum equals with no operator
           value: 100
@@ -2170,10 +2165,14 @@ components:
         minimum: 1
         maximum: 9223372036854775807
     timestampQueryParam:
+      description: The consensus timestamp in seconds.nanoseconds format with an optional comparison operator
       name: timestamp
       in: query
       explode: true
       examples:
+        noValue:
+          summary: --
+          value: ""
         secondsNoOperator:
           summary: Example of seconds equals with no operator
           value: 1234567890
@@ -2235,6 +2234,9 @@ components:
       in: query
       explode: true
       examples:
+        noValue:
+          summary: --
+          value: ""
         secondsNoOperator:
           summary: Example of seconds equals with no operator
           value: 1234567890
@@ -2265,28 +2267,28 @@ components:
     logTopic0QueryParam:
       name: topic0
       in: query
-      description: The topic in topic0 of a ContractLog
+      description: The first topic associated with a contract log. Requires a timestamp range also be populated.
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         $ref: '#/components/schemas/LogTopicQueryParam'
     logTopic1QueryParam:
       name: topic1
       in: query
-      description: The topic in topic1 of a ContractLog
+      description: The second topic associated with a contract log. Requires a timestamp range also be populated.
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         $ref: '#/components/schemas/LogTopicQueryParam'
     logTopic2QueryParam:
       name: topic2
       in: query
-      description: The topic in topic2 of a ContractLog
+      description: The third topic associated with a contract log. Requires a timestamp range also be populated.
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         $ref: '#/components/schemas/LogTopicQueryParam'
     logTopic3QueryParam:
       name: topic3
       in: query
-      description: The topic in topic3 of a ContractLog
+      description: The fourth topic associated with a contract log. Requires a timestamp range also be populated.
       example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         $ref: '#/components/schemas/LogTopicQueryParam'
@@ -2309,6 +2311,9 @@ components:
       description: The ID of the token to return information for
       in: query
       examples:
+        noValue:
+          summary: --
+          value: ""
         entityNumNoOperator:
           summary: Example of entityNum equals with no operator
           value: 100
