@@ -1983,13 +1983,8 @@ components:
       schema:
         $ref: '#/components/schemas/EntityId'
     contractIdQueryParam:
-<<<<<<< HEAD
-      name: contractId
-      description: The ID of the contract to return information for
-=======
       name: contract.id
       description: The ID of the smart contract
->>>>>>> 306f61a6fcd3ad1511ed905c737d7c2634dcf0de
       in: query
       examples:
         noValue:
