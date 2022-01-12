@@ -1957,6 +1957,7 @@ components:
     contractIdPathParam:
       name: contractId
       description: The ID of the contract to return information for
+      required: true
       example: 0.0.10 or 10
       in: path
       schema:
@@ -1966,7 +1967,7 @@ components:
       description: The ID of the contract to return information for
       in: query
       examples:
-        contractNumNoOperator:
+        entityNumNoOperator:
           summary: Example of contractNum equals with no operator
           value: 100
         idNoOperator:
@@ -2174,7 +2175,7 @@ components:
         minimum: 1
         maximum: 9223372036854775807
     serialNumberQueryParam:
-      name: serial.number
+      name: serialnumber
       in: query
       description: The nft serial number (64 bit type)
       example: 2
@@ -2249,12 +2250,12 @@ components:
       name: tokenId
       in: path
       description: The ID of the token
-      example: 0.0.10 or 10
+      example: 0.0.10, 0.10, 10
       required: true
       schema:
         type: string
         $ref: '#/components/schemas/EntityId'
-    topicIdPathParam:
+    tokpicIdPathParam:
       name: topicId
       in: path
       description: The ID of the topic
