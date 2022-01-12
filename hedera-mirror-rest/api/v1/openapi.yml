@@ -115,6 +115,7 @@ paths:
       operationId: listContractResults
       parameters:
         - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/fromQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
         - $ref: '#/components/parameters/timestampQueryParam'
