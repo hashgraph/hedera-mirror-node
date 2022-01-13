@@ -16,7 +16,7 @@
   },
   "author": "Hedera Mirror Node Team",
   "comments": {
-    "dependencies": "json-schema is a transitive dependency but we explicitly mark it as a dependency to bring in a non-vulnerable version"
+    "dependencies": "follow-redirects & json-schema are transitive dependencies but we explicitly mark them as a dependency to bring in a non-vulnerable version"
   },
   "license": "Apache-2.0",
   "dependencies": {
@@ -32,6 +32,7 @@
     "express-http-context": "^1.2.4",
     "express-openapi-validator": "^4.13.5",
     "extend": "^3.0.2",
+    "follow-redirects": "^1.14.7",
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
     "json-schema": "^0.4.0",
@@ -63,6 +64,7 @@
     "express-http-context",
     "express-openapi-validator",
     "extend",
+    "follow-redirects",
     "ip-anonymize",
     "js-yaml",
     "json-schema",
