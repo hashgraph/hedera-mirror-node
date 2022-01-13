@@ -45,7 +45,7 @@ const maxShard = 2n ** shardBits - 1n;
 
 const maxEncodedId = 2n ** 63n - 1n;
 
-const solidityAddressRegex = /^0x[A-Fa-f0-9]{40}$/;
+const solidityAddressRegex = /^(0x)?[A-Fa-f0-9]{40}$/;
 const entityIdRegex = /^(\d{1,5}\.){1,2}\d{1,10}$/;
 const encodedEntityIdRegex = /^\d{1,19}$/;
 

@@ -149,7 +149,7 @@ if (config.metrics.enabled) {
 
 // accounts routes
 app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
-app.getAsync(`${apiPrefix}/accounts/:accountId`, accounts.getOneAccount);
+app.getAsync(`${apiPrefix}/accounts/:accountAliasOrAccountId`, accounts.getOneAccount);
 
 // balances routes
 app.getAsync(`${apiPrefix}/balances`, balances.getBalances);

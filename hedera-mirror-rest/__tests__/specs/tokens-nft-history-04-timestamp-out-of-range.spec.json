@@ -155,6 +155,11 @@
     ]
   },
   "url": "/api/v1/tokens/1500/nfts/2/transactions?timestamp=gt:1234567890.000000010",
-  "responseStatus": 204,
-  "responseJson": {}
+  "responseStatus": 200,
+  "responseJson": {
+    "transactions": [],
+    "links": {
+      "next": null
+    }
+  }
 }

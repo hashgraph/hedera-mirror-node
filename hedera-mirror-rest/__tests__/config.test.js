@@ -52,7 +52,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  fs.rmdirSync(tempDir, {recursive: true});
+  fs.rmSync(tempDir, {recursive: true});
   cleanup();
 });
 

@@ -9,7 +9,9 @@
         "num": 7
       },
       {
-        "num": 8
+        "num": 8,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
       },
       {
         "num": 9
@@ -124,7 +126,10 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.8?transactionType=cryptotransfer",
+  "urls": [
+    "/api/v1/accounts/0.0.8?transactionType=cryptotransfer",
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?transactionType=cryptotransfer"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
@@ -216,6 +221,7 @@
       ]
     },
     "account": "0.0.8",
+    "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
     "expiry_timestamp": null,
     "auto_renew_period": null,
     "key": null,

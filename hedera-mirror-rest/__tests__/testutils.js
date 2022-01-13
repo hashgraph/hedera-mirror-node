@@ -23,6 +23,21 @@
 const log4js = require('log4js');
 const config = require('../config');
 
+const invalidBase32Strs = [
+  // A base32 group without padding can have 2, 4, 5, 7 or 8 characters from its alphabet
+  '',
+  'A',
+  'AAA',
+  'AAAAAA',
+  // non-base32 characters
+  '00',
+  '11',
+  '88',
+  '99',
+  'aa',
+  'AA======', // padding not accepted
+];
+
 const assertSqlQueryEqual = (actual, expected) => {
   expect(formatSqlQueryString(actual)).toEqual(formatSqlQueryString(expected));
 };
@@ -51,6 +66,8 @@ const formatSqlQueryString = (query) => {
     .replace(/,\s+/g, ',')
     .toLowerCase();
 };
+
+const getAllAccountAliases = (alias) => [alias, `0.${alias}`, `0.0.${alias}`];
 
 /**
  * Parse the sql query with positional parameters and an array of corresponding
@@ -249,7 +266,9 @@ module.exports = {
   badParamsList,
   checkSql,
   formatSqlQueryString,
+  getAllAccountAliases,
   getBuffer,
+  invalidBase32Strs,
   parseSqlQueryAndParams,
   testBadParams,
   validateAccNumInArray,

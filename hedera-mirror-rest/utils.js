@@ -84,7 +84,7 @@ const isNonNegativeInt32 = (num) => {
 };
 
 const isValidBooleanOpAndValue = (op, val) => {
-  return op === 'eq' && /^(true|false)$/i.test(val);
+  return op === constants.queryParamOperators.eq && /^(true|false)$/i.test(val);
 };
 
 const isValidTimestampParam = (timestamp) => {

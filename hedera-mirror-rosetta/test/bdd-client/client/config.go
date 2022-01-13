@@ -74,8 +74,9 @@ func (r retry) Run(work func() (bool, *types.Error, error), forceRetryOnRosettaE
 
 type Server struct {
 	DataRetry   retry
+	HttpTimeout time.Duration
+	Network     map[string]hedera.AccountID
 	OfflineUrl  string
 	OnlineUrl   string
-	HttpTimeout time.Duration
 	SubmitRetry retry
 }

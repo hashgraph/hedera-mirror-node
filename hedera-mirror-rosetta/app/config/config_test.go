@@ -82,7 +82,9 @@ func TestLoadCustomConfig(t *testing.T) {
 			if tt.fromCwdOrEnv {
 				os.Chdir(tempDir)
 			} else {
-				os.Setenv(apiConfigEnvKey, filePath)
+				em := envManager{}
+				em.SetEnv(apiConfigEnvKey, filePath)
+				t.Cleanup(em.Cleanup)
 			}
 
 			config, err := LoadConfig()
@@ -92,9 +94,6 @@ func TestLoadCustomConfig(t *testing.T) {
 			assert.True(t, config.Online)
 			assert.Equal(t, uint16(5431), config.Db.Port)
 			assert.Equal(t, "foobar", config.Db.Username)
-
-			// reset env
-			os.Unsetenv(apiConfigEnvKey)
 		})
 	}
 }
@@ -107,7 +106,10 @@ func TestLoadCustomConfigFromCwdAndEnvVar(t *testing.T) {
 
 	tempDir2, filePath2 := createYamlConfigFile(yml2, t)
 	defer os.RemoveAll(tempDir2)
-	os.Setenv(apiConfigEnvKey, filePath2)
+
+	em := envManager{}
+	em.SetEnv(apiConfigEnvKey, filePath2)
+	t.Cleanup(em.Cleanup)
 
 	// when
 	config, err := LoadConfig()
@@ -117,6 +119,23 @@ func TestLoadCustomConfigFromCwdAndEnvVar(t *testing.T) {
 	expected.Db.Host = "192.168.120.51"
 	expected.Db.Port = 12000
 	expected.Db.Username = "foobar"
+	assert.NoError(t, err)
+	assert.Equal(t, expected, config)
+}
+
+func TestLoadCustomConfigFromEnvVar(t *testing.T) {
+	// given
+	dbHost := "192.168.100.200"
+	em := envManager{}
+	em.SetEnv("HEDERA_MIRROR_ROSETTA_DB_HOST", dbHost)
+	t.Cleanup(em.Cleanup)
+
+	// when
+	config, err := LoadConfig()
+
+	// then
+	expected := getDefaultConfig()
+	expected.Db.Host = dbHost
 	assert.NoError(t, err)
 	assert.Equal(t, expected, config)
 }
@@ -134,22 +153,24 @@ func TestLoadCustomConfigInvalidYaml(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tempDir, filePath := createYamlConfigFile(tt.content, t)
 			defer os.RemoveAll(tempDir)
-			os.Setenv(apiConfigEnvKey, filePath)
+
+			em := envManager{}
+			em.SetEnv(apiConfigEnvKey, filePath)
+			t.Cleanup(em.Cleanup)
 
 			config, err := LoadConfig()
 
 			assert.Error(t, err)
 			assert.Nil(t, config)
-
-			// reset env
-			os.Unsetenv(apiConfigEnvKey)
 		})
 	}
 }
 
 func TestLoadCustomConfigByEnvVarFileNotFound(t *testing.T) {
 	// given
-	os.Setenv(apiConfigEnvKey, "/foo/bar/not_found.yml")
+	em := envManager{}
+	em.SetEnv(apiConfigEnvKey, "/foo/bar/not_found.yml")
+	t.Cleanup(em.Cleanup)
 
 	// when
 	config, err := LoadConfig()
@@ -218,8 +239,23 @@ func createYamlConfigFile(content string, t *testing.T) (string, string) {
 	return tempDir, customConfig
 }
 
-func getDefaultConfig() *Rosetta {
-	config := Config{}
+type envManager struct {
+	keys []string
+}
+
+func (e *envManager) SetEnv(key, value string) {
+	os.Setenv(key, value)
+	e.keys = append(e.keys, key)
+}
+
+func (e *envManager) Cleanup() {
+	for _, key := range e.keys {
+		os.Unsetenv(key)
+	}
+}
+
+func getDefaultConfig() *Config {
+	config := fullConfig{}
 	yaml.Unmarshal([]byte(defaultConfig), &config)
 	return &config.Hedera.Mirror.Rosetta
 }

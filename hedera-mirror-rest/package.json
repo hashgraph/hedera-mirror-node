@@ -16,7 +16,7 @@
   },
   "author": "Hedera Mirror Node Team",
   "comments": {
-    "dependencies": "json-schema is a transitive dependency but we explicitly mark it as a dependency to bring in a non-vulnerable version"
+    "dependencies": "follow-redirects & json-schema are transitive dependencies but we explicitly mark them as a dependency to bring in a non-vulnerable version"
   },
   "license": "Apache-2.0",
   "dependencies": {
@@ -24,7 +24,7 @@
     "@godaddy/terminus": "^4.9.0",
     "@hashgraph/proto": "^2.1.1",
     "asn1js": "^2.2.0",
-    "aws-sdk": "^2.1048.0",
+    "aws-sdk": "^2.1053.0",
     "body-parser": "^1.19.1",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -32,6 +32,7 @@
     "express-http-context": "^1.2.4",
     "express-openapi-validator": "^4.13.5",
     "extend": "^3.0.2",
+    "follow-redirects": "^1.14.7",
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
     "json-schema": "^0.4.0",
@@ -46,6 +47,7 @@
     "prom-client": "^14.0.1",
     "qs": "^6.10.2",
     "quick-lru": "^5.1.1",
+    "rfc4648": "^1.5.1",
     "swagger-stats": "^0.99.2",
     "swagger-ui-express": "^4.3.0"
   },
@@ -62,6 +64,7 @@
     "express-http-context",
     "express-openapi-validator",
     "extend",
+    "follow-redirects",
     "ip-anonymize",
     "js-yaml",
     "json-schema",
@@ -76,6 +79,7 @@
     "prom-client",
     "qs",
     "quick-lru",
+    "rfc4648",
     "swagger-stats",
     "swagger-ui-express"
   ],
@@ -92,8 +96,8 @@
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-security": "^1.4.0",
     "husky": "^7.0.4",
-    "jest": "^27.4.5",
-    "jest-circus": "^27.4.5",
+    "jest": "^27.4.7",
+    "jest-circus": "^27.4.6",
     "jest-extended": "^1.2.0",
     "jest-junit": "^13.0.0",
     "mock-req-res": "^1.2.0",
@@ -105,7 +109,7 @@
     "rewire": "^6.0.0",
     "sinon": "^12.0.1",
     "supertest": "^6.1.6",
-    "testcontainers": "^8.1.2"
+    "testcontainers": "^8.2.0"
   },
   "jest": {
     "collectCoverage": true,
