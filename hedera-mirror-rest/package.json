@@ -64,6 +64,7 @@
     "express-http-context",
     "express-openapi-validator",
     "extend",
+    "follow-redirects",
     "ip-anonymize",
     "js-yaml",
     "json-schema",
