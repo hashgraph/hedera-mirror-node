@@ -28,25 +28,22 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 import lombok.Data;
 import lombok.ToString;
 import org.springframework.data.domain.Persistable;
 
-import com.hedera.mirror.common.domain.topic.StreamMessage;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.AccountIdDeserializer;
 import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.converter.TopicIdConverter;
 import com.hedera.mirror.common.converter.TopicIdDeserializer;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
 @Data
 @Entity
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
 @JsonTypeName("TopicMessage")
-@ToString(exclude = {"message", "runningHash"})
+@ToString(exclude = {"initialTransactionId", "message", "runningHash"})
 public class TopicMessage implements Persistable<Long>, StreamMessage {
 
     private Integer chunkNum;
@@ -55,6 +52,8 @@ public class TopicMessage implements Persistable<Long>, StreamMessage {
 
     @Id
     private long consensusTimestamp;
+
+    private byte[] initialTransactionId;
 
     private byte[] message;
 

@@ -50,7 +50,6 @@ import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.HashSet;
@@ -189,7 +188,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             processNonFeeTransfers(consensusTimestamp, recordItem);
 
             if (body.hasConsensusSubmitMessage()) {
-                insertConsensusTopicMessage(body.getConsensusSubmitMessage(), txRecord);
+                insertConsensusTopicMessage(recordItem);
             } else if (body.hasCryptoAddLiveHash()) {
                 insertCryptoAddLiveHash(consensusTimestamp, body.getCryptoAddLiveHash());
             } else if (body.hasFileAppend()) {
@@ -316,8 +315,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private void insertConsensusTopicMessage(ConsensusSubmitMessageTransactionBody transactionBody,
-                                             TransactionRecord transactionRecord) {
+    private void insertConsensusTopicMessage(RecordItem recordItem) {
+        ConsensusSubmitMessageTransactionBody transactionBody = recordItem.getTransactionBody()
+                .getConsensusSubmitMessage();
+        TransactionRecord transactionRecord = recordItem.getRecord();
         var receipt = transactionRecord.getReceipt();
         var topicId = transactionBody.getTopicID();
         int runningHashVersion = receipt.getTopicRunningHashVersion() == 0 ? 1 : (int) receipt
@@ -331,15 +332,13 @@ public class EntityRecordItemListener implements RecordItemListener {
             topicMessage.setChunkTotal(chunkInfo.getTotal());
 
             if (chunkInfo.hasInitialTransactionID()) {
-                TransactionID transactionID = chunkInfo.getInitialTransactionID();
-                topicMessage.setPayerAccountId(EntityId.of(transactionID.getAccountID()));
-                topicMessage.setValidStartTimestamp(
-                        DomainUtils.timestampInNanosMax(transactionID.getTransactionValidStart()));
+                topicMessage.setInitialTransactionId(chunkInfo.getInitialTransactionID().toByteArray());
             }
         }
 
         topicMessage.setConsensusTimestamp(DomainUtils.timeStampInNanos(transactionRecord.getConsensusTimestamp()));
         topicMessage.setMessage(DomainUtils.toBytes(transactionBody.getMessage()));
+        topicMessage.setPayerAccountId(recordItem.getPayerAccountId());
         topicMessage.setRunningHash(DomainUtils.toBytes(receipt.getTopicRunningHash()));
         topicMessage.setRunningHashVersion(runningHashVersion);
         topicMessage.setSequenceNumber(receipt.getTopicSequenceNumber());

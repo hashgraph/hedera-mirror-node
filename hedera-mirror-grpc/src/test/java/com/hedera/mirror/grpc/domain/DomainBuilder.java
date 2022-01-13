@@ -21,6 +21,9 @@ package com.hedera.mirror.grpc.domain;
  */
 
 import com.google.common.collect.Range;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -89,9 +92,18 @@ public class DomainBuilder {
      * @return the inserted TopicMessage
      */
     public Mono<TopicMessage> topicMessage(Consumer<TopicMessage.TopicMessageBuilder> customizer) {
+
         TopicMessage.TopicMessageBuilder builder = TopicMessage.builder()
                 .consensusTimestamp(now.plus(sequenceNumber, ChronoUnit.NANOS))
+                .initialTransactionId(TransactionID.newBuilder()
+                        .setAccountID(AccountID.newBuilder().setAccountNum(10).build())
+                        .setTransactionValidStart(Timestamp.newBuilder().setSeconds(now.getEpochSecond())
+                                .setNanos(now.getNano()))
+                        .setNonce(0)
+                        .setScheduled(false)
+                        .build().toByteArray())
                 .message(new byte[] {0, 1, 2})
+                .payerAccountId(10L)
                 .runningHash(new byte[] {3, 4, 5})
                 .sequenceNumber(++sequenceNumber)
                 .topicId(0)

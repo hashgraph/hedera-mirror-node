@@ -369,16 +369,17 @@ comment on table token_transfer is 'Crypto account token transfers';
 -- topic_message
 create table if not exists topic_message
 (
-    chunk_num             integer,
-    chunk_total           integer,
-    consensus_timestamp   bigint   not null,
-    message               bytea    not null,
-    payer_account_id      bigint,
-    running_hash          bytea    not null,
-    running_hash_version  smallint not null,
-    sequence_number       bigint   not null,
-    topic_id              bigint   not null,
-    valid_start_timestamp bigint
+    chunk_num               integer,
+    chunk_total             integer,
+    consensus_timestamp     bigint   not null,
+    initial_transaction_id  bytea,
+    message                 bytea    not null,
+    payer_account_id        bigint   not null,
+    running_hash            bytea    not null,
+    running_hash_version    smallint not null,
+    sequence_number         bigint   not null,
+    topic_id                bigint   not null,
+    valid_start_timestamp   bigint
 );
 comment on table topic_message is 'Topic entity sequenced messages';
 
