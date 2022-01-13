@@ -24,15 +24,15 @@ import http from "k6/http";
 import { getOptionsWithScenarios } from '../../lib/common.js';
 
 // use unique scenario name among all tests
-const options = getOptionsWithScenarios('accountsBalance');
+const options = getOptionsWithScenarios('accountsBalanceFalsePubkey');
 
-const urlTag = '/api/v1/accounts?account.balance=ne:{balance}&order=desc';
+const urlTag = '/api/v1/accounts?balance=false&account.publickey={publicKey}';
 
 function run() {
-  const  url = __ENV.BASE_URL + `/api/v1/accounts?account.balance=ne:${__ENV.DEFAULT_ACCOUNT_BALANCE}&order=desc`;
+  const url = __ENV.BASE_URL + `/api/v1/accounts?balance=false&account.publickey=${__ENV.DEFAULT_PUBLICKEY_FALSE}`;
   const response = http.get(url, {url: urlTag});
   check(response, {
-    'Accounts balance NE OK': (r) => r.status === 200,
+    "Accounts balance false with publickey OK": (r) => r.status === 200,
   });
 }
 

@@ -104,7 +104,7 @@ const scenario = {
   duration: __ENV.DEFAULT_DURATION,
   exec: 'run',
   executor: 'constant-vus',
-  gracefulStop: '15s',
+  gracefulStop: (__ENV.DEFAULT_GRACEFUL_STOP != null && __ENV.DEFAULT_GRACEFUL_STOP) || '15s',
   vus: __ENV.DEFAULT_VUS,
 };
 

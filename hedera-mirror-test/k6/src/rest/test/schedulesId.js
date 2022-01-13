@@ -24,15 +24,15 @@ import http from "k6/http";
 import { getOptionsWithScenarios } from '../../lib/common.js';
 
 // use unique scenario name among all tests
-const options = getOptionsWithScenarios('accountsBalance');
+const options = getOptionsWithScenarios('schedulesId');
 
-const urlTag = '/api/v1/accounts?account.balance=ne:{balance}&order=desc';
+const urlTag = '/api/v1/schedules/{id}';
 
 function run() {
-  const  url = __ENV.BASE_URL + `/api/v1/accounts?account.balance=ne:${__ENV.DEFAULT_ACCOUNT_BALANCE}&order=desc`;
+  const url = __ENV.BASE_URL + `/api/v1/schedules/${__ENV.DEFAULT_SCHEDULE_ID}`;
   const response = http.get(url, {url: urlTag});
   check(response, {
-    'Accounts balance NE OK': (r) => r.status === 200,
+    "Schedules id OK": (r) => r.status === 200,
   });
 }
 

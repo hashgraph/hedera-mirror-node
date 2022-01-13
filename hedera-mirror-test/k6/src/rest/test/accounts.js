@@ -21,10 +21,10 @@
 import { check } from "k6";
 import http from "k6/http";
 
-import * as common from '../../lib/common.js';
+import { getOptionsWithScenarios } from '../../lib/common.js';
 
 // use unique scenario name among all tests
-const options = common.getOptionsWithScenarios('accounts');
+const options = getOptionsWithScenarios('accounts');
 
 const urlTag = '/api/v1/accounts';
 
