@@ -353,11 +353,16 @@ func NewClient(serverCfg Server, operators []Operator) Client {
 	}
 
 	// create hedera client
-	hederaClient, err := hedera.ClientForName(network.Network)
-	if err != nil {
-		log.Fatalf("Failed to create client for hedera '%s'", network.Network)
+	var hederaClient *hedera.Client
+	if len(serverCfg.Network) == 0 {
+		if hederaClient, err = hedera.ClientForName(network.Network); err != nil {
+			log.Fatalf("Failed to create client for hedera '%s'", network.Network)
+		}
+		log.Infof("Successfully created client for hedera '%s'", network.Network)
+	} else {
+		hederaClient = hedera.ClientForNetwork(serverCfg.Network)
+		log.Infof("Successfully created client for custom network '%v'", serverCfg.Network)
 	}
-	log.Infof("Successfully created client for hedera '%s'", network.Network)
 	hederaClient.SetOperator(operators[0].Id, operators[0].PrivateKey)
 
 	return Client{

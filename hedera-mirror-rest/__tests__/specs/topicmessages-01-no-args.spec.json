@@ -12,25 +12,25 @@
     "cryptotransfers": [],
     "topicmessages": [
       {
-        "timestamp": "1234567890000000001",
+        "consensus_timestamp": "1234567890000000001",
         "topic_id": 7,
-        "seq_num": 1
+        "sequence_number": 1
       },
       {
         "chunk_num": null,
         "chunk_total": null,
-        "timestamp": "1234567890000000002",
+        "consensus_timestamp": "1234567890000000002",
         "topic_id": 7,
-        "seq_num": 2,
+        "sequence_number": 2,
         "valid_start_timestamp": null
       },
       {
         "chunk_num": 2,
         "chunk_total": 3,
         "payer_account_id": 10,
-        "timestamp": "1234567890000000003",
+        "consensus_timestamp": "1234567890000000003",
         "topic_id": 7,
-        "seq_num": 3,
+        "sequence_number": 3,
         "valid_start_timestamp": "1234567890000000010"
       }
     ]

@@ -48,7 +48,7 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
     @Resource
     private JdbcOperations jdbcOperations;
 
-    @Value("classpath:db/migration/v1/V1.52.1__topic_message_add_payer_account_id_and_initial_transaction_id.sql")
+    @Value("classpath:db/migration/v1/V1.53.0__topic_message_add_payer_account_id_and_initial_transaction_id.sql")
     private File migrationSql;
 
     @AfterEach
@@ -112,11 +112,9 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
     private void persistTopicMessage(List<MigrationTopicMessage> topicMessages) {
         for (MigrationTopicMessage topicMessage : topicMessages) {
             jdbcOperations
-                    .update("insert into topic_message (consensus_timestamp, message, payer_account_id, running_hash," +
-                                    " " +
-                                    "running_hash_version, sequence_number, topic_id) " +
-                                    " values" +
-                                    " (?, ?, ?, ?, ?, ?, ?)",
+                    .update("insert into topic_message (consensus_timestamp, message, payer_account_id, " +
+                                    "running_hash, running_hash_version, sequence_number, topic_id) " +
+                                    " values (?, ?, ?, ?, ?, ?, ?)",
                             topicMessage.getConsensusTimestamp(), topicMessage.getMessage(),
                             topicMessage.getPayerAccountId(), topicMessage.getRunninghHash(),
                             topicMessage.getRunningHashVersion(), topicMessage.getSequenceNumber(),

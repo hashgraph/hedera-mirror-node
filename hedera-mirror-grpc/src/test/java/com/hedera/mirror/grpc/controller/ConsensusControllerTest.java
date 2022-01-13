@@ -246,10 +246,12 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
         Flux<TopicMessage> generator = Flux.concat(
                 domainBuilder.topicMessage(t -> t.sequenceNumber(6).chunkNum(2).chunkTotal(3)
                         .validStartTimestamp(now.plusNanos(4)).payerAccountId(1L)
-                        .consensusTimestamp(now.plusSeconds(5))),
+                        .consensusTimestamp(now.plusSeconds(5))
+                        .initialTransactionId(null)),
                 domainBuilder.topicMessage(t -> t.sequenceNumber(7).chunkNum(3).chunkTotal(3)
                         .validStartTimestamp(now.plusNanos(5)).payerAccountId(1L)
-                        .consensusTimestamp(now.plusSeconds(6))),
+                        .consensusTimestamp(now.plusSeconds(6))
+                        .initialTransactionId(new byte[] {1, 2})),
                 domainBuilder.topicMessage(t -> t.sequenceNumber(8).consensusTimestamp(now.plusSeconds(7)))
         );
 

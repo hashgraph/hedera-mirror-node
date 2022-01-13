@@ -104,90 +104,6 @@ systemctl status hedera-mirror-importer.service
 sudo journalctl -fu hedera-mirror-importer.service
 ```
 
-### v1 to v2 Data Migration
-
-In an effort to increase performance and reduce storage costs, the Mirror Node DB schema shifted from PostgreSQL (v1) to
-TimescaleDB (v2).
-[Migrating from a Different PostgreSQL Database](https://docs.timescale.com/latest/getting-started/migrating-data#different-db)
-highlights the general recommended data migration steps when moving to TimescaleDB.
-
-For mirror node operators running the v1 database schema, the following steps can be taken to upgrade to v2.
-
-1. Upgrade the importer
-
-   Ensure the importer is on the latest version and all v1 database migrations have completed before continuing.
-
-2. Stop the importer
-
-   If on a version that still downloads files to the filesystem, ensure the valid directory for each stream type is
-   empty. For example if `dataPath` is set to `/var/lib/hedera-mirror-importer` then
-   `/var/lib/hedera-mirror-importer/*/valid/` should be empty. If it's not empty, let the importer process fully catch
-   up before attempting the migration.
-
-3. Set up a new TimescaleDB database
-
-   A new TimescaleDB server must be spun up. Refer to the Mirror Node [DB Installation](installation.md#database-setup)
-   for manual instructions. For example, to use the Mirror Node configured docker container, simply run:
-
-    ```shell script
-    $ docker-compose up timescaledb
-    ```
-
-   Refer to the [TimescaleDB Installation Instructions](https://docs.timescale.com/latest/getting-started/installation)
-   for other installation options.
-
-   > **_NOTE:_** The following steps assume the database, users and schema have been created as detailed above
-
-4. Configure properties
-
-   First, locate the directory that contains the TimescaleDB migration scripts. For source code, the target directory is
-   located at `hedera-mirror-importer/src/main/resources/db/scripts/v2`. For binaries, the migration directory
-   can be extracted from the JAR file:
-
-   ```shell
-   jar -xvf hedera-mirror-importer-*.jar
-   cd BOOT-INF/classes/db/scripts/v2
-   ```
-
-   The configuration file `migration.config` contains database variables that need to be modified before running the
-   migration. These options include variables such as database names, passwords, users, hosts for both the existing
-   database and the new database. Update these values appropriately for your database setup.
-
-5. Run migration
-
-   Run the migration script that was previously extracted:
-
-    ```shell
-    $ ./migration.sh
-    ```
-
-   The script uses successive `psql` connections to back up, configure and restore data on the new database nodes. First
-   it copies over the `flyway_schema_history` table, to maintain migration history. It then utilizes the migration SQL
-   script used by normal flyway operations to create the new tables and then creates the TimescaleDB hypertables based
-   on these. Following this, the tables from the old database are backed up as CSV files using `COPY` and then the data
-   inserted into the new database also using `COPY`. Finally, the schema of the `flyway_schema_history` is updated and
-   the sequence values are updated to ensure continuation.
-
-6. Start the importer
-
-   Configure the importer with the new database information. Note that the default schema has been changed from `public`
-   to `mirrornode` and the database user has been split into a separate owner and regular user. The importer will need
-   to be updated with the same values specified in the `migration.config`. Example configuration:
-
-   ```yaml
-   hedera:
-     mirror:
-       importer:
-         db:
-           host: timescaledb_host
-           owner: mirror_node
-           ownerPassword: mirror_node_pass
-           password: mirror_importer_pass
-           port: 5432
-           schema: mirrornode
-           username: mirror_importer
-   ```
-
 ### Historical Data Ingestion
 
 The following resource allocation and configuration is recommended to speed up historical data ingestion. The importer
@@ -195,43 +111,43 @@ should be able to ingest one month's worth of mainnet data in less than 1.5 days
 
 1. Importer
 
-   - Resource allocation
+- Resource allocation
 
-       Run the importer with 4 vCPUs and 10 GB of heap.
+  Run the importer with 4 vCPUs and 10 GB of heap.
 
-   - Configuration:
+- Configuration:
 
-      ```yaml
-        hedera:
-          mirror:
-            importer:
-              downloader:
-                record:
-                  batchSize: 600
-                  frequency: 1
-              parser:
-                record:
-                  entity:
-                    redis:
-                      enabled: false
-                  frequency: 10
-                  queueCapacity: 40
-      ```
+   ```yaml
+     hedera:
+       mirror:
+         importer:
+           downloader:
+             record:
+               batchSize: 600
+               frequency: 1
+           parser:
+             record:
+               entity:
+                 redis:
+                   enabled: false
+               frequency: 10
+               queueCapacity: 40
+   ```
 
-      Note once the importer has caught up all data, please change the configuration to the default where applicable.
+  Note once the importer has caught up all data, please change the configuration to the default where applicable.
 
 2. PostgreSQL Database
 
-   - Resource allocation
+- Resource allocation
 
-       Run a PostgreSQL 13 instance with at least 4 vCPUs and 16 GB memory.
+  Run a PostgreSQL 13 instance with at least 4 vCPUs and 16 GB memory.
 
-   - Configuration:
+- Configuration:
 
-       Set the following parameters. Note the unit is kilobytes.
+  Set the following parameters. Note the unit is kilobytes.
 
-       - max_wal_size = 8388608
-       - work_mem = 262144
+  - max_wal_size = 8388608
+  - work_mem = 262144
 
 ## Monitor
 
@@ -341,7 +257,7 @@ Verify all ports:
 for port in {6551..6560}; do curl -s "http://127.0.0.1:${port}/api/v1/transactions?limit=1" && echo; done
 ```
 
-To setup live monitoring, see [monitoring](../hedera-mirror-rest/monitoring/README.md) documentation.
+To set up live monitoring, see [monitoring](/hedera-mirror-rest/monitoring/README.md) documentation.
 
 ### Open API Spec
 

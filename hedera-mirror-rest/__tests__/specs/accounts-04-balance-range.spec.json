@@ -94,6 +94,7 @@
           ]
         },
         "account": "0.0.19",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -109,6 +110,7 @@
           "tokens": []
         },
         "account": "0.0.17",
+        "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,

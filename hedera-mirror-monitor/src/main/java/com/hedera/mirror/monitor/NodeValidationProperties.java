@@ -36,7 +36,7 @@ public class NodeValidationProperties {
 
     @DurationMin(seconds = 30)
     @NotNull
-    private Duration frequency = Duration.ofMinutes(5);
+    private Duration frequency = Duration.ofDays(365); // Effectively disable for now due to #2914
 
     @DurationMin(millis = 250)
     @DurationMax(seconds = 10)

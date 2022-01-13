@@ -224,7 +224,8 @@ to configure the application.
 The following table lists the available properties along with their default values. Unless you need to set a non-default
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
-See the monitor [documentation](monitor.md) for more general information about configuring and using the monitor.
+See the monitor [documentation](/docs/monitor/monitor.md) for more general information about configuring and using the
+monitor.
 
 Name                                                            | Default    | Description
 ----------------------------------------------------------------| -----------| ---------------------------------------

@@ -13,7 +13,7 @@ The client currently supports basic crypto create, crypto transfer, and HTS scen
 ## Requirements
 
 - golang 1.17+
-- a testnet account with private key
+- two testnet accounts with private key
 - aws / gcp credentials with requester pay enabled to access the Hedera network cloud storage
 
 ## Test Client Configuration
@@ -21,7 +21,7 @@ The client currently supports basic crypto create, crypto transfer, and HTS scen
 Configuration properties can be customized in an `application.yml` file in the test client source directory. Most
 properties have default values and should work out of the box.
 
-The only required property is an operator account and its private key, for example:
+The only required property is two operator accounts and the corresponding private keys, for example:
 
 ```yaml
 hedera:
@@ -31,7 +31,11 @@ hedera:
         operators:
           - privateKey: 90e42b7c...
             id: 0.0.65342
+          - privateKey: 91e33b87...
+            id: 0.0.65345
 ```
+
+Note for crypto create and crypto transfer scenarios, only one operator account is required.
 
 Please refer to the [appendix](#test-configuration-properties) for the complete list of properties.
 
@@ -72,6 +76,14 @@ Please refer to the [appendix](#test-configuration-properties) for the complete 
    $ go test -v
    ```
 
+   Note you can run tests with the `--godog.tags` flag to filter features, for example, to run `crypto` scenarions:
+
+   ```shell
+   $ go test -v --godog.tags=crypto
+   ```
+
+   `--godog.tags` also supports complex expressions, please refer to the [official documentation](https://github.com/cucumber/godog#tags).
+
 ## Appendix
 
 ### Test Configuration Properties
@@ -82,12 +94,13 @@ The following table lists the available properties along with their default valu
 | ------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------- |
 | `hedera.mirror.rosetta.test.log.level`                  | debug                 | The log level                                                              |
 | `hedera.mirror.rosetta.test.operators`                  | []                    | A list of operators with the account ids and corresponding private keys    |
-| `hedera.mirror.rosetta.test.operators.id`               |                       | The operator account id, in the format of shard.realm.num                  |
-| `hedera.mirror.rosetta.test.operators.privateKey`       |                       | The operator's private key in hex                                          |
+| `hedera.mirror.rosetta.test.operators[].id`             |                       | The operator account id, in the format of shard.realm.num                  |
+| `hedera.mirror.rosetta.test.operators[].privateKey`     |                       | The operator's private key in hex                                          |
 | `hedera.mirror.rosetta.test.server.dataRetry.backOff`   | 1s                    | The amount of time to wait between data request retries, if the request can be retried. |
 | `hedera.mirror.rosetta.test.server.dataRetry.max`       | 20                    | The max retries of a data request                                          |
+| `hedera.mirror.rosetta.test.server.httpTimeout`         | 25s                   | The timeout of an http request sent to the rosetta server                  |
+| `hedera.mirror.rosetta.test.server.network`             | {}                    | A map of main nodes with its service endpoint as the key and the node account id as its value |
 | `hedera.mirror.rosetta.test.server.offlineUrl`          | http://localhost:5701 | The url of the offline rosetta server                                      |
 | `hedera.mirror.rosetta.test.server.onlineUrl`           | http://localhost:5700 | The url of the online rosetta server                                       |
-| `hedera.mirror.rosetta.test.server.httpTimeout`         | 25s                   | The timeout of an http request sent to the rosetta server                  |
 | `hedera.mirror.rosetta.test.server.submitRetry.backOff` | 200ms                 | The amount of time to wait between submit request retries                  |
 | `hedera.mirror.rosetta.test.server.submitRetry.max`     | 5                     | The max retries of a submit request                                        |

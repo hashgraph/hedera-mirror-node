@@ -65,6 +65,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     static final String TRANSACTION_MEMO = "transaction memo";
     static final String NODE_ID = "0.0.3";
     static final String TRANSACTION_ID = "0.0.9999-123456789";
+    static final EntityId PAYER_ACCOUNT_ID = EntityId.of("0.0.9999", EntityType.ACCOUNT);
 
     @ParameterizedTest
     @CsvSource({
@@ -389,55 +390,32 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
     @ParameterizedTest
     @CsvSource({
-            "0.0.9000, test-message0, 9000000, runninghash, 1, 1, , , 9999, ",
-            "0.0.9001, test-message1, 9000001, runninghash1, 9223372036854775807, 2, 1, 1, 9999, 89999999",
-            "0.0.9001, test-message2, 9000001, runninghash2, 9223372036854775807, 2, 2, 4, 9999, 89999999",
-            "0.0.9001, test-message3, 9000001, runninghash3, 9223372036854775807, 2, 4, 4, 9999, 89999999",
+            "0.0.9000, test-message0, 9000000, runninghash, 1, 1, , , , false, 0",
+            "0.0.9001, test-message1, 9000001, runninghash1, 9223372036854775807, 2, 1, 1, 89999999, false, 0",
+            "0.0.9001, test-message2, 9000001, runninghash2, 9223372036854775807, 2, 2, 4, 89999999, false, 0",
+            "0.0.9001, test-message3, 9000001, runninghash3, 9223372036854775807, 2, 4, 4, 89999999, false, 0",
+            "0.0.9001, test-message4, 9000001, runninghash3, 9223372036854775807, 2, 4, 4, 89999999, true, 7",
     })
     void submitMessageTest(@ConvertWith(TopicIdArgumentConverter.class) TopicID topicId, String message,
                            long consensusTimestamp, String runningHash, long sequenceNumber, int runningHashVersion,
-                           Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum, Long validStartNs) {
+                           Integer chunkNum, Integer chunkTotal, Long validStartNs,
+                           Boolean scheduled, Integer nonce) {
         var responseCode = SUCCESS;
 
+        TransactionID initialTransactionId = null;
+        if (chunkNum != null) {
+            initialTransactionId = createTransactionID(PAYER_ACCOUNT_ID.getEntityNum(),
+                    TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+        }
         var topicMessage = createTopicMessage(topicId, message, sequenceNumber, runningHash, consensusTimestamp,
-                runningHashVersion, chunkNum, chunkTotal, payerAccountIdNum, validStartNs);
-        var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, payerAccountIdNum,
-                TestUtils.toTimestamp(validStartNs), true);
+                runningHashVersion, chunkNum, chunkTotal, PAYER_ACCOUNT_ID, initialTransactionId);
+        var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, initialTransactionId);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
         assertTransactionInRepository(responseCode, consensusTimestamp, topicId.getTopicNum());
-        assertEquals(0L, entityRepository.count());
-        assertThat(topicMessageRepository.findById(consensusTimestamp)).get()
-                .isEqualTo(topicMessage);
-    }
-
-    @Test
-    void submitMessageTestNoInitialTransactionId() {
-        var responseCode = SUCCESS;
-        var message = "test-message1-no-initial-transaction";
-        var consensusTimestamp = 10_000_000L;
-        var sequenceNumber = 10_000L;
-        var runningHash = "running-hash";
-        var runningHashVersion = 2;
-        var chunkNum = 3;
-        var chunkTotal = 5;
-        var payerAccountIdNum = 6L;
-        var initialTransactionPayerAccountIdNum = 9999L;
-        var validStartNs = 7L;
-
-        var topicMessage = createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
-                runningHashVersion, chunkNum, chunkTotal, initialTransactionPayerAccountIdNum, null);
-        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, payerAccountIdNum,
-                TestUtils.toTimestamp(validStartNs), false);
-        var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
-                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
-
-        parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
-
-        assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
         assertEquals(0L, entityRepository.count());
         assertThat(topicMessageRepository.findById(consensusTimestamp)).get()
                 .isEqualTo(topicMessage);
@@ -453,13 +431,16 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var runningHashVersion = 2;
         var chunkNum = 3;
         var chunkTotal = 5;
-        var payerAccountIdNum = 9999L;
         var validStartNs = 7L;
+        var scheduled = false;
+        var nonce = 0;
+
+        TransactionID initialTransactionId = createTransactionID(PAYER_ACCOUNT_ID.getEntityNum(),
+                TestUtils.toTimestamp(validStartNs), scheduled, nonce);
 
         var topicMessage = createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
-                runningHashVersion, chunkNum, chunkTotal, payerAccountIdNum, validStartNs);
-        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, payerAccountIdNum,
-                TestUtils.toTimestamp(validStartNs), true);
+                runningHashVersion, chunkNum, chunkTotal, PAYER_ACCOUNT_ID, initialTransactionId);
+        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, initialTransactionId);
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -485,11 +466,14 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var runningHashVersion = 1;
         var chunkNum = 3;
         var chunkTotal = 5;
-        var payerAccountIdNum = 6L;
         var validStartNs = 7L;
+        var scheduled = false;
+        var nonce = 0;
 
-        var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, payerAccountIdNum,
-                TestUtils.toTimestamp(validStartNs), true);
+        TransactionID initialTransactionId = createTransactionID(PAYER_ACCOUNT_ID.getEntityNum(),
+                TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+
+        var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, initialTransactionId);
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
@@ -507,8 +491,12 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         // given
         var id = 10_000_000L;
         var topicId = TopicID.newBuilder().setTopicNum(9000).build();
-        var transaction = createSubmitMessageTransaction(topicId, "message", 3, 5, null,
-                TestUtils.toTimestamp(Long.MAX_VALUE, Integer.MAX_VALUE), true);
+        var scheduled = false;
+        var nonce = 0;
+
+        TransactionID initialTransactionId = createTransactionID(null,
+                TestUtils.toTimestamp(Long.MAX_VALUE, Integer.MAX_VALUE), scheduled, nonce);
+        var transaction = createSubmitMessageTransaction(topicId, "message", 3, 5, initialTransactionId);
         var transactionRecord = createTransactionRecord(topicId, 10_000L, "running-hash"
                 .getBytes(), 2, id, SUCCESS);
 
@@ -521,7 +509,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         assertThat(topicMessageRepository.findById(id))
                 .get()
                 .extracting(TopicMessage::getValidStartTimestamp, TopicMessage::getPayerAccountId)
-                .containsExactly(Long.MAX_VALUE, EntityId.of("0.0.9999", EntityType.ACCOUNT));
+                .containsExactly(null, PAYER_ACCOUNT_ID);
     }
 
     @Test
@@ -535,9 +523,13 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var chunkNum = 3;
         var chunkTotal = 5;
         var validStartNs = 7L;
+        var scheduled = false;
+        var nonce = 0;
 
-        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, PAYER.getAccountNum(),
-                TestUtils.toTimestamp(validStartNs), true);
+        TransactionID initialTransactionId = createTransactionID(PAYER_ACCOUNT_ID.getEntityNum(),
+                TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+
+        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, initialTransactionId);
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash.getBytes(),
                 runningHashVersion, consensusTimestamp, responseCode);
 
@@ -558,23 +550,25 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var runningHashVersion = 2;
         var chunkNum = 3;
         var chunkTotal = 5;
-        var payerAccountIdNum = 6L;
         var validStartNs = 7L;
+        var scheduled = false;
+        var nonce = 0;
 
         var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
         // Topic NOT saved in the repository.
 
+        TransactionID initialTransactionId = createTransactionID(PAYER_ACCOUNT_ID.getEntityNum(),
+                TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+
         createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
-                runningHashVersion, chunkNum, chunkTotal, payerAccountIdNum, validStartNs);
-        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, payerAccountIdNum,
-                TestUtils.toTimestamp(validStartNs), true);
+                runningHashVersion, chunkNum, chunkTotal, PAYER_ACCOUNT_ID, initialTransactionId);
+        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, initialTransactionId);
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
         assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
-        AccountID payerAccountID = TestUtils.toTransactionId(TRANSACTION_ID).getAccountID();
         assertEquals(0, entityRepository.count());
         assertEquals(0, topicMessageRepository.count());
     }
@@ -602,6 +596,31 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build()
                         .toByteString())
                 .build();
+    }
+
+    @Test
+    void submitMessageTestNoInitialTransactionId() {
+        var responseCode = SUCCESS;
+        var message = "test-message1-no-initial-transaction";
+        var consensusTimestamp = 10_000_000L;
+        var sequenceNumber = 10_000L;
+        var runningHash = "running-hash";
+        var runningHashVersion = 2;
+        var chunkNum = 3;
+        var chunkTotal = 5;
+
+        var topicMessage = createTopicMessage(TOPIC_ID, message, sequenceNumber, runningHash, consensusTimestamp,
+                runningHashVersion, chunkNum, chunkTotal, PAYER_ACCOUNT_ID, null);
+        var transaction = createSubmitMessageTransaction(TOPIC_ID, message, chunkNum, chunkTotal, null);
+        var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
+                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
+
+        parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
+
+        assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
+        assertEquals(0L, entityRepository.count());
+        assertThat(topicMessageRepository.findById(consensusTimestamp)).get()
+                .isEqualTo(topicMessage);
     }
 
     private TransactionRecord createTransactionRecord(TopicID topicId, long consensusTimestamp,
@@ -663,22 +682,22 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
     private TopicMessage createTopicMessage(TopicID topicId, String message, long sequenceNumber, String runningHash,
                                             long consensusTimestamp, int runningHashVersion, Integer chunkNum,
-                                            Integer chunkTotal, Long payerAccountIdNum, Long validStartNs) {
+                                            Integer chunkTotal, EntityId payerAccountId,
+                                            TransactionID initialTransactionID) {
 
         var topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusTimestamp);
+        if (initialTransactionID != null) {
+            topicMessage.setInitialTransactionId(initialTransactionID.toByteArray());
+        }
         topicMessage.setTopicId(EntityId.of("0.0." + topicId.getTopicNum(), EntityType.TOPIC));
         topicMessage.setMessage(message.getBytes());
+        topicMessage.setPayerAccountId(payerAccountId);
         topicMessage.setSequenceNumber(sequenceNumber);
         topicMessage.setRunningHash(runningHash.getBytes());
         topicMessage.setRunningHashVersion(runningHashVersion);
         topicMessage.setChunkNum(chunkNum);
         topicMessage.setChunkTotal(chunkTotal);
-        topicMessage.setValidStartTimestamp(validStartNs);
-
-        EntityId payerAccountEntityId = payerAccountIdNum == null ? null : EntityId
-                .of(AccountID.newBuilder().setAccountNum(payerAccountIdNum).build());
-        topicMessage.setPayerAccountId(payerAccountEntityId);
 
         return topicMessage;
     }
@@ -724,28 +743,20 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     private com.hederahashgraph.api.proto.java.Transaction createSubmitMessageTransaction(
-            TopicID topicId, String message, Integer chunkNum, Integer chunkTotal, Long payerAccountIdNum,
-            Timestamp validStartNs, boolean hasInitialTransactionId) {
+            TopicID topicId, String message, Integer chunkNum, Integer chunkTotal, TransactionID initialTransactionID) {
         var submitMessageTransactionBodyBuilder = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .setTopicID(topicId)
                 .setMessage(ByteString.copyFrom(message.getBytes()));
 
         if (chunkNum != null) {
-            ConsensusMessageChunkInfo.Builder chunkInfo = ConsensusMessageChunkInfo.newBuilder()
+            ConsensusMessageChunkInfo.Builder chunkInfoBuilder = ConsensusMessageChunkInfo.newBuilder()
                     .setNumber(chunkNum)
                     .setTotal(chunkTotal);
-
-            if (hasInitialTransactionId) {
-                TransactionID.Builder transactionId = TransactionID.newBuilder();
-                if (payerAccountIdNum != null) {
-                    transactionId.setAccountID(AccountID.newBuilder().setAccountNum(payerAccountIdNum).build());
-                }
-                if (validStartNs != null) {
-                    transactionId.setTransactionValidStart(validStartNs);
-                }
-                chunkInfo.setInitialTransactionID(transactionId);
+            if (initialTransactionID != null) {
+                chunkInfoBuilder.setInitialTransactionID(initialTransactionID);
             }
-            submitMessageTransactionBodyBuilder.setChunkInfo(chunkInfo);
+            submitMessageTransactionBodyBuilder
+                    .setChunkInfo(chunkInfoBuilder);
         }
 
         var innerBody = submitMessageTransactionBodyBuilder.build();
@@ -755,6 +766,24 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .setSignedTransactionBytes(SignedTransaction.newBuilder().setBodyBytes(body.toByteString()).build()
                         .toByteString())
                 .build();
+    }
+
+    private TransactionID createTransactionID(Long payerAccountIdNum, Timestamp validStartNs, Boolean scheduled,
+                                              Integer nonce) {
+        TransactionID.Builder transactionIdBuilder = TransactionID.newBuilder();
+        if (payerAccountIdNum != null) {
+            transactionIdBuilder.setAccountID(AccountID.newBuilder().setAccountNum(payerAccountIdNum).build());
+        }
+        if (validStartNs != null) {
+            transactionIdBuilder.setTransactionValidStart(validStartNs);
+        }
+        if (scheduled != null) {
+            transactionIdBuilder.setScheduled(scheduled);
+        }
+        if (nonce != null) {
+            transactionIdBuilder.setNonce(nonce);
+        }
+        return transactionIdBuilder.build();
     }
 
     private Entity getTopicEntity(TopicID topicId) {

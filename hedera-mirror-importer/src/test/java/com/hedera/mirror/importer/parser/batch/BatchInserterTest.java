@@ -245,6 +245,7 @@ class BatchInserterTest extends IntegrationTest {
     private TopicMessage topicMessage(long consensusNs, int messageSize) {
         TopicMessage topicMessage = new TopicMessage();
         topicMessage.setConsensusTimestamp(consensusNs);
+        topicMessage.setPayerAccountId(EntityId.of("0.0.1002", ACCOUNT));
         topicMessage.setMessage(RandomUtils.nextBytes(messageSize)); // Just exceeds 8000B
         topicMessage.setPayerAccountId(EntityId.of("0.0.10", ACCOUNT));
         topicMessage.setRunningHash(Strings.toByteArray("running hash"));

@@ -38,9 +38,9 @@ const commonFields = [
   'timestamp_range',
   'type',
 ];
-const accountOnlyFields = ['max_automatic_token_associations', 'receiver_sig_required'];
-const accountFields = commonFields.concat(accountOnlyFields).join(', ');
-const contractFields = commonFields.concat(accountOnlyFields.map((f) => `null as ${f}`)).join(', ');
+const accountOnlyFields = ['alias', 'max_automatic_token_associations', 'receiver_sig_required'];
+const accountFields = commonFields.concat(accountOnlyFields);
+const contractFields = commonFields.concat(accountOnlyFields.map((f) => `null as ${f}`));
 
 /**
  * Gets the account contract union query, with order options

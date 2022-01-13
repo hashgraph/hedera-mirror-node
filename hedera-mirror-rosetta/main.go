@@ -74,9 +74,9 @@ func configLogger(level string) {
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#online-mode-endpoints
 func newBlockchainOnlineRouter(
 	asserter *rosettaAsserter.Asserter,
+	config config.Config,
 	dbClient interfaces.DbClient,
 	network *rTypes.NetworkIdentifier,
-	rosetta config.Rosetta,
 	version *rTypes.Version,
 ) (http.Handler, error) {
 	accountRepo := persistence.NewAccountRepository(dbClient)
@@ -99,7 +99,7 @@ func newBlockchainOnlineRouter(
 	constructionAPIService, err := services.NewConstructionAPIService(
 		baseService,
 		network.Network,
-		rosetta.Nodes,
+		config.Nodes,
 		construction.NewTransactionConstructor(tokenRepo),
 	)
 	if err != nil {
@@ -109,7 +109,7 @@ func newBlockchainOnlineRouter(
 
 	accountAPIService := services.NewAccountAPIService(baseService, accountRepo)
 	accountAPIController := server.NewAccountAPIController(accountAPIService, asserter)
-	healthController, err := middleware.NewHealthController(rosetta.Db)
+	healthController, err := middleware.NewHealthController(config.Db)
 	metricsController := middleware.NewMetricsController()
 	if err != nil {
 		return nil, err
@@ -131,8 +131,8 @@ func newBlockchainOnlineRouter(
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#offline-mode-endpoints
 func newBlockchainOfflineRouter(
 	asserter *rosettaAsserter.Asserter,
+	config config.Config,
 	network *rTypes.NetworkIdentifier,
-	rosetta config.Rosetta,
 	version *rTypes.Version,
 ) (http.Handler, error) {
 	baseService := services.NewOfflineBaseService()
@@ -140,14 +140,14 @@ func newBlockchainOfflineRouter(
 	constructionAPIService, err := services.NewConstructionAPIService(
 		baseService,
 		network.Network,
-		rosetta.Nodes,
+		config.Nodes,
 		construction.NewTransactionConstructor(nil),
 	)
 	if err != nil {
 		return nil, err
 	}
 	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter)
-	healthController, err := middleware.NewHealthController(rosetta.Db)
+	healthController, err := middleware.NewHealthController(config.Db)
 	if err != nil {
 		return nil, err
 	}
@@ -202,14 +202,14 @@ func main() {
 	if rosettaConfig.Online {
 		dbClient := db.ConnectToDb(rosettaConfig.Db)
 
-		router, err = newBlockchainOnlineRouter(asserter, dbClient, network, *rosettaConfig, version)
+		router, err = newBlockchainOnlineRouter(asserter, *rosettaConfig, dbClient, network, version)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		log.Info("Serving Rosetta API in ONLINE mode")
 	} else {
-		router, err = newBlockchainOfflineRouter(asserter, network, *rosettaConfig, version)
+		router, err = newBlockchainOfflineRouter(asserter, *rosettaConfig, network, version)
 		if err != nil {
 			log.Fatal(err)
 		}

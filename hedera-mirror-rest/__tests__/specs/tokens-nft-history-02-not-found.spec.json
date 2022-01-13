@@ -140,14 +140,11 @@
     "/api/v1/tokens/0.1500/nfts/2/transactions",
     "/api/v1/tokens/0.0.1500/nfts/2/transactions"
   ],
-  "responseStatus": 404,
+  "responseStatus": 200,
   "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "Not found"
-        }
-      ]
+    "transactions": [],
+    "links": {
+      "next": null
     }
   }
 }

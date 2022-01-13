@@ -20,13 +20,15 @@
 
 'use strict';
 
+const AccountAlias = require('./accountAlias');
+const base32 = require('./base32');
 const {getAccountContractUnionQueryWithOrder} = require('./accountContract');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
 const transactions = require('./transactions');
 const {NotFoundError} = require('./errors/notFoundError');
-const {DbError} = require('./errors/dbError');
+const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -44,6 +46,7 @@ const processRow = (row) => {
         };
   return {
     account: EntityId.parse(row.id).toString(),
+    alias: base32.encode(row.alias),
     auto_renew_period: row.auto_renew_period === null ? null : Number(row.auto_renew_period),
     balance,
     deleted: row.deleted,
@@ -57,6 +60,7 @@ const processRow = (row) => {
 
 // 'id' is different for different join types, so will add later when composing the query
 const entityFields = [
+  'alias',
   'auto_renew_period',
   'deleted',
   'expiration_timestamp',
@@ -202,8 +206,8 @@ const getEntityBalanceQuery = (
 /**
  * Creates account query and params from filters with limit and order
  *
- * @param entityAccountQuery optional entity id query
- * @param balanceAccountQuery optional account balance account id query
+ * @param entityAccountQuery entity id query
+ * @param balanceAccountQuery account balance account id query
  * @param balanceQuery optional account balance query
  * @param limitAndOrderQuery optional limit and order query
  * @param pubKeyQuery optional entity public key query
@@ -294,6 +298,11 @@ const toQueryObject = (queryAndParams) => {
   };
 };
 
+/**
+ * Gets the balance param value from the last balance query param. Defaults to true if not found.
+ * @param query the http request query object
+ * @return {boolean}
+ */
 const getBalanceParamValue = (query) => {
   const values = query[constants.filterKeys.BALANCE] || 'true';
   const lastValue = typeof values === 'string' ? values : values[values.length - 1];
@@ -305,7 +314,7 @@ const getBalanceParamValue = (query) => {
  *
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
- * @return {Promise} Promise for PostgreSQL query
+ * @return {Promise}
  */
 const getAccounts = async (req, res) => {
   // Validate query parameters first
@@ -370,25 +379,84 @@ const getAccounts = async (req, res) => {
 };
 
 /**
- * Handler function for /account/:accountId API.
+ * Gets the query to find the alive entity matching the account alias string.
+ * @param {string} accountAliasStr
+ * @return {{query: string, params: *[]}}
+ */
+const getAccountAliasQuery = (accountAliasStr) => {
+  const accountAlias = AccountAlias.fromString(accountAliasStr);
+  const columns = ['shard', 'realm', 'alias'];
+  const conditions = ['deleted <> true'];
+  const params = [];
+
+  columns
+    .filter((column) => accountAlias[column] !== null)
+    .forEach((column) => {
+      const length = params.push(accountAlias[column]);
+      conditions.push(`${column} = $${length}`);
+    });
+
+  const query = `select id from entity where ${conditions.join(' and ')}`;
+  return {query, params};
+};
+
+/**
+ * Gets the encoded account id from the account alias string. Throws {@link InvalidArgumentError} if the account alias
+ * string is invalid,
+ * @param {string} accountAlias the account alias string
+ * @return {Promise}
+ */
+const getAccountIdFromAccountAlias = async (accountAlias) => {
+  const {query, params} = getAccountAliasQuery(accountAlias);
+
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getAccountIdFromAccountAlias query: ${query} ${JSON.stringify(params)}`);
+  }
+
+  const {rows} = await pool.queryQuietly(query, params);
+  if (rows.length === 0) {
+    throw new NotFoundError();
+  } else if (rows.length > 1) {
+    logger.error(`Incorrect db state: ${rows.length} alive entities matching alias ${accountAlias}`);
+    throw new Error();
+  }
+
+  return rows[0].id;
+};
+
+/**
+ * Handler function for /account/:accountAliasOrAccountId API.
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
- * @return {} None.
+ * @return {Promise}
  */
 const getOneAccount = async (req, res) => {
   // Validate query parameters first
   utils.validateReq(req);
 
+  // get the encoded account id from the path parameter directly if it's an account id. If it's an account alias,
+  // get the encoded account id from the alias by querying the db.
+  const {accountAliasOrAccountId} = req.params;
+  let accountId;
+  try {
+    if (EntityId.isValidEntityId(accountAliasOrAccountId)) {
+      accountId = EntityId.parse(accountAliasOrAccountId).getEncodedId();
+    } else {
+      accountId = await getAccountIdFromAccountAlias(accountAliasOrAccountId);
+    }
+  } catch (err) {
+    if (err instanceof InvalidArgumentError) {
+      throw InvalidArgumentError.forParams('accountAliasOrAccountId');
+    }
+    // rethrow any other error
+    throw err;
+  }
+
   // Parse the filter parameters for account-numbers, balance, and pagination
-  const accountId = EntityId.parse(req.params.accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId();
   const parsedQueryParams = req.query;
   const [tsQuery, tsParams] = utils.parseTimestampQueryParam(parsedQueryParams, 't.consensus_timestamp');
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
-
-  const ret = {
-    transactions: [],
-  };
 
   const accountIdParams = [accountId];
   const {query: entityQuery, params: entityParams} = getAccountQuery(
@@ -402,7 +470,7 @@ const getOneAccount = async (req, res) => {
   }
 
   // Execute query & get a promise
-  const entityPromise = pool.query(pgEntityQuery, entityParams);
+  const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
   const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const accountQuery = 'ctl.entity_id = ?';
@@ -420,7 +488,7 @@ const getOneAccount = async (req, res) => {
   );
 
   const innerParams = utils.mergeParams(accountParams, tsParams, params);
-  const transactionsQuery = await transactions.getTransactionsOuterQuery(innerQuery, order);
+  const transactionsQuery = transactions.getTransactionsOuterQuery(innerQuery, order);
   const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
 
   if (logger.isTraceEnabled()) {
@@ -428,55 +496,47 @@ const getOneAccount = async (req, res) => {
   }
 
   // Execute query & get a promise
-  const transactionsPromise = pool.query(pgTransactionsQuery, innerParams);
+  const transactionsPromise = pool.queryQuietly(pgTransactionsQuery, innerParams);
 
   // After all promises (for all of the above queries) have been resolved...
-  return Promise.all([entityPromise, transactionsPromise])
-    .catch((err) => {
-      throw new DbError(err.message);
-    })
-    .then((values) => {
-      const entityResults = values[0];
-      const transactionsResults = values[1];
+  const [entityResults, transactionsResults] = await Promise.all([entityPromise, transactionsPromise]);
+  // Process the results of entities query
+  if (entityResults.rows.length === 0) {
+    throw new NotFoundError();
+  }
 
-      // Process the results of entities query
-      if (entityResults.rows.length === 0) {
-        throw new NotFoundError();
-      }
+  if (entityResults.rows.length !== 1) {
+    throw new NotFoundError('Error: Could not get entity information');
+  }
 
-      if (entityResults.rows.length !== 1) {
-        throw new NotFoundError('Error: Could not get entity information');
-      }
+  const ret = processRow(entityResults.rows[0]);
 
-      Object.assign(ret, processRow(entityResults.rows[0]));
+  if (utils.isTestEnv()) {
+    ret.entitySqlQuery = entityResults.sqlQuery;
+  }
 
-      if (utils.isTestEnv()) {
-        ret.entitySqlQuery = entityResults.sqlQuery;
-      }
+  // Process the results of transaction query
+  const transferList = transactions.createTransferLists(transactionsResults.rows);
+  ret.transactions = transferList.transactions;
+  const {anchorSecNs} = transferList;
 
-      // Process the results of transaction query
-      const transferList = transactions.createTransferLists(transactionsResults.rows);
-      ret.transactions = transferList.transactions;
-      const {anchorSecNs} = transferList;
+  if (utils.isTestEnv()) {
+    ret.transactionsSqlQuery = transactionsResults.sqlQuery;
+  }
 
-      if (utils.isTestEnv()) {
-        ret.transactionsSqlQuery = transactionsResults.sqlQuery;
-      }
+  // Pagination links
+  ret.links = {
+    next: utils.getPaginationLink(
+      req,
+      ret.transactions.length !== limit,
+      constants.filterKeys.TIMESTAMP,
+      anchorSecNs,
+      order
+    ),
+  };
 
-      // Pagination links
-      ret.links = {
-        next: utils.getPaginationLink(
-          req,
-          ret.transactions.length !== limit,
-          constants.filterKeys.TIMESTAMP,
-          anchorSecNs,
-          order
-        ),
-      };
-
-      logger.debug(`getOneAccount returning ${ret.transactions.length} transactions entries`);
-      res.locals[constants.responseDataLabel] = ret;
-    });
+  logger.debug(`getOneAccount returning ${ret.transactions.length} transactions entries`);
+  res.locals[constants.responseDataLabel] = ret;
 };
 
 module.exports = {
@@ -486,6 +546,8 @@ module.exports = {
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
+    getAccountAliasQuery,
+    getBalanceParamValue,
     processRow,
   });
 }

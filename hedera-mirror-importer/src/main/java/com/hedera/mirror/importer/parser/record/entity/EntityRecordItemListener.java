@@ -332,8 +332,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             topicMessage.setChunkTotal(chunkInfo.getTotal());
 
             if (chunkInfo.hasInitialTransactionID()) {
-                topicMessage.setValidStartTimestamp(DomainUtils.timestampInNanosMax(chunkInfo.getInitialTransactionID()
-                        .getTransactionValidStart()));
+                topicMessage.setInitialTransactionId(chunkInfo.getInitialTransactionID().toByteArray());
             }
         }
 
