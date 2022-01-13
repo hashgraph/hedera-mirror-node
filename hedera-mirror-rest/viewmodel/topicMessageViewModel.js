@@ -20,8 +20,11 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 const EntityId = require('../entityId');
 const utils = require('../utils');
+const {TransactionID} = require('@hashgraph/proto');
 
 /**
  * Topic message view model
@@ -34,9 +37,10 @@ class TopicMessageViewModel {
    * @param {String} messageEncoding the encoding to display the message in
    */
   constructor(topicMessage, messageEncoding) {
+    if (!_.isNil(topicMessage.chunkNum)) {
+      this.chunk_info = new ChunkInfoViewModel(topicMessage);
+    }
     Object.assign(this, {
-      chunk_number: topicMessage.chunkNum,
-      chunk_total: topicMessage.chunkTotal,
       consensus_timestamp: utils.nsToSecNs(topicMessage.consensusTimestamp),
       topic_id: EntityId.parse(topicMessage.topicId).toString(),
       message: utils.encodeBinary(topicMessage.message, messageEncoding),
@@ -44,7 +48,29 @@ class TopicMessageViewModel {
       running_hash: utils.encodeBase64(topicMessage.runningHash),
       running_hash_version: parseInt(topicMessage.runningHashVersion),
       sequence_number: parseInt(topicMessage.sequenceNumber),
-      valid_start_timestamp: utils.nsToSecNs(topicMessage.validStartTimestamp),
+    });
+  }
+}
+
+class ChunkInfoViewModel {
+  constructor(topicMessage) {
+    if (!_.isNil(topicMessage.initialTransactionId)) {
+      const transactionId = TransactionID.decode(topicMessage.initialTransactionId);
+      this.initial_transaction_id = utils.createTransactionIdFromProto(
+        transactionId.accountID,
+        transactionId.transactionValidStart
+      );
+      this.nonce = transactionId.nonce;
+      this.scheduled = transactionId.scheduled;
+    } else {
+      this.initial_transaction_id = utils.createTransactionId(
+        EntityId.parse(topicMessage.payerAccountId).toString(),
+        topicMessage.validStartTimestamp
+      );
+    }
+    Object.assign(this, {
+      number: topicMessage.chunkNum,
+      total: topicMessage.chunkTotal,
     });
   }
 }

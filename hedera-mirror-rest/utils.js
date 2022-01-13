@@ -20,6 +20,7 @@
 
 'use strict';
 
+const {AccountID, Timestamp} = require('@hashgraph/proto');
 const _ = require('lodash');
 const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
@@ -650,6 +651,15 @@ const nsToSecNsWithHyphen = (ns) => {
 };
 
 /**
+ * Converts a protobuf Timestamp to seconds-nnnnnnnnn format
+ * @param {Timestamp} protoTimestamp
+ * @returns {String}
+ */
+const protobufTimestampToSecNsWithHyphen = (protoTimestamp) => {
+  return `${protoTimestamp.seconds}-${protoTimestamp.nanos.toString().padStart(9, '0')}`;
+};
+
+/**
  * Converts seconds since epoch (seconds.nnnnnnnnn format) to  nanoseconds
  * @param {String} Seconds since epoch (seconds.nnnnnnnnn format)
  * @return {String} ns Nanoseconds since epoch
@@ -778,6 +788,17 @@ const getNullableNumber = (num) => {
  */
 const createTransactionId = (entityStr, validStartTimestamp) => {
   return `${entityStr}-${nsToSecNsWithHyphen(validStartTimestamp)}`;
+};
+
+/**
+ * Creates a transactionId from a protobuf Timestamp's accountId and timestamp
+ * @param {AccountID} protoAccountId
+ * @param {Timestamp} protoTimestamp
+ * @returns {string} transactionId of format shard.realm.num-sssssssssss-nnnnnnnnn
+ */
+const createTransactionIdFromProto = (protoAccountId, protoTimestamp) => {
+  const entityStr = EntityId.of(protoAccountId.shardNum, protoAccountId.realmNum, protoAccountId.accountNum).toString();
+  return `${entityStr}-${protobufTimestampToSecNsWithHyphen(protoTimestamp)}`;
 };
 
 /**
@@ -1096,6 +1117,7 @@ module.exports = {
   buildPgSqlObject,
   checkTimestampRange,
   createTransactionId,
+  createTransactionIdFromProto,
   convertMySqlStyleQueryToPostgres,
   encodeBase64,
   encodeBinary,
@@ -1146,6 +1168,7 @@ if (isTestEnv()) {
     formatComparator,
     formatFilters,
     getLimitParamValue,
+    protobufTimestampToSecNsWithHyphen,
     validateAndParseFilters,
     validateFilters,
   });
