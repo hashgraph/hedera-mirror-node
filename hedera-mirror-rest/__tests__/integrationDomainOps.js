@@ -699,6 +699,7 @@ const addTopicMessage = async (message) => {
     'chunk_num',
     'chunk_total',
     'consensus_timestamp',
+    'initial_transaction_id',
     'topic_id',
     'message',
     'payer_account_id',
@@ -713,6 +714,7 @@ const addTopicMessage = async (message) => {
   message = {
     chunk_num: 1,
     chunk_total: 1,
+    initial_transaction_id: null,
     message: 'message', // Base64 encoding: bWVzc2FnZQ==
     payer_account_id: 3,
     running_hash: 'running_hash', // Base64 encoding: cnVubmluZ19oYXNo
@@ -721,6 +723,8 @@ const addTopicMessage = async (message) => {
     ...message,
   };
 
+  message.initial_transaction_id =
+    message.initial_transaction_id == null ? null : Buffer.from(message.initial_transaction_id);
   await insertDomainObject(table, insertFields, message);
 };
 

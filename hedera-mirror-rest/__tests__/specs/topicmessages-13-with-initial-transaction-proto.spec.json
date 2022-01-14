@@ -17,9 +17,8 @@
         "sequence_number": 1
       },
       {
-        "chunk_num": null,
-        "chunk_total": null,
         "consensus_timestamp": "1234567890000000002",
+        "initial_transaction_id": [10, 9, 8, -46, -123, -40, -52, 4, 16, -63, 2, 18, 2, 24, 3, 24, 1, 32, 1],
         "topic_id": 7,
         "sequence_number": 2,
         "valid_start_timestamp": null
@@ -54,6 +53,13 @@
         "sequence_number": 1
       },
       {
+        "chunk_info": {
+          "number": 2,
+          "total": 3,
+          "initial_transaction_id": "0.0.3-1234567890-000000321",
+          "nonce": 1,
+          "scheduled": true
+        },
         "consensus_timestamp": "1234567890.000000002",
         "topic_id": "0.0.7",
         "message": "bWVzc2FnZQ==",
