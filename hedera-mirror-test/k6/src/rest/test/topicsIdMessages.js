@@ -21,12 +21,12 @@
 import { check } from "k6";
 import http from "k6/http";
 
-import { getOptionsWithScenarios } from '../../lib/common.js';
-
-// use unique scenario name among all tests
-const options = getOptionsWithScenarios('topicsIdMessages');
+import { getOptionsWithScenario } from '../../lib/common.js';
 
 const urlTag = '/api/v1/topics/{id}/messages';
+
+// use unique scenario name among all tests
+const options = getOptionsWithScenario('topicsIdMessages', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/topics/${__ENV.DEFAULT_TOPIC}/messages?limit=${__ENV.DEFAULT_LIMIT}`;

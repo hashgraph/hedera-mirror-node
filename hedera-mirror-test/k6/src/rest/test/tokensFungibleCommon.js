@@ -21,12 +21,12 @@
 import { check } from "k6";
 import http from "k6/http";
 
-import { getOptionsWithScenarios } from '../../lib/common.js';
-
-// use unique scenario name among all tests
-const options = getOptionsWithScenarios('tokensFungibleCommon');
+import { getOptionsWithScenario } from '../../lib/common.js';
 
 const urlTag = '/api/v1/tokens?type=FUNGIBLE_COMMON';
+
+// use unique scenario name among all tests
+const options = getOptionsWithScenario('tokensFungibleCommon', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + urlTag;

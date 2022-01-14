@@ -21,12 +21,12 @@
 import { check } from "k6";
 import http from "k6/http";
 
-import { getOptionsWithScenarios } from '../../lib/common.js';
-
-// use unique scenario name among all tests
-const options = getOptionsWithScenarios('topicsIdMessagesSequenceQueryParam');
+import { getOptionsWithScenario } from '../../lib/common.js';
 
 const urlTag = '/api/v1/topics/{id}/messages?sequencenumber={sequenceNumber}';
+
+// use unique scenario name among all tests
+const options = getOptionsWithScenario('topicsIdMessagesSequenceQueryParam', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/topics/${__ENV.DEFAULT_TOPIC}/messages?sequencenumber=${__ENV.DEFAULT_TOPIC_SEQUENCE}`;

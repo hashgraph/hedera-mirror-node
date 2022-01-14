@@ -22,11 +22,11 @@ import * as common from '../../lib/common.js';
 
 // import test modules
 import * as accounts from './accounts.js';
-import * as accountsBalance from './accountsBalance.js';
 import * as accountsBalanceFalse from './accountsBalanceFalse.js';
 import * as accountsBalanceFalsePubkey from './accountsBalanceFalsePubkey.js';
 import * as accountsBalanceGt0 from './accountsBalanceGt0.js';
 import * as accountsBalanceGt0Pubkey from './accountsBalanceGt0Pubkey.js';
+import * as accountsBalanceNe from './accountsBalanceNe.js';
 import * as accountsId from './accountsId.js';
 import * as accountsIdNe from './accountsIdNe.js';
 import * as balances from './balances.js';
@@ -58,11 +58,11 @@ import * as transactionsId from './transactionsId.js';
 // add test modules here
 const tests = {
   accounts,
-  accountsBalance,
   accountsBalanceFalse,
   accountsBalanceFalsePubkey,
   accountsBalanceGt0,
   accountsBalanceGt0Pubkey,
+  accountsBalanceNe,
   accountsId,
   accountsIdNe,
   balances,

@@ -21,12 +21,12 @@
 import { check } from "k6";
 import http from "k6/http";
 
-import { getOptionsWithScenarios } from '../../lib/common.js';
-
-// use unique scenario name among all tests
-const options = getOptionsWithScenarios('contractsIdResults');
+import {getOptionsWithScenario} from '../../lib/common.js';
 
 const urlTag = '/api/v1/contracts/{id}/results';
+
+// use unique scenario name among all tests
+const options = getOptionsWithScenario('contractsIdResults',{url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results`;

@@ -44,12 +44,12 @@ function getNextStartTime(startTime, duration, gracefulStop) {
   return `${parseInt(startTime) + parseInt(gracefulStop) + parseInt(duration)}s`;
 }
 
-function getOptionsWithScenarios(...names) {
-  const scenarios = names.reduce((res, name) => {
-    res[name] = Object.assign({}, scenario);
-    return res;
-  }, {});
-  return Object.assign({}, options, {scenarios});
+function getOptionsWithScenario(name, tags) {
+  return Object.assign({}, options, {
+    scenarios: {
+      [name]: Object.assign({}, scenario, {tags}),
+    },
+  });
 }
 
 function getSequentialTestScenarios(tests) {
@@ -112,4 +112,4 @@ const scenario = {
   vus: __ENV.DEFAULT_VUS,
 };
 
-export {getNextStartTime, getOptionsWithScenarios, getSequentialTestScenarios, options, scenario};
+export {getNextStartTime, getOptionsWithScenario, getSequentialTestScenarios, options, scenario};

@@ -35,7 +35,7 @@ function getScenario(metricKey) {
 }
 
 function markdownReport(data) {
-  const header = `| scenario | VUE | pass% | RPS | http_req_duration | Comment |
+  const header = `| URL | VUE | pass% | RPS | http_req_duration | Comment |
 |----------|-----|-------|-----|-------------------|---------|`;
 
   // collect the metrics
@@ -56,9 +56,15 @@ function markdownReport(data) {
     }
 
     const scenario = getScenario(key);
-    Object.assign(scenarioMetrics[scenario] || {}, {[metric]: metrics[key]});
+    scenarioMetrics[scenario] = Object.assign(scenarioMetrics[scenario] || {}, {[metric]: metrics[key]});
   }
 
+  const scenarioUrls = {};
+  for (const name of Object.keys(options.scenarios)) {
+    scenarioUrls[name] = options.scenarios[name].tags.url;
+  }
+
+  // generate the markdown report
   let markdown = `${header}\n`;
   for (const scenario of Object.keys(scenarioMetrics).sort()) {
     const scenarioMetric = scenarioMetrics[scenario];
@@ -68,7 +74,7 @@ function markdownReport(data) {
     const rps = ((httpReqs * 1.0 / duration) * 1000).toFixed(2);
     const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
 
-    markdown += `| ${scenario} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${httpReqDuration}ms | |\n`;
+    markdown += `| ${scenarioUrls[scenario]} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${httpReqDuration}ms | |\n`;
   }
 
   return markdown;

@@ -21,12 +21,12 @@
 import { check } from "k6";
 import http from "k6/http";
 
-import { getOptionsWithScenarios } from '../../lib/common.js';
-
-// use unique scenario name among all tests
-const options = getOptionsWithScenarios('accountsBalanceGt0Pubkey');
+import {getOptionsWithScenario} from '../../lib/common.js';
 
 const urlTag = '/api/v1/accounts?account.balance=gt:0&account.publickey={publicKey}';
+
+// use unique scenario name among all tests
+const options = getOptionsWithScenario('accountsBalanceGt0Pubkey',{url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/accounts?account.balance=gt:0&account.publickey=${__ENV.DEFAULT_PUBLICKEY_TRUE}`;

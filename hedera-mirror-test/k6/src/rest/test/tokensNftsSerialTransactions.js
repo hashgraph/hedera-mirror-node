@@ -21,12 +21,12 @@
 import { check } from "k6";
 import http from "k6/http";
 
-import { getOptionsWithScenarios } from '../../lib/common.js';
-
-// use unique scenario name among all tests
-const options = getOptionsWithScenarios('tokensNftsSerialTransactions');
+import { getOptionsWithScenario } from '../../lib/common.js';
 
 const urlTag = '/api/v1/tokens/{id}/nfts/{serial}/transactions';
+
+// use unique scenario name among all tests
+const options = getOptionsWithScenario('tokensNftsSerialTransactions', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/tokens/${__ENV.DEFAULT_NFT}/nfts/${__ENV.DEFAULT_NFT_SERIAL}/transactions`;
