@@ -1,0 +1,62 @@
+{
+  "description": "Contract results api call using failed CONTRACTCREATE's transactionId",
+  "setup": {
+    "contractresults": [
+      {
+        "amount": 30,
+        "bloom": [5, 5],
+        "call_result": [],
+        "consensus_timestamp": "167654000123456",
+        "contract_id": null,
+        "created_contract_ids": [],
+        "error_message": "fatal",
+        "function_parameters": [7, 7],
+        "function_result": [8, 8],
+        "gas_limit": 987654,
+        "gas_used": 123,
+        "payer_account_id": 8001
+      }
+    ],
+    "recordFiles": [
+      {
+        "index": 17,
+        "consensus_start": 167654000123450,
+        "consensus_end": 167654000123460,
+        "hash": "6ceecd8bb224da491"
+      }
+    ],
+    "transactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "payerAccountId": "8001",
+        "transaction_hash": "519a008fabde4d",
+        "type": 8,
+        "result": 33,
+        "valid_start_timestamp": 167654000123400
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/results/0.0.8001-167654-000123400",
+    "/api/v1/contracts/results/0.0.8001-167654-000123400?nonce=0",
+    "/api/v1/contracts/results/0.0.8001-167654-000123400?nonce=1&nonce=0"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "amount": 30,
+    "block_hash": "0x6ceecd8bb224da491",
+    "block_number": 17,
+    "call_result": "0x",
+    "contract_id": null,
+    "created_contract_ids": [],
+    "error_message": "fatal",
+    "from": "0x0000000000000000000000000000000000001f41",
+    "function_parameters": "0x0707",
+    "gas_limit": 987654,
+    "gas_used": 123,
+    "hash": "0x3531396130303866616264653464",
+    "logs": [],
+    "timestamp": "167654.000123456",
+    "to": null
+  }
+}
