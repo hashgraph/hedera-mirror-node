@@ -1,5 +1,5 @@
 {
-  "description": "Get topic messages with no arguments",
+  "description": "Get topic messages with no arguments where one message has a saved protobuf initial_transaction_id",
   "setup": {
     "accounts": [
       {

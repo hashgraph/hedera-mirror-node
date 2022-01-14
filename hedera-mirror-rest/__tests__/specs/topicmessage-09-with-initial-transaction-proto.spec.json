@@ -1,5 +1,5 @@
 {
-  "description": "Get single message by valid consensus timestamp",
+  "description": "Get single message by valid consensus timestamp where the message has a saved protobuf initial_transaction_id",
   "setup": {
     "accounts": [],
     "balances": [],
