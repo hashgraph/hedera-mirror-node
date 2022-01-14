@@ -43,6 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -74,7 +75,6 @@ import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;

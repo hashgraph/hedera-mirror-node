@@ -20,6 +20,10 @@ package com.hedera.mirror.grpc.controller;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+
+import com.hedera.mirror.common.exception.InvalidEntityException;
+
 import com.hederahashgraph.api.proto.java.Timestamp;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -43,7 +47,6 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 import com.hedera.mirror.grpc.exception.TopicNotFoundException;
 import com.hedera.mirror.grpc.service.TopicMessageService;
-import com.hedera.mirror.grpc.util.EntityId;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
 /**
@@ -72,37 +75,31 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
     }
 
     private TopicMessageFilter toFilter(ConsensusTopicQuery query) {
-        if (!query.hasTopicID()) {
-            throw new IllegalArgumentException("Missing required topicID");
-        }
+        var filter = TopicMessageFilter.builder()
+                .limit(query.getLimit());
 
-        Long topicId = EntityId.encode(query.getTopicID());
-        if (topicId == null) {
-            throw new IllegalArgumentException("Invalid entity ID");
+        if (query.hasTopicID()) {
+            filter.topicId(EntityId.of(query.getTopicID()));
         }
-
-        TopicMessageFilter.TopicMessageFilterBuilder builder = TopicMessageFilter.builder()
-                .limit(query.getLimit())
-                .topicId(topicId);
 
         if (query.hasConsensusStartTime()) {
             Timestamp startTimeStamp = query.getConsensusStartTime();
             Instant startInstant = ProtoUtil.fromTimestamp(startTimeStamp);
-            builder.startTime(startInstant.isBefore(Instant.EPOCH) ? Instant.EPOCH : startInstant);
+            filter.startTime(startInstant.isBefore(Instant.EPOCH) ? Instant.EPOCH : startInstant);
         }
 
         if (query.hasConsensusEndTime()) {
             Timestamp endTimeStamp = query.getConsensusEndTime();
             Instant endInstant = ProtoUtil.fromTimestamp(endTimeStamp);
-            builder.endTime(endInstant.isAfter(InstantToLongConverter.LONG_MAX_INSTANT) ?
+            filter.endTime(endInstant.isAfter(InstantToLongConverter.LONG_MAX_INSTANT) ?
                     InstantToLongConverter.LONG_MAX_INSTANT : endInstant);
         }
 
-        return builder.build();
+        return filter.build();
     }
 
     private StatusRuntimeException mapError(Throwable t) {
-        if (t instanceof ConstraintViolationException || t instanceof IllegalArgumentException) {
+        if (t instanceof ConstraintViolationException || t instanceof IllegalArgumentException || t instanceof InvalidEntityException) {
             return clientError(t, Status.INVALID_ARGUMENT, t.getMessage());
         } else if (Exceptions.isOverflow(t)) {
             return clientError(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);

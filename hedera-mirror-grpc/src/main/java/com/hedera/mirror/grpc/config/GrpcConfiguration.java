@@ -34,13 +34,15 @@ import net.devh.boot.grpc.server.service.GrpcServiceDefinition;
 import net.devh.boot.grpc.server.service.GrpcServiceDiscoverer;
 import org.springframework.boot.actuate.health.CompositeHealthContributor;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import com.hedera.mirror.grpc.GrpcProperties;
 
 @Configuration
-public class GrpcConfiguration {
+@EntityScan({"com.hedera.mirror.common.domain.addressbook", "com.hedera.mirror.grpc.domain"})
+class GrpcConfiguration {
 
     @Bean
     CompositeHealthContributor grpcServices(GrpcServiceDiscoverer grpcServiceDiscoverer,
@@ -57,7 +59,7 @@ public class GrpcConfiguration {
     }
 
     @Bean
-    public GrpcServerConfigurer grpcServerConfigurer(GrpcProperties grpcProperties) {
+    GrpcServerConfigurer grpcServerConfigurer(GrpcProperties grpcProperties) {
         NettyProperties nettyProperties = grpcProperties.getNetty();
         Executor executor = new ThreadPoolExecutor(
                 nettyProperties.getExecutorCoreThreadCount(),

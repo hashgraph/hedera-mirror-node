@@ -21,6 +21,9 @@ package com.hedera.mirror.grpc.service;
  */
 
 import com.google.common.base.Stopwatch;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
@@ -94,7 +97,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
     private Mono<?> topicExists(TopicMessageFilter filter) {
         return Mono.justOrEmpty(entityRepository
-                        .findById(filter.getTopicId()))
+                        .findById(filter.getTopicId().getId()))
                 .switchIfEmpty(grpcProperties.isCheckTopicExists() ? Mono.error(new TopicNotFoundException()) :
                         Mono.just(Entity.builder().type(EntityType.TOPIC).build()))
                 .filter(e -> e.getType() == EntityType.TOPIC)
@@ -179,7 +182,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
         private final AtomicReference<TopicMessage> last;
         private final Instant startTime;
         private final Stopwatch stopwatch;
-        private final long topicId;
+        private final EntityId topicId;
 
         private TopicContext(TopicMessageFilter filter) {
             this.count = new AtomicLong(0L);

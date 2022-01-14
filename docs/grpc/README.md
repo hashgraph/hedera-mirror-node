@@ -1,4 +1,19 @@
 # gRPC API
 
-The gRPC API provides a protobuf defined interface for interacting with the mirror node. Currently only the Hedera
-Consensus Service (HCS) topic subscription is supported.
+The gRPC API provides a protobuf defined interface for interacting with the mirror node.
+
+## Consensus Service
+
+### Subscribe Topic
+
+The Hedera Consensus Service (HCS) provides decentralized consensus on the validity and order of messages submitted to a
+topic on the network and transparency into the history of these events over time. The `subscribeTopic` API allows a
+client to subscribe to a topic and stream messages asynchronously as they arrive at the mirror node.
+
+## Network Service
+
+### Get Nodes
+
+[HIP-21](https://hips.hedera.com/hip/hip-21) describes a need for clients to retrieve address book information without
+incurring the costs of multiple queries to get the network file's contents. The `getNode` API will return the list of
+nodes associated with the latest address book file.

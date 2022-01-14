@@ -51,6 +51,7 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
 
         TopicMessageFilter filterFast = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
+                .topicId(topicId)
                 .build();
 
         // create a fast subscriber to keep the shared flux open. the fast subscriber should receive all messages
@@ -63,6 +64,7 @@ public abstract class AbstractSharedTopicListenerTest extends AbstractTopicListe
 
         TopicMessageFilter filterSlow = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
+                .topicId(topicId)
                 .build();
 
         // send the messages in two batches and wait 2 * polling interval between. Limit the first batch to

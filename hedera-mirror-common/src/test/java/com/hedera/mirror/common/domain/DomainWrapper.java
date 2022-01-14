@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.config;
+package com.hedera.mirror.common.domain;
 
 /*-
  * ‌
@@ -20,16 +20,13 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import java.util.function.Consumer;
 
-@TestConfiguration
-public class MeterRegistryConfiguration {
+public interface DomainWrapper<T, B> {
 
-    @Bean
-    public MeterRegistry prometheusMeterRegistry() {
-        return new SimpleMeterRegistry();
-    }
+    DomainWrapper<T, B> customize(Consumer<B> customizer);
+
+    T get();
+
+    T persist();
 }

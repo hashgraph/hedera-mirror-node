@@ -31,8 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.importer.domain.DomainBuilder;
 
 class EntityRepositoryTest extends AbstractRepositoryTest {
 

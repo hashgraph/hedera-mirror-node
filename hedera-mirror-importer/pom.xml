@@ -190,6 +190,13 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>com.hedera</groupId>
+            <artifactId>hedera-mirror-common</artifactId>
+            <version>${release.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
             <version>${commons-beanutils.version}</version>

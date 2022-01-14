@@ -35,12 +35,14 @@ import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
+import javax.persistence.IdClass;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Transient;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -55,27 +57,29 @@ import com.hedera.mirror.common.converter.AccountIdConverter;
 @Builder(toBuilder = true)
 @Data
 @Entity
+@IdClass(AddressBookEntry.Id.class)
 @NoArgsConstructor
-@AllArgsConstructor
-@ToString(exclude = {"publicKey", "nodeCertHash"})
-public class AddressBookEntry implements Persistable<AddressBookEntry.Id>, Serializable {
-    private static final long serialVersionUID = -2037596800253225229L;
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For builder
+public class AddressBookEntry implements Persistable<AddressBookEntry.Id> {
 
-    @JsonIgnore
-    @EmbeddedId
-    @JsonUnwrapped
-    private AddressBookEntry.Id id;
+    @javax.persistence.Id
+    private long consensusTimestamp;
 
     private String description;
 
     private String memo;
 
-    private String publicKey;
+    @javax.persistence.Id
+    private long nodeId;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;
 
+    @ToString.Exclude
     private byte[] nodeCertHash;
+
+    @ToString.Exclude
+    private String publicKey;
 
     @EqualsAndHashCode.Exclude
     @JoinColumn(name = "consensusTimestamp", referencedColumnName = "consensusTimestamp")
@@ -97,9 +101,13 @@ public class AddressBookEntry implements Persistable<AddressBookEntry.Id>, Seria
         }
     }
 
-    @Transient
-    public String getNodeAccountIdString() {
-        return nodeAccountId.entityIdToString();
+    @JsonIgnore
+    @Override
+    public AddressBookEntry.Id getId() {
+        AddressBookEntry.Id id = new AddressBookEntry.Id();
+        id.setConsensusTimestamp(consensusTimestamp);
+        id.setNodeId(nodeId);
+        return id;
     }
 
     @JsonIgnore
@@ -109,9 +117,6 @@ public class AddressBookEntry implements Persistable<AddressBookEntry.Id>, Seria
     }
 
     @Data
-    @Embeddable
-    @AllArgsConstructor
-    @NoArgsConstructor
     public static class Id implements Serializable {
 
         private static final long serialVersionUID = -3761184325551298389L;

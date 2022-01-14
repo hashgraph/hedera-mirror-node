@@ -49,6 +49,7 @@ import javax.annotation.Resource;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
@@ -61,7 +62,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractRepository;

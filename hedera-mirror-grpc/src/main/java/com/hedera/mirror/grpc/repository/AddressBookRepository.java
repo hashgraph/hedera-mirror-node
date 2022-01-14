@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.grpc.repository;
 
 /*-
  * ‌
@@ -20,17 +20,14 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import javax.annotation.Resource;
-import org.springframework.jdbc.core.JdbcOperations;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
 
-public abstract class AbstractRepositoryTest extends IntegrationTest {
+public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
 
-    @Resource
-    protected DomainBuilder domainBuilder;
-
-    @Resource
-    protected JdbcOperations jdbcOperations;
+    @Query(value = "select max(start_consensus_timestamp) from address_book where file_id = ?", nativeQuery = true)
+    Optional<Long> findLatestTimestamp(long fileId);
 }

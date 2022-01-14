@@ -34,9 +34,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Transient;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -45,12 +43,13 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import com.hedera.mirror.common.converter.FileIdConverter;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
 @Builder(toBuilder = true)
 @Data
 @Entity
 @NoArgsConstructor
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For builder
 public class AddressBook {
     // consensusTimestamp + 1ns of transaction containing final fileAppend operation
     @Id
@@ -59,13 +58,17 @@ public class AddressBook {
     // consensusTimestamp of transaction containing final fileAppend operation of next address book
     private Long endConsensusTimestamp;
 
+    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
+    @JoinColumn(name = "consensusTimestamp")
+    private List<AddressBookEntry> entries = new ArrayList<>();
+
+    @ToString.Exclude
+    private byte[] fileData;
+
     @Convert(converter = FileIdConverter.class)
     private EntityId fileId;
 
     private Integer nodeCount;
-
-    @ToString.Exclude
-    private byte[] fileData;
 
     @ToString.Exclude
     @Transient
@@ -73,11 +76,7 @@ public class AddressBook {
     private final Map<String, PublicKey> nodeAccountIDPubKeyMap = this.getEntries()
             .stream()
             .collect(Collectors
-                    .toMap(AddressBookEntry::getNodeAccountIdString, AddressBookEntry::getPublicKeyAsObject));
-
-    @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
-    @JoinColumn(name = "consensusTimestamp")
-    private List<AddressBookEntry> entries = new ArrayList<>();
+                    .toMap(e -> e.getNodeAccountId().toString(), AddressBookEntry::getPublicKeyAsObject));
 
     public Set<EntityId> getNodeSet() {
         return entries.stream()

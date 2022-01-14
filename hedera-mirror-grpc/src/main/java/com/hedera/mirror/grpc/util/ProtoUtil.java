@@ -20,14 +20,18 @@ package com.hedera.mirror.grpc.util;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.UnsafeByteOperations;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import lombok.experimental.UtilityClass;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+import com.hedera.mirror.common.domain.entity.EntityId;
+
+@UtilityClass
 public final class ProtoUtil {
-    public static final Instant fromTimestamp(Timestamp timestamp) {
+    public static Instant fromTimestamp(Timestamp timestamp) {
         if (timestamp == null) {
             return null;
         }
@@ -35,7 +39,22 @@ public final class ProtoUtil {
         return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
 
-    public static final Timestamp toTimestamp(Instant instant) {
+    public static AccountID toAccountID(EntityId entityId) {
+        return AccountID.newBuilder()
+                .setShardNum(entityId.getShardNum())
+                .setRealmNum(entityId.getRealmNum())
+                .setAccountNum(entityId.getEntityNum())
+                .build();
+    }
+
+    public static ByteString toByteString(byte[] bytes) {
+        if (bytes == null) {
+            return ByteString.EMPTY;
+        }
+        return UnsafeByteOperations.unsafeWrap(bytes);
+    }
+
+    public static Timestamp toTimestamp(Instant instant) {
         if (instant == null) {
             return null;
         }

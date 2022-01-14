@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.grpc.exception;
 
 /*-
  * ‌
@@ -20,17 +20,13 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import javax.annotation.Resource;
-import org.springframework.jdbc.core.JdbcOperations;
+import com.hedera.mirror.common.exception.MirrorNodeException;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.importer.IntegrationTest;
+public class AddressBookNotFoundException extends MirrorNodeException {
 
-public abstract class AbstractRepositoryTest extends IntegrationTest {
+    public static final String MESSAGE = "Address book does not exist";
 
-    @Resource
-    protected DomainBuilder domainBuilder;
-
-    @Resource
-    protected JdbcOperations jdbcOperations;
+    public AddressBookNotFoundException() {
+        super(MESSAGE);
+    }
 }

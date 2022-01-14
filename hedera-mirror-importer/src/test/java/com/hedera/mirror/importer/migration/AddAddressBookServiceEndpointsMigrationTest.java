@@ -214,8 +214,9 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         int nodeIdCount = 3;
 
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
-                .id(new AddressBookEntry.Id(consensusTimestamp, 0L))
+                .consensusTimestamp(consensusTimestamp)
                 .nodeCertHash("nodeCertHash".getBytes())
+                .nodeId(0L)
                 .publicKey("rsa+public/key");
 
         List<Long> nodeIds = List.of(0L, 1L, 2L);
@@ -271,8 +272,9 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
     void verifyInitialAddressBookNullEntriesUpdated() throws IOException {
         long consensusTimestamp = 1;
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
-                .id(new AddressBookEntry.Id(consensusTimestamp, 0L))
+                .consensusTimestamp(consensusTimestamp)
                 .nodeCertHash("nodeCertHash".getBytes())
+                .nodeId(0L)
                 .publicKey("rsa+public/key");
 
         List<Long> nodeIds = List.of(0L, 1L, 2L, 3L);
@@ -315,16 +317,20 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         insertAddressBook(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID, consensusTimestamp, nodeIds.size());
         insertAddressBookEntry(
                 builder.memo(baseAccountId + (nodeIds.get(0) + nodeAccountOffset))
-                        .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.get(0)))
+                        .consensusTimestamp(consensusTimestamp)
+                        .nodeId(nodeIds.get(0))
                         .build(), "127.0.0.1", null);
         insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(1) + nodeAccountOffset))
-                .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.get(1)))
+                .consensusTimestamp(consensusTimestamp)
+                .nodeId(nodeIds.get(1))
                 .build(), "127.0.0.2", 0);
         insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(2) + nodeAccountOffset))
-                .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.get(2)))
+                .consensusTimestamp(consensusTimestamp)
+                .nodeId(nodeIds.get(2))
                 .build(), "127.0.0.3", null);
         insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(3) + nodeAccountOffset))
-                .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.get(3)))
+                .consensusTimestamp(consensusTimestamp)
+                .nodeId(nodeIds.get(3))
                 .build(), "127.0.0.4", 50211);
 
         runMigration();
@@ -352,7 +358,6 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
 
         serviceListAssert.extracting(AddressBookServiceEndpoint::getId)
                 .extracting(AddressBookServiceEndpoint.Id::getNodeId)
-                .extracting(EntityId::getId)
                 .containsExactlyInAnyOrder(0L, 1L, 2L, 3L);
 
         serviceListAssert.extracting(AddressBookServiceEndpoint::getId)
@@ -382,7 +387,8 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         String accountId = baseAccountId + accountIdNum;
         List<AddressBookEntry> addressBookEntries = new ArrayList<>();
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
-                .id(new AddressBookEntry.Id(consensusTimestamp, nodeId))
+                .consensusTimestamp(consensusTimestamp)
+                .nodeId(nodeId)
                 .memo(accountId)
                 .nodeCertHash("nodeCertHash".getBytes())
                 .nodeAccountId(EntityId.of(accountId, EntityType.ACCOUNT))
@@ -451,12 +457,12 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
                                 "node_cert_hash, node_id, port, public_key) values" +
                                 " (?, ?, ?, ?, ?, ?, ?, ?, ?)",
                         addressBookEntryIdCounter++,
-                        addressBookEntry.getId().getConsensusTimestamp(),
+                        addressBookEntry.getConsensusTimestamp(),
                         ip,
                         addressBookEntry.getMemo(),
                         nodeAccountId,
                         addressBookEntry.getNodeCertHash(),
-                        addressBookEntry.getId().getNodeId(),
+                        addressBookEntry.getNodeId(),
                         port,
                         addressBookEntry.getPublicKey());
     }

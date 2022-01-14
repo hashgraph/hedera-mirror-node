@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc;
+package com.hedera.mirror.grpc.service;
 
 /*-
  * ‌
@@ -24,24 +24,27 @@ import java.time.Duration;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.grpc.config.NettyProperties;
-
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.grpc")
-public class GrpcProperties {
+@ConfigurationProperties("hedera.mirror.grpc.addressbook")
+public class AddressBookProperties {
 
-    private boolean checkTopicExists = true;
-
+    @DurationMin(millis = 500L)
     @NotNull
-    private Duration endTimeInterval = Duration.ofSeconds(30);
+    private Duration cacheExpiry = Duration.ofSeconds(5);
+
+    @DurationMin(millis = 100L)
+    @NotNull
+    private Duration maxPageDelay = Duration.ofMillis(250L);
+
+    @DurationMin(millis = 100L)
+    @NotNull
+    private Duration minPageDelay = Duration.ofMillis(100L);
 
     @Min(1)
-    private int entityCacheSize = 50_000;
-
-    @NotNull
-    private NettyProperties netty = new NettyProperties();
+    private int pageSize = 10;
 }

@@ -85,11 +85,12 @@ class AddressBookEntryRepositoryTest extends AbstractRepositoryTest {
     private AddressBookEntry addressBookEntry(Consumer<AddressBookEntry.AddressBookEntryBuilder> nodeAddressCustomizer, long consensusTimestamp, long nodeAccountId) {
         String nodeAccountIdString = String.format("0.0.%s", nodeAccountId);
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
-                .id(new AddressBookEntry.Id(consensusTimestamp, nodeAccountId - 3))
+                .consensusTimestamp(consensusTimestamp)
                 .publicKey("rsa+public/key")
                 .memo(nodeAccountIdString)
                 .nodeAccountId(EntityId.of(nodeAccountIdString, EntityType.ACCOUNT))
-                .nodeCertHash("nodeCertHash".getBytes());
+                .nodeCertHash("nodeCertHash".getBytes())
+                .nodeId(nodeAccountId - 3);
 
         if (nodeAddressCustomizer != null) {
             nodeAddressCustomizer.accept(builder);
