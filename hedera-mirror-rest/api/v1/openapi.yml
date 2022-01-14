@@ -983,6 +983,29 @@ components:
         tokens:
           - token_id: 0.0.200001
             balance: 8
+    ChunkInfo:
+      type: object
+      properties:
+        number:
+          type: integer
+        total:
+          type: integer
+        initial_transaction_id:
+          type: string
+        nonce:
+          type: integer
+        scheduled:
+          type: boolean
+      required:
+        - number
+        - total
+        - initial_transaction_id
+      example:
+        number: 1
+        total: 2
+        initial_transaction_id: "0.0.3-1234567890-000000321"
+        nonce: 2
+        scheduled: true
     Contract:
       type: object
       properties:
@@ -1621,12 +1644,8 @@ components:
     TopicMessage:
       type: object
       properties:
-        chunk_number:
-          type: integer
-          nullable: true
-        chunk_total:
-          type: integer
-          nullable: true
+        chunk_info:
+          $ref: '#/components/schemas/ChunkInfo'
         consensus_timestamp:
           $ref: '#/components/schemas/Timestamp'
         topic_id:
@@ -1642,8 +1661,6 @@ components:
           type: number
         sequence_number:
           type: number
-        valid_start_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
       required:
         - consensus_timestamp
         - topic_id
@@ -1653,8 +1670,12 @@ components:
         - running_hash_version
         - sequence_number
       example:
-        chunk_number: 1
-        chunk_total: 1
+        chunk_info:
+          number: 1
+          total: 2
+          initial_transaction_id: "0.0.10-1234567890-000000321"
+          nonce: 3
+          scheduled: true
         consensus_timestamp: "1234567890.000000001"
         topic_id: 0.0.7
         message: bWVzc2FnZQ==
@@ -1662,7 +1683,6 @@ components:
         running_hash: cnVubmluZ19oYXNo
         running_hash_version: 2
         sequence_number: 1
-        valid_start_timestamp: "1234567890.000000002"
     TopicMessages:
       type: array
       items:
