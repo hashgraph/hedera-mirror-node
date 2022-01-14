@@ -511,6 +511,7 @@ const getTransactionsInnerQuery = function (
       ON coalesce(${Transaction.getFullName(
         Transaction.CONSENSUS_TIMESTAMP
       )}, ctl.consensus_timestamp) = ttl.consensus_timestamp
+      order by consensus_timestamp ${order}
       ${namedLimitQuery}`;
   }
 
