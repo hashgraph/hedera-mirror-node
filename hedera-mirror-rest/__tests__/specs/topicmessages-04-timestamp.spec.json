@@ -33,11 +33,6 @@
   "responseJson": {
     "messages": [
       {
-        "chunk_info": {
-          "number": 1,
-          "total": 1,
-          "initial_transaction_id": "0.0.3-1628751573-995691000"
-        },
         "consensus_timestamp": "1234567890.000000003",
         "topic_id": "0.0.7",
         "message": "bWVzc2FnZQ==",

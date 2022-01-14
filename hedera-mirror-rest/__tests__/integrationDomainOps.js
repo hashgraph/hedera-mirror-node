@@ -712,14 +712,14 @@ const addTopicMessage = async (message) => {
   const table = 'topic_message';
 
   message = {
-    chunk_num: 1,
-    chunk_total: 1,
+    chunk_num: null,
+    chunk_total: null,
     initial_transaction_id: null,
     message: 'message', // Base64 encoding: bWVzc2FnZQ==
     payer_account_id: 3,
     running_hash: 'running_hash', // Base64 encoding: cnVubmluZ19oYXNo
     running_hash_version: 2,
-    valid_start_timestamp: '1628751573995691000',
+    valid_start_timestamp: null,
     ...message,
   };
 

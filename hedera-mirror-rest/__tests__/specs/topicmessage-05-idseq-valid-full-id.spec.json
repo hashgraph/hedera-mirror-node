@@ -34,11 +34,6 @@
   "url": "/api/v1/topics/0.2.3/messages/2",
   "responseStatus": 200,
   "responseJson": {
-    "chunk_info": {
-      "number": 1,
-      "total": 1,
-      "initial_transaction_id": "0.0.3-1628751573-995691000"
-    },
     "consensus_timestamp": "1234567890.000000002",
     "message": "eyIxIiwiMiIsIjMifQ==",
     "payer_account_id": "0.0.3",

@@ -17,21 +17,15 @@
         "sequence_number": 1
       },
       {
-        "chunk_num": null,
-        "chunk_total": null,
         "consensus_timestamp": "1234567890000000002",
         "topic_id": 7,
-        "sequence_number": 2,
-        "valid_start_timestamp": null
+        "sequence_number": 2
       },
       {
-        "chunk_num": 2,
-        "chunk_total": 3,
         "payer_account_id": 10,
         "consensus_timestamp": "1234567890000000003",
         "topic_id": 7,
-        "sequence_number": 3,
-        "valid_start_timestamp": "1234567890000000010"
+        "sequence_number": 3
       }
     ]
   },
@@ -40,11 +34,6 @@
   "responseJson": {
     "messages": [
       {
-        "chunk_info": {
-          "number": 1,
-          "total": 1,
-          "initial_transaction_id": "0.0.3-1628751573-995691000"
-        },
         "consensus_timestamp": "1234567890.000000001",
         "topic_id": "0.0.7",
         "message": "bWVzc2FnZQ==",
@@ -63,11 +52,6 @@
         "sequence_number": 2
       },
       {
-        "chunk_info": {
-          "number": 2,
-          "total": 3,
-          "initial_transaction_id": "0.0.10-1234567890-000000010"
-        },
         "consensus_timestamp": "1234567890.000000003",
         "topic_id": "0.0.7",
         "message": "bWVzc2FnZQ==",

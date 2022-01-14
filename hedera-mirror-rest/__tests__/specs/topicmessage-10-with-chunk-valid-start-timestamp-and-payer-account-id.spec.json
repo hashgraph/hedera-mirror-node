@@ -1,5 +1,5 @@
 {
-  "description": "Get single message by valid consensus timestamp where the message has no chunk data",
+  "description": "Get single message by valid consensus timestamp",
   "setup": {
     "accounts": [],
     "balances": [],
@@ -12,12 +12,13 @@
         "sequence_number": 1
       },
       {
-        "chunk_num": null,
-        "chunk_total": null,
-        "payer_account_id": 3,
+        "chunk_num": 2,
+        "chunk_total": 3,
+        "payer_account_id": 10,
         "consensus_timestamp": "1234567890000000002",
         "topic_id": 7,
-        "sequence_number": 2
+        "sequence_number": 2,
+        "valid_start_timestamp": "1234567890000000000"
       },
       {
         "consensus_timestamp": "1234567890000000003",
@@ -29,10 +30,15 @@
   "url": "/api/v1/topics/messages/1234567890.000000002",
   "responseStatus": 200,
   "responseJson": {
+    "chunk_info": {
+      "number": 2,
+      "total": 3,
+      "initial_transaction_id": "0.0.10-1234567890-000000000"
+    },
     "consensus_timestamp": "1234567890.000000002",
     "topic_id": "0.0.7",
     "message": "bWVzc2FnZQ==",
-    "payer_account_id": "0.0.3",
+    "payer_account_id": "0.0.10",
     "running_hash": "cnVubmluZ19oYXNo",
     "running_hash_version": 2,
     "sequence_number": 2
