@@ -19,13 +19,72 @@
  */
 
 import exec from 'k6/execution';
+import {textSummary} from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
 
 import {funcs, options, scenarioDurationGauge} from './test/index.js';
 
-export {options};
+const checksRegex = /^checks{.*scenario:.*}$/;
+const httpReqDurationRegex = /^http_req_duration{.*scenario:.*}$/;
+const httpReqsRegex = /^http_reqs{.*scenario:.*}$/;
+const scenarioDurationRegex = /^scenario_duration{.*scenario:.*}$/;
+const scenarioRegex = /scenario:([^,}]+)/;
 
-export function run() {
+function getScenario(metricKey) {
+  const match = scenarioRegex.exec(metricKey);
+  return match[1];
+}
+
+function markdownReport(data) {
+  const header = `| scenario | VUE | pass% | RPS | http_req_duration | Comment |
+|----------|-----|-------|-----|-------------------|---------|`;
+
+  // collect the metrics
+  const {metrics} = data;
+  const scenarioMetrics = {};
+  for (const key in metrics) {
+    let metric;
+    if (checksRegex.test(key)) {
+      metric = 'checks';
+    } else if (httpReqDurationRegex.test(key)) {
+      metric = 'http_req_duration';
+    } else if (httpReqsRegex.test(key)) {
+      metric = 'http_reqs';
+    } else if (scenarioDurationRegex.test(key)) {
+      metric = 'scenario_duration';
+    } else {
+      continue;
+    }
+
+    const scenario = getScenario(key);
+    Object.assign(scenarioMetrics[scenario] || {}, {[metric]: metrics[key]});
+  }
+
+  let markdown = `${header}\n`;
+  for (const scenario of Object.keys(scenarioMetrics).sort()) {
+    const scenarioMetric = scenarioMetrics[scenario];
+    const passPercentage = (scenarioMetric['checks'].values.rate * 100.0).toFixed(2);
+    const httpReqs = scenarioMetric['http_reqs'].values.count;
+    const duration = scenarioMetric['scenario_duration'].values.value; // in ms
+    const rps = ((httpReqs * 1.0 / duration) * 1000).toFixed(2);
+    const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
+
+    markdown += `| ${scenario} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${httpReqDuration}ms | |\n`;
+  }
+
+  return markdown;
+}
+
+function handleSummary(data) {
+  return {
+    'stdout': textSummary(data, {indent: '  ', enableColors: true}),
+    'report.md': markdownReport(data),
+  };
+}
+
+function run() {
   const scenario = exec.scenario;
   funcs[scenario.name]();
   scenarioDurationGauge.add(Date.now() - scenario.startTime, {scenario: scenario.name});
 }
+
+export {options, handleSummary, run};

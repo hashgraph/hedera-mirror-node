@@ -24,6 +24,10 @@ const timeRegex = /^[0-9]+s$/;
 
 const SCENARIO_DURATION_METRIC_NAME = 'scenario_duration';
 
+function getMetricNameWithTags(name, ...tags) {
+  return tags.length === 0 ? name : `${name}{${tags}}`;
+}
+
 function getNextStartTime(startTime, duration, gracefulStop) {
   if (!timeRegex.test(startTime)) {
     throw new Error(`Invalid startTime ${startTime}`);
@@ -75,13 +79,13 @@ function getSequentialTestScenarios(tests) {
       const tag = `scenario:${scenarioName}`;
       for (const name in testThresholds) {
         if (name === 'http_req_duration') {
-          thresholds[`${name}{${tag},expected_response:true}`] = testThresholds[name];
+          thresholds[getMetricNameWithTags(name, tag, 'expected_response:true')] = testThresholds[name];
         } else {
-          thresholds[`${name}{${tag}}`] = testThresholds[name];
+          thresholds[getMetricNameWithTags(name, tag)] = testThresholds[name];
         }
       }
-      thresholds[`http_reqs{${tag}}`] = ['count>0'];
-      thresholds[`${SCENARIO_DURATION_METRIC_NAME}{${tag}}`] = ['value>0'];
+      thresholds[getMetricNameWithTags('http_reqs', tag)] = ['count>0'];
+      thresholds[getMetricNameWithTags(SCENARIO_DURATION_METRIC_NAME,tag)] = ['value>0'];
     }
   }
 
