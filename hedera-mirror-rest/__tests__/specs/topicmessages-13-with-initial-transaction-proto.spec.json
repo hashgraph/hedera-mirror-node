@@ -54,8 +54,8 @@
       },
       {
         "chunk_info": {
-          "number": 2,
-          "total": 3,
+          "number": 1,
+          "total": 1,
           "initial_transaction_id": "0.0.3-1234567890-000000321",
           "nonce": 1,
           "scheduled": true
