@@ -26,7 +26,6 @@ const {ContractController} = require('../controllers');
 
 const router = Router();
 
-// use full path to ensure controllers have access for next link population
 const resource = 'contracts';
 router.getAsync('/', ContractController.getContracts);
 router.getAsync('/:contractId', ContractController.getContractById);
