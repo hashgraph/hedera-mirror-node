@@ -39,6 +39,7 @@ class TopicMessage {
   static CHUNK_NUM = 'chunk_num';
   static CHUNK_TOTAL = 'chunk_total';
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
+  static INITIAL_TRANSACTION_ID = 'initial_transaction_id';
   static MESSAGE = 'message';
   static PAYER_ACCOUNT_ID = 'payer_account_id';
   static RUNNING_HASH = 'running_hash';
