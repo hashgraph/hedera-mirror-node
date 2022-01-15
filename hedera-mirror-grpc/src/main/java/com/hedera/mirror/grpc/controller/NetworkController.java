@@ -68,13 +68,14 @@ public class NetworkController extends ReactorNetworkServiceGrpc.NetworkServiceI
     }
 
     private AddressBookFilter toFilter(AddressBookQuery query) {
-        var filter = AddressBookFilter.builder();
+        var filter = AddressBookFilter.builder()
+                .limit(query.getLimit());
 
         if (query.hasFileId()) {
             filter.fileId(EntityId.of(query.getFileId()));
         }
 
-        return filter.limit(query.getLimit()).build();
+        return filter.build();
     }
 
     @SuppressWarnings("deprecation")

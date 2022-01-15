@@ -20,6 +20,8 @@ package com.hedera.mirror.grpc.service;
  * ‍
  */
 
+import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,6 +36,8 @@ import reactor.retry.Jitter;
 import reactor.retry.Repeat;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.domain.AddressBookFilter;
 import com.hedera.mirror.grpc.exception.AddressBookNotFoundException;
 import com.hedera.mirror.grpc.repository.AddressBookEntryRepository;
@@ -45,12 +49,22 @@ import com.hedera.mirror.grpc.repository.AddressBookRepository;
 @Validated
 public class NetworkServiceImpl implements NetworkService {
 
+    static final String INVALID_FILE_ID = "Not a valid address book file";
+    private static final Collection<EntityId> VALID_FILE_IDS = Set.of(
+            EntityId.of(0L, 0L, 101L, EntityType.FILE),
+            EntityId.of(0L, 0L, 102L, EntityType.FILE)
+    );
+
     private final AddressBookProperties addressBookProperties;
     private final AddressBookRepository addressBookRepository;
     private final AddressBookEntryRepository addressBookEntryRepository;
 
     @Override
     public Flux<AddressBookEntry> getNodes(AddressBookFilter filter) {
+        if (!VALID_FILE_IDS.contains(filter.getFileId())) {
+            throw new IllegalArgumentException(INVALID_FILE_ID);
+        }
+
         var fileId = filter.getFileId().getId();
         long timestamp = addressBookRepository.findLatestTimestamp(fileId)
                 .orElseThrow(AddressBookNotFoundException::new);

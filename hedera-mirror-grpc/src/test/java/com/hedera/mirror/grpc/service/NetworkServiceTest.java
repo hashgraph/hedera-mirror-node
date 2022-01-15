@@ -20,6 +20,7 @@ package com.hedera.mirror.grpc.service;
  * ‍
  */
 
+import static com.hedera.mirror.grpc.service.NetworkServiceImpl.INVALID_FILE_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -87,10 +88,21 @@ class NetworkServiceTest extends GrpcIntegrationTest {
     @Test
     void addressBookNotFound() {
         AddressBookFilter filter = AddressBookFilter.builder()
-                .fileId(EntityId.of(999L, EntityType.FILE))
+                .fileId(EntityId.of(102L, EntityType.FILE))
                 .build();
 
         assertThatThrownBy(() -> networkService.getNodes(filter)).isInstanceOf(AddressBookNotFoundException.class);
+    }
+
+    @Test
+    void invalidAddressBookFile() {
+        AddressBookFilter filter = AddressBookFilter.builder()
+                .fileId(EntityId.of(999L, EntityType.FILE))
+                .build();
+
+        assertThatThrownBy(() -> networkService.getNodes(filter))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining(INVALID_FILE_ID);
     }
 
     @Test
