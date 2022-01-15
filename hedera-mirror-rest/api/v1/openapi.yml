@@ -996,10 +996,6 @@ components:
           type: integer
         scheduled:
           type: boolean
-      required:
-        - number
-        - total
-        - initial_transaction_id
       example:
         number: 1
         total: 2

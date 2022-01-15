@@ -76,15 +76,6 @@ const validateGetTopicMessagesParams = (topicId) => {
 };
 
 /**
- * Format TopicMessage model into TopicMessageViewModel.
- * @param {TopicMessage} topicMessage
- * @param {String} messageEncoding
- */
-const formatTopicMessageRow = (topicMessage, messageEncoding) => {
-  return new TopicMessageViewModel(topicMessage, messageEncoding);
-};
-
-/**
  * Handler function for /messages/:consensusTimestamp API.
  * Extracts and validates timestamp input, creates db query logic in preparation for db call to get message
  * @return {Promise} Promise for PostgreSQL query
@@ -153,7 +144,7 @@ const getTopicMessages = async (req, res) => {
   // set random_page_cost to 0 to make the cost estimation of using the index on (topic_id, consensus_timestamp)
   // lower than that of the primary key so pg planner will choose the better index when querying topic messages by id
   const messages = await getMessages(query, params, constants.zeroRandomPageCostQueryHint);
-  topicMessagesResponse.messages = messages.map((m) => formatTopicMessageRow(m, messageEncoding));
+  topicMessagesResponse.messages = messages.map((m) => new TopicMessageViewModel(m, messageEncoding));
 
   // populate next
   const lastTimeStamp =
@@ -232,7 +223,8 @@ const getMessage = async (pgSqlQuery, pgSqlParams) => {
   }
 
   logger.debug('getMessage returning single entry');
-  return formatTopicMessageRow(messages[0]);
+
+  return new TopicMessageViewModel(messages[0], messageEncoding);
 };
 
 const getMessages = async (pgSqlQuery, pgSqlParams, preQueryHint) => {
@@ -247,7 +239,6 @@ const getMessages = async (pgSqlQuery, pgSqlParams, preQueryHint) => {
 
 module.exports = {
   extractSqlFromTopicMessagesRequest,
-  formatTopicMessageRow,
   getMessageByConsensusTimestamp,
   getMessageByTopicAndSequenceRequest,
   getTopicMessages,
