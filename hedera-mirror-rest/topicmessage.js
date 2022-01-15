@@ -32,7 +32,7 @@ const utils = require('./utils');
 const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {TopicMessage} = require('./model');
-const {TopicMessageViewModel} = require('./viewmodel/index');
+const {TopicMessageViewModel} = require('./viewmodel');
 
 const columnMap = {
   sequencenumber: TopicMessage.SEQUENCE_NUMBER,
@@ -216,11 +216,11 @@ const getMessage = async (pgSqlQuery, pgSqlParams) => {
   }
 
   const {rows} = await pool.queryQuietly(pgSqlQuery, pgSqlParams);
-  const messages = rows.map((tm) => new TopicMessage(tm));
-  // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
-  if (messages.length !== 1) {
+  if (rows.length !== 1) {
     throw new NotFoundError();
   }
+  const messages = rows.map((tm) => new TopicMessage(tm));
+  // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
 
   logger.debug('getMessage returning single entry');
 
