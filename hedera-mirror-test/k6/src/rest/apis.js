@@ -82,7 +82,7 @@ function markdownReport(data) {
 
 function handleSummary(data) {
   return {
-    'stdout': textSummary(data, {indent: '  ', enableColors: true}),
+    'stdout': textSummary(data, {indent: ' ', enableColors: true}),
     'report.md': markdownReport(data),
   };
 }
@@ -93,4 +93,4 @@ function run() {
   scenarioDurationGauge.add(Date.now() - scenario.startTime, {scenario: scenario.name});
 }
 
-export {options, handleSummary, run};
+export {handleSummary, options, run};
