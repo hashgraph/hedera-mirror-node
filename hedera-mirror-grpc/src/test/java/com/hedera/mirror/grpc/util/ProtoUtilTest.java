@@ -20,19 +20,31 @@ package com.hedera.mirror.grpc.util;
  * ‍
  */
 
+import static com.hedera.mirror.grpc.util.ProtoUtil.DB_ERROR;
+import static com.hedera.mirror.grpc.util.ProtoUtil.OVERFLOW_ERROR;
+import static com.hedera.mirror.grpc.util.ProtoUtil.UNKNOWN_ERROR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import java.time.Instant;
+import java.util.concurrent.TimeoutException;
+import javax.validation.ConstraintViolationException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.dao.NonTransientDataAccessResourceException;
+import org.springframework.dao.QueryTimeoutException;
+import reactor.core.Exceptions;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 
 class ProtoUtilTest {
 
@@ -49,6 +61,31 @@ class ProtoUtilTest {
         Instant instant = Instant.ofEpochSecond(seconds, nanos);
         Timestamp timestamp = Timestamp.newBuilder().setSeconds(seconds).setNanos(nanos).build();
         assertThat(ProtoUtil.fromTimestamp(timestamp)).isEqualTo(instant);
+    }
+
+    @Test
+    void mapError() {
+        var entityId = EntityId.of(1L, EntityType.ACCOUNT);
+        var message = "boom";
+
+        assertException(Exceptions.failWithOverflow(message), Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
+        assertException(new ConstraintViolationException(message, null), Status.INVALID_ARGUMENT, message);
+        assertException(new IllegalArgumentException(message), Status.INVALID_ARGUMENT, message);
+        assertException(new InvalidEntityException(message), Status.INVALID_ARGUMENT, message);
+        assertException(new EntityNotFoundException(entityId), Status.NOT_FOUND, "Account 0.0.1 does not exist");
+        assertException(new NonTransientDataAccessResourceException(message), Status.UNAVAILABLE, DB_ERROR);
+        assertException(new QueryTimeoutException(message), Status.RESOURCE_EXHAUSTED, DB_ERROR);
+        assertException(new TimeoutException(message), Status.RESOURCE_EXHAUSTED, DB_ERROR);
+        assertException(new RuntimeException(message), Status.UNKNOWN, UNKNOWN_ERROR);
+    }
+
+    void assertException(Throwable t, Status status, String message) {
+        assertThat(ProtoUtil.mapError(t))
+                .isNotNull()
+                .hasMessageContaining(message)
+                .extracting(StatusRuntimeException::getStatus)
+                .extracting(Status::getCode)
+                .isEqualTo(status.getCode());
     }
 
     @DisplayName("Convert Instant to Timestamp")

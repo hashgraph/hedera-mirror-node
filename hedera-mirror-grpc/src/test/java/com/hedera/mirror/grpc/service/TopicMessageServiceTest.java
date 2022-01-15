@@ -22,8 +22,6 @@ package com.hedera.mirror.grpc.service;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
@@ -40,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.GrpcProperties;
@@ -47,7 +46,7 @@ import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.Entity;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import com.hedera.mirror.grpc.exception.TopicNotFoundException;
+import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hedera.mirror.grpc.listener.ListenerProperties;
 import com.hedera.mirror.grpc.listener.TopicListener;
 import com.hedera.mirror.grpc.repository.EntityRepository;
@@ -147,7 +146,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         topicMessageService.subscribeTopic(filter)
                 .as(StepVerifier::create)
-                .expectError(TopicNotFoundException.class)
+                .expectError(EntityNotFoundException.class)
                 .verify(Duration.ofMillis(100));
     }
 

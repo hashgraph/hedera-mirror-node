@@ -44,8 +44,6 @@ import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
-import com.hedera.mirror.grpc.exception.AddressBookNotFoundException;
-import com.hedera.mirror.grpc.service.AddressBookProperties;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
 @Log4j2
@@ -55,9 +53,6 @@ class NetworkControllerTest extends GrpcIntegrationTest {
 
     @GrpcClient("local")
     private ReactorNetworkServiceGrpc.ReactorNetworkServiceStub reactiveService;
-
-    @Resource
-    private AddressBookProperties addressBookProperties;
 
     @Resource
     private DomainBuilder domainBuilder;
@@ -99,13 +94,12 @@ class NetworkControllerTest extends GrpcIntegrationTest {
     @Test
     void notFound() {
         AddressBookQuery query = AddressBookQuery.newBuilder()
-                .setFileId(FileID.newBuilder().setFileNum(1L).build())
+                .setFileId(FileID.newBuilder().setFileNum(102L).build())
                 .build();
 
         reactiveService.getNodes(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectErrorSatisfies(t -> assertException(t, Status.Code.NOT_FOUND,
-                        AddressBookNotFoundException.MESSAGE))
+                .expectErrorSatisfies(t -> assertException(t, Status.Code.NOT_FOUND, "does not exist"))
                 .verify(Duration.ofMillis(500));
     }
 

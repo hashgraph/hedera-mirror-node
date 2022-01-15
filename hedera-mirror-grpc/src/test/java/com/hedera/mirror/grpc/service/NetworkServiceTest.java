@@ -41,7 +41,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.AddressBookFilter;
-import com.hedera.mirror.grpc.exception.AddressBookNotFoundException;
+import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hedera.mirror.grpc.repository.AddressBookEntryRepository;
 
 class NetworkServiceTest extends GrpcIntegrationTest {
@@ -91,7 +91,8 @@ class NetworkServiceTest extends GrpcIntegrationTest {
                 .fileId(EntityId.of(102L, EntityType.FILE))
                 .build();
 
-        assertThatThrownBy(() -> networkService.getNodes(filter)).isInstanceOf(AddressBookNotFoundException.class);
+        assertThatThrownBy(() -> networkService.getNodes(filter)).isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("File 0.0.102 does not exist");
     }
 
     @Test

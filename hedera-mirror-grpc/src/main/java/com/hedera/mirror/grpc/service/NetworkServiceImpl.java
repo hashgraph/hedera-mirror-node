@@ -39,7 +39,7 @@ import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.domain.AddressBookFilter;
-import com.hedera.mirror.grpc.exception.AddressBookNotFoundException;
+import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hedera.mirror.grpc.repository.AddressBookEntryRepository;
 import com.hedera.mirror.grpc.repository.AddressBookRepository;
 
@@ -61,13 +61,13 @@ public class NetworkServiceImpl implements NetworkService {
 
     @Override
     public Flux<AddressBookEntry> getNodes(AddressBookFilter filter) {
-        if (!VALID_FILE_IDS.contains(filter.getFileId())) {
+        var fileId = filter.getFileId();
+        if (!VALID_FILE_IDS.contains(fileId)) {
             throw new IllegalArgumentException(INVALID_FILE_ID);
         }
 
-        var fileId = filter.getFileId().getId();
-        long timestamp = addressBookRepository.findLatestTimestamp(fileId)
-                .orElseThrow(AddressBookNotFoundException::new);
+        long timestamp = addressBookRepository.findLatestTimestamp(fileId.getId())
+                .orElseThrow(() -> new EntityNotFoundException(fileId));
         var context = new AddressBookContext(timestamp);
 
         return Flux.defer(() -> page(context))

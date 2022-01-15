@@ -21,9 +21,6 @@ package com.hedera.mirror.grpc.service;
  */
 
 import com.google.common.base.Stopwatch;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
@@ -41,12 +38,13 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import reactor.retry.Repeat;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcProperties;
 import com.hedera.mirror.grpc.domain.Entity;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
-import com.hedera.mirror.grpc.exception.TopicNotFoundException;
+import com.hedera.mirror.grpc.exception.EntityNotFoundException;
 import com.hedera.mirror.grpc.listener.TopicListener;
 import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.retriever.TopicMessageRetriever;
@@ -96,9 +94,9 @@ public class TopicMessageServiceImpl implements TopicMessageService {
     }
 
     private Mono<?> topicExists(TopicMessageFilter filter) {
-        return Mono.justOrEmpty(entityRepository
-                        .findById(filter.getTopicId().getId()))
-                .switchIfEmpty(grpcProperties.isCheckTopicExists() ? Mono.error(new TopicNotFoundException()) :
+        var topicId = filter.getTopicId();
+        return Mono.justOrEmpty(entityRepository.findById(topicId.getId()))
+                .switchIfEmpty(grpcProperties.isCheckTopicExists() ? Mono.error(new EntityNotFoundException(topicId)) :
                         Mono.just(Entity.builder().type(EntityType.TOPIC).build()))
                 .filter(e -> e.getType() == EntityType.TOPIC)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Not a valid topic")));

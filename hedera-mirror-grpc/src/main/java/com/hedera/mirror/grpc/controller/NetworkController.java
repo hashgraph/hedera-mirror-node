@@ -23,18 +23,11 @@ package com.hedera.mirror.grpc.controller;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.NodeAddress;
 import com.hederahashgraph.api.proto.java.ServiceEndpoint;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.TimeoutException;
-import javax.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import net.devh.boot.grpc.server.service.GrpcService;
-import org.springframework.dao.NonTransientDataAccessResourceException;
-import org.springframework.dao.TransientDataAccessException;
-import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -42,9 +35,7 @@ import com.hedera.mirror.api.proto.AddressBookQuery;
 import com.hedera.mirror.api.proto.ReactorNetworkServiceGrpc;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.grpc.domain.AddressBookFilter;
-import com.hedera.mirror.grpc.exception.AddressBookNotFoundException;
 import com.hedera.mirror.grpc.service.NetworkService;
 import com.hedera.mirror.grpc.util.ProtoUtil;
 
@@ -53,10 +44,6 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 @RequiredArgsConstructor
 public class NetworkController extends ReactorNetworkServiceGrpc.NetworkServiceImplBase {
 
-    private static final String DB_ERROR = "Error querying the data source. Please retry later";
-    private static final String OVERFLOW_ERROR = "Client lags too much behind. Please retry later";
-    private static final String UNKNOWN_ERROR = "Unknown error";
-
     private final NetworkService networkService;
 
     @Override
@@ -64,7 +51,7 @@ public class NetworkController extends ReactorNetworkServiceGrpc.NetworkServiceI
         return request.map(this::toFilter)
                 .flatMapMany(networkService::getNodes)
                 .map(this::toNodeAddress)
-                .onErrorMap(this::mapError);
+                .onErrorMap(ProtoUtil::mapError);
     }
 
     private AddressBookFilter toFilter(AddressBookQuery query) {
@@ -119,31 +106,5 @@ public class NetworkController extends ReactorNetworkServiceGrpc.NetworkServiceI
         }
 
         return nodeAddress.build();
-    }
-
-    private StatusRuntimeException mapError(Throwable t) {
-        if (t instanceof ConstraintViolationException || t instanceof IllegalArgumentException || t instanceof InvalidEntityException) {
-            return clientError(t, Status.INVALID_ARGUMENT, t.getMessage());
-        } else if (Exceptions.isOverflow(t)) {
-            return clientError(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
-        } else if (t instanceof NonTransientDataAccessResourceException) {
-            return serverError(t, Status.UNAVAILABLE, DB_ERROR);
-        } else if (t instanceof AddressBookNotFoundException) {
-            return clientError(t, Status.NOT_FOUND, t.getMessage());
-        } else if (t instanceof TransientDataAccessException || t instanceof TimeoutException) {
-            return serverError(t, Status.RESOURCE_EXHAUSTED, DB_ERROR);
-        } else {
-            return serverError(t, Status.UNKNOWN, UNKNOWN_ERROR);
-        }
-    }
-
-    private StatusRuntimeException clientError(Throwable t, Status status, String message) {
-        log.warn("Client error {} subscribing to topic: {}", t.getClass().getSimpleName(), t.getMessage());
-        return status.augmentDescription(message).asRuntimeException();
-    }
-
-    private StatusRuntimeException serverError(Throwable t, Status status, String message) {
-        log.error("Server error subscribing to topic: ", t);
-        return status.augmentDescription(message).asRuntimeException();
     }
 }
