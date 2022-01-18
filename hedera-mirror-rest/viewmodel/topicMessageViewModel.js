@@ -50,21 +50,21 @@ class TopicMessageViewModel {
 
 class ChunkInfoViewModel {
   constructor(topicMessage) {
-    let initial_transaction_id, nonce, scheduled;
+    let initialTransactionId, nonce, scheduled;
     if (!_.isNil(topicMessage.initialTransactionId)) {
       const transactionId = TransactionID.decode(topicMessage.initialTransactionId);
-      initial_transaction_id = utils.createTransactionIdFromProto(transactionId);
+      initialTransactionId = utils.createTransactionIdFromProto(transactionId);
       nonce = transactionId.nonce;
       scheduled = transactionId.scheduled;
     } else {
-      initial_transaction_id = utils.createTransactionId(
+      initialTransactionId = utils.createTransactionId(
         EntityId.parse(topicMessage.payerAccountId).toString(),
         topicMessage.validStartTimestamp
       );
       nonce = null;
       scheduled = null;
     }
-    this.initial_transaction_id = initial_transaction_id;
+    this.initial_transaction_id = initialTransactionId;
     this.nonce = nonce;
     this.number = topicMessage.chunkNum;
     this.scheduled = scheduled;
