@@ -21,8 +21,6 @@
 'use strict';
 
 const {TopicMessageViewModel} = require('../../viewmodel');
-const {Timestamp, AccountID, TransactionID} = require('@hashgraph/proto');
-const {ChunkInfoViewModel} = require('../../viewmodel/topicMessageViewModel');
 
 describe('topicMessageViewModel tests', () => {
   test('Basic topic message', () => {
@@ -106,29 +104,3 @@ const buildDefaultTopicMessageViewModel = () => {
     topic_id: '0.0.4',
   };
 };
-
-describe('Utils createTransactionIdFromProto tests', () => {
-  test('Verify correct result for valid input', () => {
-    const timestamp = Timestamp.create({seconds: 1234567890, nanos: 123});
-    const accountId = AccountID.create({shardNum: 1, realmNum: 2, accountNum: 3});
-    const transactionId = TransactionID.create({accountID: accountId, transactionValidStart: timestamp});
-    expect(ChunkInfoViewModel.createTransactionIdFromProto(transactionId)).toEqual('1.2.3-1234567890-000000123');
-  });
-  test('Verify correct result for default input', () => {
-    const timestamp = Timestamp.create();
-    const accountId = AccountID.create({accountNum: 0}); //accountNum must be populated
-    const transactionId = TransactionID.create({accountID: accountId, transactionValidStart: timestamp});
-    expect(ChunkInfoViewModel.createTransactionIdFromProto(transactionId)).toEqual('0.0.0-0-000000000');
-  });
-});
-
-describe('Utils protobufTimestampToSecNsWithHyphen tests', () => {
-  test('Test valid input produces valid string', () => {
-    const timestamp = Timestamp.create({seconds: 1234567890, nanos: 123});
-    expect(ChunkInfoViewModel.protobufTimestampToSecNsWithHyphen(timestamp)).toEqual('1234567890-000000123');
-  });
-  test('Test default input produces valid string', () => {
-    const timestamp = Timestamp.create();
-    expect(ChunkInfoViewModel.protobufTimestampToSecNsWithHyphen(timestamp)).toEqual('0-000000000');
-  });
-});
