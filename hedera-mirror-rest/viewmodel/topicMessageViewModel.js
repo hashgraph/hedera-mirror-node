@@ -55,7 +55,7 @@ class ChunkInfoViewModel {
     let initial_transaction_id, nonce, scheduled;
     if (!_.isNil(topicMessage.initialTransactionId)) {
       const transactionId = TransactionID.decode(topicMessage.initialTransactionId);
-      initial_transaction_id = utils.createTransactionIdFromProto(
+      initial_transaction_id = ChunkInfoViewModel.createTransactionIdFromProto(
         transactionId.accountID,
         transactionId.transactionValidStart
       );
@@ -75,6 +75,32 @@ class ChunkInfoViewModel {
     this.scheduled = scheduled;
     this.total = topicMessage.chunkTotal;
   }
+
+  /**
+   * Creates a transactionId from a protobuf Timestamp's accountId and timestamp
+   * @param {TransactionID} protoTransactionId
+   * @returns {string} transactionId of format shard.realm.num-sssssssssss-nnnnnnnnn
+   */
+  static createTransactionIdFromProto(protoTransactionId) {
+    const entityStr = EntityId.of(
+      protoTransactionId.accountID.shardNum,
+      protoTransactionId.accountID.realmNum,
+      protoTransactionId.accountID.accountNum
+    ).toString();
+    return `${entityStr}-${this.protobufTimestampToSecNsWithHyphen(protoTransactionId.transactionValidStart)}`;
+  }
+
+  /**
+   * Converts a protobuf Timestamp to seconds-nnnnnnnnn format
+   * @param {Timestamp} protoTimestamp
+   * @returns {String}
+   */
+  static protobufTimestampToSecNsWithHyphen(protoTimestamp) {
+    return `${protoTimestamp.seconds}-${protoTimestamp.nanos.toString().padStart(9, '0')}`;
+  }
 }
 
-module.exports = TopicMessageViewModel;
+module.exports = {
+  TopicMessageViewModel,
+  ChunkInfoViewModel,
+};

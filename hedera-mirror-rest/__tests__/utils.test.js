@@ -110,17 +110,6 @@ describe('Utils nsToSecNs tests', () => {
   });
 });
 
-describe('Utils protobufTimestampToSecNsWithHyphen tests', () => {
-  test('Test valid input produces valid string', () => {
-    const timestamp = Timestamp.create({seconds: 1234567890, nanos: 123});
-    expect(utils.protobufTimestampToSecNsWithHyphen(timestamp)).toEqual('1234567890-000000123');
-  });
-  test('Test default input produces valid string', () => {
-    const timestamp = Timestamp.create();
-    expect(utils.protobufTimestampToSecNsWithHyphen(timestamp)).toEqual('0-000000000');
-  });
-});
-
 describe('Utils createTransactionId tests', () => {
   test('Verify createTransactionId returns correct result for valid inputs', () => {
     expect(utils.createTransactionId('1.2.995', '9223372036854775837')).toEqual('1.2.995-9223372036-854775837');
@@ -128,19 +117,6 @@ describe('Utils createTransactionId tests', () => {
 
   test('Verify nsToSecNs returns correct result for 0 inputs', () => {
     expect(utils.createTransactionId('0.0.0', 0)).toEqual('0.0.0-0-000000000');
-  });
-});
-
-describe('Utils createTransactionIdFromProto tests', () => {
-  test('Verify correct result for valid input', () => {
-    const timestamp = Timestamp.create({seconds: 1234567890, nanos: 123});
-    const accountId = AccountID.create({shardNum: 1, realmNum: 2, accountNum: 3});
-    expect(utils.createTransactionIdFromProto(accountId, timestamp)).toEqual('1.2.3-1234567890-000000123');
-  });
-  test('Verify correct result for default input', () => {
-    const timestamp = Timestamp.create();
-    const accountId = AccountID.create({accountNum: 0}); //accountNum must be populated
-    expect(utils.createTransactionIdFromProto(accountId, timestamp)).toEqual('0.0.0-0-000000000');
   });
 });
 
