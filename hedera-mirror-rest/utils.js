@@ -20,7 +20,7 @@
 
 'use strict';
 
-const {AccountID, Timestamp} = require('@hashgraph/proto');
+const {TransactionID} = require('@hashgraph/proto');
 const _ = require('lodash');
 const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
@@ -651,15 +651,6 @@ const nsToSecNsWithHyphen = (ns) => {
 };
 
 /**
- * Converts a protobuf Timestamp to seconds-nnnnnnnnn format
- * @param {Timestamp} protoTimestamp
- * @returns {String}
- */
-const protobufTimestampToSecNsWithHyphen = (protoTimestamp) => {
-  return `${protoTimestamp.seconds}-${protoTimestamp.nanos.toString().padStart(9, '0')}`;
-};
-
-/**
  * Converts seconds since epoch (seconds.nnnnnnnnn format) to  nanoseconds
  * @param {String} Seconds since epoch (seconds.nnnnnnnnn format)
  * @return {String} ns Nanoseconds since epoch
@@ -792,13 +783,19 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
 
 /**
  * Creates a transactionId from a protobuf Timestamp's accountId and timestamp
- * @param {AccountID} protoAccountId
- * @param {Timestamp} protoTimestamp
+ * @param {TransactionID} protoTransactionId
  * @returns {string} transactionId of format shard.realm.num-sssssssssss-nnnnnnnnn
  */
-const createTransactionIdFromProto = (protoAccountId, protoTimestamp) => {
-  const entityStr = EntityId.of(protoAccountId.shardNum, protoAccountId.realmNum, protoAccountId.accountNum).toString();
-  return `${entityStr}-${protobufTimestampToSecNsWithHyphen(protoTimestamp)}`;
+const createTransactionIdFromProto = (protoTransactionId) => {
+  const entityStr = EntityId.of(
+    protoTransactionId.accountID.shardNum,
+    protoTransactionId.accountID.realmNum,
+    protoTransactionId.accountID.accountNum
+  ).toString();
+  const timestampString = `${
+    protoTransactionId.transactionValidStart.seconds
+  }-${protoTransactionId.transactionValidStart.nanos.toString().padStart(9, '0')}`;
+  return `${entityStr}-${timestampString}`;
 };
 
 /**
@@ -1168,7 +1165,6 @@ if (isTestEnv()) {
     formatComparator,
     formatFilters,
     getLimitParamValue,
-    protobufTimestampToSecNsWithHyphen,
     validateAndParseFilters,
     validateFilters,
   });
