@@ -782,7 +782,7 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
 };
 
 /**
- * Creates a transactionId from a protobuf Timestamp's accountId and timestamp
+ * Creates a transactionId from a protobuf TransactionID
  * @param {TransactionID} protoTransactionId
  * @returns {string} transactionId of format shard.realm.num-sssssssssss-nnnnnnnnn
  */
