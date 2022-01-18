@@ -37,16 +37,14 @@ class TopicMessageViewModel {
    * @param {String} messageEncoding the encoding to display the message in
    */
   constructor(topicMessage, messageEncoding) {
-    Object.assign(this, {
-      chunk_info: _.isNil(topicMessage.chunkNum) ? null : new ChunkInfoViewModel(topicMessage),
-      consensus_timestamp: utils.nsToSecNs(topicMessage.consensusTimestamp),
-      message: utils.encodeBinary(topicMessage.message, messageEncoding),
-      payer_account_id: EntityId.parse(topicMessage.payerAccountId).toString(),
-      running_hash: utils.encodeBase64(topicMessage.runningHash),
-      running_hash_version: parseInt(topicMessage.runningHashVersion),
-      sequence_number: parseInt(topicMessage.sequenceNumber),
-      topic_id: EntityId.parse(topicMessage.topicId).toString(),
-    });
+    this.chunk_info = _.isNil(topicMessage.chunkNum) ? null : new ChunkInfoViewModel(topicMessage);
+    this.consensus_timestamp = utils.nsToSecNs(topicMessage.consensusTimestamp);
+    this.message = utils.encodeBinary(topicMessage.message, messageEncoding);
+    this.payer_account_id = EntityId.parse(topicMessage.payerAccountId).toString();
+    this.running_hash = utils.encodeBase64(topicMessage.runningHash);
+    this.running_hash_version = parseInt(topicMessage.runningHashVersion);
+    this.sequence_number = parseInt(topicMessage.sequenceNumber);
+    this.topic_id = EntityId.parse(topicMessage.topicId).toString();
   }
 }
 
