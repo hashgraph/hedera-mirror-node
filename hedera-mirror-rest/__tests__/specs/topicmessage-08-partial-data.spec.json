@@ -16,6 +16,7 @@
   "url": "/api/v1/topics/7/messages/1",
   "responseStatus": 200,
   "responseJson": {
+    "chunk_info": null,
     "consensus_timestamp": "1234567890.000000001",
     "topic_id": "0.0.7",
     "message": "bWVzc2FnZQ==",

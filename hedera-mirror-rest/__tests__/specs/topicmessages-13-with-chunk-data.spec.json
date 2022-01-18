@@ -35,11 +35,12 @@
       }
     ]
   },
-  "urls": ["/api/v1/topics/0.0.7/messages", "/api/v1/topics/0.7/messages", "/api/v1/topics/7/messages"],
+  "urls": ["/api/v1/topics/0.0.7/messages"],
   "responseStatus": 200,
   "responseJson": {
     "messages": [
       {
+        "chunk_info": null,
         "consensus_timestamp": "1234567890.000000001",
         "topic_id": "0.0.7",
         "message": "bWVzc2FnZQ==",
@@ -68,7 +69,9 @@
         "chunk_info": {
           "number": 2,
           "total": 3,
-          "initial_transaction_id": "0.0.10-1234567890-000000010"
+          "initial_transaction_id": "0.0.10-1234567890-000000010",
+          "nonce": null,
+          "scheduled": null
         },
         "consensus_timestamp": "1234567890.000000003",
         "topic_id": "0.0.7",

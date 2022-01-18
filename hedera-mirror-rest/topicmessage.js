@@ -224,7 +224,7 @@ const getMessage = async (pgSqlQuery, pgSqlParams) => {
 
   logger.debug('getMessage returning single entry');
 
-  return new TopicMessageViewModel(messages[0], messageEncoding);
+  return new TopicMessageViewModel(messages[0]);
 };
 
 const getMessages = async (pgSqlQuery, pgSqlParams, preQueryHint) => {

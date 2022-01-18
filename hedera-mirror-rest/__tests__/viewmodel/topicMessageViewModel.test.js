@@ -47,9 +47,11 @@ describe('topicMessageViewModel tests', () => {
 
     const expected = buildDefaultTopicMessageViewModel();
     expected.chunk_info = {
-      number: 1,
-      total: 10,
       initial_transaction_id: '0.0.3-1234567890-000000000',
+      nonce: null,
+      number: 1,
+      scheduled: null,
+      total: 10,
     };
 
     expect(actual).toEqual(expected);
@@ -67,10 +69,10 @@ describe('topicMessageViewModel tests', () => {
 
     const expected = buildDefaultTopicMessageViewModel();
     expected.chunk_info = {
-      number: 1,
-      total: 10,
       initial_transaction_id: '0.0.3-1234567890-000000321',
       nonce: 1,
+      number: 1,
+      total: 10,
       scheduled: true,
     };
 
@@ -81,23 +83,24 @@ describe('topicMessageViewModel tests', () => {
 const buildDefaultTopicMessageRow = () => {
   return {
     consensusTimestamp: '1234567890000000001',
-    topicId: 4,
     message: Buffer.from([0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65]), //message
     payerAccountId: 3,
     runningHash: Buffer.from([0x68, 0x61, 0x73, 0x68]),
     runningHashVersion: 1,
     sequenceNumber: 1,
+    topicId: 4,
   };
 };
 
 const buildDefaultTopicMessageViewModel = () => {
   return {
+    chunk_info: null,
     consensus_timestamp: '1234567890.000000001',
-    topic_id: '0.0.4',
     message: 'bWVzc2FnZQ==', //message in base64
     payer_account_id: '0.0.3',
     running_hash: 'aGFzaA==', //hash in base64
     running_hash_version: 1,
     sequence_number: 1,
+    topic_id: '0.0.4',
   };
 };

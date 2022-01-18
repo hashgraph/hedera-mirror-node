@@ -37,41 +37,43 @@ class TopicMessageViewModel {
    * @param {String} messageEncoding the encoding to display the message in
    */
   constructor(topicMessage, messageEncoding) {
-    if (!_.isNil(topicMessage.chunkNum)) {
-      this.chunk_info = new ChunkInfoViewModel(topicMessage);
-    }
     Object.assign(this, {
+      chunk_info: _.isNil(topicMessage.chunkNum) ? null : new ChunkInfoViewModel(topicMessage),
       consensus_timestamp: utils.nsToSecNs(topicMessage.consensusTimestamp),
-      topic_id: EntityId.parse(topicMessage.topicId).toString(),
       message: utils.encodeBinary(topicMessage.message, messageEncoding),
       payer_account_id: EntityId.parse(topicMessage.payerAccountId).toString(),
       running_hash: utils.encodeBase64(topicMessage.runningHash),
       running_hash_version: parseInt(topicMessage.runningHashVersion),
       sequence_number: parseInt(topicMessage.sequenceNumber),
+      topic_id: EntityId.parse(topicMessage.topicId).toString(),
     });
   }
 }
 
 class ChunkInfoViewModel {
   constructor(topicMessage) {
+    let initial_transaction_id, nonce, scheduled;
     if (!_.isNil(topicMessage.initialTransactionId)) {
       const transactionId = TransactionID.decode(topicMessage.initialTransactionId);
-      this.initial_transaction_id = utils.createTransactionIdFromProto(
+      initial_transaction_id = utils.createTransactionIdFromProto(
         transactionId.accountID,
         transactionId.transactionValidStart
       );
-      this.nonce = transactionId.nonce;
-      this.scheduled = transactionId.scheduled;
+      nonce = transactionId.nonce;
+      scheduled = transactionId.scheduled;
     } else {
-      this.initial_transaction_id = utils.createTransactionId(
+      initial_transaction_id = utils.createTransactionId(
         EntityId.parse(topicMessage.payerAccountId).toString(),
         topicMessage.validStartTimestamp
       );
+      nonce = null;
+      scheduled = null;
     }
-    Object.assign(this, {
-      number: topicMessage.chunkNum,
-      total: topicMessage.chunkTotal,
-    });
+    this.initial_transaction_id = initial_transaction_id;
+    this.nonce = nonce;
+    this.number = topicMessage.chunkNum;
+    this.scheduled = scheduled;
+    this.total = topicMessage.chunkTotal;
   }
 }
 

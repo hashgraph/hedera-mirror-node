@@ -48,6 +48,7 @@
   "responseJson": {
     "messages": [
       {
+        "chunk_info": null,
         "consensus_timestamp": "1234567890.000000003",
         "topic_id": "0.0.7",
         "message": "bWVzc2FnZQ==",
@@ -57,6 +58,7 @@
         "sequence_number": 3
       },
       {
+        "chunk_info": null,
         "consensus_timestamp": "1234567890.000000004",
         "topic_id": "0.0.7",
         "message": "bWVzc2FnZQ==",

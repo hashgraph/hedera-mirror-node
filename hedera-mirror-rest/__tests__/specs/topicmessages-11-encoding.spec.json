@@ -35,6 +35,7 @@
   "responseJson": {
     "messages": [
       {
+        "chunk_info": null,
         "consensus_timestamp": "1234567890.000000001",
         "topic_id": "0.0.7",
         "message": "swirlds",
@@ -44,6 +45,7 @@
         "sequence_number": 1
       },
       {
+        "chunk_info": null,
         "consensus_timestamp": "1234567890.000000002",
         "topic_id": "0.0.7",
         "message": "hedera hashgraph",
@@ -53,6 +55,7 @@
         "sequence_number": 2
       },
       {
+        "chunk_info": null,
         "consensus_timestamp": "1234567890.000000003",
         "topic_id": "0.0.7",
         "message": "message",

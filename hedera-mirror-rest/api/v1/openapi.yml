@@ -985,6 +985,7 @@ components:
             balance: 8
     ChunkInfo:
       type: object
+      nullable: true
       properties:
         number:
           type: integer
@@ -994,8 +995,10 @@ components:
           type: string
         nonce:
           type: integer
+          nullable: true
         scheduled:
           type: boolean
+          nullable: true
       example:
         number: 1
         total: 2
