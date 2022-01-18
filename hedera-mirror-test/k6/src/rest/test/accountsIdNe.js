@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('accountsIdNe',{url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/accounts?account.id=ne:${__ENV.DEFAULT_ACCOUNT_ENTITYNUM}&order=desc`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Accounts ne: accountId order desc OK": (r) => r.status === 200,
   });

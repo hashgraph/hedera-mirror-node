@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('topicsIdMessages', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/topics/${__ENV.DEFAULT_TOPIC}/messages?limit=${__ENV.DEFAULT_LIMIT}`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Topics id messages OK": (r) => r.status === 200,
   });

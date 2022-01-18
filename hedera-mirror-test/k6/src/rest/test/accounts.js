@@ -36,7 +36,7 @@ function run() {
     url = __ENV.BASE_URL + nextLink;
   }
 
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   const status = check(response, {
     "Accounts OK": (r) => r.status === 200,
   });

@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('accountsBalanceFalsePubkey',{url: urlTag
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/accounts?balance=false&account.publickey=${__ENV.DEFAULT_PUBLICKEY_FALSE}`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Accounts balance false with publickey OK": (r) => r.status === 200,
   });

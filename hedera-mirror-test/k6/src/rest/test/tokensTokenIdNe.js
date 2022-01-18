@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('tokensTokenIdNe', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + urlTag;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Tokens token id ne 100000 OK": (r) => r.status === 200,
   });

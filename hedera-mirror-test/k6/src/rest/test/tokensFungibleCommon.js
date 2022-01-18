@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('tokensFungibleCommon', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + urlTag;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Tokens FUNGIBLE_COMMON OK": (r) => r.status === 200,
   });

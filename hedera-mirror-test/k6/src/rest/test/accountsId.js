@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('accountsId',{url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/accounts/${__ENV.DEFAULT_ACCOUNT}`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Accounts Id OK": (r) => r.status === 200,
   });

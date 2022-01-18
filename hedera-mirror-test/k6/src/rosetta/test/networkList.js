@@ -23,16 +23,17 @@ import http from "k6/http";
 
 import {getOptionsWithScenario} from '../../lib/common.js';
 
-const urlTag = '/api/v1/contracts';
+const urlTag = '/network/list';
 
 // use unique scenario name among all tests
-const options = getOptionsWithScenario('contracts',{url: urlTag});
+const options = getOptionsWithScenario('networkList',{url: urlTag});
 
 function run() {
-  const url = __ENV.BASE_URL + `${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
-  const response = http.get(url);
+  const url = __ENV.BASE_URL + urlTag;
+  const payload = JSON.stringify({metadata: {}});
+  const response = http.post(url, payload);
   check(response, {
-    "Contracts OK": (r) => r.status === 200,
+    "NetworkList OK": (r) => r.status === 200,
   });
 }
 

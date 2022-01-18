@@ -22,17 +22,23 @@ import { check } from "k6";
 import http from "k6/http";
 
 import {getOptionsWithScenario} from '../../lib/common.js';
+import * as constants from './constants.js';
 
-const urlTag = '/api/v1/contracts';
+const urlTag = '/block/transaction';
 
 // use unique scenario name among all tests
-const options = getOptionsWithScenario('contracts',{url: urlTag});
+const options = getOptionsWithScenario('blockTransaction',{url: urlTag});
 
 function run() {
-  const url = __ENV.BASE_URL + `${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
-  const response = http.get(url);
+  const url = __ENV.BASE_URL + urlTag;
+  const payload = JSON.stringify({
+    block_identifier: constants.blockIdentifier,
+    network_identifier: constants.networkIdentifier,
+    transaction_identifier: constants.transactionIdentifier,
+  });
+  const response = http.post(url, payload);
   check(response, {
-    "Contracts OK": (r) => r.status === 200,
+    "BlockTransaction OK": (r) => r.status === 200,
   });
 }
 

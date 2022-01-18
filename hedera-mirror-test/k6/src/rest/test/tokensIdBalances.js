@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('tokensIdBalances', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/tokens/${__ENV.DEFAULT_TOKEN}/balances`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Tokens id balances OK": (r) => r.status === 200,
   });

@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('tokensNftsSerial', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/tokens/${__ENV.DEFAULT_NFT}/nfts/${__ENV.DEFAULT_NFT_SERIAL}`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Tokens nfts serial OK": (r) => r.status === 200,
   });

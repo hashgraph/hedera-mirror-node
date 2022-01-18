@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('transactions', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Transactions OK": (r) => r.status === 200,
   });

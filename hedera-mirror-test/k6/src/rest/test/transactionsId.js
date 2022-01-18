@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('transactionsId', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/transactions/${__ENV.DEFAULT_TRANSACTION}`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Transactions id OK": (r) => r.status === 200,
   });

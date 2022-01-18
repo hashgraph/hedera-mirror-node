@@ -22,17 +22,22 @@ import { check } from "k6";
 import http from "k6/http";
 
 import {getOptionsWithScenario} from '../../lib/common.js';
+import {networkIdentifier} from './constants.js';
 
-const urlTag = '/api/v1/contracts';
+const urlTag = '/network/options';
 
 // use unique scenario name among all tests
-const options = getOptionsWithScenario('contracts',{url: urlTag});
+const options = getOptionsWithScenario('networkOptions',{url: urlTag});
 
 function run() {
-  const url = __ENV.BASE_URL + `${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
-  const response = http.get(url);
+  const url = __ENV.BASE_URL + urlTag;
+  const payload = JSON.stringify({
+    network_identifier: networkIdentifier,
+    metadata: {},
+  });
+  const response = http.post(url, payload);
   check(response, {
-    "Contracts OK": (r) => r.status === 200,
+    "NetworkOptions OK": (r) => r.status === 200,
   });
 }
 

@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('tokensNfts', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/tokens/${__ENV.DEFAULT_NFT}/nfts`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Tokens nfts OK": (r) => r.status === 200,
   });

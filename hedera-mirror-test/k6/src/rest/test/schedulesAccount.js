@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('schedulesAccount', {url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/schedules?account.id=gte:${__ENV.DEFAULT_SCHEDULE_ACCOUNT}`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Schedules account OK": (r) => r.status === 200,
   });

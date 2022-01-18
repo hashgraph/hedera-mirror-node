@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('topicsIdMessagesSequence', {url: urlTag}
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/topics/${__ENV.DEFAULT_TOPIC}/messages/${__ENV.DEFAULT_TOPIC_SEQUENCE}`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Topics id messages sequenceNumber OK": (r) => r.status === 200,
   });

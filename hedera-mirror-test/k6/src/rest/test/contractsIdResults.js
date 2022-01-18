@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('contractsIdResults',{url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Contracts id results OK": (r) => r.status === 200,
   });

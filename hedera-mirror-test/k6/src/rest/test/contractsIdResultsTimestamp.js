@@ -31,7 +31,7 @@ const options = getOptionsWithScenario('contractsIdResultsTimestamp',{url: urlTa
 
 function run() {
   const url = __ENV.BASE_URL + `/api/v1/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results/${__ENV.DEFAULT_CONTRACT_TIMESTAMP}`;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Contracts id results timestamp OK": (r) => r.status === 200,
   });

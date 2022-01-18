@@ -30,7 +30,7 @@ const options = getOptionsWithScenario('accountsBalanceGt0',{url: urlTag});
 
 function run() {
   const url = __ENV.BASE_URL + urlTag;
-  const response = http.get(url, {url: urlTag});
+  const response = http.get(url);
   check(response, {
     "Accounts balance gt:0 OK": (r) => r.status === 200,
   });
