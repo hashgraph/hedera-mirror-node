@@ -987,24 +987,24 @@ components:
       type: object
       nullable: true
       properties:
-        number:
-          type: integer
-        total:
-          type: integer
         initial_transaction_id:
           type: string
         nonce:
           type: integer
           nullable: true
+        number:
+          type: integer
         scheduled:
           type: boolean
           nullable: true
+        total:
+          type: integer
       example:
-        number: 1
-        total: 2
         initial_transaction_id: "0.0.3-1234567890-000000321"
         nonce: 2
+        number: 1
         scheduled: true
+        total: 2
     Contract:
       type: object
       properties:
@@ -1647,8 +1647,6 @@ components:
           $ref: '#/components/schemas/ChunkInfo'
         consensus_timestamp:
           $ref: '#/components/schemas/Timestamp'
-        topic_id:
-          $ref: '#/components/schemas/EntityId'
         message:
           type: string
         payer_account_id:
@@ -1660,28 +1658,30 @@ components:
           type: number
         sequence_number:
           type: number
+        topic_id:
+          $ref: '#/components/schemas/EntityId'
       required:
         - consensus_timestamp
-        - topic_id
         - message
         - payer_account_id
         - running_hash
         - running_hash_version
         - sequence_number
+        - topic_id
       example:
         chunk_info:
-          number: 1
-          total: 2
           initial_transaction_id: "0.0.10-1234567890-000000321"
           nonce: 3
+          number: 1
+          total: 2
           scheduled: true
         consensus_timestamp: "1234567890.000000001"
-        topic_id: 0.0.7
         message: bWVzc2FnZQ==
         payer_account_id: 0.0.10
         running_hash: cnVubmluZ19oYXNo
         running_hash_version: 2
         sequence_number: 1
+        topic_id: 0.0.7
     TopicMessages:
       type: array
       items:
