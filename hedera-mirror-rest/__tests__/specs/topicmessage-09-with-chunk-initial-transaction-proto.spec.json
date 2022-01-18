@@ -14,7 +14,7 @@
       {
         "chunk_num": 2,
         "chunk_total": 3,
-        "initial_transaction_id": [10, 9, 8, -46, -123, -40, -52, 4, 16, -63, 2, 18, 2, 24, 3, 24, 1, 32, 1],
+        "initial_transaction_id": [10, 6, 8, -46, -123, -40, -52, 4, 18, 2, 24, 3, 24, 1, 32, 1],
         "payer_account_id": 3,
         "consensus_timestamp": "1234567890000000002",
         "topic_id": 7,
@@ -33,7 +33,7 @@
     "chunk_info": {
       "number": 2,
       "total": 3,
-      "initial_transaction_id": "0.0.3-1234567890-000000321",
+      "initial_transaction_id": "0.0.3-1234567890-000000000",
       "nonce": 1,
       "scheduled": true
     },
