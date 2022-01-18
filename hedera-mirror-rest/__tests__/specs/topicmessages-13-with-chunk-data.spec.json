@@ -13,24 +13,25 @@
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",
-        "topic_id": 7,
-        "sequence_number": 1
+        "sequence_number": 1,
+        "topic_id": 7
       },
       {
         "chunk_num": 1,
         "chunk_total": 1,
         "consensus_timestamp": "1234567890000000002",
         "initial_transaction_id": [10, 6, 8, -46, -123, -40, -52, 4, 18, 2, 24, 3, 24, 1, 32, 1],
-        "topic_id": 7,
-        "sequence_number": 2
+        ,
+        "sequence_number": 2,
+        "topic_id": 7
       },
       {
         "chunk_num": 2,
         "chunk_total": 3,
-        "payer_account_id": 10,
         "consensus_timestamp": "1234567890000000003",
-        "topic_id": 7,
+        "payer_account_id": 10,
         "sequence_number": 3,
+        "topic_id": 7,
         "valid_start_timestamp": "1234567890000000000"
       }
     ]

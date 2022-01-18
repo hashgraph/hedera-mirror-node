@@ -13,15 +13,15 @@
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",
-        "topic_id": 7,
+        "message": "swirlds",
         "sequence_number": 1,
-        "message": "swirlds"
+        "topic_id": 7
       },
       {
         "consensus_timestamp": "1234567890000000002",
-        "topic_id": 7,
+        "message": "hedera hashgraph",
         "sequence_number": 2,
-        "message": "hedera hashgraph"
+        "topic_id": 7
       },
       {
         "consensus_timestamp": "1234567890000000003",

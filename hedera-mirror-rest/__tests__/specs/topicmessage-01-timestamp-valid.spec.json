@@ -8,19 +8,19 @@
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",
-        "topic_id": 7,
-        "sequence_number": 1
+        "sequence_number": 1,
+        "topic_id": 7
       },
       {
-        "payer_account_id": 10,
         "consensus_timestamp": "1234567890000000002",
-        "topic_id": 7,
-        "sequence_number": 2
+        "payer_account_id": 10,
+        "sequence_number": 2,
+        "topic_id": 7
       },
       {
         "consensus_timestamp": "1234567890000000003",
-        "topic_id": 7,
-        "sequence_number": 3
+        "sequence_number": 3,
+        "topic_id": 7
       }
     ]
   },

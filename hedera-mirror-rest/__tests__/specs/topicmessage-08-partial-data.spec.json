@@ -8,8 +8,8 @@
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",
-        "topic_id": 7,
-        "sequence_number": 1
+        "sequence_number": 1,
+        "topic_id": 7
       }
     ]
   },
