@@ -50,22 +50,22 @@
       {
         "chunk_info": null,
         "consensus_timestamp": "1234567890.000000004",
-        "topic_id": "0.0.7",
         "message": "bWVzc2FnZQ==",
         "payer_account_id": "0.0.3",
         "running_hash": "cnVubmluZ19oYXNo",
         "running_hash_version": 2,
-        "sequence_number": 4
+        "sequence_number": 4,
+        "topic_id": "0.0.7"
       },
       {
         "chunk_info": null,
         "consensus_timestamp": "1234567890.000000005",
-        "topic_id": "0.0.7",
         "message": "bWVzc2FnZQ==",
         "payer_account_id": "0.0.3",
         "running_hash": "cnVubmluZ19oYXNo",
         "running_hash_version": 2,
-        "sequence_number": 5
+        "sequence_number": 5,
+        "topic_id": "0.0.7"
       }
     ],
     "links": {

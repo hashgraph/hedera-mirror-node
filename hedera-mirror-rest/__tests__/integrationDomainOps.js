@@ -700,12 +700,12 @@ const addTopicMessage = async (message) => {
     'chunk_total',
     'consensus_timestamp',
     'initial_transaction_id',
-    'topic_id',
     'message',
     'payer_account_id',
     'running_hash',
-    'sequence_number',
     'running_hash_version',
+    'sequence_number',
+    'topic_id',
     'valid_start_timestamp',
   ];
 
