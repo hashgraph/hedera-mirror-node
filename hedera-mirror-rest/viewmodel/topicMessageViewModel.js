@@ -53,10 +53,7 @@ class ChunkInfoViewModel {
     let initial_transaction_id, nonce, scheduled;
     if (!_.isNil(topicMessage.initialTransactionId)) {
       const transactionId = TransactionID.decode(topicMessage.initialTransactionId);
-      initial_transaction_id = utils.createTransactionIdFromProto(
-        transactionId.accountID,
-        transactionId.transactionValidStart
-      );
+      initial_transaction_id = utils.createTransactionIdFromProto(transactionId);
       nonce = transactionId.nonce;
       scheduled = transactionId.scheduled;
     } else {
