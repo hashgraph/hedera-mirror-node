@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/coinbase/rosetta-sdk-go v0.7.2
-	github.com/cucumber/godog v0.12.3
+	github.com/cucumber/godog v0.12.4
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20211111073741-479b2c5befce
 	github.com/hashgraph/hedera-sdk-go/v2 v2.6.0
@@ -25,7 +25,7 @@ require (
 	google.golang.org/protobuf v1.26.1-0.20210525005349-febffdd88e85
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.2.3
-	gorm.io/gorm v1.22.4
+	gorm.io/gorm v1.22.5
 )
 
 require (
@@ -69,7 +69,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
 	github.com/jackc/pgx/v4 v4.14.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.3 // indirect
+	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect

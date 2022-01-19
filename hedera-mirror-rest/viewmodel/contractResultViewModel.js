@@ -34,10 +34,11 @@ class ContractResultViewModel {
    * @param {ContractResult} contractResult
    */
   constructor(contractResult) {
+    const contractId = EntityId.parse(contractResult.contractId, true);
     Object.assign(this, {
-      amount: Number(contractResult.amount),
+      amount: contractResult.amount === null ? null : Number(contractResult.amount),
       call_result: utils.toHexString(contractResult.callResult, true),
-      contract_id: EntityId.parse(contractResult.contractId).toString(),
+      contract_id: contractId.toString(),
       created_contract_ids: _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString()),
       error_message: contractResult.errorMessage,
       from: EntityId.parse(contractResult.payerAccountId).toSolidityAddress(),
@@ -45,7 +46,7 @@ class ContractResultViewModel {
       gas_limit: Number(contractResult.gasLimit),
       gas_used: Number(contractResult.gasUsed),
       timestamp: utils.nsToSecNs(contractResult.consensusTimestamp),
-      to: EntityId.parse(contractResult.contractId, true).toSolidityAddress(),
+      to: contractId.toSolidityAddress(),
     });
   }
 }
