@@ -35,46 +35,21 @@ pg_dump -h $OLD_POSTGRESQL_DB_IP -U mirror_node \
   --no-owner \
   --no-acl \
   -j 6 \
-  -a \
   -f data_dump \
-  -T 'flyway*' \
   mirror_node
 ```
 
 The flag `-j` sets the number of parallel dumping jobs. The value should be at least the number of cpu cores of the
 PostgreSQL server and the recommended value is 1.5 times of that.
 
-The tables specified by the flag `-T` will be excluded from the dump. Adjust the table patterns if needed.
-
 The time to dump the whole database usually depends on the size of the largest table.
-
-### Initialize the New PostgreSQL Database Instance
-
-Follow the steps below to initialize the new PostgreSQL database instance and migrate the schema to the version as the
-old instance.
-
-- Run [init.sh](/hedera-mirror-importer/src/main/resources/db/scripts/init.sh) or the equivalent SQL
-  statements to create required database objects
-- Run the same version importer with downloader disabled in `application.yml` against the new database instance
-```yaml
-hedera:
-  mirror:
-    importer:
-      downloader:
-        balance:
-          enabled: false
-        record:
-          enabled: false
- ```
-- Once the flyway migration finishes, stop the importer. A log message similar to the following can be used to confirm
-  the migration is completed successfully
-```
-2022-01-19T16:00:27.021-0600 INFO main o.f.c.i.c.DbMigrate Successfully applied 127 migrations to schema "public", now at version v1.53.0 (execution time 00:06.272s)
-```
 
 ### New PostgreSQL Database Instance Configuration
 
-The following configuration needs to be applied to the new PostgreSQL database instance to improve the write speed.
+Run [init.sh](/hedera-mirror-importer/src/main/resources/db/scripts/init.sh) or the equivalent SQL statements to create
+required database objects including the `mirror_node` database, the roles, the schema, and access privileges.
+
+The following configuration needs to be applied to the database instance to improve the write speed.
 
 ```
 checkpoint_timeout = 30m
@@ -82,9 +57,11 @@ max_wal_size = 512GB
 temp_file_limit = 2147483647kB
 ```
 
-Note once the data is restored, revert the values back for normal operation.
+Note: once the data is restored, revert the values back for normal operation.
 
 ### Restore
+
+Before restoring the data, take a database snapshot.
 
 Use the following command to restore the data dump to the new PostgreSQL database instance:
 
@@ -99,6 +76,6 @@ pg_restore -h $NEW_POSTGRESQL_DB_IP -U mirror_node \
   data_dump
 ```
 
-Note `-j` works the same way as for `pg_dump`. The single transaction mode can't be used together with the parallel
-mode. As a result, if the command is interrupted, clear the partially restored data using the
-[cleanup script](/hedera-mirror-importer/src/main/resources/db/scripts/cleanup.sql) before retry.
+Note: `-j` works the same way as for `pg_dump`. The single transaction mode can't be used together with the parallel
+mode. As a result, if the command is interrupted, the database will have partial data, and it needs to be restored
+using the saved snapshot before retry.
