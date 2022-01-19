@@ -63,7 +63,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         reactiveService.getNodes(Mono.just(query))
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "fileId: must not be null"))
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(1L));
     }
 
     @Test
@@ -74,7 +74,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         reactiveService.getNodes(Mono.just(query))
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "Invalid entity ID"))
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(1L));
     }
 
     @Test
@@ -88,7 +88,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "limit: must be greater " +
                         "than or equal to 0"))
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(1L));
     }
 
     @Test
@@ -100,7 +100,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         reactiveService.getNodes(Mono.just(query))
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.NOT_FOUND, "does not exist"))
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(1L));
     }
 
     @Test
@@ -118,7 +118,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .consumeNextWith(n -> assertEntry(addressBookEntry1, n))
                 .consumeNextWith(n -> assertEntry(addressBookEntry2, n))
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(1L));
     }
 
     @Test
@@ -136,7 +136,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .thenAwait(Duration.ofMillis(50))
                 .consumeNextWith(n -> assertEntry(addressBookEntry1, n))
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(1L));
     }
 
     @Test
@@ -166,7 +166,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                         .returns("", NodeAddress::getRSAPubKey)
                         .returns(0L, NodeAddress::getStake))
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(1L));
     }
 
     private AddressBook addressBook() {
