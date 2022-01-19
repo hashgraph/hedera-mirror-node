@@ -73,7 +73,7 @@ public class NetworkServiceImpl implements NetworkService {
         return Flux.defer(() -> page(context))
                 .repeatWhen(Repeat.onlyIf(c -> !context.isComplete())
                         .randomBackoff(addressBookProperties.getMinPageDelay(), addressBookProperties.getMaxPageDelay())
-                        .jitter(Jitter.random(0.1))
+                        .jitter(Jitter.random())
                         .withBackoffScheduler(Schedulers.parallel()))
                 .take(filter.getLimit() > 0 ? filter.getLimit() : Long.MAX_VALUE)
                 .name("addressBook")
@@ -85,15 +85,16 @@ public class NetworkServiceImpl implements NetworkService {
 
     private Flux<AddressBookEntry> page(AddressBookContext context) {
         var timestamp = context.getTimestamp();
-        var nodeId = context.getNodeId();
+        var nextNodeId = context.getNextNodeId();
         var pageSize = addressBookProperties.getPageSize();
-        var nodes = addressBookEntryRepository.findByConsensusTimestampAndNodeId(timestamp, nodeId, pageSize);
+        var nodes = addressBookEntryRepository.findByConsensusTimestampAndNodeId(timestamp, nextNodeId, pageSize);
 
         if (nodes.size() < pageSize) {
             context.completed();
         }
 
-        log.info("Retrieved {} address book entries for timestamp {} and node ID {}", nodes.size(), timestamp, nodeId);
+        log.info("Retrieved {} address book entries for timestamp {} and node ID {}",
+                nodes.size(), timestamp, nextNodeId);
         return Flux.fromIterable(nodes);
     }
 
@@ -110,7 +111,7 @@ public class NetworkServiceImpl implements NetworkService {
             last.set(entry);
         }
 
-        long getNodeId() {
+        long getNextNodeId() {
             AddressBookEntry entry = last.get();
             return entry != null ? entry.getNodeId() + 1 : 0L;
         }

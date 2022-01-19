@@ -64,7 +64,7 @@ class ProtoUtilTest {
     }
 
     @Test
-    void mapError() {
+    void toStatusRuntimeException() {
         var entityId = EntityId.of(1L, EntityType.ACCOUNT);
         var message = "boom";
 
@@ -80,7 +80,7 @@ class ProtoUtilTest {
     }
 
     void assertException(Throwable t, Status status, String message) {
-        assertThat(ProtoUtil.mapError(t))
+        assertThat(ProtoUtil.toStatusRuntimeException(t))
                 .isNotNull()
                 .hasMessageContaining(message)
                 .extracting(StatusRuntimeException::getStatus)

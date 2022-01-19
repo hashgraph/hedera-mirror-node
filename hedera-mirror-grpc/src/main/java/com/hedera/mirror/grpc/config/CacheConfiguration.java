@@ -45,7 +45,7 @@ public class CacheConfiguration {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCaffeine(Caffeine.newBuilder()
                 .expireAfterWrite(addressBookProperties.getCacheExpiry())
-                .maximumSize(50L));
+                .maximumSize(addressBookProperties.getCacheSize()));
         return caffeineCacheManager;
     }
 

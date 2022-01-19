@@ -56,7 +56,7 @@ public class ConsensusController extends ReactorConsensusServiceGrpc.ConsensusSe
         return request.map(this::toFilter)
                 .flatMapMany(topicMessageService::subscribeTopic)
                 .map(TopicMessage::getResponse)
-                .onErrorMap(ProtoUtil::mapError); // consolidate error mappings to avoid deep flux operation chaining
+                .onErrorMap(ProtoUtil::toStatusRuntimeException);
     }
 
     private TopicMessageFilter toFilter(ConsensusTopicQuery query) {

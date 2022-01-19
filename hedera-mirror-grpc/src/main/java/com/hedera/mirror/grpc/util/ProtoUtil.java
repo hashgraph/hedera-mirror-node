@@ -55,7 +55,22 @@ public final class ProtoUtil {
         return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
 
-    public static StatusRuntimeException mapError(Throwable t) {
+    public static AccountID toAccountID(EntityId entityId) {
+        return AccountID.newBuilder()
+                .setShardNum(entityId.getShardNum())
+                .setRealmNum(entityId.getRealmNum())
+                .setAccountNum(entityId.getEntityNum())
+                .build();
+    }
+
+    public static ByteString toByteString(byte[] bytes) {
+        if (bytes == null) {
+            return ByteString.EMPTY;
+        }
+        return UnsafeByteOperations.unsafeWrap(bytes);
+    }
+
+    public static StatusRuntimeException toStatusRuntimeException(Throwable t) {
         if (Exceptions.isOverflow(t)) {
             return clientError(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
         } else if (t instanceof ConstraintViolationException || t instanceof IllegalArgumentException || t instanceof InvalidEntityException) {
@@ -79,21 +94,6 @@ public final class ProtoUtil {
     private static StatusRuntimeException serverError(Throwable t, Status status, String message) {
         log.error("Server error: ", t);
         return status.augmentDescription(message).asRuntimeException();
-    }
-
-    public static AccountID toAccountID(EntityId entityId) {
-        return AccountID.newBuilder()
-                .setShardNum(entityId.getShardNum())
-                .setRealmNum(entityId.getRealmNum())
-                .setAccountNum(entityId.getEntityNum())
-                .build();
-    }
-
-    public static ByteString toByteString(byte[] bytes) {
-        if (bytes == null) {
-            return ByteString.EMPTY;
-        }
-        return UnsafeByteOperations.unsafeWrap(bytes);
     }
 
     public static Timestamp toTimestamp(Instant instant) {

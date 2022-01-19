@@ -51,7 +51,7 @@ public class NetworkController extends ReactorNetworkServiceGrpc.NetworkServiceI
         return request.map(this::toFilter)
                 .flatMapMany(networkService::getNodes)
                 .map(this::toNodeAddress)
-                .onErrorMap(ProtoUtil::mapError);
+                .onErrorMap(ProtoUtil::toStatusRuntimeException);
     }
 
     private AddressBookFilter toFilter(AddressBookQuery query) {

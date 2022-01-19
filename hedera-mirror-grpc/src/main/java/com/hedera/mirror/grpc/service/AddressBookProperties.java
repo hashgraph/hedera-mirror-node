@@ -37,6 +37,9 @@ public class AddressBookProperties {
     @NotNull
     private Duration cacheExpiry = Duration.ofSeconds(5);
 
+    @Min(0)
+    private long cacheSize = 50L;
+
     @DurationMin(millis = 100L)
     @NotNull
     private Duration maxPageDelay = Duration.ofMillis(250L);
