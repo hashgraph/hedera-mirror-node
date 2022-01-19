@@ -20,8 +20,8 @@ package com.hedera.mirror.importer.parser.domain;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.DomainBuilder.KEY_LENGTH_ECDSA;
-import static com.hedera.mirror.importer.domain.DomainBuilder.KEY_LENGTH_ED25519;
+import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ECDSA;
+import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ED25519;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;

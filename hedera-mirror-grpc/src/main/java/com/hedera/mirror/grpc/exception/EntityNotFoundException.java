@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.grpc.exception;
 
 /*-
  * ‌
@@ -20,17 +20,15 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import javax.annotation.Resource;
-import org.springframework.jdbc.core.JdbcOperations;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.exception.MirrorNodeException;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.importer.IntegrationTest;
+public class EntityNotFoundException extends MirrorNodeException {
 
-public abstract class AbstractRepositoryTest extends IntegrationTest {
+    private static final String MESSAGE = "%s %s does not exist";
+    private static final long serialVersionUID = 809036847722840635L;
 
-    @Resource
-    protected DomainBuilder domainBuilder;
-
-    @Resource
-    protected JdbcOperations jdbcOperations;
+    public EntityNotFoundException(EntityId entityId) {
+        super(String.format(MESSAGE, entityId.getType().toDisplayString(), entityId));
+    }
 }

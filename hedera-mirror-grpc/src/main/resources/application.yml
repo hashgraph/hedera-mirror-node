@@ -50,6 +50,8 @@ management:
 server:
   compression:
     enabled: true
+  http2:
+    enabled: true
   port: 8081
   shutdown: graceful
 spring:

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.grpc.service;
 
 /*-
  * ‌
@@ -20,17 +20,13 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import javax.annotation.Resource;
-import org.springframework.jdbc.core.JdbcOperations;
+import javax.validation.Valid;
+import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
+import com.hedera.mirror.grpc.domain.AddressBookFilter;
 
-public abstract class AbstractRepositoryTest extends IntegrationTest {
+public interface NetworkService {
 
-    @Resource
-    protected DomainBuilder domainBuilder;
-
-    @Resource
-    protected JdbcOperations jdbcOperations;
+    Flux<AddressBookEntry> getNodes(@Valid AddressBookFilter addressBookFilter);
 }

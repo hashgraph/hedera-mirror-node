@@ -44,7 +44,7 @@ import com.hedera.mirror.grpc.repository.EntityRepository;
 import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 
 @Log4j2
-@Named
+@Named("grpcDomainBuilder")
 @RequiredArgsConstructor
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DomainBuilder {
@@ -70,7 +70,7 @@ public class DomainBuilder {
                 .num(0L)
                 .realm(0L)
                 .shard(0L)
-                .id(0L)
+                .id(100L)
                 .timestampRange(Range.atLeast(0L))
                 .type(EntityType.TOPIC);
 
@@ -106,7 +106,7 @@ public class DomainBuilder {
                 .payerAccountId(10L)
                 .runningHash(new byte[] {3, 4, 5})
                 .sequenceNumber(++sequenceNumber)
-                .topicId(0)
+                .topicId(100)
                 .runningHashVersion(2);
 
         customizer.accept(builder);

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.grpc.domain;
 
 /*-
  * ‌
@@ -20,17 +20,19 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import javax.annotation.Resource;
-import org.springframework.jdbc.core.JdbcOperations;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import lombok.Builder;
+import lombok.Value;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
-public abstract class AbstractRepositoryTest extends IntegrationTest {
+@Builder
+@Value
+public class AddressBookFilter {
+    @NotNull
+    private final EntityId fileId;
 
-    @Resource
-    protected DomainBuilder domainBuilder;
-
-    @Resource
-    protected JdbcOperations jdbcOperations;
+    @Min(0)
+    private final int limit;
 }

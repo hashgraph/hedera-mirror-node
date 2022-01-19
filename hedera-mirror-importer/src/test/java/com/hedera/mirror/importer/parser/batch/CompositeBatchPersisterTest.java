@@ -26,18 +26,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.common.domain.contract.ContractResult;
-
-import com.hedera.mirror.importer.repository.ContractResultRepository;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.importer.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.ContractRepository;
+import com.hedera.mirror.importer.repository.ContractResultRepository;
 
 class CompositeBatchPersisterTest extends IntegrationTest {
 
