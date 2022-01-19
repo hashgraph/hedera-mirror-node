@@ -53,7 +53,7 @@ The time to dump the whole database usually depends on the size of the largest t
 Follow the steps below to initialize the new PostgreSQL database instance and migrate the schema to the version as the
 old instance.
 
-- Run [init.sh](/hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init.sh) or the equivalent SQL
+- Run [init.sh](/hedera-mirror-importer/src/main/resources/db/scripts/init.sh) or the equivalent SQL
   statements to create required database objects
 - Run the same version importer with downloader disabled in `application.yml` against the new database instance
 ```yaml
