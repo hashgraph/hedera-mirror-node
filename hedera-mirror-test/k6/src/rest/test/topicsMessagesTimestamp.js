@@ -23,13 +23,13 @@ import http from "k6/http";
 
 import { getOptionsWithScenario } from '../../lib/common.js';
 
-const urlTag = '/api/v1/topics/messages/{timestamp}';
+const urlTag = '/topics/messages/{timestamp}';
 
 // use unique scenario name among all tests
 const options = getOptionsWithScenario('topicsMessageTimestamp', {url: urlTag});
 
 function run() {
-  const url = __ENV.BASE_URL + `/api/v1/topics/messages/${__ENV.DEFAULT_TOPIC_TIMESTAMP}`;
+  const url = __ENV.BASE_URL + `/topics/messages/${__ENV.DEFAULT_TOPIC_TIMESTAMP}`;
   const response = http.get(url);
   check(response, {
     "Topics messages timestamp OK": (r) => r.status === 200,

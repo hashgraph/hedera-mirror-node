@@ -23,13 +23,13 @@ import http from "k6/http";
 
 import { getOptionsWithScenario } from '../../lib/common.js';
 
-const urlTag = '/api/v1/tokens/{id}/nfts';
+const urlTag = '/tokens/{id}/nfts';
 
 // use unique scenario name among all tests
 const options = getOptionsWithScenario('tokensNfts', {url: urlTag});
 
 function run() {
-  const url = __ENV.BASE_URL + `/api/v1/tokens/${__ENV.DEFAULT_NFT}/nfts`;
+  const url = __ENV.BASE_URL + `/tokens/${__ENV.DEFAULT_NFT}/nfts`;
   const response = http.get(url);
   check(response, {
     "Tokens nfts OK": (r) => r.status === 200,

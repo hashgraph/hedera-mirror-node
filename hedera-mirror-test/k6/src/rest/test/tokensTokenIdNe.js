@@ -23,7 +23,7 @@ import http from "k6/http";
 
 import { getOptionsWithScenario } from '../../lib/common.js';
 
-const urlTag = '/api/v1/tokens?token.id=ne:100000';
+const urlTag = '/tokens?token.id=ne:100000';
 
 // use unique scenario name among all tests
 const options = getOptionsWithScenario('tokensTokenIdNe', {url: urlTag});

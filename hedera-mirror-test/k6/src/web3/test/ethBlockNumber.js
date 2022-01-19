@@ -23,16 +23,19 @@ import http from "k6/http";
 
 import {getOptionsWithScenario} from '../../lib/common.js';
 
-const urlTag = '/accounts?account.balance=gt:0&account.publickey={publicKey}';
-
 // use unique scenario name among all tests
-const options = getOptionsWithScenario('accountsBalanceGt0Pubkey',{url: urlTag});
+const options = getOptionsWithScenario('eth_blockNumber');
 
 function run() {
-  const url = __ENV.BASE_URL + `/accounts?account.balance=gt:0&account.publickey=${__ENV.DEFAULT_PUBLICKEY_TRUE}`;
-  const response = http.get(url);
+  const url = __ENV.BASE_URL;
+  const payload = JSON.stringify({
+    id: 1,
+    jsonrpc: "2.0",
+    method: "eth_blockNumber",
+  });
+  const response = http.post(url, payload);
   check(response, {
-    "Accounts balance gt:0 with publickey OK": (r) => r.status === 200,
+    'eth_blockNumber OK': (r) => r.status === 200,
   });
 }
 

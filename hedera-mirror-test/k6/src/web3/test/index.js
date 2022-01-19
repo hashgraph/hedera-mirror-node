@@ -18,22 +18,14 @@
  * ‍
  */
 
-import { check } from "k6";
-import http from "k6/http";
+import * as common from '../../lib/common.js';
 
-import {getOptionsWithScenario} from '../../lib/common.js';
+// import test modules
+import * as ethBlockNumber from './ethBlockNumber.js';
 
-const urlTag = '/accounts?account.balance=gt:0&account.publickey={publicKey}';
+// add test modules here
+const tests = {ethBlockNumber};
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('accountsBalanceGt0Pubkey',{url: urlTag});
+const {funcs, options, scenarioDurationGauge} = common.getSequentialTestScenarios(tests);
 
-function run() {
-  const url = __ENV.BASE_URL + `/accounts?account.balance=gt:0&account.publickey=${__ENV.DEFAULT_PUBLICKEY_TRUE}`;
-  const response = http.get(url);
-  check(response, {
-    "Accounts balance gt:0 with publickey OK": (r) => r.status === 200,
-  });
-}
-
-export {options, run};
+export {funcs, options, scenarioDurationGauge};

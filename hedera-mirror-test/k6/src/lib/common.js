@@ -20,13 +20,13 @@
 
 import { Gauge } from 'k6/metrics';
 
-const timeRegex = /^[0-9]+s$/;
-
 const SCENARIO_DURATION_METRIC_NAME = 'scenario_duration';
 
 function getMetricNameWithTags(name, ...tags) {
   return tags.length === 0 ? name : `${name}{${tags}}`;
 }
+
+const timeRegex = /^[0-9]+s$/;
 
 function getNextStartTime(startTime, duration, gracefulStop) {
   if (!timeRegex.test(startTime)) {
@@ -44,7 +44,7 @@ function getNextStartTime(startTime, duration, gracefulStop) {
   return `${parseInt(startTime) + parseInt(gracefulStop) + parseInt(duration)}s`;
 }
 
-function getOptionsWithScenario(name, tags) {
+function getOptionsWithScenario(name, tags = {}) {
   return Object.assign({}, options, {
     scenarios: {
       [name]: Object.assign({}, scenario, {tags}),
@@ -94,6 +94,67 @@ function getSequentialTestScenarios(tests) {
   return {funcs, options: testOptions, scenarioDurationGauge: new Gauge(SCENARIO_DURATION_METRIC_NAME)};
 }
 
+const checksRegex = /^checks{.*scenario:.*}$/;
+const httpReqDurationRegex = /^http_req_duration{.*scenario:.*}$/;
+const httpReqsRegex = /^http_reqs{.*scenario:.*}$/;
+const scenarioDurationRegex = /^scenario_duration{.*scenario:.*}$/;
+const scenarioRegex = /scenario:([^,}]+)/;
+
+function getScenario(metricKey) {
+  const match = scenarioRegex.exec(metricKey);
+  return match[1];
+}
+
+function markdownReport(data, isFirstColumnUrl, scenarios) {
+  const firstColumnName = isFirstColumnUrl ? 'URL' : 'Scenario';
+  const header = `| ${firstColumnName} | VUE | pass% | RPS | http_req_duration | Comment |
+|----------|-----|-------|-----|-------------------|---------|`;
+
+  // collect the metrics
+  const {metrics} = data;
+  const scenarioMetrics = {};
+  for (const key in metrics) {
+    let metric;
+    if (checksRegex.test(key)) {
+      metric = 'checks';
+    } else if (httpReqDurationRegex.test(key)) {
+      metric = 'http_req_duration';
+    } else if (httpReqsRegex.test(key)) {
+      metric = 'http_reqs';
+    } else if (scenarioDurationRegex.test(key)) {
+      metric = 'scenario_duration';
+    } else {
+      continue;
+    }
+
+    const scenario = getScenario(key);
+    scenarioMetrics[scenario] = Object.assign(scenarioMetrics[scenario] || {}, {[metric]: metrics[key]});
+  }
+
+  const scenarioUrls = {};
+  if (isFirstColumnUrl) {
+    for (const name of Object.keys(scenarios)) {
+      scenarioUrls[name] = scenarios[name].tags.url;
+    }
+  }
+
+  // generate the markdown report
+  let markdown = `${header}\n`;
+  for (const scenario of Object.keys(scenarioMetrics).sort()) {
+    const scenarioMetric = scenarioMetrics[scenario];
+    const passPercentage = (scenarioMetric['checks'].values.rate * 100.0).toFixed(2);
+    const httpReqs = scenarioMetric['http_reqs'].values.count;
+    const duration = scenarioMetric['scenario_duration'].values.value; // in ms
+    const rps = ((httpReqs * 1.0 / duration) * 1000).toFixed(2);
+    const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
+
+    const firstColumn = isFirstColumnUrl ? scenarioUrls[scenario] : scenario;
+    markdown += `| ${firstColumn} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${httpReqDuration}ms | |\n`;
+  }
+
+  return markdown;
+}
+
 const options = {
   thresholds: {
     checks: ['rate>=0.95'], // at least 95% should pass the checks,
@@ -112,4 +173,4 @@ const scenario = {
   vus: __ENV.DEFAULT_VUS,
 };
 
-export {getNextStartTime, getOptionsWithScenario, getSequentialTestScenarios, options, scenario};
+export {getNextStartTime, getOptionsWithScenario, getSequentialTestScenarios, markdownReport, options, scenario};

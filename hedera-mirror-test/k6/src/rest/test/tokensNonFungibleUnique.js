@@ -23,7 +23,7 @@ import http from "k6/http";
 
 import { getOptionsWithScenario } from '../../lib/common.js';
 
-const urlTag = '/api/v1/tokens?type=NON_FUNGIBLE_UNIQUE';
+const urlTag = '/tokens?type=NON_FUNGIBLE_UNIQUE';
 
 // use unique scenario name among all tests
 const options = getOptionsWithScenario('tokensNonFungibleUnique', {url: urlTag});

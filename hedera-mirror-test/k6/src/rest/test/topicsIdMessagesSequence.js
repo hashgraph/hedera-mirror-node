@@ -23,13 +23,13 @@ import http from "k6/http";
 
 import { getOptionsWithScenario } from '../../lib/common.js';
 
-const urlTag = '/api/v1/topics/{id}/messages/{sequenceNumber}';
+const urlTag = '/topics/{id}/messages/{sequenceNumber}';
 
 // use unique scenario name among all tests
 const options = getOptionsWithScenario('topicsIdMessagesSequence', {url: urlTag});
 
 function run() {
-  const url = __ENV.BASE_URL + `/api/v1/topics/${__ENV.DEFAULT_TOPIC}/messages/${__ENV.DEFAULT_TOPIC_SEQUENCE}`;
+  const url = __ENV.BASE_URL + `/topics/${__ENV.DEFAULT_TOPIC}/messages/${__ENV.DEFAULT_TOPIC_SEQUENCE}`;
   const response = http.get(url);
   check(response, {
     "Topics id messages sequenceNumber OK": (r) => r.status === 200,

@@ -18,22 +18,23 @@
  * ‍
  */
 
-import { check } from "k6";
-import http from "k6/http";
+import exec from 'k6/execution';
+import {textSummary} from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
 
-import {getOptionsWithScenario} from '../../lib/common.js';
+import {markdownReport} from "../lib/common.js";
+import {funcs, options, scenarioDurationGauge} from './test/index.js';
 
-const urlTag = '/accounts?account.balance=gt:0&account.publickey={publicKey}';
-
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('accountsBalanceGt0Pubkey',{url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + `/accounts?account.balance=gt:0&account.publickey=${__ENV.DEFAULT_PUBLICKEY_TRUE}`;
-  const response = http.get(url);
-  check(response, {
-    "Accounts balance gt:0 with publickey OK": (r) => r.status === 200,
-  });
+function handleSummary(data) {
+  return {
+    'stdout': textSummary(data, {indent: ' ', enableColors: true}),
+    'report.md': markdownReport(data, false, options.scenarios),
+  };
 }
 
-export {options, run};
+function run() {
+  const scenario = exec.scenario;
+  funcs[scenario.name]();
+  scenarioDurationGauge.add(Date.now() - scenario.startTime, {scenario: scenario.name});
+}
+
+export {handleSummary, options, run};

@@ -23,13 +23,13 @@ import http from "k6/http";
 
 import { getOptionsWithScenario } from '../../lib/common.js';
 
-const urlTag = '/api/v1/tokens/{id}';
+const urlTag = '/tokens/{id}';
 
 // use unique scenario name among all tests
 const options = getOptionsWithScenario('tokensId', {url: urlTag});
 
 function run() {
-  const url = __ENV.BASE_URL + `/api/v1/tokens/${__ENV.DEFAULT_TOKEN}`;
+  const url = __ENV.BASE_URL + `/tokens/${__ENV.DEFAULT_TOKEN}`;
   const response = http.get(url);
   check(response, {
     "Tokens id OK": (r) => r.status === 200,

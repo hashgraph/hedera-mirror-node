@@ -23,13 +23,13 @@ import http from "k6/http";
 
 import {getOptionsWithScenario} from '../../lib/common.js';
 
-const urlTag = '/api/v1/contracts/{id}/results';
+const urlTag = '/contracts/{id}/results';
 
 // use unique scenario name among all tests
 const options = getOptionsWithScenario('contractsIdResults',{url: urlTag});
 
 function run() {
-  const url = __ENV.BASE_URL + `/api/v1/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results`;
+  const url = __ENV.BASE_URL + `/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results`;
   const response = http.get(url);
   check(response, {
     "Contracts id results OK": (r) => r.status === 200,
