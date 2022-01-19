@@ -56,6 +56,8 @@
     "gas_used": 123,
     "hash": "0x3531396130303866616264653464",
     "logs": [],
+    "result": "CONTRACT_REVERT_EXECUTED",
+    "status": "0x0",
     "timestamp": "167654.000123456",
     "to": null
   }

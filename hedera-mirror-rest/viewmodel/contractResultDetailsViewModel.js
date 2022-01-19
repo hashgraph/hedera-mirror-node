@@ -21,6 +21,7 @@
 'use strict';
 
 const ContractResultViewModel = require('./contractResultViewModel');
+const {TransactionResult} = require('../model');
 const utils = require('../utils');
 const ContractLogResultsViewModel = require('./contractResultLogViewModel');
 
@@ -43,6 +44,8 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       block_number: Number(recordFile.index),
       hash: utils.toHexString(transaction.transactionHash, true),
       logs: contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog)),
+      result: TransactionResult.getName(transaction.result),
+      status: transaction.result === Number.parseInt(TransactionResult.getSuccessProtoId()) ? `0x1` : `0x0`,
     });
   }
 }
