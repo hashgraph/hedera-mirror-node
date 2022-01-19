@@ -787,14 +787,9 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
  * @returns {string} transactionId of format shard.realm.num-sssssssssss-nnnnnnnnn
  */
 const createTransactionIdFromProto = (protoTransactionId) => {
-  const entityStr = EntityId.of(
-    protoTransactionId.accountID.shardNum,
-    protoTransactionId.accountID.realmNum,
-    protoTransactionId.accountID.accountNum
-  ).toString();
-  const timestampString = `${
-    protoTransactionId.transactionValidStart.seconds
-  }-${protoTransactionId.transactionValidStart.nanos.toString().padStart(9, '0')}`;
+  const {accountID, transactionValidStart} = protoTransactionId;
+  const entityStr = EntityId.of(accountID.shardNum, accountID.realmNum, accountID.accountNum).toString();
+  const timestampString = `${transactionValidStart.seconds}-${transactionValidStart.nanos.toString().padStart(9, '0')}`;
   return `${entityStr}-${timestampString}`;
 };
 

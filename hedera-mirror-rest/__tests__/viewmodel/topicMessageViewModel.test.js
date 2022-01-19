@@ -38,12 +38,12 @@ describe('topicMessageViewModel tests', () => {
     expect(actual).toEqual(expected);
   });
 
-  test('Chunk info with valid start timestamp and payer account id', () => {
+  test('Chunk info with explicit base64 encoding, valid start timestamp, and payer account id', () => {
     const input = buildDefaultTopicMessageRow();
     input.chunkNum = 1;
     input.chunkTotal = 10;
     input.validStartTimestamp = '1234567890000000000';
-    const actual = new TopicMessageViewModel(input, '');
+    const actual = new TopicMessageViewModel(input, 'base64');
 
     const expected = buildDefaultTopicMessageViewModel();
     expected.chunk_info = {
