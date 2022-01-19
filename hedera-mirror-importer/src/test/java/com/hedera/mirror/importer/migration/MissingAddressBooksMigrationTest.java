@@ -57,7 +57,6 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 
 class MissingAddressBooksMigrationTest extends IntegrationTest {
 
-    private static final NodeAddressBook UPDATED = addressBook(10, 0);
     private static final NodeAddressBook FINAL = addressBook(15, 0);
 
     @Resource
@@ -72,9 +71,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
     @Resource
     private AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
 
-    @Resource
-    private EntityProperties entityProperties;
-
+    @SuppressWarnings("deprecation")
     private static NodeAddressBook addressBook(int size, int endPointSize) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
         for (int i = 0; i < size; ++i) {
@@ -152,11 +149,12 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
     })
     void skipMigrationPreAddressBookService(int serviceEndpointCount, boolean result) {
         for (int j = 1; j <= serviceEndpointCount; ++j) {
-            addressBookServiceEndpointRepository.save(new AddressBookServiceEndpoint(
-                    j,
-                    "127.0.0.1",
-                    443,
-                    EntityId.of(0, 0, 100, EntityType.ACCOUNT)));
+            AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
+            addressBookServiceEndpoint.setConsensusTimestamp(j);
+            addressBookServiceEndpoint.setIpAddressV4("127.0.0.1");
+            addressBookServiceEndpoint.setPort(443);
+            addressBookServiceEndpoint.setNodeId(100L);
+            addressBookServiceEndpointRepository.save(addressBookServiceEndpoint);
         }
         assertThat(missingAddressBooksMigration.skipMigration(getConfiguration())).isEqualTo(result);
     }
@@ -165,12 +163,14 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
                                     long consensusTimestamp, int nodeCount) {
         long startConsensusTimestamp = consensusTimestamp + 1;
         List<AddressBookEntry> addressBookEntryList = new ArrayList<>();
-        for (int i = 0; i < nodeCount; i++) {
-            long nodeId = 3 + i;
+        for (long i = 0; i < nodeCount; i++) {
+            long nodeId = i;
+            long nodeAccountId =  3 + nodeId;
             addressBookEntryList
-                    .add(addressBookEntry(a -> a.id(new AddressBookEntry.Id(startConsensusTimestamp, nodeId))
-                            .memo("0.0." + nodeId)
-                            .nodeAccountId(EntityId.of("0.0." + nodeId, EntityType.ACCOUNT))));
+                    .add(addressBookEntry(a -> a.consensusTimestamp(startConsensusTimestamp)
+                            .nodeId(nodeId)
+                            .memo("0.0." + nodeAccountId)
+                            .nodeAccountId(EntityId.of("0.0." + nodeAccountId, EntityType.ACCOUNT))));
         }
 
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
@@ -189,12 +189,13 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
 
     private AddressBookEntry addressBookEntry(Consumer<AddressBookEntry.AddressBookEntryBuilder> nodeAddressCustomizer) {
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
-                .id(new AddressBookEntry.Id(Instant.now().getEpochSecond(), 5L))
+                .consensusTimestamp(Instant.now().getEpochSecond())
                 .description("address book entry")
                 .publicKey("rsa+public/key")
                 .memo("0.0.3")
                 .nodeAccountId(EntityId.of("0.0.5", EntityType.ACCOUNT))
                 .nodeCertHash("nodeCertHash".getBytes())
+                .nodeId(5L)
                 .stake(5L);
 
         if (nodeAddressCustomizer != null) {
@@ -222,7 +223,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
                 assertThat(abe.getNodeAccountId()).isEqualTo(EntityId.of(nodeAddress.getNodeAccountId()));
                 assertThat(abe.getNodeCertHash()).isEqualTo(nodeAddress.getNodeCertHash().toByteArray());
                 assertThat(abe.getPublicKey()).isEqualTo(nodeAddress.getRSAPubKey());
-                assertThat(abe.getId().getNodeId()).isEqualTo(nodeAddress.getNodeId());
+                assertThat(abe.getNodeId()).isEqualTo(nodeAddress.getNodeId());
             });
         }
     }

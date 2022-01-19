@@ -23,6 +23,10 @@ package com.hedera.mirror.grpc.listener;
 import java.time.Duration;
 import java.time.Instant;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import reactor.core.publisher.Flux;
@@ -75,7 +79,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .topicId(1001)
+                .topicId(EntityId.of(1001L, EntityType.TOPIC))
                 .build();
 
         topicListener.listen(filter)

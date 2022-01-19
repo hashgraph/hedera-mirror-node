@@ -1,4 +1,4 @@
-package com.hedera.mirror.grpc.exception;
+package com.hedera.mirror.grpc.repository;
 
 /*-
  * ‌
@@ -20,14 +20,14 @@ package com.hedera.mirror.grpc.exception;
  * ‍
  */
 
-import com.hedera.mirror.common.exception.MirrorNodeException;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 
-public class TopicNotFoundException extends MirrorNodeException {
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
 
-    private static final String MESSAGE = "Topic does not exist";
-    private static final long serialVersionUID = 809036847722840635L;
+public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
 
-    public TopicNotFoundException() {
-        super(MESSAGE);
-    }
+    @Query(value = "select max(start_consensus_timestamp) from address_book where file_id = ?", nativeQuery = true)
+    Optional<Long> findLatestTimestamp(long fileId);
 }

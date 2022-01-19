@@ -41,14 +41,14 @@ import org.springframework.test.context.jdbc.Sql;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.config.MeterRegistryConfiguration;
+import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 
 // Same database is used for all tests, so clean it up before each test.
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @SpringBootTest
-@Import(MeterRegistryConfiguration.class)
+@Import(IntegrationTestConfiguration.class)
 public abstract class IntegrationTest {
 
     protected final Logger log = LogManager.getLogger(getClass());

@@ -59,7 +59,6 @@ public class RedisEntityListener implements BatchEntityListener {
 
     private static final String TOPIC_FORMAT = "topic.%d";
 
-    private final MirrorProperties mirrorProperties;
     private final RedisProperties redisProperties;
     private final RedisOperations<String, StreamMessage> redisOperations;
     private final MeterRegistry meterRegistry;
