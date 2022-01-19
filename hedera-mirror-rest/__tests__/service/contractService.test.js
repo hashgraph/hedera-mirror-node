@@ -103,7 +103,9 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
     );
     assertSqlQueryEqual(
       query,
-      `select contract_id,
+      `select
+        bloom,
+        contract_id,
         consensus_timestamp,
         data,
         index,
@@ -148,7 +150,9 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
     );
     assertSqlQueryEqual(
       query,
-      `select contract_id,
+      `select
+       bloom,
+       contract_id,
        consensus_timestamp,
        data,
        index,
