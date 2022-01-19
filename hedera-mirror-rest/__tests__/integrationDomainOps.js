@@ -696,25 +696,35 @@ const addCryptoTransaction = async (cryptoTransfer) => {
 
 const addTopicMessage = async (message) => {
   const insertFields = [
+    'chunk_num',
+    'chunk_total',
     'consensus_timestamp',
-    'topic_id',
+    'initial_transaction_id',
     'message',
     'payer_account_id',
     'running_hash',
-    'sequence_number',
     'running_hash_version',
+    'sequence_number',
+    'topic_id',
+    'valid_start_timestamp',
   ];
 
   const table = 'topic_message';
 
   message = {
+    chunk_num: null,
+    chunk_total: null,
+    initial_transaction_id: null,
     message: 'message', // Base64 encoding: bWVzc2FnZQ==
     payer_account_id: 3,
     running_hash: 'running_hash', // Base64 encoding: cnVubmluZ19oYXNo
     running_hash_version: 2,
+    valid_start_timestamp: null,
     ...message,
   };
 
+  message.initial_transaction_id =
+    message.initial_transaction_id == null ? null : Buffer.from(message.initial_transaction_id);
   await insertDomainObject(table, insertFields, message);
 };
 

@@ -31,19 +31,12 @@ const EntityId = require('./entityId');
 const utils = require('./utils');
 const {NotFoundError} = require('./errors/notFoundError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
-
-const topicMessageColumns = {
-  CONSENSUS_TIMESTAMP: 'consensus_timestamp',
-  MESSAGE: 'message',
-  RUNNING_HASH: 'running_hash',
-  RUNNING_HASH_VERSION: 'running_hash_version',
-  SEQUENCE_NUMBER: 'sequence_number',
-  TOPIC_ID: 'topic_id',
-};
+const {TopicMessage} = require('./model');
+const {TopicMessageViewModel} = require('./viewmodel');
 
 const columnMap = {
-  sequencenumber: topicMessageColumns.SEQUENCE_NUMBER,
-  [constants.filterKeys.TIMESTAMP]: topicMessageColumns.CONSENSUS_TIMESTAMP,
+  sequencenumber: TopicMessage.SEQUENCE_NUMBER,
+  [constants.filterKeys.TIMESTAMP]: TopicMessage.CONSENSUS_TIMESTAMP,
 };
 
 /**
@@ -51,7 +44,7 @@ const columnMap = {
  */
 const validateConsensusTimestampParam = (consensusTimestamp) => {
   if (!utils.isValidTimestampParam(consensusTimestamp)) {
-    throw InvalidArgumentError.forParams(topicMessageColumns.CONSENSUS_TIMESTAMP);
+    throw InvalidArgumentError.forParams(TopicMessage.CONSENSUS_TIMESTAMP);
   }
 };
 
@@ -83,20 +76,6 @@ const validateGetTopicMessagesParams = (topicId) => {
 };
 
 /**
- * Format row in postgres query's result to object which is directly returned to user as json.
- */
-const formatTopicMessageRow = (row, messageEncoding) => {
-  return {
-    consensus_timestamp: utils.nsToSecNs(row[topicMessageColumns.CONSENSUS_TIMESTAMP]),
-    topic_id: EntityId.parse(row[topicMessageColumns.TOPIC_ID]).toString(),
-    message: utils.encodeBinary(row[topicMessageColumns.MESSAGE], messageEncoding),
-    running_hash: utils.encodeBase64(row[topicMessageColumns.RUNNING_HASH]),
-    running_hash_version: parseInt(row[topicMessageColumns.RUNNING_HASH_VERSION]),
-    sequence_number: parseInt(row[topicMessageColumns.SEQUENCE_NUMBER]),
-  };
-};
-
-/**
  * Handler function for /messages/:consensusTimestamp API.
  * Extracts and validates timestamp input, creates db query logic in preparation for db call to get message
  * @return {Promise} Promise for PostgreSQL query
@@ -107,9 +86,9 @@ const getMessageByConsensusTimestamp = async (req, res) => {
 
   const consensusTimestamp = utils.parseTimestampParam(consensusTimestampParam);
 
-  const pgSqlQuery = `SELECT *
-                      FROM topic_message
-                      WHERE consensus_timestamp = $1`;
+  const pgSqlQuery = `select *
+                      from ${TopicMessage.tableName}
+                      where ${TopicMessage.CONSENSUS_TIMESTAMP} = $1`;
   const pgSqlParams = [consensusTimestamp];
 
   res.locals[constants.responseDataLabel] = await getMessage(pgSqlQuery, pgSqlParams);
@@ -130,9 +109,9 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
 
   // handle topic stated as x.y.z vs z e.g. topic 7 vs topic 0.0.7.
   const pgSqlQuery = `select *
-                      from topic_message
-                      where topic_id = $1
-                        and sequence_number = $2
+                      from ${TopicMessage.tableName}
+                      where ${TopicMessage.TOPIC_ID} = $1
+                        and ${TopicMessage.SEQUENCE_NUMBER} = $2
                       limit 1`;
   const pgSqlParams = [topicId.getEncodedId(), seqNum];
 
@@ -165,14 +144,12 @@ const getTopicMessages = async (req, res) => {
   // set random_page_cost to 0 to make the cost estimation of using the index on (topic_id, consensus_timestamp)
   // lower than that of the primary key so pg planner will choose the better index when querying topic messages by id
   const messages = await getMessages(query, params, constants.zeroRandomPageCostQueryHint);
-  topicMessagesResponse.messages = messages.map((m) => formatTopicMessageRow(m, messageEncoding));
+  topicMessagesResponse.messages = messages.map((m) => new TopicMessageViewModel(m, messageEncoding));
 
   // populate next
   const lastTimeStamp =
     topicMessagesResponse.messages.length > 0
-      ? topicMessagesResponse.messages[topicMessagesResponse.messages.length - 1][
-          topicMessageColumns.CONSENSUS_TIMESTAMP
-        ]
+      ? topicMessagesResponse.messages[topicMessagesResponse.messages.length - 1][TopicMessage.CONSENSUS_TIMESTAMP]
       : null;
 
   topicMessagesResponse.links.next = utils.getPaginationLink(
@@ -188,8 +165,8 @@ const getTopicMessages = async (req, res) => {
 
 const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
   let pgSqlQuery = `select *
-                    from topic_message
-                    where topic_id = $1`;
+                    from ${TopicMessage.tableName}
+                    where ${TopicMessage.TOPIC_ID} = $1`;
   let nextParamCount = 2;
   const pgSqlParams = [topicId.getEncodedId()];
 
@@ -218,7 +195,7 @@ const extractSqlFromTopicMessagesRequest = (topicId, filters) => {
   }
 
   // add order
-  pgSqlQuery += ` order by ${topicMessageColumns.CONSENSUS_TIMESTAMP} ${order}`;
+  pgSqlQuery += ` order by ${TopicMessage.CONSENSUS_TIMESTAMP} ${order}`;
 
   // add limit
   pgSqlQuery += ` limit $${nextParamCount++}`;
@@ -239,13 +216,15 @@ const getMessage = async (pgSqlQuery, pgSqlParams) => {
   }
 
   const {rows} = await pool.queryQuietly(pgSqlQuery, pgSqlParams);
-  // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
   if (rows.length !== 1) {
     throw new NotFoundError();
   }
+  const messages = rows.map((tm) => new TopicMessage(tm));
+  // Since consensusTimestamp is primary key of topic_message table, only 0 and 1 rows are possible cases.
 
   logger.debug('getMessage returning single entry');
-  return formatTopicMessageRow(rows[0]);
+
+  return new TopicMessageViewModel(messages[0]);
 };
 
 const getMessages = async (pgSqlQuery, pgSqlParams, preQueryHint) => {
@@ -255,12 +234,11 @@ const getMessages = async (pgSqlQuery, pgSqlParams, preQueryHint) => {
 
   const {rows} = await pool.queryQuietly(pgSqlQuery, pgSqlParams, preQueryHint);
   logger.debug(`getMessages returning ${rows.length} entries`);
-  return rows;
+  return rows.map((row) => new TopicMessage(row));
 };
 
 module.exports = {
   extractSqlFromTopicMessagesRequest,
-  formatTopicMessageRow,
   getMessageByConsensusTimestamp,
   getMessageByTopicAndSequenceRequest,
   getTopicMessages,

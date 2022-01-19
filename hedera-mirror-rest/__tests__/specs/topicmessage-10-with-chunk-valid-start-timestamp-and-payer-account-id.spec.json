@@ -12,10 +12,13 @@
         "topic_id": 7
       },
       {
+        "chunk_num": 2,
+        "chunk_total": 3,
         "consensus_timestamp": "1234567890000000002",
         "payer_account_id": 10,
         "sequence_number": 2,
-        "topic_id": 7
+        "topic_id": 7,
+        "valid_start_timestamp": "1234567890000000000"
       },
       {
         "consensus_timestamp": "1234567890000000003",
@@ -27,7 +30,13 @@
   "url": "/api/v1/topics/messages/1234567890.000000002",
   "responseStatus": 200,
   "responseJson": {
-    "chunk_info": null,
+    "chunk_info": {
+      "initial_transaction_id": "0.0.10-1234567890-000000000",
+      "nonce": null,
+      "number": 2,
+      "scheduled": null,
+      "total": 3
+    },
     "consensus_timestamp": "1234567890.000000002",
     "message": "bWVzc2FnZQ==",
     "payer_account_id": "0.0.10",

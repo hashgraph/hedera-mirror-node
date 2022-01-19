@@ -37,6 +37,7 @@ module.exports = {
   TokenFreezeStatus: require('./tokenFreezeStatus'),
   TokenKycStatus: require('./tokenKycStatus'),
   TokenTransfer: require('./tokenTransfer'),
+  TopicMessage: require('./topicMessage'),
   Transaction: require('./transaction'),
   TransactionResult: require('./transactionResult'),
   TransactionType: require('./transactionType'),
