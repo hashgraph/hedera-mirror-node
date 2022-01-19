@@ -107,7 +107,7 @@ function getScenario(metricKey) {
 
 function markdownReport(data, isFirstColumnUrl, scenarios) {
   const firstColumnName = isFirstColumnUrl ? 'URL' : 'Scenario';
-  const header = `| ${firstColumnName} | VUE | pass% | RPS | http_req_duration | Comment |
+  const header = `| ${firstColumnName} | VUS | Pass% | RPS | Avg. Req Duration | Comment |
 |----------|-----|-------|-----|-------------------|---------|`;
 
   // collect the metrics
