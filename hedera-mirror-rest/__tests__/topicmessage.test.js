@@ -112,33 +112,6 @@ describe('topicmessage validateGetTopicMessagesParams tests', () => {
   });
 });
 
-describe('topicmessage formatTopicMessageRow tests', () => {
-  const inputMessage = Buffer.from([104, 101, 100, 101, 114, 97, 32, 104, 97, 115, 104, 103, 114, 97, 112, 104]);
-  const rowInput = {
-    consensus_timestamp: '1234567890000000003',
-    topic_id: 4294967303,
-    message: inputMessage,
-    running_hash: inputMessage,
-    sequence_number: '3',
-  };
-
-  const formattedInput = topicmessage.formatTopicMessageRow(rowInput);
-
-  const expectedFormat = {
-    consensus_timestamp: '1234567890.000000003',
-    topic_id: `${config.shard}.1.7`,
-    message: 'aGVkZXJhIGhhc2hncmFwaA==',
-    running_hash: 'aGVkZXJhIGhhc2hncmFwaA==',
-    sequence_number: 3,
-  };
-
-  expect(formattedInput.consensus_timestamp).toStrictEqual(expectedFormat.consensus_timestamp);
-  expect(formattedInput.topic_id).toStrictEqual(expectedFormat.topic_id);
-  expect(formattedInput.sequence_number).toStrictEqual(expectedFormat.sequence_number);
-  expect(JSON.stringify(formattedInput.message)).toStrictEqual(JSON.stringify(expectedFormat.message));
-  expect(JSON.stringify(formattedInput.running_hash)).toStrictEqual(JSON.stringify(expectedFormat.running_hash));
-});
-
 describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
   const filters = [
     {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' > ', value: '2'},

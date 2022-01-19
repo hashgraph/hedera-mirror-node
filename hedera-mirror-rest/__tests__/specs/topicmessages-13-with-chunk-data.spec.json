@@ -1,5 +1,5 @@
 {
-  "description": "Get topic messages with no arguments",
+  "description": "Get topic messages with no arguments where one message has a saved protobuf initial_transaction_id",
   "setup": {
     "accounts": [
       {
@@ -17,44 +17,62 @@
         "topic_id": 7
       },
       {
+        "chunk_num": 1,
+        "chunk_total": 1,
         "consensus_timestamp": "1234567890000000002",
+        "initial_transaction_id": [10, 6, 8, -46, -123, -40, -52, 4, 18, 2, 24, 3, 24, 1, 32, 1],
         "sequence_number": 2,
         "topic_id": 7
       },
       {
+        "chunk_num": 2,
+        "chunk_total": 3,
         "consensus_timestamp": "1234567890000000003",
         "payer_account_id": 10,
         "sequence_number": 3,
-        "topic_id": 7
+        "topic_id": 7,
+        "valid_start_timestamp": "1234567890000000000"
       }
     ]
   },
-  "urls": ["/api/v1/topics/0.0.7/messages", "/api/v1/topics/0.7/messages", "/api/v1/topics/7/messages"],
+  "urls": ["/api/v1/topics/0.0.7/messages"],
   "responseStatus": 200,
   "responseJson": {
     "messages": [
       {
         "chunk_info": null,
         "consensus_timestamp": "1234567890.000000001",
+        "topic_id": "0.0.7",
         "message": "bWVzc2FnZQ==",
         "payer_account_id": "0.0.3",
         "running_hash": "cnVubmluZ19oYXNo",
         "running_hash_version": 2,
-        "sequence_number": 1,
-        "topic_id": "0.0.7"
+        "sequence_number": 1
       },
       {
-        "chunk_info": null,
+        "chunk_info": {
+          "initial_transaction_id": "0.0.3-1234567890-000000000",
+          "nonce": 1,
+          "number": 1,
+          "scheduled": true,
+          "total": 1
+        },
         "consensus_timestamp": "1234567890.000000002",
+        "topic_id": "0.0.7",
         "message": "bWVzc2FnZQ==",
         "payer_account_id": "0.0.3",
         "running_hash": "cnVubmluZ19oYXNo",
         "running_hash_version": 2,
-        "sequence_number": 2,
-        "topic_id": "0.0.7"
+        "sequence_number": 2
       },
       {
-        "chunk_info": null,
+        "chunk_info": {
+          "initial_transaction_id": "0.0.10-1234567890-000000000",
+          "nonce": null,
+          "number": 2,
+          "scheduled": null,
+          "total": 3
+        },
         "consensus_timestamp": "1234567890.000000003",
         "message": "bWVzc2FnZQ==",
         "payer_account_id": "0.0.10",

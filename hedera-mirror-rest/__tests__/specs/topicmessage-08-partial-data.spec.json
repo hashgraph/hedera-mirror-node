@@ -8,19 +8,21 @@
     "topicmessages": [
       {
         "consensus_timestamp": "1234567890000000001",
-        "topic_id": 7,
-        "sequence_number": 1
+        "sequence_number": 1,
+        "topic_id": 7
       }
     ]
   },
   "url": "/api/v1/topics/7/messages/1",
   "responseStatus": 200,
   "responseJson": {
+    "chunk_info": null,
     "consensus_timestamp": "1234567890.000000001",
-    "topic_id": "0.0.7",
     "message": "bWVzc2FnZQ==",
+    "payer_account_id": "0.0.3",
     "running_hash": "cnVubmluZ19oYXNo",
     "running_hash_version": 2,
-    "sequence_number": 1
+    "sequence_number": 1,
+    "topic_id": "0.0.7"
   }
 }
