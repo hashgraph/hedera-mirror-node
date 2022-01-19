@@ -21,7 +21,6 @@
         "chunk_total": 1,
         "consensus_timestamp": "1234567890000000002",
         "initial_transaction_id": [10, 6, 8, -46, -123, -40, -52, 4, 18, 2, 24, 3, 24, 1, 32, 1],
-        ,
         "sequence_number": 2,
         "topic_id": 7
       },
