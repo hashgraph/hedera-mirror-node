@@ -18,22 +18,18 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import {getOptionsWithScenario} from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 
 const urlTag = '/schedules';
+const url = __ENV.BASE_URL + `${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('schedules',{url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + `${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
-  const response = http.get(url);
-  check(response, {
-    "Schedules OK": (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('schedules') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.get(url))
+  .check('Schedules OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

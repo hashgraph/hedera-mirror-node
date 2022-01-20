@@ -214,4 +214,4 @@ function TestScenarioBuilder () {
   return this;
 }
 
-export {getOptionsWithScenario, getSequentialTestScenarios, markdownReport, TestScenarioBuilder};
+export {getSequentialTestScenarios, markdownReport, TestScenarioBuilder};

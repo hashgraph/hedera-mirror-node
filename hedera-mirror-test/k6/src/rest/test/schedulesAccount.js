@@ -18,22 +18,18 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import { getOptionsWithScenario } from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 
+const url = __ENV.BASE_URL + `/schedules?account.id=gte:${__ENV.DEFAULT_SCHEDULE_ACCOUNT}`;
 const urlTag = '/schedules?account.id=gte:{accountId}';
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('schedulesAccount', {url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + `/schedules?account.id=gte:${__ENV.DEFAULT_SCHEDULE_ACCOUNT}`;
-  const response = http.get(url);
-  check(response, {
-    "Schedules account OK": (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('schedulesAccount') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.get(url))
+  .check('Schedules account OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

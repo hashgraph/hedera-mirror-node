@@ -18,7 +18,7 @@
  * ‍
  */
 
-import * as common from '../../lib/common.js';
+import {getSequentialTestScenarios} from '../../lib/common.js';
 
 // import test modules
 import * as ethBlockNumber from './ethBlockNumber.js';
@@ -26,6 +26,6 @@ import * as ethBlockNumber from './ethBlockNumber.js';
 // add test modules here
 const tests = {ethBlockNumber};
 
-const {funcs, options, scenarioDurationGauge} = common.getSequentialTestScenarios(tests);
+const {funcs, options, scenarioDurationGauge} = getSequentialTestScenarios(tests);
 
 export {funcs, options, scenarioDurationGauge};

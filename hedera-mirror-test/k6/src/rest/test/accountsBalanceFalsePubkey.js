@@ -18,22 +18,18 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import {getOptionsWithScenario} from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 
 const urlTag = '/accounts?balance=false&account.publickey={publicKey}';
+const url = __ENV.BASE_URL + `/accounts?balance=false&account.publickey=${__ENV.DEFAULT_PUBLICKEY_FALSE}`;
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('accountsBalanceFalsePubkey',{url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + `/accounts?balance=false&account.publickey=${__ENV.DEFAULT_PUBLICKEY_FALSE}`;
-  const response = http.get(url);
-  check(response, {
-    "Accounts balance false with publickey OK": (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('accountsBalanceFalsePubkey') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.get(url))
+  .check('Accounts balance false with publickey OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

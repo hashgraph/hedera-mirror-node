@@ -18,7 +18,7 @@
  * ‍
  */
 
-import * as common from '../../lib/common.js';
+import {getSequentialTestScenarios} from '../../lib/common.js';
 
 // import test modules
 import * as accounts from './accounts.js';
@@ -92,6 +92,6 @@ const tests = {
   transactionsId,
 };
 
-const {funcs, options, scenarioDurationGauge} = common.getSequentialTestScenarios(tests);
+const {funcs, options, scenarioDurationGauge} = getSequentialTestScenarios(tests);
 
 export {funcs, options, scenarioDurationGauge};

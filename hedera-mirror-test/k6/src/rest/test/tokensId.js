@@ -18,22 +18,18 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import { getOptionsWithScenario } from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 
+const url = __ENV.BASE_URL + `/tokens/${__ENV.DEFAULT_TOKEN}`;
 const urlTag = '/tokens/{id}';
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('tokensId', {url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + `/tokens/${__ENV.DEFAULT_TOKEN}`;
-  const response = http.get(url);
-  check(response, {
-    "Tokens id OK": (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('tokensId') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.get(url))
+  .check('Tokens id OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

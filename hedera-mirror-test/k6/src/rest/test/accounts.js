@@ -18,32 +18,32 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import { getOptionsWithScenario } from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 
 const urlTag = '/accounts';
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('accounts',{url: urlTag});
-
 let nextLink;
 
-function run() {
-  let url = __ENV.BASE_URL + `${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
-  if (nextLink) {
-    url = __ENV.BASE_URL + nextLink;
-  }
+const {options, run} = new TestScenarioBuilder()
+  .name('accounts') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => {
+    let url = __ENV.BASE_URL + `${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
+    if (nextLink) {
+      url = __ENV.BASE_URL + nextLink;
+    }
 
-  const response = http.get(url);
-  const status = check(response, {
-    "Accounts OK": (r) => r.status === 200,
-  });
-  if (status) {
-    const res = JSON.parse(response.body);
-    nextLink = res.links.next;
-  }
-}
+    const response = http.get(url);
+    if (response.status === 200) {
+      const res = JSON.parse(response.body);
+      nextLink = res.links.next;
+    }
+
+    return response;
+  })
+  .check('Accounts OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

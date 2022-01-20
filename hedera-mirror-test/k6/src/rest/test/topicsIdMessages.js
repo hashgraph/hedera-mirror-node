@@ -18,22 +18,18 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import { getOptionsWithScenario } from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 
+const url = __ENV.BASE_URL + `/topics/${__ENV.DEFAULT_TOPIC}/messages?limit=${__ENV.DEFAULT_LIMIT}`;
 const urlTag = '/topics/{id}/messages';
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('topicsIdMessages', {url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + `/topics/${__ENV.DEFAULT_TOPIC}/messages?limit=${__ENV.DEFAULT_LIMIT}`;
-  const response = http.get(url);
-  check(response, {
-    "Topics id messages OK": (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('topicsIdMessages') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.get(url))
+  .check('Topics id messages OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

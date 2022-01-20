@@ -18,22 +18,18 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import {getOptionsWithScenario} from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 
+const url = __ENV.BASE_URL + `/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results/logs`;
 const urlTag = '/contracts/{id}/results/logs';
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('contractsIdResultsLogs',{url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + `/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results/logs`;
-  const response = http.get(url);
-  check(response, {
-    "Contracts id results logs OK": (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('contractsIdResultsLogs') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.get(url))
+  .check('Contracts id results logs OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

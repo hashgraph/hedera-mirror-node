@@ -18,22 +18,18 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import {getOptionsWithScenario} from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 
 const urlTag = '/accounts?account.id=ne:{accountId}&order=desc';
+const url = __ENV.BASE_URL + `/accounts?account.id=ne:${__ENV.DEFAULT_ACCOUNT_ENTITYNUM}&order=desc`;
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('accountsIdNe',{url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + `/accounts?account.id=ne:${__ENV.DEFAULT_ACCOUNT_ENTITYNUM}&order=desc`;
-  const response = http.get(url);
-  check(response, {
-    "Accounts ne: accountId order desc OK": (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('accountsIdNe') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.get(url))
+  .check('Accounts ne: accountId order desc OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

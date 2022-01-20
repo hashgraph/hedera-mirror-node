@@ -18,22 +18,18 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import { getOptionsWithScenario } from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 
+const url = __ENV.BASE_URL + `/topics/${__ENV.DEFAULT_TOPIC}/messages?sequencenumber=${__ENV.DEFAULT_TOPIC_SEQUENCE}`;
 const urlTag = '/topics/{id}/messages?sequencenumber={sequenceNumber}';
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('topicsIdMessagesSequenceQueryParam', {url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + `/topics/${__ENV.DEFAULT_TOPIC}/messages?sequencenumber=${__ENV.DEFAULT_TOPIC_SEQUENCE}`;
-  const response = http.get(url);
-  check(response, {
-    "Topics id messages sequenceNumber query param OK": (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('topicsIdMessagesSequenceQueryParam') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.get(url))
+  .check('Topics id messages sequenceNumber query param OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

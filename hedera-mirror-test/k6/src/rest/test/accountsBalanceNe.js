@@ -18,22 +18,18 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import { getOptionsWithScenario } from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 
 const urlTag = '/accounts?account.balance=ne:{balance}&order=desc';
+const  url = __ENV.BASE_URL + `/accounts?account.balance=ne:${__ENV.DEFAULT_ACCOUNT_BALANCE}&order=desc`;
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('accountsBalanceNe', {url: urlTag});
-
-function run() {
-  const  url = __ENV.BASE_URL + `/accounts?account.balance=ne:${__ENV.DEFAULT_ACCOUNT_BALANCE}&order=desc`;
-  const response = http.get(url);
-  check(response, {
-    'Accounts balance NE OK': (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('accountsBalanceNe') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.get(url))
+  .check('Accounts balance NE OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};
