@@ -25,6 +25,7 @@ import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -232,6 +233,29 @@ class TransactionPublisherTest {
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
         assertThat(transactionPublisher.validateNode(nodeProperties)).isTrue();
+
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+    }
+
+    @Test
+    @Timeout(3)
+    void validationSucceeds() {
+        monitorProperties.getNodeValidation().setEnabled(true);
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+
+        // Wait for validation thread to succeed
+        Uninterruptibles.sleepUninterruptibly(Duration.ofMillis(500L));
 
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
         transactionPublisher.publish(request().build())
