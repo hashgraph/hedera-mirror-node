@@ -21,39 +21,48 @@ package com.hedera.mirror.common.domain.addressbook;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import java.io.Serializable;
 import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.Embeddable;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
+import javax.persistence.IdClass;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
-
+@Builder(toBuilder = true)
 @Data
 @Entity
+@IdClass(AddressBookServiceEndpoint.Id.class)
 @NoArgsConstructor
-@AllArgsConstructor
-public class AddressBookServiceEndpoint implements Persistable<AddressBookServiceEndpoint.Id>, Serializable {
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For builder
+public class AddressBookServiceEndpoint implements Persistable<AddressBookServiceEndpoint.Id> {
 
-    private static final long serialVersionUID = 6964963511683419945L;
+    @javax.persistence.Id
+    private long consensusTimestamp;
 
-    public AddressBookServiceEndpoint(long consensusTimestamp, String ip, int port, EntityId nodeAccountId) {
-        id = new AddressBookServiceEndpoint.Id(consensusTimestamp, ip, nodeAccountId, port);
-    }
+    @javax.persistence.Id
+    @Column(name = "ip_address_v4")
+    private String ipAddressV4;
+
+    @javax.persistence.Id
+    private long nodeId;
+
+    @javax.persistence.Id
+    private int port;
 
     @JsonIgnore
-    @EmbeddedId
-    @JsonUnwrapped
-    private Id id;
+    @Override
+    public Id getId() {
+        Id id = new Id();
+        id.setConsensusTimestamp(consensusTimestamp);
+        id.setIpAddressV4(ipAddressV4);
+        id.setNodeId(nodeId);
+        id.setPort(port);
+        return id;
+    }
 
     @JsonIgnore
     @Override
@@ -62,9 +71,6 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
     }
 
     @Data
-    @Embeddable
-    @AllArgsConstructor
-    @NoArgsConstructor
     public static class Id implements Serializable {
 
         private static final long serialVersionUID = -7779136597707252814L;
@@ -74,8 +80,7 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
         @Column(name = "ip_address_v4")
         private String ipAddressV4;
 
-        @Convert(converter = AccountIdConverter.class)
-        private EntityId nodeId;
+        private long nodeId;
 
         private int port;
     }

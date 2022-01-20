@@ -371,12 +371,13 @@ public class AddressBookServiceImpl implements AddressBookService {
     private static AddressBookEntry getAddressBookEntry(NodeAddress nodeAddressProto, long consensusTimestamp,
                                                         Pair<Long, EntityId> nodeIds) {
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
-                .id(new AddressBookEntry.Id(consensusTimestamp, nodeIds.getLeft()))
+                .consensusTimestamp(consensusTimestamp)
                 .description(nodeAddressProto.getDescription())
+                .nodeAccountId(nodeIds.getRight())
+                .nodeId(nodeIds.getLeft())
                 .publicKey(nodeAddressProto.getRSAPubKey())
                 .serviceEndpoints(Set.of())
-                .stake(nodeAddressProto.getStake())
-                .nodeAccountId(nodeIds.getRight());
+                .stake(nodeAddressProto.getStake());
 
         if (nodeAddressProto.getNodeCertHash() != null) {
             builder.nodeCertHash(nodeAddressProto.getNodeCertHash().toByteArray());
@@ -391,55 +392,59 @@ public class AddressBookServiceImpl implements AddressBookService {
 
     private static Set<AddressBookServiceEndpoint> getAddressBookServiceEndpoints(NodeAddress nodeAddressProto,
                                                                                   long consensusTimestamp) throws UnknownHostException {
-        var nodeAccountId = EntityId.of(nodeAddressProto.getNodeAccountId());
+        var nodeId = nodeAddressProto.getNodeId();
         Set<AddressBookServiceEndpoint> serviceEndpoints = new HashSet<>();
 
         // create an AddressBookServiceEndpoint for deprecated port and IP if populated
         AddressBookServiceEndpoint deprecatedServiceEndpoint = getAddressBookServiceEndpoint(
                 nodeAddressProto,
                 consensusTimestamp,
-                nodeAccountId);
+                nodeId);
         if (deprecatedServiceEndpoint != null) {
             serviceEndpoints.add(deprecatedServiceEndpoint);
         }
 
         // create an AddressBookServiceEndpoint for every ServiceEndpoint found
         for (ServiceEndpoint serviceEndpoint : nodeAddressProto.getServiceEndpointList()) {
-            serviceEndpoints.add(getAddressBookServiceEndpoint(serviceEndpoint, consensusTimestamp, nodeAccountId));
+            serviceEndpoints.add(getAddressBookServiceEndpoint(serviceEndpoint, consensusTimestamp, nodeId));
         }
 
         return serviceEndpoints;
     }
 
+    @SuppressWarnings("deprecation")
     private static AddressBookServiceEndpoint getAddressBookServiceEndpoint(NodeAddress nodeAddressProto,
                                                                             long consensusTimestamp,
-                                                                            EntityId nodeAccountId) {
+                                                                            long nodeId) {
         String ip = nodeAddressProto.getIpAddress().toStringUtf8();
         if (StringUtils.isBlank(ip)) {
             return null;
         }
 
-        return new AddressBookServiceEndpoint(
-                consensusTimestamp,
-                ip,
-                nodeAddressProto.getPortno(),
-                nodeAccountId);
+        AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
+        addressBookServiceEndpoint.setConsensusTimestamp(consensusTimestamp);
+        addressBookServiceEndpoint.setIpAddressV4(ip);
+        addressBookServiceEndpoint.setPort(nodeAddressProto.getPortno());
+        addressBookServiceEndpoint.setNodeId(nodeId);
+        return addressBookServiceEndpoint;
     }
 
     private static AddressBookServiceEndpoint getAddressBookServiceEndpoint(ServiceEndpoint serviceEndpoint,
                                                                             long consensusTimestamp,
-                                                                            EntityId nodeAccountId) throws UnknownHostException {
+                                                                            long nodeId) throws UnknownHostException {
         var ipAddressByteString = serviceEndpoint.getIpAddressV4();
         if (ipAddressByteString == null || ipAddressByteString.size() != 4) {
             throw new IllegalStateException(String
                     .format("Invalid IpAddressV4: %s", ipAddressByteString));
         }
 
-        return new AddressBookServiceEndpoint(
-                consensusTimestamp,
-                InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress(),
-                serviceEndpoint.getPort(),
-                nodeAccountId);
+        var ip = InetAddress.getByAddress(ipAddressByteString.toByteArray()).getHostAddress();
+        AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
+        addressBookServiceEndpoint.setConsensusTimestamp(consensusTimestamp);
+        addressBookServiceEndpoint.setIpAddressV4(ip);
+        addressBookServiceEndpoint.setPort(serviceEndpoint.getPort());
+        addressBookServiceEndpoint.setNodeId(nodeId);
+        return addressBookServiceEndpoint;
     }
 
     /**

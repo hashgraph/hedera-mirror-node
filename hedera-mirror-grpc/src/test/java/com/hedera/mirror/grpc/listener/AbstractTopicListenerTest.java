@@ -25,10 +25,16 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+
+import com.hedera.mirror.common.domain.entity.EntityType;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
+import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -41,8 +47,9 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
     protected final Instant future = Instant.now().plusSeconds(30L);
+    protected final EntityId topicId = EntityId.of(100L, EntityType.TOPIC);
 
-    @Resource
+    @Autowired
     protected DomainBuilder domainBuilder;
 
     @Resource
@@ -84,6 +91,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     void noMessages() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
+                .topicId(topicId)
                 .build();
 
         topicListener.listen(filter)
@@ -98,6 +106,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     void lessThanPageSize() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
+                .topicId(topicId)
                 .build();
 
         topicListener.listen(filter)
@@ -117,6 +126,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
+                .topicId(topicId)
                 .build();
 
         topicListener.listen(filter)
@@ -138,6 +148,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
+                .topicId(topicId)
                 .build();
 
         topicListener.listen(filter)
@@ -156,6 +167,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
     void startTimeBefore() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
+                .topicId(topicId)
                 .build();
 
         topicListener.listen(filter)
@@ -173,6 +185,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
         Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(future));
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(future)
+                .topicId(topicId)
                 .build();
 
         topicListener.listen(filter)
@@ -190,6 +203,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
         Mono<TopicMessage> topicMessage = domainBuilder.topicMessage(t -> t.consensusTimestamp(future.minusNanos(1)));
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(future)
+                .topicId(topicId)
                 .build();
 
         topicListener.listen(filter)
@@ -211,7 +225,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .topicId(1)
+                .topicId(EntityId.of(1L, EntityType.TOPIC))
                 .build();
 
         topicListener.listen(filter)
@@ -242,11 +256,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter1 = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .topicId(1)
+                .topicId(EntityId.of(1L, EntityType.TOPIC))
                 .build();
         TopicMessageFilter filter2 = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
-                .topicId(2)
+                .topicId(EntityId.of(2L, EntityType.TOPIC))
                 .build();
 
         StepVerifier stepVerifier1 = topicListener

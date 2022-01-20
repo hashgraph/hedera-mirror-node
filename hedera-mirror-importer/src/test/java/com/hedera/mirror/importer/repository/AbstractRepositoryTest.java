@@ -23,8 +23,8 @@ package com.hedera.mirror.importer.repository;
 import javax.annotation.Resource;
 import org.springframework.jdbc.core.JdbcOperations;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.DomainBuilder;
 
 public abstract class AbstractRepositoryTest extends IntegrationTest {
 

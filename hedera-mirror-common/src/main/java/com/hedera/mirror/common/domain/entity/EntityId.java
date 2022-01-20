@@ -131,9 +131,18 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         return entityId == null || EMPTY.equals(entityId);
     }
 
+    /**
+     * @deprecated in favor of using toString()
+     */
+    @Deprecated(since = "v0.49.0")
     public String entityIdToString() {
         return String.format("%d.%d.%d", getShardNum(),
                 getRealmNum(), getEntityNum());
+    }
+
+    @SuppressWarnings("deprecation")
+    public String toString() {
+        return entityIdToString();
     }
 
     public <T extends AbstractEntity> T toEntity() {

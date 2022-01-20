@@ -53,31 +53,6 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
     protected AddressBookRepository addressBookRepository;
 
     @Test
-    void save() {
-        long consensusTimestamp = 1L;
-        AddressBookServiceEndpoint addressBookServiceEndpoint = addressBookServiceEndpointRepository.save(
-                addressBookServiceEndpoint(consensusTimestamp, "127.0.0.1", 443, 3));
-        assertThat(addressBookServiceEndpointRepository.findById(addressBookServiceEndpoint.getId()))
-                .get()
-                .isEqualTo(addressBookServiceEndpoint);
-    }
-
-    @Test
-    void verifySequence() {
-        long consensusTimestamp = 1L;
-        addressBookServiceEndpointRepository.save(addressBookServiceEndpoint(consensusTimestamp, "127.0.0.1", 80, 3));
-        addressBookServiceEndpointRepository.save(addressBookServiceEndpoint(consensusTimestamp, "127.0.0.2", 443, 3));
-        addressBookServiceEndpointRepository.save(addressBookServiceEndpoint(consensusTimestamp, "127.0.0.3", 8000, 4));
-        addressBookServiceEndpointRepository.save(addressBookServiceEndpoint(consensusTimestamp, "127.0.0.4", 8443, 4));
-        assertThat(addressBookServiceEndpointRepository.findAll())
-                .isNotNull()
-                .hasSize(4)
-                .extracting(AddressBookServiceEndpoint::getId)
-                .extracting(AddressBookServiceEndpoint.Id::getPort)
-                .containsSequence(80, 443, 8000, 8443);
-    }
-
-    @Test
     void verifyEntryToServiceEndpointMapping() throws UnknownHostException {
         long consensusTimestamp = 1L;
         addressBookRepository.save(addressBook(1, Collections.emptyList(), Collections.emptyList()));
@@ -114,24 +89,26 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
     }
 
     private AddressBookServiceEndpoint addressBookServiceEndpoint(long consensusTimestamp, String ip, int port,
-                                                                  long nodeAccountId) {
-        String nodeAccountIdString = String.format("0.0.%s", nodeAccountId);
-        return new AddressBookServiceEndpoint(
-                consensusTimestamp,
-                ip,
-                port,
-                EntityId.of(nodeAccountIdString, EntityType.ACCOUNT));
+                                                                  long nodeId) {
+        AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
+        addressBookServiceEndpoint.setConsensusTimestamp(consensusTimestamp);
+        addressBookServiceEndpoint.setIpAddressV4(ip);
+        addressBookServiceEndpoint.setPort(port);
+        addressBookServiceEndpoint.setNodeId(nodeId);
+        return addressBookServiceEndpoint;
     }
 
     private AddressBookEntry addressBookEntry(long consensusTimestamp, long nodeAccountId, List<Integer> portNums) throws UnknownHostException {
+        long nodeId = nodeAccountId - 3;
         String nodeAccountIdString = String.format("0.0.%s", nodeAccountId);
         EntityId nodeAccountEntityId = EntityId.of(nodeAccountIdString, EntityType.ACCOUNT);
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
-                .id(new AddressBookEntry.Id(consensusTimestamp, nodeAccountId - 3))
-                .publicKey("rsa+public/key")
+                .consensusTimestamp(consensusTimestamp)
                 .memo(nodeAccountIdString)
                 .nodeAccountId(nodeAccountEntityId)
-                .nodeCertHash("nodeCertHash".getBytes());
+                .nodeCertHash("nodeCertHash".getBytes())
+                .nodeId(nodeId)
+                .publicKey("rsa+public/key");
 
         if (!CollectionUtils.isEmpty(portNums)) {
             Set<AddressBookServiceEndpoint> serviceEndpoints = new HashSet<>();
@@ -140,7 +117,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
                         consensusTimestamp,
                         InetAddress.getByName("127.0.0." + i).getHostAddress(),
                         portNums.get(i),
-                        nodeAccountId));
+                        nodeId));
             }
 
             builder.serviceEndpoints(serviceEndpoints);

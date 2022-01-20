@@ -692,7 +692,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.49.0-SNAPSHOT
+  version: 0.50.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -983,6 +983,28 @@ components:
         tokens:
           - token_id: 0.0.200001
             balance: 8
+    ChunkInfo:
+      type: object
+      nullable: true
+      properties:
+        initial_transaction_id:
+          type: string
+        nonce:
+          type: integer
+          nullable: true
+        number:
+          type: integer
+        scheduled:
+          type: boolean
+          nullable: true
+        total:
+          type: integer
+      example:
+        initial_transaction_id: "0.0.3-1234567890-000000321"
+        nonce: 2
+        number: 1
+        scheduled: true
+        total: 2
     Contract:
       type: object
       properties:
@@ -1621,12 +1643,14 @@ components:
     TopicMessage:
       type: object
       properties:
+        chunk_info:
+          $ref: '#/components/schemas/ChunkInfo'
         consensus_timestamp:
           $ref: '#/components/schemas/Timestamp'
-        topic_id:
-          $ref: '#/components/schemas/EntityId'
         message:
           type: string
+        payer_account_id:
+          $ref: '#/components/schemas/EntityId'
         running_hash:
           type: string
           format: byte
@@ -1634,20 +1658,30 @@ components:
           type: number
         sequence_number:
           type: number
+        topic_id:
+          $ref: '#/components/schemas/EntityId'
       required:
         - consensus_timestamp
-        - topic_id
         - message
+        - payer_account_id
         - running_hash
         - running_hash_version
         - sequence_number
+        - topic_id
       example:
+        chunk_info:
+          initial_transaction_id: "0.0.10-1234567890-000000321"
+          nonce: 3
+          number: 1
+          total: 2
+          scheduled: true
         consensus_timestamp: "1234567890.000000001"
-        topic_id: 0.0.7
         message: bWVzc2FnZQ==
+        payer_account_id: 0.0.10
         running_hash: cnVubmluZ19oYXNo
         running_hash_version: 2
         sequence_number: 1
+        topic_id: 0.0.7
     TopicMessages:
       type: array
       items:

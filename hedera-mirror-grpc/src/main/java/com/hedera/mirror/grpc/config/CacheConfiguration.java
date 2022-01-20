@@ -20,23 +20,37 @@ package com.hedera.mirror.grpc.config;
  * ‍
  */
 
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import com.hedera.mirror.grpc.GrpcProperties;
+import com.hedera.mirror.grpc.service.AddressBookProperties;
 
 @Configuration
 @ConditionalOnProperty(prefix = "spring.cache", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableCaching
 public class CacheConfiguration {
 
+    public static final String ADDRESS_BOOK_ENTRY_CACHE = "addressBookEntryCache";
     public static final String ENTITY_CACHE = "entityCache";
 
+    @Bean(ADDRESS_BOOK_ENTRY_CACHE)
+    CacheManager addressBookEntryCache(AddressBookProperties addressBookProperties) {
+        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCaffeine(Caffeine.newBuilder()
+                .expireAfterWrite(addressBookProperties.getCacheExpiry())
+                .maximumSize(addressBookProperties.getCacheSize()));
+        return caffeineCacheManager;
+    }
+
     @Bean(ENTITY_CACHE)
+    @Primary
     CacheManager entityCache(GrpcProperties grpcProperties) {
         int cacheSize = grpcProperties.getEntityCacheSize();
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();

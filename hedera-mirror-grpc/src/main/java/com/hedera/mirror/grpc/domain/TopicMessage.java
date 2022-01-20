@@ -25,10 +25,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.UnsafeByteOperations;
-import com.hederahashgraph.api.proto.java.AccountID;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.grpc.util.ProtoUtil;
+
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
-import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
 import java.util.Comparator;
@@ -46,7 +48,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.api.proto.ConsensusTopicResponse;
-import com.hedera.mirror.grpc.converter.EncodedIdToEntityConverter;
 import com.hedera.mirror.grpc.converter.InstantToLongConverter;
 import com.hedera.mirror.grpc.converter.LongToInstantConverter;
 
@@ -95,16 +96,7 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
     @ToString.Exclude
     private Long payerAccountId;
 
-    @Getter(lazy = true)
-    @Transient
-    private com.hedera.mirror.grpc.domain.Entity payerAccountEntity = EncodedIdToEntityConverter.INSTANCE
-            .convert(payerAccountId);
-
     private Long validStartTimestamp;
-
-    @Getter(lazy = true)
-    @Transient
-    private Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(validStartTimestamp);
 
     // Cache this to avoid paying the conversion penalty for multiple subscribers to the same topic
     @EqualsAndHashCode.Exclude
@@ -115,12 +107,9 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
 
     private ConsensusTopicResponse toResponse() {
         var consensusTopicResponseBuilder = ConsensusTopicResponse.newBuilder()
-                .setConsensusTimestamp(Timestamp.newBuilder()
-                        .setSeconds(getConsensusTimestampInstant().getEpochSecond())
-                        .setNanos(getConsensusTimestampInstant().getNano())
-                        .build())
-                .setMessage(UnsafeByteOperations.unsafeWrap(message))
-                .setRunningHash(UnsafeByteOperations.unsafeWrap(runningHash))
+                .setConsensusTimestamp(ProtoUtil.toTimestamp(getConsensusTimestampInstant()))
+                .setMessage(ProtoUtil.toByteString(message))
+                .setRunningHash(ProtoUtil.toByteString(runningHash))
                 .setRunningHashVersion(runningHashVersion)
                 .setSequenceNumber(sequenceNumber);
 
@@ -130,19 +119,15 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
                     .setTotal(getChunkTotal());
 
             TransactionID transactionID = parseTransactionID(initialTransactionId);
+            EntityId payerAccountEntity = EntityId.of(payerAccountId, EntityType.ACCOUNT);
+            Instant validStartInstant = LongToInstantConverter.INSTANCE.convert(validStartTimestamp);
+
             if (transactionID != null) {
                 chunkBuilder.setInitialTransactionID(transactionID);
-            } else if (getPayerAccountEntity() != null && getValidStartTimestamp() != null) {
+            } else if (payerAccountEntity != null && validStartInstant != null) {
                 chunkBuilder.setInitialTransactionID(TransactionID.newBuilder()
-                        .setAccountID(AccountID.newBuilder()
-                                .setShardNum(getPayerAccountEntity().getShard())
-                                .setRealmNum(getPayerAccountEntity().getRealm())
-                                .setAccountNum(getPayerAccountEntity().getNum())
-                                .build())
-                        .setTransactionValidStart(Timestamp.newBuilder()
-                                .setSeconds(getValidStartInstant().getEpochSecond())
-                                .setNanos(getValidStartInstant().getNano())
-                                .build())
+                        .setAccountID(ProtoUtil.toAccountID(payerAccountEntity))
+                        .setTransactionValidStart(ProtoUtil.toTimestamp(validStartInstant))
                         .build());
             }
 
@@ -167,18 +152,6 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
         return true;
     }
 
-    public static class TopicMessageBuilder {
-        public TopicMessageBuilder consensusTimestamp(Instant consensusTimestamp) {
-            this.consensusTimestamp = InstantToLongConverter.INSTANCE.convert(consensusTimestamp);
-            return this;
-        }
-
-        public TopicMessageBuilder validStartTimestamp(Instant validStartTimestamp) {
-            this.validStartTimestamp = InstantToLongConverter.INSTANCE.convert(validStartTimestamp);
-            return this;
-        }
-    }
-
     private TransactionID parseTransactionID(byte[] transactionIdBytes) {
         if (transactionIdBytes == null) {
             return null;
@@ -188,6 +161,18 @@ public class TopicMessage implements Comparable<TopicMessage>, Persistable<Long>
         } catch (InvalidProtocolBufferException e) {
             log.error("Failed to parse TransactionID for topic {} sequence number {}", topicId, sequenceNumber);
             return null;
+        }
+    }
+
+    public static class TopicMessageBuilder {
+        public TopicMessageBuilder consensusTimestamp(Instant consensusTimestamp) {
+            this.consensusTimestamp = InstantToLongConverter.INSTANCE.convert(consensusTimestamp);
+            return this;
+        }
+
+        public TopicMessageBuilder validStartTimestamp(Instant validStartTimestamp) {
+            this.validStartTimestamp = InstantToLongConverter.INSTANCE.convert(validStartTimestamp);
+            return this;
         }
     }
 }

@@ -24,6 +24,9 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;
@@ -60,8 +63,8 @@ public class TopicMessageFilter {
     @Builder.Default
     private String subscriberId = RandomStringUtils.random(8, 0, 0, true, true, null, RANDOM);
 
-    @Min(0)
-    private long topicId;
+    @NotNull
+    private EntityId topicId;
 
     public boolean hasLimit() {
         return limit > 0;

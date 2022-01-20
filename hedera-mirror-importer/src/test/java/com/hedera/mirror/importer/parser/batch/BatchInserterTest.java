@@ -45,6 +45,7 @@ import org.postgresql.PGConnection;
 import org.postgresql.copy.CopyManager;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
@@ -54,7 +55,6 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
-import com.hedera.mirror.importer.domain.DomainBuilder;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;

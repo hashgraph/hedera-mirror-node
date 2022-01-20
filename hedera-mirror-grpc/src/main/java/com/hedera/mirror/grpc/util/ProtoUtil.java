@@ -20,14 +20,34 @@ package com.hedera.mirror.grpc.util;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
+import com.google.protobuf.UnsafeByteOperations;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import java.time.Instant;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
+import java.util.concurrent.TimeoutException;
+import javax.validation.ConstraintViolationException;
+import lombok.experimental.UtilityClass;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.dao.NonTransientDataAccessResourceException;
+import org.springframework.dao.TransientDataAccessException;
+import reactor.core.Exceptions;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.grpc.exception.EntityNotFoundException;
+
+@Log4j2
+@UtilityClass
 public final class ProtoUtil {
-    public static final Instant fromTimestamp(Timestamp timestamp) {
+
+    static final String DB_ERROR = "Error querying the data source. Please retry later";
+    static final String OVERFLOW_ERROR = "Client lags too much behind. Please retry later";
+    static final String UNKNOWN_ERROR = "Unknown error";
+
+    public static Instant fromTimestamp(Timestamp timestamp) {
         if (timestamp == null) {
             return null;
         }
@@ -35,12 +55,52 @@ public final class ProtoUtil {
         return Instant.ofEpochSecond(timestamp.getSeconds(), timestamp.getNanos());
     }
 
-    public static final Timestamp toTimestamp(Instant instant) {
+    public static AccountID toAccountID(EntityId entityId) {
+        return AccountID.newBuilder()
+                .setShardNum(entityId.getShardNum())
+                .setRealmNum(entityId.getRealmNum())
+                .setAccountNum(entityId.getEntityNum())
+                .build();
+    }
+
+    public static ByteString toByteString(byte[] bytes) {
+        if (bytes == null) {
+            return ByteString.EMPTY;
+        }
+        return UnsafeByteOperations.unsafeWrap(bytes);
+    }
+
+    public static StatusRuntimeException toStatusRuntimeException(Throwable t) {
+        if (Exceptions.isOverflow(t)) {
+            return clientError(t, Status.DEADLINE_EXCEEDED, OVERFLOW_ERROR);
+        } else if (t instanceof ConstraintViolationException || t instanceof IllegalArgumentException || t instanceof InvalidEntityException) {
+            return clientError(t, Status.INVALID_ARGUMENT, t.getMessage());
+        } else if (t instanceof EntityNotFoundException) {
+            return clientError(t, Status.NOT_FOUND, t.getMessage());
+        } else if (t instanceof TransientDataAccessException || t instanceof TimeoutException) {
+            return serverError(t, Status.RESOURCE_EXHAUSTED, DB_ERROR);
+        } else if (t instanceof NonTransientDataAccessResourceException) {
+            return serverError(t, Status.UNAVAILABLE, DB_ERROR);
+        } else {
+            return serverError(t, Status.UNKNOWN, UNKNOWN_ERROR);
+        }
+    }
+
+    private static StatusRuntimeException clientError(Throwable t, Status status, String message) {
+        log.warn("Client error {}: {}", t.getClass().getSimpleName(), t.getMessage());
+        return status.augmentDescription(message).asRuntimeException();
+    }
+
+    private static StatusRuntimeException serverError(Throwable t, Status status, String message) {
+        log.error("Server error: ", t);
+        return status.augmentDescription(message).asRuntimeException();
+    }
+
+    public static Timestamp toTimestamp(Instant instant) {
         if (instant == null) {
             return null;
         }
-        return Timestamp
-                .newBuilder()
+        return Timestamp.newBuilder()
                 .setSeconds(instant.getEpochSecond())
                 .setNanos(instant.getNano())
                 .build();

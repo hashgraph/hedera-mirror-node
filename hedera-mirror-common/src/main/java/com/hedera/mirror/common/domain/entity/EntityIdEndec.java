@@ -49,7 +49,7 @@ public class EntityIdEndec {
         if (shardNum > SHARD_MASK || shardNum < 0 ||
                 realmNum > REALM_MASK || realmNum < 0 ||
                 entityNum > NUM_MASK || entityNum < 0) {
-            throw new InvalidEntityException("Entity outside encoding range: "
+            throw new InvalidEntityException("Invalid entity ID: "
                     + shardNum + "." + realmNum + "." + entityNum);
         }
         return (entityNum & NUM_MASK) |

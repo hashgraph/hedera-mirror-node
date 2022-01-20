@@ -41,10 +41,9 @@ import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.topic.StreamMessage;
-import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
@@ -66,8 +65,7 @@ class RedisEntityListenerTest {
     @BeforeEach
     void setup() {
         redisProperties = new RedisProperties();
-        entityListener = new RedisEntityListener(new MirrorProperties(), redisProperties, redisOperations,
-                new SimpleMeterRegistry());
+        entityListener = new RedisEntityListener(redisProperties, redisOperations, new SimpleMeterRegistry());
         entityListener.init();
     }
 

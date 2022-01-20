@@ -1,17 +1,17 @@
-package com.hedera.mirror.importer.config;
+package com.hedera.mirror.grpc.repository;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,16 +20,14 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 
-@TestConfiguration
-public class MeterRegistryConfiguration {
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
 
-    @Bean
-    public MeterRegistry prometheusMeterRegistry() {
-        return new SimpleMeterRegistry();
-    }
+public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
+
+    @Query(value = "select max(start_consensus_timestamp) from address_book where file_id = ?", nativeQuery = true)
+    Optional<Long> findLatestTimestamp(long fileId);
 }

@@ -34,6 +34,7 @@ import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -55,7 +56,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
     @GrpcClient("local")
     private ConsensusServiceGrpc.ConsensusServiceBlockingStub blockingService;
 
-    @Resource
+    @Autowired
     private DomainBuilder domainBuilder;
 
     @Resource
@@ -77,7 +78,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder().build();
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "Missing required topicID"))
+                .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "topicId: must not be null"))
                 .verify(Duration.ofMillis(500));
     }
 
@@ -115,7 +116,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setLimit(5L)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
-                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
                 .build();
 
         Flux<TopicMessage> generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
@@ -140,7 +141,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setLimit(3L)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
-                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
                 .build();
 
         assertThat(blockingService.subscribeTopic(query))
@@ -159,7 +160,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setLimit(5L)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(-123).setNanos(-456).build())
-                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
                 .build();
 
         Flux<TopicMessage> generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
@@ -187,7 +188,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(1).setNanos(2).build())
                 .setConsensusEndTime(Timestamp.newBuilder().setSeconds(31556889864403199L)
                         .setNanos(999999999).build())
-                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
                 .build();
 
         Flux<TopicMessage> generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
@@ -213,7 +214,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setLimit(7L)
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
-                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
                 .build();
 
         Flux<TopicMessage> generator = domainBuilder.topicMessages(4, Instant.now().plusSeconds(10L));
@@ -257,7 +258,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setConsensusStartTime(Timestamp.newBuilder().setSeconds(0).build())
-                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(0).build())
+                .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
                 .build();
 
         grpcConsensusService.subscribeTopic(Mono.just(query))

@@ -304,7 +304,7 @@ public abstract class AbstractDownloaderTest {
         AddressBook addressBookWith3Nodes = addressBook.toBuilder().entries(entries).nodeCount(entries.size()).build();
         doReturn(addressBookWith3Nodes).when(addressBookService).getCurrent();
 
-        String nodeAccountId = entries.get(0).getNodeAccountIdString();
+        String nodeAccountId = entries.get(0).getNodeAccountId().toString();
         log.info("Only copy node {}'s stream files and signature files for a 3-node network", nodeAccountId);
         fileCopier.filterDirectories("*" + nodeAccountId).copy();
         expectLastStreamFile(Instant.EPOCH);

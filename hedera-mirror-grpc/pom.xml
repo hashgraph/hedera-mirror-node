@@ -158,6 +158,13 @@
         </dependency>
         <!-- Test -->
         <dependency>
+            <groupId>com.hedera</groupId>
+            <artifactId>hedera-mirror-common</artifactId>
+            <version>${release.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
             <scope>test</scope>
