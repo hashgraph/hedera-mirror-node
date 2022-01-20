@@ -124,13 +124,13 @@ public class TransactionPublisher implements AutoCloseable {
 
         // set transaction node where applicable
         if (transaction.getNodeAccountIds() == null) {
-            var nodes = this.nodes; // Save a reference in case a write occurs
-            if (nodes.isEmpty()) {
+            var currentNodes = this.nodes; // Save a reference in case a COW occurs
+            if (currentNodes.isEmpty()) {
                 throw new PublishException(request, new IllegalArgumentException("No valid nodes available"));
             }
 
-            int nodeIndex = secureRandom.nextInt(nodes.size());
-            var node = nodes.get(nodeIndex);
+            int nodeIndex = secureRandom.nextInt(currentNodes.size());
+            var node = currentNodes.get(nodeIndex);
             transaction.setNodeAccountIds(node.getAccountIds());
         }
 

@@ -71,7 +71,7 @@ public class AcceptanceTestProperties {
 
     private final RestPollingProperties restPollingProperties;
 
-    private boolean retrieveAddressBook = true;
+    private boolean retrieveAddressBook = false;
 
     private final SdkProperties sdkProperties;
 
