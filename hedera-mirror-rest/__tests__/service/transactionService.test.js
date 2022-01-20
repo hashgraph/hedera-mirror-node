@@ -132,6 +132,15 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
     await integrationDomainOps.loadTransactions(inputTransactions);
   });
 
+  test('No match on getTransactionDetailsFromTimestamp', async () => {
+    await expect(TransactionService.getTransactionDetailsFromTimestamp(1)).resolves.toBeNull();
+  });
+
+  test('Single row match on getTransactionDetailsFromTimestamp', async () => {
+    const actual = await TransactionService.getTransactionDetailsFromTimestamp(2);
+    expect(pickTransactionFields([actual])).toEqual([{consensusTimestamp: '2', payerAccountId: '5'}]);
+  });
+
   test('No match', async () => {
     await expect(
       TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
@@ -140,7 +149,7 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
     ).resolves.toHaveLength(0);
   });
 
-  test('Single row match', async () => {
+  test('Single row match on getTransactionDetailsFromTransactionIdAndNonce', async () => {
     const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
       TransactionId.fromString('0.0.5-0-1')
     );
