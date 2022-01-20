@@ -24,6 +24,7 @@
   "responseStatus": 206,
   "responseJson": {
     "amount": null,
+    "bloom": null,
     "block_hash": "0x6ceecd8bb224da491",
     "block_number": 17,
     "call_result": null,
@@ -36,6 +37,8 @@
     "gas_used": null,
     "hash": "0x3531396130303866616264653464",
     "logs": [],
+    "result": "SUCCESS",
+    "status": "0x01",
     "timestamp": "167654.000123456",
     "to": "0x0000000000000000000000000000000000001389"
   }
