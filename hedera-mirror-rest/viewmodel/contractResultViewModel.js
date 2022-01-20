@@ -35,7 +35,7 @@ class ContractResultViewModel {
    * @param {Transaction} transaction
    */
   constructor(contractResult, transaction) {
-    // set default to handle partial result cases
+    // set defaults to handle partial result case
     this.amount = null;
     this.bloom = null;
     this.call_result = null;

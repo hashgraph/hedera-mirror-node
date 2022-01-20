@@ -573,8 +573,6 @@ const getContractResultsByTimestamp = async (req, res) => {
 
   const contractResult = contractResults.length === 0 ? null : contractResults[0];
   if (contractResult === null) {
-    logger.info(`*** transaction: ${JSON.stringify(transaction)}`);
-
     // set contractId as it would be missing in empty contratResult case
     transaction.entityId = contractId;
 
@@ -653,7 +651,6 @@ const getContractResultsByTransactionId = async (req, res) => {
   );
 
   if (contractResult === null) {
-    logger.info(`*** transaction: ${JSON.stringify(transaction)}`);
     // set 206 partial response
     res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
     logger.debug(`getContractResultsByTransactionId returning partial content`);
