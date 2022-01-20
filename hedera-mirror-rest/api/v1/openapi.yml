@@ -984,7 +984,6 @@ components:
           - token_id: 0.0.200001
             balance: 8
     Bloom:
-      description: The hex encoded bloom filter
       example: '0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398'
       format: binary
       nullable: true
@@ -1073,7 +1072,9 @@ components:
           nullable: true
           type: integer
         bloom:
-          $ref: '#/components/schemas/Bloom'
+          allOf:
+            - $ref: '#/components/schemas/Bloom'
+            - description: The hex encoded bloom filter of the contract result
         call_result:
           description: The hex encoded result returned by the function
           example: "0x2b048531b38d2882e86044bc972e940ee0a01938"
@@ -1150,7 +1151,9 @@ components:
           pattern: ^0x[0-9A-Fa-f]{40}$
           type: string
         bloom:
-          $ref: '#/components/schemas/Bloom'
+          allOf:
+            - $ref: '#/components/schemas/Bloom'
+            - description: The hex encoded bloom filter of the contract log
         contract_id:
           $ref: '#/components/schemas/EntityId'
         data:
