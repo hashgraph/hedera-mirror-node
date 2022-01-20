@@ -25,10 +25,8 @@ import static com.hedera.hashgraph.sdk.Status.SUCCESS;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -62,10 +60,11 @@ public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
-    private final AtomicReference<List<AccountId>> nodeAccountIds = new AtomicReference<>(List.of());
-    private final Flux<Client> clients = Flux.defer(this::getClients).cache();
+    private final CopyOnWriteArrayList<NodeProperties> nodes = new CopyOnWriteArrayList<>();
     private final SecureRandom secureRandom = new SecureRandom();
     private final AtomicReference<Disposable> nodeValidator = new AtomicReference<>();
+    private final AtomicReference<Client> validationClient = new AtomicReference<>();
+    private final Flux<Client> clients = Flux.defer(this::getClients).cache();
 
     @Override
     public void close() {
@@ -82,6 +81,15 @@ public class TransactionPublisher implements AutoCloseable {
                     // Ignore
                 }
             });
+
+            Client client = validationClient.get();
+            if (client != null) {
+                try {
+                    client.close();
+                } catch (Exception e) {
+                    // Ignore
+                }
+            }
         }
     }
 
@@ -116,14 +124,14 @@ public class TransactionPublisher implements AutoCloseable {
 
         // set transaction node where applicable
         if (transaction.getNodeAccountIds() == null) {
-            List<AccountId> nodes = nodeAccountIds.get();
+            var nodes = this.nodes; // Save a reference in case a write occurs
             if (nodes.isEmpty()) {
-                throw new PublishException(request, new IllegalArgumentException("No valid nodes available to publish" +
-                        " to"));
+                throw new PublishException(request, new IllegalArgumentException("No valid nodes available"));
             }
+
             int nodeIndex = secureRandom.nextInt(nodes.size());
-            List<AccountId> nodeAccountId = List.of(nodes.get(nodeIndex));
-            transaction.setNodeAccountIds(nodeAccountId);
+            var node = nodes.get(nodeIndex);
+            transaction.setNodeAccountIds(node.getAccountIds());
         }
 
         return Mono.fromFuture(transaction.executeAsync(client));
@@ -152,82 +160,64 @@ public class TransactionPublisher implements AutoCloseable {
         return Mono.just(builder);
     }
 
-    private Flux<Client> getClients() {
-        validateNodes();
-
-        log.info("Creating {} connections to {} nodes", publishProperties.getClients(), monitorProperties.getNodes()
-                .size());
-        Map<String, AccountId> nodes = monitorProperties.getNodes().stream()
-                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
-
+    private synchronized Flux<Client> getClients() {
         NodeValidationProperties validationProperties = monitorProperties.getNodeValidation();
-        if (validationProperties.isEnabled()) {
+        var configuredNodes = monitorProperties.getNodes();
+        Map<String, AccountId> nodeMap = configuredNodes.stream()
+                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
+        this.nodes.addAll(configuredNodes);
 
-            nodeValidator.compareAndSet(null, Flux.interval(validationProperties.getFrequency())
-                    .subscribeOn(Schedulers.parallel())
-                    .doOnNext(i -> validateNodes())
+        Client client = toClient(nodeMap);
+        client.setMaxAttempts(validationProperties.getMaxAttempts());
+        client.setMaxBackoff(validationProperties.getMaxBackoff());
+        client.setMinBackoff(validationProperties.getMinBackoff());
+        this.validationClient.set(client);
+
+        if (validationProperties.isEnabled() && nodeValidator.get() == null) {
+            int nodeCount = configuredNodes.size();
+            int parallelism = Math.min(nodeCount, validationProperties.getMaxThreads());
+
+            var scheduler = Schedulers.newParallel("validator", parallelism + 1);
+            var disposable = Flux.interval(Duration.ZERO, validationProperties.getFrequency(), scheduler)
+                    .filter(i -> validationProperties.isEnabled()) // In case it's later disabled
+                    .flatMap(i -> Flux.fromIterable(configuredNodes))
+                    .parallel(parallelism)
+                    .runOn(scheduler)
+                    .map(this::validateNode)
+                    .sequential()
+                    .buffer(nodeCount)
+                    .doOnNext(i -> log.info("{} of {} nodes are functional", nodes.size(), nodeCount))
+                    .doOnSubscribe(s -> log.info("Starting node validation"))
                     .onErrorContinue((e, i) -> log.error("Exception validating nodes: ", e))
-                    .subscribe());
+                    .subscribe();
+            nodeValidator.set(disposable);
         }
+
         return Flux.range(0, publishProperties.getClients())
-                .flatMap(i -> Flux.defer(() -> Mono.just(toClient(nodes))));
+                .flatMap(i -> Mono.defer(() -> Mono.just(toClient(nodeMap))));
     }
 
-    protected void validateNodes() {
-        log.info("Validating nodes");
-        Set<NodeProperties> nodes = monitorProperties.getNodes();
-
-        if (!monitorProperties.getNodeValidation().isEnabled()) {
-            setNodeAccountIds(new ArrayList<>(nodes));
-            return;
-        }
-
-        List<NodeProperties> validNodes = new ArrayList<>();
-
-        for (NodeProperties node : nodes) {
-            AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
-
-            try (Client client = toClient(Map.of(node.getEndpoint(), nodeAccountId))) {
-                if (validateNode(client, node)) {
-                    validNodes.add(node);
-                }
-            } catch (Exception e) {
-                log.warn("Error validating nodes: {}", e.getMessage());
-            }
-        }
-
-        log.info("{} of {} nodes are functional", validNodes.size(), nodes.size());
-
-        setNodeAccountIds(validNodes);
-
-        if (nodeAccountIds.get().isEmpty()) {
-            throw new IllegalArgumentException("No valid nodes found");
-        }
-    }
-
-    private void setNodeAccountIds(List<NodeProperties> validNodes) {
-        List<AccountId> newNodeAccountIds = new ArrayList<>();
-        validNodes.forEach(n -> newNodeAccountIds.add(AccountId.fromString(n.getAccountId())));
-        nodeAccountIds.set(newNodeAccountIds);
-    }
-
-    private boolean validateNode(Client client, NodeProperties node) {
-        NodeValidationProperties nodeValidationProperties = monitorProperties.getNodeValidation();
-        client.setMinBackoff(nodeValidationProperties.getMinBackoff());
-        client.setMaxBackoff(nodeValidationProperties.getMaxBackoff());
-        client.setMaxAttempts(nodeValidationProperties.getMaxAttempts());
+    boolean validateNode(NodeProperties node) {
         try {
-            AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
+            log.info("Validating node {}", node);
             Hbar hbar = Hbar.fromTinybars(1L);
+            NodeValidationProperties properties = monitorProperties.getNodeValidation();
+            AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
+            Client client = validationClient.get();
+
             Status receiptStatus = new TransferTransaction()
                     .addHbarTransfer(nodeAccountId, hbar)
                     .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
-                    .execute(client, Duration.ofSeconds(30L))
-                    .getReceipt(client, Duration.ofSeconds(30L))
+                    .execute(client, properties.getRequestTimeout())
+                    .getReceipt(client, properties.getRequestTimeout())
                     .status;
+
             if (receiptStatus == SUCCESS) {
+                log.info("Validated node {} successfully", nodeAccountId);
+                nodes.addIfAbsent(node);
                 return true;
             }
+
             log.warn("Unable to validate node {}: invalid status code {}", node, receiptStatus);
         } catch (TimeoutException e) {
             log.warn("Unable to validate node {}: Timed out", node);
@@ -235,6 +225,7 @@ public class TransactionPublisher implements AutoCloseable {
             log.warn("Unable to validate node {}: ", node, e);
         }
 
+        nodes.remove(node);
         return false;
     }
 
