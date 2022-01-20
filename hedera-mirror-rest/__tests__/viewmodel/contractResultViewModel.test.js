@@ -25,6 +25,7 @@ const ContractResultViewModel = require('../../viewmodel/contractResultViewModel
 describe('ContractResultViewModel', () => {
   const defaultContractResult = {
     amount: 10,
+    bloom: Buffer.from([0x1, 0x2, 0x3, 0x4]),
     callResult: Buffer.from([0xa, 0xb, 0xc, 0xd]),
     consensusTimestamp: '900123456789',
     contractId: 1500,
@@ -37,6 +38,7 @@ describe('ContractResultViewModel', () => {
   };
   const defaultExpected = {
     amount: 10,
+    bloom: '0x01020304',
     call_result: '0x0a0b0c0d',
     contract_id: '0.0.1500',
     created_contract_ids: ['0.0.1501', '0.0.1502'],
@@ -58,6 +60,7 @@ describe('ContractResultViewModel', () => {
       new ContractResultViewModel({
         ...defaultContractResult,
         amount: null,
+        bloom: null,
         callResult: null,
         contractId: null,
         createdContractIds: null,
@@ -67,6 +70,7 @@ describe('ContractResultViewModel', () => {
     ).toEqual({
       ...defaultExpected,
       amount: null,
+      bloom: null,
       call_result: null,
       contract_id: null,
       created_contract_ids: [],

@@ -25,6 +25,7 @@ const {ContractLogViewModel} = require('../../viewmodel');
 describe('ContractLogViewModel', () => {
   const hexArray = Array(18).fill(0x00).concat(0x12, 0x34);
   const defaultContractLog = {
+    bloom: Buffer.from([0xa, 0xb]),
     contractId: '1',
     data: Buffer.from(hexArray),
     consensusTimestamp: '99999999000000000',
@@ -37,6 +38,7 @@ describe('ContractLogViewModel', () => {
   };
   const defaultExpected = {
     address: '0x0000000000000000000000000000000000000001',
+    bloom: '0x0a0b',
     contract_id: '0.0.1',
     data: '0x0000000000000000000000000000000000001234',
     index: 6,
