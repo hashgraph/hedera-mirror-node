@@ -32,23 +32,44 @@ class ContractResultViewModel {
    * Constructs contractResult view model
    *
    * @param {ContractResult} contractResult
+   * @param {Transaction} transaction
    */
-  constructor(contractResult) {
-    const contractId = EntityId.parse(contractResult.contractId, true);
-    Object.assign(this, {
-      amount: contractResult.amount === null ? null : Number(contractResult.amount),
-      bloom: utils.toHexString(contractResult.bloom, true),
-      call_result: utils.toHexString(contractResult.callResult, true),
-      contract_id: contractId.toString(),
-      created_contract_ids: _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString()),
-      error_message: contractResult.errorMessage,
-      from: EntityId.parse(contractResult.payerAccountId).toSolidityAddress(),
-      function_parameters: utils.toHexString(contractResult.functionParameters, true),
-      gas_limit: Number(contractResult.gasLimit),
-      gas_used: Number(contractResult.gasUsed),
-      timestamp: utils.nsToSecNs(contractResult.consensusTimestamp),
-      to: contractId.toSolidityAddress(),
-    });
+  constructor(contractResult, transaction) {
+    // set default to handle partial result cases
+    this.amount = null;
+    this.bloom = null;
+    this.call_result = null;
+    this.created_contract_ids = [];
+    this.error_message = '';
+    this.function_parameters = null;
+    this.gas_limit = null;
+    this.gas_used = null;
+
+    if (_.isNil(contractResult)) {
+      const contractId = EntityId.parse(transaction.entityId, true);
+      Object.assign(this, {
+        contract_id: contractId === null ? null : contractId.toString(),
+        from: EntityId.parse(transaction.payerAccountId).toSolidityAddress(),
+        timestamp: utils.nsToSecNs(transaction.consensusTimestamp),
+        to: contractId === null ? null : contractId.toSolidityAddress(),
+      });
+    } else {
+      const contractId = EntityId.parse(contractResult.contractId, true);
+      Object.assign(this, {
+        amount: contractResult.amount === null ? null : Number(contractResult.amount),
+        bloom: utils.toHexString(contractResult.bloom, true),
+        call_result: utils.toHexString(contractResult.callResult, true),
+        contract_id: contractId.toString(),
+        created_contract_ids: _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString()),
+        error_message: contractResult.errorMessage,
+        from: EntityId.parse(contractResult.payerAccountId).toSolidityAddress(),
+        function_parameters: utils.toHexString(contractResult.functionParameters, true),
+        gas_limit: Number(contractResult.gasLimit),
+        gas_used: Number(contractResult.gasUsed),
+        timestamp: utils.nsToSecNs(contractResult.consensusTimestamp),
+        to: contractId.toSolidityAddress(),
+      });
+    }
   }
 }
 

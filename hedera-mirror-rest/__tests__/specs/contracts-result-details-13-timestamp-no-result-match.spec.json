@@ -1,26 +1,42 @@
 {
-  "description": "Contract results api call for a specific contract using transactionId with no results match",
+  "description": "Contract results api call using contract id and timestamp with no contract result match",
   "setup": {
     "contractresults": [],
+    "contractlogs": [],
     "recordFiles": [
+      {
+        "index": 16,
+        "consensus_start": 167654000123439,
+        "consensus_end": 167654000123449,
+        "hash": "f292e5624f6f4cf8c134c9"
+      },
       {
         "index": 17,
         "consensus_start": 167654000123450,
         "consensus_end": 167654000123460,
         "hash": "6ceecd8bb224da491"
+      },
+      {
+        "index": 18,
+        "consensus_start": 167654000123461,
+        "consensus_end": 167654000123470,
+        "hash": "e19f4a235bee1e6bb19258b"
       }
     ],
     "transactions": [
       {
         "consensus_timestamp": 167654000123456,
-        "entity_id": 5001,
         "payerAccountId": "8001",
         "transaction_hash": "519a008fabde4d",
-        "valid_start_timestamp": 167654000123455
+        "valid_start_timestamp": 167654000123400
       }
     ]
   },
-  "url": "/api/v1/contracts/results/0.0.8001-167654-000123455",
+  "urls": [
+    "/api/v1/contracts/0.0.5001/results/167654.000123456",
+    "/api/v1/contracts/0.5001/results/167654.000123456",
+    "/api/v1/contracts/5001/results/167654.000123456"
+  ],
   "responseStatus": 206,
   "responseJson": {
     "amount": null,

@@ -145,6 +145,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ContractResultResponse'
+        206:
+          description: Partial Content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResultResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
         404:
@@ -162,6 +168,12 @@ paths:
       responses:
         200:
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResultResponse'
+        206:
+          description: Partial Content
           content:
             application/json:
               schema:

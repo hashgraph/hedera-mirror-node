@@ -558,7 +558,7 @@ const getContractResultsById = async (req, res) => {
  * @returns {Promise<void>}
  */
 const getContractResultsByTimestamp = async (req, res) => {
-  const {timestamp} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
+  const {timestamp, contractId} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
 
   // retrieve contract result, recordFile and transaction models concurrently
   const [contractResults, recordFile, transaction, contractLogs] = await Promise.all([
@@ -567,12 +567,24 @@ const getContractResultsByTimestamp = async (req, res) => {
     TransactionService.getTransactionDetailsFromTimestamp(timestamp),
     ContractService.getContractLogsByTimestamps(timestamp),
   ]);
-  if (contractResults.length === 0) {
+  if (_.isNil(transaction)) {
     throw new NotFoundError();
   }
 
+  const contractResult = contractResults.length === 0 ? null : contractResults[0];
+  if (contractResult === null) {
+    logger.info(`*** transaction: ${JSON.stringify(transaction)}`);
+
+    // set contractId as it would be missing in empty contratResult case
+    transaction.entityId = contractId;
+
+    // set 206 partial response
+    res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
+    logger.debug(`getContractResultsByTimestamp returning partial content`);
+  }
+
   res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
-    contractResults[0],
+    contractResult,
     recordFile,
     transaction,
     contractLogs
@@ -631,16 +643,21 @@ const getContractResultsByTransactionId = async (req, res) => {
     RecordFileService.getRecordFileBlockDetailsFromTimestamp(transaction.consensusTimestamp),
     ContractService.getContractLogsByTimestamps(transaction.consensusTimestamp),
   ]);
-  if (contractResults.length === 0) {
-    throw new NotFoundError();
-  }
 
+  const contractResult = contractResults.length === 0 ? null : contractResults[0];
   res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
-    contractResults[0],
+    contractResult,
     recordFile,
     transaction,
     contractLogs
   );
+
+  if (contractResult === null) {
+    logger.info(`*** transaction: ${JSON.stringify(transaction)}`);
+    // set 206 partial response
+    res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
+    logger.debug(`getContractResultsByTransactionId returning partial content`);
+  }
 };
 
 /**
