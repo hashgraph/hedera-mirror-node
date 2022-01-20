@@ -18,40 +18,36 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import {getOptionsWithScenario} from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 import * as constants from './constants.js';
 
-const urlTag = '/construction/combine';
-
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('constructionCombine',{url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + urlTag;
-  // the public key doesn't have to belong to the account in the payload since it's merely used to verify the signature
-  const payload = JSON.stringify({
-    network_identifier: constants.networkIdentifier,
-    unsigned_transaction: __ENV.ROSETTA_UNSIGNED_TRANSACTION,
-    signatures: [
-      {
-        signing_payload: {
-          account_identifier: constants.accountIdentifier,
-          hex_bytes: __ENV.ROSETTA_SIGNING_PAYLOAD,
-          signature_type: constants.signatureType,
-        },
-        public_key: constants.publicKey,
+// the public key doesn't have to belong to the account in the payload since it's merely used to verify the signature
+const payload = JSON.stringify({
+  network_identifier: constants.networkIdentifier,
+  unsigned_transaction: __ENV.ROSETTA_UNSIGNED_TRANSACTION,
+  signatures: [
+    {
+      signing_payload: {
+        account_identifier: constants.accountIdentifier,
+        hex_bytes: __ENV.ROSETTA_SIGNING_PAYLOAD,
         signature_type: constants.signatureType,
-        hex_bytes: __ENV.ROSETTA_TRANSACTION_SIGNATURE,
       },
-    ],
-  });
-  const response = http.post(url, payload);
-  check(response, {
-    'ConstructionCombine OK': (r) => r.status === 200,
-  });
-}
+      public_key: constants.publicKey,
+      signature_type: constants.signatureType,
+      hex_bytes: __ENV.ROSETTA_TRANSACTION_SIGNATURE,
+    },
+  ],
+});
+const urlTag = '/construction/combine';
+const url = __ENV.BASE_URL + urlTag;
+
+const {options, run} = new TestScenarioBuilder()
+  .name('constructionCombine') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.post(url, payload))
+  .check('ConstructionCombine OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

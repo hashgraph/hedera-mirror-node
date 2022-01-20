@@ -18,28 +18,24 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import {getOptionsWithScenario} from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 import * as constants from './constants.js';
 
+const payload = JSON.stringify({
+  account_identifier: constants.accountIdentifier,
+  block_identifier: constants.blockIdentifier,
+  network_identifier: constants.networkIdentifier,
+});
 const urlTag = '/account/balance';
+const url = __ENV.BASE_URL + urlTag;
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('accountBalance',{url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + urlTag;
-  const payload = JSON.stringify({
-    account_identifier: constants.accountIdentifier,
-    block_identifier: constants.blockIdentifier,
-    network_identifier: constants.networkIdentifier,
-  });
-  const response = http.post(url, payload);
-  check(response, {
-    "AccountBalance OK": (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('accountBalance') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.post(url, payload))
+  .check('AccountBalance OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

@@ -1,6 +1,6 @@
 # K6 Performance Tests
 
-This module covers the [k6](https://k6.io/) based performance tests for mirrornode APIs including rest, rosetta,
+This module covers the [k6](https://k6.io/) based performance tests for Mirror Node APIs including rest, rosetta,
 and web3.
 
 ## Install k6

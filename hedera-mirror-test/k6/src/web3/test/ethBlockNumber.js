@@ -18,25 +18,21 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import {getOptionsWithScenario} from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('eth_blockNumber');
+const payload = JSON.stringify({
+  id: 1,
+  jsonrpc: "2.0",
+  method: "eth_blockNumber",
+});
+const url = __ENV.BASE_URL;
 
-function run() {
-  const url = __ENV.BASE_URL;
-  const payload = JSON.stringify({
-    id: 1,
-    jsonrpc: "2.0",
-    method: "eth_blockNumber",
-  });
-  const response = http.post(url, payload);
-  check(response, {
-    'eth_blockNumber OK': (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('eth_blockNumber') // use unique scenario name among all tests
+  .request(() => http.post(url, payload))
+  .check('eth_blockNumber', (r) => r.status === 200)
+  .build();
 
 export {options, run};

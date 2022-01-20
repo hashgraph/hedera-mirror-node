@@ -18,27 +18,23 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import {getOptionsWithScenario} from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 import {networkIdentifier} from './constants.js';
 
+const payload = JSON.stringify({
+  network_identifier: networkIdentifier,
+  metadata: {},
+});
 const urlTag = '/network/options';
+const url = __ENV.BASE_URL + urlTag;
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('networkOptions',{url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + urlTag;
-  const payload = JSON.stringify({
-    network_identifier: networkIdentifier,
-    metadata: {},
-  });
-  const response = http.post(url, payload);
-  check(response, {
-    "NetworkOptions OK": (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('networkOptions') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.post(url, payload))
+  .check('NetworkOptions OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

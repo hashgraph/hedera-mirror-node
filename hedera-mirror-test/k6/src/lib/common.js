@@ -18,9 +18,28 @@
  * ‍
  */
 
+import { check } from "k6";
 import { Gauge } from 'k6/metrics';
 
 const SCENARIO_DURATION_METRIC_NAME = 'scenario_duration';
+
+const options = {
+  thresholds: {
+    checks: ['rate>=0.95'], // at least 95% should pass the checks,
+    http_req_duration: ['p(95)<500'], // 95% requests should receive response in less than 500ms
+  },
+  insecureSkipTLSVerify: true,
+  noConnectionReuse: true,
+  noVUConnectionReuse: true,
+};
+
+const scenario = {
+  duration: __ENV.DEFAULT_DURATION,
+  exec: 'run',
+  executor: 'constant-vus',
+  gracefulStop: (__ENV.DEFAULT_GRACEFUL_STOP != null && __ENV.DEFAULT_GRACEFUL_STOP) || '15s',
+  vus: __ENV.DEFAULT_VUS,
+};
 
 function getMetricNameWithTags(name, ...tags) {
   return tags.length === 0 ? name : `${name}{${tags}}`;
@@ -41,7 +60,7 @@ function getNextStartTime(startTime, duration, gracefulStop) {
     throw new Error(`Invalid gracefulStop ${gracefulStop}`);
   }
 
-  return `${parseInt(startTime) + parseInt(gracefulStop) + parseInt(duration)}s`;
+  return `${parseInt(startTime) + parseInt(duration) + parseInt(gracefulStop)}s`;
 }
 
 function getOptionsWithScenario(name, tags = {}) {
@@ -64,8 +83,8 @@ function getSequentialTestScenarios(tests) {
     const testModule = tests[testName];
     const testScenarios = testModule.options.scenarios;
     const testThresholds = testModule.options.thresholds;
-    for (const scenarioName in  testScenarios) {
-      const scenario = Object.assign({}, testScenarios[scenarioName]);
+    for (const [scenarioName, testScenario] of Object.entries(testScenarios)) {
+      const scenario = Object.assign({}, testScenario);
       funcs[scenarioName] = testModule[scenario.exec];
       scenarios[scenarioName] = scenario;
 
@@ -77,11 +96,11 @@ function getSequentialTestScenarios(tests) {
 
       // thresholds
       const tag = `scenario:${scenarioName}`;
-      for (const name in testThresholds) {
+      for (const [name, threshold] of Object.entries(testThresholds)) {
         if (name === 'http_req_duration') {
-          thresholds[getMetricNameWithTags(name, tag, 'expected_response:true')] = testThresholds[name];
+          thresholds[getMetricNameWithTags(name, tag, 'expected_response:true')] = threshold;
         } else {
-          thresholds[getMetricNameWithTags(name, tag)] = testThresholds[name];
+          thresholds[getMetricNameWithTags(name, tag)] = threshold;
         }
       }
       thresholds[getMetricNameWithTags('http_reqs', tag)] = ['count>0'];
@@ -113,28 +132,28 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
   // collect the metrics
   const {metrics} = data;
   const scenarioMetrics = {};
-  for (const key in metrics) {
-    let metric;
+  for (const [key, value] of Object.entries(metrics)) {
+    let name;
     if (checksRegex.test(key)) {
-      metric = 'checks';
+      name = 'checks';
     } else if (httpReqDurationRegex.test(key)) {
-      metric = 'http_req_duration';
+      name = 'http_req_duration';
     } else if (httpReqsRegex.test(key)) {
-      metric = 'http_reqs';
+      name = 'http_reqs';
     } else if (scenarioDurationRegex.test(key)) {
-      metric = 'scenario_duration';
+      name = 'scenario_duration';
     } else {
       continue;
     }
 
     const scenario = getScenario(key);
-    scenarioMetrics[scenario] = Object.assign(scenarioMetrics[scenario] || {}, {[metric]: metrics[key]});
+    scenarioMetrics[scenario] = Object.assign(scenarioMetrics[scenario] || {}, {[name]: value});
   }
 
   const scenarioUrls = {};
   if (isFirstColumnUrl) {
-    for (const name of Object.keys(scenarios)) {
-      scenarioUrls[name] = scenarios[name].tags.url;
+    for (const [name, scenario] of Object.entries(scenarios)) {
+      scenarioUrls[name] = scenario.tags.url;
     }
   }
 
@@ -155,22 +174,44 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
   return markdown;
 }
 
-const options = {
-  thresholds: {
-    checks: ['rate>=0.95'], // at least 95% should pass the checks,
-    http_req_duration: ['p(95)<500'], // 95% requests should receive response in less than 500ms
-  },
-  insecureSkipTLSVerify: true,
-  noConnectionReuse: true,
-  noVUConnectionReuse: true,
-};
+function TestScenarioBuilder () {
+  this._checks = {};
+  this._name = null;
+  this._request = null;
+  this._tags = {};
 
-const scenario = {
-  duration: __ENV.DEFAULT_DURATION,
-  exec: 'run',
-  executor: 'constant-vus',
-  gracefulStop: (__ENV.DEFAULT_GRACEFUL_STOP != null && __ENV.DEFAULT_GRACEFUL_STOP) || '15s',
-  vus: __ENV.DEFAULT_VUS,
-};
+  this.build = function () {
+    const that = this;
+    return {
+      options: getOptionsWithScenario(that._name, that._tags),
+      run: function () {
+        const response = that._request();
+        check(response, that._checks);
+      },
+    };
+  }
 
-export {getNextStartTime, getOptionsWithScenario, getSequentialTestScenarios, markdownReport, options, scenario};
+  this.check = function (name, func) {
+    this._checks[name] = func;
+    return this;
+  }
+
+  this.name = function (name) {
+    this._name = name;
+    return this;
+  }
+
+  this.request = function (func) {
+    this._request = func;
+    return this;
+  }
+
+  this.tags = function (tags) {
+    this._tags = tags;
+    return this;
+  }
+
+  return this;
+}
+
+export {getOptionsWithScenario, getSequentialTestScenarios, markdownReport, TestScenarioBuilder};

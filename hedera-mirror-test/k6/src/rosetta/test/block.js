@@ -18,27 +18,23 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import {getOptionsWithScenario} from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 import * as constants from './constants.js';
 
+const payload = JSON.stringify({
+  block_identifier: constants.blockIdentifier,
+  network_identifier: constants.networkIdentifier,
+});
 const urlTag = '/block';
+const url = __ENV.BASE_URL + urlTag;
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('block',{url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + urlTag;
-  const payload = JSON.stringify({
-    block_identifier: constants.blockIdentifier,
-    network_identifier: constants.networkIdentifier,
-  });
-  const response = http.post(url, payload);
-  check(response, {
-    "Block OK": (r) => r.status === 200,
-  });
-}
+const {options,  run} = new TestScenarioBuilder()
+  .name('block') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.post(url, payload))
+  .check('Block OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};

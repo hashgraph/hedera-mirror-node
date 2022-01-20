@@ -18,27 +18,23 @@
  * ‍
  */
 
-import { check } from "k6";
 import http from "k6/http";
 
-import {getOptionsWithScenario} from '../../lib/common.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
 import * as constants from './constants.js';
 
+const payload = JSON.stringify({
+  network_identifier: constants.networkIdentifier,
+  signed_transaction: __ENV.ROSETTA_SIGNED_TRANSACTION,
+});
 const urlTag = '/construction/hash';
+const url = __ENV.BASE_URL + urlTag;
 
-// use unique scenario name among all tests
-const options = getOptionsWithScenario('constructionHash',{url: urlTag});
-
-function run() {
-  const url = __ENV.BASE_URL + urlTag;
-  const payload = JSON.stringify({
-    network_identifier: constants.networkIdentifier,
-    signed_transaction: __ENV.ROSETTA_SIGNED_TRANSACTION,
-  });
-  const response = http.post(url, payload);
-  check(response, {
-    'ConstructionHash OK': (r) => r.status === 200,
-  });
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('constructionHash') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request(() => http.post(url, payload))
+  .check('ConstructionHash OK', (r) => r.status === 200)
+  .build();
 
 export {options, run};
