@@ -29,6 +29,9 @@ const ContractLogResultsViewModel = require('./contractResultLogViewModel');
  * Contract result details view model
  */
 class ContractResultDetailsViewModel extends ContractResultViewModel {
+  static _SUCCESS_RESULT = '0x01';
+  static _FAIL_RESULT = '0x00';
+
   /**
    * Constructs contractResultDetails view model
    *
@@ -45,7 +48,10 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       hash: utils.toHexString(transaction.transactionHash, true),
       logs: contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog)),
       result: TransactionResult.getName(transaction.result),
-      status: transaction.result === Number.parseInt(TransactionResult.getSuccessProtoId()) ? `0x1` : `0x0`,
+      status:
+        transaction.result === Number.parseInt(TransactionResult.getSuccessProtoId())
+          ? ContractResultDetailsViewModel._SUCCESS_RESULT
+          : ContractResultDetailsViewModel._FAIL_RESULT,
     });
   }
 }
