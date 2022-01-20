@@ -37,6 +37,7 @@ class ContractResultViewModel {
     const contractId = EntityId.parse(contractResult.contractId, true);
     Object.assign(this, {
       amount: contractResult.amount === null ? null : Number(contractResult.amount),
+      bloom: utils.toHexString(contractResult.bloom, true),
       call_result: utils.toHexString(contractResult.callResult, true),
       contract_id: contractId.toString(),
       created_contract_ids: _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString()),

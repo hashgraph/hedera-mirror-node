@@ -44,6 +44,7 @@ class ContractService extends BaseService {
 
   static contractResultsQuery = `select
     ${ContractResult.AMOUNT},
+    ${ContractResult.BLOOM},
     ${ContractResult.CALL_RESULT},
     ${ContractResult.CONSENSUS_TIMESTAMP},
     ${ContractResult.CONTRACT_ID},
@@ -55,7 +56,9 @@ class ContractService extends BaseService {
     ${ContractResult.PAYER_ACCOUNT_ID}
     from ${ContractResult.tableName}`;
 
-  static contractLogsQuery = `select ${ContractLog.CONTRACT_ID},
+  static contractLogsQuery = `select
+    ${ContractLog.BLOOM},
+    ${ContractLog.CONTRACT_ID},
     ${ContractLog.CONSENSUS_TIMESTAMP},
     ${ContractLog.DATA},
     ${ContractLog.INDEX},

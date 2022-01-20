@@ -37,6 +37,7 @@ class ContractResultLogViewModel {
     const contractId = EntityId.parse(contractLog.contractId, constants.filterKeys.CONTRACTID);
     Object.assign(this, {
       address: contractId.toSolidityAddress(),
+      bloom: utils.toHexString(contractLog.bloom, true),
       contract_id: contractId.toString(),
       data: utils.toHexString(contractLog.data, true),
       index: contractLog.index,
