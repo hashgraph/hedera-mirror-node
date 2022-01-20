@@ -21,8 +21,6 @@ package com.hedera.mirror.grpc;
  */
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -37,9 +35,6 @@ import com.hedera.mirror.grpc.config.NettyProperties;
 public class GrpcProperties {
 
     private boolean checkTopicExists = true;
-
-    @NotNull
-    private Map<String, String> connectionOptions = new HashMap<>();
 
     @NotNull
     private Duration endTimeInterval = Duration.ofSeconds(30);

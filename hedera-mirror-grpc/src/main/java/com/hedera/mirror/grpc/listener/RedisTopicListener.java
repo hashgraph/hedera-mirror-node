@@ -76,7 +76,7 @@ public class RedisTopicListener extends SharedTopicListener {
     }
 
     private Topic getTopic(TopicMessageFilter filter) {
-        return ChannelTopic.of(String.format("topic.%d", filter.getTopicId()));
+        return ChannelTopic.of(String.format("topic.%d", filter.getTopicId().getId()));
     }
 
     private Flux<TopicMessage> subscribe(Topic topic) {

@@ -24,7 +24,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import javax.annotation.Resource;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 
@@ -38,13 +43,14 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
     @Resource
     private TopicMessageRepository topicMessageRepository;
 
-    @Resource
+    @Autowired
     private DomainBuilder domainBuilder;
 
     @Test
     void findByFilterEmpty() {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.EPOCH)
+                .topicId(EntityId.of(100L, EntityType.TOPIC))
                 .build();
 
         assertThat(topicMessageRepository.findByFilter(filter)).isEmpty();
@@ -58,6 +64,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(Instant.now().plusSeconds(10))
+                .topicId(EntityId.of(topicMessage1.getTopicId(), EntityType.TOPIC))
                 .build();
 
         assertThat(topicMessageRepository.findByFilter(filter)).isEmpty();
@@ -70,7 +77,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
         TopicMessage topicMessage3 = domainBuilder.topicMessage(t -> t.topicId(3)).block();
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
-                .topicId(2)
+                .topicId(EntityId.of(2L, EntityType.TOPIC))
                 .startTime(topicMessage1.getConsensusTimestampInstant())
                 .build();
 
@@ -85,6 +92,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
 
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(topicMessage2.getConsensusTimestampInstant())
+                .topicId(EntityId.of(topicMessage1.getTopicId(), EntityType.TOPIC))
                 .build();
 
         assertThat(topicMessageRepository.findByFilter(filter)).containsExactly(topicMessage2, topicMessage3);
@@ -99,6 +107,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .startTime(topicMessage1.getConsensusTimestampInstant())
                 .endTime(topicMessage3.getConsensusTimestampInstant())
+                .topicId(EntityId.of(topicMessage1.getTopicId(), EntityType.TOPIC))
                 .build();
 
         assertThat(topicMessageRepository.findByFilter(filter)).containsExactly(topicMessage1, topicMessage2);
@@ -113,6 +122,7 @@ class TopicMessageRepositoryTest extends GrpcIntegrationTest {
         TopicMessageFilter filter = TopicMessageFilter.builder()
                 .limit(1)
                 .startTime(topicMessage1.getConsensusTimestampInstant())
+                .topicId(EntityId.of(topicMessage1.getTopicId(), EntityType.TOPIC))
                 .build();
 
         assertThat(topicMessageRepository.findByFilter(filter)).containsExactly(topicMessage1);

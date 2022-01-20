@@ -74,7 +74,6 @@ class AddressBookServiceImplTest extends IntegrationTest {
     private static final NodeAddressBook FINAL = addressBook(15, 0);
     private static final int TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT = 4;
     private static final String baseAccountId = "0.0.";
-    private static final String baseIp = "127.0.0.";
     private static final int basePort = 50211;
     private static byte[] initialAddressBookBytes;
     @TempDir
@@ -550,7 +549,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 assertThat(abe.getNodeAccountId()).isEqualTo(EntityId.of(nodeAddress.getNodeAccountId()));
                 assertThat(abe.getNodeCertHash()).isEqualTo(nodeAddress.getNodeCertHash().toByteArray());
                 assertThat(abe.getPublicKey()).isEqualTo(nodeAddress.getRSAPubKey());
-                assertThat(abe.getId().getNodeId()).isEqualTo(expectedNodeId); // both entries have null node id
+                assertThat(abe.getNodeId()).isEqualTo(expectedNodeId); // both entries have null node id
 
                 assertAddressBookEndPoints(abe.getServiceEndpoints(), nodeAddress.getServiceEndpointList());
             });
@@ -1002,7 +1001,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 assertThat(abe.getNodeAccountId()).isEqualTo(EntityId.of(nodeAddress.getNodeAccountId()));
                 assertThat(abe.getNodeCertHash()).isEqualTo(nodeAddress.getNodeCertHash().toByteArray());
                 assertThat(abe.getPublicKey()).isEqualTo(nodeAddress.getRSAPubKey());
-                assertThat(abe.getId().getNodeId()).isEqualTo(nodeAddress.getNodeId());
+                assertThat(abe.getNodeId()).isEqualTo(nodeAddress.getNodeId());
 
                 assertAddressBookEndPoints(abe.getServiceEndpoints(), nodeAddress.getServiceEndpointList());
             });

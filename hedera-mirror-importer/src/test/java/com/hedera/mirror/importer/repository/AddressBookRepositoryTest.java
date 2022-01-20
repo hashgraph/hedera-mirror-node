@@ -70,12 +70,13 @@ class AddressBookRepositoryTest extends AbstractRepositoryTest {
         long startConsensusTimestamp = consensusTimestamp + 1;
         List<AddressBookEntry> addressBookEntryList = new ArrayList<>();
         for (int i = 0; i < nodeCount; i++) {
-            long id = i;
-            long nodeId = 3 + i;
+            long nodeId = i;
+            long nodeAccountId = 3 + i;
             addressBookEntryList
-                    .add(addressBookEntry(a -> a.id(new AddressBookEntry.Id(startConsensusTimestamp, nodeId))
-                            .memo("0.0." + nodeId)
-                            .nodeAccountId(EntityId.of("0.0." + nodeId, EntityType.ACCOUNT))));
+                    .add(addressBookEntry(a -> a.consensusTimestamp(startConsensusTimestamp)
+                            .memo("0.0." + nodeAccountId)
+                            .nodeId(nodeId)
+                            .nodeAccountId(EntityId.of("0.0." + nodeAccountId, EntityType.ACCOUNT))));
         }
 
         AddressBook.AddressBookBuilder builder = AddressBook.builder()
@@ -94,11 +95,12 @@ class AddressBookRepositoryTest extends AbstractRepositoryTest {
 
     private AddressBookEntry addressBookEntry(Consumer<AddressBookEntry.AddressBookEntryBuilder> nodeAddressCustomizer) {
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
-                .id(new AddressBookEntry.Id(Instant.now().getEpochSecond(), 5L))
-                .publicKey("rsa+public/key")
+                .consensusTimestamp(Instant.now().getEpochSecond())
                 .memo("0.0.3")
                 .nodeAccountId(EntityId.of("0.0.5", EntityType.ACCOUNT))
-                .nodeCertHash("nodeCertHash".getBytes());
+                .nodeCertHash("nodeCertHash".getBytes())
+                .nodeId(5L)
+                .publicKey("rsa+public/key");
 
         if (nodeAddressCustomizer != null) {
             nodeAddressCustomizer.accept(builder);
