@@ -30,8 +30,8 @@ const ContractLogResultsViewModel = require('./contractResultLogViewModel');
  */
 class ContractResultDetailsViewModel extends ContractResultViewModel {
   static _FAIL_PROTO_ID = Number.parseInt(TransactionResult.getSuccessProtoId());
-  static _SUCCESS_RESULT = '0x01';
-  static _FAIL_RESULT = '0x00';
+  static _SUCCESS_RESULT = '0x1';
+  static _FAIL_RESULT = '0x0';
 
   /**
    * Constructs contractResultDetails view model
