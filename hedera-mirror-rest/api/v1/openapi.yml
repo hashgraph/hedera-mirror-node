@@ -1113,8 +1113,8 @@ components:
           example: SUCCESS
           type: string
         status:
-          description: The status of the transaction, 0x01 for a SUCCESS transaction and 0x00 for all else
-          example: 0x01
+          description: The status of the transaction, 0x1 for a SUCCESS transaction and 0x0 for all else
+          example: 0x1
           type: string
         timestamp:
           $ref: '#/components/schemas/Timestamp'
