@@ -36,7 +36,10 @@ public class NodeValidationProperties {
 
     @DurationMin(seconds = 30)
     @NotNull
-    private Duration frequency = Duration.ofDays(365); // Effectively disable for now due to #2914
+    private Duration frequency = Duration.ofMinutes(30L);
+
+    @Min(1)
+    private int maxAttempts = 4;
 
     @DurationMin(millis = 250)
     @DurationMax(seconds = 10)
@@ -44,10 +47,14 @@ public class NodeValidationProperties {
     private Duration maxBackoff = Duration.ofSeconds(2);
 
     @Min(1)
-    private int maxAttempts = 20;
+    private int maxThreads = 25;
 
     @DurationMin(millis = 250)
     @DurationMax(seconds = 10)
     @NotNull
     private Duration minBackoff = Duration.ofMillis(500);
+
+    @DurationMin(millis = 500)
+    @NotNull
+    private Duration requestTimeout = Duration.ofSeconds(10L);
 }

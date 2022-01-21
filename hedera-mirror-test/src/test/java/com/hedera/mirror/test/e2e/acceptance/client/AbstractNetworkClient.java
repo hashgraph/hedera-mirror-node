@@ -103,8 +103,9 @@ public abstract class AbstractNetworkClient {
         try {
             transactionReceipt = getTransactionReceipt(transactionId);
         } catch (Exception e) {
-            log.error("TransactionReceipt retrieval Exception: {}", e.getMessage());
+            log.error("Failed to get transaction receipt for {}: {}", transactionId, e.getMessage());
         }
+
         log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
     }
