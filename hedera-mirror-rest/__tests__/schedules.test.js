@@ -151,6 +151,17 @@ describe('schedule formatScheduleRow tests', () => {
         signatures: [],
       },
     },
+    {
+      description: 'null memo',
+      input: {
+        ...defaultInput,
+        memo: null,
+      },
+      expected: {
+        ...defaultExpected,
+        memo: null,
+      },
+    },
   ];
 
   testSpecs.forEach((testSpec) => {
