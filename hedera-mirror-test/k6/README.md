@@ -15,7 +15,7 @@ the tests of an API as a test suite. You can also run tests one at a time.
 
 ### Test Suite
 
-To run a test suite, for example, for rosetta, use the following command.
+To run a test suite, such as rosetta, use the following command.
 
 ```shell
 source src/rosetta/k6.env
@@ -164,7 +164,7 @@ With the test suite mode, a simplified markdown format report `report.md` will a
 
 ### Single Test
 
-To run a single test, for instance, the rosetta accountBalance test, just do
+To run a single test, such as the rosetta accountBalance test, just do
 
 ```shell
 source src/rosetta/k6.env
