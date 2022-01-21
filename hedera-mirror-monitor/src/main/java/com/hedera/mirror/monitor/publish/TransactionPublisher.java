@@ -208,6 +208,7 @@ public class TransactionPublisher implements AutoCloseable {
             Status receiptStatus = new TransferTransaction()
                     .addHbarTransfer(nodeAccountId, hbar)
                     .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
+                    .setNodeAccountIds(node.getAccountIds())
                     .execute(client, properties.getRequestTimeout())
                     .getReceipt(client, properties.getRequestTimeout())
                     .status;
