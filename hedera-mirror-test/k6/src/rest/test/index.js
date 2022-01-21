@@ -53,6 +53,7 @@ import * as topicsIdMessagesSequence from './topicsIdMessagesSequence.js';
 import * as topicsIdMessagesSequenceQueryParam from './topicsIdMessagesSequenceQueryParam.js';
 import * as topicsMessagesTimestamp from './topicsMessagesTimestamp.js';
 import * as transactions from './transactions.js';
+import * as transactionsAccountId from './transactionsAccountId.js';
 import * as transactionsId from './transactionsId.js';
 
 // add test modules here
@@ -89,6 +90,7 @@ const tests = {
   topicsIdMessagesSequenceQueryParam,
   topicsMessagesTimestamp,
   transactions,
+  transactionsAccountId,
   transactionsId,
 };
 

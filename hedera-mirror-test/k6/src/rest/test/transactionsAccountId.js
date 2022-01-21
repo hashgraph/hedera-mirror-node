@@ -23,14 +23,14 @@ import http from "k6/http";
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results/logs`;
-const urlTag = '/contracts/{id}/results/logs';
+const urlTag = '/transactions?account.id={accountId}';
+const url = `${__ENV.BASE_URL}${urlPrefix}/transactions?account.id=${__ENV.DEFAULT_ACCOUNT}&limit=${__ENV.DEFAULT_LIMIT}`;
 
 const {options, run} = new TestScenarioBuilder()
-  .name('contractsIdResultsLogs') // use unique scenario name among all tests
+  .name('transactionsAccountId') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Contracts id results logs OK', (r) => r.status === 200)
+  .check('Transactions by account id OK', (r) => r.status === 200)
   .build();
 
 export {options, run};

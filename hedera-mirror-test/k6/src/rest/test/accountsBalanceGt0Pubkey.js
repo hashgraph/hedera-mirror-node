@@ -21,9 +21,10 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from './constants.js';
 
+const url = `${__ENV.BASE_URL}${urlPrefix}/accounts?account.balance=gt:0&account.publickey=${__ENV.DEFAULT_PUBLICKEY}`;
 const urlTag = '/accounts?account.balance=gt:0&account.publickey={publicKey}';
-const url = __ENV.BASE_URL + `/accounts?account.balance=gt:0&account.publickey=${__ENV.DEFAULT_PUBLICKEY_TRUE}`;
 
 const {options, run} = new TestScenarioBuilder()
   .name('accountsBalanceGt0Pubkey') // use unique scenario name among all tests

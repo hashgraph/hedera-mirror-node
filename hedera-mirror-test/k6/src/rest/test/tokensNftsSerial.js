@@ -21,8 +21,9 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from './constants.js';
 
-const url = __ENV.BASE_URL + `/tokens/${__ENV.DEFAULT_NFT}/nfts/${__ENV.DEFAULT_NFT_SERIAL}`;
+const url = `${__ENV.BASE_URL}${urlPrefix}/tokens/${__ENV.DEFAULT_NFT}/nfts/${__ENV.DEFAULT_NFT_SERIAL}`;
 const urlTag = '/tokens/{id}/nfts/{serial}';
 
 const {options, run} = new TestScenarioBuilder()

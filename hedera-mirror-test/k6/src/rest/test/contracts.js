@@ -21,9 +21,10 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from './constants.js';
 
 const urlTag = '/contracts';
-const url = __ENV.BASE_URL + `${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
+const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
 
 const {options, run} = new TestScenarioBuilder()
   .name('contracts') // use unique scenario name among all tests

@@ -21,8 +21,9 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from './constants.js';
 
-const url = __ENV.BASE_URL + `/transactions/${__ENV.DEFAULT_TRANSACTION}`;
+const url = `${__ENV.BASE_URL}${urlPrefix}/transactions/${__ENV.DEFAULT_TRANSACTION}`;
 const urlTag = '/transactions/{id}';
 
 const {options, run} = new TestScenarioBuilder()

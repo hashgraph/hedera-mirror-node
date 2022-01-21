@@ -21,8 +21,9 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from './constants.js';
 
-const url = __ENV.BASE_URL + `/topics/${__ENV.DEFAULT_TOPIC}/messages/${__ENV.DEFAULT_TOPIC_SEQUENCE}`;
+const url = `${__ENV.BASE_URL}${urlPrefix}/topics/${__ENV.DEFAULT_TOPIC}/messages/${__ENV.DEFAULT_TOPIC_SEQUENCE}`;
 const urlTag = '/topics/{id}/messages/{sequenceNumber}';
 
 const {options, run} = new TestScenarioBuilder()

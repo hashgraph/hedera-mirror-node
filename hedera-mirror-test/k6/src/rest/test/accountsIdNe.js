@@ -21,9 +21,10 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from './constants.js';
 
+const url = `${__ENV.BASE_URL}${urlPrefix}/accounts?account.id=ne:${__ENV.DEFAULT_ACCOUNT}&order=desc`;
 const urlTag = '/accounts?account.id=ne:{accountId}&order=desc';
-const url = __ENV.BASE_URL + `/accounts?account.id=ne:${__ENV.DEFAULT_ACCOUNT_ENTITYNUM}&order=desc`;
 
 const {options, run} = new TestScenarioBuilder()
   .name('accountsIdNe') // use unique scenario name among all tests

@@ -21,6 +21,7 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from './constants.js';
 
 const urlTag = '/accounts';
 
@@ -30,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('accounts') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => {
-    let url = __ENV.BASE_URL + `${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
+    let url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
     if (nextLink) {
       url = __ENV.BASE_URL + nextLink;
     }

@@ -21,8 +21,9 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from './constants.js';
 
-const url = __ENV.BASE_URL + `/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results/${__ENV.DEFAULT_CONTRACT_TIMESTAMP}`;
+const url = `${__ENV.BASE_URL}${urlPrefix}/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results/${__ENV.DEFAULT_CONTRACT_TIMESTAMP}`;
 const urlTag = '/contracts/{id}/results/{timestamp}';
 
 const {options, run} = new TestScenarioBuilder()

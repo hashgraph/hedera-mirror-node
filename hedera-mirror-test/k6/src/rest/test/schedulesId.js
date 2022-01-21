@@ -21,8 +21,9 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from './constants.js';
 
-const url = __ENV.BASE_URL + `/schedules/${__ENV.DEFAULT_SCHEDULE_ID}`;
+const url = `${__ENV.BASE_URL}${urlPrefix}/schedules/${__ENV.DEFAULT_SCHEDULE_ID}`;
 const urlTag = '/schedules/{id}';
 
 const {options, run} = new TestScenarioBuilder()

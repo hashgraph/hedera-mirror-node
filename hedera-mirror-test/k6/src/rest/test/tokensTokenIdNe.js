@@ -21,9 +21,10 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from './constants.js';
 
 const urlTag = '/tokens?token.id=ne:100000';
-const url = __ENV.BASE_URL + urlTag;
+const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}`;
 
 const {options, run} = new TestScenarioBuilder()
   .name('tokensTokenIdNe') // use unique scenario name among all tests

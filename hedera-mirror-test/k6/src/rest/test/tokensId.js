@@ -21,8 +21,9 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from './constants.js';
 
-const url = __ENV.BASE_URL + `/tokens/${__ENV.DEFAULT_TOKEN}`;
+const url = `${__ENV.BASE_URL}${urlPrefix}/tokens/${__ENV.DEFAULT_TOKEN}`;
 const urlTag = '/tokens/{id}';
 
 const {options, run} = new TestScenarioBuilder()

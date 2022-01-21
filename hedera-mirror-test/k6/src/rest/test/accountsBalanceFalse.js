@@ -21,9 +21,10 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from './constants.js';
 
 const urlTag = '/accounts?balance=false';
-const url = __ENV.BASE_URL + urlTag;
+const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}`;
 
 const {options, run} = new TestScenarioBuilder()
   .name('accountsBalanceFalse') // use unique scenario name among all tests
