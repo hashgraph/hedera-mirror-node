@@ -91,6 +91,7 @@ ingress:
     - host: ""
       paths:
         - "/com.hedera.mirror.api.proto.ConsensusService"
+        - "/com.hedera.mirror.api.proto.NetworkService"
         - "/grpc.reflection.v1alpha.ServerReflection"
   middleware:
     circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
