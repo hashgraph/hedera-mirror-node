@@ -20,30 +20,39 @@ package com.hedera.mirror.monitor;
  * ‍
  */
 
+import java.util.List;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.springframework.validation.annotation.Validated;
+
+import com.hedera.hashgraph.sdk.AccountId;
 
 @Data
 @NoArgsConstructor
 @Validated
 public class NodeProperties {
 
-    public NodeProperties(String accountId, String host) {
-        this.accountId = accountId;
-        this.host = host;
-    }
-
     @NotBlank
     private String accountId;
+
+    @Getter(lazy = true)
+    @ToString.Exclude
+    private final List<AccountId> accountIds = List.of(AccountId.fromString(getAccountId()));
 
     @NotBlank
     private String host;
 
     @Min(0)
     private int port = 50211;
+
+    public NodeProperties(String accountId, String host) {
+        this.accountId = accountId;
+        this.host = host;
+    }
 
     public String getEndpoint() {
         // Allow for in-process testing of gRPC stubs
@@ -53,4 +62,3 @@ public class NodeProperties {
         return host + ":" + port;
     }
 }
-
