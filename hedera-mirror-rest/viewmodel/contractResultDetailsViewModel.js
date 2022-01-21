@@ -42,7 +42,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
    * @param {ContractLog[]} contractLogs
    */
   constructor(contractResult, recordFile, transaction, contractLogs) {
-    super(contractResult, transaction);
+    super(contractResult);
     Object.assign(this, {
       block_hash: utils.addHexPrefix(recordFile.hash),
       block_number: Number(recordFile.index),

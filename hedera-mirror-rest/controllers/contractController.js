@@ -568,12 +568,12 @@ const getContractResultsByTimestamp = async (req, res) => {
     ContractService.getContractLogsByTimestamps(timestamp),
   ]);
   if (_.isNil(transaction)) {
-    throw new NotFoundError();
+    throw new NotFoundError('Not found');
   }
 
   const contractResult = contractResults.length === 0 ? null : contractResults[0];
-  if (contractResult === null) {
-    // set contractId as it would be missing in empty contratResult case
+  if (_.isNil(contractResult.callResult)) {
+    // set contractId as it would be missing in empty contractResult case
     transaction.entityId = contractId;
 
     // set 206 partial response
@@ -650,7 +650,7 @@ const getContractResultsByTransactionId = async (req, res) => {
     contractLogs
   );
 
-  if (contractResult === null) {
+  if (_.isNil(contractResult.callResult)) {
     // set 206 partial response
     res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
     logger.debug(`getContractResultsByTransactionId returning partial content`);

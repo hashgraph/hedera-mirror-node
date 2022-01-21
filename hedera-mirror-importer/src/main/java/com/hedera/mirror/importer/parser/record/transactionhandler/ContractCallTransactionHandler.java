@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -57,9 +58,10 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         var transactionRecord = recordItem.getRecord();
 
-        if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCallResult()) {
+        if (entityProperties.getPersist().isContracts()) {
             var transactionBody = recordItem.getTransactionBody().getContractCall();
-            var functionResult = transactionRecord.getContractCallResult();
+            var functionResult = transactionRecord.hasContractCallResult() ?
+                    transactionRecord.getContractCallResult() : ContractFunctionResult.getDefaultInstance();
 
             // The functionResult.contractID can sometimes be empty even if successful, so use Transaction.entityId
             ContractResult contractResult = new ContractResult();
