@@ -38,7 +38,7 @@
     "call_result": null,
     "contract_id": "0.0.5001",
     "created_contract_ids": [],
-    "error_message": "",
+    "error_message": null,
     "from": "0x0000000000000000000000000000000000001f41",
     "function_parameters": null,
     "gas_limit": 1000,

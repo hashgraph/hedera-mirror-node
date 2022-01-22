@@ -75,6 +75,8 @@ describe('ContractResultViewModel', () => {
       contract_id: null,
       created_contract_ids: [],
       error_message: null,
+      function_parameters: null,
+      gas_used: null,
       to: null,
     });
   });

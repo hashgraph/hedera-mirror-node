@@ -568,7 +568,7 @@ const getContractResultsByTimestamp = async (req, res) => {
     ContractService.getContractLogsByTimestamps(timestamp),
   ]);
   if (_.isNil(transaction)) {
-    throw new NotFoundError('Not found');
+    throw new NotFoundError();
   }
 
   const contractResult = contractResults.length === 0 ? null : contractResults[0];

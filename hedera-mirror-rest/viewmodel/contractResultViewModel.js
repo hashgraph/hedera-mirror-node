@@ -41,7 +41,7 @@ class ContractResultViewModel {
     const contractId = EntityId.parse(contractResult.contractId, true);
     this.contract_id = contractId.toString();
     this.created_contract_ids = [];
-    this.error_message = '';
+    this.error_message = null;
     this.from = EntityId.parse(contractResult.payerAccountId).toSolidityAddress();
     this.function_parameters = null;
     this.gas_limit = Number(contractResult.gasLimit);
