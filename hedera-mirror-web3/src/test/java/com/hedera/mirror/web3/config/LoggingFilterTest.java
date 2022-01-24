@@ -67,8 +67,8 @@ class LoggingFilterTest {
     }
 
     @CsvSource({
-            "/, 200, INFO, 200",
-            "/actuator/, 200, DEBUG, 200"
+            "/, 200, INFO",
+            "/actuator/, 200, DEBUG"
     })
     @ParameterizedTest
     void filterOnSuccess(String path, int code, String level) {
@@ -80,12 +80,7 @@ class LoggingFilterTest {
                 .expectComplete()
                 .verify(WAIT);
 
-        assertThat(appender.list)
-                .hasSize(1)
-                .first()
-                .returns(Level.toLevel(level), ILoggingEvent::getLevel)
-                .extracting(ILoggingEvent::getFormattedMessage, InstanceOfAssertFactories.STRING)
-                .containsPattern("\\w+ GET " + path + " in \\d+ ms: " + code);
+        assertLog(Level.toLevel(level), "\\w+ GET " + path + " in \\d+ ms: " + code);
     }
 
     @Test
@@ -97,12 +92,7 @@ class LoggingFilterTest {
                 .thenCancel()
                 .verify(WAIT);
 
-        assertThat(appender.list)
-                .hasSize(1)
-                .first()
-                .returns(Level.WARN, ILoggingEvent::getLevel)
-                .extracting(ILoggingEvent::getFormattedMessage, InstanceOfAssertFactories.STRING)
-                .containsPattern("\\w+ GET / in \\d+ ms: cancelled");
+        assertLog(Level.WARN, "\\w+ GET / in \\d+ ms: cancelled");
     }
 
     @Test
@@ -117,11 +107,15 @@ class LoggingFilterTest {
                 .expectComplete()
                 .verify(WAIT);
 
+        assertLog(Level.WARN, "\\w+ GET / in \\d+ ms: " + exception.getMessage());
+    }
+
+    private void assertLog(Level level, String pattern) {
         assertThat(appender.list)
                 .hasSize(1)
                 .first()
-                .returns(Level.WARN, ILoggingEvent::getLevel)
+                .returns(level, ILoggingEvent::getLevel)
                 .extracting(ILoggingEvent::getFormattedMessage, InstanceOfAssertFactories.STRING)
-                .containsPattern("\\w+ GET / in \\d+ ms: " + exception.getMessage());
+                .containsPattern(pattern);
     }
 }

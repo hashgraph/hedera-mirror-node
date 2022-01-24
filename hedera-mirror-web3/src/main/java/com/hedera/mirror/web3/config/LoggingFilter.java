@@ -46,7 +46,7 @@ class LoggingFilter implements WebFilter {
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         long start = System.currentTimeMillis();
         return chain.filter(exchange).transformDeferred(call ->
-                call.doOnEach((signal) -> doFilter(exchange, signal.getThrowable(), start))
+                call.doOnEach(signal -> doFilter(exchange, signal.getThrowable(), start))
                         .doOnCancel(() -> doFilter(exchange, new CancelledException(), start)));
     }
 
