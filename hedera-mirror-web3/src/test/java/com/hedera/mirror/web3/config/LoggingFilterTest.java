@@ -27,10 +27,12 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.time.Duration;
+import lombok.CustomLog;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,7 @@ import reactor.test.StepVerifier;
 
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 
+@CustomLog
 class LoggingFilterTest {
 
     private static final Duration WAIT = Duration.ofSeconds(30);
@@ -50,7 +53,8 @@ class LoggingFilterTest {
     private ListAppender<ILoggingEvent> appender;
 
     @BeforeEach
-    void setup() {
+    void setup(TestInfo testInfo) {
+        log.info("Executing {}", testInfo.getDisplayName());
         appender = new ListAppender<>();
         appender.start();
         logger = (Logger) LoggerFactory.getLogger(LoggingFilter.class);
@@ -59,8 +63,9 @@ class LoggingFilterTest {
     }
 
     @AfterEach
-    void cleanup() {
-        logger.detachAppender(appender);
+    void cleanup(TestInfo testInfo) {
+        log.info("Finished {}", testInfo.getDisplayName());
+        logger.detachAndStopAllAppenders();
     }
 
     @CsvSource({
@@ -72,7 +77,11 @@ class LoggingFilterTest {
         MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get(path).build());
         exchange.getResponse().setRawStatusCode(code);
 
-        loggingFilter.filter(exchange, serverWebExchange -> Mono.defer(() -> exchange.getResponse().setComplete()))
+        loggingFilter.filter(exchange, serverWebExchange -> Mono.defer(() -> {
+                    log.info("chain {}", path);
+                    exchange.getResponse().setComplete().block();
+                    return Mono.empty();
+                }))
                 .as(StepVerifier::create)
                 .expectComplete()
                 .verify(WAIT);
