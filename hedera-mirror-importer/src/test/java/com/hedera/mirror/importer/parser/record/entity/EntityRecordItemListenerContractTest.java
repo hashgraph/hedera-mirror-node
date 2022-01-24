@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.StorageChange;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -54,12 +55,14 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
+import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
@@ -69,6 +72,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
     @Resource
     private ContractLogRepository contractLogRepository;
+    @Resource
+    private ContractStateChangeRepository contractStateChangeRepository;
 
     @Resource
     private RecordItemBuilder recordItemBuilder;
@@ -567,7 +572,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(toBytes(transactionBody.getConstructorParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
-        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult);
+        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
+                result.getStateChangesList());
     }
 
     private void assertContractCallResult(ContractCallTransactionBody transactionBody, TransactionRecord record) {
@@ -583,12 +589,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(toBytes(transactionBody.getFunctionParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
-        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult);
+        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
+                result.getStateChangesList());
     }
 
     private void assertContractResult(long consensusTimestamp, ContractFunctionResult result,
                                       List<ContractLoginfo> logInfoList,
-                                      ObjectAssert<ContractResult> contractResult) {
+                                      ObjectAssert<ContractResult> contractResult,
+                                      List<com.hederahashgraph.api.proto.java.ContractStateChange> stageChangeList) {
         List<Long> createdContractIds = result.getCreatedContractIDsList()
                 .stream()
                 .map(ContractID::getContractNum)
@@ -620,6 +628,26 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     .returns(Utility.getTopic(logInfo, 1), ContractLog::getTopic1)
                     .returns(Utility.getTopic(logInfo, 2), ContractLog::getTopic2)
                     .returns(Utility.getTopic(logInfo, 3), ContractLog::getTopic3);
+        }
+
+        for (int i = 0; i < stageChangeList.size(); i++) {
+            int index = i;
+            com.hederahashgraph.api.proto.java.ContractStateChange contractStateChangeInfo = stageChangeList.get(i);
+
+            EntityId contractId = EntityId.of(contractStateChangeInfo.getContractID());
+            for (int j = 0; j < contractStateChangeInfo.getStorageChangesCount(); ++j) {
+                StorageChange storageChange = contractStateChangeInfo.getStorageChanges(index);
+                byte[] slot = DomainUtils.toBytes(storageChange.getSlot());
+                assertThat(contractStateChangeRepository.findById(new ContractStateChange.Id(consensusTimestamp,
+                        contractId, slot)))
+                        .isPresent()
+                        .get()
+                        .returns(consensusTimestamp, ContractStateChange::getConsensusTimestamp)
+                        .returns(contractId, ContractStateChange::getContractId)
+                        .returns(slot, ContractStateChange::getSlot)
+                        .returns(storageChange.getValueRead(), ContractStateChange::getValueRead)
+                        .returns(storageChange.getValueWritten(), ContractStateChange::getValueWritten);
+            }
         }
     }
 
