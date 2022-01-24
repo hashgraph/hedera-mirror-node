@@ -45,20 +45,24 @@ class LoggingFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+        log.info("filter1: {}", exchange.getRequest().getPath());
         return chain.filter(exchange).transformDeferred((call) -> filter(exchange, call));
     }
 
     private Publisher<Void> filter(ServerWebExchange exchange, Mono<Void> call) {
         long start = System.currentTimeMillis();
+        log.info("filter2: {}", exchange.getRequest().getPath());
         return call.doOnEach((signal) -> onTerminalSignal(exchange, signal.getThrowable(), start))
                 .doOnCancel(() -> onTerminalSignal(exchange, new CancelledException(), start));
     }
 
     private void onTerminalSignal(ServerWebExchange exchange, Throwable cause, long start) {
         ServerHttpResponse response = exchange.getResponse();
+        log.info("onTerminalSignal {}: {}", exchange.getRequest().getPath(), cause);
         if (response.isCommitted() || cause instanceof CancelledException) {
             logRequest(exchange, start, cause);
         } else {
+            log.info("beforeCommit");
             response.beforeCommit(() -> {
                 logRequest(exchange, start, cause);
                 return Mono.empty();
@@ -67,6 +71,7 @@ class LoggingFilter implements WebFilter {
     }
 
     private void logRequest(ServerWebExchange exchange, long startTime, Throwable t) {
+        log.info("logRequest {}: {}", exchange.getRequest().getPath(), t);
         long elapsed = System.currentTimeMillis() - startTime;
         ServerHttpRequest request = exchange.getRequest();
         URI uri = request.getURI();
