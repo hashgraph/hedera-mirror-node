@@ -59,6 +59,7 @@ class LoggingFilterTest {
         appender.start();
         logger = (Logger) LoggerFactory.getLogger(LoggingFilter.class);
         logger.addAppender(appender);
+        logger.setLevel(Level.DEBUG);
         loggingFilter = new LoggingFilter();
     }
 
