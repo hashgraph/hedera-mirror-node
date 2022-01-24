@@ -558,7 +558,7 @@ const getContractResultsById = async (req, res) => {
  * @returns {Promise<void>}
  */
 const getContractResultsByTimestamp = async (req, res) => {
-  const {timestamp, contractId} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
+  const {timestamp} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
 
   // retrieve contract result, recordFile and transaction models concurrently
   const [contractResults, recordFile, transaction, contractLogs] = await Promise.all([
@@ -568,14 +568,15 @@ const getContractResultsByTimestamp = async (req, res) => {
     ContractService.getContractLogsByTimestamps(timestamp),
   ]);
   if (_.isNil(transaction)) {
-    throw new NotFoundError();
+    throw new NotFoundError('No correlating transaction');
   }
 
   const contractResult = contractResults.length === 0 ? null : contractResults[0];
-  if (_.isNil(contractResult.callResult)) {
-    // set contractId as it would be missing in empty contractResult case
-    transaction.entityId = contractId;
+  if (_.isNil(contractResult)) {
+    throw new NotFoundError();
+  }
 
+  if (_.isNil(contractResult.callResult)) {
     // set 206 partial response
     res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
     logger.debug(`getContractResultsByTimestamp returning partial content`);
@@ -643,6 +644,10 @@ const getContractResultsByTransactionId = async (req, res) => {
   ]);
 
   const contractResult = contractResults.length === 0 ? null : contractResults[0];
+  if (_.isNil(contractResult)) {
+    throw new NotFoundError();
+  }
+
   res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
     contractResult,
     recordFile,
