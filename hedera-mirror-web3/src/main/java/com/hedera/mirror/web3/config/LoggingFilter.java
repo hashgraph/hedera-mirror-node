@@ -25,7 +25,6 @@ import java.net.URI;
 import javax.inject.Named;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
-import org.reactivestreams.Publisher;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.util.CollectionUtils;
@@ -45,24 +44,17 @@ class LoggingFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        log.info("filter1: {}", exchange.getRequest().getPath());
-        return chain.filter(exchange).transformDeferred((call) -> filter(exchange, call));
-    }
-
-    private Publisher<Void> filter(ServerWebExchange exchange, Mono<Void> call) {
         long start = System.currentTimeMillis();
-        log.info("filter2: {}", exchange.getRequest().getPath());
-        return call.doOnEach((signal) -> onTerminalSignal(exchange, signal.getThrowable(), start))
-                .doOnCancel(() -> onTerminalSignal(exchange, new CancelledException(), start));
+        return chain.filter(exchange).transformDeferred(call ->
+                call.doOnEach((signal) -> doFilter(exchange, signal.getThrowable(), start))
+                        .doOnCancel(() -> doFilter(exchange, new CancelledException(), start)));
     }
 
-    private void onTerminalSignal(ServerWebExchange exchange, Throwable cause, long start) {
+    private void doFilter(ServerWebExchange exchange, Throwable cause, long start) {
         ServerHttpResponse response = exchange.getResponse();
-        log.info("onTerminalSignal {}: {}", exchange.getRequest().getPath(), cause);
         if (response.isCommitted() || cause instanceof CancelledException) {
             logRequest(exchange, start, cause);
         } else {
-            log.info("beforeCommit");
             response.beforeCommit(() -> {
                 logRequest(exchange, start, cause);
                 return Mono.empty();
@@ -70,15 +62,14 @@ class LoggingFilter implements WebFilter {
         }
     }
 
-    private void logRequest(ServerWebExchange exchange, long startTime, Throwable t) {
-        log.info("logRequest {}: {}", exchange.getRequest().getPath(), t);
+    private void logRequest(ServerWebExchange exchange, long startTime, Throwable cause) {
         long elapsed = System.currentTimeMillis() - startTime;
         ServerHttpRequest request = exchange.getRequest();
         URI uri = request.getURI();
-        Object message = t != null ? t.getMessage() : exchange.getResponse().getStatusCode();
+        Object message = cause != null ? cause.getMessage() : exchange.getResponse().getStatusCode();
         Object[] params = new Object[] {getClient(request), request.getMethod(), uri, elapsed, message};
 
-        if (t != null) {
+        if (cause != null) {
             log.warn(LOG_FORMAT, params);
         } else if (StringUtils.startsWith(uri.getPath(), ACTUATOR_PATH)) {
             log.debug(LOG_FORMAT, params);
@@ -104,8 +95,10 @@ class LoggingFilter implements WebFilter {
     }
 
     private static class CancelledException extends RuntimeException {
+        private static final String MESSAGE = "cancelled";
+
         CancelledException() {
-            super("cancelled");
+            super(MESSAGE);
         }
     }
 }

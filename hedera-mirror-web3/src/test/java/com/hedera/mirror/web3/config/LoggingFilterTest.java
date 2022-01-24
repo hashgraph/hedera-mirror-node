@@ -32,7 +32,6 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.LoggerFactory;
@@ -53,8 +52,7 @@ class LoggingFilterTest {
     private ListAppender<ILoggingEvent> appender;
 
     @BeforeEach
-    void setup(TestInfo testInfo) {
-        log.info("Executing {}", testInfo.getDisplayName());
+    void setup() {
         appender = new ListAppender<>();
         appender.start();
         logger = (Logger) LoggerFactory.getLogger(LoggingFilter.class);
@@ -64,8 +62,7 @@ class LoggingFilterTest {
     }
 
     @AfterEach
-    void cleanup(TestInfo testInfo) {
-        log.info("Finished {}", testInfo.getDisplayName());
+    void cleanup() {
         logger.detachAndStopAllAppenders();
     }
 
@@ -78,11 +75,7 @@ class LoggingFilterTest {
         MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get(path).build());
         exchange.getResponse().setRawStatusCode(code);
 
-        loggingFilter.filter(exchange, serverWebExchange -> Mono.defer(() -> {
-                    log.info("chain {}", path);
-                    exchange.getResponse().setComplete().block();
-                    return Mono.empty();
-                }))
+        loggingFilter.filter(exchange, serverWebExchange -> Mono.defer(() -> exchange.getResponse().setComplete()))
                 .as(StepVerifier::create)
                 .expectComplete()
                 .verify(WAIT);
@@ -98,7 +91,6 @@ class LoggingFilterTest {
     @Test
     void filterOnCancel() {
         MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/").build());
-        exchange.getResponse().setRawStatusCode(500);
 
         loggingFilter.filter(exchange, serverWebExchange -> exchange.getResponse().setComplete())
                 .as(StepVerifier::create)
@@ -120,10 +112,7 @@ class LoggingFilterTest {
 
         var exception = new InvalidParametersException("error");
         loggingFilter.filter(exchange, serverWebExchange -> Mono.error(exception))
-                .onErrorResume((t) -> {
-                    exchange.getResponse().setRawStatusCode(500);
-                    return exchange.getResponse().setComplete();
-                })
+                .onErrorResume((t) -> exchange.getResponse().setComplete())
                 .as(StepVerifier::create)
                 .expectComplete()
                 .verify(WAIT);
