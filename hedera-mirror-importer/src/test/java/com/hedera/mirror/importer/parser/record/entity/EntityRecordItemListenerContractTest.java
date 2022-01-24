@@ -140,7 +140,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(),
-                () -> assertEquals(0, contractResultRepository.count()),
+                () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertFailedContractCreate(transactionBody, record)
         );
@@ -570,6 +570,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .hasSize(1)
                 .first()
                 .returns(transactionBody.getInitialBalance(), ContractResult::getAmount)
+                .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
                 .returns(EntityId.of(record.getReceipt().getContractID()), ContractResult::getContractId)
                 .returns(toBytes(transactionBody.getConstructorParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
@@ -587,6 +588,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .hasSize(1)
                 .first()
                 .returns(transactionBody.getAmount(), ContractResult::getAmount)
+                .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
                 .returns(EntityId.of(transactionBody.getContractID()), ContractResult::getContractId)
                 .returns(toBytes(transactionBody.getFunctionParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
