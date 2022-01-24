@@ -25,7 +25,9 @@ import java.net.URI;
 import javax.inject.Named;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
+import org.reactivestreams.Publisher;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
@@ -43,10 +45,25 @@ class LoggingFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        long startTime = System.currentTimeMillis();
-        return chain.filter(exchange).transformDeferred(call ->
-                call.doOnSuccess(done -> logRequest(exchange, startTime, null))
-                        .doOnError(cause -> logRequest(exchange, startTime, cause)));
+        return chain.filter(exchange).transformDeferred((call) -> filter(exchange, call));
+    }
+
+    private Publisher<Void> filter(ServerWebExchange exchange, Mono<Void> call) {
+        long start = System.currentTimeMillis();
+        return call.doOnEach((signal) -> onTerminalSignal(exchange, signal.getThrowable(), start))
+                .doOnCancel(() -> onTerminalSignal(exchange, new CancelledException(), start));
+    }
+
+    private void onTerminalSignal(ServerWebExchange exchange, Throwable cause, long start) {
+        ServerHttpResponse response = exchange.getResponse();
+        if (response.isCommitted() || cause instanceof CancelledException) {
+            logRequest(exchange, start, cause);
+        } else {
+            response.beforeCommit(() -> {
+                logRequest(exchange, start, cause);
+                return Mono.empty();
+            });
+        }
     }
 
     private void logRequest(ServerWebExchange exchange, long startTime, Throwable t) {
@@ -79,5 +96,11 @@ class LoggingFilter implements WebFilter {
         }
 
         return LOCALHOST;
+    }
+
+    private static class CancelledException extends RuntimeException {
+        CancelledException() {
+            super("cancelled");
+        }
     }
 }

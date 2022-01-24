@@ -46,7 +46,7 @@ import com.hedera.mirror.web3.exception.InvalidParametersException;
 @CustomLog
 class LoggingFilterTest {
 
-    private static final Duration WAIT = Duration.ofSeconds(30);
+    private static final Duration WAIT = Duration.ofSeconds(5);
 
     private LoggingFilter loggingFilter;
     private Logger logger;
@@ -95,14 +95,36 @@ class LoggingFilterTest {
     }
 
     @Test
+    void filterOnCancel() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/").build());
+        exchange.getResponse().setRawStatusCode(500);
+
+        loggingFilter.filter(exchange, serverWebExchange -> exchange.getResponse().setComplete())
+                .as(StepVerifier::create)
+                .thenCancel()
+                .verify(WAIT);
+
+        assertThat(appender.list)
+                .hasSize(1)
+                .first()
+                .returns(Level.WARN, ILoggingEvent::getLevel)
+                .extracting(ILoggingEvent::getFormattedMessage, InstanceOfAssertFactories.STRING)
+                .containsPattern("\\w+ GET / in \\d+ ms: cancelled");
+    }
+
+    @Test
     void filterOnError() {
         MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/").build());
         exchange.getResponse().setRawStatusCode(500);
 
         var exception = new InvalidParametersException("error");
         loggingFilter.filter(exchange, serverWebExchange -> Mono.error(exception))
+                .onErrorResume((t) -> {
+                    exchange.getResponse().setRawStatusCode(500);
+                    return exchange.getResponse().setComplete();
+                })
                 .as(StepVerifier::create)
-                .expectError(exception.getClass())
+                .expectComplete()
                 .verify(WAIT);
 
         assertThat(appender.list)
