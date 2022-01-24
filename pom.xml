@@ -72,7 +72,7 @@
         <jacoco.version>0.8.7</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
-        <jib.version>3.1.4</jib.version>
+        <jib.version>3.2.0</jib.version>
         <log4j2.version>2.17.1</log4j2.version> <!-- Temporarily added to address a vulnerability -->
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.0</msgpack.version>
