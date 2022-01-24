@@ -26,6 +26,7 @@ import javax.inject.Named;
 import lombok.CustomLog;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.server.reactive.ServerHttpRequest;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilter;
@@ -43,20 +44,32 @@ class LoggingFilter implements WebFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
-        long startTime = System.currentTimeMillis();
+        long start = System.currentTimeMillis();
         return chain.filter(exchange).transformDeferred(call ->
-                call.doOnSuccess(done -> logRequest(exchange, startTime, null))
-                        .doOnError(cause -> logRequest(exchange, startTime, cause)));
+                call.doOnEach(signal -> doFilter(exchange, signal.getThrowable(), start))
+                        .doOnCancel(() -> doFilter(exchange, new CancelledException(), start)));
     }
 
-    private void logRequest(ServerWebExchange exchange, long startTime, Throwable t) {
+    private void doFilter(ServerWebExchange exchange, Throwable cause, long start) {
+        ServerHttpResponse response = exchange.getResponse();
+        if (response.isCommitted() || cause instanceof CancelledException) {
+            logRequest(exchange, start, cause);
+        } else {
+            response.beforeCommit(() -> {
+                logRequest(exchange, start, cause);
+                return Mono.empty();
+            });
+        }
+    }
+
+    private void logRequest(ServerWebExchange exchange, long startTime, Throwable cause) {
         long elapsed = System.currentTimeMillis() - startTime;
         ServerHttpRequest request = exchange.getRequest();
         URI uri = request.getURI();
-        Object message = t != null ? t.getMessage() : exchange.getResponse().getStatusCode();
+        Object message = cause != null ? cause.getMessage() : exchange.getResponse().getStatusCode();
         Object[] params = new Object[] {getClient(request), request.getMethod(), uri, elapsed, message};
 
-        if (t != null) {
+        if (cause != null) {
             log.warn(LOG_FORMAT, params);
         } else if (StringUtils.startsWith(uri.getPath(), ACTUATOR_PATH)) {
             log.debug(LOG_FORMAT, params);
@@ -79,5 +92,13 @@ class LoggingFilter implements WebFilter {
         }
 
         return LOCALHOST;
+    }
+
+    private static class CancelledException extends RuntimeException {
+        private static final String MESSAGE = "cancelled";
+
+        CancelledException() {
+            super(MESSAGE);
+        }
     }
 }
