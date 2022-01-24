@@ -23,7 +23,7 @@
 const ContractResultViewModel = require('./contractResultViewModel');
 const {TransactionResult} = require('../model');
 const utils = require('../utils');
-const ContractLogResultsViewModel = require('./contractResultLogViewModel');
+const {ContractLogResultsViewModel, ContractResultViewModel, ContractResultStateChangeViewModel} = require('.');
 
 /**
  * Contract result details view model
@@ -40,8 +40,9 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
    * @param {RecordFile} recordFile
    * @param {Transaction} transaction
    * @param {ContractLog[]} contractLogs
+   * @param {ContractStateChange[]} contractStateChanges
    */
-  constructor(contractResult, recordFile, transaction, contractLogs) {
+  constructor(contractResult, recordFile, transaction, contractLogs, contractStateChanges) {
     super(contractResult);
     Object.assign(this, {
       block_hash: utils.addHexPrefix(recordFile.hash),
@@ -49,6 +50,9 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       hash: utils.toHexString(transaction.transactionHash, true),
       logs: contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog)),
       result: TransactionResult.getName(transaction.result),
+      state_changes: contractStateChanges.map(
+        (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
+      ),
       status:
         transaction.result === ContractResultDetailsViewModel._FAIL_PROTO_ID
           ? ContractResultDetailsViewModel._SUCCESS_RESULT
