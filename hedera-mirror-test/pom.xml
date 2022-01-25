@@ -138,47 +138,6 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <configuration>
-                            <includeScope>test</includeScope>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>download-licenses-for-container</id>
-                        <configuration>
-                            <licenseUrlReplacements>
-                                <licenseUrlReplacement>
-                                    <regexp>\Qhttps://github.com/mockito/mockito/blob/master/LICENSE\E</regexp>
-                                    <replacement>https://github.com/mockito/mockito/blob/release/3.x/LICENSE
-                                    </replacement>
-                                </licenseUrlReplacement>
-                                <licenseUrlReplacement>
-                                    <regexp>\Qhttp://asm.objectweb.org/license.html\E</regexp>
-                                    <replacement>https://asm.ow2.io/license.html</replacement>
-                                </licenseUrlReplacement>
-                                <licenseUrlReplacement>
-                                    <regexp>
-                                        \Qhttp://jtidy.svn.sourceforge.net/viewvc/jtidy/trunk/jtidy/LICENSE.txt?revision=95\E
-                                    </regexp>
-                                    <replacement>http://jtidy.sourceforge.net/license.html</replacement>
-                                </licenseUrlReplacement>
-                            </licenseUrlReplacements>
-                            <licensesConfigFile>${project.basedir}/src/test/resources/license/licenses.xml
-                            </licensesConfigFile>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
                 <inherited>false</inherited>
