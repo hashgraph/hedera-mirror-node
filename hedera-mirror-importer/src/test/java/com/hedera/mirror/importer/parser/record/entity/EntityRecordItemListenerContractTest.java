@@ -25,6 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -636,8 +638,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
             EntityId contractId = EntityId.of(contractStateChangeInfo.getContractID());
             for (int j = 0; j < contractStateChangeInfo.getStorageChangesCount(); ++j) {
-                StorageChange storageChange = contractStateChangeInfo.getStorageChanges(index);
+                StorageChange storageChange = contractStateChangeInfo.getStorageChanges(j);
                 byte[] slot = DomainUtils.toBytes(storageChange.getSlot());
+                byte[] valueWritten = storageChange.hasValueWritten() ? storageChange.getValueWritten().getValue()
+                        .toByteArray() : null;
                 assertThat(contractStateChangeRepository.findById(new ContractStateChange.Id(consensusTimestamp,
                         contractId, slot)))
                         .isPresent()
@@ -645,8 +649,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .returns(consensusTimestamp, ContractStateChange::getConsensusTimestamp)
                         .returns(contractId, ContractStateChange::getContractId)
                         .returns(slot, ContractStateChange::getSlot)
-                        .returns(storageChange.getValueRead(), ContractStateChange::getValueRead)
-                        .returns(storageChange.getValueWritten(), ContractStateChange::getValueWritten);
+                        .returns(storageChange.getValueRead().toByteArray(), ContractStateChange::getValueRead)
+                        .returns(valueWritten, ContractStateChange::getValueWritten);
             }
         }
     }
@@ -658,7 +662,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     private TransactionRecord createOrUpdateRecord(TransactionBody transactionBody, ResponseCodeEnum status) {
         return buildTransactionRecord(recordBuilder -> {
             recordBuilder.getReceiptBuilder().setContractID(CONTRACT_ID);
-            buildContractFunctionResult(recordBuilder.getContractCreateResultBuilder());
+            try {
+                buildContractFunctionResult(recordBuilder.getContractCreateResultBuilder());
+            } catch (InvalidProtocolBufferException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
         }, transactionBody, status.getNumber());
     }
 
@@ -670,12 +679,17 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         return buildTransactionRecord(recordBuilder -> {
             recordBuilder.getReceiptBuilder().setContractID(CONTRACT_ID);
             var contractFunctionResult = recordBuilder.getContractCallResultBuilder();
-            buildContractFunctionResult(contractFunctionResult);
+            try {
+                buildContractFunctionResult(contractFunctionResult);
+            } catch (InvalidProtocolBufferException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
             contractFunctionResult.removeCreatedContractIDs(0); // Only contract create can contain parent ID
         }, transactionBody, status.getNumber());
     }
 
-    private void buildContractFunctionResult(ContractFunctionResult.Builder builder) {
+    private void buildContractFunctionResult(ContractFunctionResult.Builder builder) throws InvalidProtocolBufferException {
         builder.setBloom(ByteString.copyFromUtf8("bloom"));
         builder.setContractCallResult(ByteString.copyFromUtf8("call result"));
         builder.setContractID(CONTRACT_ID);
@@ -699,6 +713,31 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .addTopic(ByteString.copyFromUtf8("Topic1"))
                 .addTopic(ByteString.copyFromUtf8("Topic2"))
                 .addTopic(ByteString.copyFromUtf8("Topic3")).build());
+        // 3 state changes, no value written, valid value written and zero value written
+        builder.addStateChanges(com.hederahashgraph.api.proto.java.ContractStateChange.newBuilder()
+                .setContractID(CONTRACT_ID)
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x000000000000000000"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .build())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x000000000000000001"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .setValueWritten(BytesValue.of(ByteString
+                                .copyFromUtf8("0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5")))
+                        .build())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x00000000000000002"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .setValueWritten(BytesValue.of(ByteString.copyFromUtf8("0")))
+                        .build())
+                .build());
     }
 
     private Transaction contractUpdateAllTransaction(boolean setMemoWrapperOrMemo) {

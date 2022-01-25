@@ -94,13 +94,13 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
         }
 
         // contract call state changes
-        for (int index = 0; index < functionResult.getStateChangesCount(); ++index) {
-            com.hederahashgraph.api.proto.java.ContractStateChange contractStateChangeInfo = functionResult
-                    .getStateChanges(index);
+        for (int stateIndex = 0; stateIndex < functionResult.getStateChangesCount(); ++stateIndex) {
+            var contractStateChangeInfo = functionResult.getStateChanges(stateIndex);
 
             var contractId = EntityId.of(contractStateChangeInfo.getContractID());
-            for (int i = 0; i < contractStateChangeInfo.getStorageChangesCount(); ++i) {
-                StorageChange storageChange = contractStateChangeInfo.getStorageChanges(index);
+            for (int storageIndex = 0; storageIndex < contractStateChangeInfo
+                    .getStorageChangesCount(); ++storageIndex) {
+                StorageChange storageChange = contractStateChangeInfo.getStorageChanges(storageIndex);
 
                 ContractStateChange contractStateChange = new ContractStateChange();
                 contractStateChange.setConsensusTimestamp(consensusTimestamp);
@@ -111,7 +111,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
 
                 // If a value of zero is written the valueWritten will be present but the inner value will be absent.
                 // If a value was read and not written this value will not be present.
-                if (storageChange.isInitialized()) {
+                if (storageChange.hasValueWritten()) {
                     contractStateChange
                             .setValueWritten(DomainUtils.toBytes(storageChange.getValueWritten().getValue()));
                 }
