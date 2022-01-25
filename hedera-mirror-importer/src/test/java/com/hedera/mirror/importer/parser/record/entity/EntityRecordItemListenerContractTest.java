@@ -642,8 +642,11 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 byte[] slot = DomainUtils.toBytes(storageChange.getSlot());
                 byte[] valueWritten = storageChange.hasValueWritten() ? storageChange.getValueWritten().getValue()
                         .toByteArray() : null;
-                assertThat(contractStateChangeRepository.findById(new ContractStateChange.Id(consensusTimestamp,
-                        contractId, slot)))
+                assertThat(contractStateChangeRepository.findById(ContractStateChange.builder()
+                        .consensusTimestamp(consensusTimestamp)
+                        .contractId(contractId)
+                        .slot(slot)
+                        .build().getId()))
                         .isPresent()
                         .get()
                         .returns(consensusTimestamp, ContractStateChange::getConsensusTimestamp)

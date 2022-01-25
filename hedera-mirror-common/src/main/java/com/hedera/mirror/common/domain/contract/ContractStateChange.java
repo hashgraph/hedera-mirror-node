@@ -80,8 +80,6 @@ public class ContractStateChange implements Persistable<ContractStateChange.Id> 
     }
 
     @Data
-    @AllArgsConstructor
-    @NoArgsConstructor
     public static class Id implements Serializable {
         private static final long serialVersionUID = -3677350664183037811L;
         private long consensusTimestamp;
