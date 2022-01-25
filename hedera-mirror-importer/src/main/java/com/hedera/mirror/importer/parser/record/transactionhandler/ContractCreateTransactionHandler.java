@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -74,13 +73,12 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
             ContractResult contractResult = new ContractResult();
             contractResult.setAmount(transactionBody.getInitialBalance());
             contractResult.setConsensusTimestamp(consensusTimestamp);
-            contractResult.setContractId(transaction.getEntityId());
+            contractResult.setContractId(entityId);
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
             contractResult.setPayerAccountId(transaction.getPayerAccountId());
 
-            onContractResult(recordItem, contractResult, transactionRecord.hasContractCreateResult() ?
-                    transactionRecord.getContractCreateResult() : ContractFunctionResult.getDefaultInstance());
+            onContractResult(recordItem, contractResult, transactionRecord.getContractCreateResult());
         }
     }
 

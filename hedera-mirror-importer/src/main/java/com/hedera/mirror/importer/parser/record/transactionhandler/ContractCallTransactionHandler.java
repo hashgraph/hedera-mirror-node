@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -60,8 +59,6 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
 
         if (entityProperties.getPersist().isContracts()) {
             var transactionBody = recordItem.getTransactionBody().getContractCall();
-            var functionResult = transactionRecord.hasContractCallResult() ?
-                    transactionRecord.getContractCallResult() : ContractFunctionResult.getDefaultInstance();
 
             // The functionResult.contractID can sometimes be empty even if successful, so use Transaction.entityId
             ContractResult contractResult = new ContractResult();
@@ -72,7 +69,7 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getFunctionParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
 
-            onContractResult(recordItem, contractResult, functionResult);
+            onContractResult(recordItem, contractResult, transactionRecord.getContractCallResult());
         }
     }
 

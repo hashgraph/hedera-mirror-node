@@ -485,6 +485,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertNull(dbTransaction.getEntityId()),
                 () -> assertEquals(transactionBody.getContractCreateInstance().getInitialBalance(),
                         dbTransaction.getInitialBalance()));
+
+        assertContractCreateResult(transactionBody.getContractCreateInstance(), record);
     }
 
     private void assertFailedContractCallTransaction(TransactionBody transactionBody, TransactionRecord record) {
@@ -494,6 +496,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertThat(dbTransaction.getEntityId()).isNotNull(),
                 () -> assertEquals(EntityId.of(transactionBody.getContractCall().getContractID()),
                         dbTransaction.getEntityId()));
+
+        assertContractCallResult(transactionBody.getContractCall(), record);
     }
 
     private void assertContractEntity(RecordItem recordItem) {
@@ -568,15 +572,22 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
                 .hasSize(1)
-                .first()
+                .first();
+
+        contractResult
                 .returns(transactionBody.getInitialBalance(), ContractResult::getAmount)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
-                .returns(EntityId.of(record.getReceipt().getContractID()), ContractResult::getContractId)
                 .returns(toBytes(transactionBody.getConstructorParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
-        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
-                result.getStateChangesList());
+        var status = record.getReceipt().getStatus();
+        if (status == ResponseCodeEnum.SUCCESS) {
+            contractResult
+                    .returns(EntityId.of(record.getReceipt().getContractID()), ContractResult::getContractId);
+        }
+
+        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult, result.getStateChangesList()
+                status == ResponseCodeEnum.SUCCESS ? EntityId.of(result.getContractID()) : null);
     }
 
     private void assertContractCallResult(ContractCallTransactionBody transactionBody, TransactionRecord record) {
@@ -586,7 +597,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
                 .filteredOn(c -> c.getConsensusTimestamp().equals(consensusTimestamp))
                 .hasSize(1)
-                .first()
+                .first();
+
+        contractResult
                 .returns(transactionBody.getAmount(), ContractResult::getAmount)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
                 .returns(EntityId.of(transactionBody.getContractID()), ContractResult::getContractId)
@@ -594,26 +607,38 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
         assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
-                result.getStateChangesList());
+                result.getStateChangesList(),
+                EntityId.of(result.getContractID()));
     }
 
     private void assertContractResult(long consensusTimestamp, ContractFunctionResult result,
                                       List<ContractLoginfo> logInfoList,
                                       ObjectAssert<ContractResult> contractResult,
-                                      List<com.hederahashgraph.api.proto.java.ContractStateChange> stageChangeList) {
+                                      List<com.hederahashgraph.api.proto.java.ContractStateChange> stageChangeList,
+                                      EntityId rootContractId) {
         List<Long> createdContractIds = result.getCreatedContractIDsList()
                 .stream()
                 .map(ContractID::getContractNum)
                 .collect(Collectors.toList());
 
-        contractResult
-                .returns(result.getBloom().toByteArray(), ContractResult::getBloom)
-                .returns(result.getContractCallResult().toByteArray(), ContractResult::getCallResult)
-                .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
-                .returns(createdContractIds, ContractResult::getCreatedContractIds)
-                .returns(result.getErrorMessage(), ContractResult::getErrorMessage)
-                .returns(result.toByteArray(), ContractResult::getFunctionResult)
-                .returns(result.getGasUsed(), ContractResult::getGasUsed);
+        if (result != ContractFunctionResult.getDefaultInstance()) {
+            contractResult
+                    .returns(result.getBloom().toByteArray(), ContractResult::getBloom)
+                    .returns(result.getContractCallResult().toByteArray(), ContractResult::getCallResult)
+                    .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
+                    .returns(createdContractIds, ContractResult::getCreatedContractIds)
+                    .returns(result.getErrorMessage(), ContractResult::getErrorMessage)
+                    .returns(result.toByteArray(), ContractResult::getFunctionResult)
+                    .returns(result.getGasUsed(), ContractResult::getGasUsed);
+        } else {
+            contractResult
+                    .returns(null, ContractResult::getBloom)
+                    .returns(null, ContractResult::getCallResult)
+                    .returns(List.of(), ContractResult::getCreatedContractIds)
+                    .returns(null, ContractResult::getErrorMessage)
+                    .returns(null, ContractResult::getFunctionResult)
+                    .returns(null, ContractResult::getGasUsed);
+        }
 
         for (int i = 0; i < logInfoList.size(); i++) {
             int index = i;
@@ -627,7 +652,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     .returns(EntityId.of(logInfo.getContractID()), ContractLog::getContractId)
                     .returns(logInfo.getData().toByteArray(), ContractLog::getData)
                     .returns(index, ContractLog::getIndex)
-                    .returns(EntityId.of(result.getContractID()), ContractLog::getRootContractId)
+                    .returns(rootContractId, ContractLog::getRootContractId)
                     .returns(Utility.getTopic(logInfo, 0), ContractLog::getTopic0)
                     .returns(Utility.getTopic(logInfo, 1), ContractLog::getTopic1)
                     .returns(Utility.getTopic(logInfo, 2), ContractLog::getTopic2)
