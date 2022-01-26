@@ -484,22 +484,24 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
     private void assertFailedContractCreate(TransactionBody transactionBody, TransactionRecord record) {
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
+        var contractCreateBody = transactionBody.getContractCreateInstance();
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertNull(dbTransaction.getEntityId()),
-                () -> assertEquals(transactionBody.getContractCreateInstance().getInitialBalance(),
+                () -> assertEquals(contractCreateBody.getInitialBalance(),
                         dbTransaction.getInitialBalance()),
-                () -> assertPartialContractResult());
+                () -> assertPartialContractCreateResult(transactionBody.getContractCreateInstance(), record));
     }
 
     private void assertFailedContractCallTransaction(TransactionBody transactionBody, TransactionRecord record) {
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
+        var contractCallBody = transactionBody.getContractCall();
         assertAll(
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertThat(dbTransaction.getEntityId()).isNotNull(),
-                () -> assertEquals(EntityId.of(transactionBody.getContractCall().getContractID()),
+                () -> assertEquals(EntityId.of(contractCallBody.getContractID()),
                         dbTransaction.getEntityId()),
-                () -> assertPartialContractResult());
+                () -> assertPartialContractCallResult(contractCallBody, record));
     }
 
     private void assertContractEntity(RecordItem recordItem) {
@@ -675,10 +677,42 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         }
     }
 
-    private void assertPartialContractResult() {
-        assertThat(contractResultRepository.findAll())
+    private void assertPartialContractCreateResult(ContractCreateTransactionBody transactionBody,
+                                                   TransactionRecord record) {
+        long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
+        ContractFunctionResult result = record.getContractCreateResult();
+
+        ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
                 .hasSize(1)
                 .first()
+                .returns(transactionBody.getInitialBalance(), ContractResult::getAmount)
+                .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
+                .returns(toBytes(transactionBody.getConstructorParameters()), ContractResult::getFunctionParameters)
+                .returns(transactionBody.getGas(), ContractResult::getGasLimit);
+
+        assertPartialContractResult(contractResult);
+    }
+
+    private void assertPartialContractCallResult(ContractCallTransactionBody transactionBody,
+                                                 TransactionRecord record) {
+        long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
+        ContractFunctionResult result = record.getContractCallResult();
+
+        ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
+                .filteredOn(c -> c.getConsensusTimestamp().equals(consensusTimestamp))
+                .hasSize(1)
+                .first()
+                .returns(transactionBody.getAmount(), ContractResult::getAmount)
+                .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
+                .returns(EntityId.of(transactionBody.getContractID()), ContractResult::getContractId)
+                .returns(toBytes(transactionBody.getFunctionParameters()), ContractResult::getFunctionParameters)
+                .returns(transactionBody.getGas(), ContractResult::getGasLimit);
+
+        assertPartialContractResult(contractResult);
+    }
+
+    private void assertPartialContractResult(ObjectAssert<ContractResult> contractResult) {
+        contractResult
                 .returns(null, ContractResult::getBloom)
                 .returns(null, ContractResult::getCallResult)
                 .returns(List.of(), ContractResult::getCreatedContractIds)
