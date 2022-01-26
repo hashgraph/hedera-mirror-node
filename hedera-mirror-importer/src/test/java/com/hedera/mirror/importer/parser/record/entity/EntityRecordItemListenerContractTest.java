@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -48,6 +47,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+import lombok.SneakyThrows;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -642,11 +642,13 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 byte[] slot = DomainUtils.toBytes(storageChange.getSlot());
                 byte[] valueWritten = storageChange.hasValueWritten() ? storageChange.getValueWritten().getValue()
                         .toByteArray() : null;
-                assertThat(contractStateChangeRepository.findById(ContractStateChange.builder()
-                        .consensusTimestamp(consensusTimestamp)
-                        .contractId(contractId)
-                        .slot(slot)
-                        .build().getId()))
+
+                ContractStateChange.Id id = new ContractStateChange.Id();
+                id.setConsensusTimestamp(consensusTimestamp);
+                id.setContractId(contractId);
+                id.setSlot(slot);
+
+                assertThat(contractStateChangeRepository.findById(id))
                         .isPresent()
                         .get()
                         .returns(consensusTimestamp, ContractStateChange::getConsensusTimestamp)
@@ -665,12 +667,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     private TransactionRecord createOrUpdateRecord(TransactionBody transactionBody, ResponseCodeEnum status) {
         return buildTransactionRecord(recordBuilder -> {
             recordBuilder.getReceiptBuilder().setContractID(CONTRACT_ID);
-            try {
-                buildContractFunctionResult(recordBuilder.getContractCreateResultBuilder());
-            } catch (InvalidProtocolBufferException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
+            buildContractFunctionResult(recordBuilder.getContractCreateResultBuilder());
         }, transactionBody, status.getNumber());
     }
 
@@ -682,17 +679,13 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         return buildTransactionRecord(recordBuilder -> {
             recordBuilder.getReceiptBuilder().setContractID(CONTRACT_ID);
             var contractFunctionResult = recordBuilder.getContractCallResultBuilder();
-            try {
-                buildContractFunctionResult(contractFunctionResult);
-            } catch (InvalidProtocolBufferException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
+            buildContractFunctionResult(contractFunctionResult);
             contractFunctionResult.removeCreatedContractIDs(0); // Only contract create can contain parent ID
         }, transactionBody, status.getNumber());
     }
 
-    private void buildContractFunctionResult(ContractFunctionResult.Builder builder) throws InvalidProtocolBufferException {
+    @SneakyThrows
+    private void buildContractFunctionResult(ContractFunctionResult.Builder builder) {
         builder.setBloom(ByteString.copyFromUtf8("bloom"));
         builder.setContractCallResult(ByteString.copyFromUtf8("call result"));
         builder.setContractID(CONTRACT_ID);
