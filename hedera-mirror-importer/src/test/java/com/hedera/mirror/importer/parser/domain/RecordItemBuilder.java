@@ -25,6 +25,7 @@ import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ED25519;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.google.protobuf.GeneratedMessageV3;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -42,6 +43,7 @@ import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.StorageChange;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
@@ -138,6 +140,34 @@ public class RecordItemBuilder {
                         .addTopic(bytes(32))
                         .addTopic(bytes(32))
                         .addTopic(bytes(32))
+                        .build())
+                .addStateChanges(com.hederahashgraph.api.proto.java.ContractStateChange.newBuilder()
+                        .setContractID(contractId)
+                        .addStorageChanges(StorageChange.newBuilder()
+                                .setSlot(ByteString
+                                        .copyFromUtf8("0x000000000000000000"))
+                                .setValueRead(ByteString
+                                        .copyFromUtf8(
+                                                "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                                .build())
+                        .addStorageChanges(StorageChange.newBuilder()
+                                .setSlot(ByteString
+                                        .copyFromUtf8("0x000000000000000001"))
+                                .setValueRead(ByteString
+                                        .copyFromUtf8(
+                                                "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                                .setValueWritten(BytesValue.of(ByteString
+                                        .copyFromUtf8(
+                                                "0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5")))
+                                .build())
+                        .addStorageChanges(StorageChange.newBuilder()
+                                .setSlot(ByteString
+                                        .copyFromUtf8("0x00000000000000002"))
+                                .setValueRead(ByteString
+                                        .copyFromUtf8(
+                                                "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                                .setValueWritten(BytesValue.of(ByteString.copyFromUtf8("0")))
+                                .build())
                         .build());
     }
 

@@ -19,6 +19,8 @@ select create_distributed_table('contract_log', 'payer_account_id', colocate_wit
 
 select create_distributed_table('contract_result', 'payer_account_id', colocate_with => 'entity');
 
+select create_distributed_table('contract_state_change', 'payer_account_id', colocate_with => 'entity');
+
 select create_distributed_table('custom_fee', 'token_id', colocate_with => 'entity');
 
 select create_distributed_table('entity_history', 'id', colocate_with => 'entity');

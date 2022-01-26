@@ -37,25 +37,26 @@ import org.springframework.core.annotation.Order;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
-import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
-import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
-import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountKey;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
+import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -85,6 +86,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<Contract> contracts;
     private final Collection<ContractLog> contractLogs;
     private final Collection<ContractResult> contractResults;
+    private final Collection<ContractStateChange> contractStateChanges;
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
     private final Collection<Entity> entities;
@@ -127,6 +129,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contracts = new ArrayList<>();
         contractLogs = new ArrayList<>();
         contractResults = new ArrayList<>();
+        contractStateChanges = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
         entities = new ArrayList<>();
@@ -177,6 +180,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             contractState.clear();
             contractLogs.clear();
             contractResults.clear();
+            contractStateChanges.clear();
             cryptoTransfers.clear();
             customFees.clear();
             entities.clear();
@@ -212,6 +216,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(assessedCustomFees);
             batchPersister.persist(contractLogs);
             batchPersister.persist(contractResults);
+            batchPersister.persist(contractStateChanges);
             batchPersister.persist(cryptoTransfers);
             batchPersister.persist(customFees);
             batchPersister.persist(fileData);
@@ -266,6 +271,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onContractResult(ContractResult contractResult) throws ImporterException {
         contractResults.add(contractResult);
+    }
+
+    @Override
+    public void onContractStateChange(ContractStateChange contractStateChange) {
+        contractStateChanges.add(contractStateChange);
     }
 
     @Override
