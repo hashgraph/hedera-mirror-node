@@ -589,7 +589,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     .returns(EntityId.of(record.getReceipt().getContractID()), ContractResult::getContractId);
         }
 
-        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult, result.getStateChangesList()
+        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
+                result.getStateChangesList(),
                 status == ResponseCodeEnum.SUCCESS ? EntityId.of(result.getContractID()) : null);
     }
 

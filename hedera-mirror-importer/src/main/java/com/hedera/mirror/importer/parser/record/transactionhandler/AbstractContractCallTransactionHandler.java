@@ -110,7 +110,8 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
                     contractStateChange.setSlot(DomainUtils.toBytes(storageChange.getSlot()));
                     contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
 
-                    // If a value of zero is written the valueWritten will be present but the inner value will be absent.
+                    // If a value of zero is written the valueWritten will be present but the inner value will be
+                    // absent.
                     // If a value was read and not written this value will not be present.
                     if (storageChange.hasValueWritten()) {
                         contractStateChange
@@ -120,9 +121,10 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
                     entityListener.onContractStateChange(contractStateChange);
                 }
             }
-
-            entityListener.onContractResult(contractResult);
         }
+
+        // always persist a contract result whether partial or complete
+        entityListener.onContractResult(contractResult);
     }
 
     protected abstract void doUpdateEntity(Contract contract, RecordItem recordItem);
