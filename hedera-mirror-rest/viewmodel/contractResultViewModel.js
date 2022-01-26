@@ -34,32 +34,19 @@ class ContractResultViewModel {
    * @param {ContractResult} contractResult
    */
   constructor(contractResult) {
-    // set defaults to handle partial result case
-    this.amount = contractResult.amount === null ? null : Number(contractResult.amount);
-    this.bloom = null;
-    this.call_result = null;
     const contractId = EntityId.parse(contractResult.contractId, true);
+    this.amount = contractResult.amount === null ? null : Number(contractResult.amount);
+    this.bloom = utils.toHexString(contractResult.bloom, true);
+    this.call_result = utils.toHexString(contractResult.callResult, true);
     this.contract_id = contractId.toString();
-    this.created_contract_ids = [];
-    this.error_message = null;
+    this.created_contract_ids = _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString());
+    this.error_message = _.isEmpty(contractResult.errorMessage) ? null : contractResult.errorMessage;
     this.from = EntityId.parse(contractResult.payerAccountId).toSolidityAddress();
-    this.function_parameters = null;
+    this.function_parameters = utils.toHexString(contractResult.functionParameters, true);
     this.gas_limit = Number(contractResult.gasLimit);
-    this.gas_used = null;
+    this.gas_used = _.isNil(contractResult.gasUsed) ? null : Number(contractResult.gasUsed);
     this.timestamp = utils.nsToSecNs(contractResult.consensusTimestamp);
     this.to = contractId.toSolidityAddress();
-
-    // set function call related values
-    if (!_.isNil(contractResult.callResult)) {
-      this.bloom = utils.toHexString(contractResult.bloom, true);
-      this.call_result = utils.toHexString(contractResult.callResult, true);
-      this.created_contract_ids = _.toArray(contractResult.createdContractIds).map((id) =>
-        EntityId.parse(id).toString()
-      );
-      this.error_message = contractResult.errorMessage;
-      this.function_parameters = utils.toHexString(contractResult.functionParameters, true);
-      this.gas_used = Number(contractResult.gasUsed);
-    }
   }
 }
 

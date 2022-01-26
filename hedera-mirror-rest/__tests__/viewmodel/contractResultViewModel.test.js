@@ -65,7 +65,8 @@ describe('ContractResultViewModel', () => {
         contractId: null,
         createdContractIds: null,
         errorMessage: null,
-        functionResult: null,
+        functionParameters: null,
+        gasUsed: null,
       })
     ).toEqual({
       ...defaultExpected,

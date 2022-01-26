@@ -33,7 +33,7 @@
         "call_result": "0x0404",
         "contract_id": "0.0.5001",
         "created_contract_ids": ["0.0.7001"],
-        "error_message": "",
+        "error_message": null,
         "from": "0x0000000000000000000000000000000000002329",
         "function_parameters": "0x010102020303",
         "gas_limit": 1000,

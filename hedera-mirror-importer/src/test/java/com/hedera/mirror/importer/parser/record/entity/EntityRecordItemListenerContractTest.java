@@ -110,6 +110,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     @Test
     void contractCreateFailedWithResult() {
         RecordItem recordItem = recordItemBuilder.contractCreate()
+                .record(r -> r.setContractCreateResult(ContractFunctionResult.getDefaultInstance()))
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
         var record = recordItem.getRecord();
@@ -406,11 +407,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
     @Test
     void contractCallFailedWithResult() {
-        Transaction transaction = contractCallTransaction();
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = callRecord(transactionBody, ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION);
+        RecordItem recordItem = recordItemBuilder.contractCall()
+                .record(r -> r.setContractCreateResult(ContractFunctionResult.getDefaultInstance()))
+                .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
+                .build();
+        var record = recordItem.getRecord();
+        var transactionBody = recordItem.getTransactionBody();
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(recordItem);
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -484,9 +488,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertNull(dbTransaction.getEntityId()),
                 () -> assertEquals(transactionBody.getContractCreateInstance().getInitialBalance(),
-                        dbTransaction.getInitialBalance()));
-
-        assertContractCreateResult(transactionBody.getContractCreateInstance(), record);
+                        dbTransaction.getInitialBalance()),
+                () -> assertPartialContractResult());
     }
 
     private void assertFailedContractCallTransaction(TransactionBody transactionBody, TransactionRecord record) {
@@ -495,9 +498,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertThat(dbTransaction.getEntityId()).isNotNull(),
                 () -> assertEquals(EntityId.of(transactionBody.getContractCall().getContractID()),
-                        dbTransaction.getEntityId()));
-
-        assertContractCallResult(transactionBody.getContractCall(), record);
+                        dbTransaction.getEntityId()),
+                () -> assertPartialContractResult());
     }
 
     private void assertContractEntity(RecordItem recordItem) {
@@ -572,11 +574,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
                 .hasSize(1)
-                .first();
-
-        contractResult
+                .first()
                 .returns(transactionBody.getInitialBalance(), ContractResult::getAmount)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
+                .returns(EntityId.of(record.getReceipt().getContractID()), ContractResult::getContractId)
                 .returns(toBytes(transactionBody.getConstructorParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
@@ -597,9 +598,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
                 .filteredOn(c -> c.getConsensusTimestamp().equals(consensusTimestamp))
                 .hasSize(1)
-                .first();
-
-        contractResult
+                .first()
                 .returns(transactionBody.getAmount(), ContractResult::getAmount)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
                 .returns(EntityId.of(transactionBody.getContractID()), ContractResult::getContractId)
@@ -607,8 +606,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
         assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
-                result.getStateChangesList(),
-                EntityId.of(result.getContractID()));
+                result.getStateChangesList(), EntityId.of(result.getContractID()));
     }
 
     private void assertContractResult(long consensusTimestamp, ContractFunctionResult result,
@@ -621,24 +619,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .map(ContractID::getContractNum)
                 .collect(Collectors.toList());
 
-        if (result != ContractFunctionResult.getDefaultInstance()) {
-            contractResult
-                    .returns(result.getBloom().toByteArray(), ContractResult::getBloom)
-                    .returns(result.getContractCallResult().toByteArray(), ContractResult::getCallResult)
-                    .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
-                    .returns(createdContractIds, ContractResult::getCreatedContractIds)
-                    .returns(result.getErrorMessage(), ContractResult::getErrorMessage)
-                    .returns(result.toByteArray(), ContractResult::getFunctionResult)
-                    .returns(result.getGasUsed(), ContractResult::getGasUsed);
-        } else {
-            contractResult
-                    .returns(null, ContractResult::getBloom)
-                    .returns(null, ContractResult::getCallResult)
-                    .returns(List.of(), ContractResult::getCreatedContractIds)
-                    .returns(null, ContractResult::getErrorMessage)
-                    .returns(null, ContractResult::getFunctionResult)
-                    .returns(null, ContractResult::getGasUsed);
-        }
+        contractResult
+                .returns(result.getBloom().toByteArray(), ContractResult::getBloom)
+                .returns(result.getContractCallResult().toByteArray(), ContractResult::getCallResult)
+                .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
+                .returns(createdContractIds, ContractResult::getCreatedContractIds)
+                .returns(result.getErrorMessage(), ContractResult::getErrorMessage)
+                .returns(result.toByteArray(), ContractResult::getFunctionResult)
+                .returns(result.getGasUsed(), ContractResult::getGasUsed);
 
         for (int i = 0; i < logInfoList.size(); i++) {
             int index = i;
@@ -652,7 +640,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     .returns(EntityId.of(logInfo.getContractID()), ContractLog::getContractId)
                     .returns(logInfo.getData().toByteArray(), ContractLog::getData)
                     .returns(index, ContractLog::getIndex)
-                    .returns(rootContractId, ContractLog::getRootContractId)
+                    .returns(EntityId.of(result.getContractID()), ContractLog::getRootContractId)
                     .returns(Utility.getTopic(logInfo, 0), ContractLog::getTopic0)
                     .returns(Utility.getTopic(logInfo, 1), ContractLog::getTopic1)
                     .returns(Utility.getTopic(logInfo, 2), ContractLog::getTopic2)
@@ -685,6 +673,18 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .returns(valueWritten, ContractStateChange::getValueWritten);
             }
         }
+    }
+
+    private void assertPartialContractResult() {
+        assertThat(contractResultRepository.findAll())
+                .hasSize(1)
+                .first()
+                .returns(null, ContractResult::getBloom)
+                .returns(null, ContractResult::getCallResult)
+                .returns(List.of(), ContractResult::getCreatedContractIds)
+                .returns(null, ContractResult::getErrorMessage)
+                .returns(null, ContractResult::getFunctionResult)
+                .returns(null, ContractResult::getGasUsed);
     }
 
     private TransactionRecord createOrUpdateRecord(TransactionBody transactionBody) {

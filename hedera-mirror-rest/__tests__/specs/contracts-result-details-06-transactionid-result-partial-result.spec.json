@@ -40,7 +40,7 @@
     "created_contract_ids": [],
     "error_message": null,
     "from": "0x0000000000000000000000000000000000001f41",
-    "function_parameters": null,
+    "function_parameters": "0x010102020303",
     "gas_limit": 1000,
     "gas_used": null,
     "hash": "0x3531396130303866616264653464",

@@ -571,19 +571,18 @@ const getContractResultsByTimestamp = async (req, res) => {
     throw new NotFoundError('No correlating transaction');
   }
 
-  const contractResult = contractResults.length === 0 ? null : contractResults[0];
-  if (_.isNil(contractResult)) {
+  if (contractResults.length === 0) {
     throw new NotFoundError();
   }
 
-  if (_.isNil(contractResult.callResult)) {
+  if (_.isNil(contractResults[0].callResult)) {
     // set 206 partial response
     res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
     logger.debug(`getContractResultsByTimestamp returning partial content`);
   }
 
   res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
-    contractResult,
+    contractResults[0],
     recordFile,
     transaction,
     contractLogs
@@ -643,19 +642,18 @@ const getContractResultsByTransactionId = async (req, res) => {
     ContractService.getContractLogsByTimestamps(transaction.consensusTimestamp),
   ]);
 
-  const contractResult = contractResults.length === 0 ? null : contractResults[0];
-  if (_.isNil(contractResult)) {
+  if (contractResults.length === 0) {
     throw new NotFoundError();
   }
 
   res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
-    contractResult,
+    contractResults[0],
     recordFile,
     transaction,
     contractLogs
   );
 
-  if (_.isNil(contractResult.callResult)) {
+  if (_.isNil(contractResults[0].callResult)) {
     // set 206 partial response
     res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
     logger.debug(`getContractResultsByTransactionId returning partial content`);

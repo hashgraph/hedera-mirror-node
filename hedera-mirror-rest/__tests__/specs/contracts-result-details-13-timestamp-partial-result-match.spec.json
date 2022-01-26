@@ -34,6 +34,7 @@
       {
         "consensus_timestamp": 167654000123456,
         "payerAccountId": "8001",
+        "result": 33,
         "transaction_hash": "519a008fabde4d",
         "valid_start_timestamp": 167654000123400
       }
@@ -55,13 +56,13 @@
     "created_contract_ids": [],
     "error_message": null,
     "from": "0x0000000000000000000000000000000000001f41",
-    "function_parameters": null,
+    "function_parameters": "0x010102020303",
     "gas_limit": 1000,
     "gas_used": null,
     "hash": "0x3531396130303866616264653464",
     "logs": [],
-    "result": "SUCCESS",
-    "status": "0x1",
+    "result": "CONTRACT_REVERT_EXECUTED",
+    "status": "0x0",
     "timestamp": "167654.000123456",
     "to": "0x0000000000000000000000000000000000001389"
   }
