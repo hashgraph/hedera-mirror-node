@@ -740,8 +740,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         }
 
         assertContractResult(consensusTimestamp, record.getReceipt(), result, result.getLogInfoList(), contractResult,
-                result.getStateChangesList(),
-                status == ResponseCodeEnum.SUCCESS ? EntityId.of(result.getContractID()) : null);
+                result.getStateChangesList());
     }
 
     private void assertContractCallResult(ContractCallTransactionBody transactionBody, TransactionRecord record) {
@@ -763,14 +762,13 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
         assertContractResult(consensusTimestamp, record.getReceipt(), result, result.getLogInfoList(), contractResult,
-                result.getStateChangesList(), EntityId.of(result.getContractID()));
+                result.getStateChangesList());
     }
 
     private void assertContractResult(long consensusTimestamp, TransactionReceipt receipt, ContractFunctionResult result,
                                       List<ContractLoginfo> logInfoList,
                                       ObjectAssert<ContractResult> contractResult,
-                                      List<com.hederahashgraph.api.proto.java.ContractStateChange> stageChangeList,
-                                      EntityId rootContractId) {
+                                      List<com.hederahashgraph.api.proto.java.ContractStateChange> stageChangeList) {
         List<Long> createdContractIds = result.getCreatedContractIDsList()
                 .stream()
                 .map(ContractID::getContractNum)
@@ -835,7 +833,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     private void assertPartialContractCreateResult(ContractCreateTransactionBody transactionBody,
                                                    TransactionRecord record) {
         long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
-        ContractFunctionResult result = record.getContractCreateResult();
 
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
                 .hasSize(1)
@@ -1077,7 +1074,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         ContractID protoContractId = getContractId(CONTRACT_ID, evmAddress);
         var builder = domainBuilder.contract()
                 .customize(c -> c.evmAddress(evmAddress).id(contractId.getId()).num(contractId.getEntityNum()));
-        if (customizer != null ) {
+        if (customizer != null) {
             builder.customize(customizer);
         }
         Contract contract = persist ? builder.persist() : builder.get();
