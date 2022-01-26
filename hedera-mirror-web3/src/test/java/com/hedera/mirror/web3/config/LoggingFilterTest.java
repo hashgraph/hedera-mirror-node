@@ -27,21 +27,25 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.time.Duration;
+import lombok.CustomLog;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.LoggerFactory;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 
+@CustomLog
 class LoggingFilterTest {
 
-    private static final Duration WAIT = Duration.ofSeconds(30);
+    private static final Duration WAIT = Duration.ofSeconds(5);
 
     private LoggingFilter loggingFilter;
     private Logger logger;
@@ -53,36 +57,65 @@ class LoggingFilterTest {
         appender.start();
         logger = (Logger) LoggerFactory.getLogger(LoggingFilter.class);
         logger.addAppender(appender);
+        logger.setLevel(Level.DEBUG);
         loggingFilter = new LoggingFilter();
     }
 
     @AfterEach
     void cleanup() {
-        logger.detachAppender(appender);
+        logger.detachAndStopAllAppenders();
     }
 
     @CsvSource({
-            "/, 200, INFO, 200",
-            "/actuator/, 200, DEBUG, 200",
-            "/, 500, WARN, error",
+            "/, 200, INFO",
+            "/actuator/, 200, DEBUG"
     })
     @ParameterizedTest
-    void filter(String path, int code, String level, String message) {
+    void filterOnSuccess(String path, int code, String level) {
         MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get(path).build());
-        Mono<Void> onComplete = Mono.defer(() -> {
-            exchange.getResponse().setRawStatusCode(code);
-            return exchange.getResponse().setComplete();
-        });
-        Mono<Void> downstream = code == 200 ? onComplete : Mono.error(new InvalidParametersException(message));
-        loggingFilter.filter(exchange, serverWebExchange -> downstream)
-                .onErrorResume((t) -> onComplete)
-                .block(WAIT);
+        exchange.getResponse().setRawStatusCode(code);
 
+        loggingFilter.filter(exchange, serverWebExchange -> Mono.defer(() -> exchange.getResponse().setComplete()))
+                .as(StepVerifier::create)
+                .expectComplete()
+                .verify(WAIT);
+
+        assertLog(Level.toLevel(level), "\\w+ GET " + path + " in \\d+ ms: " + code);
+    }
+
+    @Test
+    void filterOnCancel() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/").build());
+
+        loggingFilter.filter(exchange, serverWebExchange -> exchange.getResponse().setComplete())
+                .as(StepVerifier::create)
+                .thenCancel()
+                .verify(WAIT);
+
+        assertLog(Level.WARN, "\\w+ GET / in \\d+ ms: cancelled");
+    }
+
+    @Test
+    void filterOnError() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/").build());
+        exchange.getResponse().setRawStatusCode(500);
+
+        var exception = new InvalidParametersException("error");
+        loggingFilter.filter(exchange, serverWebExchange -> Mono.error(exception))
+                .onErrorResume((t) -> exchange.getResponse().setComplete())
+                .as(StepVerifier::create)
+                .expectComplete()
+                .verify(WAIT);
+
+        assertLog(Level.WARN, "\\w+ GET / in \\d+ ms: " + exception.getMessage());
+    }
+
+    private void assertLog(Level level, String pattern) {
         assertThat(appender.list)
                 .hasSize(1)
                 .first()
-                .returns(Level.toLevel(level), ILoggingEvent::getLevel)
+                .returns(level, ILoggingEvent::getLevel)
                 .extracting(ILoggingEvent::getFormattedMessage, InstanceOfAssertFactories.STRING)
-                .containsPattern("\\w+ GET " + path + " in \\d+ ms: " + message);
+                .containsPattern(pattern);
     }
 }

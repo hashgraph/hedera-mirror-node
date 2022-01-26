@@ -89,7 +89,7 @@
     "call_result": "0x0606",
     "contract_id": "0.0.5001",
     "created_contract_ids": ["0.0.7001"],
-    "error_message": "",
+    "error_message": null,
     "from": "0x0000000000000000000000000000000000001f41",
     "function_parameters": "0x0707",
     "gas_limit": 987654,
@@ -122,7 +122,7 @@
       }
     ],
     "result": "SUCCESS",
-    "status": "0x01",
+    "status": "0x1",
     "timestamp": "167654.000123456",
     "to": "0x0000000000000000000000000000000000001389"
   }

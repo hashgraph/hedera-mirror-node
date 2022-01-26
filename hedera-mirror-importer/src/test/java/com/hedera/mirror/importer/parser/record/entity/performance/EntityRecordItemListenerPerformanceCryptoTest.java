@@ -48,7 +48,6 @@ import com.hedera.mirror.importer.util.Utility;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
-    private static final int CONNECTED_ENTITY_COUNT = 4;
 
     private List<RecordItem> insertRecordItemList;
     private List<RecordItem> updateRecordItemList;
@@ -75,14 +74,14 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
     }
 
     @Test
-    @Timeout(2)
+    @Timeout(4)
     void insertHighCreateEntityCount() {
         parseRecordItemsAndCommit(insertRecordItemList);
         assertThat(entityRepository.findAll()).hasSize(insertRecordItemList.size());
     }
 
     @Test
-    @Timeout(5)
+    @Timeout(10)
     void insertHighCreateAndUpdateEntityCount() {
         Instant startTime = Instant.now();
         parseRecordItemsAndCommit(insertRecordItemList);

@@ -32,7 +32,7 @@ importer:
   priorityClassName: high
   prometheusRules:
     enabled: true
-  replicas: 2
+  replicas: 1
   updateStrategy:
     rollingUpdate:
       maxSurge: 0

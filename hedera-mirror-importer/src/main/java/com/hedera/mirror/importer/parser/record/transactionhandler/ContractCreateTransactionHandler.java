@@ -60,9 +60,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
         var transactionRecord = recordItem.getRecord();
         transaction.setInitialBalance(transactionBody.getInitialBalance());
 
-        if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCreateResult()) {
-            var functionResult = transactionRecord.getContractCreateResult();
-
+        if (entityProperties.getPersist().isContracts()) {
             ContractResult contractResult = new ContractResult();
             contractResult.setAmount(transactionBody.getInitialBalance());
             contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
@@ -71,7 +69,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
             contractResult.setGasLimit(transactionBody.getGas());
             contractResult.setPayerAccountId(transaction.getPayerAccountId());
 
-            onContractResult(recordItem, contractResult, functionResult);
+            onContractResult(recordItem, contractResult, transactionRecord.getContractCreateResult());
         }
     }
 

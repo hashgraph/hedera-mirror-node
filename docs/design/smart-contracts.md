@@ -113,6 +113,7 @@ create table if not exists contract_log
   contract_id         bigint not null,
   data                bytea  not null,
   index               int    not null,
+  payer_account_id    bigint not null,
   root_contract_id    bigint null,
   topic0              bytea  null,
   topic1              bytea  null,
@@ -135,6 +136,7 @@ create table if not exists contract_access
   consensus_timestamp bigint      not null,
   contract_id         bigint      not null,
   initial_contract_id bigint      not null,
+  payer_account_id    bigint      not null,
   storage_keys        bytea array not null,
   primary key (consensus_timestamp, initial_contract_id, contract_id)
 );
@@ -149,6 +151,7 @@ create table if not exists contract_state_change
 (
   consensus_timestamp bigint not null,
   contract_id         bigint not null,
+  payer_account_id    bigint not null,
   slot                bytea  not null,
   value_read          bytea  not null,
   value_written       bytea  null,

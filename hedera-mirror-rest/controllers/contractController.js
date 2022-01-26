@@ -45,6 +45,7 @@ const {
   ContractResultViewModel,
   ContractResultDetailsViewModel,
 } = require('../viewmodel');
+const {httpStatusCodes} = require('../constants');
 
 const contractSelectFields = [
   Contract.AUTO_RENEW_PERIOD,
@@ -567,8 +568,18 @@ const getContractResultsByTimestamp = async (req, res) => {
     TransactionService.getTransactionDetailsFromTimestamp(timestamp),
     ContractService.getContractLogsByTimestamps(timestamp),
   ]);
+  if (_.isNil(transaction)) {
+    throw new NotFoundError('No correlating transaction');
+  }
+
   if (contractResults.length === 0) {
     throw new NotFoundError();
+  }
+
+  if (_.isNil(contractResults[0].callResult)) {
+    // set 206 partial response
+    res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
+    logger.debug(`getContractResultsByTimestamp returning partial content`);
   }
 
   res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
@@ -631,6 +642,7 @@ const getContractResultsByTransactionId = async (req, res) => {
     RecordFileService.getRecordFileBlockDetailsFromTimestamp(transaction.consensusTimestamp),
     ContractService.getContractLogsByTimestamps(transaction.consensusTimestamp),
   ]);
+
   if (contractResults.length === 0) {
     throw new NotFoundError();
   }
@@ -641,6 +653,12 @@ const getContractResultsByTransactionId = async (req, res) => {
     transaction,
     contractLogs
   );
+
+  if (_.isNil(contractResults[0].callResult)) {
+    // set 206 partial response
+    res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
+    logger.debug(`getContractResultsByTransactionId returning partial content`);
+  }
 };
 
 /**

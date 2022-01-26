@@ -56,6 +56,7 @@ import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -201,6 +202,17 @@ public class DomainBuilder {
                 .gasLimit(200L)
                 .gasUsed(100L)
                 .payerAccountId(entityId(ACCOUNT));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<ContractStateChange, ContractStateChange.ContractStateChangeBuilder> contractStateChange() {
+        ContractStateChange.ContractStateChangeBuilder builder = ContractStateChange.builder()
+                .consensusTimestamp(timestamp())
+                .contractId(entityId(CONTRACT))
+                .payerAccountId(entityId(ACCOUNT))
+                .slot(bytes(128))
+                .valueRead(bytes(64))
+                .valueWritten(bytes(64));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -363,16 +375,19 @@ public class DomainBuilder {
         private final B builder;
         private final Supplier<T> supplier;
 
+        @Override
         public DomainWrapper<T, B> customize(Consumer<B> customizer) {
             customizer.accept(builder);
             return this;
         }
 
+        @Override
         public T get() {
             return supplier.get();
         }
 
         // The DomainBuilder can be used without an active ApplicationContext. If so, this method shouldn't be used.
+        @Override
         public T persist() {
             T entity = get();
 

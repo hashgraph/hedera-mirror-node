@@ -145,6 +145,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ContractResultResponse'
+        206:
+          description: Partial Content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResultResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
         404:
@@ -162,6 +168,12 @@ paths:
       responses:
         200:
           description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResultResponse'
+        206:
+          description: Partial Content
           content:
             application/json:
               schema:
@@ -1087,6 +1099,7 @@ components:
           description: The network's released supply of hbars in tinybars
           items:
             $ref: '#/components/schemas/EntityId'
+          nullable: true
           type: array
         error_message:
           description: The message when an error occurs during smart contract execution
@@ -1098,6 +1111,7 @@ components:
         function_parameters:
           description: The hex encoded parameters passed to the function
           example: "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b"
+          nullable: true
           type: string
         gas_limit:
           description: The maximum units of gas allowed for contract execution
@@ -1108,14 +1122,15 @@ components:
           description: The units of gas used to execute contract
           example: 1000
           format: int64
+          nullable: true
           type: integer
         result:
           description: The result of the transaction
           example: SUCCESS
           type: string
         status:
-          description: The status of the transaction, 0x01 for a SUCCESS transaction and 0x00 for all else
-          example: 0x01
+          description: The status of the transaction, 0x1 for a SUCCESS transaction and 0x0 for all else
+          example: 0x1
           type: string
         timestamp:
           $ref: '#/components/schemas/Timestamp'

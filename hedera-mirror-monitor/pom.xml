@@ -16,6 +16,7 @@
 
     <properties>
         <commons-math3.version>3.6.1</commons-math3.version>
+        <hedera-sdk.version>2.6.0</hedera-sdk.version>
         <meanbean.version>3.0.0-M9</meanbean.version>
         <springdoc.version>1.6.4</springdoc.version>
     </properties>
@@ -156,21 +157,6 @@
     </dependencies>
     <build>
         <plugins>
-            <plugin>
-                <groupId>com.googlecode.maven-download-plugin</groupId>
-                <artifactId>download-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>license-maven-plugin</artifactId>
-                <configuration>
-                    <excludedScopes>test</excludedScopes>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>com.google.cloud.tools</groupId>
                 <artifactId>jib-maven-plugin</artifactId>

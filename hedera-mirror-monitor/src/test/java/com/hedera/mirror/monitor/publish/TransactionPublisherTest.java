@@ -20,13 +20,13 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
+import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import io.grpc.Server;
-import io.grpc.Status;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
@@ -82,6 +82,7 @@ class TransactionPublisherTest {
         publishScenarioProperties.setType(TransactionType.CRYPTO_TRANSFER);
         monitorProperties = new MonitorProperties();
         monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
+        monitorProperties.getNodeValidation().setEnabled(false);
         OperatorProperties operatorProperties = monitorProperties.getOperator();
         operatorProperties.setAccountId("0.0.100");
         operatorProperties.setPrivateKey(PrivateKey.generate().toString());
@@ -109,8 +110,7 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publish() {
         PublishRequest request = request().build();
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
         transactionPublisher.publish(request)
                 .as(StepVerifier::create)
@@ -134,8 +134,7 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publishWithLogResponse() {
         publishScenarioProperties.setLogResponse(true);
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
@@ -147,8 +146,8 @@ class TransactionPublisherTest {
     @Test
     @Timeout(3)
     void publishWithReceipt() {
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
         transactionPublisher.publish(request().receipt(true).build())
                 .as(StepVerifier::create)
@@ -164,8 +163,8 @@ class TransactionPublisherTest {
     @Test
     @Timeout(3)
     void publishWithRecord() {
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)), Mono.just(record(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
+        cryptoServiceStub.addQueries(Mono.just(record(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
         transactionPublisher.publish(request().record(true).build())
                 .as(StepVerifier::create)
@@ -182,8 +181,7 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publishPreCheckError() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE;
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(errorResponseCode)));
+        cryptoServiceStub.addTransactions(Mono.just(response(errorResponseCode)));
 
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
@@ -196,9 +194,7 @@ class TransactionPublisherTest {
     @Test
     @Timeout(3)
     void publishRetrySuccessful() {
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)),
-                Mono.just(response(ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED)),
+        cryptoServiceStub.addTransactions(Mono.just(response(ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED)),
                 Mono.just(response(ResponseCodeEnum.OK)));
 
         transactionPublisher.publish(request().build())
@@ -210,35 +206,58 @@ class TransactionPublisherTest {
 
     @Test
     @Timeout(3)
-    void publishWithRevalidate() {
-        //Disable validation and do it manually for this test
-        monitorProperties.getNodeValidation().setFrequency(Duration.ofSeconds(60));
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
-
+    void validationRecovers() {
+        // Initialize publisher internals with first transaction
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
 
-        //Set node to unhealthy and confirm message can't be published
-        monitorProperties.setNodes(Set.of(
-                new NodeProperties("0.0.3", "invalid:test"))); // Illegal DNS to avoid SDK retry
-
-        assertThrows(IllegalArgumentException.class, transactionPublisher::validateNodes);
+        // Validate node as down manually
+        NodeProperties nodeProperties = monitorProperties.getNodes().iterator().next();
+        cryptoServiceStub.addQueries(Mono.just(receipt(ACCOUNT_DELETED)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        assertThat(transactionPublisher.validateNode(nodeProperties)).isFalse();
 
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
-                .expectError(PublishException.class)
+                .expectErrorSatisfies(t -> assertThat(t)
+                        .isInstanceOf(PublishException.class)
+                        .hasMessageContaining("No valid nodes available")
+                        .hasCauseInstanceOf(IllegalArgumentException.class))
                 .verify(Duration.ofSeconds(1L));
 
-        //Set node back to healthy, confirm publishing resumes.
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
+        // Node recovers
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        assertThat(transactionPublisher.validateNode(nodeProperties)).isTrue();
+
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+    }
+
+    @Test
+    @Timeout(3)
+    void validationSucceeds() {
+        monitorProperties.getNodeValidation().setEnabled(true);
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
-        transactionPublisher.validateNodes();
+        transactionPublisher.publish(request().build())
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
 
+        // Wait for validation thread to succeed
+        Uninterruptibles.sleepUninterruptibly(Duration.ofMillis(500L));
+
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
@@ -250,9 +269,7 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publishRetryError() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)),
-                Mono.just(response(errorResponseCode)),
+        cryptoServiceStub.addTransactions(Mono.just(response(errorResponseCode)),
                 Mono.just(response(errorResponseCode)));
 
         transactionPublisher.publish(request().build())
@@ -269,9 +286,7 @@ class TransactionPublisherTest {
     @Timeout(3)
     void publishTimeout() {
         publishScenarioProperties.setTimeout(Duration.ofMillis(100L));
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)),
-                Mono.delay(Duration.ofMillis(500L)).thenReturn(response(OK)));
+        cryptoServiceStub.addTransactions(Mono.delay(Duration.ofMillis(500L)).thenReturn(response(OK)));
 
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
@@ -284,47 +299,25 @@ class TransactionPublisherTest {
 
     @Test
     @Timeout(3)
-    void noValidNodes() {
-        cryptoServiceStub.addTransactions(Mono.error(Status.INTERNAL.asRuntimeException()));
-        transactionPublisher.publish(request().build())
-                .as(StepVerifier::create)
-                .expectError(IllegalArgumentException.class)
-                .verify(Duration.ofSeconds(1L));
-    }
+    void someValidNodes() {
+        NodeProperties node1 = new NodeProperties("0.0.3", "in-process:test");
+        NodeProperties node2 = new NodeProperties("0.0.4", "invalid:test");
+        monitorProperties.setNodes(Set.of(node1, node2));
 
-    @Test
-    @Timeout(3)
-    void skipNodeValidation() {
-        monitorProperties.getNodeValidation().setEnabled(false);
+        // Initialize publisher internals with first transaction
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-
-        transactionPublisher.publish(request().build())
+        PublishRequest publishRequest = request().build();
+        publishRequest.getTransaction().setNodeAccountIds(node1.getAccountIds());
+        transactionPublisher.publish(publishRequest)
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
-    }
 
-    @Test
-    @Timeout(3)
-    void nodeValidationFailsReceipt() {
-        cryptoServiceStub.addQueries(Mono.just(receipt(ResponseCodeEnum.ACCOUNT_DELETED)));
+        // Validate one of the nodes as down manually
+        assertThat(transactionPublisher.validateNode(node2)).isFalse();
+
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-
-        transactionPublisher.publish(request().build())
-                .as(StepVerifier::create)
-                .expectError(IllegalArgumentException.class)
-                .verify(Duration.ofSeconds(1L));
-    }
-
-    @Test
-    @Timeout(3)
-    void someValidNodes() {
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test"),
-                new NodeProperties("0.0.4", "invalid:1"))); // Illegal DNS to avoid SDK retry
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
-
         transactionPublisher.publish(request().build())
                 .as(StepVerifier::create)
                 .expectNextCount(1L)

@@ -608,7 +608,7 @@ const addContractResult = async (contractResultInput) => {
     function_parameters: Buffer.from([1, 1, 2, 2, 3, 3]),
     function_result: null,
     gas_limit: 1000,
-    gas_used: 10,
+    gas_used: null,
     payer_account_id: 101,
     ...contractResultInput,
   };

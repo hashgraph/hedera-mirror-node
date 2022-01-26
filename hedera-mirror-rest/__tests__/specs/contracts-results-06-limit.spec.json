@@ -4,14 +4,20 @@
     "contractresults": [
       {
         "amount": 20,
+        "bloom": [1, 1],
+        "call_result": [2, 2],
         "consensus_timestamp": "187654000123456",
-        "contract_id": 5001
+        "contract_id": 5001,
+        "gas_used": 101
       },
       {
         "amount": 30,
+        "bloom": [3, 3],
+        "call_result": [4, 4],
         "consensus_timestamp": "987654000123456",
         "contract_id": 5001,
-        "created_contract_ids": [7001]
+        "created_contract_ids": [7001],
+        "gas_used": 102
       }
     ]
   },
@@ -21,15 +27,15 @@
     "results": [
       {
         "amount": 30,
-        "bloom": null,
-        "call_result": null,
+        "bloom": "0x0303",
+        "call_result": "0x0404",
         "contract_id": "0.0.5001",
         "created_contract_ids": ["0.0.7001"],
-        "error_message": "",
+        "error_message": null,
         "from": "0x0000000000000000000000000000000000000065",
         "function_parameters": "0x010102020303",
         "gas_limit": 1000,
-        "gas_used": 10,
+        "gas_used": 102,
         "timestamp": "987654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
       }

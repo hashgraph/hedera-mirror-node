@@ -15,7 +15,7 @@
     </parent>
 
     <properties>
-        <vertx.version>4.2.3</vertx.version>
+        <vertx.version>4.2.4</vertx.version>
     </properties>
 
     <dependencies>
@@ -219,6 +219,13 @@
             <plugin>
                 <groupId>com.google.cloud.tools</groupId>
                 <artifactId>jib-maven-plugin</artifactId>
+                <configuration>
+                    <extraDirectories>
+                        <paths>
+                            <path>${docker.resources}</path>
+                        </paths>
+                    </extraDirectories>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>

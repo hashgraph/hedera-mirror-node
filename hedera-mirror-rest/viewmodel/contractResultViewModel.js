@@ -35,20 +35,18 @@ class ContractResultViewModel {
    */
   constructor(contractResult) {
     const contractId = EntityId.parse(contractResult.contractId, true);
-    Object.assign(this, {
-      amount: contractResult.amount === null ? null : Number(contractResult.amount),
-      bloom: utils.toHexString(contractResult.bloom, true),
-      call_result: utils.toHexString(contractResult.callResult, true),
-      contract_id: contractId.toString(),
-      created_contract_ids: _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString()),
-      error_message: contractResult.errorMessage,
-      from: EntityId.parse(contractResult.payerAccountId).toEvmAddress(),
-      function_parameters: utils.toHexString(contractResult.functionParameters, true),
-      gas_limit: Number(contractResult.gasLimit),
-      gas_used: Number(contractResult.gasUsed),
-      timestamp: utils.nsToSecNs(contractResult.consensusTimestamp),
-      to: contractId.toEvmAddress(),
-    });
+    this.amount = contractResult.amount === null ? null : Number(contractResult.amount);
+    this.bloom = utils.toHexString(contractResult.bloom, true);
+    this.call_result = utils.toHexString(contractResult.callResult, true);
+    this.contract_id = contractId.toString();
+    this.created_contract_ids = _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString());
+    this.error_message = _.isEmpty(contractResult.errorMessage) ? null : contractResult.errorMessage;
+    this.from = EntityId.parse(contractResult.payerAccountId).toEvmAddress();
+    this.function_parameters = utils.toHexString(contractResult.functionParameters, true);
+    this.gas_limit = Number(contractResult.gasLimit);
+    this.gas_used = _.isNil(contractResult.gasUsed) ? null : Number(contractResult.gasUsed);
+    this.timestamp = utils.nsToSecNs(contractResult.consensusTimestamp);
+    this.to = contractId.toEvmAddress();
   }
 }
 
