@@ -69,18 +69,16 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
             doUpdateEntity(contract, recordItem);
         }
 
-        if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCreateResult()) {
-            var functionResult = transactionRecord.getContractCreateResult();
-
+        if (entityProperties.getPersist().isContracts()) {
             ContractResult contractResult = new ContractResult();
             contractResult.setAmount(transactionBody.getInitialBalance());
             contractResult.setConsensusTimestamp(consensusTimestamp);
-            contractResult.setContractId(EntityId.of(transactionRecord.getReceipt().getContractID()));
+            contractResult.setContractId(entityId);
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
             contractResult.setPayerAccountId(transaction.getPayerAccountId());
 
-            onContractResult(recordItem, contractResult, functionResult);
+            onContractResult(recordItem, contractResult, transactionRecord.getContractCreateResult());
         }
     }
 

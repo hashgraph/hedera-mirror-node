@@ -34,13 +34,12 @@ class TransactionService extends BaseService {
   }
 
   static transactionDetailsFromTimestampQuery = `select
-      ${Transaction.PAYER_ACCOUNT_ID}, ${Transaction.RESULT}, ${Transaction.TRANSACTION_HASH}
+    ${Transaction.PAYER_ACCOUNT_ID}, ${Transaction.RESULT}, ${Transaction.TRANSACTION_HASH}
     from ${Transaction.tableName}
     where ${Transaction.CONSENSUS_TIMESTAMP} = $1`;
 
   static transactionDetailsFromTransactionIdQuery = `select
-      ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.PAYER_ACCOUNT_ID}, ${Transaction.RESULT},
-      ${Transaction.TRANSACTION_HASH}
+    ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.PAYER_ACCOUNT_ID}, ${Transaction.RESULT}, ${Transaction.TRANSACTION_HASH}
     from ${Transaction.tableName}
     where ${Transaction.PAYER_ACCOUNT_ID} = $1
       and ${Transaction.VALID_START_NS} = $2`;

@@ -1,43 +1,15 @@
 {
-  "description": "Contract results api call using contract id and timestamp with no contract logs",
+  "description": "Contract results api call using contract id and timestamp with partial contract result match",
   "setup": {
     "contractresults": [
       {
         "amount": 30,
-        "bloom": [5, 5],
-        "call_result": [6, 6],
         "consensus_timestamp": "167654000123456",
         "contract_id": 5001,
-        "created_contract_ids": [7001],
-        "error_message": "",
-        "function_parameters": [7, 7],
-        "function_result": [8, 8],
-        "gas_limit": 987654,
-        "gas_used": 123,
         "payer_account_id": 8001
       }
     ],
-    "contractlogs": [
-      {
-        "consensus_timestamp": "167654000123457",
-        "contract_id": 5001,
-        "index": 0,
-        "root_contract_id": 5001
-      },
-      {
-        "consensus_timestamp": "167654000123458",
-        "contract_id": 5002,
-        "index": 1,
-        "root_contract_id": 5001,
-        "topic2": null,
-        "topic3": null
-      },
-      {
-        "consensus_timestamp": "167654000123459",
-        "contract_id": 5001,
-        "index": 0
-      }
-    ],
+    "contractlogs": [],
     "recordFiles": [
       {
         "index": 16,
@@ -62,30 +34,35 @@
       {
         "consensus_timestamp": 167654000123456,
         "payerAccountId": "8001",
+        "result": 33,
         "transaction_hash": "519a008fabde4d",
         "valid_start_timestamp": 167654000123400
       }
     ]
   },
-  "urls": ["/api/v1/contracts/0.0.5001/results/167654.000123456"],
-  "responseStatus": 200,
+  "urls": [
+    "/api/v1/contracts/0.0.5001/results/167654.000123456",
+    "/api/v1/contracts/0.5001/results/167654.000123456",
+    "/api/v1/contracts/5001/results/167654.000123456"
+  ],
+  "responseStatus": 206,
   "responseJson": {
     "amount": 30,
-    "bloom": "0x0505",
+    "bloom": null,
     "block_hash": "0x6ceecd8bb224da491",
     "block_number": 17,
-    "call_result": "0x0606",
+    "call_result": null,
     "contract_id": "0.0.5001",
-    "created_contract_ids": ["0.0.7001"],
+    "created_contract_ids": [],
     "error_message": null,
     "from": "0x0000000000000000000000000000000000001f41",
-    "function_parameters": "0x0707",
-    "gas_limit": 987654,
-    "gas_used": 123,
+    "function_parameters": "0x010102020303",
+    "gas_limit": 1000,
+    "gas_used": null,
     "hash": "0x3531396130303866616264653464",
     "logs": [],
-    "result": "SUCCESS",
-    "status": "0x1",
+    "result": "CONTRACT_REVERT_EXECUTED",
+    "status": "0x0",
     "timestamp": "167654.000123456",
     "to": "0x0000000000000000000000000000000000001389"
   }
