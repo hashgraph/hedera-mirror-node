@@ -25,7 +25,7 @@ const constants = require('../constants');
 const utils = require('../utils');
 
 /**
- * Contract results state change view model
+ * Contract result state change view model
  */
 class ContractResultStateChangeViewModel {
   /**

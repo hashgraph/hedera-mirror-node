@@ -63,7 +63,7 @@ class ContractService extends BaseService {
     ${ContractStateChange.SLOT},
     ${ContractStateChange.VALUE_READ},
     ${ContractStateChange.VALUE_WRITTEN}
-    from ${ContractResult.tableName}`;
+    from ${ContractStateChange.tableName}`;
 
   static contractLogsQuery = `select
     ${ContractLog.BLOOM},
@@ -205,7 +205,7 @@ class ContractService extends BaseService {
 
     const whereClause = `where ${ContractStateChange.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
     const orderClause = `order by ${ContractStateChange.CONSENSUS_TIMESTAMP}, ${ContractStateChange.CONTRACT_ID}`;
-    const query = [ContractService.contractLogsQuery, whereClause, orderClause].join('\n');
+    const query = [ContractService.contractStateChangesQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractStateChangesByTimestamps');
     return rows.map((row) => new ContractStateChange(row));
   }

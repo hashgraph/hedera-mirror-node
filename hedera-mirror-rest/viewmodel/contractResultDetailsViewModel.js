@@ -20,10 +20,11 @@
 
 'use strict';
 
+const ContractLogResultsViewModel = require('./contractResultLogViewModel');
+const ContractResultStateChangeViewModel = require('./contractResultStateChangeViewModel');
 const ContractResultViewModel = require('./contractResultViewModel');
 const {TransactionResult} = require('../model');
 const utils = require('../utils');
-const {ContractLogResultsViewModel, ContractResultViewModel, ContractResultStateChangeViewModel} = require('.');
 
 /**
  * Contract result details view model
