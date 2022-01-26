@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call using contract id and timestamp",
+  "description": "Contract results api call using contract id and timestamp where contract state was read but not written or a zero value was written",
   "setup": {
     "contractresults": [
       {
