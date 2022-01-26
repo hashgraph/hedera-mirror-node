@@ -20,7 +20,9 @@
 
 \copy contract_log (bloom, consensus_timestamp, contract_id, data, index, topic0, topic1, topic2, topic3, root_contract_id) from contract_log.csv csv;
 
-\copy contract_result (amount, bloom, call_result, consensus_timestamp, contract_id, created_contract_ids, error_message, function_parameters, function_result, gas_limit, gas_used) from contract_result.csv csv;
+\copy contract_result (amount, bloom, call_result, consensus_timestamp, contract_id, created_contract_ids, error_message, function_parameters, function_result, gas_limit, gas_used, payer_account_id) from contract_result.csv csv;
+
+\copy contract_state_change (consensus_timestamp, contract_id, payer_account_id, slot, value_read, value_written) from contract_state_change.csv csv;
 
 \copy crypto_transfer (entity_id, consensus_timestamp, amount) from crypto_transfer.csv csv;
 

@@ -22,6 +22,8 @@
 
 \copy contract_result to contract_result.csv delimiter ',' csv;
 
+\copy contract_state_change to contract_state_change.csv delimiter ',' csv;
+
 \copy crypto_transfer to crypto_transfer.csv delimiter ',' csv;
 
 \copy custom_fee to custom_fee.csv delimiter ',' csv;

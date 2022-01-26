@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -36,6 +37,7 @@ import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.StorageChange;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
@@ -45,6 +47,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
+import lombok.SneakyThrows;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,12 +57,14 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
+import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
@@ -69,6 +74,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
     @Resource
     private ContractLogRepository contractLogRepository;
+    @Resource
+    private ContractStateChangeRepository contractStateChangeRepository;
 
     @Resource
     private RecordItemBuilder recordItemBuilder;
@@ -567,7 +574,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(toBytes(transactionBody.getConstructorParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
-        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult);
+        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
+                result.getStateChangesList());
     }
 
     private void assertContractCallResult(ContractCallTransactionBody transactionBody, TransactionRecord record) {
@@ -583,12 +591,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(toBytes(transactionBody.getFunctionParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
-        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult);
+        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
+                result.getStateChangesList());
     }
 
     private void assertContractResult(long consensusTimestamp, ContractFunctionResult result,
                                       List<ContractLoginfo> logInfoList,
-                                      ObjectAssert<ContractResult> contractResult) {
+                                      ObjectAssert<ContractResult> contractResult,
+                                      List<com.hederahashgraph.api.proto.java.ContractStateChange> stageChangeList) {
         List<Long> createdContractIds = result.getCreatedContractIDsList()
                 .stream()
                 .map(ContractID::getContractNum)
@@ -621,6 +631,33 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     .returns(Utility.getTopic(logInfo, 2), ContractLog::getTopic2)
                     .returns(Utility.getTopic(logInfo, 3), ContractLog::getTopic3);
         }
+
+        for (int i = 0; i < stageChangeList.size(); i++) {
+            int index = i;
+            com.hederahashgraph.api.proto.java.ContractStateChange contractStateChangeInfo = stageChangeList.get(i);
+
+            EntityId contractId = EntityId.of(contractStateChangeInfo.getContractID());
+            for (int j = 0; j < contractStateChangeInfo.getStorageChangesCount(); ++j) {
+                StorageChange storageChange = contractStateChangeInfo.getStorageChanges(j);
+                byte[] slot = DomainUtils.toBytes(storageChange.getSlot());
+                byte[] valueWritten = storageChange.hasValueWritten() ? storageChange.getValueWritten().getValue()
+                        .toByteArray() : null;
+
+                ContractStateChange.Id id = new ContractStateChange.Id();
+                id.setConsensusTimestamp(consensusTimestamp);
+                id.setContractId(contractId);
+                id.setSlot(slot);
+
+                assertThat(contractStateChangeRepository.findById(id))
+                        .isPresent()
+                        .get()
+                        .returns(consensusTimestamp, ContractStateChange::getConsensusTimestamp)
+                        .returns(contractId, ContractStateChange::getContractId)
+                        .returns(slot, ContractStateChange::getSlot)
+                        .returns(storageChange.getValueRead().toByteArray(), ContractStateChange::getValueRead)
+                        .returns(valueWritten, ContractStateChange::getValueWritten);
+            }
+        }
     }
 
     private TransactionRecord createOrUpdateRecord(TransactionBody transactionBody) {
@@ -647,6 +684,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         }, transactionBody, status.getNumber());
     }
 
+    @SneakyThrows
     private void buildContractFunctionResult(ContractFunctionResult.Builder builder) {
         builder.setBloom(ByteString.copyFromUtf8("bloom"));
         builder.setContractCallResult(ByteString.copyFromUtf8("call result"));
@@ -671,6 +709,31 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .addTopic(ByteString.copyFromUtf8("Topic1"))
                 .addTopic(ByteString.copyFromUtf8("Topic2"))
                 .addTopic(ByteString.copyFromUtf8("Topic3")).build());
+        // 3 state changes, no value written, valid value written and zero value written
+        builder.addStateChanges(com.hederahashgraph.api.proto.java.ContractStateChange.newBuilder()
+                .setContractID(CONTRACT_ID)
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x000000000000000000"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .build())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x000000000000000001"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .setValueWritten(BytesValue.of(ByteString
+                                .copyFromUtf8("0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5")))
+                        .build())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x00000000000000002"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .setValueWritten(BytesValue.of(ByteString.copyFromUtf8("0")))
+                        .build())
+                .build());
     }
 
     private Transaction contractUpdateAllTransaction(boolean setMemoWrapperOrMemo) {

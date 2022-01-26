@@ -47,6 +47,7 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -78,6 +79,7 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
+import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -108,6 +110,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final ContractRepository contractRepository;
     private final ContractLogRepository contractLogRepository;
     private final ContractResultRepository contractResultRepository;
+    private final ContractStateChangeRepository contractStateChangeRepository;
     private final JdbcOperations jdbcOperations;
     private final LiveHashRepository liveHashRepository;
     private final NftRepository nftRepository;
@@ -252,6 +255,19 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(contractResultRepository.findAll()).containsExactlyInAnyOrder(contractResult);
+    }
+
+    @Test
+    void onContractStateChange() {
+        // given
+        ContractStateChange contractStateChange = domainBuilder.contractStateChange().get();
+
+        // when
+        sqlEntityListener.onContractStateChange(contractStateChange);
+        completeFileAndCommit();
+
+        // then
+        assertThat(contractStateChangeRepository.findAll()).containsExactlyInAnyOrder(contractStateChange);
     }
 
     @Test

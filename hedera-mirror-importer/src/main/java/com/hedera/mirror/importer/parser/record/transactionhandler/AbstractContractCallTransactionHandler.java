@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.hederahashgraph.api.proto.java.StorageChange;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ import lombok.RequiredArgsConstructor;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -71,6 +73,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
         contractResult.setGasUsed(functionResult.getGasUsed());
         entityListener.onContractResult(contractResult);
 
+        // contract call logs
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
             ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
 
@@ -88,6 +91,33 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             contractLog.setTopic3(Utility.getTopic(contractLoginfo, 3));
 
             entityListener.onContractLog(contractLog);
+        }
+
+        // contract call state changes
+        for (int stateIndex = 0; stateIndex < functionResult.getStateChangesCount(); ++stateIndex) {
+            var contractStateChangeInfo = functionResult.getStateChanges(stateIndex);
+
+            var contractId = EntityId.of(contractStateChangeInfo.getContractID());
+            for (int storageIndex = 0; storageIndex < contractStateChangeInfo
+                    .getStorageChangesCount(); ++storageIndex) {
+                StorageChange storageChange = contractStateChangeInfo.getStorageChanges(storageIndex);
+
+                ContractStateChange contractStateChange = new ContractStateChange();
+                contractStateChange.setConsensusTimestamp(consensusTimestamp);
+                contractStateChange.setContractId(contractId);
+                contractStateChange.setPayerAccountId(contractResult.getPayerAccountId());
+                contractStateChange.setSlot(DomainUtils.toBytes(storageChange.getSlot()));
+                contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
+
+                // If a value of zero is written the valueWritten will be present but the inner value will be absent.
+                // If a value was read and not written this value will not be present.
+                if (storageChange.hasValueWritten()) {
+                    contractStateChange
+                            .setValueWritten(DomainUtils.toBytes(storageChange.getValueWritten().getValue()));
+                }
+
+                entityListener.onContractStateChange(contractStateChange);
+            }
         }
     }
 
