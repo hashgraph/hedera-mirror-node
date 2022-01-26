@@ -61,6 +61,7 @@ public class EntityIdServiceImpl implements EntityIdService {
      * @return The domain entityId object of the protobuf contract id
      */
     @Override
+    @SuppressWarnings("deprecation")
     public EntityId lookup(ContractID contractId) {
         if (contractId.equals(ContractID.getDefaultInstance())) {
             return EntityId.EMPTY;

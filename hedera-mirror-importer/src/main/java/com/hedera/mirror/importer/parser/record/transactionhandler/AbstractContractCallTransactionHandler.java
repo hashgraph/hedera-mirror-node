@@ -47,6 +47,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
     protected final EntityListener entityListener;
     protected final EntityProperties entityProperties;
 
+    @SuppressWarnings("deprecation")
     protected final void onContractResult(RecordItem recordItem, ContractResult contractResult,
                                           ContractFunctionResult functionResult) {
         // set function result related properties where applicable

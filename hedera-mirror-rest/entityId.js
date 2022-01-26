@@ -72,15 +72,14 @@ class EntityId {
    */
   toEvmAddress() {
     // shard, realm, and num take 4, 8, and 8 bytes respectively from the left
-    return (this.evmAddress =
-      this.num === null
-        ? null
-        : [
-            '0x',
-            toHex(this.shard).padStart(8, '0'),
-            toHex(this.realm).padStart(16, '0'),
-            toHex(this.num).padStart(16, '0'),
-          ].join(''));
+    return this.num === null
+      ? null
+      : [
+          '0x',
+          toHex(this.shard).padStart(8, '0'),
+          toHex(this.realm).padStart(16, '0'),
+          toHex(this.num).padStart(16, '0'),
+        ].join('');
   }
 
   toString() {

@@ -84,7 +84,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     /**
      * @deprecated in favor of using EntityIdService.lookup where applicable
      */
-    @Deprecated
+    @Deprecated(since = "v0.50.0")
     public static EntityId of(ContractID contractID) {
         return of(contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum(),
                 EntityType.CONTRACT);
