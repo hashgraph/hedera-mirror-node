@@ -41,6 +41,7 @@ public class CacheConfiguration {
 
     public static final String EXPIRE_AFTER_5M = "cacheManagerExpireAfter5m";
     public static final String CACHE_MANAGER_ALIAS = "cacheManagerAlias";
+    public static final String CACHE_MANAGER_ENTITY_ID = "cacheManagerEntityId";
     public static final String KEY_GENERATOR_ALIAS = "keyGeneratorAlias";
 
     @Bean(EXPIRE_AFTER_5M)
@@ -53,6 +54,13 @@ public class CacheConfiguration {
 
     @Bean(CACHE_MANAGER_ALIAS)
     CacheManager cacheManagerAlias() {
+        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCacheSpecification("maximumSize=100000,expireAfterWrite=30m");
+        return caffeineCacheManager;
+    }
+
+    @Bean(CACHE_MANAGER_ENTITY_ID)
+    CacheManager cacheManagerEntityId() {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=100000,expireAfterWrite=30m");
         return caffeineCacheManager;

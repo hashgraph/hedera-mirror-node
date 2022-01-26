@@ -23,26 +23,30 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hederahashgraph.api.proto.java.SystemDeleteTransactionBody;
 import javax.inject.Named;
 
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class SystemDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<AbstractEntity> {
 
-    SystemDeleteTransactionHandler(EntityListener entityListener) {
+    private final EntityIdService entityIdService;
+
+    SystemDeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
         super(entityListener, TransactionType.SYSTEMDELETE);
+        this.entityIdService = entityIdService;
     }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         SystemDeleteTransactionBody systemDelete = recordItem.getTransactionBody().getSystemDelete();
         if (systemDelete.hasContractID()) {
-            return EntityId.of(systemDelete.getContractID());
+            return entityIdService.lookup(systemDelete.getContractID());
         } else if (systemDelete.hasFileID()) {
             return EntityId.of(systemDelete.getFileID());
         }

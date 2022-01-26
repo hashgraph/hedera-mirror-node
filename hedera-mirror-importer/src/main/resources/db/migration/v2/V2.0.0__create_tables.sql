@@ -84,6 +84,7 @@ create table if not exists contract
     auto_renew_period    bigint                         null,
     created_timestamp    bigint                         null,
     deleted              boolean                        null,
+    evm_address          bytea                          null,
     expiration_timestamp bigint                         null,
     file_id              bigint                         null,
     id                   bigint                         not null,

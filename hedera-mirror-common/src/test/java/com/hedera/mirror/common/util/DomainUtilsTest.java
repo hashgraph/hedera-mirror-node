@@ -39,6 +39,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+
 class DomainUtilsTest {
 
     private static final String KEY = "c83755a935e442f18f12fbb9ecb5bc416417059ddb3c15aac32c1702e7da6734";
@@ -244,6 +247,13 @@ class DomainUtilsTest {
         assertThat(DomainUtils.toBytes(UnsafeByteOperations.unsafeWrap(ByteBuffer.wrap(largeArray))))
                 .isEqualTo(largeArray)
                 .isNotSameAs(largeArray);
+    }
+
+    @Test
+    void toEvmAddress() {
+        EntityId contractId = EntityId.of(1, 2, 255, EntityType.CONTRACT);
+        String expected = "00000001000000000000000200000000000000FF";
+        assertThat(DomainUtils.toEvmAddress(contractId)).asHexString().isEqualTo(expected);
     }
 
     @Test

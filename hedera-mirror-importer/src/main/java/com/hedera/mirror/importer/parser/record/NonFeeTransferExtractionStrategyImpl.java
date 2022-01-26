@@ -59,9 +59,12 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
         } else { // contractCall
             LinkedList<AccountAmount> result = new LinkedList<>();
             var amount = body.getContractCall().getAmount();
-            var contractAccountId = contractIdToAccountId(body.getContractCall().getContractID());
+            // get the contract id whose function is called from the transaction record. The transaction result is
+            // successful, so the contractId in contractCallResult should be set. Can't rely on the contract id in the
+            // body because it may have evmAddress set instead of contractNum
+            var contractAccountId = contractIdToAccountId(transactionRecord.getContractCallResult().getContractID());
             result.add(AccountAmount.newBuilder().setAccountID(contractAccountId).setAmount(amount).build());
-            result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(0 - amount).build());
+            result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(-amount).build());
             return result;
         }
     }
@@ -69,7 +72,7 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
     private Iterable<AccountAmount> extractForCreateEntity(
             long initialBalance, AccountID payerAccountId, AccountID createdEntity, TransactionRecord txRecord) {
         LinkedList<AccountAmount> result = new LinkedList<>();
-        result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(0 - initialBalance).build());
+        result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(-initialBalance).build());
         if (ResponseCodeEnum.SUCCESS == txRecord.getReceipt().getStatus()) {
             result.add(AccountAmount.newBuilder().setAccountID(createdEntity).setAmount(initialBalance).build());
         }

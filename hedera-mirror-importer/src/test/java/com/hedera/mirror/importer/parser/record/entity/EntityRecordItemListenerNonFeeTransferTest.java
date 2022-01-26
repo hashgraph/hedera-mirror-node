@@ -244,7 +244,10 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
     private void contractCallWithTransferList(TransferList.Builder transferList) {
         var transaction = contractCall();
         var transactionBody = getTransactionBody(transaction);
-        var record = transactionRecordSuccess(transactionBody, transferList).build();
+        var recordBuilder = transactionRecordSuccess(transactionBody, transferList);
+        var contractCallResult = recordBuilder.getContractCallResultBuilder()
+                        .setContractID(ContractID.newBuilder().setContractNum(NEW_CONTRACT_NUM));
+        var record = recordBuilder.setContractCallResult(contractCallResult).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -265,7 +268,10 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
     private void contractCreateWithTransferList(TransferList.Builder transferList) {
         var transaction = contractCreate();
         var transactionBody = getTransactionBody(transaction);
-        var record = transactionRecordSuccess(transactionBody, transferList).build();
+        var recordBuilder = transactionRecordSuccess(transactionBody, transferList);
+        var contractCreateResult = recordBuilder.getContractCreateResultBuilder()
+                        .addCreatedContractIDs(ContractID.newBuilder().setContractNum(NEW_CONTRACT_NUM));
+        var record = recordBuilder.setContractCreateResult(contractCreateResult).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -301,8 +307,8 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
     private Transaction cryptoTransfer(long entityNum) {
         var nonFeeTransfers = TransferList.newBuilder()
-                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, 0 - TRANSFER_AMOUNT))
-                .addAccountAmounts(accountAmount(entityNum, 0 - TRANSFER_AMOUNT));
+                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, -TRANSFER_AMOUNT))
+                .addAccountAmounts(accountAmount(entityNum, -TRANSFER_AMOUNT));
         var inner = CryptoTransferTransactionBody.newBuilder()
                 .setTransfers(nonFeeTransfers);
 
@@ -456,9 +462,9 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
     private TransferList.Builder transferListForContractCreateItemized() {
         return TransferList.newBuilder()
-                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, 0 - TRANSFER_AMOUNT))
-                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, 0 - CHARGED_FEE))
-                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, 0 - THRESHOLD_RECORD_FEE))
+                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, -TRANSFER_AMOUNT))
+                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, -CHARGED_FEE))
+                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, -THRESHOLD_RECORD_FEE))
                 .addAccountAmounts(accountAmount(NEW_CONTRACT_NUM, TRANSFER_AMOUNT))
                 .addAccountAmounts(accountAmount(NODE_ACCOUNT_NUM, NODE_FEE))
                 .addAccountAmounts(accountAmount(TREASURY_ACCOUNT_NUM, NETWORK_FEE))
@@ -468,7 +474,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
     private TransferList.Builder transferListForContractCreateAggregated() {
         return TransferList.newBuilder()
-                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, 0 - TRANSFER_AMOUNT - CHARGED_FEE))
+                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, -TRANSFER_AMOUNT - CHARGED_FEE))
                 .addAccountAmounts(accountAmount(NEW_CONTRACT_NUM, TRANSFER_AMOUNT))
                 .addAccountAmounts(accountAmount(NODE_ACCOUNT_NUM, NODE_FEE))
                 .addAccountAmounts(accountAmount(TREASURY_ACCOUNT_NUM, NETWORK_SERVICE_FEE));
@@ -476,9 +482,9 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
     private TransferList.Builder transferListForCryptoCreateItemized() {
         return TransferList.newBuilder()
-                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, 0 - TRANSFER_AMOUNT))
-                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, 0 - NODE_FEE))
-                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, 0 - NETWORK_SERVICE_FEE))
+                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, -TRANSFER_AMOUNT))
+                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, -NODE_FEE))
+                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, -NETWORK_SERVICE_FEE))
                 .addAccountAmounts(accountAmount(NEW_ACCOUNT_NUM, TRANSFER_AMOUNT))
                 .addAccountAmounts(accountAmount(NODE_ACCOUNT_NUM, NODE_FEE))
                 .addAccountAmounts(accountAmount(TREASURY_ACCOUNT_NUM, NETWORK_FEE))
@@ -487,7 +493,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
     private TransferList.Builder transferListForCryptoCreateAggregated() {
         return TransferList.newBuilder()
-                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, 0 - TRANSFER_AMOUNT - CHARGED_FEE))
+                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, -TRANSFER_AMOUNT - CHARGED_FEE))
                 .addAccountAmounts(accountAmount(NEW_ACCOUNT_NUM, TRANSFER_AMOUNT))
                 .addAccountAmounts(accountAmount(NODE_ACCOUNT_NUM, NODE_FEE))
                 .addAccountAmounts(accountAmount(TREASURY_ACCOUNT_NUM, NETWORK_SERVICE_FEE));
@@ -505,13 +511,13 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
     private TransferList.Builder transferListForFailedCryptoTransferItemized() {
         return TransferList.newBuilder()
-                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, 0 - NODE_FEE))
+                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, -NODE_FEE))
                 .addAccountAmounts(accountAmount(NODE_ACCOUNT_NUM, NODE_FEE));
     }
 
     private TransferList.Builder transferListForFailedCryptoTransferAggregated() {
         return TransferList.newBuilder()
-                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, 0 - NODE_FEE))
+                .addAccountAmounts(accountAmount(PAYER_ACCOUNT_NUM, -NODE_FEE))
                 .addAccountAmounts(accountAmount(NODE_ACCOUNT_NUM, NODE_FEE));
     }
 

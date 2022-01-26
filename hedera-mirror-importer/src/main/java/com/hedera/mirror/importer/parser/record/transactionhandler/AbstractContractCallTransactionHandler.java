@@ -33,6 +33,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.util.Utility;
@@ -40,6 +41,7 @@ import com.hedera.mirror.importer.util.Utility;
 @RequiredArgsConstructor
 abstract class AbstractContractCallTransactionHandler implements TransactionHandler {
 
+    protected final EntityIdService entityIdService;
     protected final EntityListener entityListener;
     protected final EntityProperties entityProperties;
 
@@ -50,17 +52,20 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
         boolean persist = recordItem.isSuccessful() && entityProperties.getPersist().isContracts();
 
         for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
-            EntityId contractId = EntityId.of(createdContractId);
+            EntityId contractId = entityIdService.lookup(createdContractId);
             createdContractIds.add(contractId.getId());
 
-            // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
-            if (persist && !EntityId.isEmpty(contractId) && !contractId.equals(contractResult.getContractId())) {
-                Contract contract = contractId.toEntity();
-                contract.setCreatedTimestamp(consensusTimestamp);
-                contract.setDeleted(false);
-                contract.setModifiedTimestamp(consensusTimestamp);
-                doUpdateEntity(contract, recordItem);
+            if (persist && !EntityId.isEmpty(contractId)) {
+                doUpdateEntity(getContract(contractId, consensusTimestamp), recordItem);
             }
+        }
+
+        if (functionResult.hasEvmAddress()) {
+            EntityId contractId = entityIdService.lookup(recordItem.getRecord().getReceipt().getContractID());
+            createdContractIds.add(contractId.getId());
+            Contract contract = getContract(contractId, consensusTimestamp);
+            contract.setEvmAddress(DomainUtils.toBytes(functionResult.getEvmAddress().getValue()));
+            doUpdateEntity(contract, recordItem);
         }
 
         contractResult.setBloom(DomainUtils.toBytes(functionResult.getBloom()));
@@ -77,7 +82,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             ContractLog contractLog = new ContractLog();
             contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
             contractLog.setConsensusTimestamp(consensusTimestamp);
-            contractLog.setContractId(EntityId.of(contractLoginfo.getContractID()));
+            contractLog.setContractId(entityIdService.lookup(contractLoginfo.getContractID()));
             contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
             contractLog.setRootContractId(contractResult.getContractId());
@@ -92,4 +97,12 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
     }
 
     protected abstract void doUpdateEntity(Contract contract, RecordItem recordItem);
+
+    private Contract getContract(EntityId contractId, long consensusTimestamp) {
+        Contract contract = contractId.toEntity();
+        contract.setCreatedTimestamp(consensusTimestamp);
+        contract.setDeleted(false);
+        contract.setModifiedTimestamp(consensusTimestamp);
+        return contract;
+    }
 }

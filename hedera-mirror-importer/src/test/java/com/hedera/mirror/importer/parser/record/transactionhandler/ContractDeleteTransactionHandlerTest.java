@@ -20,12 +20,16 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static org.mockito.Mockito.when;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -33,11 +37,19 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 
 class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
-    private static final long OBTAINER_ID = 99L;
+    private static final long OBTAINER_NUM = 99L;
+
+    private final ContractID obtainerId = ContractID.newBuilder().setContractNum(OBTAINER_NUM).build();
+
+    @BeforeEach
+    void beforeEach() {
+        when(entityIdService.lookup(contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
+        when(entityIdService.lookup(obtainerId)).thenReturn(EntityId.of(OBTAINER_NUM, CONTRACT));
+    }
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractDeleteTransactionHandler(entityListener);
+        return new ContractDeleteTransactionHandler(entityIdService, entityListener);
     }
 
     @Override
@@ -45,7 +57,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
         return TransactionBody.newBuilder()
                 .setContractDeleteInstance(ContractDeleteTransactionBody.newBuilder()
                         .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build())
-                        .setTransferAccountID(AccountID.newBuilder().setAccountNum(OBTAINER_ID).build()));
+                        .setTransferAccountID(AccountID.newBuilder().setAccountNum(OBTAINER_NUM).build()));
     }
 
     @Override
@@ -58,7 +70,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
         List<UpdateEntityTestSpec> specs = new ArrayList<>();
         Contract expected = (Contract) getExpectedEntityWithTimestamp();
         expected.setDeleted(true);
-        expected.setObtainerId(EntityId.of(OBTAINER_ID, EntityType.ACCOUNT));
+        expected.setObtainerId(EntityId.of(OBTAINER_NUM, EntityType.ACCOUNT));
 
         specs.add(
                 UpdateEntityTestSpec.builder()
@@ -72,7 +84,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
         TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
                 .setContractDeleteInstance(ContractDeleteTransactionBody.newBuilder()
                         .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build())
-                        .setTransferContractID(ContractID.newBuilder().setContractNum(OBTAINER_ID).build()));
+                        .setTransferContractID(ContractID.newBuilder().setContractNum(OBTAINER_NUM).build()));
 
         specs.add(
                 UpdateEntityTestSpec.builder()

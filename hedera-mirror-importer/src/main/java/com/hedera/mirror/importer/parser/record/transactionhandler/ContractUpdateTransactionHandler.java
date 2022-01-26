@@ -27,18 +27,22 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
 
-    ContractUpdateTransactionHandler(EntityListener entityListener) {
+    private final EntityIdService entityIdService;
+
+    ContractUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
         super(entityListener, TransactionType.CONTRACTUPDATEINSTANCE);
+        this.entityIdService = entityIdService;
     }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getContractUpdateInstance().getContractID());
+        return entityIdService.lookup(recordItem.getTransactionBody().getContractUpdateInstance().getContractID());
     }
 
     // We explicitly ignore the updated fileID field since hedera nodes do not allow changing the bytecode after create

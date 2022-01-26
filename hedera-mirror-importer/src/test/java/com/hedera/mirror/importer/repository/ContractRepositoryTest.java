@@ -37,6 +37,24 @@ class ContractRepositoryTest extends AbstractRepositoryTest {
     private ContractRepository contractRepository;
 
     @Test
+    void findByEvmAddress() {
+        Contract contract = domainBuilder.contract().persist();
+        assertThat(contractRepository.findByEvmAddress(contract.getEvmAddress())).get().isEqualTo(contract.getId());
+    }
+
+    @Test
+    void findByEvmAddressDeleted() {
+        Contract contract = domainBuilder.contract().customize((b) -> b.deleted(true)).persist();
+        assertThat(contractRepository.findByEvmAddress(contract.getEvmAddress())).isEmpty();
+    }
+
+    @Test
+    void findByEvmAddressNotFound() {
+        Contract contract = domainBuilder.contract().get();
+        assertThat(contractRepository.findByEvmAddress(contract.getEvmAddress())).isEmpty();
+    }
+
+    @Test
     void save() {
         Contract contract = domainBuilder.contract().persist();
         assertThat(contractRepository.findById(contract.getId())).get().isEqualTo(contract);

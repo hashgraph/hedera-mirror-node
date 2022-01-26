@@ -1,10 +1,10 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,14 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
+import com.hederahashgraph.api.proto.java.ContractID;
 
-import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.Aliasable;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
-public interface ContractRepository extends CrudRepository<Contract, Long> {
+public interface EntityIdService {
 
-    @Query(value = "select id from contract where evm_address = ?1 and deleted <> true", nativeQuery = true)
-    Optional<Long> findByEvmAddress(byte[] evmAddress);
+    EntityId lookup(ContractID contractId);
+
+    void store(Aliasable entity);
 }

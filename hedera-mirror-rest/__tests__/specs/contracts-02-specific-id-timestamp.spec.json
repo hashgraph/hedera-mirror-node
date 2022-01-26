@@ -94,12 +94,12 @@
     "contract_id": "0.0.8001",
     "created_timestamp": "987654.999123200",
     "deleted": false,
+    "evm_address": "0x0000000000000000000000000000000000001f41",
     "expiration_timestamp": null,
     "file_id": "0.0.5001",
     "memo": "contract memo",
     "obtainer_id": null,
     "proxy_account_id": null,
-    "solidity_address": "0x0000000000000000000000000000000000001f41",
     "timestamp": {
       "from": "987654.999123300",
       "to": null

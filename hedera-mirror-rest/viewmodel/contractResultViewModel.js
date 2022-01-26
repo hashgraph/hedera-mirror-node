@@ -42,12 +42,12 @@ class ContractResultViewModel {
       contract_id: contractId.toString(),
       created_contract_ids: _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString()),
       error_message: contractResult.errorMessage,
-      from: EntityId.parse(contractResult.payerAccountId).toSolidityAddress(),
+      from: EntityId.parse(contractResult.payerAccountId).toEvmAddress(),
       function_parameters: utils.toHexString(contractResult.functionParameters, true),
       gas_limit: Number(contractResult.gasLimit),
       gas_used: Number(contractResult.gasUsed),
       timestamp: utils.nsToSecNs(contractResult.consensusTimestamp),
-      to: contractId.toSolidityAddress(),
+      to: contractId.toEvmAddress(),
     });
   }
 }

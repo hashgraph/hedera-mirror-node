@@ -24,20 +24,24 @@ import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
 
-    ContractDeleteTransactionHandler(EntityListener entityListener) {
+    private final EntityIdService entityIdService;
+
+    ContractDeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
         super(entityListener, TransactionType.CONTRACTDELETEINSTANCE);
+        this.entityIdService = entityIdService;
     }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getContractDeleteInstance().getContractID());
+        return entityIdService.lookup(recordItem.getTransactionBody().getContractDeleteInstance().getContractID());
     }
 
     @Override
@@ -48,7 +52,7 @@ class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHand
         if (transactionBody.hasTransferAccountID()) {
             obtainerId = EntityId.of(transactionBody.getTransferAccountID());
         } else if (transactionBody.hasTransferContractID()) {
-            obtainerId = EntityId.of(transactionBody.getTransferContractID());
+            obtainerId = entityIdService.lookup(transactionBody.getTransferContractID());
         }
 
         contract.setObtainerId(obtainerId);

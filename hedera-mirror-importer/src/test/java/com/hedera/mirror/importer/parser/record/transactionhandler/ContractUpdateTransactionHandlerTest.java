@@ -20,16 +20,27 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityType;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static org.mockito.Mockito.when;
+
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.BeforeEach;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 
 class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
+    @BeforeEach
+    void beforeEach() {
+        when(entityIdService.lookup(contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
+    }
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractUpdateTransactionHandler(entityListener);
+        return new ContractUpdateTransactionHandler(entityIdService, entityListener);
     }
 
     @Override

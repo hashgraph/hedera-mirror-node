@@ -20,27 +20,35 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.TransactionBody;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static org.mockito.Mockito.when;
 
+import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.BeforeEach;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private final EntityProperties entityProperties = new EntityProperties();
 
+    @BeforeEach
+    void beforeEach() {
+        when(entityIdService.lookup(contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
+    }
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractCallTransactionHandler(entityListener, entityProperties);
+        return new ContractCallTransactionHandler(entityIdService, entityListener, entityProperties);
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setContractCall(ContractCallTransactionBody.newBuilder()
-                        .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build()));
+                .setContractCall(ContractCallTransactionBody.newBuilder().setContractID(contractId));
     }
 
     @Override

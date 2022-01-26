@@ -1026,6 +1026,8 @@ components:
         deleted:
           type: boolean
           example: false
+        evm_address:
+          $ref: '#/components/schemas/EvmAddress'
         expiration_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         file_id:
@@ -1037,8 +1039,6 @@ components:
           $ref: '#/components/schemas/EntityId'
         proxy_account_id:
           $ref: '#/components/schemas/EntityId'
-        solidity_address:
-          $ref: '#/components/schemas/SolidityAddress'
         timestamp:
           $ref: '#/components/schemas/TimestampRange'
     Contracts:
@@ -1051,8 +1051,9 @@ components:
         - type: object
           properties:
             root_contract_id:
-              description: The executed contract that created this contract log
-              $ref: '#/components/schemas/EntityId'
+              allOf:
+                - $ref: '#/components/schemas/EntityId'
+                - description: The executed contract that created this contract log
             timestamp:
               $ref: '#/components/schemas/Timestamp'
     ContractLogTopics:
@@ -1093,7 +1094,7 @@ components:
           nullable: true
           type: string
         from:
-          $ref: '#/components/schemas/SolidityAddress'
+          $ref: '#/components/schemas/EvmAddress'
         function_parameters:
           description: The hex encoded parameters passed to the function
           example: "0xbb9f02dc6f0e3289f57a1f33b71c73aa8548ab8b"
@@ -1119,7 +1120,7 @@ components:
         timestamp:
           $ref: '#/components/schemas/Timestamp'
         to:
-          $ref: '#/components/schemas/SolidityAddressNullable'
+          $ref: '#/components/schemas/EvmAddressNullable'
     ContractResultDetails:
       allOf:
         - $ref: '#/components/schemas/ContractResult'
@@ -1146,7 +1147,7 @@ components:
       type: object
       properties:
         address:
-          description: The hex encoded Solidity address of the contract
+          description: The hex encoded EVM address of the contract
           example: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
           pattern: ^0x[0-9A-Fa-f]{40}$
           type: string
@@ -1218,6 +1219,23 @@ components:
                 properties:
                   message:
                     type: string
+    EvmAddress:
+      type: string
+      description: A network entity encoded as an EVM address in hex
+      format: binary
+      minLength: 42
+      maxLength: 42
+      pattern: '^(0x)?[A-Fa-f0-9]{40}$'
+      example: "0x0000000000000000000000000000000000001f41"
+    EvmAddressNullable:
+      type: string
+      description: A network entity encoded as an EVM address in hex
+      format: binary
+      minLength: 42
+      maxLength: 42
+      nullable: true
+      pattern: '^0x[A-Fa-f0-9]{40}$'
+      example: "0x0000000000000000000000000000000000001f41"
     FixedFee:
       type: object
       properties:
@@ -1414,23 +1432,6 @@ components:
           type: string
           enum: [ CONTRACT, ED25519, RSA_3072, ECDSA_384, ECDSA_SECP256K1, UNKNOWN ]
           example: "ED25519"
-    SolidityAddress:
-      type: string
-      description: A network entity encoded as a solidity address in hex
-      format: binary
-      minLength: 42
-      maxLength: 42
-      pattern: '^(0x)?[A-Fa-f0-9]{40}$'
-      example: "0x0000000000000000000000000000000000001f41"
-    SolidityAddressNullable:
-      type: string
-      description: A network entity encoded as a solidity address in hex
-      format: binary
-      minLength: 42
-      maxLength: 42
-      nullable: true
-      pattern: '^0x[A-Fa-f0-9]{40}$'
-      example: "0x0000000000000000000000000000000000001f41"
     StateProofFiles:
       type: object
       properties:
@@ -2120,11 +2121,11 @@ components:
     fromQueryParam:
       name: from
       in: query
-      description: Account ID or solidity address executing the contract
+      description: Account ID or EVM address executing the contract
       schema:
         oneOf:
           - $ref: '#/components/schemas/EntityId'
-          - $ref: '#/components/schemas/SolidityAddress'
+          - $ref: '#/components/schemas/EvmAddress'
     logIndexQueryParam:
       name: index
       in: query

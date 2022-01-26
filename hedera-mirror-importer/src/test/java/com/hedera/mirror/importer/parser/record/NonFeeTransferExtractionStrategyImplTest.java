@@ -26,6 +26,7 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
@@ -69,7 +70,7 @@ class NonFeeTransferExtractionStrategyImplTest {
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewAccountTransactionRecord());
         assertAll(
                 () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count()),
-                () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance,
+                () -> assertResult(createAccountAmounts(payerAccountNum, -initialBalance,
                         newEntityNum, initialBalance), result)
         );
     }
@@ -80,7 +81,7 @@ class NonFeeTransferExtractionStrategyImplTest {
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getFailedTransactionRecord());
         assertAll(
                 () -> assertEquals(1, StreamSupport.stream(result.spliterator(), false).count()),
-                () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance), result)
+                () -> assertResult(createAccountAmounts(payerAccountNum, -initialBalance), result)
         );
     }
 
@@ -90,7 +91,7 @@ class NonFeeTransferExtractionStrategyImplTest {
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewContractTransactionRecord());
         assertAll(
                 () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count()),
-                () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance,
+                () -> assertResult(createAccountAmounts(payerAccountNum, -initialBalance,
                         newEntityNum, initialBalance), result)
         );
     }
@@ -101,7 +102,7 @@ class NonFeeTransferExtractionStrategyImplTest {
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getFailedTransactionRecord());
         assertAll(
                 () -> assertEquals(1, StreamSupport.stream(result.spliterator(), false).count()),
-                () -> assertResult(createAccountAmounts(payerAccountNum, 0 - initialBalance), result)
+                () -> assertResult(createAccountAmounts(payerAccountNum, -initialBalance), result)
         );
     }
 
@@ -110,11 +111,15 @@ class NonFeeTransferExtractionStrategyImplTest {
         var amount = 123456L;
         var contractNum = 8888L;
         var transactionBody = getContractCallTransactionBody(contractNum, amount);
-        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getSimpleTransactionRecord());
+        var contractCallResult = ContractFunctionResult.newBuilder()
+                .setContractID(ContractID.newBuilder().setContractNum(contractNum));
+        var transactionRecord = getSimpleTransactionRecord().toBuilder()
+                .setContractCallResult(contractCallResult)
+                .build();
+        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord);
         assertAll(
                 () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count()),
-                () -> assertResult(createAccountAmounts(contractNum, amount,
-                        payerAccountNum, 0 - amount), result)
+                () -> assertResult(createAccountAmounts(contractNum, amount, payerAccountNum, -amount), result)
         );
     }
 

@@ -37,6 +37,8 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+
 @Log4j2
 @UtilityClass
 public class DomainUtils {
@@ -214,6 +216,15 @@ public class DomainUtils {
         }
 
         return byteString.toByteArray();
+    }
+
+    public static byte[] toEvmAddress(EntityId contractId) {
+        byte[] evmAddress = new byte[20];
+        ByteBuffer buffer = ByteBuffer.wrap(evmAddress);
+        buffer.putInt(contractId.getShardNum().intValue());
+        buffer.putLong(contractId.getRealmNum());
+        buffer.putLong(contractId.getEntityNum());
+        return evmAddress;
     }
 
     static class UnsafeByteOutput extends ByteOutput {

@@ -29,19 +29,20 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
 class ContractCreateTransactionHandler extends AbstractContractCallTransactionHandler {
 
-    ContractCreateTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(entityListener, entityProperties);
+    ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener, EntityProperties entityProperties) {
+        super(entityIdService, entityListener, entityProperties);
     }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        return entityIdService.lookup(recordItem.getRecord().getReceipt().getContractID());
     }
 
     @Override
@@ -57,25 +58,15 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
         var transactionRecord = recordItem.getRecord();
-        long consensusTimestamp = recordItem.getConsensusTimestamp();
-        EntityId entityId = transaction.getEntityId();
         transaction.setInitialBalance(transactionBody.getInitialBalance());
-
-        if (entityProperties.getPersist().isContracts() && recordItem.isSuccessful() && !EntityId.isEmpty(entityId)) {
-            Contract contract = entityId.toEntity();
-            contract.setCreatedTimestamp(consensusTimestamp);
-            contract.setDeleted(false);
-            contract.setModifiedTimestamp(consensusTimestamp);
-            doUpdateEntity(contract, recordItem);
-        }
 
         if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCreateResult()) {
             var functionResult = transactionRecord.getContractCreateResult();
 
             ContractResult contractResult = new ContractResult();
             contractResult.setAmount(transactionBody.getInitialBalance());
-            contractResult.setConsensusTimestamp(consensusTimestamp);
-            contractResult.setContractId(EntityId.of(transactionRecord.getReceipt().getContractID()));
+            contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
+            contractResult.setContractId(transaction.getEntityId());
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
             contractResult.setPayerAccountId(transaction.getPayerAccountId());
