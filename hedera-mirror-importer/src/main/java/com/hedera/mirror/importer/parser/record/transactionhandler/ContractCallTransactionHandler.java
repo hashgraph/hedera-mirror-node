@@ -57,9 +57,8 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         var transactionRecord = recordItem.getRecord();
 
-        if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCallResult()) {
+        if (entityProperties.getPersist().isContracts()) {
             var transactionBody = recordItem.getTransactionBody().getContractCall();
-            var functionResult = transactionRecord.getContractCallResult();
 
             // The functionResult.contractID can sometimes be empty even if successful, so use Transaction.entityId
             ContractResult contractResult = new ContractResult();
@@ -70,7 +69,7 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getFunctionParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
 
-            onContractResult(recordItem, contractResult, functionResult);
+            onContractResult(recordItem, contractResult, transactionRecord.getContractCallResult());
         }
     }
 

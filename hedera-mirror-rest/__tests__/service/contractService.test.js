@@ -209,7 +209,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         contractId: '2',
         consensusTimestamp: '1',
         gasLimit: '1000',
-        gasUsed: '10',
+        gasUsed: null,
       },
     ];
 
@@ -241,7 +241,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
         contractId: '2',
         consensusTimestamp: '2',
         gasLimit: '1000',
-        gasUsed: '10',
+        gasUsed: null,
         payerAccountId: '123',
       },
     ];
@@ -429,7 +429,7 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
       createdContractIds: [],
       errorMessage: '',
       gasLimit: '1000',
-      gasUsed: '10',
+      gasUsed: null,
       payerAccountId: '5',
     },
     {
@@ -440,7 +440,7 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
       createdContractIds: [],
       errorMessage: '',
       gasLimit: '1000',
-      gasUsed: '10',
+      gasUsed: null,
       payerAccountId: '5',
     },
   ];

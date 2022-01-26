@@ -137,7 +137,7 @@ create table if not exists contract_result
     function_parameters  bytea        not null,
     function_result      bytea        null,
     gas_limit            bigint       not null,
-    gas_used             bigint       not null,
+    gas_used             bigint       null,
     payer_account_id     bigint       not null
 );
 comment on table contract_result is 'Crypto contract execution results';
