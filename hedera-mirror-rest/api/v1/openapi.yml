@@ -1007,15 +1007,11 @@ components:
         initial_transaction_id:
           $ref: '#/components/schemas/TransactionId'
         number:
+          example: 1
           type: integer
         total:
+          example: 2
           type: integer
-      example:
-        initial_transaction_id: "0.0.3-1234567890-000000321"
-        nonce: 2
-        number: 1
-        scheduled: true
-        total: 2
     Contract:
       type: object
       properties:
@@ -1864,10 +1860,12 @@ components:
         account_id:
           $ref: '#/components/schemas/EntityId'
         nonce:
+          example: 0
           type: integer
           minimum: 0
           nullable: true
         scheduled:
+          example: false
           type: boolean
           nullable: true
         valid_start_timestamp:
