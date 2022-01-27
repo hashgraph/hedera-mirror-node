@@ -57,7 +57,7 @@ import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 @Log4j2
 @Cucumber
 public class ContractFeature extends AbstractFeature {
-    private final static long maxFunctionGas = 300_000;
+    private final static long maxFunctionGas = 3_000_000;
     private final ObjectMapper mapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
