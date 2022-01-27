@@ -1005,15 +1005,9 @@ components:
       nullable: true
       properties:
         initial_transaction_id:
-          type: string
-        nonce:
-          type: integer
-          nullable: true
+          $ref: '#/components/schemas/TransactionId'
         number:
           type: integer
-        scheduled:
-          type: boolean
-          nullable: true
         total:
           type: integer
       example:
@@ -1864,6 +1858,20 @@ components:
               - 0.0.8
               - 0.0.72
             token_id: 0.0.90001
+    TransactionId:
+      type: object
+      properties:
+        account_id:
+          $ref: '#/components/schemas/EntityId'
+        nonce:
+          type: integer
+          minimum: 0
+          nullable: true
+        scheduled:
+          type: boolean
+          nullable: true
+        valid_start_timestamp:
+          $ref: '#/components/schemas/Timestamp'
     Transactions:
       type: array
       items:
