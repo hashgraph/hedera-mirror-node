@@ -21,8 +21,8 @@ data, configure the new PostgreSQL instance, and restore the data.
 
 - Importer for the old PostgreSQL database instance is stopped
 - The new PostgreSQL database instance
-- An ubuntu virtual machine with fast network speed connections to both PostgreSQL database instances. The instance should also have
-  enough free disk space for the database dump
+- An ubuntu virtual machine with fast network speed connections to both PostgreSQL database instances. The instance
+  should also have enough free disk space for the database dump
 
 ### Backup
 
