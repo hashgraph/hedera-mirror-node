@@ -197,7 +197,7 @@ paths:
         - $ref: '#/components/parameters/contractIdPathParam'
         - $ref: '#/components/parameters/logIndexQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
         - $ref: '#/components/parameters/timestampQueryParam'
         - $ref: '#/components/parameters/logTopic0QueryParam'
         - $ref: '#/components/parameters/logTopic1QueryParam'
