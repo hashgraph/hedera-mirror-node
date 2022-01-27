@@ -782,18 +782,6 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
 };
 
 /**
- * Creates a transactionId from a protobuf TransactionID
- * @param {TransactionID} protoTransactionId
- * @returns {string} transactionId of format shard.realm.num-sssssssssss-nnnnnnnnn
- */
-const createTransactionIdFromProto = (protoTransactionId) => {
-  const {accountID, transactionValidStart} = protoTransactionId;
-  const entityStr = EntityId.of(accountID.shardNum, accountID.realmNum, accountID.accountNum).toString();
-  const timestampString = `${transactionValidStart.seconds}-${transactionValidStart.nanos.toString().padStart(9, '0')}`;
-  return `${entityStr}-${timestampString}`;
-};
-
-/**
  * Builds the filters from HTTP request query, validates and parses the filters.
  *
  * @param query
@@ -1109,7 +1097,6 @@ module.exports = {
   buildPgSqlObject,
   checkTimestampRange,
   createTransactionId,
-  createTransactionIdFromProto,
   convertMySqlStyleQueryToPostgres,
   encodeBase64,
   encodeBinary,

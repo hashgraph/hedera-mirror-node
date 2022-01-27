@@ -24,7 +24,9 @@ const _ = require('lodash');
 
 const EntityId = require('../entityId');
 const utils = require('../utils');
+const TransactionId = require('../model/transactionId');
 const {TransactionID} = require('@hashgraph/proto');
+const TransactionIdViewModel = require('./transactionIdViewModel');
 
 /**
  * Topic message view model
@@ -50,24 +52,19 @@ class TopicMessageViewModel {
 
 class ChunkInfoViewModel {
   constructor(topicMessage) {
-    let initialTransactionId, nonce, scheduled;
+    let initialTransactionId;
     if (!_.isNil(topicMessage.initialTransactionId)) {
-      const transactionId = TransactionID.decode(topicMessage.initialTransactionId);
-      initialTransactionId = utils.createTransactionIdFromProto(transactionId);
-      nonce = transactionId.nonce;
-      scheduled = transactionId.scheduled;
+      initialTransactionId = TransactionID.decode(topicMessage.initialTransactionId);
     } else {
-      initialTransactionId = utils.createTransactionId(
-        EntityId.parse(topicMessage.payerAccountId).toString(),
-        topicMessage.validStartTimestamp
+      initialTransactionId = new TransactionId(
+        topicMessage.payerAccountId,
+        topicMessage.validStartTimestamp,
+        null,
+        null
       );
-      nonce = null;
-      scheduled = null;
     }
-    this.initial_transaction_id = initialTransactionId;
-    this.nonce = nonce;
+    this.initial_transaction_id = new TransactionIdViewModel(initialTransactionId);
     this.number = topicMessage.chunkNum;
-    this.scheduled = scheduled;
     this.total = topicMessage.chunkTotal;
   }
 }

@@ -39,6 +39,7 @@ module.exports = {
   TokenTransfer: require('./tokenTransfer'),
   TopicMessage: require('./topicMessage'),
   Transaction: require('./transaction'),
+  TransactionId: require('./transactionId'),
   TransactionResult: require('./transactionResult'),
   TransactionType: require('./transactionType'),
 };
