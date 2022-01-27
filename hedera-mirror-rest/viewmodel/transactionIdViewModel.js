@@ -30,9 +30,9 @@ const utils = require('../utils');
  */
 class TransactionIdViewModel {
   /**
-   * Constructs transactionId view model from proto transaction id or object of applicable keys
+   * Constructs transactionId view model from proto transaction id or TransactionId model
    *
-   * @param {Object|TransactionID} transactionId
+   * @param {TransactionId|TransactionID} transactionId
    */
   constructor(transactionId) {
     if (_.isNil(transactionId.accountID)) {

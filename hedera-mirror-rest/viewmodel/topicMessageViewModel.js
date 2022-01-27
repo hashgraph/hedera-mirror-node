@@ -24,6 +24,7 @@ const _ = require('lodash');
 
 const EntityId = require('../entityId');
 const utils = require('../utils');
+const TransactionId = require('../model/transactionId');
 const {TransactionID} = require('@hashgraph/proto');
 const TransactionIdViewModel = require('./transactionIdViewModel');
 
@@ -55,12 +56,12 @@ class ChunkInfoViewModel {
     if (!_.isNil(topicMessage.initialTransactionId)) {
       initialTransactionId = TransactionID.decode(topicMessage.initialTransactionId);
     } else {
-      initialTransactionId = {
-        payerAccountId: topicMessage.payerAccountId,
-        nonce: null,
-        scheduled: null,
-        validStartTimestamp: topicMessage.validStartTimestamp,
-      };
+      initialTransactionId = new TransactionId(
+        topicMessage.payerAccountId,
+        topicMessage.validStartTimestamp,
+        null,
+        null
+      );
     }
     this.initial_transaction_id = new TransactionIdViewModel(initialTransactionId);
     this.number = topicMessage.chunkNum;
