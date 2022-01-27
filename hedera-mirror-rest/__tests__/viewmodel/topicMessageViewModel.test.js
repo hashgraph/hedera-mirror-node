@@ -47,10 +47,13 @@ describe('topicMessageViewModel tests', () => {
 
     const expected = buildDefaultTopicMessageViewModel();
     expected.chunk_info = {
-      initial_transaction_id: '0.0.3-1234567890-000000000',
-      nonce: null,
+      initial_transaction_id: {
+        account_id: '0.0.3',
+        nonce: null,
+        scheduled: null,
+        transaction_valid_start: '1234567890.000000000',
+      },
       number: 1,
-      scheduled: null,
       total: 10,
     };
 
@@ -69,11 +72,14 @@ describe('topicMessageViewModel tests', () => {
 
     const expected = buildDefaultTopicMessageViewModel();
     expected.chunk_info = {
-      initial_transaction_id: '0.0.3-1234567890-000000321',
-      nonce: 1,
+      initial_transaction_id: {
+        account_id: '0.0.3',
+        nonce: 1,
+        scheduled: true,
+        transaction_valid_start: '1234567890.000000321',
+      },
       number: 1,
       total: 10,
-      scheduled: true,
     };
 
     expect(actual).toEqual(expected);
