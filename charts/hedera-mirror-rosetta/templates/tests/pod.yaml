@@ -15,7 +15,7 @@ spec:
       imagePullPolicy: {{ .Values.test.image.pullPolicy }}
       args:
         - run
-        - https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/{{ .Chart.AppVersion }}/hedera-mirror-rosetta/scripts/validation/postman/rosetta-api-postman.json
+        - https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/{{ regexReplaceAll "(\\d+\\.\\d+\\.\\d+(-\\w+)?)" .Chart.AppVersion "v${1}" }}/hedera-mirror-rosetta/scripts/validation/postman/rosetta-api-postman.json
         - --env-var
         - base_url=http://{{ include "hedera-mirror-rosetta.fullname" . }}:{{ .Values.service.port }}
   terminationGracePeriodSeconds: 1
