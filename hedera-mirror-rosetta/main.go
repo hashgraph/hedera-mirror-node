@@ -100,7 +100,7 @@ func newBlockchainOnlineRouter(
 		baseService,
 		network.Network,
 		config.Nodes,
-		construction.NewTransactionConstructor(tokenRepo),
+		construction.NewTransactionConstructor(),
 	)
 	if err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func newBlockchainOfflineRouter(
 		baseService,
 		network.Network,
 		config.Nodes,
-		construction.NewTransactionConstructor(nil),
+		construction.NewTransactionConstructor(),
 	)
 	if err != nil {
 		return nil, err

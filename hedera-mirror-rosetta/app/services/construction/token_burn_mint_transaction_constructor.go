@@ -34,7 +34,6 @@ import (
 
 type tokenBurnMintTransactionConstructor struct {
 	operationType   string
-	tokeRepo        interfaces.TokenRepository
 	transactionType string
 }
 
@@ -124,12 +123,20 @@ func (t *tokenBurnMintTransactionConstructor) Parse(ctx context.Context, transac
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
-	dbToken, err := t.tokeRepo.Find(ctx, tokenId.String())
+	tokenEntityId, err := domain.EntityIdOf(int64(tokenId.Shard), int64(tokenId.Realm), int64(tokenId.Token))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.ErrInvalidToken
 	}
 
-	tokenAmount := types.NewTokenAmount(dbToken, amount).
+	domainToken := domain.Token{
+		TokenId: tokenEntityId,
+		Type:    domain.TokenTypeFungibleCommon,
+	}
+	if len(serialNumbers) != 0 || len(metadatas) != 0 {
+		domainToken.Type = domain.TokenTypeNonFungibleUnique
+	}
+
+	tokenAmount := types.NewTokenAmount(domainToken, amount).
 		SetMetadatas(metadatas).
 		SetSerialNumbers(serialNumbers)
 	operation := &rTypes.Operation{
@@ -213,27 +220,21 @@ func (t *tokenBurnMintTransactionConstructor) preprocessOperationAmount(
 		}
 	}
 
-	if _, err = validateToken(ctx, t.tokeRepo, operationAmount.Currency); err != nil {
-		return nil, err
-	}
-
 	return tokenAmount, nil
 }
 
-func newTokenBurnTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
+func newTokenBurnTransactionConstructor() transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenBurnTransaction{}).Name()
 	return &tokenBurnMintTransactionConstructor{
 		operationType:   types.OperationTypeTokenBurn,
-		tokeRepo:        tokenRepo,
 		transactionType: transactionType,
 	}
 }
 
-func newTokenMintTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
+func newTokenMintTransactionConstructor() transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenMintTransaction{}).Name()
 	return &tokenBurnMintTransactionConstructor{
 		operationType:   types.OperationTypeTokenMint,
-		tokeRepo:        tokenRepo,
 		transactionType: transactionType,
 	}
 }

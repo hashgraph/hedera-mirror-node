@@ -23,15 +23,12 @@ package construction
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"time"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
@@ -132,7 +129,6 @@ func preprocessTokenFreezeKyc(
 	ctx context.Context,
 	operations []*rTypes.Operation,
 	operationType string,
-	tokenRepo interfaces.TokenRepository,
 	validate *validator.Validate,
 ) (*hedera.AccountID, *hedera.AccountID, *hedera.TokenID, *rTypes.Error) {
 	if rErr := validateOperations(operations, 1, operationType, false); rErr != nil {
@@ -150,9 +146,9 @@ func preprocessTokenFreezeKyc(
 		return nil, nil, nil, errors.ErrInvalidOperationsAmount
 	}
 
-	token, rErr := validateToken(ctx, tokenRepo, amount.Currency)
-	if rErr != nil {
-		return nil, nil, nil, rErr
+	tokenId, err := hedera.TokenIDFromString(amount.Currency.Symbol)
+	if err != nil {
+		return nil, nil, nil, errors.ErrInvalidToken
 	}
 
 	account, err := hedera.AccountIDFromString(operation.Account.Address)
@@ -164,7 +160,7 @@ func preprocessTokenFreezeKyc(
 		return nil, nil, nil, errors.ErrInvalidAccount
 	}
 
-	return payer, &account, token, nil
+	return payer, &account, &tokenId, nil
 }
 
 func validateOperations(operations []*rTypes.Operation, size int, opType string, expectNilAmount bool) *rTypes.Error {
@@ -201,37 +197,37 @@ func validateOperations(operations []*rTypes.Operation, size int, opType string,
 	return nil
 }
 
-func validateToken(
-	ctx context.Context,
-	tokenRepo interfaces.TokenRepository,
-	currency *rTypes.Currency,
-) (*hedera.TokenID, *rTypes.Error) {
-	token, rErr := tokenRepo.Find(ctx, currency.Symbol)
-	if rErr != nil {
-		return nil, rErr
-	}
-
-	if token.Decimals != int64(currency.Decimals) {
-		return nil, errors.ErrInvalidToken
-	}
-
-	if len(currency.Metadata) != 1 {
-		return nil, errors.ErrInvalidCurrency
-	}
-
-	if tokenType, ok := currency.Metadata[types.MetadataKeyType].(string); !ok {
-		return nil, errors.AddErrorDetails(
-			errors.ErrInvalidTransaction,
-			"reason",
-			fmt.Sprintf("metadata '%s' has wrong data type", types.MetadataKeyType),
-		)
-	} else if tokenType != token.Type {
-		return nil, errors.AddErrorDetails(
-			errors.ErrInvalidCurrency,
-			"reason",
-			fmt.Sprintf("currenty type '%s' doesn't match '%s' in ledger", tokenType, token.Type),
-		)
-	}
-
-	return types.Token{Token: token}.ToHederaTokenId(), nil
-}
+// func validateToken(
+// 	ctx context.Context,
+// 	tokenRepo interfaces.TokenRepository,
+// 	currency *rTypes.Currency,
+// ) (*hedera.TokenID, *rTypes.Error) {
+// 	token, rErr := tokenRepo.Find(ctx, currency.Symbol)
+// 	if rErr != nil {
+// 		return nil, rErr
+// 	}
+//
+// 	if token.Decimals != int64(currency.Decimals) {
+// 		return nil, errors.ErrInvalidToken
+// 	}
+//
+// 	if len(currency.Metadata) != 1 {
+// 		return nil, errors.ErrInvalidCurrency
+// 	}
+//
+// 	if tokenType, ok := currency.Metadata[types.MetadataKeyType].(string); !ok {
+// 		return nil, errors.AddErrorDetails(
+// 			errors.ErrInvalidTransaction,
+// 			"reason",
+// 			fmt.Sprintf("metadata '%s' has wrong data type", types.MetadataKeyType),
+// 		)
+// 	} else if tokenType != token.Type {
+// 		return nil, errors.AddErrorDetails(
+// 			errors.ErrInvalidCurrency,
+// 			"reason",
+// 			fmt.Sprintf("currenty type '%s' doesn't match '%s' in ledger", tokenType, token.Type),
+// 		)
+// 	}
+//
+// 	return types.Token{Token: token}.ToHederaTokenId(), nil
+// }

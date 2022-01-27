@@ -29,6 +29,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
@@ -50,7 +51,6 @@ type tokenUpdate struct {
 
 type tokenUpdateTransactionConstructor struct {
 	transactionType string
-	tokenRepo       interfaces.TokenRepository
 }
 
 func (t *tokenUpdateTransactionConstructor) Construct(
@@ -149,11 +149,12 @@ func (t *tokenUpdateTransactionConstructor) Parse(ctx context.Context, transacti
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
-	token, err := t.tokenRepo.Find(ctx, tokenId.String())
+	tokenEntityId, err := domain.EntityIdOf(int64(tokenId.Shard), int64(tokenId.Realm), int64(tokenId.Token))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.ErrInvalidToken
 	}
 
+	domainToken := domain.Token{TokenId: tokenEntityId, Type: domain.TokenTypeUnknown}
 	operation := &rTypes.Operation{
 		OperationIdentifier: &rTypes.OperationIdentifier{
 			Index: 0,
@@ -161,7 +162,7 @@ func (t *tokenUpdateTransactionConstructor) Parse(ctx context.Context, transacti
 		Account: &rTypes.AccountIdentifier{Address: payerId.String()},
 		Amount: &rTypes.Amount{
 			Value:    "0",
-			Currency: types.Token{Token: token}.ToRosettaCurrency(),
+			Currency: types.Token{Token: domainToken}.ToRosettaCurrency(),
 		},
 		Type: t.GetOperationType(),
 	}
@@ -246,14 +247,14 @@ func (t *tokenUpdateTransactionConstructor) preprocess(ctx context.Context, oper
 
 	operation := operations[0]
 
-	tokenId, rErr := validateToken(ctx, t.tokenRepo, operation.Amount.Currency)
-	if rErr != nil {
-		return nil, nil, rErr
+	tokenId, err := hedera.TokenIDFromString(operation.Amount.Currency.Symbol)
+	if err != nil {
+		return nil, nil, errors.ErrInvalidToken
 	}
 
-	tokenUpdate := &tokenUpdate{tokenId: *tokenId}
-	if rErr = parseOperationMetadata(nil, tokenUpdate, operation.Metadata); rErr != nil {
-		return nil, nil, rErr
+	tokenUpdate := &tokenUpdate{tokenId: tokenId}
+	if err := parseOperationMetadata(nil, tokenUpdate, operation.Metadata); err != nil {
+		return nil, nil, err
 	}
 
 	payer, err := hedera.AccountIDFromString(operation.Account.Address)
@@ -264,10 +265,7 @@ func (t *tokenUpdateTransactionConstructor) preprocess(ctx context.Context, oper
 	return &payer, tokenUpdate, nil
 }
 
-func newTokenUpdateTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
+func newTokenUpdateTransactionConstructor() transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenUpdateTransaction{}).Name()
-	return &tokenUpdateTransactionConstructor{
-		transactionType: transactionType,
-		tokenRepo:       tokenRepo,
-	}
+	return &tokenUpdateTransactionConstructor{transactionType: transactionType}
 }

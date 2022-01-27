@@ -26,7 +26,6 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -41,12 +40,12 @@ type tokenGrantRevokeKycTransactionConstructorSuite struct {
 }
 
 func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestNewTokenGrantKycTransactionConstructor() {
-	h := newTokenGrantKycTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenGrantKycTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestNewTokenRevokeKycTransactionConstructor() {
-	h := newTokenRevokeKycTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenRevokeKycTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 
@@ -70,7 +69,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestGetOperationTyp
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&mocks.MockTokenRepository{})
+			h := tt.newHandler()
 			assert.Equal(t, tt.expected, h.GetOperationType())
 		})
 	}
@@ -96,7 +95,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestGetSdkTransacti
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&mocks.MockTokenRepository{})
+			h := tt.newHandler()
 			assert.Equal(t, tt.expected, h.GetSdkTransactionType())
 		})
 	}
@@ -119,10 +118,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestConstruct() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				operations := suite.getOperations(operationType)
-				mockTokenRepo := &mocks.MockTokenRepository{}
-				h := newHandler(mockTokenRepo)
-
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
+				h := newHandler()
 
 				if tt.updateOperations != nil {
 					operations = tt.updateOperations(operations)
@@ -140,7 +136,6 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestConstruct() {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 					assertTokenGrantRevokeKycTransaction(t, operations, nodeAccountId, tx)
-					mockTokenRepo.AssertExpectations(t)
 
 					if tt.validStartNanos != 0 {
 						assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
@@ -267,16 +262,8 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				expectedOperations := suite.getOperations(operationType)
-
-				mockTokenRepo := &mocks.MockTokenRepository{}
-				h := newHandler(mockTokenRepo)
+				h := newHandler()
 				tx := tt.getTransaction(operationType)
-
-				if tt.tokenRepoErr {
-					configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
-				} else {
-					configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
-				}
 
 				// when
 				operations, signers, err := h.Parse(defaultContext, tx)
@@ -290,7 +277,6 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 					assert.ElementsMatch(t, expectedOperations, operations)
-					mockTokenRepo.AssertExpectations(t)
 				}
 			})
 		}
@@ -365,15 +351,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				operations := suite.getOperations(operationType)
-
-				mockTokenRepo := &mocks.MockTokenRepository{}
-				h := newHandler(mockTokenRepo)
-
-				if tt.tokenRepoErr {
-					configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
-				} else {
-					configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
-				}
+				h := newHandler()
 
 				if tt.updateOperations != nil {
 					operations = tt.updateOperations(operations)
@@ -389,7 +367,6 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 				} else {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-					mockTokenRepo.AssertExpectations(t)
 				}
 			})
 		}

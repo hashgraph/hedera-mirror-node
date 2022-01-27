@@ -28,7 +28,6 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -73,17 +72,17 @@ type cryptoTransferTransactionConstructorSuite struct {
 }
 
 func (suite *cryptoTransferTransactionConstructorSuite) TestNewTransactionConstructor() {
-	h := newCryptoTransferTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newCryptoTransferTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *cryptoTransferTransactionConstructorSuite) TestGetOperationType() {
-	h := newCryptoTransferTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newCryptoTransferTransactionConstructor()
 	assert.Equal(suite.T(), types.OperationTypeCryptoTransfer, h.GetOperationType())
 }
 
 func (suite *cryptoTransferTransactionConstructorSuite) TestGetSdkTransactionType() {
-	h := newCryptoTransferTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newCryptoTransferTransactionConstructor()
 	assert.Equal(suite.T(), "TransferTransaction", h.GetSdkTransactionType())
 }
 
@@ -116,9 +115,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestConstruct() {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
 			operations := suite.makeOperations(tt.transfers)
-			mockTokenRepo := &mocks.MockTokenRepository{}
-			h := newCryptoTransferTransactionConstructor(mockTokenRepo)
-			configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs...)
+			h := newCryptoTransferTransactionConstructor()
 
 			// when
 			tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
@@ -132,7 +129,6 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestConstruct() {
 				assert.Nil(t, err)
 				assert.ElementsMatch(t, tt.expectedSigners, signers)
 				assertCryptoTransferTransaction(t, operations, nodeAccountId, tx)
-				mockTokenRepo.AssertExpectations(t)
 
 				if tt.validStartNanos != 0 {
 					assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
@@ -169,19 +165,12 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 
 	var tests = []struct {
 		name           string
-		tokenRepoErr   bool
 		getTransaction func() interfaces.Transaction
 		expectError    bool
 	}{
 		{
 			name:           "Success",
 			getTransaction: defaultGetTransaction,
-		},
-		{
-			name:           "TokenNotFound",
-			tokenRepoErr:   true,
-			getTransaction: defaultGetTransaction,
-			expectError:    true,
 		},
 		{
 			name: "InvalidTransaction",
@@ -202,15 +191,8 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			mockTokenRepo := &mocks.MockTokenRepository{}
-			h := newCryptoTransferTransactionConstructor(mockTokenRepo)
+			h := newCryptoTransferTransactionConstructor()
 			tx := tt.getTransaction()
-
-			if tt.tokenRepoErr {
-				configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs...)
-			} else {
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs...)
-			}
 
 			// when
 			operations, signers, err := h.Parse(defaultContext, tx)
@@ -223,7 +205,6 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 			} else {
 				assert.Nil(t, err)
 				assert.ElementsMatch(t, []hedera.AccountID{accountIdA, accountIdB}, signers)
-				mockTokenRepo.AssertExpectations(t)
 
 				actualTransfers := make([]string, 0, len(operations))
 				for _, operation := range operations {
@@ -324,19 +305,6 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 			expectError: true,
 		},
 		{
-			name: "TokenNotFound",
-			transfers: []transferOperation{
-				{account: accountIdAStr, amount: -15, currency: types.CurrencyHbar},
-				{account: accountIdBStr, amount: 15, currency: types.CurrencyHbar},
-				{account: accountIdBStr, amount: -25, currency: tokenACurrency},
-				{account: accountIdAStr, amount: 25, currency: tokenACurrency},
-				{account: accountIdAStr, amount: -30, currency: tokenBCurrency},
-				{account: accountIdBStr, amount: 30, currency: tokenBCurrency},
-			},
-			tokenRepoErr: true,
-			expectError:  true,
-		},
-		{
 			name: "InvalidNftAmount",
 			transfers: []transferOperation{
 				{account: accountIdAStr, amount: -2, currency: tokenCCurrency, serialNumbers: []interface{}{"1", "2"}},
@@ -390,14 +358,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 				operations = suite.makeOperations(tt.transfers)
 			}
 
-			mockTokenRepo := &mocks.MockTokenRepository{}
-			h := newCryptoTransferTransactionConstructor(mockTokenRepo)
-
-			if !tt.tokenRepoErr {
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs...)
-			} else {
-				configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs...)
-			}
+			h := newCryptoTransferTransactionConstructor()
 
 			// when
 			signers, err := h.Preprocess(defaultContext, operations)
@@ -409,7 +370,6 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestPreprocess() {
 			} else {
 				assert.Nil(t, err)
 				assert.ElementsMatch(t, tt.expectedSigners, signers)
-				mockTokenRepo.AssertExpectations(t)
 			}
 		})
 	}

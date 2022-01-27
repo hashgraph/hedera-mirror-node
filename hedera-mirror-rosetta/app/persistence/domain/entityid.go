@@ -134,6 +134,20 @@ func DecodeEntityId(encodedID int64) (EntityId, error) {
 	}, nil
 }
 
+func EntityIdOf(shard, realm, num int64) (EntityId, error) {
+	encodedId, err := EncodeEntityId(shard, realm, num)
+	if err != nil {
+		return EntityId{}, err
+	}
+
+	return EntityId{
+		ShardNum:  shard,
+		RealmNum:  realm,
+		EntityNum: num,
+		EncodedId: encodedId,
+	}, nil
+}
+
 func EntityIdFromString(entityId string) (EntityId, error) {
 	inputs := strings.Split(entityId, ".")
 	if len(inputs) != 3 {
@@ -155,17 +169,7 @@ func EntityIdFromString(entityId string) (EntityId, error) {
 		return EntityId{}, errorEntityId
 	}
 
-	encodedId, err := EncodeEntityId(shardNum, realmNum, entityNum)
-	if err != nil {
-		return EntityId{}, err
-	}
-
-	return EntityId{
-		ShardNum:  shardNum,
-		RealmNum:  realmNum,
-		EntityNum: entityNum,
-		EncodedId: encodedId,
-	}, nil
+	return EntityIdOf(shardNum, realmNum, entityNum)
 }
 
 func MustDecodeEntityId(encodedId int64) EntityId {

@@ -27,7 +27,6 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -42,17 +41,17 @@ type tokenWipeTransactionConstructorSuite struct {
 }
 
 func (suite *tokenWipeTransactionConstructorSuite) TestNewTransactionConstructor() {
-	h := newTokenWipeTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenWipeTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenWipeTransactionConstructorSuite) TestGetOperationType() {
-	h := newTokenWipeTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenWipeTransactionConstructor()
 	assert.Equal(suite.T(), types.OperationTypeTokenWipe, h.GetOperationType())
 }
 
 func (suite *tokenWipeTransactionConstructorSuite) TestGetSdkTransactionType() {
-	h := newTokenWipeTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenWipeTransactionConstructor()
 	assert.Equal(suite.T(), "TokenWipeTransaction", h.GetSdkTransactionType())
 }
 
@@ -72,9 +71,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestConstruct() {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
 			operations := getTokenWipeOperations()
-			mockTokenRepo := &mocks.MockTokenRepository{}
-			h := newTokenWipeTransactionConstructor(mockTokenRepo)
-			configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
+			h := newTokenWipeTransactionConstructor()
 
 			if tt.updateOperations != nil {
 				operations = tt.updateOperations(operations)
@@ -92,7 +89,6 @@ func (suite *tokenWipeTransactionConstructorSuite) TestConstruct() {
 				assert.Nil(t, err)
 				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 				assertTokenWipeTransaction(t, operations[0], nodeAccountId, tx)
-				mockTokenRepo.AssertExpectations(t)
 
 				if tt.validStartNanos != 0 {
 					assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
@@ -171,16 +167,8 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
 			expectedOperations := getTokenWipeOperations()
-
-			mockTokenRepo := &mocks.MockTokenRepository{}
-			h := newTokenWipeTransactionConstructor(mockTokenRepo)
+			h := newTokenWipeTransactionConstructor()
 			tx := tt.getTransaction()
-
-			if tt.tokenRepoErr {
-				configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
-			} else {
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
-			}
 
 			// when
 			operations, signers, err := h.Parse(defaultContext, tx)
@@ -194,7 +182,6 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 				assert.Nil(t, err)
 				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 				assert.ElementsMatch(t, expectedOperations, operations)
-				mockTokenRepo.AssertExpectations(t)
 			}
 		})
 	}
@@ -271,15 +258,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
 			operations := getTokenWipeOperations()
-
-			mockTokenRepo := &mocks.MockTokenRepository{}
-			h := newTokenWipeTransactionConstructor(mockTokenRepo)
-
-			if tt.tokenRepoErr {
-				configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[tt.mockTokenRepoConfigIndex])
-			} else {
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[tt.mockTokenRepoConfigIndex])
-			}
+			h := newTokenWipeTransactionConstructor()
 
 			if tt.updateOperations != nil {
 				operations = tt.updateOperations(operations)
@@ -295,7 +274,6 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 			} else {
 				assert.Nil(t, err)
 				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-				mockTokenRepo.AssertExpectations(t)
 			}
 		})
 	}

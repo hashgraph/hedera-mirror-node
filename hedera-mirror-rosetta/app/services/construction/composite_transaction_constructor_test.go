@@ -67,12 +67,12 @@ func (suite *compositeTransactionConstructorSuite) SetupTest() {
 }
 
 func (suite *compositeTransactionConstructorSuite) TestNewTransactionConstructor() {
-	h := NewTransactionConstructor(&mocks.MockTokenRepository{})
+	h := NewTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *compositeTransactionConstructorSuite) TestNewTransactionConstructorNilRepo() {
-	h := NewTransactionConstructor(nil)
+	h := NewTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 

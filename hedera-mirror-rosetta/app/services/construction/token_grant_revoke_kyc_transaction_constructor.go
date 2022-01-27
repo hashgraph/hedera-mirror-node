@@ -29,12 +29,12 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
 type tokenGrantRevokeKycTransactionConstructor struct {
 	operationType   string
-	tokenRepo       interfaces.TokenRepository
 	transactionType string
 	validate        *validator.Validate
 }
@@ -110,18 +110,19 @@ func (t *tokenGrantRevokeKycTransactionConstructor) Parse(ctx context.Context, t
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
-	dbToken, err := t.tokenRepo.Find(ctx, tokenId.String())
+	tokenEntityId, err := domain.EntityIdOf(int64(tokenId.Shard), int64(tokenId.Realm), int64(tokenId.Token))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.ErrInvalidToken
 	}
 
+	domainToken := domain.Token{TokenId: tokenEntityId, Type: domain.TokenTypeUnknown}
 	operation := &rTypes.Operation{
 		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 		Type:                t.operationType,
 		Account:             &rTypes.AccountIdentifier{Address: account.String()},
 		Amount: &rTypes.Amount{
 			Value:    "0",
-			Currency: types.Token{Token: dbToken}.ToRosettaCurrency(),
+			Currency: types.Token{Token: domainToken}.ToRosettaCurrency(),
 		},
 		Metadata: map[string]interface{}{"payer": payer.String()},
 	}
@@ -147,7 +148,7 @@ func (t *tokenGrantRevokeKycTransactionConstructor) preprocess(ctx context.Conte
 	*hedera.TokenID,
 	*rTypes.Error,
 ) {
-	return preprocessTokenFreezeKyc(ctx, operations, t.GetOperationType(), t.tokenRepo, t.validate)
+	return preprocessTokenFreezeKyc(ctx, operations, t.GetOperationType(), t.validate)
 }
 
 func (t *tokenGrantRevokeKycTransactionConstructor) GetOperationType() string {
@@ -158,21 +159,19 @@ func (t *tokenGrantRevokeKycTransactionConstructor) GetSdkTransactionType() stri
 	return t.transactionType
 }
 
-func newTokenGrantKycTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
+func newTokenGrantKycTransactionConstructor() transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenGrantKycTransaction{}).Name()
 	return &tokenGrantRevokeKycTransactionConstructor{
 		operationType:   types.OperationTypeTokenGrantKyc,
-		tokenRepo:       tokenRepo,
 		transactionType: transactionType,
 		validate:        validator.New(),
 	}
 }
 
-func newTokenRevokeKycTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
+func newTokenRevokeKycTransactionConstructor() transactionConstructorWithType {
 	transactionType := reflect.TypeOf(hedera.TokenRevokeKycTransaction{}).Name()
 	return &tokenGrantRevokeKycTransactionConstructor{
 		operationType:   types.OperationTypeTokenRevokeKyc,
-		tokenRepo:       tokenRepo,
 		transactionType: transactionType,
 		validate:        validator.New(),
 	}

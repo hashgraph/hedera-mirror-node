@@ -35,7 +35,6 @@ import (
 )
 
 type tokenWipeTransactionConstructor struct {
-	tokenRepo       interfaces.TokenRepository
 	transactionType string
 	validate        *validator.Validate
 }
@@ -88,17 +87,18 @@ func (t *tokenWipeTransactionConstructor) Parse(ctx context.Context, transaction
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
-	dbToken, err := t.tokenRepo.Find(ctx, token.String())
+	tokenEntityId, err := domain.EntityIdOf(int64(token.Shard), int64(token.Realm), int64(token.Token))
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, errors.ErrInvalidToken
 	}
 
+	domainToken := domain.Token{TokenId: tokenEntityId, Type: domain.TokenTypeUnknown}
 	operation := &rTypes.Operation{
 		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 		Account:             &rTypes.AccountIdentifier{Address: account.String()},
 		Amount: &rTypes.Amount{
 			Value:    fmt.Sprintf("%d", -int64(tx.GetAmount())),
-			Currency: types.Token{Token: dbToken}.ToRosettaCurrency(),
+			Currency: types.Token{Token: domainToken}.ToRosettaCurrency(),
 		},
 		Type:     t.GetOperationType(),
 		Metadata: map[string]interface{}{"payer": payer.String()},
@@ -154,7 +154,8 @@ func (t *tokenWipeTransactionConstructor) preprocess(ctx context.Context, operat
 		return
 	}
 
-	if _, err = validateToken(ctx, t.tokenRepo, operation.Amount.Currency); err != nil {
+	if _, err1 := hedera.TokenIDFromString(operation.Amount.Currency.Symbol); err1 != nil {
+		err = errors.ErrInvalidToken
 		return
 	}
 
@@ -179,9 +180,8 @@ func (t *tokenWipeTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func newTokenWipeTransactionConstructor(tokenRepo interfaces.TokenRepository) transactionConstructorWithType {
+func newTokenWipeTransactionConstructor() transactionConstructorWithType {
 	return &tokenWipeTransactionConstructor{
-		tokenRepo:       tokenRepo,
 		transactionType: reflect.TypeOf(hedera.TokenWipeTransaction{}).Name(),
 		validate:        validator.New(),
 	}

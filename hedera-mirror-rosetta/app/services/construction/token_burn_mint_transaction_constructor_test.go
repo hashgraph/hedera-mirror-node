@@ -28,7 +28,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -54,12 +53,12 @@ type tokenTokenBurnMintTransactionConstructorSuite struct {
 }
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestNewTokenBurnTransactionConstructor() {
-	h := newTokenBurnTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenBurnTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestNewTokenMintTransactionConstructor() {
-	h := newTokenMintTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenMintTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 
@@ -83,7 +82,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetOperationType
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&mocks.MockTokenRepository{})
+			h := tt.newHandler()
 			assert.Equal(t, tt.expected, h.GetOperationType())
 		})
 	}
@@ -109,7 +108,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetSdkTransactio
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&mocks.MockTokenRepository{})
+			h := tt.newHandler()
 			assert.Equal(t, tt.expected, h.GetSdkTransactionType())
 		})
 	}
@@ -135,10 +134,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				operations := suite.getOperations(operationType, tt.token)
-				mockTokenRepo := &mocks.MockTokenRepository{}
-				h := newHandler(mockTokenRepo)
-
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[tt.tokenRepoConfigIndex])
+				h := newHandler()
 
 				if tt.updateOperations != nil {
 					operations = tt.updateOperations(operations)
@@ -156,7 +152,6 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 					assertTokenBurnMintTransaction(t, operations, nodeAccountId, tx, tt.token)
-					mockTokenRepo.AssertExpectations(t)
 
 					if tt.validStartNanos != 0 {
 						assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
@@ -278,15 +273,8 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 				// given
 				expectedOperations := suite.getOperations(operationType, tt.token)
 
-				mockTokenRepo := &mocks.MockTokenRepository{}
-				h := newHandler(mockTokenRepo)
+				h := newHandler()
 				tx := tt.getTransaction(operationType, tt.token)
-
-				if tt.tokenRepoErr {
-					configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[tt.tokenRepoConfigIndex])
-				} else {
-					configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[tt.tokenRepoConfigIndex])
-				}
 
 				// when
 				operations, signers, err := h.Parse(defaultContext, tx)
@@ -300,7 +288,6 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 					assert.ElementsMatch(t, expectedOperations, operations)
-					mockTokenRepo.AssertExpectations(t)
 				}
 			})
 		}
@@ -403,15 +390,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				operations := suite.getOperations(operationType, tt.token)
-
-				mockTokenRepo := &mocks.MockTokenRepository{}
-				h := newHandler(mockTokenRepo)
-
-				if tt.tokenRepoErr {
-					configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[tt.tokenRepoConfigIndex])
-				} else {
-					configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[tt.tokenRepoConfigIndex])
-				}
+				h := newHandler()
 
 				if tt.updateOperations != nil {
 					operations = tt.updateOperations(operations)
@@ -427,7 +406,6 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
 				} else {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-					mockTokenRepo.AssertExpectations(t)
 				}
 			})
 		}

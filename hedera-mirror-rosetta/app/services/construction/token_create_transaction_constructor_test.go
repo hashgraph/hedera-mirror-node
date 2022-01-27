@@ -175,7 +175,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 			expectError: true,
 		},
 		{
-			name: "TokenSymboolNotSet",
+			name: "TokenSymbolNotSet",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenCreateTransaction().
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
