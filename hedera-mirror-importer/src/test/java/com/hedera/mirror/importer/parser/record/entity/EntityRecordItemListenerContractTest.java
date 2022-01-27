@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
-import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ENTITY_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,8 +59,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
@@ -94,12 +91,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     @Resource
     private RecordItemBuilder recordItemBuilder;
 
-    @Resource(name = CACHE_MANAGER_ENTITY_ID)
-    private CacheManager cacheManager;
-
     @BeforeEach
     void before() {
-        cacheManager.getCacheNames().stream().map(cacheManager::getCache).forEach(Cache::clear);
         contractIds = new HashMap<>();
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
@@ -128,10 +121,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
     @Test
     void contractCreateWithEvmAddress() {
+        byte[] evmAddress = domainBuilder.create2EvmAddress();
         RecordItem recordItem = recordItemBuilder.contractCreate()
                 .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
                                 .clearCreatedContractIDs()
-                                .setEvmAddress(BytesValue.of(ByteString.copyFrom(domainBuilder.create2EvmAddress())))
+                                .addCreatedContractIDs(r.getContractCreateResult().getContractID())
+                                .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(evmAddress)))
                 ))
                 .build();
         var record = recordItem.getRecord();
@@ -655,6 +650,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
         var adminKey = transactionBody.getAdminKey().toByteArray();
         var transaction = transactionRepository.findById(createdTimestamp).get();
+        var contractCreateResult = recordItem.getRecord().getContractCreateResult();
+        byte[] evmAddress = contractCreateResult.hasEvmAddress() ?
+                DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()) : null;
         EntityId entityId = transaction.getEntityId();
         Contract contract = getEntity(entityId);
 
@@ -667,6 +665,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(transactionBody.getAutoRenewPeriod().getSeconds(), Contract::getAutoRenewPeriod)
                 .returns(createdTimestamp, Contract::getCreatedTimestamp)
                 .returns(false, Contract::getDeleted)
+                .returns(evmAddress, Contract::getEvmAddress)
                 .returns(null, Contract::getExpirationTimestamp)
                 .returns(entityId.getId(), Contract::getId)
                 .returns(EntityId.of(transactionBody.getFileID()), Contract::getFileId)
@@ -739,7 +738,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     .returns(EntityId.of(record.getReceipt().getContractID()), ContractResult::getContractId);
         }
 
-        assertContractResult(consensusTimestamp, record.getReceipt(), result, result.getLogInfoList(), contractResult,
+        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
                 result.getStateChangesList());
     }
 
@@ -761,11 +760,11 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(toBytes(transactionBody.getFunctionParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
-        assertContractResult(consensusTimestamp, record.getReceipt(), result, result.getLogInfoList(), contractResult,
+        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
                 result.getStateChangesList());
     }
 
-    private void assertContractResult(long consensusTimestamp, TransactionReceipt receipt, ContractFunctionResult result,
+    private void assertContractResult(long consensusTimestamp, ContractFunctionResult result,
                                       List<ContractLoginfo> logInfoList,
                                       ObjectAssert<ContractResult> contractResult,
                                       List<com.hederahashgraph.api.proto.java.ContractStateChange> stageChangeList) {
@@ -773,9 +772,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .stream()
                 .map(ContractID::getContractNum)
                 .collect(Collectors.toList());
-        if (result.hasEvmAddress()) {
-            createdContractIds.add(receipt.getContractID().getContractNum());
-        }
 
         contractResult
                 .returns(result.getBloom().toByteArray(), ContractResult::getBloom)

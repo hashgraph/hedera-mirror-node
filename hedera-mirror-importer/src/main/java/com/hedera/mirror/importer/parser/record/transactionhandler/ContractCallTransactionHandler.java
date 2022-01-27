@@ -43,7 +43,6 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
     }
 
     @Override
-    @SuppressWarnings("deprecated")
     public EntityId getEntity(RecordItem recordItem) {
         ContractID contractId = recordItem.getTransactionBody().getContractCall().getContractID();
         EntityId entityId = entityIdService.lookup(contractId);

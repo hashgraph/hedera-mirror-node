@@ -21,12 +21,11 @@ package com.hedera.mirror.importer.domain;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ENTITY_ID;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ALIAS;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import java.nio.ByteBuffer;
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -36,7 +35,6 @@ import org.springframework.cache.CacheManager;
 import com.hedera.mirror.common.domain.Aliasable;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.ContractRepository;
@@ -48,7 +46,7 @@ public class EntityIdServiceImpl implements EntityIdService {
     private final Cache cache;
     private final ContractRepository contractRepository;
 
-    public EntityIdServiceImpl(@Named(CACHE_MANAGER_ENTITY_ID) CacheManager cacheManager,
+    public EntityIdServiceImpl(@Named(CACHE_MANAGER_ALIAS) CacheManager cacheManager,
                                ContractRepository contractRepository) {
         this.cache = cacheManager.getCache("entityId");
         this.contractRepository = contractRepository;
@@ -63,7 +61,7 @@ public class EntityIdServiceImpl implements EntityIdService {
     @Override
     @SuppressWarnings("deprecation")
     public EntityId lookup(ContractID contractId) {
-        if (contractId.equals(ContractID.getDefaultInstance())) {
+        if (contractId == null || contractId.equals(ContractID.getDefaultInstance())) {
             return EntityId.EMPTY;
         }
 
@@ -83,7 +81,6 @@ public class EntityIdServiceImpl implements EntityIdService {
                 entityId = lookupByEvmAddress(contractId);
                 break;
             default:
-                log.error("Invalid ContractID ContractCase {}", contractCase);
                 throw new InvalidDatasetException(String.format("Invalid ContractID ContractCase %s", contractCase));
         }
 
@@ -105,7 +102,7 @@ public class EntityIdServiceImpl implements EntityIdService {
         }
 
         EntityId entityId = aliasable.toEntityId();
-        ByteString alias = ByteString.copyFrom(aliasable.getAlias());
+        ByteString alias = DomainUtils.fromBytes(aliasable.getAlias());
         int hashCode;
         if (aliasable.getType() == EntityType.ACCOUNT) {
             hashCode = AccountID.newBuilder()
@@ -128,7 +125,7 @@ public class EntityIdServiceImpl implements EntityIdService {
 
     private EntityId lookupByEvmAddress(ContractID contractId) {
         byte[] evmAddress = DomainUtils.toBytes(contractId.getEvmAddress());
-        return Optional.ofNullable(parseEvmAddress(evmAddress))
+        return Optional.ofNullable(DomainUtils.fromEvmAddress(evmAddress))
                 // verify shard and realm match when assuming evmAddress is in the 'shard.realm.num' form
                 .filter(e -> e.getShardNum() == contractId.getShardNum() && e.getRealmNum() == contractId.getRealmNum())
                 .or(() -> contractRepository.findByEvmAddress(evmAddress).map(id -> EntityId.of(id, CONTRACT)))
@@ -137,16 +134,5 @@ public class EntityIdServiceImpl implements EntityIdService {
                             "data or the address doesn't exist in network", () -> DomainUtils.bytesToHex(evmAddress));
                     return EntityId.EMPTY;
                 });
-    }
-
-    private EntityId parseEvmAddress(byte[] evmAddress) {
-        try {
-            // the 'shard.realm.num' form evm address has 4 bytes for shard, and 8 bytes each for realm and num.
-            ByteBuffer buffer = ByteBuffer.wrap(evmAddress);
-            return EntityId.of(buffer.getInt(), buffer.getLong(), buffer.getLong(), CONTRACT);
-        } catch (InvalidEntityException ex) {
-            log.debug("Failed to parse shard.realm.num form evm address into EntityId", ex);
-            return null;
-        }
     }
 }

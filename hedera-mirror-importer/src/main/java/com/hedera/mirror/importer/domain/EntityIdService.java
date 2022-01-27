@@ -29,5 +29,5 @@ public interface EntityIdService {
 
     EntityId lookup(ContractID contractId);
 
-    void store(Aliasable entity);
+    void store(Aliasable aliasable);
 }

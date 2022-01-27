@@ -60,17 +60,10 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
                 EntityId contractId = entityIdService.lookup(createdContractId);
                 createdContractIds.add(contractId.getId());
 
-                if (persist && !EntityId.isEmpty(contractId)) {
+                // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
+                if (persist && !EntityId.isEmpty(contractId) && !contractId.equals(contractResult.getContractId())) {
                     doUpdateEntity(getContract(contractId, consensusTimestamp), recordItem);
                 }
-            }
-
-            if (functionResult.hasEvmAddress()) {
-                EntityId contractId = entityIdService.lookup(recordItem.getRecord().getReceipt().getContractID());
-                createdContractIds.add(contractId.getId());
-                Contract contract = getContract(contractId, consensusTimestamp);
-                contract.setEvmAddress(DomainUtils.toBytes(functionResult.getEvmAddress().getValue()));
-                doUpdateEntity(contract, recordItem);
             }
 
             contractResult.setBloom(DomainUtils.toBytes(functionResult.getBloom()));
@@ -104,7 +97,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             for (int stateIndex = 0; stateIndex < functionResult.getStateChangesCount(); ++stateIndex) {
                 var contractStateChangeInfo = functionResult.getStateChanges(stateIndex);
 
-                var contractId = EntityId.of(contractStateChangeInfo.getContractID());
+                var contractId = entityIdService.lookup(contractStateChangeInfo.getContractID());
                 for (int storageIndex = 0; storageIndex < contractStateChangeInfo
                         .getStorageChangesCount(); ++storageIndex) {
                     StorageChange storageChange = contractStateChangeInfo.getStorageChanges(storageIndex);
@@ -135,7 +128,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
 
     protected abstract void doUpdateEntity(Contract contract, RecordItem recordItem);
 
-    private Contract getContract(EntityId contractId, long consensusTimestamp) {
+    protected Contract getContract(EntityId contractId, long consensusTimestamp) {
         Contract contract = contractId.toEntity();
         contract.setCreatedTimestamp(consensusTimestamp);
         contract.setDeleted(false);

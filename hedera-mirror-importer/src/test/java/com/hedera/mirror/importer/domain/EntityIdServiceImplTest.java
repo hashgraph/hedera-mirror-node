@@ -21,14 +21,12 @@ package com.hedera.mirror.importer.domain;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ENTITY_ID;
+import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ALIAS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractID;
 import javax.annotation.Resource;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -38,6 +36,7 @@ import org.springframework.cache.CacheManager;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.ContractRepository;
@@ -51,7 +50,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
             0, 0, 0, 0, 0, 0, 0, 100, // num
     };
 
-    @Resource(name = CACHE_MANAGER_ENTITY_ID)
+    @Resource(name = CACHE_MANAGER_ALIAS)
     private CacheManager cacheManager;
 
     @Resource
@@ -62,11 +61,6 @@ class EntityIdServiceImplTest extends IntegrationTest {
 
     @Resource
     private EntityIdService entityIdService;
-
-    @BeforeEach
-    void beforeEach() {
-        clearCache();
-    }
 
     @Test
     void cache() {
@@ -101,7 +95,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
         ContractID contractId = ContractID.newBuilder()
                 .setShardNum(contract.getShard())
                 .setRealmNum(contract.getRealm())
-                .setEvmAddress(ByteString.copyFrom(contract.getEvmAddress()))
+                .setEvmAddress(DomainUtils.fromBytes(contract.getEvmAddress()))
                 .build();
         assertThat(entityIdService.lookup(contractId)).isEqualTo(contract.toEntityId());
     }
@@ -124,8 +118,13 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    void lookupNull() {
+        assertThat(entityIdService.lookup(null)).isEqualTo(EntityId.EMPTY);
+    }
+
+    @Test
     void lookupParsableEvmAddress() {
-        ContractID contractId = ContractID.newBuilder().setEvmAddress(ByteString.copyFrom(PARSABLE_EVM_ADDRESS)).build();
+        var contractId = ContractID.newBuilder().setEvmAddress(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS)).build();
         assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.of(100, CONTRACT));
     }
 
@@ -134,7 +133,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
         ContractID contractId = ContractID.newBuilder()
                 .setShardNum(1)
                 .setRealmNum(2)
-                .setEvmAddress(ByteString.copyFrom(PARSABLE_EVM_ADDRESS))
+                .setEvmAddress(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS))
                 .build();
         assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.EMPTY);
     }
@@ -171,7 +170,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
         if (contract.getEvmAddress() == null) {
             contractId.setContractNum(contract.getNum());
         } else {
-            contractId.setEvmAddress(ByteString.copyFrom(contract.getEvmAddress()));
+            contractId.setEvmAddress(DomainUtils.fromBytes(contract.getEvmAddress()));
         }
         return contractId.build();
     }

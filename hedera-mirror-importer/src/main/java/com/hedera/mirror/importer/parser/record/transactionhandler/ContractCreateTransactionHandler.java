@@ -58,13 +58,19 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
         var transactionRecord = recordItem.getRecord();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        EntityId entityId = transaction.getEntityId();
         transaction.setInitialBalance(transactionBody.getInitialBalance());
+
+        if (entityProperties.getPersist().isContracts() && recordItem.isSuccessful() && !EntityId.isEmpty(entityId)) {
+            doUpdateEntity(getContract(entityId, consensusTimestamp), recordItem);
+        }
 
         if (entityProperties.getPersist().isContracts()) {
             ContractResult contractResult = new ContractResult();
             contractResult.setAmount(transactionBody.getInitialBalance());
-            contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-            contractResult.setContractId(transaction.getEntityId());
+            contractResult.setConsensusTimestamp(consensusTimestamp);
+            contractResult.setContractId(entityId);
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
             contractResult.setPayerAccountId(transaction.getPayerAccountId());
@@ -91,6 +97,11 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
 
         if (transactionBody.hasFileID()) {
             contract.setFileId(EntityId.of(transactionBody.getFileID()));
+        }
+
+        var contractCreateResult = recordItem.getRecord().getContractCreateResult();
+        if (contractCreateResult.hasEvmAddress()) {
+            contract.setEvmAddress(DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()));
         }
 
         contract.setMemo(transactionBody.getMemo());

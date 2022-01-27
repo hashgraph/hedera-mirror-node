@@ -250,6 +250,39 @@ class DomainUtilsTest {
     }
 
     @Test
+    void fromBytes() {
+        byte[] bytes = RandomUtils.nextBytes(16);
+
+        assertThat(DomainUtils.fromBytes(null)).isEqualTo(ByteString.EMPTY);
+        assertThat(DomainUtils.fromBytes(new byte[0])).isEqualTo(ByteString.EMPTY);
+        assertThat(DomainUtils.fromBytes(bytes).toByteArray()).isEqualTo(bytes);
+    }
+
+    @Test
+    void fromEvmAddress() {
+        long shard = 1;
+        long realm= 2;
+        long num = 255;
+        byte[] evmAddress = new byte[20];
+        evmAddress[3] = (byte)shard;
+        evmAddress[11] = (byte)realm;
+        evmAddress[19] = (byte)num;
+        EntityId expected = EntityId.of(shard, realm, num, EntityType.CONTRACT);
+        assertThat(DomainUtils.fromEvmAddress(evmAddress)).isEqualTo(expected);
+
+        evmAddress[0] = (byte)255;
+        evmAddress[4] = (byte)255;
+        evmAddress[12] = (byte)255;
+        // can't be encoded to long
+        assertThat(DomainUtils.fromEvmAddress(evmAddress)).isNull();
+    }
+
+    @Test
+    void fromEvmAddressIncorrectSize() {
+        assertThrows(Exception.class, () -> DomainUtils.fromEvmAddress(new byte[10]));
+    }
+
+    @Test
     void toEvmAddress() {
         EntityId contractId = EntityId.of(1, 2, 255, EntityType.CONTRACT);
         String expected = "00000001000000000000000200000000000000FF";
