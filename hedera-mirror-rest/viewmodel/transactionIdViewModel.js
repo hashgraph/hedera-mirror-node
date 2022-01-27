@@ -49,7 +49,7 @@ class TransactionIdViewModel {
       // handle db format. Handle nil case for nonce and scheduled
       this.account_id = EntityId.parse(transactionId.payerAccountId).toString();
       this.nonce = _.isNil(transactionId.nonce) ? null : Number(transactionId.nonce);
-      this.scheduled = _.isNil(transactionId.scheduled) ? null : transactionId.scheduled;
+      this.scheduled = transactionId.scheduled;
       this.transaction_valid_start = utils.nsToSecNs(transactionId.validStartTimestamp);
     }
   }
