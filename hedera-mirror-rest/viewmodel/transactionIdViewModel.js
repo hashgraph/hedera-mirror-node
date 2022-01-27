@@ -23,6 +23,7 @@
 const _ = require('lodash');
 
 const EntityId = require('../entityId');
+const {TransactionID} = require('@hashgraph/proto');
 const utils = require('../utils');
 
 /**
@@ -35,21 +36,21 @@ class TransactionIdViewModel {
    * @param {TransactionId|TransactionID} transactionId
    */
   constructor(transactionId) {
-    if (_.isNil(transactionId.accountID)) {
-      // handle db format
-      this.account_id = EntityId.parse(transactionId.payerAccountId).toString();
-      this.nonce = _.isNil(transactionId.nonce) ? null : Number(transactionId.nonce);
-      this.scheduled = _.isNil(transactionId.scheduled) ? null : transactionId.scheduled;
-      this.transaction_valid_start = utils.nsToSecNs(transactionId.validStartTimestamp);
-    } else {
+    if (transactionId instanceof TransactionID) {
       // handle proto format
       const {accountID, transactionValidStart, nonce, scheduled} = transactionId;
       this.account_id = EntityId.of(accountID.shardNum, accountID.realmNum, accountID.accountNum).toString();
-      this.nonce = _.isNil(nonce) ? null : Number(nonce);
+      this.nonce = Number(nonce);
       this.scheduled = scheduled;
       this.transaction_valid_start = `${transactionValidStart.seconds}.${transactionValidStart.nanos
         .toString()
         .padStart(9, '0')}`;
+    } else {
+      // handle db format. Handle nil case for nonce and scheduled
+      this.account_id = EntityId.parse(transactionId.payerAccountId).toString();
+      this.nonce = _.isNil(transactionId.nonce) ? null : Number(transactionId.nonce);
+      this.scheduled = _.isNil(transactionId.scheduled) ? null : transactionId.scheduled;
+      this.transaction_valid_start = utils.nsToSecNs(transactionId.validStartTimestamp);
     }
   }
 }

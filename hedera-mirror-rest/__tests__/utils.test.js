@@ -120,21 +120,6 @@ describe('Utils createTransactionId tests', () => {
   });
 });
 
-describe('Utils createTransactionIdFromProto tests', () => {
-  test('Verify correct result for valid input', () => {
-    const timestamp = Timestamp.create({seconds: 1234567890, nanos: 123});
-    const accountId = AccountID.create({shardNum: 1, realmNum: 2, accountNum: 3});
-    const transactionId = TransactionID.create({accountID: accountId, transactionValidStart: timestamp});
-    expect(utils.createTransactionIdFromProto(transactionId)).toEqual('1.2.3-1234567890-000000123');
-  });
-  test('Verify correct result for default input', () => {
-    const timestamp = Timestamp.create();
-    const accountId = AccountID.create({accountNum: 0}); //accountNum must be populated
-    const transactionId = TransactionID.create({accountID: accountId, transactionValidStart: timestamp});
-    expect(utils.createTransactionIdFromProto(transactionId)).toEqual('0.0.0-0-000000000');
-  });
-});
-
 describe('Utils encodeKey', () => {
   test('Null', () => expect(utils.encodeKey(null)).toBe(null));
   [

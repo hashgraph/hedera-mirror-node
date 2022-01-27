@@ -1868,7 +1868,7 @@ components:
           example: false
           type: boolean
           nullable: true
-        valid_start_timestamp:
+        transaction_valid_start:
           $ref: '#/components/schemas/Timestamp'
     Transactions:
       type: array
