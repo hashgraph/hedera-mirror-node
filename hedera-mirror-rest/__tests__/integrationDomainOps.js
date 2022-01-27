@@ -693,9 +693,6 @@ const addContractStateChange = async (contractStateChangeInput) => {
     'value_read',
     'value_written',
   ];
-  const positions = _.range(1, insertFields.length + 1)
-    .map((position) => `$${position}`)
-    .join(',');
 
   const contractStateChange = {
     consensus_timestamp: 1234510001,
@@ -717,11 +714,7 @@ const addContractStateChange = async (contractStateChangeInput) => {
     contractStateChange.value_written
   );
 
-  await sqlConnection.query(
-    `insert into contract_state_change (${insertFields.join(',')})
-     values (${positions})`,
-    insertFields.map((name) => contractStateChange[name])
-  );
+  await insertDomainObject('contract_state_change', insertFields, contractStateChange);
 };
 
 const addCryptoTransaction = async (cryptoTransfer) => {

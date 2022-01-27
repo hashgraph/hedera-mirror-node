@@ -204,7 +204,7 @@ class ContractService extends BaseService {
     }
 
     const whereClause = `where ${ContractStateChange.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
-    const orderClause = `order by ${ContractStateChange.CONSENSUS_TIMESTAMP}, ${ContractStateChange.CONTRACT_ID}`;
+    const orderClause = `order by ${ContractStateChange.CONSENSUS_TIMESTAMP}, ${ContractStateChange.CONTRACT_ID}, ${ContractStateChange.SLOT}`;
     const query = [ContractService.contractStateChangesQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractStateChangesByTimestamps');
     return rows.map((row) => new ContractStateChange(row));

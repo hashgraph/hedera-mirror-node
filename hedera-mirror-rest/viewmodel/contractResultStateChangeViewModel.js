@@ -35,13 +35,11 @@ class ContractResultStateChangeViewModel {
    */
   constructor(contractStateChange) {
     const contractId = EntityId.parse(contractStateChange.contractId, constants.filterKeys.CONTRACTID);
-    Object.assign(this, {
-      address: contractId.toSolidityAddress(),
-      contract_id: contractId.toString(),
-      slot: utils.toHexString(contractStateChange.slot, true),
-      value_read: utils.toHexString(contractStateChange.valueRead, true),
-      value_written: utils.toHexString(contractStateChange.valueWritten, true),
-    });
+    this.address = contractId.toSolidityAddress();
+    this.contract_id = contractId.toString();
+    this.slot = utils.toHexString(contractStateChange.slot, true, 64);
+    this.value_read = utils.toHexString(contractStateChange.valueRead, true, 64);
+    this.value_written = utils.toHexString(contractStateChange.valueWritten, true, 64);
   }
 }
 
