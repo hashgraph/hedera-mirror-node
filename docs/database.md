@@ -53,11 +53,16 @@ The following configuration needs to be applied to the database instance to impr
 
 ```
 checkpoint_timeout = 30m
+maintenance_work_mem = 2GB
+max_parallel_maintenance_workers = 4
 max_wal_size = 512GB
 temp_file_limit = 2147483647kB
 ```
 
-Note: once the data is restored, revert the values back for normal operation.
+Note:
+ - Not all flags are available in managed database services. For example, `max_parallel_maintenance_workers` is not
+   available in Google Cloud SQL.
+ - Once the data is restored, revert the values back for normal operation.
 
 ### Restore
 
