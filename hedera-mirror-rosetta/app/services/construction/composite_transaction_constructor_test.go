@@ -71,11 +71,6 @@ func (suite *compositeTransactionConstructorSuite) TestNewTransactionConstructor
 	assert.NotNil(suite.T(), h)
 }
 
-func (suite *compositeTransactionConstructorSuite) TestNewTransactionConstructorNilRepo() {
-	h := NewTransactionConstructor()
-	assert.NotNil(suite.T(), h)
-}
-
 func (suite *compositeTransactionConstructorSuite) TestConstruct() {
 	// given
 	suite.mockConstructor.
