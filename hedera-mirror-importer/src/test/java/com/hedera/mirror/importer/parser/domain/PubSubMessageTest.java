@@ -182,7 +182,10 @@ class PubSubMessageTest {
                 "  \"tokenTransferLists\":[]," +
                 "  \"assessedCustomFees\":[]," +
                 "  \"automaticTokenAssociations\":[]," +
-                "  \"alias\":\"\"" +
+                "  \"alias\":\"\"," +
+                "  \"cryptoAdjustments\":[]," +
+                "  \"nftAdjustments\":[]," +
+                "  \"tokenAdjustments\":[]" +
                 "}";
     }
 
