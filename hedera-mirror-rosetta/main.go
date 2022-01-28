@@ -82,7 +82,6 @@ func newBlockchainOnlineRouter(
 	accountRepo := persistence.NewAccountRepository(dbClient)
 	addressBookEntryRepo := persistence.NewAddressBookEntryRepository(dbClient)
 	blockRepo := persistence.NewBlockRepository(dbClient)
-	tokenRepo := persistence.NewTokenRepository(dbClient)
 	transactionRepo := persistence.NewTransactionRepository(dbClient)
 
 	baseService := services.NewOnlineBaseService(blockRepo, transactionRepo)

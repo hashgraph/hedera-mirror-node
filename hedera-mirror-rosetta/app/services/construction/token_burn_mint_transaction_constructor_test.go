@@ -116,16 +116,15 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetSdkTransactio
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
 	tests := []struct {
-		name                 string
-		updateOperations     updateOperationsFunc
-		tokenRepoConfigIndex int
-		token                domain.Token
-		validStartNanos      int64
-		expectError          bool
+		name             string
+		updateOperations updateOperationsFunc
+		token            domain.Token
+		validStartNanos  int64
+		expectError      bool
 	}{
-		{name: "SuccessFT", tokenRepoConfigIndex: 0, token: dbTokenA},
-		{name: "SuccessNFT", tokenRepoConfigIndex: 2, token: dbTokenC},
-		{name: "SuccessValidStartNanos", tokenRepoConfigIndex: 0, token: dbTokenA, validStartNanos: 100},
+		{name: "SuccessFT", token: dbTokenA},
+		{name: "SuccessNFT", token: dbTokenC},
+		{name: "SuccessValidStartNanos", token: dbTokenA, validStartNanos: 100},
 		{name: "EmptyOperations", updateOperations: getEmptyOperations, expectError: true},
 	}
 
@@ -197,22 +196,13 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 	}
 
 	tests := []struct {
-		name                 string
-		getTransaction       func(operationType string, token domain.Token) interfaces.Transaction
-		token                domain.Token
-		tokenRepoConfigIndex int
-		tokenRepoErr         bool
-		expectError          bool
+		name           string
+		getTransaction func(operationType string, token domain.Token) interfaces.Transaction
+		token          domain.Token
+		expectError    bool
 	}{
 		{name: "SuccessFT", getTransaction: defaultGetTransaction, token: dbTokenA},
-		{name: "SuccessNFT", getTransaction: defaultGetTransaction, tokenRepoConfigIndex: 2, token: dbTokenC},
-		{
-			name:           "TokenNotFound",
-			token:          dbTokenA,
-			tokenRepoErr:   true,
-			getTransaction: defaultGetTransaction,
-			expectError:    true,
-		},
+		{name: "SuccessNFT", getTransaction: defaultGetTransaction, token: dbTokenC},
 		{
 			name: "InvalidTransaction",
 			getTransaction: func(string, domain.Token) interfaces.Transaction {
@@ -304,84 +294,60 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
 	tests := []struct {
-		name                 string
-		token                domain.Token
-		tokenRepoConfigIndex int
-		tokenRepoErr         bool
-		updateOperations     updateOperationsFunc
-		expectError          bool
+		name             string
+		token            domain.Token
+		updateOperations updateOperationsFunc
+		expectError      bool
 	}{
-		{name: "SuccessFT", token: dbTokenA, tokenRepoConfigIndex: 0},
-		{name: "SuccessNFT", token: dbTokenC, tokenRepoConfigIndex: 2},
+		{name: "SuccessFT", token: dbTokenA},
+		{name: "SuccessNFT", token: dbTokenC},
 		{
-			name:                 "InvalidAccountAddress",
-			token:                dbTokenA,
-			tokenRepoConfigIndex: 0,
-			updateOperations:     updateOperationAccount("x.y.z"),
-			expectError:          true,
+			name:             "InvalidAccountAddress",
+			token:            dbTokenA,
+			updateOperations: updateOperationAccount("x.y.z"),
+			expectError:      true,
 		},
 		{
-			name:                 "ZeroAccountAddress",
-			token:                dbTokenA,
-			tokenRepoConfigIndex: 0,
-			updateOperations:     updateOperationAccount("0.0.0"),
-			expectError:          true,
+			name:             "ZeroAccountAddress",
+			token:            dbTokenA,
+			updateOperations: updateOperationAccount("0.0.0"),
+			expectError:      true,
 		},
 		{
-			name:                 "InvalidCurrency",
-			token:                dbTokenA,
-			tokenRepoConfigIndex: 0,
-			updateOperations:     updateCurrency(types.CurrencyHbar),
-			expectError:          true,
+			name:             "InvalidCurrency",
+			token:            dbTokenA,
+			updateOperations: updateCurrency(types.CurrencyHbar),
+			expectError:      true,
 		},
 		{
-			name:                 "InvalidCurrencySymbol",
-			token:                dbTokenA,
-			tokenRepoConfigIndex: 0,
-			updateOperations:     updateTokenSymbol("1"),
-			expectError:          true,
+			name:             "InvalidCurrencySymbol",
+			token:            dbTokenA,
+			updateOperations: updateTokenSymbol("1"),
+			expectError:      true,
 		},
 		{
-			name:                 "TokenDecimalsMismatch",
-			token:                dbTokenA,
-			tokenRepoConfigIndex: 0,
-			updateOperations:     updateTokenDecimals(1990),
-			expectError:          true,
+			name:             "ZeroAmountValue",
+			token:            dbTokenA,
+			updateOperations: updateAmountValue("0"),
+			expectError:      true,
 		},
 		{
-			name:                 "ZeroAmountValue",
-			token:                dbTokenA,
-			tokenRepoConfigIndex: 0,
-			updateOperations:     updateAmountValue("0"),
-			expectError:          true,
+			name:             "NegatedAmountValue",
+			token:            dbTokenA,
+			updateOperations: negateAmountValue,
+			expectError:      true,
 		},
 		{
-			name:                 "NegatedAmountValue",
-			token:                dbTokenA,
-			tokenRepoConfigIndex: 0,
-			updateOperations:     negateAmountValue,
-			expectError:          true,
+			name:             "MissingAmount",
+			token:            dbTokenA,
+			updateOperations: updateAmount(nil),
+			expectError:      true,
 		},
 		{
-			name:                 "MissingAmount",
-			token:                dbTokenA,
-			tokenRepoConfigIndex: 0,
-			updateOperations:     updateAmount(nil),
-			expectError:          true,
-		},
-		{
-			name:                 "TokenNotFound",
-			token:                dbTokenA,
-			tokenRepoConfigIndex: 0,
-			tokenRepoErr:         true,
-			expectError:          true,
-		},
-		{
-			name:                 "InvalidOperationType",
-			token:                dbTokenA,
-			tokenRepoConfigIndex: 0,
-			updateOperations:     updateOperationType(types.OperationTypeCryptoTransfer),
-			expectError:          true,
+			name:             "InvalidOperationType",
+			token:            dbTokenA,
+			updateOperations: updateOperationType(types.OperationTypeCryptoTransfer),
+			expectError:      true,
 		},
 	}
 
@@ -429,13 +395,17 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) getOperations(
 		amount = mintAmount
 	}
 
+	currency := newRosettaCurrencyBuilder().
+		setSymbol(token.TokenId.String()).
+		setType(token.Type).
+		build()
 	operation := &rTypes.Operation{
 		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 		Type:                operationType,
 		Account:             payerAccountIdentifier,
 		Amount: &rTypes.Amount{
 			Value:    fmt.Sprintf("%d", amount),
-			Currency: types.Token{Token: token}.ToRosettaCurrency(),
+			Currency: currency,
 		},
 	}
 

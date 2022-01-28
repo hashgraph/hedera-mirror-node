@@ -173,7 +173,6 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 
 	tests := []struct {
 		name           string
-		tokenRepoErr   bool
 		getTransaction func(operationType string) interfaces.Transaction
 		expectError    bool
 	}{
@@ -182,27 +181,9 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 			getTransaction: defaultGetTransaction,
 		},
 		{
-			name:           "TokenNotFound",
-			tokenRepoErr:   true,
-			getTransaction: defaultGetTransaction,
-			expectError:    true,
-		},
-		{
 			name:           "InvalidTransaction",
 			getTransaction: getTransferTransaction,
 			expectError:    true,
-		},
-		{
-			name: "TransactionMismatch",
-			getTransaction: func(operationType string) interfaces.Transaction {
-				if operationType == types.OperationTypeTokenGrantKyc {
-					return hedera.NewTokenRevokeKycTransaction()
-				}
-
-				return hedera.NewTokenGrantKycTransaction()
-
-			},
-			expectError: true,
 		},
 		{
 			name: "TransactionAccountIDNotSet",
@@ -294,7 +275,6 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 	tests := []struct {
 		name             string
-		tokenRepoErr     bool
 		updateOperations updateOperationsFunc
 		expectError      bool
 	}{
@@ -320,11 +300,6 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 			expectError:      true,
 		},
 		{
-			name:             "TokenDecimalsMismatch",
-			updateOperations: updateTokenDecimals(1990),
-			expectError:      true,
-		},
-		{
 			name:             "NegativeAmountValue",
 			updateOperations: updateAmountValue("-100"),
 			expectError:      true,
@@ -333,11 +308,6 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 			name:             "MissingAmount",
 			updateOperations: updateAmount(nil),
 			expectError:      true,
-		},
-		{
-			name:         "TokenNotFound",
-			tokenRepoErr: true,
-			expectError:  true,
 		},
 		{
 			name:             "InvalidOperationType",
@@ -387,7 +357,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) getOperations(opera
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 			Type:                operationType,
 			Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
-			Amount:              &rTypes.Amount{Value: "0", Currency: tokenACurrency},
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenAPartialCurrency},
 			Metadata:            map[string]interface{}{"payer": payerId.String()},
 		},
 	}

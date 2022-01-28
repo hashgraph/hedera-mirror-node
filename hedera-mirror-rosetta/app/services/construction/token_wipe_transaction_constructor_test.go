@@ -70,7 +70,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestConstruct() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			operations := getTokenWipeOperations()
+			operations := getTokenWipeOperations(false)
 			h := newTokenWipeTransactionConstructor()
 
 			if tt.updateOperations != nil {
@@ -110,17 +110,10 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 
 	var tests = []struct {
 		name           string
-		tokenRepoErr   bool
 		getTransaction func() interfaces.Transaction
 		expectError    bool
 	}{
 		{name: "Success", getTransaction: defaultGetTransaction},
-		{
-			name:           "TokenNotFound",
-			tokenRepoErr:   true,
-			getTransaction: defaultGetTransaction,
-			expectError:    true,
-		},
 		{
 			name: "InvalidTransaction",
 			getTransaction: func() interfaces.Transaction {
@@ -166,7 +159,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			expectedOperations := getTokenWipeOperations()
+			expectedOperations := getTokenWipeOperations(true)
 			h := newTokenWipeTransactionConstructor()
 			tx := tt.getTransaction()
 
@@ -189,11 +182,9 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 
 func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 	var tests = []struct {
-		name                     string
-		mockTokenRepoConfigIndex int
-		tokenRepoErr             bool
-		updateOperations         updateOperationsFunc
-		expectError              bool
+		name             string
+		updateOperations updateOperationsFunc
+		expectError      bool
 	}{
 		{name: "Success"},
 		{
@@ -205,16 +196,6 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 			name:             "InvalidAmountValue",
 			updateOperations: updateAmountValue("0"),
 			expectError:      true,
-		},
-		{
-			name:             "TokenDecimalsMismatch",
-			updateOperations: updateTokenDecimals(1990),
-			expectError:      true,
-		},
-		{
-			name:         "TokenNotFound",
-			tokenRepoErr: true,
-			expectError:  true,
 		},
 		{
 			name:             "InvalidMetadataPayer",
@@ -242,10 +223,9 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 			expectError:      true,
 		},
 		{
-			name:                     "NFTSerialNumbersCountMismatch",
-			mockTokenRepoConfigIndex: 2,
-			updateOperations:         updateAmount(&rTypes.Amount{Value: "-2", Currency: tokenCCurrency}),
-			expectError:              true,
+			name:             "NFTSerialNumbersCountMismatch",
+			updateOperations: updateAmount(&rTypes.Amount{Value: "-2", Currency: tokenCCurrency}),
+			expectError:      true,
 		},
 		{
 			name:             "InvalidCurrency",
@@ -257,7 +237,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			operations := getTokenWipeOperations()
+			operations := getTokenWipeOperations(false)
 			h := newTokenWipeTransactionConstructor()
 
 			if tt.updateOperations != nil {
@@ -301,17 +281,19 @@ func assertTokenWipeTransaction(
 	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
 }
 
-func getTokenWipeOperations() []*rTypes.Operation {
+func getTokenWipeOperations(partialTokenCurrency bool) []*rTypes.Operation {
+	currency := tokenACurrency
+	if partialTokenCurrency {
+		currency = tokenAPartialCurrency
+	}
+	value := fmt.Sprintf("%d", -defaultAmount)
 	return []*rTypes.Operation{
 		{
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 			Type:                types.OperationTypeTokenWipe,
 			Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
-			Amount: &rTypes.Amount{
-				Value:    fmt.Sprintf("%d", -defaultAmount),
-				Currency: tokenACurrency,
-			},
-			Metadata: map[string]interface{}{"payer": payerId.String()},
+			Amount:              &rTypes.Amount{Value: value, Currency: currency},
+			Metadata:            map[string]interface{}{"payer": payerId.String()},
 		},
 	}
 }

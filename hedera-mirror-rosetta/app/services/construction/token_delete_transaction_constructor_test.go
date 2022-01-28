@@ -113,17 +113,10 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 
 	tests := []struct {
 		name           string
-		tokenRepoErr   bool
 		getTransaction func() interfaces.Transaction
 		expectError    bool
 	}{
 		{name: "Success", getTransaction: defaultGetTransaction},
-		{
-			name:           "TokenNotFound",
-			tokenRepoErr:   true,
-			getTransaction: defaultGetTransaction,
-			expectError:    true,
-		},
 		{
 			name: "InvalidTransaction",
 			getTransaction: func() interfaces.Transaction {
@@ -154,7 +147,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			expectedOperations := getTokenDeleteOperations(tokenACurrency)
+			expectedOperations := getTokenDeleteOperations(tokenAPartialCurrency)
 
 			h := newTokenDeleteTransactionConstructor()
 			tx := tt.getTransaction()
@@ -179,7 +172,6 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 func (suite *tokenDeleteTransactionConstructorSuite) TestPreprocess() {
 	var tests = []struct {
 		name             string
-		tokenRepoErr     bool
 		updateOperations updateOperationsFunc
 		expectError      bool
 	}{
@@ -193,16 +185,6 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestPreprocess() {
 			name:             "InvalidAmountValue",
 			updateOperations: updateAmountValue("10"),
 			expectError:      true,
-		},
-		{
-			name:             "TokenDecimalsMismatch",
-			updateOperations: updateTokenDecimals(1990),
-			expectError:      true,
-		},
-		{
-			name:         "TokenNotFound",
-			tokenRepoErr: true,
-			expectError:  true,
 		},
 		{
 			name:             "MultipleOperations",

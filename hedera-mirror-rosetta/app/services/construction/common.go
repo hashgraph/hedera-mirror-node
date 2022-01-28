@@ -21,7 +21,6 @@
 package construction
 
 import (
-	"context"
 	"encoding/json"
 	"reflect"
 	"time"
@@ -126,7 +125,6 @@ func parsePayerMetadata(validate *validator.Validate, metadata map[string]interf
 }
 
 func preprocessTokenFreezeKyc(
-	ctx context.Context,
 	operations []*rTypes.Operation,
 	operationType string,
 	validate *validator.Validate,
@@ -196,38 +194,3 @@ func validateOperations(operations []*rTypes.Operation, size int, opType string,
 
 	return nil
 }
-
-// func validateToken(
-// 	ctx context.Context,
-// 	tokenRepo interfaces.TokenRepository,
-// 	currency *rTypes.Currency,
-// ) (*hedera.TokenID, *rTypes.Error) {
-// 	token, rErr := tokenRepo.Find(ctx, currency.Symbol)
-// 	if rErr != nil {
-// 		return nil, rErr
-// 	}
-//
-// 	if token.Decimals != int64(currency.Decimals) {
-// 		return nil, errors.ErrInvalidToken
-// 	}
-//
-// 	if len(currency.Metadata) != 1 {
-// 		return nil, errors.ErrInvalidCurrency
-// 	}
-//
-// 	if tokenType, ok := currency.Metadata[types.MetadataKeyType].(string); !ok {
-// 		return nil, errors.AddErrorDetails(
-// 			errors.ErrInvalidTransaction,
-// 			"reason",
-// 			fmt.Sprintf("metadata '%s' has wrong data type", types.MetadataKeyType),
-// 		)
-// 	} else if tokenType != token.Type {
-// 		return nil, errors.AddErrorDetails(
-// 			errors.ErrInvalidCurrency,
-// 			"reason",
-// 			fmt.Sprintf("currenty type '%s' doesn't match '%s' in ledger", tokenType, token.Type),
-// 		)
-// 	}
-//
-// 	return types.Token{Token: token}.ToHederaTokenId(), nil
-// }

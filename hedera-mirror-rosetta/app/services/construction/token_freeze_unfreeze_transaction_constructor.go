@@ -138,13 +138,13 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Preprocess(ctx context.Conte
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenFreezeUnfreezeTransactionConstructor) preprocess(ctx context.Context, operations []*rTypes.Operation) (
+func (t *tokenFreezeUnfreezeTransactionConstructor) preprocess(_ context.Context, operations []*rTypes.Operation) (
 	*hedera.AccountID,
 	*hedera.AccountID,
 	*hedera.TokenID,
 	*rTypes.Error,
 ) {
-	return preprocessTokenFreezeKyc(ctx, operations, t.GetOperationType(), t.validate)
+	return preprocessTokenFreezeKyc(operations, t.GetOperationType(), t.validate)
 }
 
 func (t *tokenFreezeUnfreezeTransactionConstructor) GetOperationType() string {

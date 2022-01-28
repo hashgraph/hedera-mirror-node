@@ -76,20 +76,21 @@ var (
 	tokenACurrency         = types.Token{Token: dbTokenA}.ToRosettaCurrency()
 	tokenBCurrency         = types.Token{Token: dbTokenB}.ToRosettaCurrency()
 	tokenCCurrency         = types.Token{Token: dbTokenC}.ToRosettaCurrency()
-	tokenIdA               = hedera.TokenID{Token: 212}
-	tokenIdB               = hedera.TokenID{Token: 252}
-	tokenIdC               = hedera.TokenID{Token: 282}
-
-	// defaultMockTokenRepoConfigs = []mockTokenRepoConfig{
-	// 	{dbToken: dbTokenA, tokenId: tokenIdA},
-	// 	{dbToken: dbTokenB, tokenId: tokenIdB},
-	// 	{dbToken: dbTokenC, tokenId: tokenIdC},
-	// }
-	// mockTokenRepoNotFoundConfigs = []mockTokenRepoConfig{
-	// 	{dbToken: dbTokenA, tokenId: tokenIdA, err: errors.ErrTokenNotFound},
-	// 	{dbToken: dbTokenB, tokenId: tokenIdB, err: errors.ErrTokenNotFound},
-	// 	{dbToken: dbTokenC, tokenId: tokenIdC, err: errors.ErrTokenNotFound},
-	// }
+	tokenAPartialCurrency  = newRosettaCurrencyBuilder().
+				setSymbol(tokenEntityIdA.String()).
+				setType(domain.TokenTypeUnknown).
+				build()
+	tokenBPartialCurrency = newRosettaCurrencyBuilder().
+				setSymbol(tokenEntityIdB.String()).
+				setType(domain.TokenTypeUnknown).
+				build()
+	tokenCPartialCurrency = newRosettaCurrencyBuilder().
+				setSymbol(tokenEntityIdC.String()).
+				setType(domain.TokenTypeUnknown).
+				build()
+	tokenIdA = hedera.TokenID{Token: 212}
+	tokenIdB = hedera.TokenID{Token: 252}
+	tokenIdC = hedera.TokenID{Token: 282}
 )
 
 type newConstructorFunc func() transactionConstructorWithType
@@ -436,19 +437,19 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) getOperations(
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 			Type:                operationType,
 			Account:             payerAccountIdentifier,
-			Amount:              &rTypes.Amount{Value: "0", Currency: tokenACurrency},
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenAPartialCurrency},
 		},
 		{
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 1},
 			Type:                operationType,
 			Account:             payerAccountIdentifier,
-			Amount:              &rTypes.Amount{Value: "0", Currency: tokenBCurrency},
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenBPartialCurrency},
 		},
 		{
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 2},
 			Type:                operationType,
 			Account:             payerAccountIdentifier,
-			Amount:              &rTypes.Amount{Value: "0", Currency: tokenCCurrency},
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenCPartialCurrency},
 		},
 	}
 }
@@ -492,18 +493,6 @@ func assertTokenAssociateDissociateTransaction(
 	assert.ElementsMatch(t, expectedTokens, tokens)
 	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
 }
-
-// type mockTokenRepoConfig struct {
-// 	dbToken domain.Token
-// 	err     *rTypes.Error
-// 	tokenId hedera.TokenID
-// }
-//
-// func configMockTokenRepo(mock *mocks.MockTokenRepository, configs ...mockTokenRepoConfig) {
-// 	for _, c := range configs {
-// 		mock.On("Find", defaultContext, c.tokenId.String()).Return(c.dbToken, c.err)
-// 	}
-// }
 
 func addOperation(operations []*rTypes.Operation) []*rTypes.Operation {
 	return append(operations, &rTypes.Operation{})
@@ -607,17 +596,6 @@ func updateOperationType(operationType string) updateOperationsFunc {
 	}
 }
 
-func updateTokenDecimals(decimals int32) updateOperationsFunc {
-	return func(operations []*rTypes.Operation) []*rTypes.Operation {
-		for _, operation := range operations {
-			currency := *operation.Amount.Currency
-			currency.Decimals = decimals
-			operation.Amount.Currency = &currency
-		}
-		return operations
-	}
-}
-
 func updateTokenSymbol(symbol string) updateOperationsFunc {
 	return func(operations []*rTypes.Operation) []*rTypes.Operation {
 		for _, operation := range operations {
@@ -626,5 +604,40 @@ func updateTokenSymbol(symbol string) updateOperationsFunc {
 			operation.Amount.Currency = &currency
 		}
 		return operations
+	}
+}
+
+type rosettaCurrencyBuilder struct {
+	symbol   string
+	decimals int32
+	metadata map[string]interface{}
+}
+
+func (b *rosettaCurrencyBuilder) build() *rTypes.Currency {
+	return &rTypes.Currency{
+		Decimals: b.decimals,
+		Symbol:   b.symbol,
+		Metadata: b.metadata,
+	}
+}
+
+func (b *rosettaCurrencyBuilder) setDecimals(decimals int32) *rosettaCurrencyBuilder {
+	b.decimals = decimals
+	return b
+}
+
+func (b *rosettaCurrencyBuilder) setSymbol(symbol string) *rosettaCurrencyBuilder {
+	b.symbol = symbol
+	return b
+}
+
+func (b *rosettaCurrencyBuilder) setType(tokenType string) *rosettaCurrencyBuilder {
+	b.metadata[types.MetadataKeyType] = tokenType
+	return b
+}
+
+func newRosettaCurrencyBuilder() *rosettaCurrencyBuilder {
+	return &rosettaCurrencyBuilder{
+		metadata: make(map[string]interface{}),
 	}
 }

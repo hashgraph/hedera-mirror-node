@@ -143,19 +143,12 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestParse() {
 
 	tests := []struct {
 		name           string
-		tokenRepoErr   bool
 		getTransaction func() interfaces.Transaction
 		expectError    bool
 	}{
 		{
 			name:           "Success",
 			getTransaction: defaultGetTransaction,
-		},
-		{
-			name:           "TokenNotFound",
-			tokenRepoErr:   true,
-			getTransaction: defaultGetTransaction,
-			expectError:    true,
 		},
 		{
 			name: "InvalidTransaction",
@@ -235,7 +228,6 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestParse() {
 func (suite *tokenUpdateTransactionConstructorSuite) TestPreprocess() {
 	var tests = []struct {
 		name             string
-		tokenRepoErr     bool
 		updateOperations updateOperationsFunc
 		expectError      bool
 	}{
@@ -244,16 +236,6 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestPreprocess() {
 			name:             "InvalidAccountAddress",
 			updateOperations: updateOperationAccount("x.y.z"),
 			expectError:      true,
-		},
-		{
-			name:             "TokenDecimalsMismatch",
-			updateOperations: updateTokenDecimals(1990),
-			expectError:      true,
-		},
-		{
-			name:         "TokenNotFound",
-			tokenRepoErr: true,
-			expectError:  true,
 		},
 		{
 			name:             "InvalidMetadataAdminKey",
@@ -389,10 +371,7 @@ func getTokenUpdateOperations() []*rTypes.Operation {
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 			Type:                types.OperationTypeTokenUpdate,
 			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
-			Amount: &rTypes.Amount{
-				Value:    "0",
-				Currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
-			},
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenAPartialCurrency},
 			Metadata: map[string]interface{}{
 				"admin_key":          adminKeyStr,
 				"auto_renew_account": autoRenewAccount.String(),

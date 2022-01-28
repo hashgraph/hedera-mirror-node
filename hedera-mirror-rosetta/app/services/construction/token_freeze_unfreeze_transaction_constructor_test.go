@@ -262,12 +262,6 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 			updateOperations: updateOperationAccount("0.0.0"),
 			expectError:      true,
 		},
-
-		{
-			name:             "TokenDecimalsMismatch",
-			updateOperations: updateTokenDecimals(1990),
-			expectError:      true,
-		},
 		{
 			name:             "MultipleOperations",
 			updateOperations: addOperation,
@@ -355,7 +349,7 @@ func getFreezeUnfreezeOperations(operationType string) []*rTypes.Operation {
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 			Type:                operationType,
 			Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
-			Amount:              &rTypes.Amount{Value: "0", Currency: tokenACurrency},
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenAPartialCurrency},
 			Metadata:            map[string]interface{}{"payer": payerId.String()},
 		},
 	}
