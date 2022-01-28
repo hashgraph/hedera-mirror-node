@@ -1182,10 +1182,7 @@ components:
       type: object
       properties:
         address:
-          description: The hex encoded EVM address of the contract
-          example: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-          pattern: ^0x[0-9A-Fa-f]{40}$
-          type: string
+          $ref: '#/components/schemas/SolidityAddress'
         contract_id:
           $ref: '#/components/schemas/EntityId'
         slot:
@@ -1199,7 +1196,7 @@ components:
           format: binary
           type: string
         value_written:
-          description: The hex encoded value written to the slot.
+          description: The hex encoded value written to the slot. `null` implies no value written.
           example: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
           format: binary
           nullable: true

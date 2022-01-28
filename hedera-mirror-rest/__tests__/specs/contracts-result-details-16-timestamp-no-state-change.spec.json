@@ -49,7 +49,7 @@
         "consensus_timestamp": "167654000123456",
         "contract_id": 5002,
         "slot": [2, 2],
-        "value_written": null
+        "value_written": []
       }
     ],
     "recordFiles": [
@@ -140,7 +140,7 @@
         "contract_id": "0.0.5002",
         "slot": "0x0000000000000000000000000000000000000000000000000000000000000202",
         "value_read": "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
-        "value_written": null
+        "value_written": "0x0000000000000000000000000000000000000000000000000000000000000000"
       }
     ],
     "result": "SUCCESS",
