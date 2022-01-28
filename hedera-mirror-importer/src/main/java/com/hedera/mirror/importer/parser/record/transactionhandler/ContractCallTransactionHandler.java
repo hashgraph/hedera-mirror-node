@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+
 import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
 
@@ -49,12 +51,14 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
         // falls back to use the contractId in ContractCallResult, this should only happen for partial mirror node
         // where the create2 evm address of the contractId is not stored in db
         if (EntityId.isEmpty(entityId) && recordItem.getRecord().hasContractCallResult()) {
-            long num = recordItem.getRecord().getContractCallResult().getContractID().getContractNum();
+            byte[] evmAddress = DomainUtils.toBytes(contractId.getEvmAddress());
+            contractId = recordItem.getRecord().getContractCallResult().getContractID();
             Contract contract = Contract.builder()
                     .shard(contractId.getShardNum())
                     .realm(contractId.getRealmNum())
-                    .num(num)
-                    .evmAddress(DomainUtils.toBytes(contractId.getEvmAddress()))
+                    .num(contractId.getContractNum())
+                    .evmAddress(evmAddress)
+                    .type(CONTRACT)
                     .build();
             entityId = contract.toEntityId();
             entityIdService.store(contract);

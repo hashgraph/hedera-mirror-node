@@ -20,12 +20,15 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 
 import com.hedera.mirror.common.domain.Aliasable;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
 public interface EntityIdService {
+
+    EntityId lookup(AccountID accountId);
 
     EntityId lookup(ContractID contractId);
 

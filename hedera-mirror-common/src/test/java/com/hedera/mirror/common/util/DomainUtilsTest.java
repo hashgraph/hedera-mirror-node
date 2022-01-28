@@ -253,7 +253,7 @@ class DomainUtilsTest {
     void fromBytes() {
         byte[] bytes = RandomUtils.nextBytes(16);
 
-        assertThat(DomainUtils.fromBytes(null)).isEqualTo(ByteString.EMPTY);
+        assertThat(DomainUtils.fromBytes(null)).isNull();
         assertThat(DomainUtils.fromBytes(new byte[0])).isEqualTo(ByteString.EMPTY);
         assertThat(DomainUtils.fromBytes(bytes).toByteArray()).isEqualTo(bytes);
     }

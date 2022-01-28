@@ -20,10 +20,12 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ALIAS;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.GeneratedMessageV3;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Optional;
@@ -35,9 +37,11 @@ import org.springframework.cache.CacheManager;
 import com.hedera.mirror.common.domain.Aliasable;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.ContractRepository;
+import com.hedera.mirror.importer.repository.EntityRepository;
 
 @Log4j2
 @Named
@@ -45,11 +49,24 @@ public class EntityIdServiceImpl implements EntityIdService {
 
     private final Cache cache;
     private final ContractRepository contractRepository;
+    private final EntityRepository entityRepository;
 
     public EntityIdServiceImpl(@Named(CACHE_MANAGER_ALIAS) CacheManager cacheManager,
-                               ContractRepository contractRepository) {
+                               ContractRepository contractRepository, EntityRepository entityRepository) {
         this.cache = cacheManager.getCache("entityId");
         this.contractRepository = contractRepository;
+        this.entityRepository = entityRepository;
+    }
+
+    /**
+     * Looks up the domain EntityId of the protobuf accountId.
+     *
+     * @param accountId The protobuf account id
+     * @return The domain entityId object of the protobuf account id
+     */
+    @Override
+    public EntityId lookup(AccountID accountId) {
+        return lookupGeneral(accountId);
     }
 
     /**
@@ -59,29 +76,67 @@ public class EntityIdServiceImpl implements EntityIdService {
      * @return The domain entityId object of the protobuf contract id
      */
     @Override
-    @SuppressWarnings("deprecation")
     public EntityId lookup(ContractID contractId) {
-        if (contractId == null || contractId.equals(ContractID.getDefaultInstance())) {
+        return lookupGeneral(contractId);
+    }
+
+    @Override
+    public void store(Aliasable aliasable) {
+        if (aliasable.getDeleted() != null && aliasable.getDeleted()) {
+            return;
+        }
+
+        ByteString alias = DomainUtils.fromBytes(aliasable.getAlias());
+        if (alias == null) {
+            return;
+        }
+
+        int hashCode;
+        EntityId entityId = aliasable.toEntityId();
+        EntityType type = aliasable.getType();
+        switch (type) {
+            case ACCOUNT:
+                hashCode = AccountID.newBuilder()
+                        .setShardNum(entityId.getShardNum())
+                        .setRealmNum(entityId.getRealmNum())
+                        .setAlias(alias)
+                        .build()
+                        .hashCode();
+                break;
+            case CONTRACT:
+                hashCode = ContractID.newBuilder()
+                        .setShardNum(entityId.getShardNum())
+                        .setRealmNum(entityId.getRealmNum())
+                        .setEvmAddress(alias)
+                        .build()
+                        .hashCode();
+                break;
+            default:
+                throw new InvalidEntityException(String.format("%s entity can't have alias", type));
+        }
+
+        cache.put(hashCode, entityId);
+    }
+
+    private EntityId lookupGeneral(GeneratedMessageV3 protoEntityId) {
+        if (protoEntityId == null || protoEntityId.equals(protoEntityId.getDefaultInstanceForType())) {
             return EntityId.EMPTY;
         }
 
-        int hashCode = contractId.hashCode();
+        int hashCode = protoEntityId.hashCode();
         EntityId cached = cache.get(hashCode, EntityId.class);
         if (cached != null) {
             return cached;
         }
 
-        var contractCase = contractId.getContractCase();
         EntityId entityId;
-        switch (contractCase) {
-            case CONTRACTNUM:
-                entityId =  EntityId.of(contractId);
-                break;
-            case EVM_ADDRESS:
-                entityId = lookupByEvmAddress(contractId);
-                break;
-            default:
-                throw new InvalidDatasetException(String.format("Invalid ContractID ContractCase %s", contractCase));
+        if (protoEntityId instanceof AccountID) {
+            entityId = lookupAccountId((AccountID) protoEntityId);
+        } else if (protoEntityId instanceof ContractID) {
+            entityId = lookupContractId((ContractID) protoEntityId);
+        } else {
+            String message = String.format("Entity type %s not supported", protoEntityId.getClass().getSimpleName());
+            throw new InvalidEntityException(message);
         }
 
         if (!EntityId.isEmpty(entityId)) {
@@ -91,36 +146,36 @@ public class EntityIdServiceImpl implements EntityIdService {
         return entityId;
     }
 
-    @Override
-    public void store(Aliasable aliasable) {
-        if (aliasable.getDeleted() != null && aliasable.getDeleted()) {
-            return;
+    private EntityId lookupAccountId(AccountID accountId) {
+        var accountCase = accountId.getAccountCase();
+        switch (accountCase) {
+            case ACCOUNTNUM:
+                return EntityId.of(accountId);
+            case ALIAS:
+                byte[] alias = DomainUtils.toBytes(accountId.getAlias());
+                return entityRepository.findByAlias(alias)
+                        .map(id -> EntityId.of(id, ACCOUNT))
+                        .orElseGet(() -> {
+                            log.warn("No match found for the alias {}, it could be that the mirrornode has partial " +
+                                    "data or the alias doesn't exist in network", () -> DomainUtils.bytesToHex(alias));
+                            return EntityId.EMPTY;
+                        });
+            default:
+                throw new InvalidDatasetException(String.format("Invalid AccountID AccountCase %s", accountCase));
         }
+    }
 
-        if (aliasable.getAlias() == null) {
-            return;
+    @SuppressWarnings("deprecation")
+    private EntityId lookupContractId(ContractID contractId) {
+        var contractCase = contractId.getContractCase();
+        switch (contractCase) {
+            case CONTRACTNUM:
+                return EntityId.of(contractId);
+            case EVM_ADDRESS:
+                return lookupByEvmAddress(contractId);
+            default:
+                throw new InvalidDatasetException(String.format("Invalid ContractID ContractCase %s", contractCase));
         }
-
-        EntityId entityId = aliasable.toEntityId();
-        ByteString alias = DomainUtils.fromBytes(aliasable.getAlias());
-        int hashCode;
-        if (aliasable.getType() == EntityType.ACCOUNT) {
-            hashCode = AccountID.newBuilder()
-                    .setShardNum(entityId.getShardNum())
-                    .setRealmNum(entityId.getRealmNum())
-                    .setAlias(alias)
-                    .build()
-                    .hashCode();
-        } else {
-            hashCode = ContractID.newBuilder()
-                    .setShardNum(entityId.getShardNum())
-                    .setRealmNum(entityId.getRealmNum())
-                    .setEvmAddress(alias)
-                    .build()
-                    .hashCode();
-        }
-
-        cache.put(hashCode, entityId);
     }
 
     private EntityId lookupByEvmAddress(ContractID contractId) {

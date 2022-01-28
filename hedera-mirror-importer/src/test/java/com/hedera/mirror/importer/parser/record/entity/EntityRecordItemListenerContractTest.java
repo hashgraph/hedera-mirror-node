@@ -42,7 +42,6 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -124,8 +123,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         byte[] evmAddress = domainBuilder.create2EvmAddress();
         RecordItem recordItem = recordItemBuilder.contractCreate()
                 .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
-                                .clearCreatedContractIDs()
-                                .addCreatedContractIDs(r.getContractCreateResult().getContractID())
                                 .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(evmAddress)))
                 ))
                 .build();
@@ -136,6 +133,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
+                // only the parent contract is persisted since the child contract in the createdContractIDs list will
+                // persist when processing the corresponding child transaction
                 () -> assertEquals(1, contractRepository.count()),
                 () -> assertEquals(0, entityRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),

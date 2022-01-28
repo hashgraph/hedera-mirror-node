@@ -223,7 +223,7 @@ public class DomainUtils {
 
     public static ByteString fromBytes(byte[] bytes) {
         if (bytes == null) {
-            return ByteString.EMPTY;
+            return null;
         }
 
         return UnsafeByteOperations.unsafeWrap(bytes);
