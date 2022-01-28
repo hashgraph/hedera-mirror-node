@@ -29,6 +29,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var invalidEntityIdParts = [][3]int64{
+	{-1, 0, 0},
+	{0, -1, 0},
+	{0, 0, -1},
+	{2 << 15, 0, 0},
+	{0, 2 << 16, 0},
+	{0, 0, 2 << 32},
+}
+
 var invalidEntityIdStrs = []string{
 	"abc",
 	"a.0.0",
@@ -261,6 +270,31 @@ func TestEntityIdFromString(t *testing.T) {
 func TestEntityIdFromStringThrows(t *testing.T) {
 	for _, tt := range invalidEntityIdStrs {
 		res, err := EntityIdFromString(tt)
+		assert.Equal(t, EntityId{}, res)
+		assert.Error(t, err)
+	}
+}
+
+func TestEntityIdOf(t *testing.T) {
+	var testData = []struct {
+		expected EntityId
+		parts    [3]int64
+	}{
+		{EntityId{}, [3]int64{0, 0, 0}},
+		{EntityId{EntityNum: 10, EncodedId: 10}, [3]int64{0, 0, 10}},
+		{EntityId{EntityNum: 4294967295, EncodedId: 4294967295}, [3]int64{0, 0, 4294967295}},
+	}
+
+	for _, tt := range testData {
+		res, err := EntityIdOf(tt.parts[0], tt.parts[1], tt.parts[2])
+		assert.Nil(t, err)
+		assert.Equal(t, tt.expected, res)
+	}
+}
+
+func TestEntityIdOfThrows(t *testing.T) {
+	for _, tt := range invalidEntityIdParts {
+		res, err := EntityIdOf(tt[0], tt[1], tt[2])
 		assert.Equal(t, EntityId{}, res)
 		assert.Error(t, err)
 	}
