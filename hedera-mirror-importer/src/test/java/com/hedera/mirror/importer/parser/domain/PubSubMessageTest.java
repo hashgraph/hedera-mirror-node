@@ -169,14 +169,16 @@ class PubSubMessageTest {
                 "        \"realmNum\": \"0\"," +
                 "        \"accountNum\": \"10\"" +
                 "      }," +
-                "      \"amount\": \"100000000\"" +
+                "      \"amount\": \"100000000\"," +
+                "      \"isApproval\": false" +
                 "    }, {" +
                 "      \"accountID\": {" +
                 "        \"shardNum\": \"0\"," +
                 "        \"realmNum\": \"0\"," +
                 "        \"accountNum\": \"10\"" +
                 "      }," +
-                "      \"amount\": \"100000000\"" +
+                "      \"amount\": \"100000000\"," +
+                "      \"isApproval\": false" +
                 "    }]" +
                 "  }," +
                 "  \"tokenTransferLists\":[]," +
@@ -220,14 +222,16 @@ class PubSubMessageTest {
                 "      \"realmNum\": \"0\"," +
                 "      \"accountNum\": \"10\"" +
                 "      }," +
-                "    \"amount\": \"100000000\"" +
+                "    \"amount\": \"100000000\"," +
+                "    \"isApproval\": false" +
                 "  }, {" +
                 "    \"accountID\": {" +
                 "      \"shardNum\": \"0\"," +
                 "      \"realmNum\": \"0\"," +
                 "      \"accountNum\": \"10\"" +
                 "      }," +
-                "    \"amount\": \"100000000\"" +
+                "    \"amount\": \"100000000\"," +
+                "    \"isApproval\": false" +
                 "  } ]" +
                 "}";
         JSONAssert.assertEquals(expected, actual, true);
