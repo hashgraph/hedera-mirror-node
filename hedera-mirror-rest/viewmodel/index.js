@@ -26,6 +26,7 @@ module.exports = {
   ContractViewModel: require('./contractViewModel'),
   ContractLogViewModel: require('./contractLogViewModel'),
   ContractResultDetailsViewModel: require('./contractResultDetailsViewModel'),
+  ContractResultStateChangeViewModel: require('./contractResultStateChangeViewModel'),
   ContractResultViewModel: require('./contractResultViewModel'),
   NftTransactionHistoryViewModel: require('./nftTransactionHistoryViewModel'),
   NftTransferViewModel: require('./nftTransferViewModel'),
