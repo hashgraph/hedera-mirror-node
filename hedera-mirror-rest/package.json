@@ -100,7 +100,7 @@
     "jest-circus": "^27.4.6",
     "jest-extended": "^2.0.0",
     "jest-junit": "^13.0.0",
-    "node-fetch": "^2.6.7",
+    "node-fetch": "^3.2.0",
     "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.7",
     "nodemon": "^2.0.15",
