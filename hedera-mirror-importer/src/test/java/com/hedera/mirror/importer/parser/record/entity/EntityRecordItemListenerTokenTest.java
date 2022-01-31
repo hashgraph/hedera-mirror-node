@@ -68,15 +68,10 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
-import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
-import com.hedera.mirror.importer.domain.CustomFeeWrapper;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransferId;
@@ -88,7 +83,12 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
+import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
+import com.hedera.mirror.importer.domain.CustomFeeWrapper;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
@@ -1333,6 +1333,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                                                                                 TokenID token, AccountID payer) {
         var nftTransfer = new com.hedera.mirror.common.domain.token.NftTransfer();
         nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, EntityId.of(token)));
+        nftTransfer.setIsApproval(false);
         nftTransfer.setPayerAccountId(EntityId.of(payer));
         if (!receiver.equals(DEFAULT_ACCOUNT_ID)) {
             nftTransfer.setReceiverAccountId(EntityId.of(receiver));
@@ -1606,6 +1607,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var expected = domainBuilder.tokenTransfer().customize(t -> t
                 .amount(amount)
                 .id(new TokenTransfer.Id(consensusTimestamp, EntityId.of(tokenID), EntityId.of(accountID)))
+                .isApproval(false)
                 .payerAccountId(PAYER_ACCOUNT_ID)
                 .tokenDissociate(false)).get();
         assertThat(tokenTransferRepository.findById(expected.getId()))
@@ -1695,7 +1697,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private TokenTransferList tokenTransfer(TokenID tokenId, AccountID accountId, long amount) {
         return TokenTransferList.newBuilder()
                 .setToken(tokenId)
-                .addTransfers(AccountAmount.newBuilder().setAccountID(accountId).setAmount(amount))
+                .addTransfers(AccountAmount.newBuilder().setAccountID(accountId).setAmount(amount).setIsApproval(false))
                 .build();
     }
 
@@ -1711,6 +1713,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             if (senderAccountId != null) {
                 nftTransferBuilder.setSenderAccountID(senderAccountId);
             }
+            nftTransferBuilder.setIsApproval(false);
             builder.addNftTransfers(nftTransferBuilder);
         }
         return builder.build();

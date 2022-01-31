@@ -65,7 +65,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
             Contract contract = entityId.toEntity();
             contract.setCreatedTimestamp(consensusTimestamp);
             contract.setDeleted(false);
-            contract.setModifiedTimestamp(consensusTimestamp);
+            contract.setTimestampLower(consensusTimestamp);
             doUpdateEntity(contract, recordItem);
         }
 

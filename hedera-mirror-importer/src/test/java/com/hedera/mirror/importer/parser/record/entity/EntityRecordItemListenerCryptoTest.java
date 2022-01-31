@@ -221,7 +221,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(DomainUtils.timeStampInNanos(cryptoUpdateTransactionBody.getExpirationTime()),
                         dbAccountEntity.getExpirationTimestamp()),
                 () -> assertEquals(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()),
-                        dbAccountEntity.getModifiedTimestamp()),
+                        dbAccountEntity.getTimestampLower()),
                 () -> assertFalse(dbAccountEntity.getReceiverSigRequired())
         );
     }
@@ -362,7 +362,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .isNotNull()
                         .returns(true, Entity::getDeleted)
                         .returns(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()),
-                                Entity::getModifiedTimestamp)
+                                Entity::getTimestampLower)
                         .usingRecursiveComparison()
                         .ignoringFields("deleted", "timestampRange")
                         .isEqualTo(dbAccountEntityBefore)
@@ -595,7 +595,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertArrayEquals(expected.getKey().toByteArray(), actualAccount.getKey()),
                 () -> assertEquals(0, actualAccount.getMaxAutomaticTokenAssociations()),
                 () -> assertEquals(expected.getMemo(), actualAccount.getMemo()),
-                () -> assertEquals(timestamp, actualAccount.getModifiedTimestamp()),
+                () -> assertEquals(timestamp, actualAccount.getTimestampLower()),
                 () -> assertEquals(DomainUtils.getPublicKey(expected.getKey().toByteArray()),
                         actualAccount.getPublicKey()),
                 () -> assertEquals(EntityId.of(expected.getProxyAccountID()),

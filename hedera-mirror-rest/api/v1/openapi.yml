@@ -729,7 +729,7 @@ servers:
       network:
         default: testnet
         description: The Hedera network in use
-        enum: [ mainnet, previewnet, testnet ]
+        enum: [ mainnet-public, mainnet, previewnet, testnet ]
 components:
   schemas:
     AccountAlias:

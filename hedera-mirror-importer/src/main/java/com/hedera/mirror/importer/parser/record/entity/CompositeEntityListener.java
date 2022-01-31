@@ -31,7 +31,10 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -91,6 +94,11 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
+    public void onCryptoAllowance(CryptoAllowance cryptoAllowance) throws ImporterException {
+        onEach(EntityListener::onCryptoAllowance, cryptoAllowance);
+    }
+
+    @Override
     public void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
         onEach(EntityListener::onCryptoTransfer, cryptoTransfer);
     }
@@ -126,6 +134,11 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
+    public void onNftAllowance(NftAllowance nftAllowance) throws ImporterException {
+        onEach(EntityListener::onNftAllowance, nftAllowance);
+    }
+
+    @Override
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
         onEach(EntityListener::onNftTransfer, nftTransfer);
     }
@@ -143,6 +156,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
         onEach(EntityListener::onTokenAccount, tokenAccount);
+    }
+
+    @Override
+    public void onTokenAllowance(TokenAllowance tokenAllowance) throws ImporterException {
+        onEach(EntityListener::onTokenAllowance, tokenAllowance);
     }
 
     @Override

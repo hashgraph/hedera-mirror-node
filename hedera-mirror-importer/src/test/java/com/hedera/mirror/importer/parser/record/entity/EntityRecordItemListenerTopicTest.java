@@ -92,7 +92,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 autoRenewPeriod);
         expectedEntity.setCreatedTimestamp(consensusTimestamp);
         expectedEntity.setDeleted(false);
-        expectedEntity.setModifiedTimestamp(consensusTimestamp);
+        expectedEntity.setTimestampLower(consensusTimestamp);
 
         assertThat(entity).isEqualTo(expectedEntity);
     }
@@ -196,7 +196,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var expectedEntity = createTopicEntity(topicId, updatedExpirationTimeSeconds, updatedExpirationTimeNanos,
                 updatedAdminKey, updatedSubmitKey, updatedMemo, autoRenewAccountId, autoRenewPeriod);
         expectedEntity.setDeleted(false);
-        expectedEntity.setModifiedTimestamp(consensusTimestamp);
+        expectedEntity.setTimestampLower(consensusTimestamp);
 
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
@@ -253,7 +253,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var expectedTopic = createTopicEntity(TOPIC_ID, 11L, 0, adminKey, submitKey, memo, autoRenewAccount.getId(),
                 30L);
         expectedTopic.setDeleted(false);
-        expectedTopic.setModifiedTimestamp(consensusTimestamp);
+        expectedTopic.setTimestampLower(consensusTimestamp);
         assertThat(entity).isEqualTo(expectedTopic);
     }
 
@@ -314,7 +314,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             topic.setAutoRenewAccountId(EntityId.of(0L, 0L, updatedAutoRenewAccountNum, EntityType.ACCOUNT));
         }
         topic.setDeleted(false);
-        topic.setModifiedTimestamp(consensusTimestamp);
+        topic.setTimestampLower(consensusTimestamp);
 
         var entity = getTopicEntity(topicId);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
@@ -333,7 +333,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
 
         // Setup expected data
         topic.setDeleted(true);
-        topic.setModifiedTimestamp(consensusTimestamp);
+        topic.setTimestampLower(consensusTimestamp);
 
         var transaction = createDeleteTopicTransaction(TOPIC_ID);
         var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
@@ -354,7 +354,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         // Setup expected data
         var topic = createTopicEntity(TOPIC_ID, null, null, null, null, "", null, null);
         topic.setDeleted(true);
-        topic.setModifiedTimestamp(consensusTimestamp);
+        topic.setTimestampLower(consensusTimestamp);
         // Topic not saved to the repository.
 
         var transaction = createDeleteTopicTransaction(TOPIC_ID);

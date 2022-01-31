@@ -22,13 +22,17 @@ package com.hedera.mirror.importer;
 
 import com.google.common.collect.Range;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import java.sql.SQLException;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import javax.annotation.Resource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
+import org.postgresql.jdbc.PgArray;
 import org.postgresql.util.PGobject;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cache.CacheManager;
@@ -68,6 +72,14 @@ public abstract class IntegrationTest {
                 source -> PostgreSQLGuavaRangeType.longRange(source.getValue()));
         defaultConversionService.addConverter(Long.class, EntityId.class,
                 id -> EntityIdEndec.decode(id, EntityType.ACCOUNT));
+        defaultConversionService.addConverter(PgArray.class, List.class,
+                array -> {
+                    try {
+                        return Arrays.asList((Object[]) array.getArray());
+                    } catch (SQLException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
 
         DataClassRowMapper dataClassRowMapper = new DataClassRowMapper<>(entityClass);
         dataClassRowMapper.setConversionService(defaultConversionService);

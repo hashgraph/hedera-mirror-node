@@ -57,9 +57,12 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.NftTransferId;
@@ -207,11 +210,20 @@ public class DomainBuilder {
     public DomainWrapper<ContractStateChange, ContractStateChange.ContractStateChangeBuilder> contractStateChange() {
         ContractStateChange.ContractStateChangeBuilder builder = ContractStateChange.builder()
                 .consensusTimestamp(timestamp())
-                .contractId(entityId(CONTRACT))
+                .contractId(entityId(CONTRACT).getId())
                 .payerAccountId(entityId(ACCOUNT))
                 .slot(bytes(128))
                 .valueRead(bytes(64))
                 .valueWritten(bytes(64));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder> cryptoAllowance() {
+        var builder = CryptoAllowance.builder()
+                .amount(10)
+                .payerAccountId(entityId(ACCOUNT).getId())
+                .spender(entityId(ACCOUNT).getId())
+                .timestampRange(Range.atLeast(timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -308,6 +320,27 @@ public class DomainBuilder {
                 .tokenId(new TokenId(entityId(TOKEN)))
                 .treasuryAccountId(entityId(ACCOUNT))
                 .wipeKey(key());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<NftAllowance, NftAllowance.NftAllowanceBuilder> nftAllowance() {
+        var builder = NftAllowance.builder()
+                .approvedForAll(false)
+                .payerAccountId(entityId(ACCOUNT).getId())
+                .serialNumbers(List.of(1L, 2L, 3L))
+                .spender(entityId(ACCOUNT).getId())
+                .timestampRange(Range.atLeast(timestamp()))
+                .tokenId(entityId(TOKEN).getId());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder> tokenAllowance() {
+        var builder = TokenAllowance.builder()
+                .amount(10L)
+                .payerAccountId(entityId(ACCOUNT).getId())
+                .spender(entityId(ACCOUNT).getId())
+                .timestampRange(Range.atLeast(timestamp()))
+                .tokenId(entityId(TOKEN).getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

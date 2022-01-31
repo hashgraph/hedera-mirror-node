@@ -93,7 +93,7 @@ abstract class AbstractTransactionHandlerTest {
             "5a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96G");
 
     protected static final KeyList DEFAULT_KEY_LIST = KeyList.newBuilder().addAllKeys(
-            Arrays.asList(DEFAULT_KEY, DEFAULT_SUBMIT_KEY))
+                    Arrays.asList(DEFAULT_KEY, DEFAULT_SUBMIT_KEY))
             .build();
 
     protected static final String UPDATED_MEMO = "update memo";
@@ -253,12 +253,12 @@ abstract class AbstractTransactionHandlerTest {
         if (entityOperation == EntityOperation.CREATE) {
             entity.setCreatedTimestamp(CREATED_TIMESTAMP_NS);
             entity.setDeleted(false);
-            entity.setModifiedTimestamp(CREATED_TIMESTAMP_NS);
+            entity.setTimestampLower(CREATED_TIMESTAMP_NS);
         } else if (entityOperation == EntityOperation.UPDATE) {
             entity.setDeleted(false);
-            entity.setModifiedTimestamp(MODIFIED_TIMESTAMP_NS);
+            entity.setTimestampLower(MODIFIED_TIMESTAMP_NS);
         } else {
-            entity.setModifiedTimestamp(MODIFIED_TIMESTAMP_NS);
+            entity.setTimestampLower(MODIFIED_TIMESTAMP_NS);
         }
 
         return entity;

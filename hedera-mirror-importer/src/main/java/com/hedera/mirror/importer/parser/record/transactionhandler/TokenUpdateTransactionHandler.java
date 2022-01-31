@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.common.util.DomainUtils;
-
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.TokenTransferList;
 import javax.inject.Named;
@@ -31,6 +29,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.NftRepository;
 
@@ -88,7 +87,7 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
                     EntityId tokenId = EntityId.of(tokenTransferList.getToken());
 
                     nftRepository.updateTreasury(tokenId.getId(), previousTreasury.getId(), newTreasury.getId(),
-                            recordItem.getConsensusTimestamp(), payerAccountId);
+                            recordItem.getConsensusTimestamp(), payerAccountId, nftTransfer.getIsApproval());
                 }
             }
         }

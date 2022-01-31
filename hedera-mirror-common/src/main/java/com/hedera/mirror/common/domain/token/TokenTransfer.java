@@ -29,9 +29,6 @@ import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.Transient;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -42,6 +39,7 @@ import org.springframework.data.domain.Persistable;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.converter.TokenIdConverter;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
 @Builder
@@ -55,6 +53,8 @@ public class TokenTransfer implements Persistable<TokenTransfer.Id> {
     private Id id;
 
     private long amount;
+
+    private Boolean isApproval;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;

@@ -110,17 +110,17 @@ comment on table contract_history is 'Contract entity historical state';
 -- contract_log
 create table if not exists contract_log
 (
-    bloom               bytea       not null,
-    consensus_timestamp bigint      not null,
-    contract_id         bigint      not null,
-    data                bytea       not null,
-    index               int         not null,
-    payer_account_id    bigint      not null,
-    root_contract_id    bigint      null,
-    topic0              bytea       null,
-    topic1              bytea       null,
-    topic2              bytea       null,
-    topic3              bytea       null
+    bloom               bytea  not null,
+    consensus_timestamp bigint not null,
+    contract_id         bigint not null,
+    data                bytea  not null,
+    index               int    not null,
+    payer_account_id    bigint not null,
+    root_contract_id    bigint null,
+    topic0              bytea  null,
+    topic1              bytea  null,
+    topic2              bytea  null,
+    topic3              bytea  null
 );
 comment on table contract_log is 'Contract execution result logs';
 
@@ -153,13 +153,29 @@ create table if not exists contract_state_change
 );
 comment on table contract_result is 'Contract execution state changes';
 
+create table if not exists crypto_allowance
+(
+    amount           bigint    not null,
+    payer_account_id bigint    not null,
+    spender          bigint    not null,
+    timestamp_range  int8range not null
+);
+comment on table crypto_allowance is 'Hbar allowances delegated by payer to spender';
+
+create table if not exists crypto_allowance_history
+(
+    like crypto_allowance including defaults
+);
+comment on table crypto_allowance_history is 'History of hbar allowances delegated by payer to spender';
+
 -- crypto_transfer
 create table if not exists crypto_transfer
 (
-    amount              bigint not null,
-    consensus_timestamp bigint not null,
-    entity_id           bigint not null,
-    payer_account_id    bigint not null
+    amount              bigint  not null,
+    consensus_timestamp bigint  not null,
+    is_approval         boolean null,
+    entity_id           bigint  not null,
+    payer_account_id    bigint  not null
 );
 comment on table crypto_transfer is 'Crypto account Hbar transfers';
 
@@ -259,25 +275,44 @@ create table if not exists nft
 );
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 
+create table if not exists nft_allowance
+(
+    approved_for_all boolean   not null,
+    payer_account_id bigint    not null,
+    serial_numbers   bigint[]  not null,
+    spender          bigint    not null,
+    timestamp_range  int8range not null,
+    token_id         bigint    not null
+);
+comment on table token_allowance is 'NFT allowances delegated by payer to spender';
+
+create table if not exists nft_allowance_history
+(
+    like nft_allowance including defaults
+);
+comment on table token_allowance is 'History of NFT allowances delegated by payer to spender';
+
 -- nft_transfer
 create table if not exists nft_transfer
 (
-    consensus_timestamp bigint not null,
-    payer_account_id    bigint not null,
+    consensus_timestamp bigint  not null,
+    is_approval         boolean null,
+    payer_account_id    bigint  not null,
     receiver_account_id bigint,
     sender_account_id   bigint,
-    serial_number       bigint not null,
-    token_id            bigint not null
+    serial_number       bigint  not null,
+    token_id            bigint  not null
 );
 comment on table nft_transfer is 'Crypto account nft transfers';
 
 -- non_fee_transfer
 create table if not exists non_fee_transfer
 (
-    amount              bigint not null,
-    consensus_timestamp bigint not null,
-    entity_id           bigint not null,
-    payer_account_id    bigint not null
+    amount              bigint  not null,
+    consensus_timestamp bigint  not null,
+    is_approval         boolean null,
+    entity_id           bigint  not null,
+    payer_account_id    bigint  not null
 );
 comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 
@@ -356,6 +391,22 @@ create table if not exists token_account
 );
 comment on table token is 'Token account entity';
 
+create table if not exists token_allowance
+(
+    amount           bigint    not null,
+    payer_account_id bigint    not null,
+    spender          bigint    not null,
+    timestamp_range  int8range not null,
+    token_id         bigint    not null
+);
+comment on table token_allowance is 'Token allowances delegated by payer to spender';
+
+create table if not exists token_allowance_history
+(
+    like token_allowance including defaults
+);
+comment on table token_allowance_history is 'History of token allowances delegated by payer to spender';
+
 --- token_balance
 create table if not exists token_balance
 (
@@ -369,28 +420,29 @@ comment on table token_balance is 'Crypto account token balances';
 --- token_transfer
 create table if not exists token_transfer
 (
-    account_id          bigint not null,
-    amount              bigint not null,
-    consensus_timestamp bigint not null,
-    payer_account_id    bigint not null,
-    token_id            bigint not null
+    account_id          bigint  not null,
+    amount              bigint  not null,
+    consensus_timestamp bigint  not null,
+    is_approval         boolean null,
+    payer_account_id    bigint  not null,
+    token_id            bigint  not null
 );
 comment on table token_transfer is 'Crypto account token transfers';
 
 -- topic_message
 create table if not exists topic_message
 (
-    chunk_num               integer,
-    chunk_total             integer,
-    consensus_timestamp     bigint   not null,
-    initial_transaction_id  bytea,
-    message                 bytea    not null,
-    payer_account_id        bigint   not null,
-    running_hash            bytea    not null,
-    running_hash_version    smallint not null,
-    sequence_number         bigint   not null,
-    topic_id                bigint   not null,
-    valid_start_timestamp   bigint
+    chunk_num              integer,
+    chunk_total            integer,
+    consensus_timestamp    bigint   not null,
+    initial_transaction_id bytea,
+    message                bytea    not null,
+    payer_account_id       bigint   not null,
+    running_hash           bytea    not null,
+    running_hash_version   smallint not null,
+    sequence_number        bigint   not null,
+    topic_id               bigint   not null,
+    valid_start_timestamp  bigint
 );
 comment on table topic_message is 'Topic entity sequenced messages';
 

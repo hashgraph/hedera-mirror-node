@@ -295,6 +295,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
                 nonFeeTransfer.setAmount(aa.getAmount());
                 nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, entityId));
+                nonFeeTransfer.setIsApproval(aa.getIsApproval());
                 nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
                 entityListener.onNonFeeTransfer(nonFeeTransfer);
             }
@@ -385,6 +386,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
             CryptoTransfer cryptoTransfer = new CryptoTransfer(consensusTimestamp, aa.getAmount(), account);
+            cryptoTransfer.setIsApproval(aa.getIsApproval());
             cryptoTransfer.setPayerAccountId(payerAccountId);
             entityListener.onCryptoTransfer(cryptoTransfer);
         }
@@ -402,6 +404,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
             CryptoTransfer cryptoTransfer = new CryptoTransfer(consensusTimestamp, aa.getAmount(), account);
+            cryptoTransfer.setIsApproval(aa.getIsApproval());
             cryptoTransfer.setPayerAccountId(recordItem.getPayerAccountId());
             entityListener.onCryptoTransfer(cryptoTransfer);
 
@@ -640,6 +643,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     TokenTransfer tokenTransfer = new TokenTransfer();
                     tokenTransfer.setAmount(amount);
                     tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
+                    tokenTransfer.setIsApproval(accountAmount.getIsApproval());
                     tokenTransfer.setPayerAccountId(recordItem.getPayerAccountId());
                     tokenTransfer.setTokenDissociate(isTokenDissociate);
                     entityListener.onTokenTransfer(tokenTransfer);
@@ -668,6 +672,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                     NftTransfer nftTransferDomain = new NftTransfer();
                     nftTransferDomain.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
+                    nftTransferDomain.setIsApproval(nftTransfer.getIsApproval());
                     nftTransferDomain.setReceiverAccountId(receiverId);
                     nftTransferDomain.setSenderAccountId(senderId);
                     nftTransferDomain.setPayerAccountId(recordItem.getPayerAccountId());

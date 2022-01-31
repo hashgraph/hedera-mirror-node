@@ -351,7 +351,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setDeleted(deleted);
         entity.setExpirationTimestamp(expiryTimeNs);
         entity.setMemo(memo);
-        entity.setModifiedTimestamp(modifiedTimestamp);
+        entity.setTimestampLower(modifiedTimestamp);
         entity.setKey(adminKeyBytes);
         entity.setSubmitKey(submitKeyBytes);
 
