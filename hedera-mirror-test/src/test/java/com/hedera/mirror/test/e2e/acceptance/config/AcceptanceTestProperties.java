@@ -46,6 +46,8 @@ public class AcceptanceTestProperties {
     @NotNull
     private Long existingTopicNum;
 
+    private final FeatureProperties featureProperties;
+
     @Max(5)
     private int maxRetries = 2;
 
