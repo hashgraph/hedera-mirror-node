@@ -31,10 +31,13 @@
   "responseStatus": 200,
   "responseJson": {
     "chunk_info": {
-      "initial_transaction_id": "0.0.10-1234567890-000000000",
-      "nonce": null,
+      "initial_transaction_id": {
+        "account_id": "0.0.10",
+        "nonce": null,
+        "scheduled": null,
+        "transaction_valid_start": "1234567890.000000000"
+      },
       "number": 2,
-      "scheduled": null,
       "total": 3
     },
     "consensus_timestamp": "1234567890.000000002",

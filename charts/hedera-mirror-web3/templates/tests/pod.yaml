@@ -15,7 +15,7 @@ spec:
       imagePullPolicy: {{ .Values.test.image.pullPolicy }}
       args:
         - run
-        - https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/{{ .Chart.AppVersion }}/hedera-mirror-web3/postman.json
+        - https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/{{ regexReplaceAll "(\\d+\\.\\d+\\.\\d+(-\\w+)?)" .Chart.AppVersion "v${1}" }}/hedera-mirror-web3/postman.json
         - --env-var
         - baseUrl=http://{{ include "hedera-mirror-web3.fullname" . }}:{{ .Values.service.port }}
   terminationGracePeriodSeconds: 1

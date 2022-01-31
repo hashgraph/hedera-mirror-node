@@ -21,8 +21,8 @@ data, configure the new PostgreSQL instance, and restore the data.
 
 - Importer for the old PostgreSQL database instance is stopped
 - The new PostgreSQL database instance
-- An ubuntu virtual machine with fast network speed connections to both PostgreSQL database instances. The instance should also have
-  enough free disk space for the database dump
+- An ubuntu virtual machine with fast network speed connections to both PostgreSQL database instances. The instance
+  should also have enough free disk space for the database dump
 
 ### Backup
 
@@ -53,11 +53,16 @@ The following configuration needs to be applied to the database instance to impr
 
 ```
 checkpoint_timeout = 30m
+maintenance_work_mem = 2GB
+max_parallel_maintenance_workers = 4
 max_wal_size = 512GB
 temp_file_limit = 2147483647kB
 ```
 
-Note: once the data is restored, revert the values back for normal operation.
+Note:
+ - Not all flags are available in managed database services. For example, `max_parallel_maintenance_workers` is not
+   available in Google Cloud SQL.
+ - Once the data is restored, revert the values back for normal operation.
 
 ### Restore
 
