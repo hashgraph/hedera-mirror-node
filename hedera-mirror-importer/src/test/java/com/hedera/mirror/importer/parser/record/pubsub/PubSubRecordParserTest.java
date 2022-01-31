@@ -26,17 +26,21 @@ import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 
-import com.hedera.mirror.importer.PubSubIntegrationTest;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.PubSubIntegrationTest;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
@@ -73,6 +77,29 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
                 .map(ByteString::toStringUtf8)
                 .collect(Collectors.toList());
 
-        assertThat(actualMessages).containsExactlyElementsOf(expectedMessages);
+        // map timestamps to messages and compare individual message JSON strings
+        Map<Long, String> expectedMessageMap = mapMessages(expectedMessages);
+        Map<Long, String> actualMessageMap = mapMessages(actualMessages);
+        assertThat(actualMessageMap.size()).isEqualTo(actualMessages.size());
+        assertThat(expectedMessageMap.size()).isEqualTo(expectedMessages.size());
+        for (Map.Entry<Long, String> messageEntry : expectedMessageMap.entrySet()) {
+            String expectedMessage = messageEntry.getValue();
+            String actualMessage = actualMessageMap.get(messageEntry.getKey());
+            assertThat(actualMessage).isEqualTo(expectedMessage);
+        }
+    }
+
+    public Map<Long, String> mapMessages(List<String> inputMessages) {
+        // given message records text. Extract timestamp as a key and string as value
+        Map<Long, String> messages = new HashMap<>();
+        Pattern pattern = Pattern.compile("\"consensusTimestamp\":(\\d{19}),");
+
+        for (String message : inputMessages) {
+            Matcher matcher = pattern.matcher(message);
+            assertThat(matcher.find()).as("Message is missing consensusTimestamp: " + message).isTrue();
+            messages.put(Long.valueOf(matcher.group(1)), message);
+        }
+
+        return messages;
     }
 }
