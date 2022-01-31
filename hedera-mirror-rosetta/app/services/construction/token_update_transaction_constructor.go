@@ -54,12 +54,12 @@ type tokenUpdateTransactionConstructor struct {
 }
 
 func (t *tokenUpdateTransactionConstructor) Construct(
-	ctx context.Context,
+	_ context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenUpdate, err := t.preprocess(ctx, operations)
+	payer, tokenUpdate, err := t.preprocess(operations)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -132,7 +132,7 @@ func (t *tokenUpdateTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func (t *tokenUpdateTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
+func (t *tokenUpdateTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -224,11 +224,11 @@ func (t *tokenUpdateTransactionConstructor) Parse(ctx context.Context, transacti
 	return []*rTypes.Operation{operation}, []hedera.AccountID{*payerId}, nil
 }
 
-func (t *tokenUpdateTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
+func (t *tokenUpdateTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
-	payer, _, err := t.preprocess(ctx, operations)
+	payer, _, err := t.preprocess(operations)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +236,7 @@ func (t *tokenUpdateTransactionConstructor) Preprocess(ctx context.Context, oper
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenUpdateTransactionConstructor) preprocess(ctx context.Context, operations []*rTypes.Operation) (
+func (t *tokenUpdateTransactionConstructor) preprocess(operations []*rTypes.Operation) (
 	*hedera.AccountID,
 	*tokenUpdate,
 	*rTypes.Error,

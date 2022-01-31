@@ -62,7 +62,13 @@ func (suite *tokenWipeTransactionConstructorSuite) TestConstruct() {
 		validStartNanos  int64
 		expectError      bool
 	}{
-		{name: "Success"},
+		{name: "SuccessFT"},
+		{
+			name: "SuccessNFT",
+			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
+				return getNonFungibleTokenWipeOperations(false)
+			},
+		},
 		{name: "SuccessValidStartNanos", validStartNanos: 100},
 		{name: "EmptyOperations", updateOperations: getEmptyOperations, expectError: true},
 	}
@@ -70,7 +76,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestConstruct() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			operations := getTokenWipeOperations(false)
+			operations := getFungibleTokenWipeOperations(false)
 			h := newTokenWipeTransactionConstructor()
 
 			if tt.updateOperations != nil {
@@ -133,6 +139,18 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 			expectError: true,
 		},
 		{
+			name: "InvalidTokenId",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTokenWipeTransaction().
+					SetAccountID(accountId).
+					SetAmount(defaultAmount).
+					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetTransactionID(hedera.TransactionIDGenerate(payerId)).
+					SetTokenID(outOfRangeTokenId)
+			},
+			expectError: true,
+		},
+		{
 			name: "TransactionIDNotSet",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenWipeTransaction().
@@ -159,7 +177,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			expectedOperations := getTokenWipeOperations(true)
+			expectedOperations := getFungibleTokenWipeOperations(true)
 			h := newTokenWipeTransactionConstructor()
 			tx := tt.getTransaction()
 
@@ -198,6 +216,11 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 			expectError:      true,
 		},
 		{
+			name:             "InvalidCurrencySymbol",
+			updateOperations: updateCurrency(types.CurrencyHbar),
+			expectError:      true,
+		},
+		{
 			name:             "InvalidMetadataPayer",
 			updateOperations: updateOperationMetadata("payer", "x.y.z"),
 			expectError:      true,
@@ -228,8 +251,8 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 			expectError:      true,
 		},
 		{
-			name:             "InvalidCurrency",
-			updateOperations: updateCurrency(types.CurrencyHbar),
+			name:             "ZeroAccountAddress",
+			updateOperations: updateOperationAccount("0.0.0"),
 			expectError:      true,
 		},
 	}
@@ -237,7 +260,7 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			operations := getTokenWipeOperations(false)
+			operations := getFungibleTokenWipeOperations(false)
 			h := newTokenWipeTransactionConstructor()
 
 			if tt.updateOperations != nil {
@@ -270,18 +293,31 @@ func assertTokenWipeTransaction(
 
 	tx, _ := actual.(*hedera.TokenWipeTransaction)
 	account := tx.GetAccountID().String()
-	amount := fmt.Sprintf("%d", -int64(tx.GetAmount()))
 	payer := tx.GetTransactionID().AccountID.String()
 	token := tx.GetTokenID().String()
 
 	assert.Equal(t, operation.Metadata["payer"], payer)
-	assert.Equal(t, operation.Amount.Value, amount)
 	assert.Equal(t, operation.Account.Address, account)
 	assert.Equal(t, operation.Amount.Currency.Symbol, token)
 	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
+
+	if len(tx.GetSerialNumbers()) == 0 {
+		amount := fmt.Sprintf("%d", -int64(tx.GetAmount()))
+		assert.Equal(t, operation.Amount.Value, amount)
+	} else {
+		// nft
+		serialNumbers := make([]interface{}, 0)
+		for _, serial := range tx.GetSerialNumbers() {
+			serialNumbers = append(serialNumbers, fmt.Sprintf("%d", serial))
+		}
+
+		assert.Zero(t, tx.GetAmount())
+		expectedSerialNumbers := operation.Amount.Metadata["serial_numbers"]
+		assert.ElementsMatch(t, expectedSerialNumbers, serialNumbers)
+	}
 }
 
-func getTokenWipeOperations(partialTokenCurrency bool) []*rTypes.Operation {
+func getFungibleTokenWipeOperations(partialTokenCurrency bool) []*rTypes.Operation {
 	currency := tokenACurrency
 	if partialTokenCurrency {
 		currency = tokenAPartialCurrency
@@ -294,6 +330,29 @@ func getTokenWipeOperations(partialTokenCurrency bool) []*rTypes.Operation {
 			Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
 			Amount:              &rTypes.Amount{Value: value, Currency: currency},
 			Metadata:            map[string]interface{}{"payer": payerId.String()},
+		},
+	}
+}
+
+func getNonFungibleTokenWipeOperations(partialTokenCurrency bool) []*rTypes.Operation {
+	currency := tokenCCurrency
+	if partialTokenCurrency {
+		currency = tokenCPartialCurrency
+	}
+	value := fmt.Sprintf("%d", -defaultAmount)
+	return []*rTypes.Operation{
+		{
+			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
+			Type:                types.OperationTypeTokenWipe,
+			Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
+			Amount: &rTypes.Amount{
+				Value:    value,
+				Currency: currency,
+				Metadata: map[string]interface{}{
+					"serial_numbers": []interface{}{"1", "2"},
+				},
+			},
+			Metadata: map[string]interface{}{"payer": payerId.String()},
 		},
 	}
 }

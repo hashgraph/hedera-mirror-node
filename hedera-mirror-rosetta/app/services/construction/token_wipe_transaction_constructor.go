@@ -40,12 +40,12 @@ type tokenWipeTransactionConstructor struct {
 }
 
 func (t *tokenWipeTransactionConstructor) Construct(
-	ctx context.Context,
+	_ context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	payer, account, tokenAmount, rErr := t.preprocess(ctx, operations)
+	payer, account, tokenAmount, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
@@ -69,7 +69,7 @@ func (t *tokenWipeTransactionConstructor) Construct(
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenWipeTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
+func (t *tokenWipeTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -107,11 +107,11 @@ func (t *tokenWipeTransactionConstructor) Parse(ctx context.Context, transaction
 	return []*rTypes.Operation{operation}, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenWipeTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
+func (t *tokenWipeTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
-	payer, _, _, err := t.preprocess(ctx, operations)
+	payer, _, _, err := t.preprocess(operations)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +119,7 @@ func (t *tokenWipeTransactionConstructor) Preprocess(ctx context.Context, operat
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenWipeTransactionConstructor) preprocess(ctx context.Context, operations []*rTypes.Operation) (
+func (t *tokenWipeTransactionConstructor) preprocess(operations []*rTypes.Operation) (
 	payer *hedera.AccountID,
 	account *hedera.AccountID,
 	tokenAmount *types.TokenAmount,
@@ -151,11 +151,6 @@ func (t *tokenWipeTransactionConstructor) preprocess(ctx context.Context, operat
 
 	if tmpTokenAmount.Value >= 0 ||
 		(tmpTokenAmount.Type == domain.TokenTypeNonFungibleUnique && len(tmpTokenAmount.SerialNumbers) == 0) {
-		return
-	}
-
-	if _, err1 := hedera.TokenIDFromString(operation.Amount.Currency.Symbol); err1 != nil {
-		err = errors.ErrInvalidToken
 		return
 	}
 

@@ -51,7 +51,7 @@ type cryptoCreateTransactionConstructor struct {
 }
 
 func (c *cryptoCreateTransactionConstructor) Construct(
-	ctx context.Context,
+	_ context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
@@ -99,7 +99,7 @@ func (c *cryptoCreateTransactionConstructor) GetSdkTransactionType() string {
 	return c.transactionType
 }
 
-func (c *cryptoCreateTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
+func (c *cryptoCreateTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -152,7 +152,7 @@ func (c *cryptoCreateTransactionConstructor) Parse(ctx context.Context, transact
 	return []*rTypes.Operation{operation}, []hedera.AccountID{payer}, nil
 }
 
-func (c *cryptoCreateTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
+func (c *cryptoCreateTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {

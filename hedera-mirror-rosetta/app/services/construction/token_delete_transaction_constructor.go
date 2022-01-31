@@ -37,12 +37,12 @@ type tokenDeleteTransactionConstructor struct {
 }
 
 func (t *tokenDeleteTransactionConstructor) Construct(
-	ctx context.Context,
+	_ context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	payerId, tokenId, rErr := t.preprocess(ctx, operations)
+	payerId, tokenId, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
@@ -59,7 +59,7 @@ func (t *tokenDeleteTransactionConstructor) Construct(
 	return tx, []hedera.AccountID{*payerId}, nil
 }
 
-func (t *tokenDeleteTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
+func (t *tokenDeleteTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -95,11 +95,11 @@ func (t *tokenDeleteTransactionConstructor) Parse(ctx context.Context, transacti
 	return []*rTypes.Operation{operation}, []hedera.AccountID{*payerId}, nil
 }
 
-func (t *tokenDeleteTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
+func (t *tokenDeleteTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
-	payer, _, err := t.preprocess(ctx, operations)
+	payer, _, err := t.preprocess(operations)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +107,7 @@ func (t *tokenDeleteTransactionConstructor) Preprocess(ctx context.Context, oper
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenDeleteTransactionConstructor) preprocess(ctx context.Context, operations []*rTypes.Operation) (
+func (t *tokenDeleteTransactionConstructor) preprocess(operations []*rTypes.Operation) (
 	*hedera.AccountID,
 	*hedera.TokenID,
 	*rTypes.Error,

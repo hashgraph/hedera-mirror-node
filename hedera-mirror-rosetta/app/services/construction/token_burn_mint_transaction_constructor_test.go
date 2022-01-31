@@ -195,6 +195,21 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		return tx
 	}
 
+	getTransactionWithInvalidTokenId := func(operationType string, token domain.Token) interfaces.Transaction {
+		transaction := defaultGetTransaction(operationType, token)
+		switch tx := transaction.(type) {
+		case *hedera.TokenBurnTransaction:
+			tx.SetTokenID(outOfRangeTokenId)
+			break
+		case *hedera.TokenMintTransaction:
+			tx.SetTokenID(outOfRangeTokenId)
+			break
+		default:
+			break
+		}
+		return transaction
+	}
+
 	tests := []struct {
 		name           string
 		getTransaction func(operationType string, token domain.Token) interfaces.Transaction
@@ -209,6 +224,18 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 				return hedera.NewTransferTransaction()
 			},
 			expectError: true,
+		},
+		{
+			name:           "InvalidTokenIdFT",
+			getTransaction: getTransactionWithInvalidTokenId,
+			token:          dbTokenA,
+			expectError:    true,
+		},
+		{
+			name:           "InvalidTokenIdFT",
+			getTransaction: getTransactionWithInvalidTokenId,
+			token:          dbTokenC,
+			expectError:    true,
 		},
 		{
 			name: "TransactionMismatch",

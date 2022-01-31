@@ -246,6 +246,25 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 			getTransaction: defaultGetTransaction,
 		},
 		{
+			name: "InvalidTokenId",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenAssociate {
+					return hedera.NewTokenAssociateTransaction().
+						SetAccountID(payerId).
+						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+						SetTokenIDs(outOfRangeTokenId).
+						SetTransactionID(hedera.TransactionIDGenerate(payerId))
+				}
+
+				return hedera.NewTokenDissociateTransaction().
+					SetAccountID(payerId).
+					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetTokenIDs(outOfRangeTokenId).
+					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			},
+			expectError: true,
+		},
+		{
 			name:           "InvalidTransaction",
 			getTransaction: getTransferTransaction,
 			expectError:    true,
@@ -378,6 +397,11 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestPreprocess
 		{
 			name:             "InvalidAccountAddress",
 			updateOperations: updateOperationAccount("x.y.z"),
+			expectError:      true,
+		},
+		{
+			name:             "InvalidCurrencySymbol",
+			updateOperations: updateCurrency(types.CurrencyHbar),
 			expectError:      true,
 		},
 		{

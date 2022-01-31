@@ -151,6 +151,17 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestParse() {
 			getTransaction: defaultGetTransaction,
 		},
 		{
+			name: "InvalidTokenId",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTokenUpdateTransaction().
+					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetTokenID(outOfRangeTokenId).
+					SetTokenName(name).
+					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			},
+			expectError: true,
+		},
+		{
 			name: "InvalidTransaction",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTransferTransaction()
@@ -235,6 +246,11 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestPreprocess() {
 		{
 			name:             "InvalidAccountAddress",
 			updateOperations: updateOperationAccount("x.y.z"),
+			expectError:      true,
+		},
+		{
+			name:             "InvalidCurrencySymbol",
+			updateOperations: updateCurrency(currencyHbar),
 			expectError:      true,
 		},
 		{

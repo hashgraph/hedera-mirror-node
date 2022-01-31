@@ -56,6 +56,7 @@ var (
 		{account: accountIdAStr, amount: -1, currency: tokenCCurrency, serialNumbers: defaultSerialNumbers},
 		{account: accountIdBStr, amount: 1, currency: tokenCCurrency, serialNumbers: defaultSerialNumbers},
 	}
+	outOfRangeTokenId = hedera.TokenID{Shard: 2 << 15, Realm: 2 << 16, Token: 2 << 32}
 )
 
 type transferOperation struct {
@@ -185,6 +186,38 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 			name: "TransactionIDNotSet",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTransferTransaction().SetNodeAccountIDs([]hedera.AccountID{nodeAccountId})
+			},
+			expectError: true,
+		},
+		{
+			name: "NoExpectedDecimals",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTransferTransaction().
+					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetTransactionID(hedera.TransactionIDGenerate(accountIdA)).
+					AddTokenTransfer(tokenIdA, accountIdA, -25).
+					AddTokenTransfer(tokenIdA, accountIdB, 25)
+			},
+			expectError: true,
+		},
+		{
+			name: "InvalidFungibleCommonTokenId",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTransferTransaction().
+					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetTransactionID(hedera.TransactionIDGenerate(accountIdA)).
+					AddTokenTransferWithDecimals(outOfRangeTokenId, accountIdA, -25, decimals).
+					AddTokenTransferWithDecimals(outOfRangeTokenId, accountIdB, 25, decimals)
+			},
+			expectError: true,
+		},
+		{
+			name: "InvalidNonFungibleUniqueTokenId",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTransferTransaction().
+					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetTransactionID(hedera.TransactionIDGenerate(accountIdA)).
+					AddNftTransfer(hedera.NftID{TokenID: outOfRangeTokenId, SerialNumber: 1}, accountIdA, accountIdB)
 			},
 			expectError: true,
 		},

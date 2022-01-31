@@ -178,9 +178,25 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 		getTransaction func(operationType string) interfaces.Transaction
 		expectError    bool
 	}{
+		{name: "Success", getTransaction: defaultGetTransaction},
 		{
-			name:           "Success",
-			getTransaction: defaultGetTransaction,
+			name: "InvalidTokenId",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenFreeze {
+					return hedera.NewTokenFreezeTransaction().
+						SetAccountID(accountId).
+						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+						SetTokenID(outOfRangeTokenId).
+						SetTransactionID(hedera.TransactionIDGenerate(payerId))
+				}
+
+				return hedera.NewTokenUnfreezeTransaction().
+					SetAccountID(accountId).
+					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetTokenID(outOfRangeTokenId).
+					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			},
+			expectError: true,
 		},
 		{
 			name: "InvalidTransaction",
@@ -255,6 +271,11 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 		{
 			name:             "InvalidAccountAddress",
 			updateOperations: updateOperationAccount("x.y.z"),
+			expectError:      true,
+		},
+		{
+			name:             "InvalidTokenId",
+			updateOperations: updateCurrency(currencyHbar),
 			expectError:      true,
 		},
 		{

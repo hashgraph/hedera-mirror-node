@@ -38,12 +38,12 @@ type tokenAssociateDissociateTransactionConstructor struct {
 }
 
 func (t *tokenAssociateDissociateTransactionConstructor) Construct(
-	ctx context.Context,
+	_ context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenIds, rErr := t.preprocess(ctx, operations)
+	payer, tokenIds, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
@@ -75,8 +75,7 @@ func (t *tokenAssociateDissociateTransactionConstructor) Construct(
 }
 
 func (t *tokenAssociateDissociateTransactionConstructor) Parse(
-	ctx context.Context,
-	transaction interfaces.Transaction,
+	_ context.Context, transaction interfaces.Transaction,
 ) ([]*rTypes.Operation, []hedera.AccountID, *rTypes.Error) {
 	var accountId hedera.AccountID
 	var payerId *hedera.AccountID
@@ -142,10 +141,10 @@ func (t *tokenAssociateDissociateTransactionConstructor) Parse(
 }
 
 func (t *tokenAssociateDissociateTransactionConstructor) Preprocess(
-	ctx context.Context,
+	_ context.Context,
 	operations []*rTypes.Operation,
 ) ([]hedera.AccountID, *rTypes.Error) {
-	payer, _, err := t.preprocess(ctx, operations)
+	payer, _, err := t.preprocess(operations)
 	if err != nil {
 		return nil, err
 	}
@@ -153,10 +152,11 @@ func (t *tokenAssociateDissociateTransactionConstructor) Preprocess(
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenAssociateDissociateTransactionConstructor) preprocess(
-	ctx context.Context,
-	operations []*rTypes.Operation,
-) (*hedera.AccountID, []hedera.TokenID, *rTypes.Error) {
+func (t *tokenAssociateDissociateTransactionConstructor) preprocess(operations []*rTypes.Operation) (
+	*hedera.AccountID,
+	[]hedera.TokenID,
+	*rTypes.Error,
+) {
 	if rErr := validateOperations(operations, 0, t.operationType, false); rErr != nil {
 		return nil, nil, rErr
 	}

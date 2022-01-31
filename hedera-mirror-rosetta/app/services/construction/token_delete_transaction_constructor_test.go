@@ -118,6 +118,16 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 	}{
 		{name: "Success", getTransaction: defaultGetTransaction},
 		{
+			name: "InvalidTokenId",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTokenDeleteTransaction().
+					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetTransactionID(hedera.TransactionIDGenerate(payerId)).
+					SetTokenID(outOfRangeTokenId)
+			},
+			expectError: true,
+		},
+		{
 			name: "InvalidTransaction",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTransferTransaction()
@@ -184,6 +194,11 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestPreprocess() {
 		{
 			name:             "InvalidAmountValue",
 			updateOperations: updateAmountValue("10"),
+			expectError:      true,
+		},
+		{
+			name:             "InvalidCurrency",
+			updateOperations: updateCurrency(currencyHbar),
 			expectError:      true,
 		},
 		{

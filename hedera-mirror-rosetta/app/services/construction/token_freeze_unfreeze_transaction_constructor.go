@@ -40,12 +40,12 @@ type tokenFreezeUnfreezeTransactionConstructor struct {
 }
 
 func (t *tokenFreezeUnfreezeTransactionConstructor) Construct(
-	ctx context.Context,
+	_ context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
 ) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	payer, account, token, rErr := t.preprocess(ctx, operations)
+	payer, account, token, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
@@ -76,7 +76,7 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Construct(
 	return tx, []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
+func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -126,11 +126,11 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(ctx context.Context, t
 	return []*rTypes.Operation{operation}, []hedera.AccountID{payer}, nil
 }
 
-func (t *tokenFreezeUnfreezeTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
+func (t *tokenFreezeUnfreezeTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {
-	payer, _, _, err := t.preprocess(ctx, operations)
+	payer, _, _, err := t.preprocess(operations)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Preprocess(ctx context.Conte
 	return []hedera.AccountID{*payer}, nil
 }
 
-func (t *tokenFreezeUnfreezeTransactionConstructor) preprocess(_ context.Context, operations []*rTypes.Operation) (
+func (t *tokenFreezeUnfreezeTransactionConstructor) preprocess(operations []*rTypes.Operation) (
 	*hedera.AccountID,
 	*hedera.AccountID,
 	*hedera.TokenID,

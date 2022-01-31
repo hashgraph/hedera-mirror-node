@@ -155,20 +155,22 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestConstruct() {
 }
 
 func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
+	tokenGrantKycTransaction := hedera.NewTokenGrantKycTransaction().
+		SetAccountID(accountId).
+		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+		SetTokenID(tokenIdA).
+		SetTransactionID(hedera.TransactionIDGenerate(payerId))
+	tokenRevokeKycTransaction := hedera.NewTokenRevokeKycTransaction().
+		SetAccountID(accountId).
+		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+		SetTokenID(tokenIdA).
+		SetTransactionID(hedera.TransactionIDGenerate(payerId))
 	defaultGetTransaction := func(operationType string) interfaces.Transaction {
 		if operationType == types.OperationTypeTokenGrantKyc {
-			return hedera.NewTokenGrantKycTransaction().
-				SetAccountID(accountId).
-				SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-				SetTokenID(tokenIdA).
-				SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			return tokenGrantKycTransaction
 		}
 
-		return hedera.NewTokenRevokeKycTransaction().
-			SetAccountID(accountId).
-			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTokenID(tokenIdA).
-			SetTransactionID(hedera.TransactionIDGenerate(payerId))
+		return tokenRevokeKycTransaction
 	}
 
 	tests := []struct {
@@ -179,6 +181,25 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 		{
 			name:           "Success",
 			getTransaction: defaultGetTransaction,
+		},
+		{
+			name: "InvalidTokenId",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenGrantKyc {
+					return hedera.NewTokenGrantKycTransaction().
+						SetAccountID(accountId).
+						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+						SetTokenID(outOfRangeTokenId).
+						SetTransactionID(hedera.TransactionIDGenerate(payerId))
+				}
+
+				return hedera.NewTokenRevokeKycTransaction().
+					SetAccountID(accountId).
+					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetTokenID(outOfRangeTokenId).
+					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			},
+			expectError: true,
 		},
 		{
 			name:           "InvalidTransaction",
@@ -233,6 +254,16 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 					SetAccountID(accountId).
 					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenID(tokenIdA)
+			},
+			expectError: true,
+		},
+		{
+			name: "TransactionMismatch",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenGrantKyc {
+					return tokenRevokeKycTransaction
+				}
+				return tokenGrantKycTransaction
 			},
 			expectError: true,
 		},
@@ -297,6 +328,11 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 		{
 			name:             "InvalidAccountAddress",
 			updateOperations: updateOperationAccount("x.y.z"),
+			expectError:      true,
+		},
+		{
+			name:             "InvalidToken",
+			updateOperations: updateCurrency(currencyHbar),
 			expectError:      true,
 		},
 		{
