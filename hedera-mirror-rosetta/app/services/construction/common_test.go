@@ -27,7 +27,6 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 )
@@ -459,76 +458,6 @@ func TestValidateOperationsWithType(t *testing.T) {
 				assert.NotNil(t, err)
 			} else {
 				assert.Nil(t, err)
-			}
-		})
-	}
-}
-
-func TestValidateToken(t *testing.T) {
-	var tests = []struct {
-		name         string
-		currency     *rTypes.Currency
-		tokenRepoErr bool
-		expectError  bool
-	}{
-		{
-			name:     "Success",
-			currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
-		},
-		{
-			name:         "TokenNotFound",
-			currency:     types.Token{Token: dbTokenA}.ToRosettaCurrency(),
-			tokenRepoErr: true,
-			expectError:  true,
-		},
-		{
-			name:        "DecimalsMismatch",
-			currency:    &rTypes.Currency{Symbol: dbTokenA.TokenId.String(), Decimals: 19867},
-			expectError: true,
-		},
-		{
-			name:        "MissingMetadata",
-			currency:    &rTypes.Currency{Symbol: dbTokenA.TokenId.String(), Decimals: int32(dbTokenA.Decimals)},
-			expectError: true,
-		},
-		{
-			name: "InvalidTokenTypeDataType",
-			currency: &rTypes.Currency{
-				Symbol:   dbTokenA.TokenId.String(),
-				Decimals: int32(dbTokenA.Decimals),
-				Metadata: map[string]interface{}{"type": 100},
-			},
-			expectError: true,
-		},
-		{
-			name: "TokenTypeMismatch",
-			currency: &rTypes.Currency{
-				Symbol:   dbTokenA.TokenId.String(),
-				Decimals: int32(dbTokenA.Decimals),
-				Metadata: map[string]interface{}{"type": "foobar"},
-			},
-			expectError: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockTokenRepo := &mocks.MockTokenRepository{}
-
-			if tt.tokenRepoErr {
-				configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
-			} else {
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
-			}
-
-			token, err := validateToken(defaultContext, mockTokenRepo, tt.currency)
-
-			if tt.expectError {
-				assert.NotNil(t, err)
-			} else {
-				assert.Nil(t, err)
-				assert.Equal(t, types.Token{Token: dbTokenA}.ToHederaTokenId(), token)
-				mockTokenRepo.AssertExpectations(t)
 			}
 		})
 	}

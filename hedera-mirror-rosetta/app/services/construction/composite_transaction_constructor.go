@@ -112,29 +112,26 @@ func (c *compositeTransactionConstructor) validate(operations []*rTypes.Operatio
 	return h, nil
 }
 
-func NewTransactionConstructor(tokenRepo interfaces.TokenRepository) TransactionConstructor {
+func NewTransactionConstructor() TransactionConstructor {
 	c := &compositeTransactionConstructor{
 		constructorsByOperationType:   make(map[string]transactionConstructorWithType),
 		constructorsByTransactionType: make(map[string]transactionConstructorWithType),
 	}
 
 	c.addConstructor(newCryptoCreateTransactionConstructor())
-	c.addConstructor(newCryptoTransferTransactionConstructor(tokenRepo))
+	c.addConstructor(newCryptoTransferTransactionConstructor())
 	c.addConstructor(newTokenCreateTransactionConstructor())
-
-	if tokenRepo != nil {
-		c.addConstructor(newTokenAssociateTransactionConstructor(tokenRepo))
-		c.addConstructor(newTokenBurnTransactionConstructor(tokenRepo))
-		c.addConstructor(newTokenDeleteTransactionConstructor(tokenRepo))
-		c.addConstructor(newTokenDissociateTransactionConstructor(tokenRepo))
-		c.addConstructor(newTokenFreezeTransactionConstructor(tokenRepo))
-		c.addConstructor(newTokenGrantKycTransactionConstructor(tokenRepo))
-		c.addConstructor(newTokenRevokeKycTransactionConstructor(tokenRepo))
-		c.addConstructor(newTokenMintTransactionConstructor(tokenRepo))
-		c.addConstructor(newTokenUnfreezeTransactionConstructor(tokenRepo))
-		c.addConstructor(newTokenUpdateTransactionConstructor(tokenRepo))
-		c.addConstructor(newTokenWipeTransactionConstructor(tokenRepo))
-	}
+	c.addConstructor(newTokenAssociateTransactionConstructor())
+	c.addConstructor(newTokenBurnTransactionConstructor())
+	c.addConstructor(newTokenDeleteTransactionConstructor())
+	c.addConstructor(newTokenDissociateTransactionConstructor())
+	c.addConstructor(newTokenFreezeTransactionConstructor())
+	c.addConstructor(newTokenGrantKycTransactionConstructor())
+	c.addConstructor(newTokenRevokeKycTransactionConstructor())
+	c.addConstructor(newTokenMintTransactionConstructor())
+	c.addConstructor(newTokenUnfreezeTransactionConstructor())
+	c.addConstructor(newTokenUpdateTransactionConstructor())
+	c.addConstructor(newTokenWipeTransactionConstructor())
 
 	return c
 }
