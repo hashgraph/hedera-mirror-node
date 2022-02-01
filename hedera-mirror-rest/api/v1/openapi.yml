@@ -197,7 +197,7 @@ paths:
         - $ref: '#/components/parameters/contractIdPathParam'
         - $ref: '#/components/parameters/logIndexQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
         - $ref: '#/components/parameters/timestampQueryParam'
         - $ref: '#/components/parameters/logTopic0QueryParam'
         - $ref: '#/components/parameters/logTopic1QueryParam'
@@ -1005,23 +1005,13 @@ components:
       nullable: true
       properties:
         initial_transaction_id:
-          type: string
-        nonce:
-          type: integer
-          nullable: true
+          $ref: '#/components/schemas/TransactionId'
         number:
+          example: 1
           type: integer
-        scheduled:
-          type: boolean
-          nullable: true
         total:
+          example: 2
           type: integer
-      example:
-        initial_transaction_id: "0.0.3-1234567890-000000321"
-        nonce: 2
-        number: 1
-        scheduled: true
-        total: 2
     Contract:
       type: object
       properties:
@@ -1865,6 +1855,22 @@ components:
               - 0.0.8
               - 0.0.72
             token_id: 0.0.90001
+    TransactionId:
+      type: object
+      properties:
+        account_id:
+          $ref: '#/components/schemas/EntityId'
+        nonce:
+          example: 0
+          type: integer
+          minimum: 0
+          nullable: true
+        scheduled:
+          example: false
+          type: boolean
+          nullable: true
+        transaction_valid_start:
+          $ref: '#/components/schemas/Timestamp'
     Transactions:
       type: array
       items:
