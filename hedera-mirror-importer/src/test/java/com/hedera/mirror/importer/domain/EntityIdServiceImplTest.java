@@ -214,7 +214,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
 
     @Test
     void storeNull() {
-        entityIdService.store(null);
+        assertDoesNotThrow(() -> entityIdService.store(null));
     }
 
     private void clearCache() {

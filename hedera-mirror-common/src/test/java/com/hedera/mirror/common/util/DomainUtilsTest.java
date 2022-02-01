@@ -41,6 +41,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
 
 class DomainUtilsTest {
 
@@ -284,12 +285,15 @@ class DomainUtilsTest {
 
     @Test
     void toEvmAddress() {
-        assertThat(DomainUtils.toEvmAddress(null)).isEqualTo(null);
-        assertThat(DomainUtils.toEvmAddress(EntityId.EMPTY)).isEqualTo(null);
-
         EntityId contractId = EntityId.of(1, 2, 255, EntityType.CONTRACT);
         String expected = "00000001000000000000000200000000000000FF";
         assertThat(DomainUtils.toEvmAddress(contractId)).asHexString().isEqualTo(expected);
+    }
+
+    @Test
+    void toEvmAddressThrows() {
+        assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress(null));
+        assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress(EntityId.EMPTY));
     }
 
     @Test

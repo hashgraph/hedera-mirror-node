@@ -200,7 +200,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     @Test
     void contractCreateFailedWithResult() {
         RecordItem recordItem = recordItemBuilder.contractCreate()
-                .record(r -> r.setContractCreateResult(ContractFunctionResult.getDefaultInstance()))
+                .record(TransactionRecord.Builder::clearContractCreateResult)
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
         var record = recordItem.getRecord();
