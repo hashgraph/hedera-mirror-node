@@ -59,7 +59,7 @@ type tokenCreateTransactionConstructor struct {
 }
 
 func (t *tokenCreateTransactionConstructor) Construct(
-	ctx context.Context,
+	_ context.Context,
 	nodeAccountId hedera.AccountID,
 	operations []*rTypes.Operation,
 	validStartNanos int64,
@@ -140,7 +140,7 @@ func (t *tokenCreateTransactionConstructor) GetSdkTransactionType() string {
 	return t.transactionType
 }
 
-func (t *tokenCreateTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
+func (t *tokenCreateTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
 	[]*rTypes.Operation,
 	[]hedera.AccountID,
 	*rTypes.Error,
@@ -224,7 +224,7 @@ func (t *tokenCreateTransactionConstructor) Parse(ctx context.Context, transacti
 	return []*rTypes.Operation{operation}, signers, nil
 }
 
-func (t *tokenCreateTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
+func (t *tokenCreateTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
 	[]hedera.AccountID,
 	*rTypes.Error,
 ) {

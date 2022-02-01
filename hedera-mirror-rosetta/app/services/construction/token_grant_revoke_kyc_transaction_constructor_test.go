@@ -26,7 +26,6 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -41,12 +40,12 @@ type tokenGrantRevokeKycTransactionConstructorSuite struct {
 }
 
 func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestNewTokenGrantKycTransactionConstructor() {
-	h := newTokenGrantKycTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenGrantKycTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestNewTokenRevokeKycTransactionConstructor() {
-	h := newTokenRevokeKycTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenRevokeKycTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 
@@ -70,7 +69,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestGetOperationTyp
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&mocks.MockTokenRepository{})
+			h := tt.newHandler()
 			assert.Equal(t, tt.expected, h.GetOperationType())
 		})
 	}
@@ -96,7 +95,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestGetSdkTransacti
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&mocks.MockTokenRepository{})
+			h := tt.newHandler()
 			assert.Equal(t, tt.expected, h.GetSdkTransactionType())
 		})
 	}
@@ -119,10 +118,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestConstruct() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				operations := suite.getOperations(operationType)
-				mockTokenRepo := &mocks.MockTokenRepository{}
-				h := newHandler(mockTokenRepo)
-
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
+				h := newHandler()
 
 				if tt.updateOperations != nil {
 					operations = tt.updateOperations(operations)
@@ -140,7 +136,6 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestConstruct() {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 					assertTokenGrantRevokeKycTransaction(t, operations, nodeAccountId, tx)
-					mockTokenRepo.AssertExpectations(t)
 
 					if tt.validStartNanos != 0 {
 						assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
@@ -160,25 +155,26 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestConstruct() {
 }
 
 func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
+	tokenGrantKycTransaction := hedera.NewTokenGrantKycTransaction().
+		SetAccountID(accountId).
+		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+		SetTokenID(tokenIdA).
+		SetTransactionID(hedera.TransactionIDGenerate(payerId))
+	tokenRevokeKycTransaction := hedera.NewTokenRevokeKycTransaction().
+		SetAccountID(accountId).
+		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+		SetTokenID(tokenIdA).
+		SetTransactionID(hedera.TransactionIDGenerate(payerId))
 	defaultGetTransaction := func(operationType string) interfaces.Transaction {
 		if operationType == types.OperationTypeTokenGrantKyc {
-			return hedera.NewTokenGrantKycTransaction().
-				SetAccountID(accountId).
-				SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-				SetTokenID(tokenIdA).
-				SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			return tokenGrantKycTransaction
 		}
 
-		return hedera.NewTokenRevokeKycTransaction().
-			SetAccountID(accountId).
-			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTokenID(tokenIdA).
-			SetTransactionID(hedera.TransactionIDGenerate(payerId))
+		return tokenRevokeKycTransaction
 	}
 
 	tests := []struct {
 		name           string
-		tokenRepoErr   bool
 		getTransaction func(operationType string) interfaces.Transaction
 		expectError    bool
 	}{
@@ -187,27 +183,28 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 			getTransaction: defaultGetTransaction,
 		},
 		{
-			name:           "TokenNotFound",
-			tokenRepoErr:   true,
-			getTransaction: defaultGetTransaction,
-			expectError:    true,
+			name: "InvalidTokenId",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenGrantKyc {
+					return hedera.NewTokenGrantKycTransaction().
+						SetAccountID(accountId).
+						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+						SetTokenID(outOfRangeTokenId).
+						SetTransactionID(hedera.TransactionIDGenerate(payerId))
+				}
+
+				return hedera.NewTokenRevokeKycTransaction().
+					SetAccountID(accountId).
+					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetTokenID(outOfRangeTokenId).
+					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			},
+			expectError: true,
 		},
 		{
 			name:           "InvalidTransaction",
 			getTransaction: getTransferTransaction,
 			expectError:    true,
-		},
-		{
-			name: "TransactionMismatch",
-			getTransaction: func(operationType string) interfaces.Transaction {
-				if operationType == types.OperationTypeTokenGrantKyc {
-					return hedera.NewTokenRevokeKycTransaction()
-				}
-
-				return hedera.NewTokenGrantKycTransaction()
-
-			},
-			expectError: true,
 		},
 		{
 			name: "TransactionAccountIDNotSet",
@@ -260,6 +257,16 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 			},
 			expectError: true,
 		},
+		{
+			name: "TransactionMismatch",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenGrantKyc {
+					return tokenRevokeKycTransaction
+				}
+				return tokenGrantKycTransaction
+			},
+			expectError: true,
+		},
 	}
 
 	runTests := func(t *testing.T, operationType string, newHandler newConstructorFunc) {
@@ -267,16 +274,8 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				expectedOperations := suite.getOperations(operationType)
-
-				mockTokenRepo := &mocks.MockTokenRepository{}
-				h := newHandler(mockTokenRepo)
+				h := newHandler()
 				tx := tt.getTransaction(operationType)
-
-				if tt.tokenRepoErr {
-					configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
-				} else {
-					configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
-				}
 
 				// when
 				operations, signers, err := h.Parse(defaultContext, tx)
@@ -290,7 +289,6 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 					assert.ElementsMatch(t, expectedOperations, operations)
-					mockTokenRepo.AssertExpectations(t)
 				}
 			})
 		}
@@ -308,7 +306,6 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 	tests := []struct {
 		name             string
-		tokenRepoErr     bool
 		updateOperations updateOperationsFunc
 		expectError      bool
 	}{
@@ -334,8 +331,8 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 			expectError:      true,
 		},
 		{
-			name:             "TokenDecimalsMismatch",
-			updateOperations: updateTokenDecimals(1990),
+			name:             "InvalidToken",
+			updateOperations: updateCurrency(currencyHbar),
 			expectError:      true,
 		},
 		{
@@ -349,11 +346,6 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 			expectError:      true,
 		},
 		{
-			name:         "TokenNotFound",
-			tokenRepoErr: true,
-			expectError:  true,
-		},
-		{
 			name:             "InvalidOperationType",
 			updateOperations: updateOperationType(types.OperationTypeCryptoTransfer),
 			expectError:      true,
@@ -365,15 +357,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				operations := suite.getOperations(operationType)
-
-				mockTokenRepo := &mocks.MockTokenRepository{}
-				h := newHandler(mockTokenRepo)
-
-				if tt.tokenRepoErr {
-					configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
-				} else {
-					configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
-				}
+				h := newHandler()
 
 				if tt.updateOperations != nil {
 					operations = tt.updateOperations(operations)
@@ -389,7 +373,6 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 				} else {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-					mockTokenRepo.AssertExpectations(t)
 				}
 			})
 		}
@@ -410,7 +393,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) getOperations(opera
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 			Type:                operationType,
 			Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
-			Amount:              &rTypes.Amount{Value: "0", Currency: tokenACurrency},
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenAPartialCurrency},
 			Metadata:            map[string]interface{}{"payer": payerId.String()},
 		},
 	}

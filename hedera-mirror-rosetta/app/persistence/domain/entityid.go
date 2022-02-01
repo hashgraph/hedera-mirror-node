@@ -155,15 +155,19 @@ func EntityIdFromString(entityId string) (EntityId, error) {
 		return EntityId{}, errorEntityId
 	}
 
-	encodedId, err := EncodeEntityId(shardNum, realmNum, entityNum)
+	return EntityIdOf(shardNum, realmNum, entityNum)
+}
+
+func EntityIdOf(shard, realm, num int64) (EntityId, error) {
+	encodedId, err := EncodeEntityId(shard, realm, num)
 	if err != nil {
 		return EntityId{}, err
 	}
 
 	return EntityId{
-		ShardNum:  shardNum,
-		RealmNum:  realmNum,
-		EntityNum: entityNum,
+		ShardNum:  shard,
+		RealmNum:  realm,
+		EntityNum: num,
 		EncodedId: encodedId,
 	}, nil
 }

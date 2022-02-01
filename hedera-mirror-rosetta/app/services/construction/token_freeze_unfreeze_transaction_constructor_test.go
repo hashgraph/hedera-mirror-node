@@ -26,7 +26,6 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -41,12 +40,12 @@ type tokenFreezeUnfreezeTransactionConstructorSuite struct {
 }
 
 func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestNewTokenFreezeTransactionConstructor() {
-	h := newTokenFreezeTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenFreezeTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestNewTokenUnfreezeTransactionConstructor() {
-	h := newTokenUnfreezeTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenUnfreezeTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 
@@ -70,7 +69,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestGetOperationTyp
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&mocks.MockTokenRepository{})
+			h := tt.newHandler()
 			assert.Equal(t, tt.expected, h.GetOperationType())
 		})
 	}
@@ -96,7 +95,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestGetSdkTransacti
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
-			h := tt.newHandler(&mocks.MockTokenRepository{})
+			h := tt.newHandler()
 			assert.Equal(t, tt.expected, h.GetSdkTransactionType())
 		})
 	}
@@ -119,9 +118,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				operations := getFreezeUnfreezeOperations(operationType)
-				mockTokenRepo := &mocks.MockTokenRepository{}
-				h := newHandler(mockTokenRepo)
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
+				h := newHandler()
 
 				if tt.updateOperations != nil {
 					operations = tt.updateOperations(operations)
@@ -139,7 +136,6 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 					assertTokenFreezeUnfreezeTransaction(t, operations[0], nodeAccountId, tx)
-					mockTokenRepo.AssertExpectations(t)
 
 					if tt.validStartNanos != 0 {
 						assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
@@ -179,19 +175,28 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 
 	var tests = []struct {
 		name           string
-		tokenRepoErr   bool
 		getTransaction func(operationType string) interfaces.Transaction
 		expectError    bool
 	}{
+		{name: "Success", getTransaction: defaultGetTransaction},
 		{
-			name:           "Success",
-			getTransaction: defaultGetTransaction,
-		},
-		{
-			name:           "TokenNotFound",
-			tokenRepoErr:   true,
-			getTransaction: defaultGetTransaction,
-			expectError:    true,
+			name: "InvalidTokenId",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenFreeze {
+					return hedera.NewTokenFreezeTransaction().
+						SetAccountID(accountId).
+						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+						SetTokenID(outOfRangeTokenId).
+						SetTransactionID(hedera.TransactionIDGenerate(payerId))
+				}
+
+				return hedera.NewTokenUnfreezeTransaction().
+					SetAccountID(accountId).
+					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetTokenID(outOfRangeTokenId).
+					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			},
+			expectError: true,
 		},
 		{
 			name: "InvalidTransaction",
@@ -217,16 +222,8 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				expectedOperations := getFreezeUnfreezeOperations(operationType)
-
-				mockTokenRepo := &mocks.MockTokenRepository{}
-				h := newHandler(mockTokenRepo)
+				h := newHandler()
 				tx := tt.getTransaction(operationType)
-
-				if tt.tokenRepoErr {
-					configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
-				} else {
-					configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
-				}
 
 				// when
 				operations, signers, err := h.Parse(defaultContext, tx)
@@ -240,7 +237,6 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 					assert.ElementsMatch(t, expectedOperations, operations)
-					mockTokenRepo.AssertExpectations(t)
 				}
 			})
 		}
@@ -258,7 +254,6 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 	var tests = []struct {
 		name             string
-		tokenRepoErr     bool
 		updateOperations updateOperationsFunc
 		expectError      bool
 	}{
@@ -279,20 +274,14 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 			expectError:      true,
 		},
 		{
+			name:             "InvalidTokenId",
+			updateOperations: updateCurrency(currencyHbar),
+			expectError:      true,
+		},
+		{
 			name:             "ZeroAccountId",
 			updateOperations: updateOperationAccount("0.0.0"),
 			expectError:      true,
-		},
-
-		{
-			name:             "TokenDecimalsMismatch",
-			updateOperations: updateTokenDecimals(1990),
-			expectError:      true,
-		},
-		{
-			name:         "TokenNotFound",
-			tokenRepoErr: true,
-			expectError:  true,
 		},
 		{
 			name:             "MultipleOperations",
@@ -311,15 +300,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 			t.Run(tt.name, func(t *testing.T) {
 				// given
 				operations := getFreezeUnfreezeOperations(operationType)
-
-				mockTokenRepo := &mocks.MockTokenRepository{}
-				h := newHandler(mockTokenRepo)
-
-				if tt.tokenRepoErr {
-					configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
-				} else {
-					configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
-				}
+				h := newHandler()
 
 				if tt.updateOperations != nil {
 					operations = tt.updateOperations(operations)
@@ -335,7 +316,6 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 				} else {
 					assert.Nil(t, err)
 					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-					mockTokenRepo.AssertExpectations(t)
 				}
 			})
 		}
@@ -390,7 +370,7 @@ func getFreezeUnfreezeOperations(operationType string) []*rTypes.Operation {
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 			Type:                operationType,
 			Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
-			Amount:              &rTypes.Amount{Value: "0", Currency: tokenACurrency},
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenAPartialCurrency},
 			Metadata:            map[string]interface{}{"payer": payerId.String()},
 		},
 	}

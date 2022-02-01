@@ -82,7 +82,6 @@ func newBlockchainOnlineRouter(
 	accountRepo := persistence.NewAccountRepository(dbClient)
 	addressBookEntryRepo := persistence.NewAddressBookEntryRepository(dbClient)
 	blockRepo := persistence.NewBlockRepository(dbClient)
-	tokenRepo := persistence.NewTokenRepository(dbClient)
 	transactionRepo := persistence.NewTransactionRepository(dbClient)
 
 	baseService := services.NewOnlineBaseService(blockRepo, transactionRepo)
@@ -100,7 +99,7 @@ func newBlockchainOnlineRouter(
 		baseService,
 		network.Network,
 		config.Nodes,
-		construction.NewTransactionConstructor(tokenRepo),
+		construction.NewTransactionConstructor(),
 	)
 	if err != nil {
 		return nil, err
@@ -141,7 +140,7 @@ func newBlockchainOfflineRouter(
 		baseService,
 		network.Network,
 		config.Nodes,
-		construction.NewTransactionConstructor(nil),
+		construction.NewTransactionConstructor(),
 	)
 	if err != nil {
 		return nil, err
