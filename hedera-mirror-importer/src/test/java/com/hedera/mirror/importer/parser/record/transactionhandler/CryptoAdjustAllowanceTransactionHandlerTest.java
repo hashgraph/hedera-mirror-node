@@ -23,10 +23,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
@@ -34,20 +32,18 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 
-class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class CryptoAdjustAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoApproveAllowanceTransactionHandler(entityListener);
+        return new CryptoAdjustAllowanceTransactionHandler(entityListener);
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setCryptoApproveAllowance(CryptoApproveAllowanceTransactionBody.newBuilder().build());
+                .setCryptoAdjustAllowance(CryptoAdjustAllowanceTransactionBody.newBuilder().build());
     }
 
     @Override
@@ -56,18 +52,8 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     }
 
     @Test
-    void updateTransactionUnsuccessful() {
-        var transaction = new Transaction();
-        RecordItem recordItem = recordItemBuilder.cryptoApproveAllowance()
-                .receipt(r -> r.setStatus(ResponseCodeEnum.ACCOUNT_DELETED))
-                .build();
-        transactionHandler.updateTransaction(transaction, recordItem);
-        verifyNoInteractions(entityListener);
-    }
-
-    @Test
-    void updateTransactionSuccessful() {
-        var recordItem = recordItemBuilder.cryptoApproveAllowance().build();
+    void updateTransaction() {
+        var recordItem = recordItemBuilder.cryptoAdjustAllowance().build();
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
         transactionHandler.updateTransaction(transaction, recordItem);

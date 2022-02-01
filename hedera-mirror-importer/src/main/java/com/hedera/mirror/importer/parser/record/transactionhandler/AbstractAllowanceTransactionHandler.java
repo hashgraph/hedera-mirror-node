@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.google.common.collect.Range;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 
@@ -44,16 +43,15 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
 
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (!recordItem.isSuccessful()) {
-            return;
-        }
+        long consensusTimestamp = transaction.getConsensusTimestamp();
+        long payerAccountId = recordItem.getPayerAccountId().getId();
 
         for (var cryptoApproval : getCryptoAllowances(recordItem)) {
             CryptoAllowance cryptoAllowance = new CryptoAllowance();
             cryptoAllowance.setAmount(cryptoApproval.getAmount());
-            cryptoAllowance.setPayerAccountId(recordItem.getPayerAccountId().getId());
+            cryptoAllowance.setPayerAccountId(payerAccountId);
             cryptoAllowance.setSpender(EntityId.of(cryptoApproval.getSpender()).getId());
-            cryptoAllowance.setTimestampRange(Range.atLeast(transaction.getConsensusTimestamp()));
+            cryptoAllowance.setTimestampLower(consensusTimestamp);
             entityListener.onCryptoAllowance(cryptoAllowance);
         }
 
@@ -61,21 +59,21 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
             var approvedForAll = nftApproval.hasApprovedForAll() && nftApproval.getApprovedForAll().getValue();
             NftAllowance nftAllowance = new NftAllowance();
             nftAllowance.setApprovedForAll(approvedForAll);
-            nftAllowance.setPayerAccountId(recordItem.getPayerAccountId().getId());
+            nftAllowance.setPayerAccountId(payerAccountId);
             nftAllowance.setSerialNumbers(nftApproval.getSerialNumbersList());
             nftAllowance.setSpender(EntityId.of(nftApproval.getSpender()).getId());
             nftAllowance.setTokenId(EntityId.of(nftApproval.getTokenId()).getId());
-            nftAllowance.setTimestampLower(transaction.getConsensusTimestamp());
+            nftAllowance.setTimestampLower(consensusTimestamp);
             entityListener.onNftAllowance(nftAllowance);
         }
 
         for (var tokenApproval : getTokenAllowances(recordItem)) {
             TokenAllowance tokenAllowance = new TokenAllowance();
             tokenAllowance.setAmount(tokenApproval.getAmount());
-            tokenAllowance.setPayerAccountId(recordItem.getPayerAccountId().getId());
+            tokenAllowance.setPayerAccountId(payerAccountId);
             tokenAllowance.setSpender(EntityId.of(tokenApproval.getSpender()).getId());
             tokenAllowance.setTokenId(EntityId.of(tokenApproval.getTokenId()).getId());
-            tokenAllowance.setTimestampLower(transaction.getConsensusTimestamp());
+            tokenAllowance.setTimestampLower(consensusTimestamp);
             entityListener.onTokenAllowance(tokenAllowance);
         }
     }

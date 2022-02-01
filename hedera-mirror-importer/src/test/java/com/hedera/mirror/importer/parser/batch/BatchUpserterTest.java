@@ -714,11 +714,13 @@ class BatchUpserterTest extends IntegrationTest {
         TokenTransfer fungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
                 .amount(-10)
                 .id(new TokenTransfer.Id(consensusTimestamp, ftId, accountId))
+                .isApproval(false)
                 .payerAccountId(payerId)
                 .tokenDissociate(true)).get();
         TokenTransfer nonFungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
                 .amount(-2)
                 .id(new TokenTransfer.Id(consensusTimestamp, tokenId1, accountId))
+                .isApproval(false)
                 .payerAccountId(payerId)
                 .tokenDissociate(true)).get();
         List<TokenTransfer> tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer);
@@ -856,6 +858,7 @@ class BatchUpserterTest extends IntegrationTest {
                                        long consensusTimestamp) {
         NftTransfer nftTransfer = new NftTransfer();
         nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
+        nftTransfer.setIsApproval(false);
         nftTransfer.setSenderAccountId(senderAccountId);
         return nftTransfer;
     }

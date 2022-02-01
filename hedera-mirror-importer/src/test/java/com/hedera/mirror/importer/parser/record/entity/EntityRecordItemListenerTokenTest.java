@@ -507,6 +507,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var expected = domainBuilder.tokenTransfer().customize(t -> t
                 .amount(-10)
                 .id(new TokenTransfer.Id(dissociateTimeStamp, EntityId.of(TOKEN_ID), EntityId.of(PAYER2)))
+                .isApproval(false)
                 .payerAccountId(EntityId.of(PAYER))
                 .tokenDissociate(false)).get();
         assertThat(tokenTransferRepository.findById(expected.getId())).get().isEqualTo(expected);

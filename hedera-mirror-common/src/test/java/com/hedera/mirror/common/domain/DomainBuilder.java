@@ -29,6 +29,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -72,7 +73,9 @@ import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 
 @Component
@@ -351,6 +354,28 @@ public class DomainBuilder {
                 .payerAccountId(entityId(ACCOUNT))
                 .tokenDissociate(false);
 
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<Transaction, Transaction.TransactionBuilder> transaction() {
+        Transaction.TransactionBuilder builder = Transaction.builder()
+                .chargedTxFee(10000000L)
+                .consensusTimestamp(timestamp())
+                .entityId(entityId(ACCOUNT))
+                .initialBalance(10000000L)
+                .maxFee(100000000L)
+                .memo(bytes(10))
+                .nodeAccountId(entityId(ACCOUNT))
+                .nonce(0)
+                .parentConsensusTimestamp(timestamp())
+                .payerAccountId(entityId(ACCOUNT))
+                .result(ResponseCodeEnum.SUCCESS.getNumber())
+                .scheduled(false)
+                .transactionBytes(bytes(100))
+                .transactionHash(bytes(48))
+                .type(TransactionType.CRYPTOTRANSFER.getProtoId())
+                .validStartNs(timestamp())
+                .validDurationSeconds(120L);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

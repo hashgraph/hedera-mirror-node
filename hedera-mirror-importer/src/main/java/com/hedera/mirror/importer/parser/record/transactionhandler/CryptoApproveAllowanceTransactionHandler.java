@@ -27,6 +27,7 @@ import java.util.List;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
@@ -40,6 +41,13 @@ class CryptoApproveAllowanceTransactionHandler extends AbstractAllowanceTransact
     @Override
     public TransactionType getType() {
         return TransactionType.CRYPTOAPPROVEALLOWANCE;
+    }
+
+    @Override
+    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+        if (recordItem.isSuccessful()) {
+            super.updateTransaction(transaction, recordItem);
+        }
     }
 
     @Override

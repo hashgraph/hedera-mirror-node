@@ -88,11 +88,9 @@ create table if not exists token_allowance_history
 );
 ```
 
-### Importer
-
 ### REST API
 
-#### Hbar Allowances
+#### Crypto Allowances
 
 `/api/v1/accounts/{accountId}/allowances/crypto`
 
@@ -114,7 +112,7 @@ create table if not exists token_allowance_history
       "spender": "0.0.9857",
       "timestamp": {
         "from": "1633466229.96874612",
-        "to": "1633466568.31556926"
+        "to": null
       }
     }
   ],
@@ -124,8 +122,8 @@ create table if not exists token_allowance_history
 
 Optional Filters
 
-* `order`: `asc` or `desc` with a default of `desc`
-* `limit`
+* `limit`: The maximum amount of items to return.
+* `order`: Order by `payer_account_id`. Accepts `asc` or `desc` with a default of `asc`.
 
 #### NFT Allowances
 
@@ -157,7 +155,7 @@ Optional Filters
       "token_id": "0.0.1032",
       "timestamp": {
         "from": "1633466229.96874612",
-        "to": "1633466568.31556926"
+        "to": null
       }
     }
   ],
@@ -167,8 +165,8 @@ Optional Filters
 
 Optional Filters
 
-* `order`: `asc` or `desc` with a default of `desc`
-* `limit`
+* `limit`: The maximum amount of items to return.
+* `order`: Order by `payer_account_id` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
 
 #### Token Allowances
 
@@ -194,7 +192,7 @@ Optional Filters
       "token_id": "0.0.1032",
       "timestamp": {
         "from": "1633466229.96874612",
-        "to": "1633466568.31556926"
+        "to": null
       }
     }
   ],
@@ -204,11 +202,21 @@ Optional Filters
 
 Optional Filters
 
-* `order`: `asc` or `desc` with a default of `desc`
-* `limit`
+* `limit`: The maximum amount of items to return.
+* `order`: Order by `payer_account_id` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
+
+#### Transactions APIs
+
+Update all APIs that show transfers to return `is_approval` in its response. Including `/api/v1/accounts/:id` and all
+the transactions REST APIs.
 
 ## Non-Functional Requirements
 
+* Ingest new transaction types at the same rate as consensus nodes
+
 ## Open Questions
+
+1) How will we handle adjust allowance for serial numbers?
+2) How will we do REST API pagination using multiple columns?
 
 ## Answered Questions

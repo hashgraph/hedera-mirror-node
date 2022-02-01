@@ -25,10 +25,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -37,12 +36,13 @@ import org.springframework.data.domain.Persistable;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.converter.UnknownIdConverter;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For builder
+@Builder
 @Data
 @Entity
 @NoArgsConstructor
-@AllArgsConstructor
-@ToString(exclude = {"memo", "transactionHash", "transactionBytes"})
 public class Transaction implements Persistable<Long> {
 
     @Id
@@ -56,6 +56,7 @@ public class Transaction implements Persistable<Long> {
 
     private Long initialBalance;
 
+    @ToString.Exclude
     private byte[] memo;
 
     private Long maxFee;
@@ -76,8 +77,10 @@ public class Transaction implements Persistable<Long> {
 
     private boolean scheduled;
 
+    @ToString.Exclude
     private byte[] transactionBytes;
 
+    @ToString.Exclude
     private byte[] transactionHash;
 
     private Integer type;

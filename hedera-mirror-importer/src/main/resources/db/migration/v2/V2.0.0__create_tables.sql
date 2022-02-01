@@ -284,13 +284,13 @@ create table if not exists nft_allowance
     timestamp_range  int8range not null,
     token_id         bigint    not null
 );
-comment on table token_allowance is 'NFT allowances delegated by payer to spender';
+comment on table nft_allowance is 'NFT allowances delegated by payer to spender';
 
 create table if not exists nft_allowance_history
 (
     like nft_allowance including defaults
 );
-comment on table token_allowance is 'History of NFT allowances delegated by payer to spender';
+comment on table nft_allowance_history is 'History of NFT allowances delegated by payer to spender';
 
 -- nft_transfer
 create table if not exists nft_transfer
