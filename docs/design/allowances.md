@@ -123,7 +123,8 @@ create table if not exists token_allowance_history
 Optional Filters
 
 * `limit`: The maximum amount of items to return.
-* `order`: Order by `payer_account_id`. Accepts `asc` or `desc` with a default of `asc`.
+* `order`: Order by `spender`. Accepts `asc` or `desc` with a default of `asc`.
+* `spender`: Filter by the spender account ID. Only need to support `eq` operator and allow multiple.
 
 #### NFT Allowances
 
@@ -166,7 +167,9 @@ Optional Filters
 Optional Filters
 
 * `limit`: The maximum amount of items to return.
-* `order`: Order by `payer_account_id` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
+* `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
+* `spender`: Filter by the spender account ID. Only need to support `eq` operator and allow multiple.
+* `token.id`: Filter by the token ID. Only need to support `eq` operator and allow multiple.
 
 #### Token Allowances
 
@@ -203,7 +206,9 @@ Optional Filters
 Optional Filters
 
 * `limit`: The maximum amount of items to return.
-* `order`: Order by `payer_account_id` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
+* `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
+* `spender`: Filter by the spender account ID. Only need to support `eq` operator and allow multiple.
+* `token.id`: Filter by the token ID. Only need to support `eq` operator and allow multiple.
 
 #### Transactions APIs
 
@@ -218,5 +223,6 @@ the transactions REST APIs.
 
 1) How will we handle adjust allowance for serial numbers?
 2) How will we do REST API pagination using multiple columns?
+3) What happens if client populates both `approvedForAll` and `serialNumbers`?
 
 ## Answered Questions

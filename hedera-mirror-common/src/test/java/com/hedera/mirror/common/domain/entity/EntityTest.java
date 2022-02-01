@@ -22,6 +22,7 @@ package com.hedera.mirror.common.domain.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
 import org.junit.jupiter.api.Test;
 
 class EntityTest {
@@ -31,5 +32,31 @@ class EntityTest {
         Entity entity = new Entity();
         entity.setMemo("abc" + (char) 0);
         assertThat(entity.getMemo()).isEqualTo("abc�");
+    }
+
+    @Test
+    void history() {
+        Entity entity = new Entity();
+        assertThat(entity.getTimestampRange()).isNull();
+        assertThat(entity.getTimestampLower()).isNull();
+        assertThat(entity.getTimestampUpper()).isNull();
+
+        Range<Long> timestampRangeLower = Range.atLeast(1L);
+        entity.setTimestampRange(timestampRangeLower);
+        assertThat(entity.getTimestampRange()).isEqualTo(timestampRangeLower);
+        assertThat(entity.getTimestampLower()).isEqualTo(timestampRangeLower.lowerEndpoint());
+        assertThat(entity.getTimestampUpper()).isNull();
+
+        entity.setTimestampUpper(2L);
+        assertThat(entity.getTimestampUpper()).isEqualTo(2L);
+
+        Range<Long> timestampRangeUpper = Range.atMost(1L);
+        entity.setTimestampRange(timestampRangeUpper);
+        assertThat(entity.getTimestampRange()).isEqualTo(timestampRangeUpper);
+        assertThat(entity.getTimestampLower()).isNull();
+        assertThat(entity.getTimestampUpper()).isEqualTo(timestampRangeUpper.upperEndpoint());
+
+        entity.setTimestampLower(0L);
+        assertThat(entity.getTimestampLower()).isEqualTo(0L);
     }
 }

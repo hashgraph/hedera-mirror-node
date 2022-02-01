@@ -63,7 +63,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -75,11 +74,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
     @Resource
     private ContractLogRepository contractLogRepository;
-    @Resource
-    private ContractStateChangeRepository contractStateChangeRepository;
 
     @Resource
-    private RecordItemBuilder recordItemBuilder;
+    private ContractStateChangeRepository contractStateChangeRepository;
 
     @BeforeEach
     void before() {

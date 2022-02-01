@@ -206,6 +206,13 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.CRYPTOAPPROVEALLOWANCE, builder);
     }
 
+    private StorageChange.Builder storageChange() {
+        return StorageChange.newBuilder()
+                .setSlot(bytes(32))
+                .setValueRead(bytes(32))
+                .setValueWritten(BytesValue.of(bytes(32)));
+    }
+
     public Builder<TokenMintTransactionBody.Builder> tokenMint(TokenType tokenType) {
         TokenMintTransactionBody.Builder transactionBody = TokenMintTransactionBody.newBuilder().setToken(tokenId());
 
@@ -255,13 +262,6 @@ public class RecordItemBuilder {
         } else {
             return Key.newBuilder().setEd25519(bytes(KEY_LENGTH_ED25519)).build();
         }
-    }
-
-    private StorageChange.Builder storageChange() {
-        return StorageChange.newBuilder()
-                .setSlot(bytes(32))
-                .setValueRead(bytes(32))
-                .setValueWritten(BytesValue.of(bytes(32)));
     }
 
     public String text(int characters) {
