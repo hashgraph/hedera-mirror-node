@@ -378,11 +378,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private <T extends AbstractEntity> T mergeAbstractEntity(T previous, T current) {
         // Copy non-updatable fields from previous
-        if (current.getCreatedTimestamp() == null) {
-            // set created timestamp to previous only if it's not set on current
-            // this is used to correct the contract's created timestamp with the nested ContractCreate txs since
-            current.setCreatedTimestamp(previous.getCreatedTimestamp());
-        }
+        current.setCreatedTimestamp(previous.getCreatedTimestamp());
 
         if (current.getAutoRenewPeriod() == null) {
             current.setAutoRenewPeriod(previous.getAutoRenewPeriod());

@@ -284,6 +284,9 @@ class DomainUtilsTest {
 
     @Test
     void toEvmAddress() {
+        assertThat(DomainUtils.toEvmAddress(null)).isEqualTo(null);
+        assertThat(DomainUtils.toEvmAddress(EntityId.EMPTY)).isEqualTo(null);
+
         EntityId contractId = EntityId.of(1, 2, 255, EntityType.CONTRACT);
         String expected = "00000001000000000000000200000000000000FF";
         assertThat(DomainUtils.toEvmAddress(contractId)).asHexString().isEqualTo(expected);

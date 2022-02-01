@@ -61,7 +61,9 @@ import javax.inject.Named;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
+import org.springframework.data.util.Version;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.util.Utility;
@@ -83,19 +85,30 @@ public class RecordItemBuilder {
     private final SecureRandom random = new SecureRandom();
 
     public Builder<ContractCallTransactionBody.Builder> contractCall() {
-        ContractID contractId = contractId();
+        return contractCall(contractId());
+    }
+
+    public Builder<ContractCallTransactionBody.Builder> contractCall(ContractID contractId) {
+        return contractCall(contractId, contractId);
+    }
+
+    public Builder<ContractCallTransactionBody.Builder> contractCall(ContractID contractIdInBody,
+                                                                     ContractID contractIdInRecord) {
         ContractCallTransactionBody.Builder transactionBody = ContractCallTransactionBody.newBuilder()
                 .setAmount(5_000L)
-                .setContractID(contractId)
+                .setContractID(contractIdInBody)
                 .setFunctionParameters(bytes(64))
                 .setGas(10_000L);
 
         return new Builder<>(TransactionType.CONTRACTCALL, transactionBody)
-                .record(r -> r.setContractCallResult(contractFunctionResult(contractId)));
+                .record(r -> r.setContractCallResult(contractFunctionResult(contractIdInRecord)));
     }
 
     public Builder<ContractCreateTransactionBody.Builder> contractCreate() {
-        ContractID contractId = contractId();
+        return contractCreate(contractId());
+    }
+
+    public Builder<ContractCreateTransactionBody.Builder> contractCreate(ContractID contractId) {
         ContractCreateTransactionBody.Builder transactionBody = ContractCreateTransactionBody.newBuilder()
                 .setAdminKey(key())
                 .setAutoRenewPeriod(duration(30))
@@ -111,7 +124,8 @@ public class RecordItemBuilder {
 
         return new Builder<>(TransactionType.CONTRACTCREATEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId))
-                .record(r -> r.setContractCreateResult(contractFunctionResult(contractId)));
+                .record(r -> r.setContractCreateResult(contractFunctionResult(contractId)
+                        .addCreatedContractIDs(contractId)));
     }
 
     private ContractFunctionResult.Builder contractFunctionResult(ContractID contractId) {
@@ -119,7 +133,6 @@ public class RecordItemBuilder {
                 .setBloom(bytes(256))
                 .setContractCallResult(bytes(16))
                 .setContractID(contractId)
-                .addCreatedContractIDs(contractId)
                 .addCreatedContractIDs(contractId())
                 .setErrorMessage(text(10))
                 .setGasUsed(1000L)
@@ -250,8 +263,12 @@ public class RecordItemBuilder {
         }
 
         public RecordItem build() {
+            return build(RecordFile.HAPI_VERSION_NOT_SET);
+        }
+
+        public RecordItem build(Version hapiVersion) {
             Transaction transaction = transaction().build();
-            return new RecordItem(transaction, transactionRecord.build());
+            return new RecordItem(hapiVersion, transaction.toByteArray(), transactionRecord.build().toByteArray());
         }
 
         public Builder<T> receipt(Consumer<TransactionReceipt.Builder> consumer) {

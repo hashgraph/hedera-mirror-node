@@ -22,9 +22,6 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import com.hedera.mirror.common.exception.ProtobufException;
-
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -36,9 +33,11 @@ import java.util.Set;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
 
 @Log4j2
@@ -48,6 +47,7 @@ public class RecordItem implements StreamItem {
     static final String BAD_RECORD_BYTES_MESSAGE = "Failed to parse record bytes";
     static final String BAD_TRANSACTION_BODY_BYTES_MESSAGE = "Error parsing transactionBody from transaction";
 
+    private final Version hapiVersion;
     private final Transaction transaction;
     private final TransactionBodyAndSignatureMap transactionBodyAndSignatureMap;
     private final TransactionRecord record;
@@ -67,7 +67,7 @@ public class RecordItem implements StreamItem {
     /**
      * Constructs RecordItem from serialized transactionBytes and recordBytes.
      */
-    public RecordItem(byte[] transactionBytes, byte[] recordBytes) {
+    public RecordItem(Version hapiVersion, byte[] transactionBytes, byte[] recordBytes) {
         try {
             transaction = Transaction.parseFrom(transactionBytes);
         } catch (InvalidProtocolBufferException e) {
@@ -80,6 +80,8 @@ public class RecordItem implements StreamItem {
         }
         transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
         transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());
+
+        this.hapiVersion = hapiVersion;
         this.transactionBytes = transactionBytes;
         this.recordBytes = recordBytes;
     }
@@ -87,15 +89,22 @@ public class RecordItem implements StreamItem {
     // Used only in tests
     // There are many brittle RecordItemParser*Tests which rely on bytes being null. Those tests need to be fixed,
     // then this function can be removed.
-    public RecordItem(Transaction transaction, TransactionRecord record) {
+    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord record) {
         Objects.requireNonNull(transaction, "transaction is required");
         Objects.requireNonNull(record, "record is required");
+
+        this.hapiVersion = hapiVersion;
         this.transaction = transaction;
         transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
         transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());
         this.record = record;
         transactionBytes = null;
         recordBytes = null;
+    }
+
+    // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET
+    public RecordItem(Transaction transaction, TransactionRecord record) {
+        this(RecordFile.HAPI_VERSION_NOT_SET, transaction, record);
     }
 
     private static TransactionBodyAndSignatureMap parseTransactionBodyAndSignatureMap(Transaction transaction) {

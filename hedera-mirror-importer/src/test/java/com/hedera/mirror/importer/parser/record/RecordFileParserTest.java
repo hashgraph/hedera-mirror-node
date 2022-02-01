@@ -44,17 +44,18 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser> {
 
@@ -198,6 +199,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         TransactionRecord transactionRecord = TransactionRecord.newBuilder()
                 .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
                 .build();
-        return new RecordItem(transaction.toByteArray(), transactionRecord.toByteArray());
+        return DomainUtils.recordItem(transaction, transactionRecord);
     }
 }

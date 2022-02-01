@@ -28,6 +28,8 @@ import com.google.protobuf.UnsafeByteOperations;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -38,8 +40,11 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 
 @Log4j2
@@ -160,6 +165,15 @@ public class DomainUtils {
         return convertToNanosMax(instant.getEpochSecond(), instant.getNano());
     }
 
+    public static RecordItem recordItem(Transaction transaction, TransactionRecord transactionRecord) {
+        return recordItem(RecordFile.HAPI_VERSION_NOT_SET, transaction, transactionRecord);
+    }
+
+    public static RecordItem recordItem(Version hapiVersion, Transaction transaction,
+                                        TransactionRecord transactionRecord) {
+        return new RecordItem(hapiVersion, transaction.toByteArray(), transactionRecord.toByteArray());
+    }
+
     /**
      * Convert Timestamp to a Long type timeStampInNanos
      */
@@ -241,6 +255,10 @@ public class DomainUtils {
     }
 
     public static byte[] toEvmAddress(EntityId contractId) {
+        if (EntityId.isEmpty(contractId)) {
+            return null;
+        }
+
         byte[] evmAddress = new byte[20];
         ByteBuffer buffer = ByteBuffer.wrap(evmAddress);
         buffer.putInt(contractId.getShardNum().intValue());

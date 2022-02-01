@@ -212,6 +212,11 @@ class EntityIdServiceImplTest extends IntegrationTest {
         assertThat(entityIdService.lookup(getProtoContractId(contract))).isEqualTo(EntityId.EMPTY);
     }
 
+    @Test
+    void storeNull() {
+        entityIdService.store(null);
+    }
+
     private void clearCache() {
         cacheManager.getCacheNames().stream().map(cacheManager::getCache).forEach(Cache::clear);
     }

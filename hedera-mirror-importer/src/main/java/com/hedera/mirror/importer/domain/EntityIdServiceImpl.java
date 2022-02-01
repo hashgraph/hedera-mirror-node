@@ -82,7 +82,7 @@ public class EntityIdServiceImpl implements EntityIdService {
 
     @Override
     public void store(Aliasable aliasable) {
-        if (aliasable.getDeleted() != null && aliasable.getDeleted()) {
+        if (aliasable == null || (aliasable.getDeleted() != null && aliasable.getDeleted())) {
             return;
         }
 

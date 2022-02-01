@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.StorageChange;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
@@ -43,6 +44,8 @@ import com.hedera.mirror.importer.util.Utility;
 @RequiredArgsConstructor
 abstract class AbstractContractCallTransactionHandler implements TransactionHandler {
 
+    private static final Version HAPI_VERSION_0_23_0 = new Version(0, 23, 0);
+
     protected final EntityIdService entityIdService;
     protected final EntityListener entityListener;
     protected final EntityProperties entityProperties;
@@ -54,14 +57,15 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
         if (functionResult != ContractFunctionResult.getDefaultInstance()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             List<Long> createdContractIds = new ArrayList<>();
-            boolean persist = recordItem.isSuccessful() && entityProperties.getPersist().isContracts();
+            boolean persist = shouldPersistCreatedContractIDs(recordItem);
 
             for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
                 EntityId contractId = entityIdService.lookup(createdContractId);
                 createdContractIds.add(contractId.getId());
 
                 // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
-                if (persist && !EntityId.isEmpty(contractId) && !contractId.equals(contractResult.getContractId())) {
+                if (persist && !EntityId.isEmpty(contractId) && !contractId.equals(
+                        contractResult.getContractId())) {
                     doUpdateEntity(getContract(contractId, consensusTimestamp), recordItem);
                 }
             }
@@ -134,5 +138,13 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
         contract.setDeleted(false);
         contract.setModifiedTimestamp(consensusTimestamp);
         return contract;
+    }
+
+    private boolean shouldPersistCreatedContractIDs(RecordItem recordItem) {
+        // persist contract entities in createdContractIDsList if it's prior to HAPI 0.23.0. Since HAPI 0.23.0,
+        // the createdContractIDs list is also externalized to the corresponding new contract's own child contractCreate
+        // record with evmAddress, mirrornode only needs to persist the complete contract entity from the child record.
+        return recordItem.isSuccessful() && entityProperties.getPersist().isContracts() &&
+                recordItem.getHapiVersion().isLessThan(HAPI_VERSION_0_23_0);
     }
 }

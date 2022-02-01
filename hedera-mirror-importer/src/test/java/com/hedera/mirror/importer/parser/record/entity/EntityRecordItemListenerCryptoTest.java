@@ -700,7 +700,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         // when
-        parseRecordItemAndCommit(new RecordItem(transaction.toByteArray(), record.toByteArray()));
+        parseRecordItemAndCommit(DomainUtils.recordItem(transaction, record));
 
         // then
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());

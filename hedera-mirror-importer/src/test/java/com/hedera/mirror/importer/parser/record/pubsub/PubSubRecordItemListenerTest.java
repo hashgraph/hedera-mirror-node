@@ -65,11 +65,11 @@ import org.springframework.messaging.MessageChannel;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
-import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategyImpl;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
@@ -84,7 +84,6 @@ class PubSubRecordItemListenerTest {
             .setConsensusTimestamp(Utility.instantToTimestamp(Instant.ofEpochSecond(0L, CONSENSUS_TIMESTAMP)))
             .setReceipt(TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS).build())
             .build();
-    private static final byte[] DEFAULT_RECORD_BYTES = DEFAULT_RECORD.toByteArray();
     private static final FileID ADDRESS_BOOK_FILE_ID = FileID.newBuilder().setFileNum(102).build();
     private static final NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy =
             new NonFeeTransferExtractionStrategyImpl();
@@ -162,7 +161,7 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
         // when
         doReturn(topicIdEntity).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+        pubSubRecordItemListener.onItem(DomainUtils.recordItem(transaction, DEFAULT_RECORD));
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
@@ -185,7 +184,7 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setCryptoTransfer(cryptoTransfer));
 
         // when
-        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+        pubSubRecordItemListener.onItem(DomainUtils.recordItem(transaction, DEFAULT_RECORD));
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
@@ -206,8 +205,7 @@ class PubSubRecordItemListenerTest {
 
         // then
         assertThatThrownBy(
-                () -> pubSubRecordItemListener.onItem(
-                        new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES)))
+                () -> pubSubRecordItemListener.onItem(DomainUtils.recordItem(transaction, DEFAULT_RECORD)))
                 .isInstanceOf(ParserException.class)
                 .hasMessageContaining("Error sending transaction to pubsub");
         verify(messageChannel, times(1)).send(any());
@@ -227,7 +225,7 @@ class PubSubRecordItemListenerTest {
                 .thenThrow(MessageTimeoutException.class)
                 .thenThrow(MessageTimeoutException.class)
                 .thenReturn(true);
-        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+        pubSubRecordItemListener.onItem(DomainUtils.recordItem(transaction, DEFAULT_RECORD));
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 3);
@@ -249,7 +247,7 @@ class PubSubRecordItemListenerTest {
         // when
         EntityId entityId = EntityId.of(ADDRESS_BOOK_FILE_ID);
         doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+        pubSubRecordItemListener.onItem(DomainUtils.recordItem(transaction, DEFAULT_RECORD));
 
         // then
         FileData fileData = new FileData(100L, fileContents, entityId, TransactionType.FILEAPPEND
@@ -270,7 +268,7 @@ class PubSubRecordItemListenerTest {
         // when
         EntityId entityId = EntityId.of(ADDRESS_BOOK_FILE_ID);
         doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+        pubSubRecordItemListener.onItem(DomainUtils.recordItem(transaction, DEFAULT_RECORD));
 
         // then
         FileData fileData = new FileData(100L, fileContents, EntityId
