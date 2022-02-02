@@ -82,7 +82,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
         assertThat(entityIdService.lookup(contractId)).isEqualTo(expected);
 
         // cache miss
-        clearCache();
+        reset();
         assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.EMPTY);
     }
 
@@ -215,10 +215,6 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void storeNull() {
         assertDoesNotThrow(() -> entityIdService.store(null));
-    }
-
-    private void clearCache() {
-        cacheManager.getCacheNames().stream().map(cacheManager::getCache).forEach(Cache::clear);
     }
 
     private AccountID getProtoAccountId(Entity account) {
