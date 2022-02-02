@@ -306,7 +306,7 @@ describe('EntityId parse from encoded entityId', () => {
   }
 });
 
-describe('EntityId toSolidityAddress', () => {
+describe('EntityId toEvmAddress', () => {
   test('0.0.0', () => {
     expect(EntityId.of(0n, 0n, 0n).toEvmAddress()).toEqual('0x0000000000000000000000000000000000000000');
   });

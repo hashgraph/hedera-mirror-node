@@ -195,7 +195,7 @@ const entityIdCacheOptions = {
 
 const parseMemoized = mem(
   /**
-   * Parses entity ID string, can be shard.realm.num, realm.num, the encoded entity ID or a solidity contract address.
+   * Parses entity ID string, can be shard.realm.num, realm.num, the encoded entity ID or an evm contract address.
    * @param {string} id
    * @param {Function} error
    * @return {EntityId}
