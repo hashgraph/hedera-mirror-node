@@ -60,13 +60,13 @@ function main() {
     export HEDERA_MIRROR_ROSETTA_NETWORK="${NETWORK}"
   fi
 
-  restore
 
   case "${MODE}" in
     "offline")
       run_offline_mode
     ;;
     *)
+      restore
       run_online_mode
     ;;
   esac
