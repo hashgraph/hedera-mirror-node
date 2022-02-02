@@ -32,7 +32,7 @@ function restore() {
   cp /app/postgresql-restore.conf "${PGCONF}/conf.d/postgresql.conf"
   /etc/init.d/postgresql start
 
-  if (psql -h localhost -d mirror_node -U mirror_node -c 'select count(*) from flyway_schema_history'); then
+  if (psql -h localhost -d mirror_node -U mirror_node -c 'select count(*) from flyway_schema_history' > /dev/null); then
     echo "Skipping restore since database already contains data"
     cleanup
     return
