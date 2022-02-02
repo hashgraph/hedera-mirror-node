@@ -629,3 +629,86 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
     expect(response).toMatchObject(expectedContractLog);
   });
 });
+
+// state changes
+describe('ContractService.getContractStateChangesByTimestamps tests', () => {
+  test('No match', async () => {
+    const response = await ContractService.getContractStateChangesByTimestamps('1');
+    expect(response).toEqual([]);
+  });
+
+  test('Row match', async () => {
+    await integrationDomainOps.loadContractStateChanges([
+      {
+        consensus_timestamp: 1,
+        contract_id: 2,
+      },
+    ]);
+
+    const expectedContractStateChange = [
+      {
+        consensusTimestamp: '1',
+        contractId: '2',
+      },
+    ];
+
+    const response = await ContractService.getContractStateChangesByTimestamps('1');
+    expect(response).toMatchObject(expectedContractStateChange);
+  });
+
+  test('Id match', async () => {
+    await integrationDomainOps.loadContractStateChanges([
+      {
+        consensus_timestamp: 1,
+        contract_id: 3,
+        slot: '\\x000a',
+      },
+      {
+        consensus_timestamp: 1,
+        contract_id: 4,
+        slot: '\\x000b',
+      },
+      {
+        consensus_timestamp: 1,
+        contract_id: 5,
+        slot: '\\x000c',
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 3,
+        slot: '\\x0001',
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 4,
+        slot: '\\x0002',
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 5,
+        slot: '\\x0003',
+      },
+    ]);
+
+    const expectedContractStateChange = [
+      {
+        consensusTimestamp: '2',
+        contractId: '3',
+        slot: Buffer.from([92, 120, 48, 48, 48, 49]),
+      },
+      {
+        consensusTimestamp: '2',
+        contractId: '4',
+        slot: Buffer.from([92, 120, 48, 48, 48, 50]),
+      },
+      {
+        consensusTimestamp: '2',
+        contractId: '5',
+        slot: Buffer.from([92, 120, 48, 48, 48, 51]),
+      },
+    ];
+
+    const response = await ContractService.getContractStateChangesByTimestamps('2');
+    expect(response).toMatchObject(expectedContractStateChange);
+  });
+});

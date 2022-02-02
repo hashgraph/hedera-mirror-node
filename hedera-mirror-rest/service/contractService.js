@@ -23,7 +23,7 @@
 const _ = require('lodash');
 
 const BaseService = require('./baseService');
-const {ContractResult, ContractLog} = require('../model');
+const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
   response: {
     limit: {default: defaultLimit},
@@ -55,6 +55,15 @@ class ContractService extends BaseService {
     ${ContractResult.GAS_USED},
     ${ContractResult.PAYER_ACCOUNT_ID}
     from ${ContractResult.tableName}`;
+
+  static contractStateChangesQuery = `select
+    ${ContractStateChange.CONSENSUS_TIMESTAMP},
+    ${ContractStateChange.CONTRACT_ID},
+    ${ContractStateChange.PAYER_ACCOUNT_ID},
+    ${ContractStateChange.SLOT},
+    ${ContractStateChange.VALUE_READ},
+    ${ContractStateChange.VALUE_WRITTEN}
+    from ${ContractStateChange.tableName}`;
 
   static contractLogsQuery = `select
     ${ContractLog.BLOOM},
@@ -183,6 +192,22 @@ class ContractService extends BaseService {
     const query = [ContractService.contractLogsQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractLogsByTimestamps');
     return rows.map((row) => new ContractLog(row));
+  }
+
+  async getContractStateChangesByTimestamps(timestamps) {
+    let params = [timestamps];
+    let timestampsOpAndValue = '= $1';
+    if (Array.isArray(timestamps)) {
+      params = timestamps;
+      const positions = _.range(1, timestamps.length + 1).map((i) => `$${i}`);
+      timestampsOpAndValue = `in (${positions})`;
+    }
+
+    const whereClause = `where ${ContractStateChange.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
+    const orderClause = `order by ${ContractStateChange.CONSENSUS_TIMESTAMP}, ${ContractStateChange.CONTRACT_ID}, ${ContractStateChange.SLOT}`;
+    const query = [ContractService.contractStateChangesQuery, whereClause, orderClause].join('\n');
+    const rows = await super.getRows(query, params, 'getContractStateChangesByTimestamps');
+    return rows.map((row) => new ContractStateChange(row));
   }
 }
 

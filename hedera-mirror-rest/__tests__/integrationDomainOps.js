@@ -45,8 +45,9 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadContracts(testDataJson.contracts);
-  await loadContractResults(testDataJson.contractresults);
   await loadContractLogs(testDataJson.contractlogs);
+  await loadContractResults(testDataJson.contractresults);
+  await loadContractStateChanges(testDataJson.contractStateChanges);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
   await loadFileData(testDataJson.filedata);
@@ -117,6 +118,16 @@ const loadContractLogs = async (contractLogs) => {
 
   for (const contractLog of contractLogs) {
     await addContractLog(contractLog);
+  }
+};
+
+const loadContractStateChanges = async (contractStateChanges) => {
+  if (contractStateChanges == null) {
+    return;
+  }
+
+  for (const contractStateChange of contractStateChanges) {
+    await addContractStateChange(contractStateChange);
   }
 };
 
@@ -676,6 +687,39 @@ const addContractLog = async (contractLogInput) => {
   );
 };
 
+const addContractStateChange = async (contractStateChangeInput) => {
+  const insertFields = [
+    'consensus_timestamp',
+    'contract_id',
+    'payer_account_id',
+    'slot',
+    'value_read',
+    'value_written',
+  ];
+
+  const contractStateChange = {
+    consensus_timestamp: 1234510001,
+    contract_id: 1,
+    payer_account_id: 2,
+    slot: '\\x0123',
+    value_read: '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+    value_written: '\\x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
+    ...contractStateChangeInput,
+  };
+
+  contractStateChange.slot = testUtils.getBuffer(contractStateChangeInput.slot, contractStateChange.slot);
+  contractStateChange.value_read = testUtils.getBuffer(
+    contractStateChangeInput.value_read,
+    contractStateChange.value_read
+  );
+  contractStateChange.value_written = testUtils.getBuffer(
+    contractStateChangeInput.value_written,
+    contractStateChange.value_written
+  );
+
+  await insertDomainObject('contract_state_change', insertFields, contractStateChange);
+};
+
 const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
@@ -993,6 +1037,7 @@ module.exports = {
   loadRecordFiles,
   loadTransactions,
   loadContractLogs,
+  loadContractStateChanges,
   setAccountBalance,
   setUp,
 };

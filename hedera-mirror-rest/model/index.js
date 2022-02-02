@@ -25,6 +25,7 @@ module.exports = {
   Contract: require('./contract'),
   ContractLog: require('./contractLog'),
   ContractResult: require('./contractResult'),
+  ContractStateChange: require('./contractStateChange'),
   CryptoTransfer: require('./cryptoTransfer'),
   CustomFee: require('./customFee'),
   Entity: require('./entity'),

@@ -1148,6 +1148,8 @@ components:
               type: string
             logs:
               $ref: '#/components/schemas/ContractResultLogs'
+            state_changes:
+              $ref: '#/components/schemas/ContractResultStateChanges'
     ContractResultLog:
       type: object
       properties:
@@ -1177,6 +1179,33 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/ContractResultLog'
+    ContractResultStateChange:
+      type: object
+      properties:
+        address:
+          $ref: '#/components/schemas/SolidityAddress'
+        contract_id:
+          $ref: '#/components/schemas/EntityId'
+        slot:
+          description: The hex encoded storage slot changed.
+          format: binary
+          example: '0x00000000000000000000000000000000000000000000000000000000000000fa'
+          type: string
+        value_read:
+          description: The hex encoded value read from the storage slot.
+          example: '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750'
+          format: binary
+          type: string
+        value_written:
+          description: The hex encoded value written to the slot. `null` implies no value written.
+          example: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+          format: binary
+          nullable: true
+          type: string
+    ContractResultStateChanges:
+      type: array
+      items:
+        $ref: '#/components/schemas/ContractResultStateChange'
     ContractResults:
       type: array
       items:

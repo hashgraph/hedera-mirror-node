@@ -38,6 +38,18 @@
         "index": 0
       }
     ],
+    "contractStateChanges": [
+      {
+        "consensus_timestamp": "167654000123456",
+        "contract_id": 5001,
+        "slot": [1, 1]
+      },
+      {
+        "consensus_timestamp": "167654000123456",
+        "contract_id": 5002,
+        "slot": [2, 2]
+      }
+    ],
     "recordFiles": [
       {
         "index": 16,
@@ -111,6 +123,22 @@
           "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
           "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
         ]
+      }
+    ],
+    "state_changes": [
+      {
+        "address": "0x0000000000000000000000000000000000001389",
+        "contract_id": "0.0.5001",
+        "slot": "0x0000000000000000000000000000000000000000000000000000000000000101",
+        "value_read": "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+        "value_written": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+      },
+      {
+        "address": "0x000000000000000000000000000000000000138a",
+        "contract_id": "0.0.5002",
+        "slot": "0x0000000000000000000000000000000000000000000000000000000000000202",
+        "value_read": "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+        "value_written": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
       }
     ],
     "result": "SUCCESS",

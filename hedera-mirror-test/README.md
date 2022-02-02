@@ -55,6 +55,8 @@ under `hedera.mirror.test.acceptance` include:
   `environments.
 - `existingTopicNum` - A pre-existing default topic number that can be used when no topicId is specified in a test. Used
   initially by `@subscribeonly` test.
+- `featureProperties`
+  - `maxContractFunctionGas` - The maximum amount of gas an account is willing to pay for a contract function call.
 - `maxRetries` - The number of times client should retryable on supported failures.
 - `maxTinyBarTransactionFee` - The maximum transaction fee you're willing to pay on a transaction.
 - `messageTimeout` - The number of seconds to wait on messages representing transactions (default is 20).

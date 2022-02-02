@@ -57,7 +57,6 @@ import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 @Log4j2
 @Cucumber
 public class ContractFeature extends AbstractFeature {
-    private final static long maxFunctionGas = 300_000;
     private final ObjectMapper mapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
@@ -166,7 +165,8 @@ public class ContractFeature extends AbstractFeature {
         persistContractBytes(byteCode.replaceFirst("0x", ""));
         networkTransactionResponse = contractClient.createContract(
                 fileId,
-                maxFunctionGas,
+                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
+                        .getMaxContractFunctionGas(),
                 initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
                 null);
 
@@ -236,7 +236,9 @@ public class ContractFeature extends AbstractFeature {
         assertThat(contractResult.getErrorMessage()).isBlank();
         assertThat(contractResult.getFrom()).isEqualTo(FeatureInputHandler.solidityAddress(
                 contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId()));
-        assertThat(contractResult.getGasLimit()).isEqualTo(maxFunctionGas);
+        assertThat(contractResult.getGasLimit())
+                .isEqualTo(contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
+                        .getMaxContractFunctionGas());
         assertThat(contractResult.getGasUsed()).isPositive();
         assertThat(contractResult.getTo()).isEqualTo(FeatureInputHandler.solidityAddress(contractId));
 
@@ -264,7 +266,8 @@ public class ContractFeature extends AbstractFeature {
     private void executeCreateChildTransaction(int transferAmount) {
         networkTransactionResponse = contractClient.executeContract(
                 contractId,
-                maxFunctionGas,
+                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
+                        .getMaxContractFunctionGas(),
                 "createChild",
                 new ContractFunctionParameters()
                         .addUint256(BigInteger.valueOf(transferAmount)),
