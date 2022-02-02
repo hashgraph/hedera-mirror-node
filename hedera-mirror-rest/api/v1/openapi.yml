@@ -1183,7 +1183,7 @@ components:
       type: object
       properties:
         address:
-          $ref: '#/components/schemas/SolidityAddress'
+          $ref: '#/components/schemas/EvmAddress'
         contract_id:
           $ref: '#/components/schemas/EntityId'
         slot:
