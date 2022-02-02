@@ -16,6 +16,7 @@ function cleanup() {
   cp /app/postgresql.conf "${PGCONF}/conf.d"
   rm -rf "${TMPDIR}"
   cd /app
+  echo "Cleanup complete"
 }
 
 function restore() {
