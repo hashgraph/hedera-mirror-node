@@ -43,6 +43,10 @@ import java.util.List;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
+
 class NonFeeTransferExtractionStrategyImplTest {
     private static final long payerAccountNum = 999L;
     private static final AccountID payerAccountId = AccountID.newBuilder().setAccountNum(payerAccountNum).build();
@@ -124,6 +128,15 @@ class NonFeeTransferExtractionStrategyImplTest {
     }
 
     @Test
+    void extractNonFeeTransfersContractCallFailedThrows() {
+        var amount = 123456L;
+        var transactionBody = getContractCallTransactionBody(TestUtils.generateRandomByteArray(20), amount);
+        var transactionRecord = getSimpleTransactionRecord();
+        assertThrows(InvalidEntityException.class,
+                () -> extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord));
+    }
+
+    @Test
     void extractNonFeeTransfersFileCreateNone() {
         var transactionBody = getFileCreateTransactionBody();
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, getNewFileTransactionRecord());
@@ -183,6 +196,13 @@ class NonFeeTransferExtractionStrategyImplTest {
     private TransactionBody getContractCallTransactionBody(long contractNum, long amount) {
         var innerBody = ContractCallTransactionBody.newBuilder()
                 .setContractID(ContractID.newBuilder().setContractNum(contractNum).build())
+                .setAmount(amount).build();
+        return transactionBodyBuilder().setContractCall(innerBody).build();
+    }
+
+    private TransactionBody getContractCallTransactionBody(byte[] evmAddress, long amount) {
+        var innerBody = ContractCallTransactionBody.newBuilder()
+                .setContractID(ContractID.newBuilder().setEvmAddress(DomainUtils.fromBytes(evmAddress)))
                 .setAmount(amount).build();
         return transactionBodyBuilder().setContractCall(innerBody).build();
     }

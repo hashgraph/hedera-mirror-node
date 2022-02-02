@@ -30,6 +30,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import org.springframework.stereotype.Component;
 
+import com.hedera.mirror.common.exception.InvalidEntityException;
+
 /**
  * Non-fee transfers are explicitly requested transfers. This implementation extracts non_fee_transfer requested by a
  * transaction into an iterable of transfers.
@@ -57,11 +59,16 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
             return extractForCreateEntity(body.getContractCreateInstance().getInitialBalance(), payerAccountId,
                     contractIdToAccountId(transactionRecord.getReceipt().getContractID()), transactionRecord);
         } else { // contractCall
+            if (!transactionRecord.getContractCallResult().hasContractID()) {
+                throw new InvalidEntityException("Expect successful contractCall transaction with contractId set in " +
+                        "the contractCallResult in tx record");
+            }
+
             LinkedList<AccountAmount> result = new LinkedList<>();
             var amount = body.getContractCall().getAmount();
-            // get the contract id whose function is called from the transaction record. The transaction result is
-            // successful, so the contractId in contractCallResult should be set. Can't rely on the contract id in the
-            // body because it may have evmAddress set instead of contractNum
+            // get the contract id whose function is called from the transaction record. The transaction result should
+            // be successful, so the contractId in contractCallResult should be set. Can't rely on the contract id in
+            // the body because it may have evmAddress set instead of contractNum
             var contractAccountId = contractIdToAccountId(transactionRecord.getContractCallResult().getContractID());
             result.add(AccountAmount.newBuilder().setAccountID(contractAccountId).setAmount(amount).build());
             result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(-amount).build());
