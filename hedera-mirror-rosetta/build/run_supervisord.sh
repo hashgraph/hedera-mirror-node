@@ -40,8 +40,7 @@ function restore() {
 
   echo "Downloading and restoring from database backup: ${RESTORE}"
   cd "${TMPDIR}"
-  curl --fail -L --retry 3 "${RESTORE}" -o db.tar
-  tar -xvf db.tar
+  curl --fail -L --retry 3 "${RESTORE}" | tar -xvf -
 
   if [[ ! -d "${DATA_DIR}" ]]; then
     echo "Database dump does not contain the required '${DATA_DIR}' directory"
