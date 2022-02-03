@@ -38,7 +38,7 @@ function restore() {
     return
   fi
 
-  echo "Downloading and restoring from database backup: ${RESTORE}"
+  echo "Downloading database backup: ${RESTORE}"
   cd "${TMPDIR}"
   curl --fail -L --retry 3 "${RESTORE}" | tar -xvf -
 
@@ -48,8 +48,10 @@ function restore() {
     exit 1
   fi
 
+  echo "Restoring from database backup"
   pg_restore -h localhost -U mirror_node --exit-on-error --format=directory --no-owner --no-acl -j 6 -d mirror_node "${DATA_DIR}"
 
+  echo "Restoration complete"
   cleanup
 }
 
