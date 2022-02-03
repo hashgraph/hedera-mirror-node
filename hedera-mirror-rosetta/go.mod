@@ -7,7 +7,7 @@ require (
 	github.com/cucumber/godog v0.12.4
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20211228072109-84b5087d2be4
-	github.com/hashgraph/hedera-sdk-go/v2 v2.7.0
+	github.com/hashgraph/hedera-sdk-go/v2 v2.8.0
 	github.com/hellofresh/health-go/v4 v4.5.0
 	github.com/jackc/pgtype v1.9.1
 	github.com/lib/pq v1.10.4
@@ -111,5 +111,3 @@ require (
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
-
-replace github.com/hashgraph/hedera-sdk-go/v2 v2.7.0 => github.com/xin-hedera/hedera-sdk-go/v2 v2.7.1-0.20220127183632-19da4b7537dd
