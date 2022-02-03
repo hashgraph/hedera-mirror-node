@@ -29,7 +29,7 @@ FROM ubuntu:20.04 as runner
 ARG DEBIAN_FRONTEND=noninteractive
 ENV PG_VERSION=13
 RUN apt-get update \
-    && apt-get install -y ca-certificates gnupg lsb-release \
+    && apt-get install -y ca-certificates curl gnupg lsb-release \
     && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8 \
     && echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update \
