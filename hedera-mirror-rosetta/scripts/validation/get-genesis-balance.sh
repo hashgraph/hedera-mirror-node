@@ -35,9 +35,9 @@ EOF
 
 network=${1:-demo}
 parent_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P)"
-psql_cmd="psql -h localhost -U mirror_rosetta mirror_node -p 6432 -t -P format=unaligned"
+psql_cmd="psql -h localhost -U mirror_rosetta mirror_node -t -P format=unaligned"
 
-echo "localhost:6432:mirror_node:mirror_rosetta:mirror_rosetta_pass" > ~/.pgpass && chmod 0600 ~/.pgpass
+echo "localhost:5432:mirror_node:mirror_rosetta:mirror_rosetta_pass" > ~/.pgpass && chmod 0600 ~/.pgpass
 
 SECONDS=0
 while [[ $SECONDS -lt 120 ]];
