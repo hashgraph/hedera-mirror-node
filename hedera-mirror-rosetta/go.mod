@@ -6,8 +6,8 @@ require (
 	github.com/coinbase/rosetta-sdk-go v0.7.2
 	github.com/cucumber/godog v0.12.4
 	github.com/go-playground/validator/v10 v10.10.0
-	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20211111073741-479b2c5befce
-	github.com/hashgraph/hedera-sdk-go/v2 v2.6.0
+	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20211228072109-84b5087d2be4
+	github.com/hashgraph/hedera-sdk-go/v2 v2.8.0
 	github.com/hellofresh/health-go/v4 v4.5.0
 	github.com/jackc/pgtype v1.9.1
 	github.com/lib/pq v1.10.4
@@ -33,6 +33,7 @@ require (
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/btcsuite/btcd v0.22.0-beta // indirect
 	github.com/cenkalti/backoff/v4 v4.1.2 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/containerd/continuity v0.0.0-20190827140505-75bee3e2ccb6 // indirect
@@ -43,6 +44,7 @@ require (
 	github.com/docker/docker v20.10.7+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
+	github.com/ethereum/go-ethereum v1.10.13 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
@@ -105,7 +107,7 @@ require (
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
-	google.golang.org/grpc v1.41.0 // indirect
+	google.golang.org/grpc v1.43.0 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

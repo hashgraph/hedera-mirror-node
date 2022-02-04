@@ -27,7 +27,6 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -65,17 +64,17 @@ type tokenUpdateTransactionConstructorSuite struct {
 }
 
 func (suite *tokenUpdateTransactionConstructorSuite) TestNewTransactionConstructor() {
-	h := newTokenUpdateTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenUpdateTransactionConstructor()
 	assert.NotNil(suite.T(), h)
 }
 
 func (suite *tokenUpdateTransactionConstructorSuite) TestGetOperationType() {
-	h := newTokenUpdateTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenUpdateTransactionConstructor()
 	assert.Equal(suite.T(), types.OperationTypeTokenUpdate, h.GetOperationType())
 }
 
 func (suite *tokenUpdateTransactionConstructorSuite) TestGetSdkTransactionType() {
-	h := newTokenUpdateTransactionConstructor(&mocks.MockTokenRepository{})
+	h := newTokenUpdateTransactionConstructor()
 	assert.Equal(suite.T(), "TokenUpdateTransaction", h.GetSdkTransactionType())
 }
 
@@ -95,9 +94,7 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestConstruct() {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
 			operations := getTokenUpdateOperations()
-			mockTokenRepo := &mocks.MockTokenRepository{}
-			h := newTokenUpdateTransactionConstructor(mockTokenRepo)
-			configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
+			h := newTokenUpdateTransactionConstructor()
 
 			if tt.updateOperations != nil {
 				operations = tt.updateOperations(operations)
@@ -115,7 +112,6 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestConstruct() {
 				assert.Nil(t, err)
 				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 				assertTokenUpdateTransaction(t, operations[0], nodeAccountId, tx)
-				mockTokenRepo.AssertExpectations(t)
 
 				if tt.validStartNanos != 0 {
 					assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
@@ -147,7 +143,6 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestParse() {
 
 	tests := []struct {
 		name           string
-		tokenRepoErr   bool
 		getTransaction func() interfaces.Transaction
 		expectError    bool
 	}{
@@ -156,10 +151,15 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestParse() {
 			getTransaction: defaultGetTransaction,
 		},
 		{
-			name:           "TokenNotFound",
-			tokenRepoErr:   true,
-			getTransaction: defaultGetTransaction,
-			expectError:    true,
+			name: "InvalidTokenId",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTokenUpdateTransaction().
+					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetTokenID(outOfRangeTokenId).
+					SetTokenName(name).
+					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			},
+			expectError: true,
 		},
 		{
 			name: "InvalidTransaction",
@@ -216,16 +216,8 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestParse() {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
 			expectedOperations := getTokenUpdateOperations()
-
-			mockTokenRepo := &mocks.MockTokenRepository{}
-			h := newTokenUpdateTransactionConstructor(mockTokenRepo)
+			h := newTokenUpdateTransactionConstructor()
 			tx := tt.getTransaction()
-
-			if tt.tokenRepoErr {
-				configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
-			} else {
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
-			}
 
 			// when
 			operations, signers, err := h.Parse(defaultContext, tx)
@@ -239,7 +231,6 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestParse() {
 				assert.Nil(t, err)
 				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
 				assert.ElementsMatch(t, expectedOperations, operations)
-				mockTokenRepo.AssertExpectations(t)
 			}
 		})
 	}
@@ -248,7 +239,6 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestParse() {
 func (suite *tokenUpdateTransactionConstructorSuite) TestPreprocess() {
 	var tests = []struct {
 		name             string
-		tokenRepoErr     bool
 		updateOperations updateOperationsFunc
 		expectError      bool
 	}{
@@ -259,14 +249,9 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestPreprocess() {
 			expectError:      true,
 		},
 		{
-			name:             "TokenDecimalsMismatch",
-			updateOperations: updateTokenDecimals(1990),
+			name:             "InvalidCurrencySymbol",
+			updateOperations: updateCurrency(currencyHbar),
 			expectError:      true,
-		},
-		{
-			name:         "TokenNotFound",
-			tokenRepoErr: true,
-			expectError:  true,
 		},
 		{
 			name:             "InvalidMetadataAdminKey",
@@ -344,15 +329,7 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestPreprocess() {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
 			operations := getTokenUpdateOperations()
-
-			mockTokenRepo := &mocks.MockTokenRepository{}
-			h := newTokenUpdateTransactionConstructor(mockTokenRepo)
-
-			if tt.tokenRepoErr {
-				configMockTokenRepo(mockTokenRepo, mockTokenRepoNotFoundConfigs[0])
-			} else {
-				configMockTokenRepo(mockTokenRepo, defaultMockTokenRepoConfigs[0])
-			}
+			h := newTokenUpdateTransactionConstructor()
 
 			if tt.updateOperations != nil {
 				operations = tt.updateOperations(operations)
@@ -368,7 +345,6 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestPreprocess() {
 			} else {
 				assert.Nil(t, err)
 				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-				mockTokenRepo.AssertExpectations(t)
 			}
 		})
 	}
@@ -411,10 +387,7 @@ func getTokenUpdateOperations() []*rTypes.Operation {
 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 			Type:                types.OperationTypeTokenUpdate,
 			Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
-			Amount: &rTypes.Amount{
-				Value:    "0",
-				Currency: types.Token{Token: dbTokenA}.ToRosettaCurrency(),
-			},
+			Amount:              &rTypes.Amount{Value: "0", Currency: tokenAPartialCurrency},
 			Metadata: map[string]interface{}{
 				"admin_key":          adminKeyStr,
 				"auto_renew_account": autoRenewAccount.String(),

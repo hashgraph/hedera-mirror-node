@@ -150,10 +150,13 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 		{
 			name: "TransactionIDNotSet",
 			getTransaction: func() interfaces.Transaction {
-				tx := defaultGetTransaction()
-				accountCreateTx, _ := tx.(*hedera.AccountCreateTransaction)
-				accountCreateTx.SetTransactionID(hedera.TransactionID{})
-				return tx
+				return hedera.NewAccountCreateTransaction().
+					SetAccountMemo(memo).
+					SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
+					SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
+					SetKey(newAccountKey).
+					SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
+					SetProxyAccountID(proxyAccountId)
 			},
 			expectError: true,
 		},

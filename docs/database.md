@@ -52,7 +52,7 @@ required database objects including the `mirror_node` database, the roles, the s
 The following configuration needs to be applied to the database instance to improve the write speed.
 
 ```
-checkpoint_timeout = 30m
+checkpoint_timeout = 30min
 maintenance_work_mem = 2GB
 max_parallel_maintenance_workers = 4
 max_wal_size = 512GB
@@ -60,9 +60,10 @@ temp_file_limit = 2147483647kB
 ```
 
 Note:
- - Not all flags are available in managed database services. For example, `max_parallel_maintenance_workers` is not
-   available in Google Cloud SQL.
- - Once the data is restored, revert the values back for normal operation.
+
+- Not all flags are available in managed database services. For example, `max_parallel_maintenance_workers` is not
+  available in Google Cloud SQL.
+- Once the data is restored, revert the values back for normal operation.
 
 ### Restore
 
@@ -82,5 +83,5 @@ pg_restore -h $NEW_POSTGRESQL_DB_IP -U mirror_node \
 ```
 
 Note: `-j` works the same way as for `pg_dump`. The single transaction mode can't be used together with the parallel
-mode. As a result, if the command is interrupted, the database will have partial data, and it needs to be restored
-using the saved snapshot before retry.
+mode. As a result, if the command is interrupted, the database will have partial data, and it needs to be restored using
+the saved snapshot before retry.
