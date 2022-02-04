@@ -66,9 +66,9 @@ alter table if exists contract_state_change
 
 -- crypto_allowance
 alter table if exists crypto_allowance
-    add constraint crypto_allowance__pk primary key (payer_account_id, spender);
+    add constraint crypto_allowance__pk primary key (owner, spender);
 alter table if exists crypto_allowance_history
-    add constraint crypto_allowance_history__pk primary key (payer_account_id, spender, timestamp_range);
+    add constraint crypto_allowance_history__pk primary key (owner, spender, timestamp_range);
 create index if not exists crypto_allowance_history__timestamp_range on crypto_allowance_history using gist (timestamp_range);
 
 -- crypto_transfer
@@ -127,9 +127,9 @@ create index if not exists nft__account_token on nft (account_id, token_id);
 
 -- nft_allowance
 alter table if exists nft_allowance
-    add constraint nft_allowance__pk primary key (payer_account_id, spender, token_id);
+    add constraint nft_allowance__pk primary key (owner, spender, token_id);
 alter table if exists nft_allowance_history
-    add constraint nft_allowance_history__pk primary key (payer_account_id, spender, token_id, timestamp_range);
+    add constraint nft_allowance_history__pk primary key (owner, spender, token_id, timestamp_range);
 create index if not exists nft_allowance_history__timestamp_range on nft_allowance_history using gist (timestamp_range);
 
 -- nft_transfer
@@ -167,9 +167,9 @@ alter table token_account
 
 -- token_allowance
 alter table if exists token_allowance
-    add constraint token_allowance__pk primary key (payer_account_id, spender, token_id);
+    add constraint token_allowance__pk primary key (owner, spender, token_id);
 alter table if exists token_allowance_history
-    add constraint token_allowance_history__pk primary key (payer_account_id, spender, token_id, timestamp_range);
+    add constraint token_allowance_history__pk primary key (owner, spender, token_id, timestamp_range);
 create index if not exists token_allowance_history__timestamp_range on token_allowance_history using gist (timestamp_range);
 
 -- token_balance

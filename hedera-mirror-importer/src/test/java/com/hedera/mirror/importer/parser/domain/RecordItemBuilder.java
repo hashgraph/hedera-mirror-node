@@ -159,18 +159,22 @@ public class RecordItemBuilder {
     public Builder<CryptoAdjustAllowanceTransactionBody.Builder> cryptoAdjustAllowance() {
         var cryptoAllowance = CryptoAllowance.newBuilder()
                 .setAmount(-10L)
+                .setOwner(accountId())
                 .setSpender(accountId());
         var nftAllowance1 = NftAllowance.newBuilder()
+                .setOwner(accountId())
                 .setSpender(accountId())
                 .setTokenId(tokenId())
                 .addSerialNumbers(-1L)
                 .addSerialNumbers(2L);
         var nftAllowance2 = NftAllowance.newBuilder()
                 .setApprovedForAll(BoolValue.of(true))
+                .setOwner(accountId())
                 .setSpender(accountId())
                 .setTokenId(tokenId());
         var tokenAllowance = TokenAllowance.newBuilder()
                 .setAmount(-10L)
+                .setOwner(accountId())
                 .setSpender(accountId())
                 .setTokenId(tokenId());
         var builder = CryptoAdjustAllowanceTransactionBody.newBuilder()
@@ -189,18 +193,22 @@ public class RecordItemBuilder {
         var builder = CryptoApproveAllowanceTransactionBody.newBuilder()
                 .addCryptoAllowances(CryptoAllowance.newBuilder()
                         .setAmount(10L)
+                        .setOwner(accountId())
                         .setSpender(accountId()))
                 .addNftAllowances(NftAllowance.newBuilder()
+                        .setOwner(accountId())
                         .addSerialNumbers(1L)
                         .addSerialNumbers(2L)
                         .setSpender(accountId())
                         .setTokenId(tokenId()))
                 .addNftAllowances(NftAllowance.newBuilder()
                         .setApprovedForAll(BoolValue.of(true))
+                        .setOwner(accountId())
                         .setSpender(accountId())
                         .setTokenId(tokenId()))
                 .addTokenAllowances(TokenAllowance.newBuilder()
                         .setAmount(10L)
+                        .setOwner(accountId())
                         .setSpender(accountId())
                         .setTokenId(tokenId()));
         return new Builder<>(TransactionType.CRYPTOAPPROVEALLOWANCE, builder);

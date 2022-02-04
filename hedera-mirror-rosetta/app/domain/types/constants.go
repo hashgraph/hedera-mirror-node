@@ -305,6 +305,7 @@ var TransactionResults = map[int32]string{
 	297: "REPEATED_SERIAL_NUMS_IN_NFT_ALLOWANCES",
 	298: "FUNGIBLE_TOKEN_IN_NFT_ALLOWANCES",
 	299: "NFT_IN_FUNGIBLE_TOKEN_ALLOWANCES",
+	300: "PAYER_AND_OWNER_NOT_EQUAL",
 }
 
 var TransactionTypes = map[int32]string{

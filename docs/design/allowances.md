@@ -3,8 +3,8 @@
 ## Purpose
 
 [HIP-336](https://hips.hedera.com/hip/hip-336) describes new APIs to approve and exercise allowances to a delegate
-account. An allowance grants a spender the right to transfer a predetermined amount of the payer's hbars or tokens to
-another account of the spender's choice.
+account. An allowance grants a spender the right to transfer a predetermined maximum limit of the payer's hbars or
+tokens to another account of the spender's choice.
 
 ## Goals
 
@@ -28,10 +28,11 @@ another account of the spender's choice.
 create table if not exists crypto_allowance
 (
   amount           bigint    not null,
+  owner            bigint    not null,
   payer_account_id bigint    not null,
   spender          bigint    not null,
   timestamp_range  int8range not null,
-  primary key (payer_account_id, spender)
+  primary key (owner, spender)
 );
 ```
 
@@ -39,7 +40,7 @@ create table if not exists crypto_allowance
 create table if not exists crypto_allowance_history
 (
   like crypto_allowance including defaults,
-  primary key (payer_account_id, spender, timestamp_range)
+  primary key (owner, spender, timestamp_range)
 );
 ```
 
@@ -49,12 +50,13 @@ create table if not exists crypto_allowance_history
 create table if not exists nft_allowance
 (
   approved_for_all boolean   not null,
+  owner            bigint    not null,
   payer_account_id bigint    not null,
   serial_numbers   bigint[]  not null,
   spender          bigint    not null,
   timestamp_range  int8range not null,
   token_id         bigint    not null,
-  primary key (payer_account_id, spender, token_id)
+  primary key (owner, spender, token_id)
 );
 ```
 
@@ -62,7 +64,7 @@ create table if not exists nft_allowance
 create table if not exists nft_allowance_history
 (
   like nft_allowance including defaults,
-  primary key (payer_account_id, spender, token_id, timestamp_range)
+  primary key (owner, spender, token_id, timestamp_range)
 );
 ```
 
@@ -72,11 +74,12 @@ create table if not exists nft_allowance_history
 create table if not exists token_allowance
 (
   amount           bigint    not null,
+  owner            bigint    not null,
   payer_account_id bigint    not null,
   spender          bigint    not null,
   timestamp_range  int8range not null,
   token_id         bigint    not null,
-  primary key (payer_account_id, spender, token_id)
+  primary key (owner, spender, token_id)
 );
 ```
 
@@ -84,7 +87,7 @@ create table if not exists token_allowance
 create table if not exists token_allowance_history
 (
   like token_allowance including defaults,
-  primary key (payer_account_id, spender, token_id, timestamp_range)
+  primary key (owner, spender, token_id, timestamp_range)
 );
 ```
 
@@ -99,6 +102,7 @@ create table if not exists token_allowance_history
   "allowances": [
     {
       "amount": 10,
+      "owner": "0.0.1000",
       "payer_account_id": "0.0.1000",
       "spender": "0.0.8488",
       "timestamp": {
@@ -108,7 +112,8 @@ create table if not exists token_allowance_history
     },
     {
       "amount": 5,
-      "payer_account_id": "0.0.1000",
+      "owner": "0.0.1000",
+      "payer_account_id": "0.0.1001",
       "spender": "0.0.9857",
       "timestamp": {
         "from": "1633466229.96874612",
@@ -135,6 +140,7 @@ Optional Filters
   "allowances": [
     {
       "approved_for_all": false,
+      "owner": "0.0.1000",
       "payer_account_id": "0.0.1000",
       "serial_numbers": [
         1,
@@ -150,6 +156,7 @@ Optional Filters
     },
     {
       "approved_for_all": true,
+      "owner": "0.0.1000",
       "payer_account_id": "0.0.1000",
       "serial_numbers": [],
       "spender": "0.0.9857",
@@ -180,6 +187,7 @@ Optional Filters
   "allowances": [
     {
       "amount": 10,
+      "owner": "0.0.1000",
       "payer_account_id": "0.0.1000",
       "spender": "0.0.8488",
       "token_id": "0.0.1032",
@@ -190,6 +198,7 @@ Optional Filters
     },
     {
       "amount": 5,
+      "owner": "0.0.1000",
       "payer_account_id": "0.0.1000",
       "spender": "0.0.9857",
       "token_id": "0.0.1032",
@@ -221,8 +230,15 @@ the transactions REST APIs.
 
 ## Open Questions
 
-1) How will we handle adjust allowance for serial numbers?
-2) How will we do REST API pagination using multiple columns?
-3) What happens if client populates both `approvedForAll` and `serialNumbers`?
+1) How will we do REST API pagination using multiple columns?
 
 ## Answered Questions
+
+1) How will we handle adjust allowance for serial numbers?
+
+   The full list of allowed serials that result from the transaction will be provided in the record.
+
+2) What happens if client populates both `approvedForAll` and `serialNumbers`?
+
+   It is an error if they populate `approvedForAll=true` and a non-empty `serialNumbers`. It is allowed, but not
+   required, to populate `approvedForAll=false` when providing a non-empty `serialNumbers`.

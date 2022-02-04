@@ -26,6 +26,8 @@
 
 \copy crypto_allowance (amount, payer_account_id, spender, timestamp_range) from crypto_allowance.csv csv;
 
+\copy crypto_allowance_history (amount, payer_account_id, spender, timestamp_range) from crypto_allowance_history.csv csv;
+
 \copy crypto_transfer (entity_id, consensus_timestamp, amount, is_approval) from crypto_transfer.csv csv;
 
 \copy custom_fee (amount, amount_denominator, collector_account_id, created_timestamp, denominating_token_id, maximum_amount, minimum_amount, token_id) from custom_fee.csv csv;
@@ -44,6 +46,8 @@
 
 \copy nft_allowance (approved_for_all, payer_account_id, serial_numbers, spender, timestamp_range, token_id) from nft_allowance.csv csv;
 
+\copy nft_allowance_history (approved_for_all, payer_account_id, serial_numbers, spender, timestamp_range, token_id) from nft_allowance_history.csv csv;
+
 \copy nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, serial_number, token_id, is_approval) from nft_transfer.csv csv
 
 \copy non_fee_transfer (entity_id, consensus_timestamp, amount, is_approval) from non_fee_transfer.csv csv;
@@ -57,6 +61,8 @@
 \copy token_account (account_id, associated, created_timestamp, freeze_status, kyc_status, modified_timestamp, token_id, automatic_association) from token_account.csv csv;
 
 \copy token_allowance (amount, payer_account_id, spender, timestamp_range, token_id) from token_allowance.csv csv;
+
+\copy token_allowance_history (amount, payer_account_id, spender, timestamp_range, token_id) from token_allowance_history.csv csv;
 
 \copy token_balance (consensus_timestamp, account_id, balance, token_id) from token_balance.csv csv;
 

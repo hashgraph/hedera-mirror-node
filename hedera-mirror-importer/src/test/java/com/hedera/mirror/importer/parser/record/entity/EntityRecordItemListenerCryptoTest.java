@@ -114,22 +114,25 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord()),
                 () -> assertThat(cryptoAllowanceRepository.findAll())
                         .allSatisfy(a -> assertThat(a.getAmount()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
                         .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
                         .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
-                        .allMatch(a -> recordItem.getPayerAccountId().getId() == a.getPayerAccountId()),
+                        .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
                 () -> assertThat(nftAllowanceRepository.findAll())
                         .allSatisfy(a -> assertThat(a.isApprovedForAll()).isNotNull())
+                        .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
                         .allSatisfy(a -> assertThat(a.getSerialNumbers()).isNotNull())
                         .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
                         .allSatisfy(a -> assertThat(a.getTokenId()).isPositive())
                         .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
-                        .allMatch(a -> recordItem.getPayerAccountId().getId() == a.getPayerAccountId()),
+                        .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
                 () -> assertThat(tokenAllowanceRepository.findAll())
                         .allSatisfy(a -> assertThat(a.getAmount()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
                         .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
                         .allSatisfy(a -> assertThat(a.getTokenId()).isPositive())
                         .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
-                        .allMatch(a -> recordItem.getPayerAccountId().getId() == a.getPayerAccountId())
+                        .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId()))
         );
     }
 

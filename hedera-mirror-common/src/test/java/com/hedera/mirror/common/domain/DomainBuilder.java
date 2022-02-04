@@ -224,7 +224,8 @@ public class DomainBuilder {
     public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder> cryptoAllowance() {
         var builder = CryptoAllowance.builder()
                 .amount(10)
-                .payerAccountId(entityId(ACCOUNT).getId())
+                .owner(entityId(ACCOUNT).getId())
+                .payerAccountId(entityId(ACCOUNT))
                 .spender(entityId(ACCOUNT).getId())
                 .timestampRange(Range.atLeast(timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -329,7 +330,8 @@ public class DomainBuilder {
     public DomainWrapper<NftAllowance, NftAllowance.NftAllowanceBuilder> nftAllowance() {
         var builder = NftAllowance.builder()
                 .approvedForAll(false)
-                .payerAccountId(entityId(ACCOUNT).getId())
+                .owner(entityId(ACCOUNT).getId())
+                .payerAccountId(entityId(ACCOUNT))
                 .serialNumbers(List.of(1L, 2L, 3L))
                 .spender(entityId(ACCOUNT).getId())
                 .timestampRange(Range.atLeast(timestamp()))
@@ -340,7 +342,8 @@ public class DomainBuilder {
     public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder> tokenAllowance() {
         var builder = TokenAllowance.builder()
                 .amount(10L)
-                .payerAccountId(entityId(ACCOUNT).getId())
+                .owner(entityId(ACCOUNT).getId())
+                .payerAccountId(entityId(ACCOUNT))
                 .spender(entityId(ACCOUNT).getId())
                 .timestampRange(Range.atLeast(timestamp()))
                 .tokenId(entityId(TOKEN).getId());

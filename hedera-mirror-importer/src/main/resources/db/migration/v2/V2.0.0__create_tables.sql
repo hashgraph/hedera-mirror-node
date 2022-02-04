@@ -156,6 +156,7 @@ comment on table contract_result is 'Contract execution state changes';
 create table if not exists crypto_allowance
 (
     amount           bigint    not null,
+    owner            bigint    not null,
     payer_account_id bigint    not null,
     spender          bigint    not null,
     timestamp_range  int8range not null
@@ -278,6 +279,7 @@ comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 create table if not exists nft_allowance
 (
     approved_for_all boolean   not null,
+    owner            bigint    not null,
     payer_account_id bigint    not null,
     serial_numbers   bigint[]  not null,
     spender          bigint    not null,
@@ -394,6 +396,7 @@ comment on table token is 'Token account entity';
 create table if not exists token_allowance
 (
     amount           bigint    not null,
+    owner            bigint    not null,
     payer_account_id bigint    not null,
     spender          bigint    not null,
     timestamp_range  int8range not null,

@@ -44,11 +44,12 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = transaction.getConsensusTimestamp();
-        long payerAccountId = recordItem.getPayerAccountId().getId();
+        var payerAccountId = recordItem.getPayerAccountId();
 
         for (var cryptoApproval : getCryptoAllowances(recordItem)) {
             CryptoAllowance cryptoAllowance = new CryptoAllowance();
             cryptoAllowance.setAmount(cryptoApproval.getAmount());
+            cryptoAllowance.setOwner(EntityId.of(cryptoApproval.getOwner()).getId());
             cryptoAllowance.setPayerAccountId(payerAccountId);
             cryptoAllowance.setSpender(EntityId.of(cryptoApproval.getSpender()).getId());
             cryptoAllowance.setTimestampLower(consensusTimestamp);
@@ -59,6 +60,7 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
             var approvedForAll = nftApproval.hasApprovedForAll() && nftApproval.getApprovedForAll().getValue();
             NftAllowance nftAllowance = new NftAllowance();
             nftAllowance.setApprovedForAll(approvedForAll);
+            nftAllowance.setOwner(EntityId.of(nftApproval.getOwner()).getId());
             nftAllowance.setPayerAccountId(payerAccountId);
             nftAllowance.setSerialNumbers(nftApproval.getSerialNumbersList());
             nftAllowance.setSpender(EntityId.of(nftApproval.getSpender()).getId());
@@ -70,6 +72,7 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
         for (var tokenApproval : getTokenAllowances(recordItem)) {
             TokenAllowance tokenAllowance = new TokenAllowance();
             tokenAllowance.setAmount(tokenApproval.getAmount());
+            tokenAllowance.setOwner(EntityId.of(tokenApproval.getOwner()).getId());
             tokenAllowance.setPayerAccountId(payerAccountId);
             tokenAllowance.setSpender(EntityId.of(tokenApproval.getSpender()).getId());
             tokenAllowance.setTokenId(EntityId.of(tokenApproval.getTokenId()).getId());

@@ -61,24 +61,27 @@ class CryptoAdjustAllowanceTransactionHandlerTest extends AbstractTransactionHan
         verify(entityListener).onCryptoAllowance(assertArg(t -> assertThat(t)
                 .isNotNull()
                 .satisfies(a -> assertThat(a.getAmount()).isPositive())
+                .satisfies(a -> assertThat(a.getOwner()).isPositive())
                 .satisfies(a -> assertThat(a.getSpender()).isPositive())
-                .returns(recordItem.getPayerAccountId().getId(), CryptoAllowance::getPayerAccountId)
+                .returns(recordItem.getPayerAccountId(), CryptoAllowance::getPayerAccountId)
                 .returns(timestamp, CryptoAllowance::getTimestampLower)));
 
         verify(entityListener, times(2)).onNftAllowance(assertArg(t -> assertThat(t)
                 .isNotNull()
                 .satisfies(a -> assertThat(a.isApprovedForAll()).isNotNull())
+                .satisfies(a -> assertThat(a.getOwner()).isPositive())
                 .satisfies(a -> assertThat(a.getSpender()).isPositive())
                 .satisfies(a -> assertThat(a.getTokenId()).isPositive())
-                .returns(recordItem.getPayerAccountId().getId(), NftAllowance::getPayerAccountId)
+                .returns(recordItem.getPayerAccountId(), NftAllowance::getPayerAccountId)
                 .returns(timestamp, NftAllowance::getTimestampLower)));
 
         verify(entityListener).onTokenAllowance(assertArg(t -> assertThat(t)
                 .isNotNull()
                 .satisfies(a -> assertThat(a.getAmount()).isPositive())
+                .satisfies(a -> assertThat(a.getOwner()).isPositive())
                 .satisfies(a -> assertThat(a.getSpender()).isNotNull())
                 .satisfies(a -> assertThat(a.getTokenId()).isPositive())
-                .returns(recordItem.getPayerAccountId().getId(), TokenAllowance::getPayerAccountId)
+                .returns(recordItem.getPayerAccountId(), TokenAllowance::getPayerAccountId)
                 .returns(timestamp, TokenAllowance::getTimestampLower)));
     }
 }

@@ -26,12 +26,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.io.Serializable;
+import javax.persistence.Convert;
 import javax.persistence.IdClass;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.TypeDef;
 
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.RangeToStringDeserializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.History;
@@ -52,7 +54,10 @@ public class CryptoAllowance implements History {
     private long amount;
 
     @javax.persistence.Id
-    private long payerAccountId;
+    private long owner;
+
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
 
     @javax.persistence.Id
     private long spender;
@@ -64,7 +69,7 @@ public class CryptoAllowance implements History {
     @JsonIgnore
     public Id getId() {
         Id id = new Id();
-        id.setPayerAccountId(payerAccountId);
+        id.setOwner(owner);
         id.setSpender(spender);
         return id;
     }
@@ -74,7 +79,7 @@ public class CryptoAllowance implements History {
 
         private static final long serialVersionUID = 4078820027811154183L;
 
-        private long payerAccountId;
+        private long owner;
         private long spender;
     }
 }

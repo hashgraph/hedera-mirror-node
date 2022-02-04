@@ -26,6 +26,8 @@
 
 \copy crypto_allowance to crypto_allowance.csv delimiter ',' csv;
 
+\copy crypto_allowance_history to crypto_allowance_history.csv delimiter ',' csv;
+
 \copy crypto_transfer to crypto_transfer.csv delimiter ',' csv;
 
 \copy custom_fee to custom_fee.csv delimiter ',' csv;
@@ -44,6 +46,8 @@
 
 \copy nft_allowance to nft_allowance.csv delimiter ',' csv;
 
+\copy nft_allowance_history to nft_allowance_history.csv delimiter ',' csv;
+
 \copy nft_transfer to nft_transfer.csv delimiter ',' csv;
 
 \copy non_fee_transfer to non_fee_transfer.csv delimiter ',' csv;
@@ -57,6 +61,8 @@
 \copy token_account to token_account.csv delimiter ',' csv;
 
 \copy token_allowance to token_allowance.csv delimiter ',' csv;
+
+\copy token_allowance_history to token_allowance_history.csv delimiter ',' csv;
 
 \copy token_balance to token_balance.csv delimiter ',' csv;
 

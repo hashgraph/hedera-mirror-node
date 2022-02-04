@@ -28,6 +28,7 @@ import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
+import javax.persistence.Convert;
 import javax.persistence.IdClass;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,6 +36,7 @@ import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.LongListToStringSerializer;
 import com.hedera.mirror.common.converter.RangeToStringDeserializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
@@ -56,7 +58,10 @@ public class NftAllowance implements History {
     private boolean approvedForAll;
 
     @javax.persistence.Id
-    private long payerAccountId;
+    private long owner;
+
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
 
     @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
     @JsonSerialize(using = LongListToStringSerializer.class)
@@ -75,7 +80,7 @@ public class NftAllowance implements History {
     @JsonIgnore
     public NftAllowance.Id getId() {
         Id id = new Id();
-        id.setPayerAccountId(payerAccountId);
+        id.setOwner(owner);
         id.setSpender(spender);
         id.setTokenId(tokenId);
         return id;
@@ -86,7 +91,7 @@ public class NftAllowance implements History {
 
         private static final long serialVersionUID = 4078820027811154183L;
 
-        private long payerAccountId;
+        private long owner;
         private long spender;
         private long tokenId;
     }
