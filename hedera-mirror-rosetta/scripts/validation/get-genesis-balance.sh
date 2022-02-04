@@ -11,7 +11,7 @@ currency=$(cat <<EOF
 }
 EOF
 )
-genesis_timestamp_query="select min(consensus_timestamp) from account_balance_file"
+genesis_timestamp_query="select consensus_timestamp from account_balance_file order by consensus_timestamp asc limit 2"
 
 genesis_hbar_balance_query=$(cat <<EOF
 \set ON_ERROR_STOP on
@@ -19,7 +19,7 @@ with genesis_balance as (
   select account_id, balance
   from account_balance ab
   join crypto_transfer ct
-    on ct.entity_id = ab.account_id and ct.consensus_timestamp > :genesis_timestamp
+    on ct.entity_id = ab.account_id and ct.consensus_timestamp > :genesis_timestamp and ct.consensus_timestamp <= :second_timestamp
   where balance <> 0 and ab.consensus_timestamp = :genesis_timestamp
   group by account_id,balance
   order by min(ct.consensus_timestamp)
@@ -32,17 +32,19 @@ EOF
 
 network=${1:-demo}
 parent_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P)"
-psql_cmd="psql -h localhost -U mirror_rosetta mirror_node -t -P format=unaligned"
+psql_cmd="psql -h localhost -U mirror_rosetta mirror_node -p 6432 -t -P format=unaligned"
 
-echo "localhost:5432:mirror_node:mirror_rosetta:mirror_rosetta_pass" > ~/.pgpass && chmod 0600 ~/.pgpass
+echo "localhost:6432:mirror_node:mirror_rosetta:mirror_rosetta_pass" > ~/.pgpass && chmod 0600 ~/.pgpass
 
 SECONDS=0
 while [[ $SECONDS -lt 120 ]];
 do
-  genesis_timestamp=$($psql_cmd -c "$genesis_timestamp_query")
+  first_two_timestamps=($($psql_cmd -c "$genesis_timestamp_query"))
+  genesis_timestamp=${first_two_timestamps[0]}
+  second_timestamp=${first_two_timestamps[1]}
   if [[ -n "$genesis_timestamp" ]]; then
     # get genesis hbar balances from genesis account balance file
-    account_balances=$(echo "$genesis_hbar_balance_query" | $psql_cmd -v genesis_timestamp="$genesis_timestamp")
+    account_balances=$(echo "$genesis_hbar_balance_query" | $psql_cmd -v genesis_timestamp="$genesis_timestamp" -v second_timestamp="$second_timestamp")
     echo "account balances - $(echo "$account_balances" | jq . )"
     break
   fi
