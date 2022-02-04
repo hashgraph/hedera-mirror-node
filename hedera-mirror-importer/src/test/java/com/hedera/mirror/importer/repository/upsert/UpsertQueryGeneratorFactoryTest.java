@@ -104,52 +104,52 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
 
     @Test
     void cryptoAllowance() {
-        String allColumns = "amount,payer_account_id,spender,timestamp_range";
-        String updatableColumns = "amount,timestamp_range";
+        String allColumns = "amount,owner,payer_account_id,spender,timestamp_range";
+        String updatableColumns = "amount,payer_account_id,timestamp_range";
 
         assertThat(factory.createEntity(CryptoAllowance.class))
                 .isNotNull()
                 .returns("crypto_allowance", UpsertEntity::getTableName)
                 .returns(true, e -> e.getUpsertable().history())
-                .returns("payer_account_id,spender", e -> e.columns(UpsertColumn::isId, "{0}"))
+                .returns("owner,spender", e -> e.columns(UpsertColumn::isId, "{0}"))
                 .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
                 .returns(allColumns, e -> e.columns("{0}"))
                 .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
                 .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(4);
+                .hasSize(allColumns.split(",").length);
     }
 
     @Test
     void nftAllowance() {
-        String allColumns = "approved_for_all,payer_account_id,serial_numbers,spender,timestamp_range,token_id";
-        String updatableColumns = "approved_for_all,serial_numbers,timestamp_range";
+        String allColumns = "approved_for_all,owner,payer_account_id,serial_numbers,spender,timestamp_range,token_id";
+        String updatableColumns = "approved_for_all,payer_account_id,serial_numbers,timestamp_range";
 
         assertThat(factory.createEntity(NftAllowance.class))
                 .isNotNull()
                 .returns("nft_allowance", UpsertEntity::getTableName)
                 .returns(true, e -> e.getUpsertable().history())
-                .returns("payer_account_id,spender,token_id", e -> e.columns(UpsertColumn::isId, "{0}"))
+                .returns("owner,spender,token_id", e -> e.columns(UpsertColumn::isId, "{0}"))
                 .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
                 .returns(allColumns, e -> e.columns("{0}"))
                 .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
                 .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(6);
+                .hasSize(allColumns.split(",").length);
     }
 
     @Test
     void tokenAllowance() {
-        String allColumns = "amount,payer_account_id,spender,timestamp_range,token_id";
-        String updatableColumns = "amount,timestamp_range";
+        String allColumns = "amount,owner,payer_account_id,spender,timestamp_range,token_id";
+        String updatableColumns = "amount,payer_account_id,timestamp_range";
 
         assertThat(factory.createEntity(TokenAllowance.class))
                 .isNotNull()
                 .returns("token_allowance", UpsertEntity::getTableName)
                 .returns(true, e -> e.getUpsertable().history())
-                .returns("payer_account_id,spender,token_id", e -> e.columns(UpsertColumn::isId, "{0}"))
+                .returns("owner,spender,token_id", e -> e.columns(UpsertColumn::isId, "{0}"))
                 .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
                 .returns(allColumns, e -> e.columns("{0}"))
                 .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
                 .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(5);
+                .hasSize(allColumns.split(",").length);
     }
 }
