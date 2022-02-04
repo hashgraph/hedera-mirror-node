@@ -57,6 +57,6 @@ class EntityTest {
         assertThat(entity.getTimestampUpper()).isEqualTo(timestampRangeUpper.upperEndpoint());
 
         entity.setTimestampLower(0L);
-        assertThat(entity.getTimestampLower()).isEqualTo(0L);
+        assertThat(entity.getTimestampLower()).isZero();
     }
 }

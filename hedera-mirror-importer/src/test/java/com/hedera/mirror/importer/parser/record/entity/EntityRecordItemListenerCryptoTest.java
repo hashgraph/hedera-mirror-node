@@ -119,7 +119,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
                         .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
                 () -> assertThat(nftAllowanceRepository.findAll())
-                        .allSatisfy(a -> assertThat(a.isApprovedForAll()).isNotNull())
                         .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
                         .allSatisfy(a -> assertThat(a.getSerialNumbers()).isNotNull())
                         .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
