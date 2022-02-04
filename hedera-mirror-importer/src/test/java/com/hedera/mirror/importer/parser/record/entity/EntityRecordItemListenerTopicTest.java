@@ -483,6 +483,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         // then
         assertEquals(0L, entityRepository.count());
         assertEquals(0L, topicMessageRepository.count());
+        assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
         entityProperties.getPersist().setTopics(true);
     }
 
