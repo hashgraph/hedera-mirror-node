@@ -15,15 +15,18 @@ genesis_timestamp_query="select consensus_timestamp from account_balance_file or
 
 genesis_hbar_balance_query=$(cat <<EOF
 \set ON_ERROR_STOP on
-with genesis_balance as (
+with recent_crypto_accounts as (
+ select distinct(entity_id)
+ from crypto_transfer where consensus_timestamp > :genesis_timestamp and consensus_timestamp <= :second_timestamp
+ limit 20
+),
+genesis_balance as (
   select account_id, balance
   from account_balance ab
-  join crypto_transfer ct
-    on ct.entity_id = ab.account_id and ct.consensus_timestamp > :genesis_timestamp and ct.consensus_timestamp <= :second_timestamp
+  join recent_crypto_accounts ct
+    on ct.entity_id = ab.account_id
   where balance <> 0 and ab.consensus_timestamp = :genesis_timestamp
   group by account_id,balance
-  order by min(ct.consensus_timestamp)
-  limit 20
 )
 select json_agg(json_build_object('id', account_id::text, 'value', balance::text))
 from genesis_balance
