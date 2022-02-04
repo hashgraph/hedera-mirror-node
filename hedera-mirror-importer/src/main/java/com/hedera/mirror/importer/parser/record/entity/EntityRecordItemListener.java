@@ -316,6 +316,10 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertConsensusTopicMessage(RecordItem recordItem) {
+        if (!entityProperties.getPersist().isTopics()) {
+            return;
+        }
+
         ConsensusSubmitMessageTransactionBody transactionBody = recordItem.getTransactionBody()
                 .getConsensusSubmitMessage();
         TransactionRecord transactionRecord = recordItem.getRecord();
