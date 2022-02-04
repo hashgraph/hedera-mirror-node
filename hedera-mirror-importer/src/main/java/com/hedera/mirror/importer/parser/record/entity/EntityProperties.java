@@ -57,6 +57,8 @@ public class EntityProperties {
 
         private boolean tokens = true;
 
+        private boolean topics = true;
+
         /**
          * If configured the mirror node will store the raw transaction bytes on the transaction table
          */
