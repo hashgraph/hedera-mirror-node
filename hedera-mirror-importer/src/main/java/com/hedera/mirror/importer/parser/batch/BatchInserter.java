@@ -42,9 +42,9 @@ import org.postgresql.copy.CopyIn;
 import org.postgresql.copy.PGCopyOutputStream;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 
-import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 
@@ -119,6 +119,11 @@ public class BatchInserter implements BatchPersister {
         PGConnection pgConnection = connection.unwrap(PGConnection.class);
         CopyIn copyIn = pgConnection.getCopyAPI().copyIn(sql);
 
+        if (log.isTraceEnabled()) {
+            String csv = writer.writeValueAsString(items);
+            log.trace("Generated SQL: {}\n{}", sql, csv);
+        }
+
         try (var pgCopyOutputStream = new PGCopyOutputStream(copyIn, properties.getBufferSize())) {
             writer.writeValue(pgCopyOutputStream, items);
         } finally {
@@ -128,4 +133,3 @@ public class BatchInserter implements BatchPersister {
         }
     }
 }
-

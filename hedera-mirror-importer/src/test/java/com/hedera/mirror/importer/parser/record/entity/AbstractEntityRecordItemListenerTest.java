@@ -221,7 +221,8 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
             for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
                 EntityId account = EntityId.of(accountAmount.getAccountID());
                 assertThat(cryptoTransferRepository
-                        .findById(new CryptoTransfer.Id(accountAmount.getAmount(), consensusTimestamp, account)))
+                        .findById(new CryptoTransfer.Id(accountAmount.getAmount(), consensusTimestamp,
+                                account.getId())))
                         .isPresent();
             }
         } else {
@@ -254,6 +255,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
         assertThat(dbTransaction)
                 .isNotNull()
+                .returns(null, Transaction::getErrata)
                 .returns(transactionBody.getTransactionFee(), Transaction::getMaxFee)
                 .returns(transactionBody.getMemoBytes().toByteArray(), Transaction::getMemo)
                 .returns(EntityId.of(transactionBody.getNodeAccountID()), Transaction::getNodeAccountId)

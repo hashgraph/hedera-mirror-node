@@ -59,6 +59,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -157,7 +158,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
         Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
-                INITIAL_BALANCE, consensusTimestamp, accountEntityId));
+                INITIAL_BALANCE, consensusTimestamp, accountEntityId.getId()));
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -240,7 +241,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
         Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
-                INITIAL_BALANCE, consensusTimestamp, accountEntityId));
+                INITIAL_BALANCE, consensusTimestamp, accountEntityId.getId()));
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -579,6 +580,41 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(3, cryptoTransferRepository.count(), "Node and network fee"),
                 () -> assertEquals(0, nonFeeTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, record)
+        );
+    }
+
+    @Test
+    void cryptoTransferFailedTransactionErrata() {
+        entityProperties.getPersist().setCryptoTransferAmounts(true);
+        Transaction transaction = cryptoTransferTransaction();
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord record = buildTransactionRecord(r -> {
+            for (int i = 0; i < additionalTransfers.length; i++) {
+                // Add non-fee transfers to record
+                var accountAmount = accountAmount(additionalTransfers[i], additionalTransferAmounts[i]);
+                r.getTransferListBuilder().addAccountAmounts(accountAmount);
+            }
+        }, transactionBody, ResponseCodeEnum.INVALID_ACCOUNT_ID.getNumber());
+
+        var recordItem = new RecordItem(transaction, record);
+        parseRecordItemAndCommit(recordItem);
+
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEntities(),
+                () -> assertEquals(4, cryptoTransferRepository.count(), "Node, network fee & errata"),
+                () -> assertEquals(0, nonFeeTransferRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> {
+                    for (int i = 0; i < additionalTransfers.length; i++) {
+                        var id = new CryptoTransfer.Id(additionalTransferAmounts[i],
+                                recordItem.getConsensusTimestamp(), additionalTransfers[i]);
+                        assertThat(cryptoTransferRepository.findById(id))
+                                .get()
+                                .extracting(CryptoTransfer::getErrata)
+                                .isEqualTo(ErrataType.DELETE);
+                    }
+                }
         );
     }
 

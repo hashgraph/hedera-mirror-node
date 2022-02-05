@@ -54,6 +54,9 @@ import org.springframework.transaction.support.TransactionOperations;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -71,6 +74,7 @@ import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -98,8 +102,31 @@ public class DomainBuilder {
         this(null, null);
     }
 
+    public DomainWrapper<AccountBalance, AccountBalance.AccountBalanceBuilder> accountBalance() {
+        var builder = AccountBalance.builder()
+                .balance(10L)
+                .id(new AccountBalance.Id(timestamp(), entityId(ACCOUNT)));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<AccountBalanceFile, AccountBalanceFile.AccountBalanceFileBuilder> accountBalanceFile() {
+        long timestamp = timestamp();
+        var name = Instant.ofEpochSecond(0L, timestamp).toString().replace(':', '_') + "_Balances.pb.gz";
+        var builder = AccountBalanceFile.builder()
+                .bytes(bytes(16))
+                .consensusTimestamp(timestamp)
+                .count(1L)
+                .fileHash(text(96))
+                .loadEnd(timestamp + 1)
+                .loadStart(timestamp)
+                .name(name)
+                .nodeAccountId(entityId(ACCOUNT))
+                .timeOffset(0);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<AddressBook, AddressBook.AddressBookBuilder> addressBook() {
-        AddressBook.AddressBookBuilder builder = AddressBook.builder()
+        var builder = AddressBook.builder()
                 .fileData(bytes(10))
                 .fileId(EntityId.of(0L, 0L, 102, FILE))
                 .nodeCount(6)
@@ -115,7 +142,7 @@ public class DomainBuilder {
     public DomainWrapper<AddressBookEntry, AddressBookEntry.AddressBookEntryBuilder> addressBookEntry(int endpoints) {
         long consensusTimestamp = timestamp();
         long nodeId = id();
-        AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
+        var builder = AddressBookEntry.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .description(text(10))
                 .memo(text(10))
@@ -146,7 +173,7 @@ public class DomainBuilder {
             // This shouldn't happen
         }
 
-        AddressBookServiceEndpoint.AddressBookServiceEndpointBuilder builder = AddressBookServiceEndpoint.builder()
+        var builder = AddressBookServiceEndpoint.builder()
                 .consensusTimestamp(timestamp())
                 .ipAddressV4(ipAddress)
                 .nodeId(id())
@@ -158,7 +185,7 @@ public class DomainBuilder {
         long id = id();
         long timestamp = timestamp();
 
-        Contract.ContractBuilder builder = Contract.builder()
+        var builder = Contract.builder()
                 .autoRenewPeriod(1800L)
                 .createdTimestamp(timestamp)
                 .deleted(false)
@@ -180,7 +207,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<ContractLog, ContractLog.ContractLogBuilder> contractLog() {
-        ContractLog.ContractLogBuilder builder = ContractLog.builder()
+        var builder = ContractLog.builder()
                 .bloom(bytes(256))
                 .consensusTimestamp(timestamp())
                 .contractId(entityId(CONTRACT))
@@ -195,7 +222,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<ContractResult, ContractResult.ContractResultBuilder> contractResult() {
-        ContractResult.ContractResultBuilder builder = ContractResult.builder()
+        var builder = ContractResult.builder()
                 .amount(1000L)
                 .bloom(bytes(256))
                 .callResult(bytes(512))
@@ -212,7 +239,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<ContractStateChange, ContractStateChange.ContractStateChangeBuilder> contractStateChange() {
-        ContractStateChange.ContractStateChangeBuilder builder = ContractStateChange.builder()
+        var builder = ContractStateChange.builder()
                 .consensusTimestamp(timestamp())
                 .contractId(entityId(CONTRACT).getId())
                 .payerAccountId(entityId(ACCOUNT))
@@ -232,11 +259,21 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<CryptoTransfer, CryptoTransfer.CryptoTransferBuilder> cryptoTransfer() {
+        var builder = CryptoTransfer.builder()
+                .amount(10L)
+                .consensusTimestamp(timestamp())
+                .entityId(entityId(ACCOUNT).getId())
+                .isApproval(false)
+                .payerAccountId(entityId(ACCOUNT));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<Entity, Entity.EntityBuilder> entity() {
         long id = id();
         long timestamp = timestamp();
 
-        Entity.EntityBuilder builder = Entity.builder()
+        var builder = Entity.builder()
                 .alias(key())
                 .autoRenewAccountId(entityId(ACCOUNT))
                 .autoRenewPeriod(1800L)
@@ -259,8 +296,20 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<NftAllowance, NftAllowance.NftAllowanceBuilder> nftAllowance() {
+        var builder = NftAllowance.builder()
+                .approvedForAll(false)
+                .owner(entityId(ACCOUNT).getId())
+                .payerAccountId(entityId(ACCOUNT))
+                .serialNumbers(List.of(1L, 2L, 3L))
+                .spender(entityId(ACCOUNT).getId())
+                .timestampRange(Range.atLeast(timestamp()))
+                .tokenId(entityId(TOKEN).getId());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<NftTransfer, NftTransfer.NftTransferBuilder> nftTransfer() {
-        NftTransfer.NftTransferBuilder builder = NftTransfer.builder()
+        var builder = NftTransfer.builder()
                 .id(new NftTransferId(timestamp(), 1L, entityId(TOKEN)))
                 .receiverAccountId(entityId(ACCOUNT))
                 .payerAccountId(entityId(ACCOUNT))
@@ -270,7 +319,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<NonFeeTransfer, NonFeeTransfer.NonFeeTransferBuilder> nonFeeTransfer() {
-        NonFeeTransfer.NonFeeTransferBuilder builder = NonFeeTransfer.builder()
+        var builder = NonFeeTransfer.builder()
                 .amount(100L)
                 .consensusTimestamp(timestamp())
                 .entityId(entityId(ACCOUNT))
@@ -281,7 +330,7 @@ public class DomainBuilder {
 
     public DomainWrapper<RecordFile, RecordFile.RecordFileBuilder> recordFile() {
         long timestamp = timestamp();
-        RecordFile.RecordFileBuilder builder = RecordFile.builder()
+        var builder = RecordFile.builder()
                 .consensusStart(timestamp)
                 .consensusEnd(timestamp + 1)
                 .count(1L)
@@ -298,7 +347,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<Schedule, Schedule.ScheduleBuilder> schedule() {
-        Schedule.ScheduleBuilder builder = Schedule.builder()
+        var builder = Schedule.builder()
                 .consensusTimestamp(timestamp())
                 .creatorAccountId(entityId(ACCOUNT))
                 .payerAccountId(entityId(ACCOUNT))
@@ -309,7 +358,7 @@ public class DomainBuilder {
 
     public DomainWrapper<Token, Token.TokenBuilder> token() {
         long timestamp = timestamp();
-        Token.TokenBuilder builder = Token.builder()
+        var builder = Token.builder()
                 .createdTimestamp(timestamp)
                 .decimals(1000)
                 .feeScheduleKey(key())
@@ -329,18 +378,6 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<NftAllowance, NftAllowance.NftAllowanceBuilder> nftAllowance() {
-        var builder = NftAllowance.builder()
-                .approvedForAll(false)
-                .owner(entityId(ACCOUNT).getId())
-                .payerAccountId(entityId(ACCOUNT))
-                .serialNumbers(List.of(1L, 2L, 3L))
-                .spender(entityId(ACCOUNT).getId())
-                .timestampRange(Range.atLeast(timestamp()))
-                .tokenId(entityId(TOKEN).getId());
-        return new DomainWrapperImpl<>(builder, builder::build);
-    }
-
     public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder> tokenAllowance() {
         var builder = TokenAllowance.builder()
                 .amount(10L)
@@ -352,8 +389,15 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<TokenBalance, TokenBalance.TokenBalanceBuilder> tokenBalance() {
+        var builder = TokenBalance.builder()
+                .balance(1L)
+                .id(new TokenBalance.Id(timestamp(), entityId(ACCOUNT), entityId(TOKEN)));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<TokenTransfer, TokenTransfer.TokenTransferBuilder> tokenTransfer() {
-        TokenTransfer.TokenTransferBuilder builder = TokenTransfer.builder()
+        var builder = TokenTransfer.builder()
                 .amount(100L)
                 .id(new TokenTransfer.Id(timestamp(), entityId(TOKEN), entityId(ACCOUNT)))
                 .payerAccountId(entityId(ACCOUNT))
@@ -363,7 +407,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<Transaction, Transaction.TransactionBuilder> transaction() {
-        Transaction.TransactionBuilder builder = Transaction.builder()
+        var builder = Transaction.builder()
                 .chargedTxFee(10000000L)
                 .consensusTimestamp(timestamp())
                 .entityId(entityId(ACCOUNT))
@@ -385,7 +429,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<TransactionSignature, TransactionSignature.TransactionSignatureBuilder> transactionSignature() {
-        TransactionSignature.TransactionSignatureBuilder builder = TransactionSignature.builder()
+        var builder = TransactionSignature.builder()
                 .consensusTimestamp(timestamp())
                 .entityId(entityId(ACCOUNT))
                 .publicKeyPrefix(bytes(16))
