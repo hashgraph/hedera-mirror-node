@@ -65,11 +65,11 @@ import org.springframework.messaging.MessageChannel;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
-import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategyImpl;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
@@ -167,6 +167,27 @@ class PubSubRecordItemListenerTest {
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
         assertThat(pubSubMessage.getEntity()).isEqualTo(topicIdEntity);
+        assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
+    }
+
+    @Test
+    void testPubSubMessageNullEntityId() throws Exception {
+        // given
+        byte[] message = new byte[] {'a', 'b', 'c'};
+        TopicID topicID = TopicID.newBuilder().setTopicNum(10L).build();
+        EntityId topicIdEntity = EntityId.of(topicID);
+        ConsensusSubmitMessageTransactionBody submitMessage = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .setMessage(ByteString.copyFrom(message))
+                .setTopicID(topicID)
+                .build();
+        Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
+        // when
+        doReturn(null).when(transactionHandler).getEntity(any());
+        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+
+        // then
+        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
+        assertThat(pubSubMessage.getEntity()).isEqualTo(null);
         assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
     }
 
