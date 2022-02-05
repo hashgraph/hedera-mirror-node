@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
-import com.hedera.mirror.common.util.DomainUtils;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -37,6 +35,8 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -69,8 +69,16 @@ public class PubSubRecordItemListener implements RecordItemListener {
         TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionType);
         log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
         long consensusTimestamp = DomainUtils.timeStampInNanos(txRecord.getConsensusTimestamp());
-        EntityId entity = transactionHandler.getEntity(recordItem);
-        PubSubMessage pubSubMessage = buildPubSubMessage(consensusTimestamp, entity, recordItem);
+
+        EntityId entityId;
+        try {
+            entityId = transactionHandler.getEntity(recordItem);
+        } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
+            log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
+            entityId = null;
+        }
+
+        PubSubMessage pubSubMessage = buildPubSubMessage(consensusTimestamp, entityId, recordItem);
         try {
             sendPubSubMessage(pubSubMessage);
         } catch (Exception e) {
@@ -81,7 +89,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
         }
         log.debug("Published transaction : {}", consensusTimestamp);
 
-        if (addressBookService.isAddressBook(entity)) {
+        if (addressBookService.isAddressBook(entityId)) {
             FileID fileID = null;
             byte[] fileBytes = null;
 
@@ -137,4 +145,3 @@ public class PubSubRecordItemListener implements RecordItemListener {
         return nonFeeTransfers;
     }
 }
-
