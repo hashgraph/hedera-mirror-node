@@ -182,7 +182,7 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
         // when
         doReturn(null).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+        pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD));
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);

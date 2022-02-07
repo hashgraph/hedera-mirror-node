@@ -123,7 +123,7 @@ public class EntityIdServiceImpl implements EntityIdService {
 
         EntityId entityId = aliasable.toEntityId();
         EntityType type = aliasable.getType();
-        GeneratedMessageV3.Builder builder;
+        GeneratedMessageV3.Builder<?> builder;
 
         switch (type) {
             case ACCOUNT:
