@@ -34,14 +34,15 @@ import javax.inject.Named;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.codec.binary.Hex;
+import org.springframework.data.util.Version;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.reader.AbstractStreamObject;
 import com.hedera.mirror.importer.reader.HashObject;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
@@ -109,7 +110,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
         // read record stream objects
         while (!isHashObject(vdis, hashObjectClassId)) {
-            RecordStreamObject recordStreamObject = new RecordStreamObject(vdis);
+            RecordStreamObject recordStreamObject = new RecordStreamObject(vdis, recordFile.getHapiVersion());
             items.add(recordStreamObject.getRecordItem());
 
             if (count == 0) {
@@ -163,12 +164,14 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
         private static final int MAX_RECORD_LENGTH = 64 * 1024;
 
+        private final Version hapiVersion;
         private final byte[] recordBytes;
         private final byte[] transactionBytes;
         private RecordItem recordItem;
 
-        RecordStreamObject(ValidatedDataInputStream vdis) {
+        RecordStreamObject(ValidatedDataInputStream vdis, Version hapiVersion) {
             super(vdis);
+            this.hapiVersion = hapiVersion;
 
             try {
                 recordBytes = vdis.readLengthAndBytes(1, MAX_RECORD_LENGTH, false, "record bytes");
@@ -184,7 +187,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             }
 
             if (recordItem == null) {
-                recordItem = new RecordItem(transactionBytes, recordBytes);
+                recordItem = new RecordItem(hapiVersion, transactionBytes, recordBytes);
             }
 
             return recordItem;

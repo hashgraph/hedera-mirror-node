@@ -74,6 +74,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     void before() {
         entityProperties.getPersist().setClaims(true);
         entityProperties.getPersist().setCryptoTransferAmounts(true);
+        entityProperties.getPersist().setTransactionBytes(false);
     }
 
     @Test
@@ -700,7 +701,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         // when
-        parseRecordItemAndCommit(new RecordItem(transaction.toByteArray(), record.toByteArray()));
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
 
         // then
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());

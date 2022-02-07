@@ -24,9 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
-
-import com.hedera.mirror.common.exception.ProtobufException;
-
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -38,9 +35,13 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.util.Version;
+
+import com.hedera.mirror.common.exception.ProtobufException;
 
 class RecordItemTest {
 
+    private static final Version DEFAULT_HAPI_VERSION = new Version(0, 22, 0);
     private static final Transaction DEFAULT_TRANSACTION = Transaction.newBuilder()
             .setSignedTransactionBytes(SignedTransaction.getDefaultInstance().getBodyBytes())
             .build();
@@ -94,7 +95,7 @@ class RecordItemTest {
                 .setBody(TRANSACTION_BODY)
                 .setSigMap(SIGNATURE_MAP)
                 .build();
-        RecordItem recordItem = new RecordItem(transaction.toByteArray(), TRANSACTION_RECORD.toByteArray());
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
         assertRecordItem(transaction, recordItem);
     }
 
@@ -109,7 +110,8 @@ class RecordItemTest {
                 .setSigMap(SIGNATURE_MAP)
                 .build();
 
-        RecordItem recordItem = new RecordItem(transactionFromProto, TRANSACTION_RECORD.toByteArray());
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transactionFromProto,
+                TRANSACTION_RECORD.toByteArray());
         assertRecordItem(expectedTransaction, recordItem);
     }
 
@@ -119,7 +121,7 @@ class RecordItemTest {
                 .setBodyBytes(TRANSACTION_BODY.toByteString())
                 .setSigMap(SIGNATURE_MAP)
                 .build();
-        RecordItem recordItem = new RecordItem(transaction.toByteArray(), TRANSACTION_RECORD.toByteArray());
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
         assertRecordItem(transaction, recordItem);
     }
 
@@ -128,7 +130,7 @@ class RecordItemTest {
         Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
                 .build();
-        RecordItem recordItem = new RecordItem(transaction.toByteArray(), TRANSACTION_RECORD.toByteArray());
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
         assertRecordItem(transaction, recordItem);
     }
 
@@ -150,12 +152,13 @@ class RecordItemTest {
     }
 
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {
-        assertThatThrownBy(() -> new RecordItem(transactionBytes, recordBytes))
+        assertThatThrownBy(() -> new RecordItem(DEFAULT_HAPI_VERSION, transactionBytes, recordBytes))
                 .isInstanceOf(ProtobufException.class)
                 .hasMessage(expectedMessage);
     }
 
     private void assertRecordItem(Transaction transaction, RecordItem recordItem) {
+        assertThat(recordItem.getHapiVersion()).isEqualTo(DEFAULT_HAPI_VERSION);
         assertThat(recordItem.getTransaction()).isEqualTo(transaction);
         assertThat(recordItem.getRecord()).isEqualTo(TRANSACTION_RECORD);
         assertThat(recordItem.getTransactionBody()).isEqualTo(TRANSACTION_BODY);

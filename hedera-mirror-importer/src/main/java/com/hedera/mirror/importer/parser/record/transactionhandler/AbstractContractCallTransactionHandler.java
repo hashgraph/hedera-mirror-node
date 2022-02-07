@@ -33,8 +33,10 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.util.Utility;
@@ -42,28 +44,27 @@ import com.hedera.mirror.importer.util.Utility;
 @RequiredArgsConstructor
 abstract class AbstractContractCallTransactionHandler implements TransactionHandler {
 
+    protected final EntityIdService entityIdService;
     protected final EntityListener entityListener;
     protected final EntityProperties entityProperties;
 
+    @SuppressWarnings("deprecation")
     protected final void onContractResult(RecordItem recordItem, ContractResult contractResult,
                                           ContractFunctionResult functionResult) {
         // set function result related properties where applicable
         if (functionResult != ContractFunctionResult.getDefaultInstance()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             List<Long> createdContractIds = new ArrayList<>();
-            boolean persist = recordItem.isSuccessful() && entityProperties.getPersist().isContracts();
+            boolean persist = shouldPersistCreatedContractIDs(recordItem);
 
             for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
-                EntityId contractId = EntityId.of(createdContractId);
+                EntityId contractId = entityIdService.lookup(createdContractId);
                 createdContractIds.add(contractId.getId());
 
                 // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
-                if (persist && !EntityId.isEmpty(contractId) && !contractId.equals(contractResult.getContractId())) {
-                    Contract contract = contractId.toEntity();
-                    contract.setCreatedTimestamp(consensusTimestamp);
-                    contract.setDeleted(false);
-                    contract.setModifiedTimestamp(consensusTimestamp);
-                    doUpdateEntity(contract, recordItem);
+                if (persist && !EntityId.isEmpty(contractId) && !contractId.equals(
+                        contractResult.getContractId())) {
+                    doUpdateEntity(getContract(contractId, consensusTimestamp), recordItem);
                 }
             }
 
@@ -81,7 +82,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
                 ContractLog contractLog = new ContractLog();
                 contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
                 contractLog.setConsensusTimestamp(consensusTimestamp);
-                contractLog.setContractId(EntityId.of(contractLoginfo.getContractID()));
+                contractLog.setContractId(entityIdService.lookup(contractLoginfo.getContractID()));
                 contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
                 contractLog.setIndex(index);
                 contractLog.setRootContractId(contractResult.getContractId());
@@ -98,7 +99,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             for (int stateIndex = 0; stateIndex < functionResult.getStateChangesCount(); ++stateIndex) {
                 var contractStateChangeInfo = functionResult.getStateChanges(stateIndex);
 
-                var contractId = EntityId.of(contractStateChangeInfo.getContractID());
+                var contractId = entityIdService.lookup(contractStateChangeInfo.getContractID());
                 for (int storageIndex = 0; storageIndex < contractStateChangeInfo
                         .getStorageChangesCount(); ++storageIndex) {
                     StorageChange storageChange = contractStateChangeInfo.getStorageChanges(storageIndex);
@@ -111,8 +112,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
                     contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
 
                     // If a value of zero is written the valueWritten will be present but the inner value will be
-                    // absent.
-                    // If a value was read and not written this value will not be present.
+                    // absent. If a value was read and not written this value will not be present.
                     if (storageChange.hasValueWritten()) {
                         contractStateChange
                                 .setValueWritten(DomainUtils.toBytes(storageChange.getValueWritten().getValue()));
@@ -123,9 +123,30 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             }
         }
 
-        // always persist a contract result whether partial or complete
+        // Always persist a contract result whether partial or complete
         entityListener.onContractResult(contractResult);
     }
 
     protected abstract void doUpdateEntity(Contract contract, RecordItem recordItem);
+
+    protected Contract getContract(EntityId contractId, long consensusTimestamp) {
+        Contract contract = contractId.toEntity();
+        contract.setCreatedTimestamp(consensusTimestamp);
+        contract.setDeleted(false);
+        contract.setModifiedTimestamp(consensusTimestamp);
+        return contract;
+    }
+
+    /**
+     * Persist contract entities in createdContractIDs if it's prior to HAPI 0.23.0. After that the createdContractIDs
+     * list is also externalized as contract create child records so we only need to persist the complete contract
+     * entity from the child record.
+     *
+     * @param recordItem to check
+     * @return Whether the createdContractIDs list should be persisted.
+     */
+    private boolean shouldPersistCreatedContractIDs(RecordItem recordItem) {
+        return recordItem.isSuccessful() && entityProperties.getPersist().isContracts() &&
+                recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_23_0);
+    }
 }

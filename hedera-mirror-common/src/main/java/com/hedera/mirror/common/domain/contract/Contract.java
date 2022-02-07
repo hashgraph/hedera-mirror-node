@@ -20,24 +20,29 @@ package com.hedera.mirror.common.domain.contract;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.persistence.Column;
 import javax.persistence.Convert;
-
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import com.hedera.mirror.common.converter.FileIdConverter;
 import com.hedera.mirror.common.converter.UnknownIdConverter;
+import com.hedera.mirror.common.domain.Aliasable;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
 @Data
 @javax.persistence.Entity
 @NoArgsConstructor
 @SuperBuilder
-public class Contract extends AbstractEntity {
+public class Contract extends AbstractEntity implements Aliasable {
+
+    @Column(updatable = false)
+    @ToString.Exclude
+    private byte[] evmAddress;
 
     @Column(updatable = false)
     @Convert(converter = FileIdConverter.class)
@@ -45,4 +50,10 @@ public class Contract extends AbstractEntity {
 
     @Convert(converter = UnknownIdConverter.class)
     private EntityId obtainerId;
+
+    @JsonIgnore
+    @Override
+    public byte[] getAlias() {
+        return evmAddress;
+    }
 }

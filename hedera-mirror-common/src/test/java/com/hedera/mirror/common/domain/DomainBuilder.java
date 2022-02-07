@@ -156,6 +156,7 @@ public class DomainBuilder {
                 .autoRenewPeriod(1800L)
                 .createdTimestamp(timestamp)
                 .deleted(false)
+                .evmAddress(create2EvmAddress())
                 .expirationTimestamp(timestamp + 30_000_000L)
                 .fileId(entityId(FILE))
                 .id(id)
@@ -336,6 +337,10 @@ public class DomainBuilder {
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return bytes;
+    }
+
+    public byte[] create2EvmAddress() {
+        return bytes(20);
     }
 
     public EntityId entityId(EntityType type) {

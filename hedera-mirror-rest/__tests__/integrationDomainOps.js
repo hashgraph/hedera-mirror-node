@@ -554,6 +554,7 @@ const addContract = async (contract) => {
     'auto_renew_period',
     'created_timestamp',
     'deleted',
+    'evm_address',
     'expiration_timestamp',
     'file_id',
     'id',
@@ -571,6 +572,7 @@ const addContract = async (contract) => {
   contract = {
     auto_renew_period: null,
     deleted: false,
+    evm_address: null,
     expiration_timestamp: null,
     key: null,
     memo: 'contract memo',
@@ -581,6 +583,7 @@ const addContract = async (contract) => {
     timestamp_range: '[0,)',
     ...contract,
   };
+  contract.evm_address = contract.evm_address != null ? Buffer.from(contract.evm_address) : null;
   contract.id = EntityId.of(BigInt(contract.shard), BigInt(contract.realm), BigInt(contract.num)).getEncodedId();
   contract.key = contract.key != null ? Buffer.from(contract.key) : null;
 

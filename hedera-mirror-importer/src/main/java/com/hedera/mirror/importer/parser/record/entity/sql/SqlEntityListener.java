@@ -59,6 +59,7 @@ import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.batch.BatchPersister;
@@ -76,6 +77,7 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 public class SqlEntityListener implements EntityListener, RecordStreamFileListener {
 
     private final BatchPersister batchPersister;
+    private final EntityIdService entityIdService;
     private final ApplicationEventPublisher eventPublisher;
     private final RecordFileRepository recordFileRepository;
     private final SqlProperties sqlProperties;
@@ -115,11 +117,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Map<TokenAccountKey, TokenAccount> tokenAccountState;
 
     public SqlEntityListener(BatchPersister batchPersister,
+                             EntityIdService entityIdService,
                              ApplicationEventPublisher eventPublisher,
                              RecordFileRepository recordFileRepository,
                              SqlProperties sqlProperties,
                              @Qualifier(TOKEN_DISSOCIATE_BATCH_PERSISTER) BatchPersister tokenDissociateTransferBatchPersister) {
         this.batchPersister = batchPersister;
+        this.entityIdService = entityIdService;
         this.eventPublisher = eventPublisher;
         this.recordFileRepository = recordFileRepository;
         this.sqlProperties = sqlProperties;
@@ -259,6 +263,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onContract(Contract contract) {
+        entityIdService.notify(contract);
         Contract merged = contractState.merge(contract.getId(), contract, this::mergeContract);
         contracts.add(merged);
     }

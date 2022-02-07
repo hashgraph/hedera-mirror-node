@@ -28,12 +28,13 @@ import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.domain.Aliasable;
 
 @Data
 @javax.persistence.Entity
 @NoArgsConstructor
 @SuperBuilder
-public class Entity extends AbstractEntity {
+public class Entity extends AbstractEntity implements Aliasable  {
 
     @Column(updatable = false)
     @ToString.Exclude

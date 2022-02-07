@@ -20,22 +20,41 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static org.mockito.Mockito.when;
+
+import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.Message;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private final EntityProperties entityProperties = new EntityProperties();
 
+    @BeforeEach
+    void beforeEach() {
+        when(entityIdService.lookup(contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
+    }
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractCreateTransactionHandler(entityListener, entityProperties);
+        return new ContractCreateTransactionHandler(entityIdService, entityListener, entityProperties);
     }
 
     @Override
@@ -46,12 +65,44 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Override
     protected TransactionReceipt.Builder getTransactionReceipt(ResponseCodeEnum responseCodeEnum) {
-        return TransactionReceipt.newBuilder().setStatus(responseCodeEnum)
-                .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build());
+        return TransactionReceipt.newBuilder().setStatus(responseCodeEnum).setContractID(contractId);
+    }
+
+    @Override
+    protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(
+            Descriptors.FieldDescriptor memoField) {
+        List<UpdateEntityTestSpec> testSpecs = super.getUpdateEntityTestSpecsForCreateTransaction(memoField);
+
+        TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
+        Message innerBody = getInnerBody(body);
+        body = getTransactionBody(body, innerBody);
+        byte[] evmAddress = TestUtils.generateRandomByteArray(20);
+        var contractCreateResult = ContractFunctionResult.newBuilder()
+                .setEvmAddress(BytesValue.of(ByteString.copyFrom(evmAddress)));
+        var recordBuilder = getDefaultTransactionRecord().setContractCreateResult(contractCreateResult);
+
+        AbstractEntity expected = getExpectedUpdatedEntity();
+        ((Contract) expected).setEvmAddress(evmAddress);
+        expected.setMemo("");
+        testSpecs.add(
+                UpdateEntityTestSpec.builder()
+                        .description("create contract entity with evm address in record")
+                        .expected(expected)
+                        .recordItem(getRecordItem(body, recordBuilder.build()))
+                        .build()
+        );
+
+        return testSpecs;
+    }
+
+    @Override
+    protected TransactionRecord.Builder getDefaultTransactionRecord() {
+        return super.getDefaultTransactionRecord()
+                .setContractCreateResult(ContractFunctionResult.newBuilder().addCreatedContractIDs(contractId));
     }
 
     @Override
     protected EntityType getExpectedEntityIdType() {
-        return EntityType.CONTRACT;
+        return CONTRACT;
     }
 }

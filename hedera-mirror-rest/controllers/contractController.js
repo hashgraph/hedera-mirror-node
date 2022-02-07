@@ -51,6 +51,7 @@ const contractSelectFields = [
   Contract.AUTO_RENEW_PERIOD,
   Contract.CREATED_TIMESTAMP,
   Contract.DELETED,
+  Contract.EVM_ADDRESS,
   Contract.EXPIRATION_TIMESTAMP,
   Contract.FILE_ID,
   Contract.ID,

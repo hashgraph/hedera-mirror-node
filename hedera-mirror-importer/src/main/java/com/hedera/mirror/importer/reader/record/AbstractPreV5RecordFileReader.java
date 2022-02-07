@@ -36,10 +36,10 @@ import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 
 @RequiredArgsConstructor
@@ -117,7 +117,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
             vdis.readByte(RECORD_MARKER, "record marker");
             byte[] transactionBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction bytes");
             byte[] recordBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "record bytes");
-            RecordItem recordItem = new RecordItem(transactionBytes, recordBytes);
+            RecordItem recordItem = new RecordItem(recordFile.getHapiVersion(), transactionBytes, recordBytes);
             items.add(recordItem);
 
             if (count == 0) {
