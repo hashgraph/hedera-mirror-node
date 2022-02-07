@@ -454,6 +454,40 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
     }
 
     @Test
+    void submitMessageDisabled() {
+        // given
+        entityProperties.getPersist().setTopics(false);
+        var responseCode = SUCCESS;
+        var topicId = TOPIC_ID;
+        var consensusTimestamp = 10_000_000L;
+        var message = "message";
+        var sequenceNumber = 10_000L;
+        var runningHash = "running-hash";
+        var runningHashVersion = 1;
+        var chunkNum = 3;
+        var chunkTotal = 5;
+        var validStartNs = 7L;
+        var scheduled = false;
+        var nonce = 0;
+
+        TransactionID initialTransactionId = createTransactionID(PAYER_ACCOUNT_ID.getEntityNum(),
+                TestUtils.toTimestamp(validStartNs), scheduled, nonce);
+
+        var transaction = createSubmitMessageTransaction(topicId, message, chunkNum, chunkTotal, initialTransactionId);
+        var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
+                .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
+
+        // when
+        parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
+
+        // then
+        assertEquals(0L, entityRepository.count());
+        assertEquals(0L, topicMessageRepository.count());
+        assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
+        entityProperties.getPersist().setTopics(true);
+    }
+
+    @Test
     void submitMessageTestFiltered() {
         // given
         var responseCode = SUCCESS;

@@ -170,6 +170,27 @@ class PubSubRecordItemListenerTest {
     }
 
     @Test
+    void testPubSubMessageNullEntityId() throws Exception {
+        // given
+        byte[] message = new byte[] {'a', 'b', 'c'};
+        TopicID topicID = TopicID.newBuilder().setTopicNum(10L).build();
+        EntityId topicIdEntity = EntityId.of(topicID);
+        ConsensusSubmitMessageTransactionBody submitMessage = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .setMessage(ByteString.copyFrom(message))
+                .setTopicID(topicID)
+                .build();
+        Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
+        // when
+        doReturn(null).when(transactionHandler).getEntity(any());
+        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+
+        // then
+        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
+        assertThat(pubSubMessage.getEntity()).isEqualTo(null);
+        assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
+    }
+
+    @Test
     void testPubSubMessageWithNonFeeTransferAndNullEntityId() throws Exception {
         // given
         List<AccountAmount> nonFeeTransfers = new ArrayList<>();
