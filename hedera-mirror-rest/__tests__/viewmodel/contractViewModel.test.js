@@ -28,6 +28,10 @@ describe('ContractViewModel', () => {
     autoRenewPeriod: '1000',
     createdTimestamp: '999123456789',
     deleted: false,
+    evmAddress: Buffer.from([
+      0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22,
+      0x23,
+    ]),
     expirationTimestamp: '99999999000000000',
     fileId: '2800',
     id: '3001',
@@ -46,12 +50,12 @@ describe('ContractViewModel', () => {
     contract_id: '0.0.3001',
     created_timestamp: '999.123456789',
     deleted: false,
+    evm_address: '0x101112131415161718191a1b1c1d1e1f20212223',
     expiration_timestamp: '99999999.000000000',
     file_id: '0.0.2800',
     memo: 'sample contract',
     obtainer_id: '0.0.2005',
     proxy_account_id: '0.0.2002',
-    solidity_address: '0x0000000000000000000000000000000000000bb9',
     timestamp: {
       from: '1000.123456789',
       to: '2000.123456789',
@@ -83,6 +87,18 @@ describe('ContractViewModel', () => {
     ).toEqual({
       ...defaultExpected,
       bytecode: null,
+    });
+  });
+
+  test('null evm address', () => {
+    expect(
+      new ContractViewModel({
+        ...defaultContract,
+        evmAddress: null,
+      })
+    ).toEqual({
+      ...defaultExpected,
+      evm_address: '0x0000000000000000000000000000000000000bb9',
     });
   });
 

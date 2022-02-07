@@ -89,6 +89,7 @@ class ContractResultMigrationTest extends IntegrationTest {
                 .allMatch(Objects::isNull);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void migrate() throws Exception {
         ContractFunctionResult.Builder functionResult = contractFunctionResult();

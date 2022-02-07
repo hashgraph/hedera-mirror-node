@@ -45,9 +45,9 @@ const maxShard = 2n ** shardBits - 1n;
 
 const maxEncodedId = 2n ** 63n - 1n;
 
-const solidityAddressRegex = /^(0x)?[A-Fa-f0-9]{40}$/;
 const entityIdRegex = /^(\d{1,5}\.){1,2}\d{1,10}$/;
 const encodedEntityIdRegex = /^\d{1,19}$/;
+const evmAddressRegex = /^(0x)?[A-Fa-f0-9]{40}$/;
 
 class EntityId {
   constructor(shard, realm, num) {
@@ -68,9 +68,9 @@ class EntityId {
   }
 
   /**
-   * Converts the entity id to the 20-byte solidity address in hex with '0x' prefix
+   * Converts the entity id to the 20-byte EVM address in hex with '0x' prefix
    */
-  toSolidityAddress() {
+  toEvmAddress() {
     // shard, realm, and num take 4, 8, and 8 bytes respectively from the left
     return this.num === null
       ? null
@@ -91,9 +91,9 @@ const toHex = (num) => {
   return num.toString(16);
 };
 
-const isValidSolidityAddress = (address) => {
+const isValidEvmAddress = (address) => {
   // Accepted forms: 0x...
-  return typeof address === 'string' && solidityAddressRegex.test(address);
+  return typeof address === 'string' && evmAddressRegex.test(address);
 };
 
 const isValidEntityId = (entityId) => {
@@ -155,11 +155,11 @@ const parseFromEncodedId = (id, error) => {
 };
 
 /**
- * Parses shard, realm, num from solidity address string.
+ * Parses shard, realm, num from EVM address string.
  * @param {string} address
  * @return {bigint[3]}
  */
-const parseFromSolidityAddress = (address) => {
+const parseFromEvmAddress = (address) => {
   // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
   const hexDigits = address.replace('0x', '');
   const parts = [
@@ -195,7 +195,7 @@ const entityIdCacheOptions = {
 
 const parseMemoized = mem(
   /**
-   * Parses entity ID string, can be shard.realm.num, realm.num, the encoded entity ID or a solidity contract address.
+   * Parses entity ID string, can be shard.realm.num, realm.num, the encoded entity ID or an evm contract address.
    * @param {string} id
    * @param {Function} error
    * @return {EntityId}
@@ -204,8 +204,8 @@ const parseMemoized = mem(
     let shard, realm, num;
     if (isValidEntityId(id)) {
       [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
-    } else if (isValidSolidityAddress(id)) {
-      [shard, realm, num] = parseFromSolidityAddress(id);
+    } else if (isValidEvmAddress(id)) {
+      [shard, realm, num] = parseFromEvmAddress(id);
     } else {
       throw error();
     }
@@ -251,7 +251,7 @@ const parse = (id, ...rest) => {
 
 module.exports = {
   isValidEntityId,
-  isValidSolidityAddress,
+  isValidEvmAddress,
   of,
   parse,
 };

@@ -26,15 +26,14 @@ import javax.persistence.Entity;
 import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Transient;
-
-import com.hedera.mirror.common.domain.StreamItem;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.springframework.data.util.Version;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
@@ -49,6 +48,13 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 @AllArgsConstructor
 @NoArgsConstructor
 public class RecordFile implements StreamFile<RecordItem> {
+
+    public static final Version HAPI_VERSION_NOT_SET = new Version(0, 0, 0);
+    public static final Version HAPI_VERSION_0_23_0 = new Version(0, 23, 0);
+
+    @Getter(lazy = true)
+    @Transient
+    private final Version hapiVersion = hapiVersion();
 
     @ToString.Exclude
     private byte[] bytes;
@@ -104,5 +110,13 @@ public class RecordFile implements StreamFile<RecordItem> {
     @Override
     public StreamType getType() {
         return StreamType.RECORD;
+    }
+
+    private Version hapiVersion() {
+        if (hapiVersionMajor == null || hapiVersionMinor == null || hapiVersionPatch == null) {
+            return HAPI_VERSION_NOT_SET;
+        }
+
+        return new Version(hapiVersionMajor, hapiVersionMinor, hapiVersionPatch);
     }
 }

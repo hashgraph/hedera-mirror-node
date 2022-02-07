@@ -34,23 +34,22 @@ class ContractViewModel {
    */
   constructor(contract) {
     const contractId = EntityId.parse(contract.id);
-    Object.assign(this, {
-      admin_key: utils.encodeKey(contract.key),
-      auto_renew_period: contract.autoRenewPeriod && Number(contract.autoRenewPeriod),
-      contract_id: contractId.toString(),
-      created_timestamp: utils.nsToSecNs(contract.createdTimestamp),
-      deleted: contract.deleted,
-      expiration_timestamp: utils.nsToSecNs(contract.expirationTimestamp),
-      file_id: EntityId.parse(contract.fileId, true).toString(),
-      memo: contract.memo,
-      obtainer_id: EntityId.parse(contract.obtainerId, true).toString(),
-      proxy_account_id: EntityId.parse(contract.proxyAccountId, true).toString(),
-      solidity_address: contractId.toSolidityAddress(),
-      timestamp: {
-        from: utils.nsToSecNs(contract.timestampRange.begin),
-        to: utils.nsToSecNs(contract.timestampRange.end),
-      },
-    });
+    this.admin_key = utils.encodeKey(contract.key);
+    this.auto_renew_period = contract.autoRenewPeriod && Number(contract.autoRenewPeriod);
+    this.contract_id = contractId.toString();
+    this.created_timestamp = utils.nsToSecNs(contract.createdTimestamp);
+    this.deleted = contract.deleted;
+    this.evm_address =
+      contract.evmAddress !== null ? utils.toHexString(contract.evmAddress, true) : contractId.toEvmAddress();
+    this.expiration_timestamp = utils.nsToSecNs(contract.expirationTimestamp);
+    this.file_id = EntityId.parse(contract.fileId, true).toString();
+    this.memo = contract.memo;
+    this.obtainer_id = EntityId.parse(contract.obtainerId, true).toString();
+    this.proxy_account_id = EntityId.parse(contract.proxyAccountId, true).toString();
+    this.timestamp = {
+      from: utils.nsToSecNs(contract.timestampRange.begin),
+      to: utils.nsToSecNs(contract.timestampRange.end),
+    };
 
     if (contract.bytecode !== undefined) {
       this.bytecode = utils.toHexString(contract.bytecode, true);

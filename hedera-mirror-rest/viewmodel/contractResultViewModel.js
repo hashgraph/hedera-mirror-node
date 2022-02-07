@@ -41,12 +41,12 @@ class ContractResultViewModel {
     this.contract_id = contractId.toString();
     this.created_contract_ids = _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString());
     this.error_message = _.isEmpty(contractResult.errorMessage) ? null : contractResult.errorMessage;
-    this.from = EntityId.parse(contractResult.payerAccountId).toSolidityAddress();
+    this.from = EntityId.parse(contractResult.payerAccountId).toEvmAddress();
     this.function_parameters = utils.toHexString(contractResult.functionParameters, true);
     this.gas_limit = Number(contractResult.gasLimit);
     this.gas_used = _.isNil(contractResult.gasUsed) ? null : Number(contractResult.gasUsed);
     this.timestamp = utils.nsToSecNs(contractResult.consensusTimestamp);
-    this.to = contractId.toSolidityAddress();
+    this.to = contractId.toEvmAddress();
   }
 }
 

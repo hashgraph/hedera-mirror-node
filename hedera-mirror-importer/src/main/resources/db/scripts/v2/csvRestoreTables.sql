@@ -14,9 +14,9 @@
 
 \copy assessed_custom_fee (amount, collector_account_id, consensus_timestamp, token_id) from assessed_custom_fee.csv csv;
 
-\copy contract (auto_renew_period, created_timestamp, deleted, expiration_timestamp, file_id, id, key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type) from contract.csv csv;
+\copy contract (auto_renew_period, created_timestamp, deleted, expiration_timestamp, file_id, id, key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type, evm_address) from contract.csv csv;
 
-\copy contract_history (auto_renew_period, created_timestamp, deleted, expiration_timestamp, file_id, id, key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type) from contract_history.csv csv;
+\copy contract_history (auto_renew_period, created_timestamp, deleted, expiration_timestamp, file_id, id, key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type, evm_address) from contract_history.csv csv;
 
 \copy contract_log (bloom, consensus_timestamp, contract_id, data, index, topic0, topic1, topic2, topic3, root_contract_id) from contract_log.csv csv;
 
