@@ -36,7 +36,8 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 @Named
 class ContractCreateTransactionHandler extends AbstractContractCallTransactionHandler {
 
-    ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener, EntityProperties entityProperties) {
+    ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
+                                     EntityProperties entityProperties) {
         super(entityIdService, entityListener, entityProperties);
     }
 
@@ -81,6 +82,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
 
     @Override
     protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
+        var contractCreateResult = recordItem.getRecord().getContractCreateResult();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         if (transactionBody.hasAutoRenewPeriod()) {
@@ -99,7 +101,6 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
             contract.setFileId(EntityId.of(transactionBody.getFileID()));
         }
 
-        var contractCreateResult = recordItem.getRecord().getContractCreateResult();
         if (contractCreateResult.hasEvmAddress()) {
             contract.setEvmAddress(DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()));
         }

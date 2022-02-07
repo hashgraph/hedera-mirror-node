@@ -50,6 +50,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 public class RecordFile implements StreamFile<RecordItem> {
 
     public static final Version HAPI_VERSION_NOT_SET = new Version(0, 0, 0);
+    public static final Version HAPI_VERSION_0_23_0 = new Version(0, 23, 0);
 
     @Getter(lazy = true)
     @Transient

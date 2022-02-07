@@ -262,25 +262,26 @@ class DomainUtilsTest {
     @Test
     void fromEvmAddress() {
         long shard = 1;
-        long realm= 2;
+        long realm = 2;
         long num = 255;
         byte[] evmAddress = new byte[20];
-        evmAddress[3] = (byte)shard;
-        evmAddress[11] = (byte)realm;
-        evmAddress[19] = (byte)num;
+        evmAddress[3] = (byte) shard;
+        evmAddress[11] = (byte) realm;
+        evmAddress[19] = (byte) num;
         EntityId expected = EntityId.of(shard, realm, num, EntityType.CONTRACT);
         assertThat(DomainUtils.fromEvmAddress(evmAddress)).isEqualTo(expected);
 
-        evmAddress[0] = (byte)255;
-        evmAddress[4] = (byte)255;
-        evmAddress[12] = (byte)255;
+        evmAddress[0] = (byte) 255;
+        evmAddress[4] = (byte) 255;
+        evmAddress[12] = (byte) 255;
         // can't be encoded to long
         assertThat(DomainUtils.fromEvmAddress(evmAddress)).isNull();
     }
 
     @Test
     void fromEvmAddressIncorrectSize() {
-        assertThrows(Exception.class, () -> DomainUtils.fromEvmAddress(new byte[10]));
+        assertNull(DomainUtils.fromEvmAddress(null));
+        assertNull(DomainUtils.fromEvmAddress(new byte[10]));
     }
 
     @Test
@@ -307,4 +308,3 @@ class DomainUtilsTest {
         assertThat(DomainUtils.bytesToHex(null)).isNull();
     }
 }
-

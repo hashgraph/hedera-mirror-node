@@ -28,16 +28,22 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Collections;
 import java.util.LinkedList;
-import org.springframework.stereotype.Component;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.importer.domain.EntityIdService;
 
 /**
  * Non-fee transfers are explicitly requested transfers. This implementation extracts non_fee_transfer requested by a
  * transaction into an iterable of transfers.
  */
-@Component
+@Named
+@RequiredArgsConstructor
 public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtractionStrategy {
+
+    private final EntityIdService entityIdService;
+
     /**
      * @return iterable of transfers. If transaction has no non-fee transfers, then iterable will have no elements.
      */
@@ -59,17 +65,16 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
             return extractForCreateEntity(body.getContractCreateInstance().getInitialBalance(), payerAccountId,
                     contractIdToAccountId(transactionRecord.getReceipt().getContractID()), transactionRecord);
         } else { // contractCall
-            if (!transactionRecord.getContractCallResult().hasContractID()) {
-                throw new InvalidEntityException("Expect successful contractCall transaction with contractId set in " +
-                        "the contractCallResult in tx record");
-            }
-
+            EntityId contractId = entityIdService.lookup(transactionRecord.getReceipt().getContractID(),
+                    body.getContractCall().getContractID());
             LinkedList<AccountAmount> result = new LinkedList<>();
             var amount = body.getContractCall().getAmount();
-            // get the contract id whose function is called from the transaction record. The transaction result should
-            // be successful, so the contractId in contractCallResult should be set. Can't rely on the contract id in
-            // the body because it may have evmAddress set instead of contractNum
-            var contractAccountId = contractIdToAccountId(transactionRecord.getContractCallResult().getContractID());
+
+            var contractAccountId = AccountID.newBuilder()
+                    .setShardNum(contractId.getShardNum())
+                    .setRealmNum(contractId.getRealmNum())
+                    .setAccountNum(contractId.getEntityNum())
+                    .build();
             result.add(AccountAmount.newBuilder().setAccountID(contractAccountId).setAmount(amount).build());
             result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(-amount).build());
             return result;

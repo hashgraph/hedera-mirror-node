@@ -50,7 +50,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import com.hedera.mirror.importer.domain.StreamFilename;
@@ -114,6 +113,9 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         recordFile.setCount(id);
         recordFile.setDigestAlgorithm(DigestAlgorithm.SHA384);
         recordFile.setFileHash("fileHash" + id);
+        recordFile.setHapiVersionMajor(0);
+        recordFile.setHapiVersionMinor(23);
+        recordFile.setHapiVersionPatch(0);
         recordFile.setHash("hash" + id);
         recordFile.setLoadEnd(id);
         recordFile.setLoadStart(id);
@@ -199,6 +201,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         TransactionRecord transactionRecord = TransactionRecord.newBuilder()
                 .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
                 .build();
-        return DomainUtils.recordItem(transaction, transactionRecord);
+        return new RecordItem(transaction, transactionRecord);
     }
 }

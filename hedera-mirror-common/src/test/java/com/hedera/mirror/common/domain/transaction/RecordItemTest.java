@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.exception.ProtobufException;
-import com.hedera.mirror.common.util.DomainUtils;
 
 class RecordItemTest {
 
@@ -96,7 +95,7 @@ class RecordItemTest {
                 .setBody(TRANSACTION_BODY)
                 .setSigMap(SIGNATURE_MAP)
                 .build();
-        RecordItem recordItem = DomainUtils.recordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
         assertRecordItem(transaction, recordItem);
     }
 
@@ -122,7 +121,7 @@ class RecordItemTest {
                 .setBodyBytes(TRANSACTION_BODY.toByteString())
                 .setSigMap(SIGNATURE_MAP)
                 .build();
-        RecordItem recordItem = DomainUtils.recordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
         assertRecordItem(transaction, recordItem);
     }
 
@@ -131,7 +130,7 @@ class RecordItemTest {
         Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
                 .build();
-        RecordItem recordItem = DomainUtils.recordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
         assertRecordItem(transaction, recordItem);
     }
 
@@ -147,7 +146,7 @@ class RecordItemTest {
         Transaction transaction = Transaction.newBuilder()
                 .setBodyBytes(ByteString.copyFrom(transactionBodyBytes))
                 .build();
-        RecordItem recordItem = DomainUtils.recordItem(transaction, TRANSACTION_RECORD);
+        RecordItem recordItem = new RecordItem(transaction, TRANSACTION_RECORD);
 
         assertThat(recordItem.getTransactionType()).isEqualTo(unknownType);
     }

@@ -80,7 +80,7 @@ public abstract class IntegrationTest {
         log.info("Executing: {}", testInfo.getDisplayName());
     }
 
-    public void reset() {
+    protected void reset() {
         cacheManagers.forEach(c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
         mirrorDateRangePropertiesProcessor.clear();
         mirrorProperties.setStartDate(Instant.EPOCH);

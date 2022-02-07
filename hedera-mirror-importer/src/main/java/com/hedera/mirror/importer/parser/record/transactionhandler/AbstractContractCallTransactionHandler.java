@@ -27,13 +27,13 @@ import com.hederahashgraph.api.proto.java.StorageChange;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
@@ -43,8 +43,6 @@ import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor
 abstract class AbstractContractCallTransactionHandler implements TransactionHandler {
-
-    private static final Version HAPI_VERSION_0_23_0 = new Version(0, 23, 0);
 
     protected final EntityIdService entityIdService;
     protected final EntityListener entityListener;
@@ -114,8 +112,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
                     contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
 
                     // If a value of zero is written the valueWritten will be present but the inner value will be
-                    // absent.
-                    // If a value was read and not written this value will not be present.
+                    // absent. If a value was read and not written this value will not be present.
                     if (storageChange.hasValueWritten()) {
                         contractStateChange
                                 .setValueWritten(DomainUtils.toBytes(storageChange.getValueWritten().getValue()));
@@ -126,7 +123,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             }
         }
 
-        // always persist a contract result whether partial or complete
+        // Always persist a contract result whether partial or complete
         entityListener.onContractResult(contractResult);
     }
 
@@ -140,11 +137,16 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
         return contract;
     }
 
+    /**
+     * Persist contract entities in createdContractIDs if it's prior to HAPI 0.23.0. After that the createdContractIDs
+     * list is also externalized as contract create child records so we only need to persist the complete contract
+     * entity from the child record.
+     *
+     * @param recordItem to check
+     * @return Whether the createdContractIDs list should be persisted.
+     */
     private boolean shouldPersistCreatedContractIDs(RecordItem recordItem) {
-        // persist contract entities in createdContractIDsList if it's prior to HAPI 0.23.0. Since HAPI 0.23.0,
-        // the createdContractIDs list is also externalized to the corresponding new contract's own child contractCreate
-        // record with evmAddress, mirrornode only needs to persist the complete contract entity from the child record.
         return recordItem.isSuccessful() && entityProperties.getPersist().isContracts() &&
-                recordItem.getHapiVersion().isLessThan(HAPI_VERSION_0_23_0);
+                recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_23_0);
     }
 }

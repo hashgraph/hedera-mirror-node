@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -35,6 +36,8 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 
+import org.junit.jupiter.api.Test;
+
 class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
     private static final long OBTAINER_NUM = 99L;
@@ -43,7 +46,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
 
     @BeforeEach
     void beforeEach() {
-        when(entityIdService.lookup(contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
+        when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
         when(entityIdService.lookup(obtainerId)).thenReturn(EntityId.of(OBTAINER_NUM, CONTRACT));
     }
 
@@ -95,5 +98,17 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
                         .build()
         );
         return specs;
+    }
+
+    @Test
+    void testGetEntityIdReceipt() {
+        var recordItem = recordItemBuilder.contractDelete().build();
+        ContractID contractIdBody = recordItem.getTransactionBody().getContractDeleteInstance().getContractID();
+        ContractID contractIdReceipt = recordItem.getRecord().getReceipt().getContractID();
+        EntityId expectedEntityId = EntityId.of(contractIdReceipt);
+
+        when(entityIdService.lookup(contractIdReceipt, contractIdBody)).thenReturn(expectedEntityId);
+        EntityId entityId = transactionHandler.getEntity(recordItem);
+        assertThat(entityId).isEqualTo(expectedEntityId);
     }
 }

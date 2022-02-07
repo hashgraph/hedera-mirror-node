@@ -29,6 +29,9 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Message;
 import com.google.protobuf.StringValue;
+
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
+
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -110,6 +113,8 @@ abstract class AbstractTransactionHandlerTest {
     protected final Logger log = LogManager.getLogger(getClass());
 
     protected final ContractID contractId = ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build();
+
+    protected final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
 
     protected TransactionHandler transactionHandler;
 

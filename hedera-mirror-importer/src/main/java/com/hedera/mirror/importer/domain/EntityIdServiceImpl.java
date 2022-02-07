@@ -29,6 +29,8 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.function.Function;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.cache.Cache;
@@ -58,30 +60,58 @@ public class EntityIdServiceImpl implements EntityIdService {
         this.entityRepository = entityRepository;
     }
 
-    /**
-     * Looks up the domain EntityId of the protobuf accountId.
-     *
-     * @param accountId The protobuf account id
-     * @return The domain entityId object of the protobuf account id
-     */
     @Override
     public EntityId lookup(AccountID accountId) {
-        return lookupGeneral(accountId);
+        return doLookup(accountId, () -> load(accountId));
     }
 
-    /**
-     * Looks up the domain EntityId of the protobuf contractID.
-     *
-     * @param contractId The protobuf contract id
-     * @return The domain entityId object of the protobuf contract id
-     */
+    @Override
+    public EntityId lookup(AccountID... accountIds) {
+        return doLookups(accountIds, this::load);
+    }
+
     @Override
     public EntityId lookup(ContractID contractId) {
-        return lookupGeneral(contractId);
+        return doLookup(contractId, () -> load(contractId));
     }
 
     @Override
-    public void store(Aliasable aliasable) {
+    public EntityId lookup(ContractID... contractIds) {
+        return doLookups(contractIds, this::load);
+    }
+
+    private EntityId doLookup(GeneratedMessageV3 entityIdProto, Callable<EntityId> loader) {
+        if (entityIdProto == null || entityIdProto.equals(entityIdProto.getDefaultInstanceForType())) {
+            return EntityId.EMPTY;
+        }
+
+        EntityId entityId = cache.get(entityIdProto.hashCode(), loader);
+
+        if (entityId == null) {
+            log.warn("No match found. It could be that the mirror node has partial data " +
+                    "or the alias doesn't exist: {}", entityIdProto);
+            return EntityId.EMPTY;
+        }
+
+        return entityId;
+    }
+
+    private <T extends GeneratedMessageV3> EntityId doLookups(T[] entityIdProtos, Function<T, EntityId> loader) {
+        for (T entityIdProto : entityIdProtos) {
+            try {
+                EntityId entityId = doLookup(entityIdProto, () -> loader.apply(entityIdProto));
+                if (!EntityId.isEmpty(entityId)) {
+                    return entityId;
+                }
+            } catch (Exception e) {
+                log.warn("Skipping entity ID {}: {}", entityIdProto, e.getMessage());
+            }
+        }
+        return EntityId.EMPTY;
+    }
+
+    @Override
+    public void notify(Aliasable aliasable) {
         if (aliasable == null || (aliasable.getDeleted() != null && aliasable.getDeleted())) {
             return;
         }
@@ -91,103 +121,62 @@ public class EntityIdServiceImpl implements EntityIdService {
             return;
         }
 
-        int hashCode;
         EntityId entityId = aliasable.toEntityId();
         EntityType type = aliasable.getType();
+        GeneratedMessageV3.Builder builder;
+
         switch (type) {
             case ACCOUNT:
-                hashCode = AccountID.newBuilder()
+                builder = AccountID.newBuilder()
                         .setShardNum(entityId.getShardNum())
                         .setRealmNum(entityId.getRealmNum())
-                        .setAlias(alias)
-                        .build()
-                        .hashCode();
+                        .setAlias(alias);
                 break;
             case CONTRACT:
-                hashCode = ContractID.newBuilder()
+                builder = ContractID.newBuilder()
                         .setShardNum(entityId.getShardNum())
                         .setRealmNum(entityId.getRealmNum())
-                        .setEvmAddress(alias)
-                        .build()
-                        .hashCode();
+                        .setEvmAddress(alias);
                 break;
             default:
                 throw new InvalidEntityException(String.format("%s entity can't have alias", type));
         }
 
-        cache.put(hashCode, entityId);
+        cache.put(builder.build().hashCode(), entityId);
     }
 
-    private EntityId lookupGeneral(GeneratedMessageV3 protoEntityId) {
-        if (protoEntityId == null || protoEntityId.equals(protoEntityId.getDefaultInstanceForType())) {
-            return EntityId.EMPTY;
-        }
-
-        int hashCode = protoEntityId.hashCode();
-        EntityId cached = cache.get(hashCode, EntityId.class);
-        if (cached != null) {
-            return cached;
-        }
-
-        EntityId entityId;
-        if (protoEntityId instanceof AccountID) {
-            entityId = lookupAccountId((AccountID) protoEntityId);
-        } else if (protoEntityId instanceof ContractID) {
-            entityId = lookupContractId((ContractID) protoEntityId);
-        } else {
-            String message = String.format("Entity type %s not supported", protoEntityId.getClass().getSimpleName());
-            throw new InvalidEntityException(message);
-        }
-
-        if (!EntityId.isEmpty(entityId)) {
-            cache.put(hashCode, entityId);
-        }
-
-        return entityId;
-    }
-
-    private EntityId lookupAccountId(AccountID accountId) {
-        var accountCase = accountId.getAccountCase();
-        switch (accountCase) {
+    private EntityId load(AccountID accountId) {
+        switch (accountId.getAccountCase()) {
             case ACCOUNTNUM:
                 return EntityId.of(accountId);
             case ALIAS:
                 byte[] alias = DomainUtils.toBytes(accountId.getAlias());
                 return entityRepository.findByAlias(alias)
                         .map(id -> EntityId.of(id, ACCOUNT))
-                        .orElseGet(() -> {
-                            log.warn("No match found for the alias {}, it could be that the mirrornode has partial " +
-                                    "data or the alias doesn't exist in network", () -> DomainUtils.bytesToHex(alias));
-                            return EntityId.EMPTY;
-                        });
+                        .orElse(null);
             default:
-                throw new InvalidDatasetException(String.format("Invalid AccountID AccountCase %s", accountCase));
+                throw new InvalidDatasetException("Invalid AccountID: " + accountId);
         }
     }
 
     @SuppressWarnings("deprecation")
-    private EntityId lookupContractId(ContractID contractId) {
-        var contractCase = contractId.getContractCase();
-        switch (contractCase) {
+    private EntityId load(ContractID contractId) {
+        switch (contractId.getContractCase()) {
             case CONTRACTNUM:
                 return EntityId.of(contractId);
             case EVM_ADDRESS:
-                return lookupByEvmAddress(contractId);
+                return findByEvmAddress(contractId);
             default:
-                throw new InvalidDatasetException(String.format("Invalid ContractID ContractCase %s", contractCase));
+                throw new InvalidDatasetException("Invalid ContractID: " + contractId);
         }
     }
 
-    private EntityId lookupByEvmAddress(ContractID contractId) {
+    private EntityId findByEvmAddress(ContractID contractId) {
         byte[] evmAddress = DomainUtils.toBytes(contractId.getEvmAddress());
         return Optional.ofNullable(DomainUtils.fromEvmAddress(evmAddress))
-                // verify shard and realm match when assuming evmAddress is in the 'shard.realm.num' form
+                // Verify shard and realm match when assuming evmAddress is in the 'shard.realm.num' form
                 .filter(e -> e.getShardNum() == contractId.getShardNum() && e.getRealmNum() == contractId.getRealmNum())
                 .or(() -> contractRepository.findByEvmAddress(evmAddress).map(id -> EntityId.of(id, CONTRACT)))
-                .orElseGet(() -> {
-                    log.warn("No match found for the evm address {}, it could be that the mirrornode has partial " +
-                            "data or the address doesn't exist in network", () -> DomainUtils.bytesToHex(evmAddress));
-                    return EntityId.EMPTY;
-                });
+                .orElse(null);
     }
 }

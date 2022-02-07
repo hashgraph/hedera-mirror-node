@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -39,9 +40,20 @@ class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHand
         this.entityIdService = entityIdService;
     }
 
+    /**
+     * First attempts to extract the contract ID from the receipt, which was populated in HAPI 0.23 for contract
+     * deletes. Otherwise, falls back to checking the transaction body which may contain an EVM address. In case of
+     * partial mirror nodes, it's possible the database does not have the mapping for that EVM address in the body,
+     * hence the need for prioritizing the receipt.
+     *
+     * @param recordItem to check
+     * @return The contract ID associated with this contract delete
+     */
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return entityIdService.lookup(recordItem.getTransactionBody().getContractDeleteInstance().getContractID());
+        ContractID contractIdBody = recordItem.getTransactionBody().getContractDeleteInstance().getContractID();
+        ContractID contractIdReceipt = recordItem.getRecord().getReceipt().getContractID();
+        return entityIdService.lookup(contractIdReceipt, contractIdBody);
     }
 
     @Override

@@ -98,8 +98,8 @@ public class RecordItem implements StreamItem {
         transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
         transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());
         this.record = record;
-        transactionBytes = null;
-        recordBytes = null;
+        transactionBytes = transaction.toByteArray();
+        recordBytes = record.toByteArray();
     }
 
     // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET

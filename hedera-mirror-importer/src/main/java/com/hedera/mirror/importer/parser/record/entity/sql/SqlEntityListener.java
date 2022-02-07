@@ -263,7 +263,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onContract(Contract contract) {
-        entityIdService.store(contract);
+        entityIdService.notify(contract);
         Contract merged = contractState.merge(contract.getId(), contract, this::mergeContract);
         contracts.add(merged);
     }

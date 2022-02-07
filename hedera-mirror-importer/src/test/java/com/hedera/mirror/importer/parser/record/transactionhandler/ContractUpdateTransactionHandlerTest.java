@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -31,11 +32,13 @@ import org.junit.jupiter.api.BeforeEach;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 
+import org.junit.jupiter.api.Test;
+
 class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @BeforeEach
     void beforeEach() {
-        when(entityIdService.lookup(contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
+        when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
     }
 
     @Override
@@ -53,5 +56,17 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Override
     protected EntityType getExpectedEntityIdType() {
         return EntityType.CONTRACT;
+    }
+
+    @Test
+    void testGetEntityIdReceipt() {
+        var recordItem = recordItemBuilder.contractUpdate().build();
+        ContractID contractIdBody = recordItem.getTransactionBody().getContractUpdateInstance().getContractID();
+        ContractID contractIdReceipt = recordItem.getRecord().getReceipt().getContractID();
+        EntityId expectedEntityId = EntityId.of(contractIdReceipt);
+
+        when(entityIdService.lookup(contractIdReceipt, contractIdBody)).thenReturn(expectedEntityId);
+        EntityId entityId = transactionHandler.getEntity(recordItem);
+        assertThat(entityId).isEqualTo(expectedEntityId);
     }
 }

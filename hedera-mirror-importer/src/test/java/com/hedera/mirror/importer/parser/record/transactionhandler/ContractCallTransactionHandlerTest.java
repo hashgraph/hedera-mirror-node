@@ -21,11 +21,14 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -37,7 +40,7 @@ class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
     @BeforeEach
     void beforeEach() {
-        when(entityIdService.lookup(contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
+        when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
     }
 
     @Override
@@ -54,5 +57,17 @@ class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @Override
     protected EntityType getExpectedEntityIdType() {
         return EntityType.CONTRACT;
+    }
+
+    @Test
+    void testGetEntityIdReceipt() {
+        var recordItem = recordItemBuilder.contractCall().build();
+        ContractID contractIdBody = recordItem.getTransactionBody().getContractCall().getContractID();
+        ContractID contractIdReceipt = recordItem.getRecord().getReceipt().getContractID();
+        EntityId expectedEntityId = EntityId.of(contractIdReceipt);
+
+        when(entityIdService.lookup(contractIdReceipt, contractIdBody)).thenReturn(expectedEntityId);
+        EntityId entityId = transactionHandler.getEntity(recordItem);
+        assertThat(entityId).isEqualTo(expectedEntityId);
     }
 }

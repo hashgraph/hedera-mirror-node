@@ -28,8 +28,6 @@ import com.google.protobuf.UnsafeByteOperations;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
@@ -40,17 +38,15 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 
 @Log4j2
 @UtilityClass
 public class DomainUtils {
 
+    private static final int EVM_ADDRESS_LENGTH = 20;
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
     private static final char NULL_CHARACTER = (char) 0;
     private static final char NULL_REPLACEMENT = '�'; // Standard replacement character 0xFFFD
@@ -165,15 +161,6 @@ public class DomainUtils {
         return convertToNanosMax(instant.getEpochSecond(), instant.getNano());
     }
 
-    public static RecordItem recordItem(Transaction transaction, TransactionRecord transactionRecord) {
-        return recordItem(RecordFile.HAPI_VERSION_NOT_SET, transaction, transactionRecord);
-    }
-
-    public static RecordItem recordItem(Version hapiVersion, Transaction transaction,
-                                        TransactionRecord transactionRecord) {
-        return new RecordItem(hapiVersion, transaction.toByteArray(), transactionRecord.toByteArray());
-    }
-
     /**
      * Convert Timestamp to a Long type timeStampInNanos
      */
@@ -243,15 +230,17 @@ public class DomainUtils {
         return UnsafeByteOperations.unsafeWrap(bytes);
     }
 
+    // The 'shard.realm.num' form evm address has 4 bytes for shard, and 8 bytes each for realm and num.
     public static EntityId fromEvmAddress(byte[] evmAddress) {
         try {
-            // the 'shard.realm.num' form evm address has 4 bytes for shard, and 8 bytes each for realm and num.
-            ByteBuffer buffer = ByteBuffer.wrap(evmAddress);
-            return EntityId.of(buffer.getInt(), buffer.getLong(), buffer.getLong(), CONTRACT);
+            if (evmAddress != null && evmAddress.length == EVM_ADDRESS_LENGTH) {
+                ByteBuffer buffer = ByteBuffer.wrap(evmAddress);
+                return EntityId.of(buffer.getInt(), buffer.getLong(), buffer.getLong(), CONTRACT);
+            }
         } catch (InvalidEntityException ex) {
             log.debug("Failed to parse shard.realm.num form evm address into EntityId", ex);
-            return null;
         }
+        return null;
     }
 
     public static byte[] toEvmAddress(EntityId contractId) {
@@ -259,7 +248,7 @@ public class DomainUtils {
             throw new InvalidEntityException("Empty contractId");
         }
 
-        byte[] evmAddress = new byte[20];
+        byte[] evmAddress = new byte[EVM_ADDRESS_LENGTH];
         ByteBuffer buffer = ByteBuffer.wrap(evmAddress);
         buffer.putInt(contractId.getShardNum().intValue());
         buffer.putLong(contractId.getRealmNum());

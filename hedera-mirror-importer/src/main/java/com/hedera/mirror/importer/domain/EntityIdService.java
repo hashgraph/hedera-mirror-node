@@ -26,11 +26,50 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hedera.mirror.common.domain.Aliasable;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
+/**
+ * This service is used to centralize the conversion logic from protobuf-based Hedera entities to its internal EntityId
+ * representation. Lookup methods encapsulate caching and alias resolution.
+ */
 public interface EntityIdService {
 
+    /**
+     * Converts a protobuf AccountID to an EntityID, resolving any aliases that may be present.
+     *
+     * @param accountId The protobuf account ID
+     * @return The converted EntityId or EntityId.EMPTY if not resolved
+     */
     EntityId lookup(AccountID accountId);
 
+    /**
+     * Specialized form of lookup(AccountID) that returns the first account ID parameter that resolves to a non-empty
+     * EntityId.
+     *
+     * @param accountIds The protobuf account IDs
+     * @return The converted EntityId or EntityId.EMPTY if none can be resolved
+     */
+    EntityId lookup(AccountID... accountIds);
+
+    /**
+     * Converts a protobuf ContractID to an EntityID, resolving any EVM addresses that may be present.
+     *
+     * @param contractId The protobuf contract ID
+     * @return The converted EntityId or EntityId.EMPTY if not resolved
+     */
     EntityId lookup(ContractID contractId);
 
-    void store(Aliasable aliasable);
+    /**
+     * Specialized form of lookup(ContractID) that returns the first contract ID parameter that resolves to a non-empty
+     * EntityId.
+     *
+     * @param contractIds The protobuf contract IDs
+     * @return The converted EntityId or EntityId.EMPTY if none can be resolved
+     */
+    EntityId lookup(ContractID... contractIds);
+
+    /**
+     * Used to notify the system of new aliases for potential use in future lookups.
+     *
+     * @param aliasable Represents a mapping of alias to entity ID.
+     */
+    void notify(Aliasable aliasable);
 }

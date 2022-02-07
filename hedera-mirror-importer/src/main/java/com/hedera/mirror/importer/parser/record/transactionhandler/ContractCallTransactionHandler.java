@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-
 import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
 
@@ -44,26 +42,20 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
         super(entityIdService, entityListener, entityProperties);
     }
 
+    /**
+     * First attempts to extract the contract ID from the receipt, which was populated in HAPI 0.23 for contract calls.
+     * Otherwise, falls back to checking the transaction body which may contain an EVM address. In case of partial
+     * mirror nodes, it's possible the database does not have the mapping for that EVM address in the body, hence the
+     * need for prioritizing the receipt.
+     *
+     * @param recordItem to check
+     * @return The contract ID associated with this contract call
+     */
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        ContractID contractId = recordItem.getTransactionBody().getContractCall().getContractID();
-        EntityId entityId = entityIdService.lookup(contractId);
-        // falls back to use the contractId in ContractCallResult, this should only happen for partial mirror node
-        // where the create2 evm address of the contractId is not stored in db
-        if (EntityId.isEmpty(entityId) && recordItem.getRecord().hasContractCallResult()) {
-            byte[] evmAddress = DomainUtils.toBytes(contractId.getEvmAddress());
-            contractId = recordItem.getRecord().getContractCallResult().getContractID();
-            Contract contract = Contract.builder()
-                    .shard(contractId.getShardNum())
-                    .realm(contractId.getRealmNum())
-                    .num(contractId.getContractNum())
-                    .evmAddress(evmAddress)
-                    .type(CONTRACT)
-                    .build();
-            entityId = contract.toEntityId();
-            entityIdService.store(contract);
-        }
-        return entityId;
+        ContractID contractIdBody = recordItem.getTransactionBody().getContractCall().getContractID();
+        ContractID contractIdReceipt = recordItem.getRecord().getReceipt().getContractID();
+        return entityIdService.lookup(contractIdReceipt, contractIdBody);
     }
 
     @Override

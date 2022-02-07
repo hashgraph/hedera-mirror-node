@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.domain;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER_ALIAS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -33,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -41,7 +39,6 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.ContractRepository;
 
 class EntityIdServiceImplTest extends IntegrationTest {
@@ -52,9 +49,6 @@ class EntityIdServiceImplTest extends IntegrationTest {
             0, 0, 0, 0, 0, 0, 0, 0, // realm
             0, 0, 0, 0, 0, 0, 0, 100, // num
     };
-
-    @Resource(name = CACHE_MANAGER_ALIAS)
-    private CacheManager cacheManager;
 
     @Resource
     private ContractRepository contractRepository;
@@ -79,6 +73,9 @@ class EntityIdServiceImplTest extends IntegrationTest {
         contractRepository.save(contract);
 
         // cache hit
+        assertThat(entityIdService.lookup(contractId)).isEqualTo(expected);
+
+        contractRepository.deleteById(contract.getId());
         assertThat(entityIdService.lookup(contractId)).isEqualTo(expected);
 
         // cache miss
@@ -123,7 +120,30 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void lookupAccountThrows() {
         AccountID accountId = AccountID.newBuilder().setRealmNum(1).build();
-        assertThrows(InvalidDatasetException.class, () -> entityIdService.lookup(accountId));
+        assertThrows(Cache.ValueRetrievalException.class, () -> entityIdService.lookup(accountId));
+    }
+
+    @Test
+    void lookupAccounts() {
+        AccountID accountId = AccountID.newBuilder().setAccountNum(100).build();
+        AccountID accountIdInvalid = AccountID.newBuilder().setRealmNum(1).build();
+        Entity accountDeleted = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+
+        EntityId entityId = entityIdService.lookup(null,
+                AccountID.getDefaultInstance(),
+                getProtoAccountId(accountDeleted),
+                accountIdInvalid,
+                accountId);
+
+        assertThat(entityId).isEqualTo(EntityId.of(accountId));
+    }
+
+    @Test
+    void lookupAccountsReturnsFirst() {
+        AccountID accountId1 = AccountID.newBuilder().setAccountNum(100).build();
+        AccountID accountId2 = AccountID.newBuilder().setAccountNum(101).build();
+        EntityId entityId = entityIdService.lookup(accountId1, accountId2);
+        assertThat(entityId).isEqualTo(EntityId.of(accountId1));
     }
 
     @Test
@@ -179,21 +199,44 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void lookupContractThrows() {
         ContractID contractId = ContractID.newBuilder().setRealmNum(1).build();
-        assertThrows(InvalidDatasetException.class, () -> entityIdService.lookup(contractId));
+        assertThrows(Cache.ValueRetrievalException.class, () -> entityIdService.lookup(contractId));
+    }
+
+    @Test
+    void lookupContracts() {
+        ContractID contractId = ContractID.newBuilder().setContractNum(100).build();
+        ContractID contractIdInvalid = ContractID.newBuilder().setRealmNum(1).build();
+        Contract contractDeleted = domainBuilder.contract().customize(e -> e.deleted(true)).persist();
+
+        EntityId entityId = entityIdService.lookup(null,
+                ContractID.getDefaultInstance(),
+                getProtoContractId(contractDeleted),
+                contractIdInvalid,
+                contractId);
+
+        assertThat(entityId).isEqualTo(EntityId.of(contractId));
+    }
+
+    @Test
+    void lookupContractsReturnsFirst() {
+        ContractID contractId1 = ContractID.newBuilder().setContractNum(100).build();
+        ContractID contractId2 = ContractID.newBuilder().setContractNum(101).build();
+        EntityId entityId = entityIdService.lookup(contractId1, contractId2);
+        assertThat(entityId).isEqualTo(EntityId.of(contractId1));
     }
 
     @ParameterizedTest
     @CsvSource(value = {"false", ","})
     void storeAccount(Boolean deleted) {
         Entity account = domainBuilder.entity().customize(e -> e.deleted(deleted)).get();
-        entityIdService.store(account);
+        entityIdService.notify(account);
         assertThat(entityIdService.lookup(getProtoAccountId(account))).isEqualTo(account.toEntityId());
     }
 
     @Test
     void storeAccountDeleted() {
         Entity account = domainBuilder.entity().customize(e -> e.deleted(true)).get();
-        entityIdService.store(account);
+        entityIdService.notify(account);
         assertThat(entityIdService.lookup(getProtoAccountId(account))).isEqualTo(EntityId.EMPTY);
     }
 
@@ -201,20 +244,20 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @CsvSource(value = {"false", ","})
     void storeContract(Boolean deleted) {
         Contract contract = domainBuilder.contract().customize(c -> c.deleted(deleted)).get();
-        entityIdService.store(contract);
+        entityIdService.notify(contract);
         assertThat(entityIdService.lookup(getProtoContractId(contract))).isEqualTo(contract.toEntityId());
     }
 
     @Test
     void storeContractDeleted() {
         Contract contract = domainBuilder.contract().customize(c -> c.deleted(true)).get();
-        entityIdService.store(contract);
+        entityIdService.notify(contract);
         assertThat(entityIdService.lookup(getProtoContractId(contract))).isEqualTo(EntityId.EMPTY);
     }
 
     @Test
     void storeNull() {
-        assertDoesNotThrow(() -> entityIdService.store(null));
+        assertDoesNotThrow(() -> entityIdService.notify(null));
     }
 
     private AccountID getProtoAccountId(Entity account) {
