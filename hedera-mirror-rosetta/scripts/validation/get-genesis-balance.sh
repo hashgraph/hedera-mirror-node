@@ -31,6 +31,7 @@ applicable_accounts_query=$(cat <<EOF
 with recent_crypto_accounts as (
  select distinct(entity_id)
  from crypto_transfer where consensus_timestamp > :genesis_timestamp and consensus_timestamp <= :genesis_timestamp + :transfer_window_ns
+ order by entity_id asc
  limit :account_limit
 ),
 genesis_balance as (
