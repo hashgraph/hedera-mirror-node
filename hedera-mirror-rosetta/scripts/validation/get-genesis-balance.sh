@@ -5,6 +5,7 @@ set -euo pipefail
 network=${1:-demo}
 account_limit=${2:-20}
 starting_timestamp=${3:-0}
+transfer_window_ns=${4:-604800000000000}
 
 currency=$(cat <<EOF
 {
@@ -26,11 +27,10 @@ limit 1
 EOF
 )
 
-one_week_ns=604800000000000
 applicable_accounts_query=$(cat <<EOF
 with recent_crypto_accounts as (
  select distinct(entity_id)
- from crypto_transfer where consensus_timestamp > :genesis_timestamp and consensus_timestamp <= :genesis_timestamp + :one_week_ns
+ from crypto_transfer where consensus_timestamp > :genesis_timestamp and consensus_timestamp <= :genesis_timestamp + :transfer_window_ns
  limit :account_limit
 ),
 genesis_balance as (
@@ -99,7 +99,7 @@ do
 
   if [[ -n "$genesis_timestamp" ]]; then
     # get genesis hbar balances from genesis account balance file
-    account_balances=$(echo "$genesis_hbar_balance_query" | $psql_cmd -v genesis_timestamp="$genesis_timestamp" -v one_week_ns="$one_week_ns" -v account_limit="$account_limit")
+    account_balances=$(echo "$genesis_hbar_balance_query" | $psql_cmd -v genesis_timestamp="$genesis_timestamp" -v transfer_window_ns="$transfer_window_ns" -v account_limit="$account_limit")
     echo "account balances - $(echo "$account_balances" | jq . )"
     break
   fi
