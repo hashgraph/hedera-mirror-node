@@ -20,24 +20,40 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
 
-    ContractDeleteTransactionHandler(EntityListener entityListener) {
+    private final EntityIdService entityIdService;
+
+    ContractDeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
         super(entityListener, TransactionType.CONTRACTDELETEINSTANCE);
+        this.entityIdService = entityIdService;
     }
 
+    /**
+     * First attempts to extract the contract ID from the receipt, which was populated in HAPI 0.23 for contract
+     * deletes. Otherwise, falls back to checking the transaction body which may contain an EVM address. In case of
+     * partial mirror nodes, it's possible the database does not have the mapping for that EVM address in the body,
+     * hence the need for prioritizing the receipt.
+     *
+     * @param recordItem to check
+     * @return The contract ID associated with this contract delete
+     */
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getContractDeleteInstance().getContractID());
+        ContractID contractIdBody = recordItem.getTransactionBody().getContractDeleteInstance().getContractID();
+        ContractID contractIdReceipt = recordItem.getRecord().getReceipt().getContractID();
+        return entityIdService.lookup(contractIdReceipt, contractIdBody);
     }
 
     @Override
@@ -48,7 +64,7 @@ class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHand
         if (transactionBody.hasTransferAccountID()) {
             obtainerId = EntityId.of(transactionBody.getTransferAccountID());
         } else if (transactionBody.hasTransferContractID()) {
-            obtainerId = EntityId.of(transactionBody.getTransferContractID());
+            obtainerId = entityIdService.lookup(transactionBody.getTransferContractID());
         }
 
         contract.setObtainerId(obtainerId);

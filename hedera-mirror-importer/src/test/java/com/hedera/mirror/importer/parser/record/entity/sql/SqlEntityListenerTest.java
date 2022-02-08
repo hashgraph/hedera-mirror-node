@@ -178,7 +178,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onContract() {
         // given
         Contract contract1 = domainBuilder.contract().get();
-        Contract contract2 = domainBuilder.contract().get();
+        Contract contract2 = domainBuilder.contract().customize(c -> c.evmAddress(null)).get();
 
         // when
         sqlEntityListener.onContract(contract1);
@@ -199,6 +199,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         Contract contractUpdate = contractCreate.toEntityId().toEntity();
         contractUpdate.setAutoRenewPeriod(30L);
+        contractUpdate.setEvmAddress(contractCreate.getEvmAddress());
         contractUpdate.setExpirationTimestamp(500L);
         contractUpdate.setKey(domainBuilder.key());
         contractUpdate.setMemo("updated");
@@ -207,6 +208,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         Contract contractDelete = contractCreate.toEntityId().toEntity();
         contractDelete.setDeleted(true);
+        contractDelete.setEvmAddress(contractCreate.getEvmAddress());
         contractDelete.setTimestampLower(contractCreate.getTimestampLower() + 2);
         contractDelete.setObtainerId(EntityId.of(999L, EntityType.CONTRACT));
 

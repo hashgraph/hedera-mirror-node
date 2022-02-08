@@ -37,6 +37,7 @@ alter table if exists contract
 alter table if exists contract
     add constraint contract__type_check
         check (type = 'CONTRACT');
+create index if not exists contract__evm_address on contract (evm_address) where evm_address is not null;
 create index if not exists contract__public_key on contract (public_key) where public_key is not null;
 
 -- contract_history

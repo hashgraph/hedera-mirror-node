@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -29,19 +30,32 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
 class ContractCallTransactionHandler extends AbstractContractCallTransactionHandler {
 
-    ContractCallTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(entityListener, entityProperties);
+    ContractCallTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
+                                   EntityProperties entityProperties) {
+        super(entityIdService, entityListener, entityProperties);
     }
 
+    /**
+     * First attempts to extract the contract ID from the receipt, which was populated in HAPI 0.23 for contract calls.
+     * Otherwise, falls back to checking the transaction body which may contain an EVM address. In case of partial
+     * mirror nodes, it's possible the database does not have the mapping for that EVM address in the body, hence the
+     * need for prioritizing the receipt.
+     *
+     * @param recordItem to check
+     * @return The contract ID associated with this contract call
+     */
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getContractCall().getContractID());
+        ContractID contractIdBody = recordItem.getTransactionBody().getContractCall().getContractID();
+        ContractID contractIdReceipt = recordItem.getRecord().getReceipt().getContractID();
+        return entityIdService.lookup(contractIdReceipt, contractIdBody);
     }
 
     @Override

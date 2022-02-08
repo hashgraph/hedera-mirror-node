@@ -30,6 +30,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Message;
 import com.google.protobuf.StringValue;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -73,6 +74,7 @@ import com.hedera.mirror.common.domain.entity.EntityOperation;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -102,7 +104,12 @@ abstract class AbstractTransactionHandlerTest {
     protected final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
     protected final Logger log = LogManager.getLogger(getClass());
 
+    protected final ContractID contractId = ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build();
+
     protected TransactionHandler transactionHandler;
+
+    @Mock(lenient = true)
+    protected EntityIdService entityIdService;
 
     @Mock
     protected EntityListener entityListener;
@@ -139,7 +146,7 @@ abstract class AbstractTransactionHandlerTest {
 
     protected TransactionRecord.Builder getDefaultTransactionRecord() {
         TransactionRecord.Builder builder = TransactionRecord.newBuilder();
-        if (transactionHandler instanceof AbstractEntityCrudTransactionHandler) {
+        if (isCrudTransactionHandler(transactionHandler)) {
             Timestamp consensusTimestamp = transactionHandler.getType().getEntityOperation() == EntityOperation.CREATE
                     ? CREATED_TIMESTAMP : MODIFIED_TIMESTAMP;
             builder.setConsensusTimestamp(consensusTimestamp);
@@ -174,7 +181,7 @@ abstract class AbstractTransactionHandlerTest {
 
     @TestFactory
     Stream<DynamicTest> testUpdateEntity() {
-        if (!(transactionHandler instanceof AbstractEntityCrudTransactionHandler)) {
+        if (!isCrudTransactionHandler(transactionHandler)) {
             // empty test if the handler does not update entity
             return Stream.empty();
         }
@@ -244,7 +251,7 @@ abstract class AbstractTransactionHandlerTest {
     }
 
     protected AbstractEntity getEntity() {
-        EntityId entityId = EntityId.of(0L, 0L, 1L, getExpectedEntityIdType());
+        EntityId entityId = EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, getExpectedEntityIdType());
         return entityId.toEntity();
     }
 
@@ -531,6 +538,11 @@ abstract class AbstractTransactionHandlerTest {
                 .build();
 
         return new RecordItem(transaction, record);
+    }
+
+    private boolean isCrudTransactionHandler(TransactionHandler transactionHandler) {
+        return transactionHandler instanceof AbstractEntityCrudTransactionHandler ||
+                transactionHandler instanceof ContractCreateTransactionHandler;
     }
 
     @Builder

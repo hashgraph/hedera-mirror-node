@@ -65,13 +65,12 @@ import org.springframework.messaging.MessageChannel;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
-import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.domain.PubSubMessage;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
-import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategyImpl;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -84,10 +83,7 @@ class PubSubRecordItemListenerTest {
             .setConsensusTimestamp(Utility.instantToTimestamp(Instant.ofEpochSecond(0L, CONSENSUS_TIMESTAMP)))
             .setReceipt(TransactionReceipt.newBuilder().setStatus(ResponseCodeEnum.SUCCESS).build())
             .build();
-    private static final byte[] DEFAULT_RECORD_BYTES = DEFAULT_RECORD.toByteArray();
     private static final FileID ADDRESS_BOOK_FILE_ID = FileID.newBuilder().setFileNum(102).build();
-    private static final NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy =
-            new NonFeeTransferExtractionStrategyImpl();
 
     private static final NodeAddressBook UPDATED = addressBook(3);
 
@@ -99,6 +95,9 @@ class PubSubRecordItemListenerTest {
 
     @Mock
     private FileDataRepository fileDataRepository;
+
+    @Mock
+    private NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy;
 
     @Mock
     private TransactionHandler transactionHandler;
@@ -162,11 +161,32 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
         // when
         doReturn(topicIdEntity).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+        pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD));
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
         assertThat(pubSubMessage.getEntity()).isEqualTo(topicIdEntity);
+        assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
+    }
+
+    @Test
+    void testPubSubMessageNullEntityId() throws Exception {
+        // given
+        byte[] message = new byte[] {'a', 'b', 'c'};
+        TopicID topicID = TopicID.newBuilder().setTopicNum(10L).build();
+        EntityId topicIdEntity = EntityId.of(topicID);
+        ConsensusSubmitMessageTransactionBody submitMessage = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .setMessage(ByteString.copyFrom(message))
+                .setTopicID(topicID)
+                .build();
+        Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
+        // when
+        doReturn(null).when(transactionHandler).getEntity(any());
+        pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD));
+
+        // then
+        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
+        assertThat(pubSubMessage.getEntity()).isEqualTo(null);
         assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
     }
 
@@ -183,9 +203,12 @@ class PubSubRecordItemListenerTest {
                         .build())
                 .build();
         Transaction transaction = buildTransaction(builder -> builder.setCryptoTransfer(cryptoTransfer));
+        var recordItem = new RecordItem(transaction, DEFAULT_RECORD);
+        when(nonFeeTransferExtractionStrategy.extractNonFeeTransfers(recordItem.getTransactionBody(),
+                recordItem.getRecord())).thenReturn(cryptoTransfer.getTransfers().getAccountAmountsList());
 
         // when
-        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+        pubSubRecordItemListener.onItem(recordItem);
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
@@ -206,8 +229,7 @@ class PubSubRecordItemListenerTest {
 
         // then
         assertThatThrownBy(
-                () -> pubSubRecordItemListener.onItem(
-                        new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES)))
+                () -> pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD)))
                 .isInstanceOf(ParserException.class)
                 .hasMessageContaining("Error sending transaction to pubsub");
         verify(messageChannel, times(1)).send(any());
@@ -227,7 +249,7 @@ class PubSubRecordItemListenerTest {
                 .thenThrow(MessageTimeoutException.class)
                 .thenThrow(MessageTimeoutException.class)
                 .thenReturn(true);
-        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+        pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD));
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 3);
@@ -248,8 +270,8 @@ class PubSubRecordItemListenerTest {
 
         // when
         EntityId entityId = EntityId.of(ADDRESS_BOOK_FILE_ID);
-        doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+        doReturn(entityId).when(transactionHandler).getEntity(any());
+        pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD));
 
         // then
         FileData fileData = new FileData(100L, fileContents, entityId, TransactionType.FILEAPPEND
@@ -268,9 +290,8 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setFileUpdate(fileUpdate));
 
         // when
-        EntityId entityId = EntityId.of(ADDRESS_BOOK_FILE_ID);
         doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction.toByteArray(), DEFAULT_RECORD_BYTES));
+        pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD));
 
         // then
         FileData fileData = new FileData(100L, fileContents, EntityId

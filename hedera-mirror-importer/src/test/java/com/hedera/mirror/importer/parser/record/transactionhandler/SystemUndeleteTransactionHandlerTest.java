@@ -20,24 +20,33 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityType;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static org.mockito.Mockito.when;
+
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 
 class SystemUndeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
-    public SystemUndeleteTransactionHandlerTest() {
+    SystemUndeleteTransactionHandlerTest() {
         super(false);
+    }
+
+    @BeforeEach
+    void beforeEach() {
+        when(entityIdService.lookup(contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
     }
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new SystemUndeleteTransactionHandler(entityListener);
+        return new SystemUndeleteTransactionHandler(entityIdService, entityListener);
     }
 
     @Override

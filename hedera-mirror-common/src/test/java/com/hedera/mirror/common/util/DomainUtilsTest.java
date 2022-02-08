@@ -39,6 +39,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
+
 class DomainUtilsTest {
 
     private static final String KEY = "c83755a935e442f18f12fbb9ecb5bc416417059ddb3c15aac32c1702e7da6734";
@@ -247,6 +251,53 @@ class DomainUtilsTest {
     }
 
     @Test
+    void fromBytes() {
+        byte[] bytes = RandomUtils.nextBytes(16);
+
+        assertThat(DomainUtils.fromBytes(null)).isNull();
+        assertThat(DomainUtils.fromBytes(new byte[0])).isEqualTo(ByteString.EMPTY);
+        assertThat(DomainUtils.fromBytes(bytes).toByteArray()).isEqualTo(bytes);
+    }
+
+    @Test
+    void fromEvmAddress() {
+        long shard = 1;
+        long realm = 2;
+        long num = 255;
+        byte[] evmAddress = new byte[20];
+        evmAddress[3] = (byte) shard;
+        evmAddress[11] = (byte) realm;
+        evmAddress[19] = (byte) num;
+        EntityId expected = EntityId.of(shard, realm, num, EntityType.CONTRACT);
+        assertThat(DomainUtils.fromEvmAddress(evmAddress)).isEqualTo(expected);
+
+        evmAddress[0] = (byte) 255;
+        evmAddress[4] = (byte) 255;
+        evmAddress[12] = (byte) 255;
+        // can't be encoded to long
+        assertThat(DomainUtils.fromEvmAddress(evmAddress)).isNull();
+    }
+
+    @Test
+    void fromEvmAddressIncorrectSize() {
+        assertNull(DomainUtils.fromEvmAddress(null));
+        assertNull(DomainUtils.fromEvmAddress(new byte[10]));
+    }
+
+    @Test
+    void toEvmAddress() {
+        EntityId contractId = EntityId.of(1, 2, 255, EntityType.CONTRACT);
+        String expected = "00000001000000000000000200000000000000FF";
+        assertThat(DomainUtils.toEvmAddress(contractId)).asHexString().isEqualTo(expected);
+    }
+
+    @Test
+    void toEvmAddressThrows() {
+        assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress(null));
+        assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress(EntityId.EMPTY));
+    }
+
+    @Test
     void bytesToHex() {
         assertThat(DomainUtils.bytesToHex(new byte[] {1})).isEqualTo("01");
         assertThat(DomainUtils.bytesToHex(new byte[] {127})).isEqualTo("7f");
@@ -257,4 +308,3 @@ class DomainUtilsTest {
         assertThat(DomainUtils.bytesToHex(null)).isNull();
     }
 }
-

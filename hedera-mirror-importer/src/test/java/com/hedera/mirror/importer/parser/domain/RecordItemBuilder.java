@@ -28,14 +28,17 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ContractStateChange;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
@@ -69,7 +72,9 @@ import javax.inject.Named;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
+import org.springframework.data.util.Version;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.util.Utility;
@@ -91,7 +96,7 @@ public class RecordItemBuilder {
     private final SecureRandom random = new SecureRandom();
 
     public Builder<ContractCallTransactionBody.Builder> contractCall() {
-        ContractID contractId = contractId();
+        var contractId = contractId();
         ContractCallTransactionBody.Builder transactionBody = ContractCallTransactionBody.newBuilder()
                 .setAmount(5_000L)
                 .setContractID(contractId)
@@ -99,11 +104,15 @@ public class RecordItemBuilder {
                 .setGas(10_000L);
 
         return new Builder<>(TransactionType.CONTRACTCALL, transactionBody)
+                .receipt(r -> r.setContractID(contractId))
                 .record(r -> r.setContractCallResult(contractFunctionResult(contractId)));
     }
 
     public Builder<ContractCreateTransactionBody.Builder> contractCreate() {
-        ContractID contractId = contractId();
+        return contractCreate(contractId());
+    }
+
+    public Builder<ContractCreateTransactionBody.Builder> contractCreate(ContractID contractId) {
         ContractCreateTransactionBody.Builder transactionBody = ContractCreateTransactionBody.newBuilder()
                 .setAdminKey(key())
                 .setAutoRenewPeriod(duration(30))
@@ -119,15 +128,25 @@ public class RecordItemBuilder {
 
         return new Builder<>(TransactionType.CONTRACTCREATEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId))
-                .record(r -> r.setContractCreateResult(contractFunctionResult(contractId)));
+                .record(r -> r.setContractCreateResult(contractFunctionResult(contractId)
+                        .addCreatedContractIDs(contractId)));
     }
 
-    private ContractFunctionResult.Builder contractFunctionResult(ContractID contractId) {
+    public Builder<ContractDeleteTransactionBody.Builder> contractDelete() {
+        var contractId = contractId();
+        ContractDeleteTransactionBody.Builder transactionBody = ContractDeleteTransactionBody.newBuilder()
+                .setContractID(contractId)
+                .setTransferAccountID(accountId());
+
+        return new Builder<>(TransactionType.CONTRACTDELETEINSTANCE, transactionBody)
+                .receipt(r -> r.setContractID(contractId));
+    }
+
+    public ContractFunctionResult.Builder contractFunctionResult(ContractID contractId) {
         return ContractFunctionResult.newBuilder()
                 .setBloom(bytes(256))
                 .setContractCallResult(bytes(16))
                 .setContractID(contractId)
-                .addCreatedContractIDs(contractId)
                 .addCreatedContractIDs(contractId())
                 .setErrorMessage(text(10))
                 .setGasUsed(1000L)
@@ -154,6 +173,20 @@ public class RecordItemBuilder {
                         .addStorageChanges(storageChange())
                         .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)))
                         .build());
+    }
+
+    public Builder<ContractUpdateTransactionBody.Builder> contractUpdate() {
+        var contractId = contractId();
+        ContractUpdateTransactionBody.Builder transactionBody = ContractUpdateTransactionBody.newBuilder()
+                .setAdminKey(key())
+                .setAutoRenewPeriod(duration(30))
+                .setContractID(contractId)
+                .setExpirationTime(timestamp())
+                .setMemoWrapper(StringValue.of(text(16)))
+                .setProxyAccountID(accountId());
+
+        return new Builder<>(TransactionType.CONTRACTUPDATEINSTANCE, transactionBody)
+                .receipt(r -> r.setContractID(contractId));
     }
 
     public Builder<CryptoAdjustAllowanceTransactionBody.Builder> cryptoAdjustAllowance() {
@@ -290,6 +323,7 @@ public class RecordItemBuilder {
         private final TransactionBody.Builder transactionBodyWrapper;
         private final TransactionRecord.Builder transactionRecord;
         private final AccountID payerAccountId;
+        private Version hapiVersion = RecordFile.HAPI_VERSION_NOT_SET;
 
         private Builder(TransactionType type, T transactionBody) {
             this.payerAccountId = accountId();
@@ -300,8 +334,17 @@ public class RecordItemBuilder {
         }
 
         public RecordItem build() {
+            var field = transactionBodyWrapper.getDescriptorForType().findFieldByNumber(type.getProtoId());
+            transactionBodyWrapper.setField(field, this.transactionBody.build());
+
             Transaction transaction = transaction().build();
-            return new RecordItem(transaction, transactionRecord.build());
+            TransactionRecord record = transactionRecord.build();
+            return new RecordItem(hapiVersion, transaction.toByteArray(), record.toByteArray());
+        }
+
+        public Builder<T> hapiVersion(Version hapiVersion) {
+            this.hapiVersion = hapiVersion;
+            return this;
         }
 
         public Builder<T> receipt(Consumer<TransactionReceipt.Builder> consumer) {
@@ -337,17 +380,12 @@ public class RecordItemBuilder {
         }
 
         private TransactionBody.Builder defaultTransactionBody() {
-            TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
+            return TransactionBody.newBuilder()
                     .setMemo(type.name())
                     .setNodeAccountID(NODE)
                     .setTransactionFee(100L)
                     .setTransactionID(Utility.getTransactionId(payerAccountId))
                     .setTransactionValidDuration(duration(120));
-
-            var field = transactionBody.getDescriptorForType().findFieldByNumber(type.getProtoId());
-            transactionBody.setField(field, this.transactionBody.build());
-
-            return transactionBody;
         }
 
         private TransactionRecord.Builder defaultTransactionRecord() {

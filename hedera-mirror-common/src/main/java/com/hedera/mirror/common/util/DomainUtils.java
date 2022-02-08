@@ -20,6 +20,8 @@ package com.hedera.mirror.common.util;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+
 import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
@@ -37,10 +39,14 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.exception.InvalidEntityException;
+
 @Log4j2
 @UtilityClass
 public class DomainUtils {
 
+    private static final int EVM_ADDRESS_LENGTH = 20;
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
     private static final char NULL_CHARACTER = (char) 0;
     private static final char NULL_REPLACEMENT = '�'; // Standard replacement character 0xFFFD
@@ -214,6 +220,40 @@ public class DomainUtils {
         }
 
         return byteString.toByteArray();
+    }
+
+    public static ByteString fromBytes(byte[] bytes) {
+        if (bytes == null) {
+            return null;
+        }
+
+        return UnsafeByteOperations.unsafeWrap(bytes);
+    }
+
+    // The 'shard.realm.num' form evm address has 4 bytes for shard, and 8 bytes each for realm and num.
+    public static EntityId fromEvmAddress(byte[] evmAddress) {
+        try {
+            if (evmAddress != null && evmAddress.length == EVM_ADDRESS_LENGTH) {
+                ByteBuffer buffer = ByteBuffer.wrap(evmAddress);
+                return EntityId.of(buffer.getInt(), buffer.getLong(), buffer.getLong(), CONTRACT);
+            }
+        } catch (InvalidEntityException ex) {
+            log.debug("Failed to parse shard.realm.num form evm address into EntityId", ex);
+        }
+        return null;
+    }
+
+    public static byte[] toEvmAddress(EntityId contractId) {
+        if (EntityId.isEmpty(contractId)) {
+            throw new InvalidEntityException("Empty contractId");
+        }
+
+        byte[] evmAddress = new byte[EVM_ADDRESS_LENGTH];
+        ByteBuffer buffer = ByteBuffer.wrap(evmAddress);
+        buffer.putInt(contractId.getShardNum().intValue());
+        buffer.putLong(contractId.getRealmNum());
+        buffer.putLong(contractId.getEntityNum());
+        return evmAddress;
     }
 
     static class UnsafeByteOutput extends ByteOutput {

@@ -29,19 +29,21 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
 class ContractCreateTransactionHandler extends AbstractContractCallTransactionHandler {
 
-    ContractCreateTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(entityListener, entityProperties);
+    ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
+                                     EntityProperties entityProperties) {
+        super(entityIdService, entityListener, entityProperties);
     }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        return entityIdService.lookup(recordItem.getRecord().getReceipt().getContractID());
     }
 
     @Override
@@ -62,11 +64,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
         transaction.setInitialBalance(transactionBody.getInitialBalance());
 
         if (entityProperties.getPersist().isContracts() && recordItem.isSuccessful() && !EntityId.isEmpty(entityId)) {
-            Contract contract = entityId.toEntity();
-            contract.setCreatedTimestamp(consensusTimestamp);
-            contract.setDeleted(false);
-            contract.setTimestampLower(consensusTimestamp);
-            doUpdateEntity(contract, recordItem);
+            doUpdateEntity(getContract(entityId, consensusTimestamp), recordItem);
         }
 
         if (entityProperties.getPersist().isContracts()) {
@@ -84,6 +82,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
 
     @Override
     protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
+        var contractCreateResult = recordItem.getRecord().getContractCreateResult();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         if (transactionBody.hasAutoRenewPeriod()) {
@@ -100,6 +99,10 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
 
         if (transactionBody.hasFileID()) {
             contract.setFileId(EntityId.of(transactionBody.getFileID()));
+        }
+
+        if (contractCreateResult.hasEvmAddress()) {
+            contract.setEvmAddress(DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()));
         }
 
         contract.setMemo(transactionBody.getMemo());

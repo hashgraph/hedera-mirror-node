@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -27,18 +28,33 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
 
-    ContractUpdateTransactionHandler(EntityListener entityListener) {
+    private final EntityIdService entityIdService;
+
+    ContractUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
         super(entityListener, TransactionType.CONTRACTUPDATEINSTANCE);
+        this.entityIdService = entityIdService;
     }
 
+    /**
+     * First attempts to extract the contract ID from the receipt, which was populated in HAPI 0.23 for contract update.
+     * Otherwise, falls back to checking the transaction body which may contain an EVM address. In case of partial
+     * mirror nodes, it's possible the database does not have the mapping for that EVM address in the body, hence the
+     * need for prioritizing the receipt.
+     *
+     * @param recordItem to check
+     * @return The contract ID associated with this contract transaction
+     */
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getContractUpdateInstance().getContractID());
+        ContractID contractIdBody = recordItem.getTransactionBody().getContractUpdateInstance().getContractID();
+        ContractID contractIdReceipt = recordItem.getRecord().getReceipt().getContractID();
+        return entityIdService.lookup(contractIdReceipt, contractIdBody);
     }
 
     // We explicitly ignore the updated fileID field since hedera nodes do not allow changing the bytecode after create

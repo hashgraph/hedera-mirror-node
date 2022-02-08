@@ -18,6 +18,7 @@
       },
       {
         "created_timestamp": "987654111123456",
+        "evm_address": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
         "file_id": "5001",
         "key": [2, 2, 2],
         "num": "8002",
@@ -49,12 +50,12 @@
         "contract_id": "0.0.8003",
         "created_timestamp": "987654.222123456",
         "deleted": false,
+        "evm_address": "0x0000000000000000000000000000000000001f43",
         "expiration_timestamp": "1236987654.000000123",
         "file_id": "0.0.5001",
         "memo": "contract memo",
         "obtainer_id": "0.0.7001",
         "proxy_account_id": "0.0.7005",
-        "solidity_address": "0x0000000000000000000000000000000000001f43",
         "timestamp": {
           "from": "987654.222123456",
           "to": null
@@ -69,12 +70,12 @@
         "contract_id": "0.0.8002",
         "created_timestamp": "987654.111123456",
         "deleted": false,
+        "evm_address": "0x0102030405060708090a0b0c0d0e0f1011121314",
         "expiration_timestamp": null,
         "file_id": "0.0.5001",
         "memo": "contract memo",
         "obtainer_id": null,
         "proxy_account_id": null,
-        "solidity_address": "0x0000000000000000000000000000000000001f42",
         "timestamp": {
           "from": "987654.111123456",
           "to": null

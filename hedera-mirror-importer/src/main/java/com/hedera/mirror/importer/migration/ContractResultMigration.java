@@ -119,7 +119,6 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
 
             for (int index = 0; index < contractFunctionResult.getLogInfoCount(); ++index) {
                 ContractLoginfo contractLoginfo = contractFunctionResult.getLogInfo(index);
-                List<ByteString> topics = contractLoginfo.getTopicList();
 
                 MigrationContractLog migrationContractLog = new MigrationContractLog();
                 migrationContractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
@@ -143,6 +142,7 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
         return false;
     }
 
+    @SuppressWarnings("deprecation")
     private Long getContractId(ContractID contractID) {
         EntityId entityId = EntityId.of(contractID);
         return !EntityId.isEmpty(entityId) ? entityId.getId() : null;

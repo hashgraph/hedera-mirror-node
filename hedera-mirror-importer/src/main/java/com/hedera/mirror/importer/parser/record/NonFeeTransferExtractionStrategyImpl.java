@@ -28,14 +28,22 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Collections;
 import java.util.LinkedList;
-import org.springframework.stereotype.Component;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.importer.domain.EntityIdService;
 
 /**
  * Non-fee transfers are explicitly requested transfers. This implementation extracts non_fee_transfer requested by a
  * transaction into an iterable of transfers.
  */
-@Component
+@Named
+@RequiredArgsConstructor
 public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtractionStrategy {
+
+    private final EntityIdService entityIdService;
+
     /**
      * @return iterable of transfers. If transaction has no non-fee transfers, then iterable will have no elements.
      */
@@ -52,9 +60,17 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
             return extractForCreateEntity(body.getContractCreateInstance().getInitialBalance(), payerAccountId,
                     contractIdToAccountId(transactionRecord.getReceipt().getContractID()), transactionRecord);
         } else if (body.hasContractCall()) {
+
+            EntityId contractId = entityIdService.lookup(transactionRecord.getReceipt().getContractID(),
+                    body.getContractCall().getContractID());
             LinkedList<AccountAmount> result = new LinkedList<>();
             var amount = body.getContractCall().getAmount();
-            var contractAccountId = contractIdToAccountId(body.getContractCall().getContractID());
+
+            var contractAccountId = AccountID.newBuilder()
+                    .setShardNum(contractId.getShardNum())
+                    .setRealmNum(contractId.getRealmNum())
+                    .setAccountNum(contractId.getEntityNum())
+                    .build();
             result.add(AccountAmount.newBuilder()
                     .setAccountID(contractAccountId)
                     .setAmount(amount)
@@ -62,7 +78,7 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
                     .build());
             result.add(AccountAmount.newBuilder()
                     .setAccountID(payerAccountId)
-                    .setAmount(0 - amount)
+                    .setAmount(-amount)
                     .setIsApproval(false)
                     .build());
             return result;
@@ -76,7 +92,7 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
         LinkedList<AccountAmount> result = new LinkedList<>();
         result.add(AccountAmount.newBuilder()
                 .setAccountID(payerAccountId)
-                .setAmount(0 - initialBalance)
+                .setAmount(-initialBalance)
                 .setIsApproval(false)
                 .build());
 
