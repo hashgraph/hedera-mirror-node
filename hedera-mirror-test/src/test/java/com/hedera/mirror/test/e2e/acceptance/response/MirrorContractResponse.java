@@ -36,12 +36,12 @@ public class MirrorContractResponse {
     private boolean deleted;
     private String executedTimestamp;
     private String expirationTimestamp;
+    private String evmAddress;
     private String fileId;
     private String memo;
     private String obtainerId;
     private String payerAccountId;
     private String proxyAccountId;
     private String scheduleId;
-    private String solidityAddress;
     private MirrorTimestampRange timestamp;
 }
