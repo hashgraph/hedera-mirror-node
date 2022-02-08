@@ -39,8 +39,11 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -89,14 +92,17 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<ContractLog> contractLogs;
     private final Collection<ContractResult> contractResults;
     private final Collection<ContractStateChange> contractStateChanges;
+    private final Collection<CryptoAllowance> cryptoAllowances;
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
     private final Collection<Entity> entities;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
+    private final Collection<NftAllowance> nftAllowances;
     private final Collection<NftTransfer> nftTransfers;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
     private final Collection<TokenAccount> tokenAccounts;
+    private final Collection<TokenAllowance> tokenAllowances;
     private final Collection<TokenTransfer> tokenDissociateTransfers;
     private final Collection<TokenTransfer> tokenTransfers;
     private final Collection<TopicMessage> topicMessages;
@@ -106,9 +112,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // maps of upgradable domains
     private final Map<Long, Contract> contractState;
     private final Map<Long, Entity> entityState;
+    private final Map<CryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
+    private final Map<NftId, Nft> nfts;
+    private final Map<NftAllowance.Id, NftAllowance> nftAllowanceState;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
-    private final Map<NftId, Nft> nfts;
+    private final Map<TokenAllowance.Id, TokenAllowance> tokenAllowanceState;
 
     // tracks the state of <token, account> relationships in a batch, the initial state before the batch is in db.
     // for each <token, account> update, merge the state and the update, save the merged state to the batch.
@@ -134,26 +143,32 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractLogs = new ArrayList<>();
         contractResults = new ArrayList<>();
         contractStateChanges = new ArrayList<>();
+        cryptoAllowances = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
         entities = new ArrayList<>();
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
+        nftAllowances = new ArrayList<>();
         nftTransfers = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
+        tokenAccounts = new ArrayList<>();
+        tokenAllowances = new ArrayList<>();
         tokenDissociateTransfers = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
-        tokenAccounts = new ArrayList<>();
         topicMessages = new ArrayList<>();
         transactions = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
 
         contractState = new HashMap<>();
+        cryptoAllowanceState = new HashMap<>();
         entityState = new HashMap<>();
         nfts = new HashMap<>();
+        nftAllowanceState = new HashMap<>();
         schedules = new HashMap<>();
         tokens = new HashMap<>();
         tokenAccountState = new HashMap<>();
+        tokenAllowanceState = new HashMap<>();
     }
 
     @Override
@@ -185,6 +200,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             contractLogs.clear();
             contractResults.clear();
             contractStateChanges.clear();
+            cryptoAllowances.clear();
+            cryptoAllowanceState.clear();
             cryptoTransfers.clear();
             customFees.clear();
             entities.clear();
@@ -193,11 +210,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             liveHashes.clear();
             nonFeeTransfers.clear();
             nfts.clear();
+            nftAllowances.clear();
+            nftAllowanceState.clear();
             nftTransfers.clear();
             schedules.clear();
             topicMessages.clear();
             tokenAccounts.clear();
             tokenAccountState.clear();
+            tokenAllowances.clear();
+            tokenAllowanceState.clear();
             tokens.clear();
             tokenDissociateTransfers.clear();
             tokenTransfers.clear();
@@ -231,10 +252,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // insert operations with conflict management
             batchPersister.persist(contracts);
+            batchPersister.persist(cryptoAllowances);
             batchPersister.persist(entities);
+            batchPersister.persist(nftAllowances);
             batchPersister.persist(tokens.values());
             // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
             batchPersister.persist(tokenAccounts);
+            batchPersister.persist(tokenAllowances);
             batchPersister.persist(nfts.values()); // persist nft after token entity
             batchPersister.persist(schedules.values());
 
@@ -284,6 +308,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    public void onCryptoAllowance(CryptoAllowance cryptoAllowance) {
+        var merged = cryptoAllowanceState.merge(cryptoAllowance.getId(), cryptoAllowance, this::mergeCryptoAllowance);
+        cryptoAllowances.add(merged);
+    }
+
+    @Override
     public void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
         cryptoTransfers.add(cryptoTransfer);
     }
@@ -320,6 +350,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    public void onNftAllowance(NftAllowance nftAllowance) {
+        var merged = nftAllowanceState.merge(nftAllowance.getId(), nftAllowance, this::mergeNftAllowance);
+        nftAllowances.add(merged);
+    }
+
+    @Override
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
         nftTransfers.add(nftTransfer);
     }
@@ -346,6 +382,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         var key = new TokenAccountKey(tokenAccount.getId().getTokenId(), tokenAccount.getId().getAccountId());
         TokenAccount merged = tokenAccountState.merge(key, tokenAccount, this::mergeTokenAccount);
         tokenAccounts.add(merged);
+    }
+
+    @Override
+    public void onTokenAllowance(TokenAllowance tokenAllowance) {
+        TokenAllowance merged = tokenAllowanceState.merge(tokenAllowance.getId(), tokenAllowance,
+                this::mergeTokenAllowance);
+        tokenAllowances.add(merged);
     }
 
     @Override
@@ -404,7 +447,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             current.setProxyAccountId(previous.getProxyAccountId());
         }
 
-        previous.setTimestampRangeUpper(current.getModifiedTimestamp());
+        previous.setTimestampUpper(current.getTimestampLower());
         return current;
     }
 
@@ -417,6 +460,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             current.setObtainerId(previous.getObtainerId());
         }
 
+        return current;
+    }
+
+    private CryptoAllowance mergeCryptoAllowance(CryptoAllowance previous, CryptoAllowance current) {
+        previous.setTimestampUpper(current.getTimestampLower());
         return current;
     }
 
@@ -461,6 +509,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         cachedNft.setModifiedTimestamp(newNft.getModifiedTimestamp());
         return cachedNft;
+    }
+
+    private NftAllowance mergeNftAllowance(NftAllowance previous, NftAllowance current) {
+        previous.setTimestampUpper(current.getTimestampLower());
+        return current;
     }
 
     private Schedule mergeSchedule(Schedule cachedSchedule, Schedule schedule) {
@@ -547,5 +600,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         return newTokenAccount;
+    }
+
+    private TokenAllowance mergeTokenAllowance(TokenAllowance previous, TokenAllowance current) {
+        previous.setTimestampUpper(current.getTimestampLower());
+        return current;
     }
 }

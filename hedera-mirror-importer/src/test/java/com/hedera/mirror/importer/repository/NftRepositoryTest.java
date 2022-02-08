@@ -96,9 +96,8 @@ class NftRepositoryTest extends AbstractRepositoryTest {
 
         EntityId tokenId = nft1.getId().getTokenId();
         EntityId previousAccountId = nft1.getAccountId();
-        nftRepository
-                .updateTreasury(tokenId.getId(), previousAccountId.getId(), newAccountId.getId(), consensusTimestamp,
-                        EntityId.of("0.0.200", EntityType.ACCOUNT).getId());
+        nftRepository.updateTreasury(tokenId.getId(), previousAccountId.getId(), newAccountId.getId(),
+                consensusTimestamp, EntityId.of("0.0.200", EntityType.ACCOUNT).getId(), false);
 
         assertAccountUpdated(nft1, newAccountId);
         assertAccountUpdated(nft2, newAccountId);
@@ -112,6 +111,7 @@ class NftRepositoryTest extends AbstractRepositoryTest {
         nftTransfers.extracting(n -> n.getId().getTokenId()).containsOnly(tokenId);
         nftTransfers.extracting(n -> n.getId().getConsensusTimestamp()).containsOnly(consensusTimestamp);
         nftTransfers.extracting(n -> n.getId().getSerialNumber()).containsExactlyInAnyOrder(1L, 2L, 3L);
+        nftTransfers.extracting(NftTransfer::getIsApproval).containsExactlyInAnyOrder(false, false, false);
     }
 
     private void assertAccountUpdated(Nft nft, EntityId accountId) {

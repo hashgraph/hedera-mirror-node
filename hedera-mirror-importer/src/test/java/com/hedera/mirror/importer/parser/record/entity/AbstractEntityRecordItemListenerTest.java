@@ -63,6 +63,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.StreamFilename;
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
@@ -114,6 +115,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     @Resource
     protected EntityProperties entityProperties;
+
+    @Resource
+    protected RecordItemBuilder recordItemBuilder;
 
     @Resource
     protected RecordStreamFileListener recordStreamFileListener;
@@ -351,7 +355,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setDeleted(deleted);
         entity.setExpirationTimestamp(expiryTimeNs);
         entity.setMemo(memo);
-        entity.setModifiedTimestamp(modifiedTimestamp);
+        entity.setTimestampLower(modifiedTimestamp);
         entity.setKey(adminKeyBytes);
         entity.setSubmitKey(submitKeyBytes);
 

@@ -25,6 +25,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.base.CaseFormat;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
@@ -48,9 +49,12 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -80,16 +84,19 @@ import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
+import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
+import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
@@ -102,29 +109,32 @@ class SqlEntityListenerTest extends IntegrationTest {
     private static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
     private static final EntityId TRANSACTION_PAYER = EntityId.of("0.0.1000", ACCOUNT);
 
-    private final DomainBuilder domainBuilder;
-    private final TransactionRepository transactionRepository;
-    private final EntityRepository entityRepository;
-    private final CryptoTransferRepository cryptoTransferRepository;
-    private final NonFeeTransferRepository nonFeeTransferRepository;
-    private final ContractRepository contractRepository;
     private final ContractLogRepository contractLogRepository;
+    private final ContractRepository contractRepository;
     private final ContractResultRepository contractResultRepository;
     private final ContractStateChangeRepository contractStateChangeRepository;
+    private final CryptoAllowanceRepository cryptoAllowanceRepository;
+    private final CryptoTransferRepository cryptoTransferRepository;
+    private final DomainBuilder domainBuilder;
+    private final EntityRepository entityRepository;
+    private final FileDataRepository fileDataRepository;
     private final JdbcOperations jdbcOperations;
     private final LiveHashRepository liveHashRepository;
     private final NftRepository nftRepository;
+    private final NftAllowanceRepository nftAllowanceRepository;
     private final NftTransferRepository nftTransferRepository;
-    private final FileDataRepository fileDataRepository;
-    private final TopicMessageRepository topicMessageRepository;
+    private final NonFeeTransferRepository nonFeeTransferRepository;
     private final RecordFileRepository recordFileRepository;
-    private final TokenRepository tokenRepository;
-    private final TokenAccountRepository tokenAccountRepository;
-    private final TokenTransferRepository tokenTransferRepository;
     private final ScheduleRepository scheduleRepository;
-    private final TransactionSignatureRepository transactionSignatureRepository;
     private final SqlEntityListener sqlEntityListener;
     private final SqlProperties sqlProperties;
+    private final TokenAccountRepository tokenAccountRepository;
+    private final TokenAllowanceRepository tokenAllowanceRepository;
+    private final TokenRepository tokenRepository;
+    private final TokenTransferRepository tokenTransferRepository;
+    private final TopicMessageRepository topicMessageRepository;
+    private final TransactionRepository transactionRepository;
+    private final TransactionSignatureRepository transactionSignatureRepository;
     private final TransactionTemplate transactionTemplate;
 
     private static Key keyFromString(String key) {
@@ -193,20 +203,20 @@ class SqlEntityListenerTest extends IntegrationTest {
         contractUpdate.setExpirationTimestamp(500L);
         contractUpdate.setKey(domainBuilder.key());
         contractUpdate.setMemo("updated");
-        contractUpdate.setModifiedTimestamp(contractCreate.getModifiedTimestamp() + 1);
+        contractUpdate.setTimestampLower(contractCreate.getTimestampLower() + 1);
         contractUpdate.setProxyAccountId(EntityId.of(100L, ACCOUNT));
 
         Contract contractDelete = contractCreate.toEntityId().toEntity();
         contractDelete.setDeleted(true);
         contractDelete.setEvmAddress(contractCreate.getEvmAddress());
-        contractDelete.setModifiedTimestamp(contractCreate.getModifiedTimestamp() + 2);
+        contractDelete.setTimestampLower(contractCreate.getTimestampLower() + 2);
         contractDelete.setObtainerId(EntityId.of(999L, EntityType.CONTRACT));
 
         // Expected merged objects
         Contract mergedCreate = TestUtils.clone(contractCreate);
         Contract mergedUpdate = TestUtils.merge(contractCreate, contractUpdate);
         Contract mergedDelete = TestUtils.merge(mergedUpdate, contractDelete);
-        mergedCreate.setTimestampRangeUpper(contractUpdate.getModifiedTimestamp());
+        mergedCreate.setTimestampUpper(contractUpdate.getTimestampLower());
 
         // when
         sqlEntityListener.onContract(contractCreate);
@@ -227,7 +237,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        mergedUpdate.setTimestampRangeUpper(contractDelete.getModifiedTimestamp());
+        mergedUpdate.setTimestampUpper(contractDelete.getTimestampLower());
         assertThat(contractRepository.findAll()).containsExactly(mergedDelete);
         assertThat(findHistory(Contract.class)).containsExactly(mergedCreate, mergedUpdate);
         assertThat(entityRepository.count()).isZero();
@@ -270,6 +280,67 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(contractStateChangeRepository.findAll()).containsExactlyInAnyOrder(contractStateChange);
+    }
+
+    @Test
+    void onCryptoAllowance() {
+        // given
+        CryptoAllowance cryptoAllowance1 = domainBuilder.cryptoAllowance().get();
+        CryptoAllowance cryptoAllowance2 = domainBuilder.cryptoAllowance().get();
+
+        // when
+        sqlEntityListener.onCryptoAllowance(cryptoAllowance1);
+        sqlEntityListener.onCryptoAllowance(cryptoAllowance2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(entityRepository.count()).isZero();
+        assertThat(cryptoAllowanceRepository.findAll()).containsExactlyInAnyOrder(cryptoAllowance1, cryptoAllowance2);
+        assertThat(findHistory(CryptoAllowance.class, "payer_account_id, spender")).isEmpty();
+    }
+
+    @ValueSource(ints = {1, 2, 3})
+    @ParameterizedTest
+    void onCryptoAllowanceHistory(int commitIndex) {
+        // given
+        final String idColumns = "payer_account_id, spender";
+        var builder = domainBuilder.cryptoAllowance();
+        CryptoAllowance cryptoAllowanceCreate = builder.get();
+
+        CryptoAllowance cryptoAllowanceUpdate1 = builder.customize(c -> c.amount(999L)).get();
+        cryptoAllowanceUpdate1.setTimestampLower(cryptoAllowanceCreate.getTimestampLower() + 1);
+
+        CryptoAllowance cryptoAllowanceUpdate2 = builder.customize(c -> c.amount(0L)).get();
+        cryptoAllowanceUpdate2.setTimestampLower(cryptoAllowanceCreate.getTimestampLower() + 2);
+
+        // Expected merged objects
+        CryptoAllowance mergedCreate = TestUtils.clone(cryptoAllowanceCreate);
+        CryptoAllowance mergedUpdate1 = TestUtils.merge(cryptoAllowanceCreate, cryptoAllowanceUpdate1);
+        CryptoAllowance mergedUpdate2 = TestUtils.merge(mergedUpdate1, cryptoAllowanceUpdate2);
+        mergedCreate.setTimestampUpper(cryptoAllowanceUpdate1.getTimestampLower());
+
+        // when
+        sqlEntityListener.onCryptoAllowance(cryptoAllowanceCreate);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(cryptoAllowanceRepository.findAll()).containsExactly(cryptoAllowanceCreate);
+            assertThat(findHistory(CryptoAllowance.class, idColumns)).isEmpty();
+        }
+
+        sqlEntityListener.onCryptoAllowance(cryptoAllowanceUpdate1);
+        if (commitIndex > 2) {
+            completeFileAndCommit();
+            assertThat(cryptoAllowanceRepository.findAll()).containsExactly(mergedUpdate1);
+            assertThat(findHistory(CryptoAllowance.class, idColumns)).containsExactly(mergedCreate);
+        }
+
+        sqlEntityListener.onCryptoAllowance(cryptoAllowanceUpdate2);
+        completeFileAndCommit();
+
+        // then
+        mergedUpdate1.setTimestampUpper(cryptoAllowanceUpdate2.getTimestampLower());
+        assertThat(cryptoAllowanceRepository.findAll()).containsExactly(mergedUpdate2);
+        assertThat(findHistory(CryptoAllowance.class, idColumns)).containsExactly(mergedCreate, mergedUpdate1);
     }
 
     @Test
@@ -320,7 +391,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entityUpdate.setKey(domainBuilder.key());
         entityUpdate.setMaxAutomaticTokenAssociations(40);
         entityUpdate.setMemo("updated");
-        entityUpdate.setModifiedTimestamp(entityCreate.getModifiedTimestamp() + 1);
+        entityUpdate.setTimestampLower(entityCreate.getTimestampLower() + 1);
         entityUpdate.setProxyAccountId(EntityId.of(100L, ACCOUNT));
         entityUpdate.setReceiverSigRequired(true);
         entityUpdate.setSubmitKey(domainBuilder.key());
@@ -328,13 +399,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         Entity entityDelete = entityCreate.toEntityId().toEntity();
         entityDelete.setAlias(entityCreate.getAlias());
         entityDelete.setDeleted(true);
-        entityDelete.setModifiedTimestamp(entityCreate.getModifiedTimestamp() + 2);
+        entityDelete.setTimestampLower(entityCreate.getTimestampLower() + 2);
 
         // Expected merged objects
         Entity mergedCreate = TestUtils.clone(entityCreate);
         Entity mergedUpdate = TestUtils.merge(entityCreate, entityUpdate);
         Entity mergedDelete = TestUtils.merge(mergedUpdate, entityDelete);
-        mergedCreate.setTimestampRangeUpper(entityUpdate.getModifiedTimestamp());
+        mergedCreate.setTimestampUpper(entityUpdate.getTimestampLower());
 
         // when
         sqlEntityListener.onEntity(entityCreate);
@@ -355,7 +426,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        mergedUpdate.setTimestampRangeUpper(entityDelete.getModifiedTimestamp());
+        mergedUpdate.setTimestampUpper(entityDelete.getTimestampLower());
         assertThat(entityRepository.findAll()).containsExactly(mergedDelete);
         assertThat(findHistory(Entity.class)).containsExactly(mergedCreate, mergedUpdate);
     }
@@ -507,6 +578,68 @@ class SqlEntityListenerTest extends IntegrationTest {
         Nft nft2 = getNft(tokenId2, 1L, accountId2, 4L, false, metadata2, 4L); // transfer
 
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2);
+    }
+
+    @Test
+    void onNftAllowance() {
+        // given
+        NftAllowance nftAllowance1 = domainBuilder.nftAllowance().get();
+        NftAllowance nftAllowance2 = domainBuilder.nftAllowance().get();
+
+        // when
+        sqlEntityListener.onNftAllowance(nftAllowance1);
+        sqlEntityListener.onNftAllowance(nftAllowance2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(entityRepository.count()).isZero();
+        assertThat(nftAllowanceRepository.findAll()).containsExactlyInAnyOrder(nftAllowance1, nftAllowance2);
+        assertThat(findHistory(NftAllowance.class, "payer_account_id, spender, token_id")).isEmpty();
+    }
+
+    @ValueSource(ints = {1, 2, 3})
+    @ParameterizedTest
+    void onNftAllowanceHistory(int commitIndex) {
+        // given
+        final String idColumns = "payer_account_id, spender, token_id";
+        var builder = domainBuilder.nftAllowance();
+        NftAllowance nftAllowanceCreate = builder.get();
+
+        NftAllowance nftAllowanceUpdate1 = builder.customize(c -> c.serialNumbers(List.of(4L, 5L, 6L))).get();
+        nftAllowanceUpdate1.setTimestampLower(nftAllowanceCreate.getTimestampLower() + 1);
+
+        NftAllowance nftAllowanceUpdate2 = builder.customize(c -> c.approvedForAll(true).serialNumbers(List.of()))
+                .get();
+        nftAllowanceUpdate2.setTimestampLower(nftAllowanceCreate.getTimestampLower() + 2);
+
+        // Expected merged objects
+        NftAllowance mergedCreate = TestUtils.clone(nftAllowanceCreate);
+        NftAllowance mergedUpdate1 = TestUtils.merge(nftAllowanceCreate, nftAllowanceUpdate1);
+        NftAllowance mergedUpdate2 = TestUtils.merge(mergedUpdate1, nftAllowanceUpdate2);
+        mergedCreate.setTimestampUpper(nftAllowanceUpdate1.getTimestampLower());
+
+        // when
+        sqlEntityListener.onNftAllowance(nftAllowanceCreate);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(nftAllowanceRepository.findAll()).containsExactly(nftAllowanceCreate);
+            assertThat(findHistory(NftAllowance.class, idColumns)).isEmpty();
+        }
+
+        sqlEntityListener.onNftAllowance(nftAllowanceUpdate1);
+        if (commitIndex > 2) {
+            completeFileAndCommit();
+            assertThat(nftAllowanceRepository.findAll()).containsExactly(mergedUpdate1);
+            assertThat(findHistory(NftAllowance.class, idColumns)).containsExactly(mergedCreate);
+        }
+
+        sqlEntityListener.onNftAllowance(nftAllowanceUpdate2);
+        completeFileAndCommit();
+
+        // then
+        mergedUpdate1.setTimestampUpper(nftAllowanceUpdate2.getTimestampLower());
+        assertThat(nftAllowanceRepository.findAll()).containsExactly(mergedUpdate2);
+        assertThat(findHistory(NftAllowance.class, idColumns)).containsExactly(mergedCreate, mergedUpdate1);
     }
 
     @Test
@@ -998,6 +1131,67 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onTokenAllowance() {
+        // given
+        TokenAllowance tokenAllowance1 = domainBuilder.tokenAllowance().get();
+        TokenAllowance tokenAllowance2 = domainBuilder.tokenAllowance().get();
+
+        // when
+        sqlEntityListener.onTokenAllowance(tokenAllowance1);
+        sqlEntityListener.onTokenAllowance(tokenAllowance2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(entityRepository.count()).isZero();
+        assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrder(tokenAllowance1, tokenAllowance2);
+        assertThat(findHistory(TokenAllowance.class, "payer_account_id, spender, token_id")).isEmpty();
+    }
+
+    @ValueSource(ints = {1, 2, 3})
+    @ParameterizedTest
+    void onTokenAllowanceHistory(int commitIndex) {
+        // given
+        final String idColumns = "payer_account_id, spender, token_id";
+        var builder = domainBuilder.tokenAllowance();
+        TokenAllowance tokenAllowanceCreate = builder.get();
+
+        TokenAllowance tokenAllowanceUpdate1 = builder.customize(c -> c.amount(999L)).get();
+        tokenAllowanceUpdate1.setTimestampLower(tokenAllowanceCreate.getTimestampLower() + 1);
+
+        TokenAllowance tokenAllowanceUpdate2 = builder.customize(c -> c.amount(0)).get();
+        tokenAllowanceUpdate2.setTimestampLower(tokenAllowanceCreate.getTimestampLower() + 2);
+
+        // Expected merged objects
+        TokenAllowance mergedCreate = TestUtils.clone(tokenAllowanceCreate);
+        TokenAllowance mergedUpdate1 = TestUtils.merge(tokenAllowanceCreate, tokenAllowanceUpdate1);
+        TokenAllowance mergedUpdate2 = TestUtils.merge(mergedUpdate1, tokenAllowanceUpdate2);
+        mergedCreate.setTimestampUpper(tokenAllowanceUpdate1.getTimestampLower());
+
+        // when
+        sqlEntityListener.onTokenAllowance(tokenAllowanceCreate);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(tokenAllowanceRepository.findAll()).containsExactly(tokenAllowanceCreate);
+            assertThat(findHistory(TokenAllowance.class, idColumns)).isEmpty();
+        }
+
+        sqlEntityListener.onTokenAllowance(tokenAllowanceUpdate1);
+        if (commitIndex > 2) {
+            completeFileAndCommit();
+            assertThat(tokenAllowanceRepository.findAll()).containsExactly(mergedUpdate1);
+            assertThat(findHistory(TokenAllowance.class, idColumns)).containsExactly(mergedCreate);
+        }
+
+        sqlEntityListener.onTokenAllowance(tokenAllowanceUpdate2);
+        completeFileAndCommit();
+
+        // then
+        mergedUpdate1.setTimestampUpper(tokenAllowanceUpdate2.getTimestampLower());
+        assertThat(tokenAllowanceRepository.findAll()).containsExactly(mergedUpdate2);
+        assertThat(findHistory(TokenAllowance.class, idColumns)).containsExactly(mergedCreate, mergedUpdate1);
+    }
+
+    @Test
     void onTokenTransfer() {
         EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
         EntityId tokenId2 = EntityId.of("0.0.7", TOKEN);
@@ -1078,8 +1272,13 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private <T> Collection<T> findHistory(Class<T> historyClass) {
-        String table = historyClass.getSimpleName().toLowerCase();
-        String sql = String.format("select * from %s_history order by id asc, timestamp_range asc", table);
+        return findHistory(historyClass, "id");
+    }
+
+    private <T> Collection<T> findHistory(Class<T> historyClass, String ids) {
+        String table = historyClass.getSimpleName();
+        table = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, table);
+        String sql = String.format("select * from %s_history order by %s, timestamp_range asc", table, ids);
         return jdbcOperations.query(sql, rowMapper(historyClass));
     }
 
@@ -1106,7 +1305,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setExpirationTimestamp(expiryTimeNs);
         entity.setKey(adminKey != null ? adminKey.toByteArray() : null);
         entity.setMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations);
-        entity.setModifiedTimestamp(modifiedTimestamp);
+        entity.setTimestampLower(modifiedTimestamp);
         entity.setNum(id);
         entity.setRealm(0L);
         entity.setReceiverSigRequired(receiverSigRequired);

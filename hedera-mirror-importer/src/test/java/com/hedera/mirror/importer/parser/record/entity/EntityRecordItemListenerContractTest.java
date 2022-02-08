@@ -45,6 +45,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +71,6 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -90,9 +90,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
     @Resource
     private ContractStateChangeRepository contractStateChangeRepository;
-
-    @Resource
-    private RecordItemBuilder recordItemBuilder;
 
     @BeforeEach
     void before() {
@@ -157,6 +154,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var parentEvmAddress = domainBuilder.create2EvmAddress();
         var parentRecordItem = recordItemBuilder.contractCreate()
                 .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
+                        .clearStateChanges()
                         .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(parentEvmAddress)))
                 ))
                 .hapiVersion(HAPI_VERSION_0_23_0)
@@ -424,7 +422,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertThat(dbContractEntity)
                         .isNotNull()
                         .returns(true, Contract::getDeleted)
-                        .returns(recordItem.getConsensusTimestamp(), Contract::getModifiedTimestamp)
+                        .returns(recordItem.getConsensusTimestamp(), Contract::getTimestampLower)
                         .returns(EntityId.of(PAYER), Contract::getObtainerId)
                         .usingRecursiveComparison()
                         .ignoringFields("deleted", "obtainerId", "timestampRange")
@@ -455,7 +453,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertThat(contract)
                         .isNotNull()
                         .returns(true, Contract::getDeleted)
-                        .returns(recordItem.getConsensusTimestamp(), Contract::getModifiedTimestamp)
+                        .returns(recordItem.getConsensusTimestamp(), Contract::getTimestampLower)
                         .returns(null, Contract::getAutoRenewPeriod)
                         .returns(null, Contract::getExpirationTimestamp)
                         .returns(null, Contract::getKey)
@@ -541,7 +539,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .receipt(r -> r.setContractID(CONTRACT_ID))
                 .transactionBody(b -> b.setContractID(setupResult.protoContractId))
                 .record(r -> r.clearContractCallResult()
-                        .setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
+                        .setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)
+                                .clearStateChanges()))
                 .hapiVersion(HAPI_VERSION_0_23_0)
                 .build();
 
@@ -774,7 +773,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(EntityId.of(transactionBody.getFileID()), Contract::getFileId)
                 .returns(adminKey, Contract::getKey)
                 .returns(transactionBody.getMemo(), Contract::getMemo)
-                .returns(createdTimestamp, Contract::getModifiedTimestamp)
+                .returns(createdTimestamp, Contract::getTimestampLower)
                 .returns(null, Contract::getObtainerId)
                 .returns(EntityId.of(transactionBody.getProxyAccountID()), Contract::getProxyAccountId)
                 .returns(DomainUtils.getPublicKey(adminKey), Contract::getPublicKey)
@@ -796,7 +795,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(false, Contract::getDeleted)
                 .returns(evmAddress, Contract::getEvmAddress)
                 .returns(createdId.getId(), Contract::getId)
-                .returns(recordItem.getConsensusTimestamp(), Contract::getModifiedTimestamp)
+                .returns(recordItem.getConsensusTimestamp(), Contract::getTimestampLower)
                 .returns(createdId.getEntityNum(), Contract::getNum)
                 .returns(createdId.getShardNum(), Contract::getShard)
                 .returns(createdId.getType(), Contract::getType);
@@ -815,7 +814,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(DomainUtils.timeStampInNanos(expected.getExpirationTime()), Contract::getExpirationTimestamp)
                 .returns(adminKey, Contract::getKey)
                 .returns(getMemoFromContractUpdateTransactionBody(expected), Contract::getMemo)
-                .returns(updatedTimestamp, Contract::getModifiedTimestamp)
+                .returns(updatedTimestamp, Contract::getTimestampLower)
                 .returns(null, Contract::getObtainerId)
                 .returns(EntityId.of(expected.getProxyAccountID()), Contract::getProxyAccountId)
                 .returns(DomainUtils.getPublicKey(adminKey), Contract::getPublicKey)
@@ -870,7 +869,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     private void assertContractResult(long consensusTimestamp, ContractFunctionResult result,
                                       List<ContractLoginfo> logInfoList,
                                       ObjectAssert<ContractResult> contractResult,
-                                      List<com.hederahashgraph.api.proto.java.ContractStateChange> stageChangeList) {
+                                      List<com.hederahashgraph.api.proto.java.ContractStateChange> stateChanges) {
         List<Long> createdContractIds = result.getCreatedContractIDsList()
                 .stream()
                 .map(ContractID::getContractNum)
@@ -904,29 +903,27 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     .returns(Utility.getTopic(logInfo, 3), ContractLog::getTopic3);
         }
 
-        for (var contractStateChangeInfo : stageChangeList) {
+        int count = 0;
+        var contractStateChanges = assertThat(contractStateChangeRepository.findAll());
+
+        for (var contractStateChangeInfo : stateChanges) {
             EntityId contractId = EntityId.of(contractStateChangeInfo.getContractID());
-            for (int j = 0; j < contractStateChangeInfo.getStorageChangesCount(); ++j) {
-                StorageChange storageChange = contractStateChangeInfo.getStorageChanges(j);
+            for (var storageChange : contractStateChangeInfo.getStorageChangesList()) {
                 byte[] slot = DomainUtils.toBytes(storageChange.getSlot());
                 byte[] valueWritten = storageChange.hasValueWritten() ? storageChange.getValueWritten().getValue()
                         .toByteArray() : null;
 
-                ContractStateChange.Id id = new ContractStateChange.Id();
-                id.setConsensusTimestamp(consensusTimestamp);
-                id.setContractId(contractId);
-                id.setSlot(slot);
-
-                assertThat(contractStateChangeRepository.findById(id))
-                        .isPresent()
-                        .get()
-                        .returns(consensusTimestamp, ContractStateChange::getConsensusTimestamp)
-                        .returns(contractId, ContractStateChange::getContractId)
-                        .returns(slot, ContractStateChange::getSlot)
+                contractStateChanges.filteredOn(c -> c.getConsensusTimestamp() == consensusTimestamp
+                                && c.getContractId() == contractId.getId() && Arrays.equals(c.getSlot(), slot))
+                        .hasSize(1)
+                        .first()
                         .returns(storageChange.getValueRead().toByteArray(), ContractStateChange::getValueRead)
                         .returns(valueWritten, ContractStateChange::getValueWritten);
+                ++count;
             }
         }
+
+        contractStateChanges.hasSize(count);
     }
 
     private void assertPartialContractCreateResult(ContractCreateTransactionBody transactionBody,

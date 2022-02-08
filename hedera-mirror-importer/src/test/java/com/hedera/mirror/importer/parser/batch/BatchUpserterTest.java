@@ -41,9 +41,12 @@ import org.springframework.transaction.support.TransactionOperations;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
@@ -60,11 +63,14 @@ import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.ContractRepository;
+import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 
@@ -81,6 +87,9 @@ class BatchUpserterTest extends IntegrationTest {
     private ContractRepository contractRepository;
 
     @Resource
+    private CryptoAllowanceRepository cryptoAllowanceRepository;
+
+    @Resource
     private DomainBuilder domainBuilder;
 
     @Resource
@@ -93,6 +102,9 @@ class BatchUpserterTest extends IntegrationTest {
     private NftRepository nftRepository;
 
     @Resource
+    private NftAllowanceRepository nftAllowanceRepository;
+
+    @Resource
     private NftTransferRepository nftTransferRepository;
 
     @Resource
@@ -103,6 +115,9 @@ class BatchUpserterTest extends IntegrationTest {
 
     @Resource
     private TokenAccountRepository tokenAccountRepository;
+
+    @Resource
+    private TokenAllowanceRepository tokenAllowanceRepository;
 
     @Resource(name = TOKEN_DISSOCIATE_BATCH_PERSISTER)
     private BatchPersister tokenDissociateTransferBatchUpserter;
@@ -141,6 +156,16 @@ class BatchUpserterTest extends IntegrationTest {
                 .hasSize(3)
                 .extracting(Contract::getId)
                 .containsExactlyInAnyOrder(contract1.getId(), contract2.getId(), contract3.getId());
+    }
+
+    @Test
+    void cryptoAllowance() {
+        CryptoAllowance cryptoAllowance1 = domainBuilder.cryptoAllowance().get();
+        CryptoAllowance cryptoAllowance2 = domainBuilder.cryptoAllowance().get();
+        CryptoAllowance cryptoAllowance3 = domainBuilder.cryptoAllowance().get();
+        var cryptoAllowances = List.of(cryptoAllowance1, cryptoAllowance2, cryptoAllowance3);
+        persist(batchPersister, cryptoAllowances);
+        assertThat(cryptoAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(cryptoAllowances);
     }
 
     @Test
@@ -645,6 +670,26 @@ class BatchUpserterTest extends IntegrationTest {
     }
 
     @Test
+    void nftAllowance() {
+        NftAllowance nftAllowance1 = domainBuilder.nftAllowance().get();
+        NftAllowance nftAllowance2 = domainBuilder.nftAllowance().get();
+        NftAllowance nftAllowance3 = domainBuilder.nftAllowance().get();
+        var nftAllowance = List.of(nftAllowance1, nftAllowance2, nftAllowance3);
+        persist(batchPersister, nftAllowance);
+        assertThat(nftAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(nftAllowance);
+    }
+
+    @Test
+    void tokenAllowance() {
+        TokenAllowance tokenAllowance1 = domainBuilder.tokenAllowance().get();
+        TokenAllowance tokenAllowance2 = domainBuilder.tokenAllowance().get();
+        TokenAllowance tokenAllowance3 = domainBuilder.tokenAllowance().get();
+        var tokenAllowance = List.of(tokenAllowance1, tokenAllowance2, tokenAllowance3);
+        persist(batchPersister, tokenAllowance);
+        assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAllowance);
+    }
+
+    @Test
     void tokenDissociateTransfer() {
         // given
         EntityId accountId = EntityId.of("0.0.215", ACCOUNT);
@@ -669,11 +714,13 @@ class BatchUpserterTest extends IntegrationTest {
         TokenTransfer fungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
                 .amount(-10)
                 .id(new TokenTransfer.Id(consensusTimestamp, ftId, accountId))
+                .isApproval(false)
                 .payerAccountId(payerId)
                 .tokenDissociate(true)).get();
         TokenTransfer nonFungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
                 .amount(-2)
                 .id(new TokenTransfer.Id(consensusTimestamp, tokenId1, accountId))
+                .isApproval(false)
                 .payerAccountId(payerId)
                 .tokenDissociate(true)).get();
         List<TokenTransfer> tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer);
@@ -719,7 +766,7 @@ class BatchUpserterTest extends IntegrationTest {
         Entity entity = new Entity();
         entity.setId(id);
         entity.setCreatedTimestamp(createdTimestamp);
-        entity.setModifiedTimestamp(modifiedTimestamp);
+        entity.setTimestampLower(modifiedTimestamp);
         entity.setNum(id);
         entity.setRealm(0L);
         entity.setShard(0L);
@@ -811,6 +858,7 @@ class BatchUpserterTest extends IntegrationTest {
                                        long consensusTimestamp) {
         NftTransfer nftTransfer = new NftTransfer();
         nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
+        nftTransfer.setIsApproval(false);
         nftTransfer.setSenderAccountId(senderAccountId);
         return nftTransfer;
     }

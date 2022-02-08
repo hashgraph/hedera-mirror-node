@@ -73,7 +73,9 @@ public enum TransactionType {
     SCHEDULESIGN(44, EntityOperation.NONE),
     TOKENFEESCHEDULEUPDATE(45, EntityOperation.NONE),
     TOKENPAUSE(46, EntityOperation.NONE),
-    TOKENUNPAUSE(47, EntityOperation.NONE);
+    TOKENUNPAUSE(47, EntityOperation.NONE),
+    CRYPTOADJUSTALLOWANCE(48, EntityOperation.NONE),
+    CRYPTOAPPROVEALLOWANCE(49, EntityOperation.NONE);
 
     private static final Map<Integer, TransactionType> idMap = Arrays.stream(values())
             .collect(Collectors.toMap(TransactionType::getProtoId, Function.identity()));

@@ -24,7 +24,10 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -66,6 +69,9 @@ public interface EntityListener {
     default void onContractResult(ContractResult contractResult) throws ImporterException {
     }
 
+    default void onCryptoAllowance(CryptoAllowance cryptoAllowance) {
+    }
+
     default void onCustomFee(CustomFee customFee) throws ImporterException {
     }
 
@@ -84,6 +90,9 @@ public interface EntityListener {
     default void onNft(Nft nft) throws ImporterException {
     }
 
+    default void onNftAllowance(NftAllowance nftAllowance) {
+    }
+
     default void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
     }
 
@@ -97,6 +106,9 @@ public interface EntityListener {
     }
 
     default void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
+    }
+
+    default void onTokenAllowance(TokenAllowance tokenAllowance) {
     }
 
     default void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {

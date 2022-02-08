@@ -29,6 +29,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -57,9 +58,12 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.NftTransferId;
@@ -69,7 +73,9 @@ import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 
 @Component
@@ -208,11 +214,21 @@ public class DomainBuilder {
     public DomainWrapper<ContractStateChange, ContractStateChange.ContractStateChangeBuilder> contractStateChange() {
         ContractStateChange.ContractStateChangeBuilder builder = ContractStateChange.builder()
                 .consensusTimestamp(timestamp())
-                .contractId(entityId(CONTRACT))
+                .contractId(entityId(CONTRACT).getId())
                 .payerAccountId(entityId(ACCOUNT))
                 .slot(bytes(128))
                 .valueRead(bytes(64))
                 .valueWritten(bytes(64));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder> cryptoAllowance() {
+        var builder = CryptoAllowance.builder()
+                .amount(10)
+                .owner(entityId(ACCOUNT).getId())
+                .payerAccountId(entityId(ACCOUNT))
+                .spender(entityId(ACCOUNT).getId())
+                .timestampRange(Range.atLeast(timestamp()));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -312,6 +328,29 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<NftAllowance, NftAllowance.NftAllowanceBuilder> nftAllowance() {
+        var builder = NftAllowance.builder()
+                .approvedForAll(false)
+                .owner(entityId(ACCOUNT).getId())
+                .payerAccountId(entityId(ACCOUNT))
+                .serialNumbers(List.of(1L, 2L, 3L))
+                .spender(entityId(ACCOUNT).getId())
+                .timestampRange(Range.atLeast(timestamp()))
+                .tokenId(entityId(TOKEN).getId());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder> tokenAllowance() {
+        var builder = TokenAllowance.builder()
+                .amount(10L)
+                .owner(entityId(ACCOUNT).getId())
+                .payerAccountId(entityId(ACCOUNT))
+                .spender(entityId(ACCOUNT).getId())
+                .timestampRange(Range.atLeast(timestamp()))
+                .tokenId(entityId(TOKEN).getId());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<TokenTransfer, TokenTransfer.TokenTransferBuilder> tokenTransfer() {
         TokenTransfer.TokenTransferBuilder builder = TokenTransfer.builder()
                 .amount(100L)
@@ -319,6 +358,28 @@ public class DomainBuilder {
                 .payerAccountId(entityId(ACCOUNT))
                 .tokenDissociate(false);
 
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<Transaction, Transaction.TransactionBuilder> transaction() {
+        Transaction.TransactionBuilder builder = Transaction.builder()
+                .chargedTxFee(10000000L)
+                .consensusTimestamp(timestamp())
+                .entityId(entityId(ACCOUNT))
+                .initialBalance(10000000L)
+                .maxFee(100000000L)
+                .memo(bytes(10))
+                .nodeAccountId(entityId(ACCOUNT))
+                .nonce(0)
+                .parentConsensusTimestamp(timestamp())
+                .payerAccountId(entityId(ACCOUNT))
+                .result(ResponseCodeEnum.SUCCESS.getNumber())
+                .scheduled(false)
+                .transactionBytes(bytes(100))
+                .transactionHash(bytes(48))
+                .type(TransactionType.CRYPTOTRANSFER.getProtoId())
+                .validStartNs(timestamp())
+                .validDurationSeconds(120L);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

@@ -65,6 +65,13 @@ create index if not exists contract_result__id_payer_timestamp
 alter table if exists contract_state_change
     add constraint contract_state_change__pk primary key (consensus_timestamp, contract_id, slot, payer_account_id);
 
+-- crypto_allowance
+alter table if exists crypto_allowance
+    add constraint crypto_allowance__pk primary key (owner, spender);
+alter table if exists crypto_allowance_history
+    add constraint crypto_allowance_history__pk primary key (owner, spender, timestamp_range);
+create index if not exists crypto_allowance_history__timestamp_range on crypto_allowance_history using gist (timestamp_range);
+
 -- crypto_transfer
 create index if not exists crypto_transfer__consensus_timestamp
     on crypto_transfer (consensus_timestamp);
@@ -119,10 +126,17 @@ alter table nft
     add constraint nft__pk primary key (token_id, serial_number);
 create index if not exists nft__account_token on nft (account_id, token_id);
 
+-- nft_allowance
+alter table if exists nft_allowance
+    add constraint nft_allowance__pk primary key (owner, spender, token_id);
+alter table if exists nft_allowance_history
+    add constraint nft_allowance_history__pk primary key (owner, spender, token_id, timestamp_range);
+create index if not exists nft_allowance_history__timestamp_range on nft_allowance_history using gist (timestamp_range);
+
 -- nft_transfer
 create index if not exists nft_transfer__timestamp on nft_transfer (consensus_timestamp desc);
 create unique index if not exists nft_transfer__token_id_serial_num_timestamp
-    on nft_transfer(token_id desc, serial_number desc, consensus_timestamp desc);
+    on nft_transfer (token_id desc, serial_number desc, consensus_timestamp desc);
 
 -- non_fee_transfer
 create index if not exists non_fee_transfer__consensus_timestamp
@@ -151,6 +165,13 @@ alter table token
 -- token_account
 alter table token_account
     add constraint token_account__pk primary key (account_id, token_id, modified_timestamp);
+
+-- token_allowance
+alter table if exists token_allowance
+    add constraint token_allowance__pk primary key (owner, spender, token_id);
+alter table if exists token_allowance_history
+    add constraint token_allowance_history__pk primary key (owner, spender, token_id, timestamp_range);
+create index if not exists token_allowance_history__timestamp_range on token_allowance_history using gist (timestamp_range);
 
 -- token_balance
 alter table token_balance

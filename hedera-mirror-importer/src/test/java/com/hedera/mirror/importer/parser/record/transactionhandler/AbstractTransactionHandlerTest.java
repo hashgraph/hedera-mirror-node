@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.BoolValue;
@@ -29,9 +30,6 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Message;
 import com.google.protobuf.StringValue;
-
-import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
-
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -48,6 +46,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.Builder;
@@ -66,6 +65,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -75,6 +75,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -83,38 +84,27 @@ import com.hedera.mirror.importer.util.Utility;
 abstract class AbstractTransactionHandlerTest {
 
     protected static final Duration DEFAULT_AUTO_RENEW_PERIOD = Duration.newBuilder().setSeconds(1).build();
-
     protected static final Long DEFAULT_ENTITY_NUM = 100L;
-
     protected static final Timestamp DEFAULT_EXPIRATION_TIME = Utility.instantToTimestamp(Instant.now());
-
     protected static final Key DEFAULT_KEY = getKey("4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f");
-
     protected static final String DEFAULT_MEMO = "default entity memo";
-
     protected static final boolean DEFAULT_RECEIVER_SIG_REQUIRED = false;
-
     protected static final Key DEFAULT_SUBMIT_KEY = getKey(
             "5a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96G");
-
     protected static final KeyList DEFAULT_KEY_LIST = KeyList.newBuilder().addAllKeys(
-            Arrays.asList(DEFAULT_KEY, DEFAULT_SUBMIT_KEY))
-            .build();
-
+            Arrays.asList(DEFAULT_KEY, DEFAULT_SUBMIT_KEY)).build();
     protected static final String UPDATED_MEMO = "update memo";
-
     protected static final BoolValue UPDATED_RECEIVER_SIG_REQUIRED = BoolValue.of(true);
     protected static final Timestamp MODIFIED_TIMESTAMP = Timestamp.newBuilder().setSeconds(200).setNanos(2).build();
     private static final Timestamp CREATED_TIMESTAMP = Timestamp.newBuilder().setSeconds(100).setNanos(1).build();
     private static final Long CREATED_TIMESTAMP_NS = DomainUtils.timestampInNanosMax(CREATED_TIMESTAMP);
-
     private static final Long MODIFIED_TIMESTAMP_NS = DomainUtils.timestampInNanosMax(MODIFIED_TIMESTAMP);
 
+    protected final DomainBuilder domainBuilder = new DomainBuilder();
+    protected final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
     protected final Logger log = LogManager.getLogger(getClass());
 
     protected final ContractID contractId = ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build();
-
-    protected final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
 
     protected TransactionHandler transactionHandler;
 
@@ -132,6 +122,13 @@ abstract class AbstractTransactionHandlerTest {
 
     protected static Key getKey(String keyString) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(keyString)).build();
+    }
+
+    protected final <T> T assertArg(Consumer<T> asserter) {
+        return argThat(t -> {
+            asserter.accept(t);
+            return true;
+        });
     }
 
     protected abstract TransactionHandler getTransactionHandler();
@@ -265,12 +262,12 @@ abstract class AbstractTransactionHandlerTest {
         if (entityOperation == EntityOperation.CREATE) {
             entity.setCreatedTimestamp(CREATED_TIMESTAMP_NS);
             entity.setDeleted(false);
-            entity.setModifiedTimestamp(CREATED_TIMESTAMP_NS);
+            entity.setTimestampLower(CREATED_TIMESTAMP_NS);
         } else if (entityOperation == EntityOperation.UPDATE) {
             entity.setDeleted(false);
-            entity.setModifiedTimestamp(MODIFIED_TIMESTAMP_NS);
+            entity.setTimestampLower(MODIFIED_TIMESTAMP_NS);
         } else {
-            entity.setModifiedTimestamp(MODIFIED_TIMESTAMP_NS);
+            entity.setTimestampLower(MODIFIED_TIMESTAMP_NS);
         }
 
         return entity;

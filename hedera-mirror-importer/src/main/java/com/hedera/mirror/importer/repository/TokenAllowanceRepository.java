@@ -1,10 +1,10 @@
-package com.hedera.mirror.importer.parser.batch;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,13 +20,8 @@ package com.hedera.mirror.importer.parser.batch;
  * ‍
  */
 
-import java.util.Collection;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import org.springframework.data.repository.CrudRepository;
 
-/**
- * Performs bulk insertion of domain objects to the database. For some domain types it might be insert-only while others
- * may use upsert logic.
- */
-public interface BatchPersister {
-
-    void persist(Collection<? extends Object> items);
+public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance, TokenAllowance.Id> {
 }
