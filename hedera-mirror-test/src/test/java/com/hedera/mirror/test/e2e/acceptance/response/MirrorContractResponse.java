@@ -34,9 +34,9 @@ public class MirrorContractResponse {
     private String createdTimestamp;
     private String creatorAccountId;
     private boolean deleted;
+    private String evmAddress;
     private String executedTimestamp;
     private String expirationTimestamp;
-    private String evmAddress;
     private String fileId;
     private String memo;
     private String obtainerId;
