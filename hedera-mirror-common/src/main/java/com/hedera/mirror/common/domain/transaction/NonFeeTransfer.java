@@ -27,9 +27,6 @@ import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -38,6 +35,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
 @Builder
@@ -51,6 +49,8 @@ public class NonFeeTransfer implements Persistable<NonFeeTransfer.Id> {
     @EmbeddedId
     @JsonUnwrapped
     private NonFeeTransfer.Id id;
+
+    private Boolean isApproval;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;

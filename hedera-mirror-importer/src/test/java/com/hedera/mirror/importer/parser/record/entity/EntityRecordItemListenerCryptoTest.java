@@ -47,6 +47,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -60,6 +61,9 @@ import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
+import com.hedera.mirror.importer.repository.NftAllowanceRepository;
+import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
@@ -70,11 +74,66 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private static final ByteString ALIAS_KEY = ByteString.copyFromUtf8(
             "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff");
 
+    @Resource
+    private CryptoAllowanceRepository cryptoAllowanceRepository;
+
+    @Resource
+    private NftAllowanceRepository nftAllowanceRepository;
+
+    @Resource
+    private TokenAllowanceRepository tokenAllowanceRepository;
+
     @BeforeEach
     void before() {
         entityProperties.getPersist().setClaims(true);
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         entityProperties.getPersist().setTransactionBytes(false);
+    }
+
+    @Test
+    void cryptoAdjustAllowance() {
+        RecordItem recordItem = recordItemBuilder.cryptoAdjustAllowance().build();
+        parseRecordItemAndCommit(recordItem);
+        assertAllowances(recordItem);
+    }
+
+    @Test
+    void cryptoApproveAllowance() {
+        RecordItem recordItem = recordItemBuilder.cryptoApproveAllowance().build();
+        parseRecordItemAndCommit(recordItem);
+        assertAllowances(recordItem);
+    }
+
+    private void assertAllowances(RecordItem recordItem) {
+        assertAll(
+                () -> assertEquals(1, cryptoAllowanceRepository.count()),
+                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(0, entityRepository.count()),
+                () -> assertEquals(2, nftAllowanceRepository.count()),
+                () -> assertEquals(1, tokenAllowanceRepository.count()),
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord()),
+                () -> assertThat(cryptoAllowanceRepository.findAll())
+                        .allSatisfy(a -> assertThat(a.getAmount()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
+                        .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
+                        .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
+                () -> assertThat(nftAllowanceRepository.findAll())
+                        .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getSerialNumbers()).isNotNull())
+                        .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getTokenId()).isPositive())
+                        .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
+                        .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
+                () -> assertThat(tokenAllowanceRepository.findAll())
+                        .allSatisfy(a -> assertThat(a.getAmount()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getTokenId()).isPositive())
+                        .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
+                        .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId()))
+        );
     }
 
     @Test
@@ -222,7 +281,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(DomainUtils.timeStampInNanos(cryptoUpdateTransactionBody.getExpirationTime()),
                         dbAccountEntity.getExpirationTimestamp()),
                 () -> assertEquals(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()),
-                        dbAccountEntity.getModifiedTimestamp()),
+                        dbAccountEntity.getTimestampLower()),
                 () -> assertFalse(dbAccountEntity.getReceiverSigRequired())
         );
     }
@@ -363,7 +422,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .isNotNull()
                         .returns(true, Entity::getDeleted)
                         .returns(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()),
-                                Entity::getModifiedTimestamp)
+                                Entity::getTimestampLower)
                         .usingRecursiveComparison()
                         .ignoringFields("deleted", "timestampRange")
                         .isEqualTo(dbAccountEntityBefore)
@@ -596,7 +655,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertArrayEquals(expected.getKey().toByteArray(), actualAccount.getKey()),
                 () -> assertEquals(0, actualAccount.getMaxAutomaticTokenAssociations()),
                 () -> assertEquals(expected.getMemo(), actualAccount.getMemo()),
-                () -> assertEquals(timestamp, actualAccount.getModifiedTimestamp()),
+                () -> assertEquals(timestamp, actualAccount.getTimestampLower()),
                 () -> assertEquals(DomainUtils.getPublicKey(expected.getKey().toByteArray()),
                         actualAccount.getPublicKey()),
                 () -> assertEquals(EntityId.of(expected.getProxyAccountID()),

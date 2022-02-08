@@ -36,8 +36,8 @@ public class TokenDissociateTransferUpsertQueryGenerator implements UpsertQueryG
             ".payer_account_id" +
             "), updated_nft as (" +
             "  insert into nft_transfer (consensus_timestamp, sender_account_id, serial_number, token_id," +
-            "payer_account_id)" +
-            "  select modified_timestamp, account_id, serial_number, token_id, payer_account_id" +
+            "payer_account_id, is_approval)" +
+            "  select modified_timestamp, account_id, serial_number, token_id, payer_account_id, false" +
             "  from dissociated_nft" +
             "  returning token_id" +
             ") " +

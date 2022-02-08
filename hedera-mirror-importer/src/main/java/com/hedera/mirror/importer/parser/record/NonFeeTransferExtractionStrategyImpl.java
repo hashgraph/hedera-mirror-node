@@ -49,13 +49,8 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
      */
     @Override
     public Iterable<AccountAmount> extractNonFeeTransfers(TransactionBody body, TransactionRecord transactionRecord) {
-        // Only these types of transactions have non-fee transfers.
-        if (!body.hasCryptoCreateAccount() && !body.hasContractCreateInstance() && !body.hasCryptoTransfer()
-                && !body.hasContractCall()) {
-            return Collections.emptyList();
-        }
-
         AccountID payerAccountId = body.getTransactionID().getAccountID();
+
         if (body.hasCryptoTransfer()) {
             return body.getCryptoTransfer().getTransfers().getAccountAmountsList();
         } else if (body.hasCryptoCreateAccount()) {
@@ -64,7 +59,8 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
         } else if (body.hasContractCreateInstance()) {
             return extractForCreateEntity(body.getContractCreateInstance().getInitialBalance(), payerAccountId,
                     contractIdToAccountId(transactionRecord.getReceipt().getContractID()), transactionRecord);
-        } else { // contractCall
+        } else if (body.hasContractCall()) {
+
             EntityId contractId = entityIdService.lookup(transactionRecord.getReceipt().getContractID(),
                     body.getContractCall().getContractID());
             LinkedList<AccountAmount> result = new LinkedList<>();
@@ -75,19 +71,39 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
                     .setRealmNum(contractId.getRealmNum())
                     .setAccountNum(contractId.getEntityNum())
                     .build();
-            result.add(AccountAmount.newBuilder().setAccountID(contractAccountId).setAmount(amount).build());
-            result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(-amount).build());
+            result.add(AccountAmount.newBuilder()
+                    .setAccountID(contractAccountId)
+                    .setAmount(amount)
+                    .setIsApproval(false)
+                    .build());
+            result.add(AccountAmount.newBuilder()
+                    .setAccountID(payerAccountId)
+                    .setAmount(-amount)
+                    .setIsApproval(false)
+                    .build());
             return result;
+        } else {
+            return Collections.emptyList();
         }
     }
 
     private Iterable<AccountAmount> extractForCreateEntity(
             long initialBalance, AccountID payerAccountId, AccountID createdEntity, TransactionRecord txRecord) {
         LinkedList<AccountAmount> result = new LinkedList<>();
-        result.add(AccountAmount.newBuilder().setAccountID(payerAccountId).setAmount(-initialBalance).build());
+        result.add(AccountAmount.newBuilder()
+                .setAccountID(payerAccountId)
+                .setAmount(-initialBalance)
+                .setIsApproval(false)
+                .build());
+
         if (ResponseCodeEnum.SUCCESS == txRecord.getReceipt().getStatus()) {
-            result.add(AccountAmount.newBuilder().setAccountID(createdEntity).setAmount(initialBalance).build());
+            result.add(AccountAmount.newBuilder()
+                    .setAccountID(createdEntity)
+                    .setAmount(initialBalance)
+                    .setIsApproval(false)
+                    .build());
         }
+
         return result;
     }
 

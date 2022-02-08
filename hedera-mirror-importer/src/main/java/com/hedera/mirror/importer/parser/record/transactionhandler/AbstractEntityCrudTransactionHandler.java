@@ -68,7 +68,7 @@ abstract class AbstractEntityCrudTransactionHandler<T extends AbstractEntity> im
             entity.setDeleted(true);
         }
 
-        entity.setModifiedTimestamp(consensusTimestamp);
+        entity.setTimestampLower(consensusTimestamp);
         doUpdateEntity(entity, recordItem);
     }
 

@@ -48,7 +48,8 @@ public class ContractStateChange implements Persistable<ContractStateChange.Id> 
     private long consensusTimestamp;
 
     @Convert(converter = ContractIdConverter.class)
-    private EntityId contractId;
+    @javax.persistence.Id
+    private long contractId;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
@@ -79,11 +80,15 @@ public class ContractStateChange implements Persistable<ContractStateChange.Id> 
         return true;
     }
 
+    public void setContractId(EntityId contractId) {
+        this.contractId = contractId.getId();
+    }
+
     @Data
     public static class Id implements Serializable {
         private static final long serialVersionUID = -3677350664183037811L;
         private long consensusTimestamp;
-        private EntityId contractId;
+        private long contractId;
         private byte[] slot;
     }
 }

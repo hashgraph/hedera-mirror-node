@@ -133,7 +133,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
         Contract contract = contractId.toEntity();
         contract.setCreatedTimestamp(consensusTimestamp);
         contract.setDeleted(false);
-        contract.setModifiedTimestamp(consensusTimestamp);
+        contract.setTimestampLower(consensusTimestamp);
         return contract;
     }
 

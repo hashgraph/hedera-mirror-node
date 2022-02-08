@@ -38,15 +38,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
@@ -127,7 +127,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
             assertAll(
                     () -> assertThat(entity).isPresent().get()
                             .returns(consensusTimestamp, Entity::getCreatedTimestamp)
-                            .returns(consensusTimestamp, Entity::getModifiedTimestamp)
+                            .returns(consensusTimestamp, Entity::getTimestampLower)
                             .returns("", Entity::getMemo)
             );
         }
@@ -148,7 +148,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
                     entity.setId(rs.getLong("id"));
                     entity.setKey(rs.getBytes("key"));
                     entity.setMemo(rs.getString("memo"));
-                    entity.setModifiedTimestamp(rs.getLong("modified_timestamp"));
+                    entity.setTimestampLower(rs.getLong("modified_timestamp"));
                     entity.setNum(rs.getLong("num"));
                     entity.setPublicKey(rs.getString("public_key"));
                     entity.setRealm(rs.getLong("realm"));
@@ -211,7 +211,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
             assertAll(
                     () -> assertThat(entity).isPresent().get()
                             .returns(consensusTimestamp, Entity::getCreatedTimestamp)
-                            .returns(consensusTimestamp, Entity::getModifiedTimestamp)
+                            .returns(consensusTimestamp, Entity::getTimestampLower)
                             .returns("", Entity::getMemo)
             );
         }
@@ -265,7 +265,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
             assertAll(
                     () -> assertThat(entity).isPresent().get()
                             .returns(createdTimestamp, Entity::getCreatedTimestamp)
-                            .returns(modifiedTimestamp, Entity::getModifiedTimestamp)
+                            .returns(modifiedTimestamp, Entity::getTimestampLower)
             );
         }
     }
@@ -330,7 +330,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
             assertAll(
                     () -> assertThat(entity).isPresent().get()
                             .returns(createdTimestamp, Entity::getCreatedTimestamp)
-                            .returns(modifiedTimestamp, Entity::getModifiedTimestamp)
+                            .returns(modifiedTimestamp, Entity::getTimestampLower)
             );
         }
     }

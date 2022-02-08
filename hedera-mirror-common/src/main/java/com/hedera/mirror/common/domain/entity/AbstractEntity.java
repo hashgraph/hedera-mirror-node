@@ -20,7 +20,6 @@ package com.hedera.mirror.common.domain.entity;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
@@ -42,6 +41,7 @@ import org.hibernate.annotations.TypeDef;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.RangeToStringDeserializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
+import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.util.DomainUtils;
 
@@ -58,7 +58,7 @@ import com.hedera.mirror.common.util.DomainUtils;
         typeClass = PostgreSQLEnumType.class
 )
 @Upsertable(history = true)
-public abstract class AbstractEntity {
+public abstract class AbstractEntity implements History {
 
     private Long autoRenewPeriod;
 
@@ -99,19 +99,6 @@ public abstract class AbstractEntity {
     @JsonDeserialize(using = RangeToStringDeserializer.class)
     @JsonSerialize(using = RangeToStringSerializer.class)
     private Range<Long> timestampRange;
-
-    public void setTimestampRangeUpper(long timestampRangeUpper) {
-        setTimestampRange(Range.closedOpen(getModifiedTimestamp(), timestampRangeUpper));
-    }
-
-    @JsonIgnore
-    public Long getModifiedTimestamp() {
-        return timestampRange != null ? timestampRange.lowerEndpoint() : null;
-    }
-
-    public void setModifiedTimestamp(long modifiedTimestamp) {
-        timestampRange = Range.atLeast(modifiedTimestamp);
-    }
 
     public void setKey(byte[] key) {
         this.key = key;

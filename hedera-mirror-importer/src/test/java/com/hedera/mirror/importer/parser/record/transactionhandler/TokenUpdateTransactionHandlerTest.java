@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.common.util.DomainUtils;
-
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.NftTransfer;
@@ -43,6 +41,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.repository.NftRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -105,7 +104,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         TransactionBody body = recordItem.getTransactionBody();
         var payerAccount = EntityId.of(body.getTransactionID().getAccountID()).toEntity().getId();
         Mockito.verify(nftRepository).updateTreasury(tokenID.getTokenNum(), previousAccountId.getAccountNum(),
-                newAccountId.getAccountNum(), consensusTimestamp, payerAccount);
+                newAccountId.getAccountNum(), consensusTimestamp, payerAccount, false);
     }
 
     @Test
