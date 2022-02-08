@@ -34,6 +34,7 @@ public class MirrorContractResponse {
     private String createdTimestamp;
     private String creatorAccountId;
     private boolean deleted;
+    private String evmAddress;
     private String executedTimestamp;
     private String expirationTimestamp;
     private String fileId;
@@ -42,6 +43,5 @@ public class MirrorContractResponse {
     private String payerAccountId;
     private String proxyAccountId;
     private String scheduleId;
-    private String solidityAddress;
     private MirrorTimestampRange timestamp;
 }

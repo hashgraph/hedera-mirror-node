@@ -42,15 +42,15 @@ public class FeatureInputHandler {
         return refDate;
     }
 
-    public static String solidityAddress(AccountId accountId) {
-        return FeatureInputHandler.solidityAddress(accountId.shard, accountId.realm, accountId.num);
+    public static String evmAddress(AccountId accountId) {
+        return FeatureInputHandler.evmAddress(accountId.shard, accountId.realm, accountId.num);
     }
 
-    public static String solidityAddress(ContractId contractId) {
-        return FeatureInputHandler.solidityAddress(contractId.shard, contractId.realm, contractId.num);
+    public static String evmAddress(ContractId contractId) {
+        return FeatureInputHandler.evmAddress(contractId.shard, contractId.realm, contractId.num);
     }
 
-    public static String solidityAddress(long shard, long realm, long num) {
+    public static String evmAddress(long shard, long realm, long num) {
         return String.format("0x%08x%016x%016x", shard, realm, num);
     }
 }

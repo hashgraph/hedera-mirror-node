@@ -187,7 +187,7 @@ public class ContractFeature extends AbstractFeature {
         assertThat(mirrorContract.isDeleted()).isEqualTo(isDeleted);
         assertThat(mirrorContract.getFileId()).isEqualTo(fileId.toString());
         assertThat(mirrorContract.getMemo()).isNotBlank();
-        String address = mirrorContract.getSolidityAddress();
+        String address = mirrorContract.getEvmAddress();
         assertThat(address).isNotBlank().isNotEqualTo("0x").isNotEqualTo("0x0000000000000000000000000000000000000000");
         assertThat(mirrorContract.getTimestamp()).isNotNull();
         assertThat(mirrorContract.getTimestamp().getFrom()).isNotNull();
@@ -234,13 +234,13 @@ public class ContractFeature extends AbstractFeature {
         String[] createdIds = contractResult.getCreatedContractIds();
         assertThat(createdIds).isNotEmpty();
         assertThat(contractResult.getErrorMessage()).isBlank();
-        assertThat(contractResult.getFrom()).isEqualTo(FeatureInputHandler.solidityAddress(
+        assertThat(contractResult.getFrom()).isEqualTo(FeatureInputHandler.evmAddress(
                 contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId()));
         assertThat(contractResult.getGasLimit())
                 .isEqualTo(contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
                         .getMaxContractFunctionGas());
         assertThat(contractResult.getGasUsed()).isPositive();
-        assertThat(contractResult.getTo()).isEqualTo(FeatureInputHandler.solidityAddress(contractId));
+        assertThat(contractResult.getTo()).isEqualTo(FeatureInputHandler.evmAddress(contractId));
 
         int amount = 0; // no payment in contract construction phase
         int numCreatedIds = 2; // parent and child contract
