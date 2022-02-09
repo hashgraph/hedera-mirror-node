@@ -26,6 +26,8 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -53,7 +55,7 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +66,7 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 
+import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -240,6 +243,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertAutomaticTokenAssociations(recordItem);
         }
 
+        insertContractResult(recordItem, entityId, recordItem.getPayerAccountId());
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
     }
@@ -274,7 +278,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setValidStartNs(DomainUtils.timeStampInNanos(transactionId.getTransactionValidStart()));
 
         if (txRecord.hasParentConsensusTimestamp()) {
-            transaction.setParentConsensusTimestamp(DomainUtils.timestampInNanosMax(txRecord.getParentConsensusTimestamp()));
+            transaction.setParentConsensusTimestamp(DomainUtils
+                    .timestampInNanosMax(txRecord.getParentConsensusTimestamp()));
         }
 
         return transaction;
@@ -1069,6 +1074,64 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         if (royaltyFee.hasFallbackFee()) {
             parseFixedFee(customFee, royaltyFee.getFallbackFee(), tokenId);
+        }
+    }
+
+    private void insertContractResult(RecordItem recordItem, EntityId entityId, EntityId payerAccountId) {
+        if (recordItem.getTransactionBody().hasContractCreateInstance() ||
+                recordItem.getTransactionBody().hasContractCall()) {
+            // allow transaction handlers to manage ContractCreate & ContractCall transaction logic
+            return;
+        }
+
+        if (entityProperties.getPersist().isContracts()) {
+            ContractFunctionResult functionResult = ContractFunctionResult.getDefaultInstance();
+
+            var transactionRecord = recordItem.getRecord();
+            ContractResult contractResult = new ContractResult();
+            if (transactionRecord.hasContractCreateResult()) {
+                functionResult = transactionRecord.getContractCreateResult();
+                var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+                contractResult.setAmount(transactionBody.getInitialBalance());
+                contractResult.setGasLimit(transactionBody.getGas());
+                contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
+            } else if (transactionRecord.hasContractCallResult()) {
+                functionResult = transactionRecord.getContractCallResult();
+                var transactionBody = recordItem.getTransactionBody().getContractCall();
+                contractResult.setAmount(transactionBody.getAmount());
+                contractResult.setGasLimit(transactionBody.getGas());
+                contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getFunctionParameters()));
+            } else {
+                return;
+            }
+
+            if (functionResult != ContractFunctionResult.getDefaultInstance()) {
+                long consensusTimestamp = recordItem.getConsensusTimestamp();
+
+                contractResult.setConsensusTimestamp(consensusTimestamp);
+                contractResult.setContractId(entityId);
+                contractResult.setPayerAccountId(payerAccountId);
+
+//                if (recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_23_0)) {
+                if (functionResult.getCreatedContractIDsCount() > 0) {
+                    List<Long> createdContractIds = new ArrayList<>();
+                    for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
+                        EntityId contractId = EntityId.of(createdContractId);
+                        createdContractIds.add(contractId.getId());
+                    }
+
+                    contractResult.setCreatedContractIds(createdContractIds);
+                }
+//                }
+
+                contractResult.setBloom(DomainUtils.toBytes(functionResult.getBloom()));
+                contractResult.setCallResult(DomainUtils.toBytes(functionResult.getContractCallResult()));
+                contractResult.setErrorMessage(functionResult.getErrorMessage());
+                contractResult.setFunctionResult(functionResult.toByteArray());
+                contractResult.setGasUsed(functionResult.getGasUsed());
+
+                entityListener.onContractResult(contractResult);
+            }
         }
     }
 }

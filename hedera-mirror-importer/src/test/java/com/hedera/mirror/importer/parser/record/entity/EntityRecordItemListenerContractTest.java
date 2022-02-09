@@ -75,7 +75,6 @@ import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-@SuppressWarnings("deprecation")
 class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
 
     private static final ContractID CONTRACT_ID = ContractID.newBuilder().setContractNum(901).build();
@@ -200,7 +199,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     @Test
     void contractCreateFailedWithResult() {
         RecordItem recordItem = recordItemBuilder.contractCreate()
-                .record(TransactionRecord.Builder::clearContractCreateResult)
+                .record(r -> r.setContractCreateResult(ContractFunctionResult.getDefaultInstance()))
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
         var record = recordItem.getRecord();
@@ -267,7 +266,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         // now update
         Transaction transaction = contractUpdateAllTransaction(setupResult.protoContractId, true);
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = createOrUpdateRecord(transactionBody);
+        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -295,7 +294,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         // now update
         Transaction transaction = contractUpdateAllTransaction(false);
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = createOrUpdateRecord(transactionBody);
+        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -319,7 +318,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         Transaction transaction = contractUpdateAllTransaction(setupResult.protoContractId, true);
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = createOrUpdateRecord(transactionBody);
+        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -342,7 +341,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         Transaction transaction = contractUpdateAllTransaction(setupResult.protoContractId, true);
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = createOrUpdateRecord(transactionBody);
+        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
@@ -361,7 +360,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     void contractUpdateAllWithMemoToNew() {
         Transaction transaction = contractUpdateAllTransaction(false);
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = createOrUpdateRecord(transactionBody);
+        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -385,7 +384,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         Transaction transaction = contractUpdateAllTransaction(setupResult.protoContractId, true);
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = createOrUpdateRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
+        TransactionRecord record = getContractTransactionRecord(transactionBody,
+                ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
+                ContractTransactionType.UPDATE);
         RecordItem recordItem = new RecordItem(transaction, record);
 
         parseRecordItemAndCommit(recordItem);
@@ -406,7 +407,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         Transaction transaction = contractDeleteTransaction(setupResult.protoContractId);
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = createOrUpdateRecord(transactionBody);
+        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.DELETE);
         RecordItem recordItem = new RecordItem(transaction, record);
 
         parseRecordItemAndCommit(recordItem);
@@ -438,7 +439,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         Transaction transaction = contractDeleteTransaction(setupResult.protoContractId);
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = createOrUpdateRecord(transactionBody);
+        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.DELETE);
         RecordItem recordItem = new RecordItem(transaction, record);
 
         parseRecordItemAndCommit(recordItem);
@@ -469,7 +470,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         Transaction transaction = contractDeleteTransaction(setupResult.protoContractId);
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = createOrUpdateRecord(transactionBody);
+        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.DELETE);
         RecordItem recordItem = new RecordItem(transaction, record);
 
         parseRecordItemAndCommit(recordItem);
@@ -489,7 +490,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     void contractDeleteToNewInvalidTransaction() {
         Transaction transaction = contractDeleteTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = createOrUpdateRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
+        TransactionRecord record = getContractTransactionRecord(transactionBody,
+                ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
+                ContractTransactionType.DELETE);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
@@ -725,6 +728,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         );
     }
 
+    // add test for precompiled functions - Mint, burn, associate, dissociate, transfer (FT & NFT)
+
     private void assertFailedContractCreate(TransactionBody transactionBody, TransactionRecord record) {
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
         var contractCreateBody = transactionBody.getContractCreateInstance();
@@ -914,7 +919,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .toByteArray() : null;
 
                 contractStateChanges.filteredOn(c -> c.getConsensusTimestamp() == consensusTimestamp
-                                && c.getContractId() == contractId.getId() && Arrays.equals(c.getSlot(), slot))
+                        && c.getContractId() == contractId.getId() && Arrays.equals(c.getSlot(), slot))
                         .hasSize(1)
                         .first()
                         .returns(storageChange.getValueRead().toByteArray(), ContractStateChange::getValueRead)
@@ -969,11 +974,11 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(null, ContractResult::getGasUsed);
     }
 
-    private TransactionRecord createOrUpdateRecord(TransactionBody transactionBody) {
-        return createOrUpdateRecord(transactionBody, ResponseCodeEnum.SUCCESS);
+    private TransactionRecord createRecord(TransactionBody transactionBody) {
+        return createRecord(transactionBody, ResponseCodeEnum.SUCCESS);
     }
 
-    private TransactionRecord createOrUpdateRecord(TransactionBody transactionBody, ResponseCodeEnum status) {
+    private TransactionRecord createRecord(TransactionBody transactionBody, ResponseCodeEnum status) {
         return buildTransactionRecord(recordBuilder -> {
             recordBuilder.getReceiptBuilder().setContractID(CONTRACT_ID);
             buildContractFunctionResult(recordBuilder.getContractCreateResultBuilder());
@@ -990,6 +995,31 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             var contractFunctionResult = recordBuilder.getContractCallResultBuilder();
             buildContractFunctionResult(contractFunctionResult);
             contractFunctionResult.removeCreatedContractIDs(0); // Only contract create can contain parent ID
+        }, transactionBody, status.getNumber());
+    }
+
+    private TransactionRecord getContractTransactionRecord(TransactionBody transactionBody,
+                                                           ContractTransactionType contractTransactionType) {
+        return getContractTransactionRecord(transactionBody, ResponseCodeEnum.SUCCESS, contractTransactionType);
+    }
+
+    private TransactionRecord getContractTransactionRecord(TransactionBody transactionBody, ResponseCodeEnum status,
+                                                           ContractTransactionType contractTransactionType) {
+        return buildTransactionRecord(recordBuilder -> {
+            recordBuilder.getReceiptBuilder().setContractID(CONTRACT_ID);
+
+            switch (contractTransactionType) {
+                case CREATE:
+                    buildContractFunctionResult(recordBuilder.getContractCreateResultBuilder());
+                    break;
+                case CALL:
+                    var contractFunctionResult = recordBuilder.getContractCallResultBuilder();
+                    buildContractFunctionResult(contractFunctionResult);
+                    contractFunctionResult.removeCreatedContractIDs(0);
+                    break;
+                default:
+                    break;
+            }
         }, transactionBody, status.getNumber());
     }
 
@@ -1185,6 +1215,13 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         PLAIN,
         PARSABLE_EVM,
         CREATE2_EVM,
+    }
+
+    enum ContractTransactionType {
+        CREATE,
+        CALL,
+        UPDATE,
+        DELETE
     }
 
     @Value
