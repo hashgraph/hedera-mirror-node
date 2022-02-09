@@ -20,15 +20,20 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+
 class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
+    private final EntityProperties entityProperties = new EntityProperties();
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenMintTransactionHandler();
+        return new TokenMintTransactionHandler(entityIdService, entityListener, entityProperties);
     }
 
     @Override

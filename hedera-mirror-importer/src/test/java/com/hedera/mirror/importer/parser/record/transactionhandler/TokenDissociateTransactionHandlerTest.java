@@ -25,11 +25,14 @@ import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 class TokenDissociateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+    private final EntityProperties entityProperties = new EntityProperties();
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenDissociateTransactionHandler();
+        return new TokenDissociateTransactionHandler(entityIdService, entityListener, entityProperties);
     }
 
     @Override

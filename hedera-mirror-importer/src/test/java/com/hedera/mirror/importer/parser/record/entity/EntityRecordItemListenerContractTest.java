@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
+import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -39,6 +40,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.StorageChange;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
@@ -46,6 +48,7 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +83,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     private static final ContractID CONTRACT_ID = ContractID.newBuilder().setContractNum(901).build();
     private static final ContractID CREATED_CONTRACT_ID = ContractID.newBuilder().setContractNum(902).build();
     private static final Version HAPI_VERSION_0_23_0 = new Version(0, 23, 0);
+    private static final String METADATA = "METADATA";
+    private static final TokenID TOKEN_ID = TokenID.newBuilder().setTokenNum(903).build();
 
     // saves the mapping from proto ContractID to EntityId so as not to use EntityIdService to verify itself
     private Map<ContractID, EntityId> contractIds;
@@ -514,7 +519,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         // now call
         Transaction transaction = contractCallTransaction(setupResult.protoContractId);
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = callRecord(transactionBody);
+        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.CALL);
         ContractCallTransactionBody contractCallTransactionBody = transactionBody.getContractCall();
         RecordItem recordItem = new RecordItem(transaction, record);
 
@@ -594,7 +599,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         Transaction transaction = contractCallTransaction(setupResult.protoContractId);
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = callRecord(transactionBody);
+        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.CALL);
         ContractCallTransactionBody contractCallTransactionBody = transactionBody.getContractCall();
         RecordItem recordItem = new RecordItem(transaction, record);
 
@@ -671,7 +676,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     void contractCallFailedWithoutResult() {
         Transaction transaction = contractCallTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = callRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE)
+        TransactionRecord record = getContractTransactionRecord(transactionBody,
+                ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE, ContractTransactionType.CALL)
                 .toBuilder().clearContractCallResult().build();
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -690,7 +696,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         entityProperties.getPersist().setContracts(false);
         Transaction transaction = contractCallTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = callRecord(transactionBody);
+        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.CALL);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
@@ -729,6 +735,57 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     // add test for precompiled functions - Mint, burn, associate, dissociate, transfer (FT & NFT)
+    @ParameterizedTest
+    @EnumSource(SupportedPrecompileType.class)
+    void contractCallToExisting(SupportedPrecompileType supportedPrecompileType) {
+        // now call
+        SetupResult setupResult = setupContract(CONTRACT_ID, ContractIdType.PARSABLE_EVM, true, true, c -> c
+                .obtainerId(null));
+        Transaction transaction = null;
+
+        // set HTS transaction type
+        switch (supportedPrecompileType) {
+            case MINT_FUNGIBLE_COMMON:
+                transaction = tokenSupplyTransaction(TokenType.FUNGIBLE_COMMON, true);
+                break;
+            case MINT_NON_FUNGIBLE_UNIQUE:
+                transaction = tokenSupplyTransaction(TokenType.NON_FUNGIBLE_UNIQUE, true);
+                break;
+            case ASSOCIATE:
+                transaction = tokenAssociateTransaction();
+                break;
+            case BURN_FUNGIBLE_COMMON:
+                transaction = tokenSupplyTransaction(TokenType.FUNGIBLE_COMMON, false);
+                break;
+            case BURN_NON_FUNGIBLE_UNIQUE:
+                transaction = tokenSupplyTransaction(TokenType.NON_FUNGIBLE_UNIQUE, false);
+                break;
+            case DISSOCIATE:
+                transaction = tokenDissociateTransaction();
+                break;
+            case FUNGIBLE_TOKEN_TRANSFER:
+            case NON_FUNGIBLE_TOKEN_TRANSFER:
+                transaction = cryptoTransferTransaction();
+                break;
+            default:
+                throw new UnsupportedOperationException("Unknown precompile HTS transaction type: " + supportedPrecompileType);
+        }
+
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.CALL);
+        ContractCallTransactionBody contractCallTransactionBody = transactionBody.getContractCall();
+        RecordItem recordItem = new RecordItem(transaction, record);
+
+        parseRecordItemAndCommit(recordItem);
+
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(1, contractResultRepository.count()),
+                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertContractCallResult(contractCallTransactionBody, record)
+        );
+    }
 
     private void assertFailedContractCreate(TransactionBody transactionBody, TransactionRecord record) {
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
@@ -854,7 +911,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         ContractFunctionResult result = record.getContractCallResult();
 
         // get the corresponding entity id from the local cache, fall back to parseContractId if not found.
-        ContractID protoContractId = transactionBody.getContractID();
+        ContractID protoContractId = record.getContractCallResult().getContractID();
         EntityId contractId = contractIds.getOrDefault(protoContractId, parseContractId(protoContractId));
 
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
@@ -972,30 +1029,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(null, ContractResult::getErrorMessage)
                 .returns(null, ContractResult::getFunctionResult)
                 .returns(null, ContractResult::getGasUsed);
-    }
-
-    private TransactionRecord createRecord(TransactionBody transactionBody) {
-        return createRecord(transactionBody, ResponseCodeEnum.SUCCESS);
-    }
-
-    private TransactionRecord createRecord(TransactionBody transactionBody, ResponseCodeEnum status) {
-        return buildTransactionRecord(recordBuilder -> {
-            recordBuilder.getReceiptBuilder().setContractID(CONTRACT_ID);
-            buildContractFunctionResult(recordBuilder.getContractCreateResultBuilder());
-        }, transactionBody, status.getNumber());
-    }
-
-    private TransactionRecord callRecord(TransactionBody transactionBody) {
-        return callRecord(transactionBody, ResponseCodeEnum.SUCCESS);
-    }
-
-    private TransactionRecord callRecord(TransactionBody transactionBody, ResponseCodeEnum status) {
-        return buildTransactionRecord(recordBuilder -> {
-            recordBuilder.getReceiptBuilder().setContractID(CONTRACT_ID);
-            var contractFunctionResult = recordBuilder.getContractCallResultBuilder();
-            buildContractFunctionResult(contractFunctionResult);
-            contractFunctionResult.removeCreatedContractIDs(0); // Only contract create can contain parent ID
-        }, transactionBody, status.getNumber());
     }
 
     private TransactionRecord getContractTransactionRecord(TransactionBody transactionBody,
@@ -1135,6 +1168,65 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         });
     }
 
+    private Transaction tokenAssociateTransaction() {
+        return buildTransaction(builder -> builder.getTokenAssociateBuilder()
+                .setAccount(PAYER2)
+                .addAllTokens(List.of(TOKEN_ID)));
+    }
+
+    private Transaction tokenDissociateTransaction() {
+        return buildTransaction(builder -> builder.getTokenDissociateBuilder()
+                .setAccount(PAYER2)
+                .addAllTokens(List.of(TOKEN_ID)));
+    }
+
+    private Transaction cryptoTransferTransaction() {
+        return buildTransaction(TransactionBody.Builder::getCryptoTransferBuilder);
+    }
+
+//    private Transaction tokenTransferRecord(boolean ftType) {
+//        if (ftType) {
+//            return buildTransaction(builder -> builder.getCryptoTransferBuilder()
+//                    .addTokenTransferLists(TokenTransferList.newBuilder()
+//                            .setToken(TOKEN_ID)
+//                            .addTransfers(AccountAmount.newBuilder().setAccountID(PAYER2).setAmount(10L)
+//                                    .setIsApproval(false))
+//                            .build()));
+//        } else {
+//
+//        }
+//    }
+
+    private Transaction tokenSupplyTransaction(TokenType tokenType, boolean mint) {
+        var serialNumbers = List.of(1L, 2L, 3L);
+        Transaction transaction = null;
+        if (mint) {
+            transaction = buildTransaction(builder -> {
+                builder.getTokenMintBuilder()
+                        .setToken(TOKEN_ID);
+                if (tokenType == FUNGIBLE_COMMON) {
+                    builder.getTokenMintBuilder().setAmount(10);
+                } else {
+                    builder.getTokenMintBuilder().addAllMetadata(Collections
+                            .nCopies(serialNumbers.size(), ByteString.copyFromUtf8(METADATA)));
+                }
+            });
+        } else {
+            transaction = buildTransaction(builder -> {
+                builder.getTokenBurnBuilder()
+                        .setToken(TOKEN_ID);
+                if (tokenType == FUNGIBLE_COMMON) {
+                    builder.getTokenBurnBuilder().setAmount(10);
+                } else {
+                    builder.getTokenBurnBuilder()
+                            .addAllSerialNumbers(serialNumbers);
+                }
+            });
+        }
+
+        return transaction;
+    }
+
     private Optional<ContractResult> getContractResult(Timestamp consensusTimestamp) {
         return contractResultRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp));
     }
@@ -1222,6 +1314,17 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         CALL,
         UPDATE,
         DELETE
+    }
+
+    enum SupportedPrecompileType {
+        MINT_FUNGIBLE_COMMON,
+        MINT_NON_FUNGIBLE_UNIQUE,
+        BURN_FUNGIBLE_COMMON,
+        BURN_NON_FUNGIBLE_UNIQUE,
+        ASSOCIATE,
+        DISSOCIATE,
+        FUNGIBLE_TOKEN_TRANSFER,
+        NON_FUNGIBLE_TOKEN_TRANSFER
     }
 
     @Value
