@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,8 @@ const InvalidArgumentErrorMessageFormat = 'Invalid parameter: ';
 const ParameterExceedsMaxErrorMessageFormat = 'Parameter values count exceeds maximum number allowed: ';
 
 class InvalidArgumentError extends Error {
-
-  static INVALID_ERROR_CODE = "invalidArgument";
-  static PARAM_COUNT_EXCEEDS_MAX_CODE = "paramCountExceedsMax";
+  static INVALID_ERROR_CODE = 'invalidArgument';
+  static PARAM_COUNT_EXCEEDS_MAX_CODE = 'paramCountExceedsMax';
 
   constructor(errorMessage) {
     super();
@@ -46,14 +45,15 @@ class InvalidArgumentError extends Error {
       badParams = [badParams];
     }
 
-    return new InvalidArgumentError(badParams.map((message) => {
-      if (message.code === this.PARAM_COUNT_EXCEEDS_MAX_CODE) {
-        return `${ParameterExceedsMaxErrorMessageFormat}${message.key} count: ${message.count} max: ${message.max}`;
-
-      } else {
-        return `${InvalidArgumentErrorMessageFormat}${message.key}`
-      }
-    }));
+    return new InvalidArgumentError(
+      badParams.map((message) => {
+        if (message.code === this.PARAM_COUNT_EXCEEDS_MAX_CODE) {
+          return `${ParameterExceedsMaxErrorMessageFormat}${message.key} count: ${message.count} max: ${message.max}`;
+        } else {
+          return `${InvalidArgumentErrorMessageFormat}${message.key}`;
+        }
+      })
+    );
   }
 }
 
