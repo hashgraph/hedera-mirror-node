@@ -279,7 +279,7 @@ class TransactionPublisherTest {
                         .hasMessageContaining("exceeded maximum attempts for request with last exception being")
                         .getRootCause()
                         .hasMessageContaining(errorResponseCode.toString()))
-                .verify(Duration.ofSeconds(1L));
+                .verify(Duration.ofSeconds(2L));
     }
 
     @Test
