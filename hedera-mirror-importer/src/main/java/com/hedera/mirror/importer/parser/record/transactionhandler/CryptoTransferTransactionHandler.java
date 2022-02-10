@@ -45,14 +45,10 @@ class CryptoTransferTransactionHandler implements TransactionHandler {
 
             var functionResult = recordItem.getRecord().getContractCallResult();
             if (functionResult != ContractFunctionResult.getDefaultInstance() && functionResult.hasContractID()) {
-                // The functionResult.contractID can sometimes be empty even if successful, so use Transaction.entityId
                 ContractResult contractResult = new ContractResult();
-//            contractResult.setAmount(transactionBody.getAmount());
                 contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
                 contractResult.setContractId(entityIdService.lookup(functionResult.getContractID()));
                 contractResult.setPayerAccountId(transaction.getPayerAccountId());
-//            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getFunctionParameters()));
-//            contractResult.setGasLimit(transactionBody.getGas());
                 return contractResult;
             }
         }

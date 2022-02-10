@@ -45,14 +45,10 @@ class TokenAssociateTransactionHandler implements TransactionHandler {
 
             var functionResult = recordItem.getRecord().getContractCallResult();
             if (functionResult != ContractFunctionResult.getDefaultInstance() && functionResult.hasContractID()) {
-                var transactionBody = recordItem.getTransactionBody().getTokenMint();
                 ContractResult contractResult = new ContractResult();
-                contractResult.setAmount(transactionBody.getAmount());
                 contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
                 contractResult.setContractId(entityIdService.lookup(functionResult.getContractID()));
                 contractResult.setPayerAccountId(transaction.getPayerAccountId());
-//            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getFunctionParameters()));
-//            contractResult.setGasLimit(transactionBody.getGas());
                 return contractResult;
             }
         }

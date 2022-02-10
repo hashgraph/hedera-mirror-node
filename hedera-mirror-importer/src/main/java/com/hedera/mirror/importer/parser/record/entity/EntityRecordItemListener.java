@@ -93,7 +93,6 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
@@ -1084,11 +1083,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (royaltyFee.hasFallbackFee()) {
             parseFixedFee(customFee, royaltyFee.getFallbackFee(), tokenId);
         }
-    }
-
-    private boolean shouldPersistCreatedContractIDs(RecordItem recordItem) {
-        return recordItem.isSuccessful() && entityProperties.getPersist().isContracts() &&
-                recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_23_0);
     }
 
     protected Contract getContract(EntityId contractId, long consensusTimestamp) {

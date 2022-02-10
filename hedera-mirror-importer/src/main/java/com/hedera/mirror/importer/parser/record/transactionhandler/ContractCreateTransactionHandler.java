@@ -45,7 +45,6 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
     public ContractResult getContractResult(Transaction transaction, RecordItem recordItem) {
         if (entityProperties.getPersist().isContracts()) {
             var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
-            long consensusTimestamp = recordItem.getConsensusTimestamp();
 
             ContractResult contractResult = getBaseContractResult(transaction, recordItem,
                     recordItem.getRecord().getContractCreateResult());
