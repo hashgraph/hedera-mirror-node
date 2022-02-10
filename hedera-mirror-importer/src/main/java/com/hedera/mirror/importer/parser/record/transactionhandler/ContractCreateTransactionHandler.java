@@ -42,6 +42,24 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
     }
 
     @Override
+    public ContractResult getContractResult(Transaction transaction, RecordItem recordItem) {
+        if (entityProperties.getPersist().isContracts()) {
+            var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
+
+            ContractResult contractResult = getBaseContractResult(transaction, recordItem,
+                    recordItem.getRecord().getContractCreateResult());
+            contractResult.setAmount(transactionBody.getInitialBalance());
+            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
+            contractResult.setGasLimit(transactionBody.getGas());
+
+            return contractResult;
+        }
+
+        return null;
+    }
+
+    @Override
     public EntityId getEntity(RecordItem recordItem) {
         return entityIdService.lookup(recordItem.getRecord().getReceipt().getContractID());
     }
@@ -58,25 +76,12 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
-        var transactionRecord = recordItem.getRecord();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         EntityId entityId = transaction.getEntityId();
         transaction.setInitialBalance(transactionBody.getInitialBalance());
 
         if (entityProperties.getPersist().isContracts() && recordItem.isSuccessful() && !EntityId.isEmpty(entityId)) {
             doUpdateEntity(getContract(entityId, consensusTimestamp), recordItem);
-        }
-
-        if (entityProperties.getPersist().isContracts()) {
-            ContractResult contractResult = new ContractResult();
-            contractResult.setAmount(transactionBody.getInitialBalance());
-            contractResult.setConsensusTimestamp(consensusTimestamp);
-            contractResult.setContractId(entityId);
-            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
-            contractResult.setGasLimit(transactionBody.getGas());
-            contractResult.setPayerAccountId(transaction.getPayerAccountId());
-
-            onContractResult(recordItem, contractResult, transactionRecord.getContractCreateResult());
         }
     }
 

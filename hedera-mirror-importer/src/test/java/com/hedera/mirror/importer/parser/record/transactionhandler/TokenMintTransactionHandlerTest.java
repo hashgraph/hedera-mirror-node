@@ -33,7 +33,7 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenMintTransactionHandler(entityIdService, entityListener, entityProperties);
+        return new TokenMintTransactionHandler(entityIdService, entityProperties);
     }
 
     @Override

@@ -31,7 +31,7 @@ class CryptoTransferTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoTransferTransactionHandler(entityIdService, entityListener, entityProperties);
+        return new CryptoTransferTransactionHandler(entityIdService, entityProperties);
     }
 
     @Override

@@ -42,6 +42,23 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
         super(entityIdService, entityListener, entityProperties);
     }
 
+    @Override
+    public ContractResult getContractResult(Transaction transaction, RecordItem recordItem) {
+        if (entityProperties.getPersist().isContracts()) {
+            var transactionBody = recordItem.getTransactionBody().getContractCall();
+
+            ContractResult contractResult = getBaseContractResult(transaction, recordItem,
+                    recordItem.getRecord().getContractCallResult());
+            contractResult.setAmount(transactionBody.getAmount());
+            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getFunctionParameters()));
+            contractResult.setGasLimit(transactionBody.getGas());
+
+            return contractResult;
+        }
+
+        return null;
+    }
+
     /**
      * First attempts to extract the contract ID from the receipt, which was populated in HAPI 0.23 for contract calls.
      * Otherwise, falls back to checking the transaction body which may contain an EVM address. In case of partial
@@ -61,30 +78,6 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
     @Override
     public TransactionType getType() {
         return TransactionType.CONTRACTCALL;
-    }
-
-    /*
-     * Insert contract results even for failed transactions since they could fail during execution, and we want to
-     * know the gas used and call result regardless.
-     */
-    @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        var transactionRecord = recordItem.getRecord();
-
-        if (entityProperties.getPersist().isContracts()) {
-            var transactionBody = recordItem.getTransactionBody().getContractCall();
-
-            // The functionResult.contractID can sometimes be empty even if successful, so use Transaction.entityId
-            ContractResult contractResult = new ContractResult();
-            contractResult.setAmount(transactionBody.getAmount());
-            contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-            contractResult.setContractId(transaction.getEntityId());
-            contractResult.setPayerAccountId(transaction.getPayerAccountId());
-            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getFunctionParameters()));
-            contractResult.setGasLimit(transactionBody.getGas());
-
-            onContractResult(recordItem, contractResult, transactionRecord.getContractCallResult());
-        }
     }
 
     // Will only be called for child created contract IDs.

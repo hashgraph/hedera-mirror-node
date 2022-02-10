@@ -20,10 +20,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 /**
  * TransactionHandler interface abstracts the logic for processing different kinds for transactions. For each
@@ -33,6 +34,11 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
  * {@link RecordItem}. Hence, most functions of this interface require RecordItem as a parameter.
  */
 public interface TransactionHandler {
+
+    /**
+     * @return the applicable contract result
+     */
+    ContractResult getContractResult(Transaction transaction, RecordItem recordItem);
 
     /**
      * @return main entity associated with this transaction

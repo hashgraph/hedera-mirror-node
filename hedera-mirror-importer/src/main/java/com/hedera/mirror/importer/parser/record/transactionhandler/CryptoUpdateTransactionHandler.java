@@ -42,7 +42,6 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
     }
 
     @Override
-    @SuppressWarnings("java:S1874")
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getCryptoUpdateAccount();
 

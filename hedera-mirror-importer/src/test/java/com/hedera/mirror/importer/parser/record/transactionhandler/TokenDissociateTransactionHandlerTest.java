@@ -32,7 +32,7 @@ class TokenDissociateTransactionHandlerTest extends AbstractTransactionHandlerTe
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenDissociateTransactionHandler(entityIdService, entityListener, entityProperties);
+        return new TokenDissociateTransactionHandler(entityIdService, entityProperties);
     }
 
     @Override

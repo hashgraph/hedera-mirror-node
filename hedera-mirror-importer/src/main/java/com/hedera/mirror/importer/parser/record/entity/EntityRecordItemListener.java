@@ -26,6 +26,8 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -35,6 +37,7 @@ import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.StorageChange;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
 import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
@@ -63,6 +66,10 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractLog;
+import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -86,6 +93,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
@@ -93,6 +101,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -105,12 +114,14 @@ import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHa
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
 @ConditionOnEntityRecordParser
 public class EntityRecordItemListener implements RecordItemListener {
     private final AddressBookService addressBookService;
+    private final EntityIdService entityIdService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
     private final EntityRepository entityRepository;
@@ -129,6 +140,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     EntityRepository entityRepository,
                                     RecordParserProperties parserProperties) {
         this.addressBookService = addressBookService;
+        this.entityIdService = entityIdService;
         this.entityListener = entityListener;
         this.entityProperties = entityProperties;
         this.entityRepository = entityRepository;
@@ -238,6 +250,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertAssessedCustomFees(recordItem);
             insertAutomaticTokenAssociations(recordItem);
         }
+
+        insertContractResult(recordItem, transactionHandler.getContractResult(transaction, recordItem));
 
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
@@ -1070,5 +1084,91 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (royaltyFee.hasFallbackFee()) {
             parseFixedFee(customFee, royaltyFee.getFallbackFee(), tokenId);
         }
+    }
+
+    private boolean shouldPersistCreatedContractIDs(RecordItem recordItem) {
+        return recordItem.isSuccessful() && entityProperties.getPersist().isContracts() &&
+                recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_23_0);
+    }
+
+    protected Contract getContract(EntityId contractId, long consensusTimestamp) {
+        Contract contract = contractId.toEntity();
+        contract.setCreatedTimestamp(consensusTimestamp);
+        contract.setDeleted(false);
+        contract.setTimestampLower(consensusTimestamp);
+        return contract;
+    }
+
+    private void insertContractResult(RecordItem recordItem, ContractResult contractResult) {
+        if (contractResult == null) {
+            // not a contract create/call/precompiled
+            return;
+        }
+
+        var transactionRecord = recordItem.getRecord();
+        var functionResult = transactionRecord.hasContractCreateResult() ?
+                transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
+
+        // set function result related properties where applicable
+        if (functionResult != ContractFunctionResult.getDefaultInstance() && functionResult.hasContractID()) {
+            long consensusTimestamp = recordItem.getConsensusTimestamp();
+
+            // expand upon base contractResult properties set
+            contractResult.setBloom(DomainUtils.toBytes(functionResult.getBloom()));
+            contractResult.setCallResult(DomainUtils.toBytes(functionResult.getContractCallResult()));
+            contractResult.setErrorMessage(functionResult.getErrorMessage());
+            contractResult.setFunctionResult(functionResult.toByteArray());
+            contractResult.setGasUsed(functionResult.getGasUsed());
+
+            // contract call logs
+            for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
+                ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
+
+                ContractLog contractLog = new ContractLog();
+                contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
+                contractLog.setConsensusTimestamp(consensusTimestamp);
+                contractLog.setContractId(entityIdService.lookup(contractLoginfo.getContractID()));
+                contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
+                contractLog.setIndex(index);
+                contractLog.setRootContractId(contractResult.getContractId());
+                contractLog.setPayerAccountId(contractResult.getPayerAccountId());
+                contractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
+                contractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
+                contractLog.setTopic2(Utility.getTopic(contractLoginfo, 2));
+                contractLog.setTopic3(Utility.getTopic(contractLoginfo, 3));
+
+                entityListener.onContractLog(contractLog);
+            }
+
+            // contract call state changes
+            for (int stateIndex = 0; stateIndex < functionResult.getStateChangesCount(); ++stateIndex) {
+                var contractStateChangeInfo = functionResult.getStateChanges(stateIndex);
+
+                var contractId = entityIdService.lookup(contractStateChangeInfo.getContractID());
+                for (int storageIndex = 0; storageIndex < contractStateChangeInfo
+                        .getStorageChangesCount(); ++storageIndex) {
+                    StorageChange storageChange = contractStateChangeInfo.getStorageChanges(storageIndex);
+
+                    ContractStateChange contractStateChange = new ContractStateChange();
+                    contractStateChange.setConsensusTimestamp(consensusTimestamp);
+                    contractStateChange.setContractId(contractId);
+                    contractStateChange.setPayerAccountId(contractResult.getPayerAccountId());
+                    contractStateChange.setSlot(DomainUtils.toBytes(storageChange.getSlot()));
+                    contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
+
+                    // If a value of zero is written the valueWritten will be present but the inner value will be
+                    // absent. If a value was read and not written this value will not be present.
+                    if (storageChange.hasValueWritten()) {
+                        contractStateChange
+                                .setValueWritten(DomainUtils.toBytes(storageChange.getValueWritten().getValue()));
+                    }
+
+                    entityListener.onContractStateChange(contractStateChange);
+                }
+            }
+        }
+
+        // Always persist a contract result whether partial or complete
+        entityListener.onContractResult(contractResult);
     }
 }

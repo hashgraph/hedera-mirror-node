@@ -20,25 +20,44 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import javax.inject.Named;
+import lombok.AllArgsConstructor;
 
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
+@AllArgsConstructor
 @Named
-class TokenDissociateTransactionHandler extends AbstractContractCallTransactionHandler {
+class TokenDissociateTransactionHandler implements TransactionHandler {
 
-    TokenDissociateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                      EntityProperties entityProperties) {
-        super(entityIdService, entityListener, entityProperties);
+    protected final EntityIdService entityIdService;
+    protected final EntityProperties entityProperties;
+
+    @Override
+    public ContractResult getContractResult(Transaction transaction, RecordItem recordItem) {
+        if (entityProperties.getPersist().isContracts() && recordItem.getRecord().hasContractCallResult()) {
+
+            var functionResult = recordItem.getRecord().getContractCallResult();
+            if (functionResult != ContractFunctionResult.getDefaultInstance() && functionResult.hasContractID()) {
+                var transactionBody = recordItem.getTransactionBody().getTokenMint();
+                ContractResult contractResult = new ContractResult();
+                contractResult.setAmount(transactionBody.getAmount());
+                contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
+                contractResult.setContractId(entityIdService.lookup(functionResult.getContractID()));
+                contractResult.setPayerAccountId(transaction.getPayerAccountId());
+//            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getFunctionParameters()));
+//            contractResult.setGasLimit(transactionBody.getGas());
+                return contractResult;
+            }
+        }
+
+        return null;
     }
 
     @Override
@@ -49,30 +68,6 @@ class TokenDissociateTransactionHandler extends AbstractContractCallTransactionH
     @Override
     public TransactionType getType() {
         return TransactionType.TOKENDISSOCIATE;
-    }
-
-    @Override
-    protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
-    }
-
-    @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        var transactionRecord = recordItem.getRecord();
-
-        if (entityProperties.getPersist().isContracts() && transactionRecord.hasContractCallResult()) {
-            var transactionBody = recordItem.getTransactionBody().getContractCall();
-
-            // The functionResult.contractID can sometimes be empty even if successful, so use Transaction.entityId
-            ContractResult contractResult = new ContractResult();
-            contractResult.setAmount(transactionBody.getAmount());
-            contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-            contractResult.setContractId(transaction.getEntityId());
-            contractResult.setPayerAccountId(transaction.getPayerAccountId());
-            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getFunctionParameters()));
-            contractResult.setGasLimit(transactionBody.getGas());
-
-            onContractResult(recordItem, contractResult, transactionRecord.getContractCallResult());
-        }
     }
 }
 

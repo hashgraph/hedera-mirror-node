@@ -755,7 +755,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         int unknownResult = -1000;
         Transaction transaction = cryptoCreateTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = transactionRecord(transactionBody, unknownResult);
+        TransactionRecord record = transactionRecord(transactionBody, unknownResult, false);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
@@ -861,6 +861,21 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         TransactionBody createTransactionBody = getTransactionBody(createTransaction);
         TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
         parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
+    }
+
+    private TransactionRecord transactionRecord(TransactionBody transactionBody, ResponseCodeEnum responseCode) {
+        return transactionRecord(transactionBody, responseCode.getNumber(), false);
+    }
+
+    private TransactionRecord transactionRecord(TransactionBody transactionBody, int status, boolean precompile) {
+        return buildTransactionRecord(recordBuilder -> {
+                    recordBuilder.getReceiptBuilder().setAccountID(accountId1);
+
+                    if (precompile) {
+                        buildContractFunctionResult(recordBuilder.getContractCallResultBuilder());
+                    }
+                },
+                transactionBody, status);
     }
 
     private CryptoCreateTransactionBody.Builder cryptoCreateAccountBuilderWithDefaults() {

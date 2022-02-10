@@ -33,7 +33,7 @@ class TokenWipeTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenWipeTransactionHandler(entityIdService, entityListener, entityProperties);
+        return new TokenWipeTransactionHandler(entityIdService, entityProperties);
     }
 
     @Override

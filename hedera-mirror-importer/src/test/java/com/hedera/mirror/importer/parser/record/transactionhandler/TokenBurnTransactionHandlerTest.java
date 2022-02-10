@@ -32,7 +32,7 @@ class TokenBurnTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenBurnTransactionHandler(entityIdService, entityListener, entityProperties);
+        return new TokenBurnTransactionHandler(entityIdService, entityProperties);
     }
 
     @Override
