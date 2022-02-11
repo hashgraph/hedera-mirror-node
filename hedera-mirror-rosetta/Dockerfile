@@ -1,4 +1,4 @@
-FROM golang:1.17.1 as build
+FROM golang:1.17.7-alpine as build
 WORKDIR /app
 COPY . .
 ARG VERSION=development
