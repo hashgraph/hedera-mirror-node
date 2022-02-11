@@ -45,14 +45,12 @@ jobs:
         with:
           timeout_minutes: 1
           max_attempts: 3
-          command: |
-            set -ex
-            k3d image import -c mirror \
-              "gcr.io/mirrornode/hedera-mirror-grpc:${IMAGE_TAG}" \
-              "gcr.io/mirrornode/hedera-mirror-importer:${IMAGE_TAG}" \
-              "gcr.io/mirrornode/hedera-mirror-rest:${IMAGE_TAG}" \
-              "gcr.io/mirrornode/hedera-mirror-rosetta:${IMAGE_TAG}" \
-              "gcr.io/mirrornode/hedera-mirror-web3:${IMAGE_TAG}"
+          command: k3d image import -c mirror \
+            "gcr.io/mirrornode/hedera-mirror-grpc:${IMAGE_TAG}" \
+            "gcr.io/mirrornode/hedera-mirror-importer:${IMAGE_TAG}" \
+            "gcr.io/mirrornode/hedera-mirror-rest:${IMAGE_TAG}" \
+            "gcr.io/mirrornode/hedera-mirror-rosetta:${IMAGE_TAG}" \
+            "gcr.io/mirrornode/hedera-mirror-web3:${IMAGE_TAG}"
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.2.0
