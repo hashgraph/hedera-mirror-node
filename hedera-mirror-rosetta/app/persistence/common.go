@@ -18,26 +18,9 @@
  * ‍
  */
 
-package mocks
+package persistence
 
-import (
-	"context"
-
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/stretchr/testify/mock"
+const (
+	genesisTimestampQuery = "select min(consensus_timestamp) as timestamp from account_balance_file"
+	genesisTimestampCte   = " genesis as (" + genesisTimestampQuery + ") "
 )
-
-var NilError *rTypes.Error
-
-type MockAccountRepository struct {
-	mock.Mock
-}
-
-func (m *MockAccountRepository) RetrieveBalanceAtBlock(ctx context.Context, accountId int64, consensusEnd int64) (
-	[]types.Amount,
-	*rTypes.Error,
-) {
-	args := m.Called()
-	return args.Get(0).([]types.Amount), args.Get(1).(*rTypes.Error)
-}

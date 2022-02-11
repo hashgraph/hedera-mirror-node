@@ -6,16 +6,17 @@
       "network": "shard 0 realm 0"
     }
   },
-  "retry_elapsed_time": 5,
   "online_url": "http://localhost:5700",
-  "data_directory": "",
-  "http_timeout": 10,
+  "http_timeout": 15,
+  "max_retries": 5,
+  "retry_elapsed_time": 100,
   "tip_delay": 300,
   "data": {
-    "reconciliation_disabled": false,
-    "inactive_discrepancy_search_disabled": false,
     "balance_tracking_disabled": false,
-    "bootstrap_balances": "./data_genesis_balances.json",
+    "historical_balance_enabled": true,
+    "inactive_discrepancy_search_disabled": false,
+    "reconciliation_disabled": false,
+    "start_index": 1,
     "end_conditions": {
       "reconciliation_coverage": {
         "coverage": 0.95
