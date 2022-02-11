@@ -453,6 +453,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         builder.addCreatedContractIDs(CONTRACT_ID);
         builder.addCreatedContractIDs(CREATED_CONTRACT_ID);
         builder.setErrorMessage("call error message");
+        builder.setEvmAddress(BytesValue.of(DomainUtils.fromBytes(domainBuilder.create2EvmAddress())));
         builder.setGasUsed(30);
         builder.addLogInfo(ContractLoginfo.newBuilder()
                 .setBloom(ByteString.copyFromUtf8("bloom"))

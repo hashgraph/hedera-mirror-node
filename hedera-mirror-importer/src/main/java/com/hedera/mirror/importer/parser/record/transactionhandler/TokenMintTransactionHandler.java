@@ -23,12 +23,15 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
+import org.apache.commons.codec.binary.Hex;
 
+import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
@@ -49,6 +52,23 @@ class TokenMintTransactionHandler implements TransactionHandler {
                 contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
                 contractResult.setContractId(entityIdService.lookup(functionResult.getContractID()));
                 contractResult.setPayerAccountId(transaction.getPayerAccountId());
+
+                // amount, gasLimit and functionParameters are missing from proto. Generate missing values
+                contractResult.setAmount(0L); // precompile Mint amount is always 0
+                var transactionBody = recordItem.getTransactionBody().getTokenMint();
+                var contractFunctionParameters = new ContractFunctionParameters()
+                        .addAddress(Hex
+                                .encodeHexString(DomainUtils.toEvmAddress(EntityId.of(functionResult.getContractID()))))
+                        .addUint64(transactionBody.getAmount());
+
+                if (transactionBody.getMetadataCount() > 0) {
+                    contractFunctionParameters.addBytes(transactionBody.getMetadata(0).toByteArray());
+                }
+
+                contractResult.setFunctionParameters(contractFunctionParameters
+                        .toBytes("mintToken")
+                        .toByteArray());
+
                 return contractResult;
             }
         }

@@ -30,6 +30,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
@@ -53,12 +54,14 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Resource;
 import lombok.Builder;
 import org.apache.commons.lang3.StringUtils;
+import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,6 +71,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
@@ -918,6 +922,45 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     @Test
+    void tokenMintPrecompile() {
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+                PAYER2, false, false, false, INITIAL_SUPPLY);
+
+        long amount = 1000;
+        long mintTimestamp = 10L;
+        TokenTransferList tokenTransfer = tokenTransfer(TOKEN_ID, PAYER, amount);
+        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, FUNGIBLE_COMMON, true, amount, null);
+        AtomicReference<ContractFunctionResult> contractFunctionResultAtomic = new AtomicReference<>();
+        insertAndParseTransaction(mintTimestamp, transaction, builder -> {
+            builder.getReceiptBuilder().setNewTotalSupply(INITIAL_SUPPLY + amount);
+            builder.addTokenTransferLists(tokenTransfer);
+            buildContractFunctionResult(builder.getContractCallResultBuilder());
+            contractFunctionResultAtomic.set(builder.getContractCallResult());
+        });
+
+        // Verify
+        assertThat(tokenTransferRepository.count()).isEqualTo(2L);
+        assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
+        assertTokenTransferInRepository(TOKEN_ID, PAYER, mintTimestamp, amount);
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, INITIAL_SUPPLY + amount);
+        assertEquals(1, contractResultRepository.count());
+
+        ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
+                .filteredOn(c -> c.getConsensusTimestamp().equals(mintTimestamp))
+                .hasSize(1)
+                .first()
+                .returns(EntityId.of(CONTRACT_ID), ContractResult::getContractId);
+
+        var contractFunctionResult = contractFunctionResultAtomic.get();
+        contractResult
+                .returns(contractFunctionResult.getBloom().toByteArray(), ContractResult::getBloom)
+                .returns(contractFunctionResult.getContractCallResult().toByteArray(), ContractResult::getCallResult)
+                .returns(mintTimestamp, ContractResult::getConsensusTimestamp)
+                .returns(contractFunctionResult.getErrorMessage(), ContractResult::getErrorMessage)
+                .returns(contractFunctionResult.getGasUsed(), ContractResult::getGasUsed);
+    }
+
+    @Test
     void tokenMintNfts() {
         // given
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP,
@@ -945,6 +988,55 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .getBytes(), EntityId.of(PAYER), false);
         assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, mintTimestamp, mintTimestamp, METADATA
                 .getBytes(), EntityId.of(PAYER), false);
+    }
+
+    @Test
+    void tokenMintNftsPrecompile() {
+        // given
+        createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP,
+                ASSOCIATE_TIMESTAMP, PAYER2, false, false, false, 0);
+
+        long mintTimestamp = 10L;
+        TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
+        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0,
+                SERIAL_NUMBER_LIST);
+
+        // when
+        AtomicReference<ContractFunctionResult> contractFunctionResultAtomic = new AtomicReference<>();
+        insertAndParseTransaction(mintTimestamp, transaction, builder -> {
+            builder.getReceiptBuilder()
+                    .setNewTotalSupply(SERIAL_NUMBER_LIST.size())
+                    .addAllSerialNumbers(SERIAL_NUMBER_LIST);
+            builder.addTokenTransferLists(mintTransfer);
+            buildContractFunctionResult(builder.getContractCallResultBuilder());
+            contractFunctionResultAtomic.set(builder.getContractCallResult());
+        });
+
+        // then
+        assertThat(nftTransferRepository.count()).isEqualTo(2L);
+        assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_2, TOKEN_ID, PAYER, null);
+        assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_1, TOKEN_ID, PAYER, null);
+        assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, 2);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, true, mintTimestamp, mintTimestamp, METADATA
+                .getBytes(), EntityId.of(PAYER), false);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, mintTimestamp, mintTimestamp, METADATA
+                .getBytes(), EntityId.of(PAYER), false);
+
+        assertEquals(1, contractResultRepository.count());
+
+        ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
+                .filteredOn(c -> c.getConsensusTimestamp().equals(mintTimestamp))
+                .hasSize(1)
+                .first()
+                .returns(EntityId.of(CONTRACT_ID), ContractResult::getContractId);
+
+        var contractFunctionResult = contractFunctionResultAtomic.get();
+        contractResult
+                .returns(contractFunctionResult.getBloom().toByteArray(), ContractResult::getBloom)
+                .returns(contractFunctionResult.getContractCallResult().toByteArray(), ContractResult::getCallResult)
+                .returns(mintTimestamp, ContractResult::getConsensusTimestamp)
+                .returns(contractFunctionResult.getErrorMessage(), ContractResult::getErrorMessage)
+                .returns(contractFunctionResult.getGasUsed(), ContractResult::getGasUsed);
     }
 
     @Test

@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
@@ -1114,6 +1115,13 @@ public class EntityRecordItemListener implements RecordItemListener {
             contractResult.setFunctionResult(functionResult.toByteArray());
             contractResult.setGasUsed(functionResult.getGasUsed());
 
+            if (contractResult.getAmount() == null) {
+                // in precompile came amount is not in proto
+                // get amount by checking transferList for +ve amount to contractID
+                contractResult.setAmount(getPrecompileAmount(recordItem.getRecord().getTransferList(),
+                        functionResult.getContractID()));
+            }
+
             // contract call logs
             for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
                 ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
@@ -1164,5 +1172,22 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         // Always persist a contract result whether partial or complete
         entityListener.onContractResult(contractResult);
+    }
+
+    private long getPrecompileAmount(TransferList transferList, ContractID contractID) {
+        long amount = 0;
+        long contractId = entityIdService.lookup(contractID).getId();
+
+        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
+            var accountAmount = transferList.getAccountAmounts(i);
+            var accountId = entityIdService.lookup(accountAmount.getAccountID()).getId();
+
+            // check for positive transfer paid to contract
+            if (contractId == accountId && accountAmount.getAmount() > 0) {
+                amount = accountAmount.getAmount();
+            }
+        }
+
+        return amount;
     }
 }

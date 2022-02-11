@@ -730,59 +730,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         );
     }
 
-    // add test for precompiled functions - Mint, burn, associate, dissociate, transfer (FT & NFT)
-    @ParameterizedTest
-    @EnumSource(SupportedPrecompileType.class)
-    void contractCallToExisting(SupportedPrecompileType supportedPrecompileType) {
-        // now call
-        SetupResult setupResult = setupContract(CONTRACT_ID, ContractIdType.PARSABLE_EVM, true, true, c -> c
-                .obtainerId(null));
-        Transaction transaction = null;
-
-        // set HTS transaction type
-        switch (supportedPrecompileType) {
-            case MINT_FUNGIBLE_COMMON:
-                transaction = tokenSupplyTransaction(TokenType.FUNGIBLE_COMMON, true);
-                break;
-            case MINT_NON_FUNGIBLE_UNIQUE:
-                transaction = tokenSupplyTransaction(TokenType.NON_FUNGIBLE_UNIQUE, true);
-                break;
-            case ASSOCIATE:
-                transaction = tokenAssociateTransaction();
-                break;
-            case BURN_FUNGIBLE_COMMON:
-                transaction = tokenSupplyTransaction(TokenType.FUNGIBLE_COMMON, false);
-                break;
-            case BURN_NON_FUNGIBLE_UNIQUE:
-                transaction = tokenSupplyTransaction(TokenType.NON_FUNGIBLE_UNIQUE, false);
-                break;
-            case DISSOCIATE:
-                transaction = tokenDissociateTransaction();
-                break;
-            case FUNGIBLE_TOKEN_TRANSFER:
-            case NON_FUNGIBLE_TOKEN_TRANSFER:
-                transaction = cryptoTransferTransaction();
-                break;
-            default:
-                throw new UnsupportedOperationException("Unknown precompile HTS transaction type: " + supportedPrecompileType);
-        }
-
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.CALL);
-        ContractCallTransactionBody contractCallTransactionBody = transactionBody.getContractCall();
-        RecordItem recordItem = new RecordItem(transaction, record);
-
-        parseRecordItemAndCommit(recordItem);
-
-        assertAll(
-                () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
-                () -> assertTransactionAndRecord(transactionBody, record),
-                () -> assertContractCallResult(contractCallTransactionBody, record)
-        );
-    }
-
     private void assertFailedContractCreate(TransactionBody transactionBody, TransactionRecord record) {
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
         var contractCreateBody = transactionBody.getContractCreateInstance();
@@ -1245,17 +1192,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         CALL,
         UPDATE,
         DELETE
-    }
-
-    enum SupportedPrecompileType {
-        MINT_FUNGIBLE_COMMON,
-        MINT_NON_FUNGIBLE_UNIQUE,
-        BURN_FUNGIBLE_COMMON,
-        BURN_NON_FUNGIBLE_UNIQUE,
-        ASSOCIATE,
-        DISSOCIATE,
-        FUNGIBLE_TOKEN_TRANSFER,
-        NON_FUNGIBLE_TOKEN_TRANSFER
     }
 
     @Value
