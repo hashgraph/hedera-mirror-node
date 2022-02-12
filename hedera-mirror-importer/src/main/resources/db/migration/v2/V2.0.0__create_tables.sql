@@ -137,7 +137,7 @@ create table if not exists contract_result
     contract_id          bigint       null,
     created_contract_ids bigint array null,
     error_message        text         null,
-    function_parameters  bytea        not null,
+    function_parameters  bytea        null,
     function_result      bytea        null,
     gas_limit            bigint       not null,
     gas_used             bigint       null,

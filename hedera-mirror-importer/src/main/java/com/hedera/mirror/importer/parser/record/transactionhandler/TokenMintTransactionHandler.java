@@ -21,11 +21,19 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 import org.apache.commons.codec.binary.Hex;
+import org.web3j.abi.FunctionEncoder;
+import org.web3j.abi.datatypes.Address;
+import org.web3j.abi.datatypes.BytesType;
+import org.web3j.abi.datatypes.DynamicArray;
+import org.web3j.abi.datatypes.Function;
+import org.web3j.abi.datatypes.generated.Uint64;
 
-import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -39,6 +47,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 @Named
 class TokenMintTransactionHandler implements TransactionHandler {
 
+    private static final String MINT_TOKEN_FUNCTION_NAME = "mintToken";
     protected final EntityIdService entityIdService;
     protected final EntityProperties entityProperties;
 
@@ -56,18 +65,18 @@ class TokenMintTransactionHandler implements TransactionHandler {
                 // amount, gasLimit and functionParameters are missing from proto. Generate missing values
                 contractResult.setAmount(0L); // precompile Mint amount is always 0
                 var transactionBody = recordItem.getTransactionBody().getTokenMint();
-                var contractFunctionParameters = new ContractFunctionParameters()
-                        .addAddress(Hex
-                                .encodeHexString(DomainUtils.toEvmAddress(EntityId.of(functionResult.getContractID()))))
-                        .addUint64(transactionBody.getAmount());
 
-                if (transactionBody.getMetadataCount() > 0) {
-                    contractFunctionParameters.addBytes(transactionBody.getMetadata(0).toByteArray());
-                }
-
-                contractResult.setFunctionParameters(contractFunctionParameters
-                        .toBytes("mintToken")
-                        .toByteArray());
+                // TokenMint signature - mintToken(address token, uint64 amount, bytes[] memory metadata)
+                Function function = new Function(
+                        MINT_TOKEN_FUNCTION_NAME,
+                        Arrays.asList(
+                                new Address(Hex.encodeHexString(DomainUtils
+                                        .toEvmAddress(EntityId.of(transactionBody.getToken())))),
+                                new Uint64(transactionBody.getAmount()),
+                                new DynamicArray(BytesType.class, transactionBody.getMetadataList())),
+                        Collections.emptyList()
+                );
+                contractResult.setFunctionResult(FunctionEncoder.encode(function).getBytes(StandardCharsets.UTF_8));
 
                 return contractResult;
             }

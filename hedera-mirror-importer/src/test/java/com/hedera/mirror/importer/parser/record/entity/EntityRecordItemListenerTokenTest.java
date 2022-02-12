@@ -461,6 +461,23 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     @Test
+    void tokenAssociatePrecompile() {
+        createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, true, true);
+
+        Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER2);
+        AtomicReference<ContractFunctionResult> contractFunctionResultAtomic = new AtomicReference<>();
+        insertAndParseTransaction(ASSOCIATE_TIMESTAMP, associateTransaction, builder -> {
+            buildContractFunctionResult(builder.getContractCallResultBuilder());
+            contractFunctionResultAtomic.set(builder.getContractCallResult());
+        });
+
+        assertTokenAccountInRepository(TOKEN_ID, PAYER2, ASSOCIATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, true,
+                TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.REVOKED);
+
+        assertContractResult(ASSOCIATE_TIMESTAMP, contractFunctionResultAtomic.get());
+    }
+
+    @Test
     void tokenAssociateWithMissingToken() {
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER);
         insertAndParseTransaction(ASSOCIATE_TIMESTAMP, associateTransaction);
@@ -487,6 +504,32 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         expected.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
         expected.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
         assertThat(latestTokenAccount(TOKEN_ID, PAYER2)).get().isEqualTo(expected);
+    }
+
+    @Test
+    void tokenDissociatePrecompile() {
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+                PAYER2, false, false, false, INITIAL_SUPPLY);
+
+        Transaction dissociateTransaction = tokenDissociate(List.of(TOKEN_ID), PAYER2);
+        long dissociateTimeStamp = 10L;
+        AtomicReference<ContractFunctionResult> contractFunctionResultAtomic = new AtomicReference<>();
+        insertAndParseTransaction(dissociateTimeStamp, dissociateTransaction, builder -> {
+            buildContractFunctionResult(builder.getContractCallResultBuilder());
+            contractFunctionResultAtomic.set(builder.getContractCallResult());
+        });
+
+        EntityId tokenId = EntityId.of(TOKEN_ID);
+        EntityId accountId = EntityId.of(PAYER2);
+        TokenAccount expected = new TokenAccount(tokenId, accountId, dissociateTimeStamp);
+        expected.setCreatedTimestamp(ASSOCIATE_TIMESTAMP);
+        expected.setAssociated(false);
+        expected.setAutomaticAssociation(false);
+        expected.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
+        expected.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
+        assertThat(latestTokenAccount(TOKEN_ID, PAYER2)).get().isEqualTo(expected);
+
+        assertContractResult(dissociateTimeStamp, contractFunctionResultAtomic.get());
     }
 
     @Test
@@ -943,21 +986,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, mintTimestamp, amount);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, INITIAL_SUPPLY + amount);
-        assertEquals(1, contractResultRepository.count());
 
-        ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
-                .filteredOn(c -> c.getConsensusTimestamp().equals(mintTimestamp))
-                .hasSize(1)
-                .first()
-                .returns(EntityId.of(CONTRACT_ID), ContractResult::getContractId);
-
-        var contractFunctionResult = contractFunctionResultAtomic.get();
-        contractResult
-                .returns(contractFunctionResult.getBloom().toByteArray(), ContractResult::getBloom)
-                .returns(contractFunctionResult.getContractCallResult().toByteArray(), ContractResult::getCallResult)
-                .returns(mintTimestamp, ContractResult::getConsensusTimestamp)
-                .returns(contractFunctionResult.getErrorMessage(), ContractResult::getErrorMessage)
-                .returns(contractFunctionResult.getGasUsed(), ContractResult::getGasUsed);
+        assertContractResult(mintTimestamp, contractFunctionResultAtomic.get());
     }
 
     @Test
@@ -1022,21 +1052,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, mintTimestamp, mintTimestamp, METADATA
                 .getBytes(), EntityId.of(PAYER), false);
 
-        assertEquals(1, contractResultRepository.count());
-
-        ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
-                .filteredOn(c -> c.getConsensusTimestamp().equals(mintTimestamp))
-                .hasSize(1)
-                .first()
-                .returns(EntityId.of(CONTRACT_ID), ContractResult::getContractId);
-
-        var contractFunctionResult = contractFunctionResultAtomic.get();
-        contractResult
-                .returns(contractFunctionResult.getBloom().toByteArray(), ContractResult::getBloom)
-                .returns(contractFunctionResult.getContractCallResult().toByteArray(), ContractResult::getCallResult)
-                .returns(mintTimestamp, ContractResult::getConsensusTimestamp)
-                .returns(contractFunctionResult.getErrorMessage(), ContractResult::getErrorMessage)
-                .returns(contractFunctionResult.getGasUsed(), ContractResult::getGasUsed);
+        assertContractResult(mintTimestamp, contractFunctionResultAtomic.get());
     }
 
     @Test
@@ -1070,14 +1086,21 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @MethodSource("provideAssessedCustomFees")
     void tokenTransferWithoutAutoTokenAssociations(String name, List<AssessedCustomFee> assessedCustomFees,
                                                    List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees) {
-        tokenTransfer(assessedCustomFees, protoAssessedCustomFees, false);
+        tokenTransfer(assessedCustomFees, protoAssessedCustomFees, false, false);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("provideAssessedCustomFees")
+    void tokenTransferPrecompile(String name, List<AssessedCustomFee> assessedCustomFees,
+                                 List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees) {
+        tokenTransfer(assessedCustomFees, protoAssessedCustomFees, false, true);
     }
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideAssessedCustomFees")
     void tokenTransferWithAutoTokenAssociations(String name, List<AssessedCustomFee> assessedCustomFees,
                                                 List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees) {
-        tokenTransfer(assessedCustomFees, protoAssessedCustomFees, true);
+        tokenTransfer(assessedCustomFees, protoAssessedCustomFees, true, false);
     }
 
     @Test
@@ -1333,7 +1356,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     void tokenTransfer(List<AssessedCustomFee> assessedCustomFees,
                        List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees,
-                       boolean hasAutoTokenAssociations) {
+                       boolean hasAutoTokenAssociations, boolean isPrecompile) {
         // given
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, false, INITIAL_SUPPLY);
@@ -1374,11 +1397,16 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 Lists.emptyList();
 
         // when
+        AtomicReference<ContractFunctionResult> contractFunctionResultAtomic = new AtomicReference<>();
         insertAndParseTransaction(TRANSFER_TIMESTAMP, transaction, builder -> {
             builder.addAllTokenTransferLists(transferLists)
                     .addAllAssessedCustomFees(protoAssessedCustomFees);
             if (hasAutoTokenAssociations) {
                 builder.addAutomaticTokenAssociations(autoTokenAssociation);
+            }
+            if (isPrecompile) {
+                buildContractFunctionResult(builder.getContractCallResultBuilder());
+                contractFunctionResultAtomic.set(builder.getContractCallResult());
             }
         });
 
@@ -1391,6 +1419,10 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(tokenAccountRepository.findAll())
                 .filteredOn(TokenAccount::getAutomaticAssociation)
                 .containsExactlyInAnyOrderElementsOf(expectedAutoAssociatedTokenAccounts);
+
+        if (isPrecompile) {
+            assertContractResult(TRANSFER_TIMESTAMP, contractFunctionResultAtomic.get());
+        }
     }
 
     private RecordItem getRecordItem(long consensusTimestamp, Transaction transaction) {
@@ -1730,6 +1762,22 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .get()
                 .returns(receiver, from(com.hedera.mirror.common.domain.token.NftTransfer::getReceiverAccountId))
                 .returns(sender, from(com.hedera.mirror.common.domain.token.NftTransfer::getSenderAccountId));
+    }
+
+    private void assertContractResult(long timestamp, ContractFunctionResult contractFunctionResult) {
+        assertEquals(1, contractResultRepository.count());
+        ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
+                .filteredOn(c -> c.getConsensusTimestamp().equals(timestamp))
+                .hasSize(1)
+                .first()
+                .returns(EntityId.of(CONTRACT_ID), ContractResult::getContractId);
+
+        contractResult
+                .returns(contractFunctionResult.getBloom().toByteArray(), ContractResult::getBloom)
+                .returns(contractFunctionResult.getContractCallResult().toByteArray(), ContractResult::getCallResult)
+                .returns(timestamp, ContractResult::getConsensusTimestamp)
+                .returns(contractFunctionResult.getErrorMessage(), ContractResult::getErrorMessage)
+                .returns(contractFunctionResult.getGasUsed(), ContractResult::getGasUsed);
     }
 
     private void createTokenEntity(TokenID tokenId, TokenType tokenType, String symbol, long consensusTimestamp,
