@@ -8,7 +8,7 @@ To this end, we use [Flux](https://fluxcd.io) in our Kubernetes clusters to mana
 
 ### Kubernetes
 
-Create a standard GKE cluster with at least Kubernetes 1.19.
+Create a standard GKE cluster with at least Kubernetes 1.21.
 
 ### Sealed Secrets
 
