@@ -55,6 +55,10 @@ spec:
       globalArguments:
         - --entryPoints.web.forwardedHeaders.insecure
         - --entryPoints.websecure.forwardedHeaders.insecure
+      logs:
+        access:
+          filters:
+            statuscodes: 300-599
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-na"} } }'
