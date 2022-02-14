@@ -340,7 +340,7 @@ traefik:
   deployment:
     kind: DaemonSet
   enabled: true
-  globalArguments: # Expose X-Forwarded-For header for tracing
+  globalArguments:  # Expose X-Forwarded-For header for tracing
     - --entryPoints.web.forwardedHeaders.insecure
     - --entryPoints.websecure.forwardedHeaders.insecure
   logs:
