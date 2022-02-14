@@ -42,7 +42,7 @@ spec:
                   regex: .*(grpc|importer|monitor|rest|rosetta|traefik|web3)$
                   sourceLabels: [job]
                 - action: drop
-                  regex: (api_request_size_bytes_bucket|executor.*)
+                  regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
     promtail:
