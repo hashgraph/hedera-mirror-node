@@ -38,7 +38,9 @@ public interface TransactionHandler {
     /**
      * @return the applicable contract result
      */
-    ContractResult getContractResult(Transaction transaction, RecordItem recordItem);
+    default ContractResult getContractResult(Transaction transaction, RecordItem recordItem) {
+        return null;
+    }
 
     /**
      * @return main entity associated with this transaction

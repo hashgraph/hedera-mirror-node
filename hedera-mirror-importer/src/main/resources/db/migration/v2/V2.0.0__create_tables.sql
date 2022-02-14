@@ -137,7 +137,7 @@ create table if not exists contract_result
     contract_id          bigint       null,
     created_contract_ids bigint array null,
     error_message        text         null,
-    function_parameters  bytea        null,
+    function_parameters  bytea        not null,
     function_result      bytea        null,
     gas_limit            bigint       not null,
     gas_used             bigint       null,
@@ -154,7 +154,7 @@ create table if not exists contract_state_change
     value_read          bytea  not null,
     value_written       bytea  null
 );
-comment on table contract_result is 'Contract execution state changes';
+comment on table contract_state_change is 'Contract execution state changes';
 
 create table if not exists crypto_allowance
 (
