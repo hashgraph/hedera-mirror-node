@@ -9,7 +9,7 @@ require (
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20211228072109-84b5087d2be4
 	github.com/hashgraph/hedera-sdk-go/v2 v2.8.0
 	github.com/hellofresh/health-go/v4 v4.5.0
-	github.com/jackc/pgtype v1.9.1
+	github.com/jackc/pgtype v1.10.0
 	github.com/lib/pq v1.10.4
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/onrik/gorm-logrus v0.3.0
