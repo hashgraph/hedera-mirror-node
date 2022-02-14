@@ -37,6 +37,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.appender.WriterAppender;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.AfterEach;
@@ -77,6 +78,7 @@ class PublishMetricsTest {
 
         logOutput = new StringWriter();
         writerAppender = WriterAppender.newBuilder()
+                .setLayout(PatternLayout.newBuilder().withPattern("%p|%m%n").build())
                 .setName("stringAppender")
                 .setTarget(logOutput)
                 .build();
@@ -166,6 +168,7 @@ class PublishMetricsTest {
         assertThat(logOutput)
                 .asString()
                 .hasLineCount(1)
+                .contains("INFO")
                 .contains("Scenario " + SCENARIO_NAME + " published 0 transactions in")
                 .contains("Errors: {" + status + "=1}");
     }
@@ -179,6 +182,7 @@ class PublishMetricsTest {
         assertThat(logOutput)
                 .asString()
                 .hasLineCount(1)
+                .contains("INFO")
                 .contains("Scenario " + SCENARIO_NAME + " published 1 transactions in")
                 .contains("Errors: {}");
     }

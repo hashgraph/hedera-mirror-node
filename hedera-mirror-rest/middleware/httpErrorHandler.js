@@ -21,6 +21,7 @@
 'use strict';
 
 const {httpStatusCodes} = require('../constants');
+const constants = require('../constants');
 
 const defaultStatusCode = httpStatusCodes.INTERNAL_ERROR;
 
@@ -36,13 +37,17 @@ const errorMap = {
 const handleError = async (err, req, res, next) => {
   const statusCode = errorMap[err.constructor.name] || defaultStatusCode;
   let errorMessage;
+  const startTime = res.locals[constants.requestStartTime];
+  const elapsed = startTime ? Date.now() - startTime : 0;
 
   if (shouldReturnMessage(statusCode)) {
     errorMessage = err.message;
-    logger.warn(`${statusCode} processing ${req.originalUrl}: ${err.constructor.name} ${errorMessage}`);
+    logger.warn(
+      `${req.ip} ${req.method} ${req.originalUrl} in ${elapsed} ms: ${statusCode} ${err.constructor.name} ${errorMessage}`
+    );
   } else {
     errorMessage = statusCode.message;
-    logger.error(`${statusCode} processing ${req.originalUrl}: `, err);
+    logger.error(`${req.ip} ${req.method} ${req.originalUrl} in ${elapsed} ms: ${statusCode}`, err);
   }
 
   res.status(statusCode.code).json(errorMessageFormat(errorMessage));

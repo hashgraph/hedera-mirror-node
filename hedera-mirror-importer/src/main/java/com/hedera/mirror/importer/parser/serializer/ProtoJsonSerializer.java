@@ -28,11 +28,13 @@ import com.google.protobuf.util.JsonFormat;
 import java.io.IOException;
 
 public class ProtoJsonSerializer extends JsonSerializer<Message> {
+
+    private static final JsonFormat.Printer PRINTER = JsonFormat.printer()
+            .includingDefaultValueFields()
+            .omittingInsignificantWhitespace();
+
     @Override
     public void serialize(Message message, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        gen.writeRawValue(JsonFormat.printer()
-                .includingDefaultValueFields()
-                .omittingInsignificantWhitespace()
-                .print(message));
+        gen.writeRawValue(PRINTER.print(message));
     }
 }

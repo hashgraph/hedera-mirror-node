@@ -32,7 +32,13 @@ const responseHandler = async (req, res, next) => {
     throw new NotFoundError();
   } else {
     // set response json
-    res.status(res.locals.statusCode).json(res.locals[constants.responseDataLabel]);
+    const code = res.locals.statusCode;
+    const data = res.locals[constants.responseDataLabel];
+    res.status(code).json(data);
+
+    const startTime = res.locals[constants.requestStartTime];
+    const elapsed = startTime ? Date.now() - startTime : 0;
+    logger.info(`${req.ip} ${req.method} ${req.originalUrl} in ${elapsed} ms: ${code}`);
   }
 };
 
