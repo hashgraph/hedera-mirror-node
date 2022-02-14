@@ -3,7 +3,7 @@ global:
   rbac:
     pspEnabled: false
 
-labels: { }
+labels: {}
 
 loki:
   enabled: true
@@ -174,7 +174,7 @@ prometheus:
         group_wait: 30s
         receiver: 'null'
         repeat_interval: 7d
-        routes: [ ]
+        routes: []
       templates:
         - '/etc/alertmanager/config/slack.tmpl'
     enabled: true
@@ -248,11 +248,11 @@ prometheus:
       cAdvisorMetricRelabelings:
         - action: drop
           regex: container_(memory_failures_total|tasks_state)
-          sourceLabels: [ __name__ ]
+          sourceLabels: [__name__]
       metricRelabelings:
         - action: drop
           regex: .*_bucket
-          sourceLabels: [ __name__ ]
+          sourceLabels: [__name__]
   kubeProxy:
     enabled: false
   kubeScheduler:
@@ -313,7 +313,7 @@ promtail:
     lokiAddress: http://{{ .Release.Name }}-loki:3100/loki/api/v1/push
     snippets:
       pipelineStages:
-        - docker: { }
+        - docker: {}
   enabled: true
   rbac:
     pspEnabled: false
@@ -362,5 +362,5 @@ traefik:
       cpu: 250m
       memory: 150Mi
   service:
-    spec: { }
+    spec: {}
     type: ClusterIP
