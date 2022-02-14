@@ -346,6 +346,8 @@ traefik:
   logs:
     access:
       enabled: true
+      filters:
+        statuscodes: 300-599
   podDisruptionBudget:
     enabled: true
     minAvailable: 1
