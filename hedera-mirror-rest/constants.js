@@ -76,6 +76,7 @@ const transactionColumns = {
 };
 
 const requestIdLabel = 'requestId';
+const requestStartTime = 'requestStartTime';
 const responseDataLabel = 'mirrorRestData';
 
 const orderFilterValues = {
@@ -186,6 +187,7 @@ module.exports = {
   queryParamOperators,
   recordStreamPrefix,
   requestIdLabel,
+  requestStartTime,
   responseDataLabel,
   tokenTypeFilter,
   transactionColumns,

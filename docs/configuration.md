@@ -311,7 +311,7 @@ The following table lists the available properties along with their default valu
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
 | Name                                                     | Default                 | Description                                                                                    |
-| -------------------------------------------------------- | ----------------------- | ---------------------------------------------------------------------------------------------- |
+| -------------------------------------------------------- |-------------------------| ---------------------------------------------------------------------------------------------- |
 | `hedera.mirror.rest.cache.entityId.maxAge`               | 1800                    | The number of seconds until the entityId cache entry expires                                   |
 | `hedera.mirror.rest.cache.entityId.maxSize`              | 100000                  | The maximum number of entries in the entityId cache                                            |
 | `hedera.mirror.rest.db.host`                             | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
@@ -321,15 +321,18 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.db.pool.maxConnections`              | 10                      | The maximum number of clients the database pool can contain                                    |
 | `hedera.mirror.rest.db.pool.statementTimeout`            | 20000                   | The number of milliseconds to wait before timing out a query statement                         |
 | `hedera.mirror.rest.db.port`                             | 5432                    | The port used to connect to the database                                                       |
-| `hedera.mirror.rest.db.username`                         | mirror_api              | The username the processor uses to connect to the database                                     |
 | `hedera.mirror.rest.db.sslMode`                          | DISABLE                 | The ssl level of protection against Eavesdropping, Man-in-the-middle (MITM) and Impersonation on the db connection. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL. |
 | `hedera.mirror.rest.db.tls.ca`                           | ""                      | The path to the certificate authority used by the database for secure connections              |
 | `hedera.mirror.rest.db.tls.cert`                         | ""                      | The path to the public key the client should use to securely connect to the database           |
 | `hedera.mirror.rest.db.tls.enabled`                      | false                   | Whether TLS should be used for the database connection                                         |
 | `hedera.mirror.rest.db.tls.key`                          | ""                      | The path to the private key the client should use to securely connect to the database          |
-| `hedera.mirror.rest.log.level`                           | debug                   | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
+| `hedera.mirror.rest.db.username`                         | mirror_api              | The username the processor uses to connect to the database                                     |
+| `hedera.mirror.rest.log.level`                           | info                    | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
 | `hedera.mirror.rest.maxRepeatedQueryParameters`          | 100                     | The maximum number of times any query parameter can be repeated in the uri                     |
 | `hedera.mirror.rest.maxTimestampRange`                   | 7d                      | The maximum amount of time a timestamp range query param can span for some APIs.               |
+| `hedera.mirror.rest.metrics.enabled`                     | true                    | Whether metrics should be collected and exposed for scraping                                   |
+| `hedera.mirror.rest.metrics.config`                      | See application.yml     | The configuration to pass to Swagger stats (https://swaggerstats.io/guide/conf.html#options)   |
+| `hedera.mirror.rest.metrics.ipMetrics`                   | false                   | Whether metrics should be associated with a masked client IP label                             |
 | `hedera.mirror.rest.network.unreleasedSupplyAccounts`    | [0.0.2, 0.0.42, ...]    | An array of account IDs whose aggregated balance subtracted from the total supply is the released supply |
 | `hedera.mirror.rest.port`                                | 5551                    | The REST API port                                                                              |
 | `hedera.mirror.rest.metrics.enabled`                     | true                    | Whether metrics are enabled for the REST API                                                   |
@@ -339,6 +342,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.metrics.config.uriPath`              | '/swagger'              | The REST API metrics uri path                                                                  |
 | `hedera.mirror.rest.openapi.specFileName`                | 'openapi'               | The file name of the OpenAPI spec file                                                         |
 | `hedera.mirror.rest.openapi.swaggerUIPath`               | '/docs'                 | Swagger UI path for your REST API                                                              |
+| `hedera.mirror.rest.response.compression`                | true                    | Whether GZIP compression should be enabled for response bodies                                 |
 | `hedera.mirror.rest.response.includeHostInLink`          | false                   | Whether to include the hostname and port in the next link in the response                      |
 | `hedera.mirror.rest.response.limit.default`              | 25                      | The default value for the limit parameter that controls the REST API response size             |
 | `hedera.mirror.rest.response.limit.max`                  | 100                     | The maximum size the limit parameter can be that controls the REST API response size           |

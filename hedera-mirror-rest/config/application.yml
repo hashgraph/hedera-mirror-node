@@ -23,17 +23,17 @@ hedera:
           key: ''
         username: mirror_api
       log:
-        level: debug
+        level: info
       maxRepeatedQueryParameters: 100
       maxTimestampRange: 7d
       metrics:
         enabled: true
         config:
           authentication: true
-          durationBuckets: [ 100, 250, 500, 1000, 2500, 5000 ]
+          durationBuckets: [ 25, 100, 250, 500 ]
           password: password
-          requestSizeBuckets: [ 64, 256, 1024 ]
-          responseSizeBuckets: [ 512, 1024, 10240, 25600, 51200 ]
+          requestSizeBuckets: [ ]
+          responseSizeBuckets: [ 100, 250, 500, 1000 ]
           swaggerOnly: true,
           username: metrics
           uriPath: '/swagger'
@@ -107,12 +107,11 @@ hedera:
         addressBookHistory: false
         enabled: false
         streams:
-          network: 'DEMO'
+          accessKey:
+          bucketName:
           cloudProvider: 'S3'
           endpointOverride:
           gcpProjectId:
+          network: 'DEMO'
           region: 'us-east-1'
-          accessKey:
           secretKey:
-          bucketName:
-
