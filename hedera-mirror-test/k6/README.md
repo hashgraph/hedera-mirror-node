@@ -5,7 +5,7 @@ and web3.
 
 ## Install k6
 
-The k6 test engine is needed to run the tests. Please follow
+The k6 test engine ris needed to run the tests. Please follow
 the [official documentation](https://k6.io/docs/getting-started/installation/) to install k6.
 
 ## Run The Tests
@@ -23,7 +23,20 @@ k6 run src/rosetta/apis.js
 ```
 
 The `k6.env` file contains sensible default values for environment variables used in the tests. Some are network
-dependent. Adjust the values if needed.
+dependent. Adjust the values if needed. If you don't want to use the default values, you can query the target
+environment for environment specific parameters, this can be done by using the `src/bootstrapEnvParameters.js`.
+Example:
+```shell
+source src/rosetta/k6.env
+../../hedera-mirror-rest/node/node src/config/bootstrapEnvParameters.js -env mainnet -baseApiUrl https://mainnet-public.mirrornode.hedera.com/api/v1
+source src/configs/mainnet.env
+k6 run src/rosetta/apis.js
+```
+
+The commands above will query the main net environment by using the given API URL, and build the
+`src/configs/mainnet.env` file with a list of `export` commands the environment variables.
+The command `source src/configs/mainnet.env` will overwrite the value of some environment variables already exported
+by the command `source src/rosetta/k6.env`
 
 The test suite will run the tests sequentially with a configurable graceful stop time in between, so they don't
 interfere with each other.
