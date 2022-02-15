@@ -34,9 +34,20 @@ k6 run src/rosetta/apis.js
 ```
 
 The commands above will query the main net environment by using the given API URL, and build the
-`src/configs/mainnet.env` file with a list of `export` commands the environment variables.
+`src/configs/mainnet.env` file with a list of `export` commands for the environment variables.
 The command `source src/configs/mainnet.env` will overwrite the value of some environment variables already exported
-by the command `source src/rosetta/k6.env`
+by the command `source src/rosetta/k6.env`, at the moment the `bootstrapEnvParameters.js` script is able to overwrite
+the values of the following env variables:
+- DEFAULT_ACCOUNT
+- DEFAULT_ACCOUNT_BALANCE
+- DEFAULT_CONTRACT_ID
+- DEFAULT_NFT
+- DEFAULT_NFT_SERIAL
+- DEFAULT_PUBLICKEY
+- DEFAULT_SCHEDULE_ACCOUNT
+- DEFAULT_SCHEDULE_ID
+- DEFAULT_TOKEN
+- DEFAULT_TRANSACTION
 
 The test suite will run the tests sequentially with a configurable graceful stop time in between, so they don't
 interfere with each other.
