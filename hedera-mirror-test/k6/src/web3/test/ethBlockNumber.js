@@ -34,7 +34,7 @@ const payload = JSON.stringify({
 
 const httpParams = {
   headers: {
-    'Content-Type': 'application/xml',
+    'Content-Type': 'application/json',
   },
 };
 
