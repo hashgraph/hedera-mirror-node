@@ -38,6 +38,7 @@ const (
 	truncateAccountBalanceFileSql = "truncate account_balance_file"
 	truncateCryptoTransferFileSql = "truncate crypto_transfer"
 	truncateEntitySql             = "truncate entity"
+	truncateNftTransferSql        = "truncate nft_transfer"
 	truncateRecordFileSql         = "truncate record_file"
 	truncateTokenSql              = "truncate token"
 	truncateTokenBalanceSql       = "truncate token_balance"

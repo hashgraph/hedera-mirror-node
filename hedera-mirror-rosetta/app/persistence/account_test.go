@@ -275,7 +275,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	hbarAmount := &types.HbarAmount{Value: initialAccountBalance + sum(cryptoTransferAmounts)}
 	token1Amount := types.NewTokenAmount(token1, sum(token1TransferAmounts[:2]))
 	token2Amount := types.NewTokenAmount(token2, sum(token2TransferAmounts[:2]))
-	token3Amount := types.NewTokenAmount(token3, 2).SetSerialNumbers([]int64{3, 4})
+	token3Amount := types.NewTokenAmount(token3, 2)
 	token4Amount := types.NewTokenAmount(token4, 0)
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
 
@@ -301,7 +301,9 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAfterSecondSnapshot() {
 	// given
-	db.ExecSql(dbClient, truncateCryptoTransferFileSql, truncateTokenTransferSql)
+	// remove any transfers in db. with the balance info in the second snapshot, this test verifies the account balance
+	// is computed with additional transfers applied on top of the snapshot
+	db.ExecSql(dbClient, truncateCryptoTransferFileSql, truncateNftTransferSql, truncateTokenTransferSql)
 	tdomain.NewAccountBalanceFileBuilder(dbClient, secondSnapshotTimestamp).
 		AddAccountBalance(account1, initialAccountBalance+sum(cryptoTransferAmounts)).
 		AddTokenBalance(account1, encodedTokenId1, sum(token1TransferAmounts[:2])).
@@ -332,7 +334,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAfterSecondSnapsh
 	hbarAmount := &types.HbarAmount{Value: initialAccountBalance + sum(cryptoTransferAmounts)}
 	token1Amount := types.NewTokenAmount(token1, sum(token1TransferAmounts[:2])+10)
 	token2Amount := types.NewTokenAmount(token2, sum(token2TransferAmounts[:2])+12)
-	token3Amount := types.NewTokenAmount(token3, 3).SetSerialNumbers([]int64{3, 4, 6})
+	token3Amount := types.NewTokenAmount(token3, 3)
 	token4Amount := types.NewTokenAmount(token4, 0)
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
 	repo := NewAccountRepository(dbClient)
@@ -361,8 +363,8 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockForDeletedAccount
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	// account is deleted before the second account balance file, so there is no balance info in the file. querying the
-	// account balance for a timestamp after the second account balance file should then return the balance at the time
+	// account is deleted before the third account balance file, so there is no balance info in the file. querying the
+	// account balance for a timestamp after the third account balance file should then return the balance at the time
 	// the account is deleted
 	actual, err := repo.RetrieveBalanceAtBlock(defaultContext, account1, thirdSnapshotTimestamp+10)
 
@@ -400,7 +402,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoAccountEntity()
 	hbarAmount := &types.HbarAmount{Value: initialAccountBalance + sum(cryptoTransferAmounts)}
 	token1Amount := types.NewTokenAmount(token1, sum(token1TransferAmounts[:2]))
 	token2Amount := types.NewTokenAmount(token2, sum(token2TransferAmounts[:2]))
-	token3Amount := types.NewTokenAmount(token3, 2).SetSerialNumbers([]int64{3, 4})
+	token3Amount := types.NewTokenAmount(token3, 2)
 	token4Amount := types.NewTokenAmount(token4, 0)
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
 	repo := NewAccountRepository(dbClient)
@@ -437,7 +439,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance(
 	hbarAmount := &types.HbarAmount{Value: sum(cryptoTransferAmounts)}
 	token1Amount := types.NewTokenAmount(token1, sum(token1TransferAmounts[:2]))
 	token2Amount := types.NewTokenAmount(token2, sum(token2TransferAmounts[:2]))
-	token3Amount := types.NewTokenAmount(token3, 2).SetSerialNumbers([]int64{3, 4})
+	token3Amount := types.NewTokenAmount(token3, 2)
 	token4Amount := types.NewTokenAmount(token4, 0)
 	expected := []types.Amount{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
 

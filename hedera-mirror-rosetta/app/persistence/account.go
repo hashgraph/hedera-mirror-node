@@ -26,7 +26,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
@@ -101,9 +100,7 @@ const (
                                         from token_balance tb
                                         join token t on t.token_id = tb.token_id
                                         join genesis on t.created_timestamp > genesis.timestamp
-                                        where tb.consensus_timestamp = abm.max and
-                                          tb.account_id = @account_id and
-                                          t.type = 'FUNGIBLE_COMMON'
+                                        where tb.consensus_timestamp = abm.max and tb.account_id = @account_id
                                       ), '[]') token_balances
                                     from abm
                                     left join account_balance ab
@@ -120,9 +117,9 @@ const (
                                     from nft_transfer nt
                                     join token t on t.token_id = nt.token_id
                                     join genesis on t.created_timestamp > genesis.timestamp
-                                    where consensus_timestamp <= @consensus_end and
+                                    where consensus_timestamp > @start and consensus_timestamp <= @end and
                                       (receiver_account_id = @account_id or sender_account_id = @account_id)
-                                    order by consensus_timestamp desc`
+                                    order by consensus_timestamp`
 )
 
 type accountBalanceChange struct {
@@ -135,11 +132,6 @@ type combinedAccountBalance struct {
 	ConsensusTimestamp int64
 	Balance            int64
 	TokenBalances      string
-}
-
-type nftId struct {
-	tokenId      int64
-	serialNumber int64
 }
 
 type tokenAssociation struct {
@@ -202,10 +194,19 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 	hbarAmount.Value += hbarValue
 
 	ftAssociationMap := tokenAssociationMap[domain.TokenTypeFungibleCommon]
-	ftAmounts := getUpdatedFungibleTokenAmounts(tokenAmountMap, tokenValues, ftAssociationMap)
+	ftAmountMap := tokenAmountMap[domain.TokenTypeFungibleCommon]
+	ftAmounts := getUpdatedTokenAmounts(ftAmountMap, tokenValues, ftAssociationMap)
 
 	nftAssociationMap := tokenAssociationMap[domain.TokenTypeNonFungibleUnique]
-	nftAmounts, err := ar.getNftBalance(ctx, accountId, consensusEnd, nftAssociationMap)
+	nftAmountMap := tokenAmountMap[domain.TokenTypeNonFungibleUnique]
+	nftAmounts, err := ar.getNftBalance(
+		ctx,
+		accountId,
+		snapshotTimestamp,
+		consensusEnd,
+		nftAmountMap,
+		nftAssociationMap,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +246,7 @@ func (ar *accountRepository) getCryptoEntity(ctx context.Context, entityId int64
 func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accountId, timestamp int64) (
 	int64,
 	*types.HbarAmount,
-	map[int64]*types.TokenAmount,
+	map[string]map[int64]*types.TokenAmount,
 	*rTypes.Error,
 ) {
 	db, cancel := ar.dbClient.GetDbWithContext(ctx)
@@ -277,9 +278,12 @@ func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accou
 		return 0, nil, nil, hErrors.ErrInvalidToken
 	}
 
-	tokenAmountMap := make(map[int64]*types.TokenAmount, len(tokenAmounts))
+	tokenAmountMap := map[string]map[int64]*types.TokenAmount{
+		domain.TokenTypeFungibleCommon:    make(map[int64]*types.TokenAmount),
+		domain.TokenTypeNonFungibleUnique: make(map[int64]*types.TokenAmount),
+	}
 	for _, tokenAmount := range tokenAmounts {
-		tokenAmountMap[tokenAmount.TokenId.EncodedId] = tokenAmount
+		tokenAmountMap[tokenAmount.Type][tokenAmount.TokenId.EncodedId] = tokenAmount
 	}
 
 	return cb.ConsensusTimestamp, &hbarAmount, tokenAmountMap, nil
@@ -338,7 +342,9 @@ func (ar *accountRepository) getBalanceChange(ctx context.Context, accountId, co
 func (ar *accountRepository) getNftBalance(
 	ctx context.Context,
 	accountId int64,
+	consensusStart int64,
 	consensusEnd int64,
+	tokenAmountMap map[int64]*types.TokenAmount,
 	tokenAssociationMap map[int64]tokenAssociation,
 ) ([]types.Amount, *rTypes.Error) {
 	db, cancel := ar.dbClient.GetDbWithContext(ctx)
@@ -348,7 +354,8 @@ func (ar *accountRepository) getNftBalance(
 	if err := db.Raw(
 		selectNftTransfersForAccount,
 		sql.Named("account_id", accountId),
-		sql.Named("consensus_end", consensusEnd),
+		sql.Named("start", consensusStart),
+		sql.Named("end", consensusEnd),
 	).Scan(&nftTransfers).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
@@ -358,10 +365,7 @@ func (ar *accountRepository) getNftBalance(
 		return nil, hErrors.ErrDatabaseError
 	}
 
-	allNfts := make(map[nftId]bool)
-	ownedNfts := make(map[int64][]int64)
-	tokenIdMap := make(map[int64]domain.EntityId)
-	// nftTransfers are ordered by consensus timestamp in descending order
+	balanceChangeMap := make(map[int64]*types.TokenAmount)
 	for _, nftTransfer := range nftTransfers {
 		tokenId := nftTransfer.TokenId.EncodedId
 		if ta, ok := tokenAssociationMap[tokenId]; ok && !ta.Associated {
@@ -369,51 +373,30 @@ func (ar *accountRepository) getNftBalance(
 			continue
 		}
 
-		// the latest record of a nft supersedes past records
-		id := nftId{tokenId: nftTransfer.TokenId.EncodedId, serialNumber: nftTransfer.SerialNumber}
-		if allNfts[id] {
-			continue
+		if _, ok := balanceChangeMap[tokenId]; !ok {
+			// initialize if not exist
+			balanceChangeMap[tokenId] = &types.TokenAmount{
+				TokenId: nftTransfer.TokenId,
+				Type:    domain.TokenTypeNonFungibleUnique,
+			}
 		}
-		allNfts[id] = true
-
-		// if accountId is the receiver, the nft instance is owned by the account at consensus_end; any previous
-		// transfer of this nft instance will be ignored
-		if nftTransfer.ReceiverAccountId != nil && nftTransfer.ReceiverAccountId.EncodedId == accountId {
-			tokenIdMap[id.tokenId] = nftTransfer.TokenId
-			ownedNfts[id.tokenId] = append(ownedNfts[id.tokenId], id.serialNumber)
+		// add 1 if the account is the receiver, and subtract 1 if the account is the sender
+		change := int64(1)
+		if nftTransfer.SenderAccountId != nil && nftTransfer.SenderAccountId.EncodedId == accountId {
+			change = -1
 		}
+		balanceChangeMap[tokenId].Value += change
 	}
 
-	// ownedNfts have entries for nft classes that 1) the account is associated with at consensusEnd,
-	// and 2) the account has at least 1 nft instance with
-	tokenAmounts := make([]types.Amount, 0, len(ownedNfts))
-	for tokenId, serialNumbers := range ownedNfts {
-		// sort the serial numbers in natural order
-		sort.Slice(serialNumbers, func(i, j int) bool { return serialNumbers[i] < serialNumbers[j] })
-		tokenAmount := &types.TokenAmount{
-			SerialNumbers: serialNumbers,
-			TokenId:       tokenIdMap[tokenId],
-			Type:          domain.TokenTypeNonFungibleUnique,
-			Value:         int64(len(serialNumbers)),
-		}
-		tokenAmounts = append(tokenAmounts, tokenAmount)
+	nftValues := make([]*types.TokenAmount, 0, len(balanceChangeMap))
+	for _, balanceChange := range balanceChangeMap {
+		nftValues = append(nftValues, balanceChange)
 	}
 
-	for tokenId, ta := range tokenAssociationMap {
-		_, ok := ownedNfts[tokenId]
-		if !ta.Associated || !ok {
-			// if dissociated, or associated and there's no instances of the token found, add 0 amount tokenAmount
-			tokenAmounts = append(tokenAmounts, &types.TokenAmount{
-				TokenId: ta.TokenId,
-				Type:    ta.Type,
-			})
-		}
-	}
-
-	return tokenAmounts, nil
+	return getUpdatedTokenAmounts(tokenAmountMap, nftValues, tokenAssociationMap), nil
 }
 
-func getUpdatedFungibleTokenAmounts(
+func getUpdatedTokenAmounts(
 	tokenAmountMap map[int64]*types.TokenAmount,
 	tokenValues []*types.TokenAmount,
 	tokenAssociationMap map[int64]tokenAssociation,
