@@ -3,6 +3,9 @@ function isNonErrorResponse(response){
   //lets just do the normal path and return false,
   //if an exception happens.
   try{
+    if(response.status !== 200){
+      return false;
+    }
     const body = JSON.parse(response.body);
     return body["error"] === undefined && body["error_code"] === undefined;
   }
