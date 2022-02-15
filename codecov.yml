@@ -1,11 +1,14 @@
-# We upload three separate reports: js, java and go
+# We upload multiple separate reports, one for each GitHub action
 codecov:
-    notify:
-        after_n_builds: 3
+  notify:
+    after_n_builds: 8
 comment:
-    after_n_builds: 3
+  after_n_builds: 8
 coverage:
-    status:
-        project:
-            default:
-                threshold: 1.0
+  status:
+    project:
+      default:
+        threshold: 1.0
+ignore:
+  - "hedera-mirror-common/src/main/java/com/hedera/mirror/common/domain/**/*"
+
