@@ -3,7 +3,7 @@ module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 go 1.17
 
 require (
-	github.com/coinbase/rosetta-sdk-go v0.7.2
+	github.com/coinbase/rosetta-sdk-go v0.7.3
 	github.com/cucumber/godog v0.12.4
 	github.com/go-playground/validator/v10 v10.10.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20211228072109-84b5087d2be4
@@ -103,7 +103,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/net v0.0.0-20210907225631-ff17edfbf26d // indirect
+	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
