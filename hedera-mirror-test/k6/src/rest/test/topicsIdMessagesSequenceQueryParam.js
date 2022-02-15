@@ -22,6 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
+import {responseHasNonEmptyList} from "./common.js";
 
 const url = `${__ENV.BASE_URL}${urlPrefix}/topics/${__ENV.DEFAULT_TOPIC}/messages?sequencenumber=${__ENV.DEFAULT_TOPIC_SEQUENCE}`;
 const urlTag = '/topics/{id}/messages?sequencenumber={sequenceNumber}';
@@ -30,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('topicsIdMessagesSequenceQueryParam') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Topics id messages sequenceNumber query param OK', (r) => r.status === 200)
+  .check('Topics id messages sequenceNumber query param OK', (r) => responseHasNonEmptyList(r, "messages"))
   .build();
 
 export {options, run};

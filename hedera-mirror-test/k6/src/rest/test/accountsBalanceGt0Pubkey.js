@@ -22,6 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
+import {responseHasListWithSize} from "./common.js";
 
 const url = `${__ENV.BASE_URL}${urlPrefix}/accounts?account.balance=gt:0&account.publickey=${__ENV.DEFAULT_PUBLICKEY}`;
 const urlTag = '/accounts?account.balance=gt:0&account.publickey={publicKey}';
@@ -30,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('accountsBalanceGt0Pubkey') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Accounts balance gt:0 with publickey OK', (r) => r.status === 200)
+  .check('Accounts balance gt:0 with publickey OK', (r) => responseHasListWithSize(r, "accounts", 1))
   .build();
 
 export {options, run};

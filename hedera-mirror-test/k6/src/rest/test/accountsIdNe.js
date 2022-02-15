@@ -22,6 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
+import {responseHasNonEmptyList} from "./common.js";
 
 const url = `${__ENV.BASE_URL}${urlPrefix}/accounts?account.id=ne:${__ENV.DEFAULT_ACCOUNT}&order=desc`;
 const urlTag = '/accounts?account.id=ne:{accountId}&order=desc';
@@ -30,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('accountsIdNe') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Accounts ne: accountId order desc OK', (r) => r.status === 200)
+  .check('Accounts ne: accountId order desc OK', (r) => responseHasNonEmptyList(r, "accounts"))
   .build();
 
 export {options, run};

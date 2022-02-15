@@ -22,6 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
+import {responseHasListWithValidSize} from "./common.js";
 
 const urlTag = '/accounts';
 
@@ -44,7 +45,7 @@ const {options, run} = new TestScenarioBuilder()
 
     return response;
   })
-  .check('Accounts OK', (r) => r.status === 200)
+  .check('Accounts OK', (r) => responseHasListWithValidSize(r, "accounts"))
   .build();
 
 export {options, run};

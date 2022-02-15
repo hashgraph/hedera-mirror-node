@@ -22,6 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
+import {responseHasListWithValidSize} from "./common.js";
 
 const urlTag = '/tokens';
 const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
@@ -30,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('tokens') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Tokens OK', (r) => r.status === 200)
+  .check('Tokens OK', (r) => responseHasListWithValidSize(r, "tokens"))
   .build();
 
 export {options, run};
