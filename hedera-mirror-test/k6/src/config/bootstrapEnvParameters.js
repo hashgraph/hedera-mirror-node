@@ -84,14 +84,14 @@ async function computeNftParameters(configuration) {
   const tokenPath = `${configuration.baseApiUrl}/tokens?type=NON_FUNGIBLE_UNIQUE&limit=1&order=desc`;
   const tokensResponse = await makeGetRequest(tokenPath);
   if(tokensResponse.tokens.length === 0){
-    throw new Error(`No NFT has been found for the configuration: ${JSON.stringify(configuration)}`);
+    throw new Error(`No NFT has been found in the tokens route for the configuration: ${JSON.stringify(configuration)}`);
   }
   const firstNft = tokensResponse.tokens[0];
 
   const nftPath = `${configuration.baseApiUrl}/tokens/${firstNft.token_id}/nfts?limit=1&order=desc`;
   const nftResponse = await makeGetRequest(nftPath);
   if(nftResponse.nfts.length === 0){
-    throw new Error(`No NFT has been found for the configuration: ${JSON.stringify(configuration)}`);
+    throw new Error(`No NFT has been found in the NFT route for the configuration: ${JSON.stringify(configuration)}`);
   }
   return {
     nft: firstNft.token_id,
@@ -164,7 +164,8 @@ export DEFAULT_PUBLICKEY=${testParameters.publicKey}
 export DEFAULT_SCHEDULE_ACCOUNT=${testParameters.scheduleAccount}
 export DEFAULT_SCHEDULE_ID=${testParameters.scheduleId}
 export DEFAULT_TOKEN=${testParameters.token}
-export DEFAULT_TRANSACTION=${testParameters.transaction}`;
+export DEFAULT_TRANSACTION=${testParameters.transaction}
+export BASE_URL=${configuration.baseApiUrl}`;
   fs.writeFileSync(envParametersFile, parameters);
   fs.fdatasyncSync(envParametersFile);
   fs.closeSync(envParametersFile);
