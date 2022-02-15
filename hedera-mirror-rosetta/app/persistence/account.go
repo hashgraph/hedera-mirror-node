@@ -172,7 +172,7 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 	balanceChangeEndTimestamp := consensusEnd
 	balanceSnapshotEndTimestamp := consensusEnd
 	if entity != nil && entity.Deleted != nil && *entity.Deleted && entity.TimestampRange.Lower.Int <= consensusEnd {
-		// if an account / contract is deleted at t1, a balance snapshot at t1 (if exists) won't have info for the
+		// if an account / contract is deleted at encodedTokenId1, a balance snapshot at encodedTokenId1 (if exists) won't have info for the
 		// entity, thus look for a balance snapshot at or before the deleted timestamp - 1
 		// however, the balanceChangeEndTimestamp should be the deletion timestamp since the crypto delete transaction
 		// may have a transfer which moves the remaining hbar balance to another account
@@ -364,7 +364,7 @@ func (ar *accountRepository) getNftBalance(
 	// nftTransfers are ordered by consensus timestamp in descending order
 	for _, nftTransfer := range nftTransfers {
 		tokenId := nftTransfer.TokenId.EncodedId
-		if ta, ok := tokenAssociationMap[tokenId]; ok && ta.Associated {
+		if ta, ok := tokenAssociationMap[tokenId]; ok && !ta.Associated {
 			// skip  dissociated tokens
 			continue
 		}

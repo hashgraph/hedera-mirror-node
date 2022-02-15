@@ -37,9 +37,8 @@ import (
 )
 
 const (
-	batchSize                            = 2000
-	transactionResultSuccess       int32 = 22
-	transactionTypeTokenDissociate int16 = 41
+	batchSize                      = 2000
+	transactionResultSuccess int32 = 22
 )
 
 const (
@@ -114,7 +113,7 @@ const (
           ) order by nft.token_id, nft.serial_number) as nft_transfers
         from (select * from dissociated_token where type = 'NON_FUNGIBLE_UNIQUE') as d
         join nft on nft.account_id = d.account_id and nft.token_id = d.token_id
-        where nft.deleted is false or nft.modified_timestamp = d.consensus_timestamp
+        where nft.deleted is null or nft.deleted is false or nft.modified_timestamp = d.consensus_timestamp
         group by consensus_timestamp
       )
       select
@@ -531,7 +530,7 @@ func (tr *transactionRepository) processSuccessTokenDissociates(
 ) *rTypes.Error {
 	hasSuccessTokenDissociate := false
 	for _, txn := range transactions {
-		if txn.Type == transactionTypeTokenDissociate && IsTransactionResultSuccessful(int32(txn.Result)) {
+		if txn.Type == domain.TransactionTypeTokenDissociate && IsTransactionResultSuccessful(int32(txn.Result)) {
 			hasSuccessTokenDissociate = true
 			break
 		}
@@ -556,20 +555,11 @@ func (tr *transactionRepository) processSuccessTokenDissociates(
 	// replace NftTransfers and TokenTransfers for any matching transaction by consensus timestamp
 	// both transactions and tokenDissociateTransactions are sorted by consensus timestamp,
 	// and tokenDissociateTransactions is a subset of transactions
-	i := 0
-	j := 0
-	for {
-		if i >= len(tokenDissociateTransactions) || j >= len(transactions) {
-			break
-		}
-
-		if tokenDissociateTransactions[i].ConsensusTimestamp == transactions[j].ConsensusTimestamp {
-			transactions[j].NftTransfers = tokenDissociateTransactions[i].NftTransfers
-			transactions[j].TokenTransfers = tokenDissociateTransactions[i].TokenTransfers
-			i++
-			j++
-		} else {
-			j++
+	for t, d := 0, 0; t < len(transactions) && d < len(tokenDissociateTransactions); t++ {
+		if transactions[t].ConsensusTimestamp == tokenDissociateTransactions[d].ConsensusTimestamp {
+			transactions[t].NftTransfers = tokenDissociateTransactions[d].NftTransfers
+			transactions[t].TokenTransfers = tokenDissociateTransactions[d].TokenTransfers
+			d++
 		}
 	}
 
@@ -594,17 +584,22 @@ func adjustCryptoTransfers(
 	nonFeeTransferMap map[int64]int64,
 ) []hbarTransfer {
 	cryptoTransferMap := make(map[int64]hbarTransfer)
+	accountIds := make([]int64, 0)
 	for _, transfer := range cryptoTransfers {
-		key := transfer.AccountId.EncodedId
-		cryptoTransferMap[key] = hbarTransfer{
+		accountId := transfer.AccountId.EncodedId
+		if _, ok := cryptoTransferMap[accountId]; !ok {
+			accountIds = append(accountIds, accountId)
+		}
+		cryptoTransferMap[accountId] = hbarTransfer{
 			AccountId: transfer.AccountId,
-			Amount:    transfer.Amount + cryptoTransferMap[key].Amount,
+			Amount:    transfer.Amount + cryptoTransferMap[accountId].Amount,
 		}
 	}
 
 	adjusted := make([]hbarTransfer, 0, len(cryptoTransfers))
-	for key, aggregated := range cryptoTransferMap {
-		amount := aggregated.Amount - nonFeeTransferMap[key]
+	for _, accountId := range accountIds {
+		aggregated := cryptoTransferMap[accountId]
+		amount := aggregated.Amount - nonFeeTransferMap[accountId]
 		if amount != 0 {
 			adjusted = append(adjusted, hbarTransfer{
 				AccountId: aggregated.AccountId,

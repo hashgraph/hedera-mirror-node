@@ -20,19 +20,19 @@
 
 package domain
 
-import (
-	"testing"
+const tableNameNft = "nft"
 
-	"github.com/jackc/pgtype"
-	"github.com/stretchr/testify/assert"
-)
-
-func TestEntityTableName(t *testing.T) {
-	assert.Equal(t, "entity", Entity{}.TableName())
+type Nft struct {
+	AccountId         *EntityId
+	CreatedTimestamp  *int64
+	Deleted           *bool
+	ModifiedTimestamp int64
+	Metadata          []byte
+	SerialNumber      int64    `gorm:"primaryKey"`
+	TokenId           EntityId `gorm:"primaryKey"`
 }
 
-func TestEntityGetModifiedTimestamp(t *testing.T) {
-	timestamp := int64(100)
-	entity := Entity{TimestampRange: pgtype.Int8range{Lower: pgtype.Int8{Int: timestamp, Status: pgtype.Present}}}
-	assert.Equal(t, int64(100), entity.GetModifiedTimestamp())
+// TableName returns nft table name
+func (Nft) TableName() string {
+	return tableNameNft
 }

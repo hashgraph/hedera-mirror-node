@@ -34,8 +34,14 @@ import (
 )
 
 const (
+	truncateAccountBalanceSql     = "truncate account_balance"
 	truncateAccountBalanceFileSql = "truncate account_balance_file"
+	truncateCryptoTransferFileSql = "truncate crypto_transfer"
+	truncateEntitySql             = "truncate entity"
 	truncateRecordFileSql         = "truncate record_file"
+	truncateTokenSql              = "truncate token"
+	truncateTokenBalanceSql       = "truncate token_balance"
+	truncateTokenTransferSql      = "truncate token_transfer"
 )
 
 var (
