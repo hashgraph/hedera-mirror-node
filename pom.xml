@@ -67,7 +67,7 @@
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.44.0</grpc.version>
         <guava.version>31.0.1-jre</guava.version>
-        <hedera-protobuf.version>0.23.0-alpha.2</hedera-protobuf.version>
+        <hedera-protobuf.version>0.23.1</hedera-protobuf.version>
         <hibernate-types.version>2.14.0</hibernate-types.version>
         <jacoco.version>0.8.7</jacoco.version>
         <java.version>11</java.version>
@@ -139,14 +139,6 @@
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
-        </repository>
-        <repository>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <id>sdk-staging</id>
-            <name>SDK Staging</name>
-            <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1397</url>
         </repository>
     </repositories>
 
