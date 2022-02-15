@@ -340,10 +340,14 @@ traefik:
   deployment:
     kind: DaemonSet
   enabled: true
-  globalArguments: []
+  globalArguments:  # Expose X-Forwarded-For header for tracing
+    - --entryPoints.web.forwardedHeaders.insecure
+    - --entryPoints.websecure.forwardedHeaders.insecure
   logs:
     access:
       enabled: true
+      filters:
+        statuscodes: 300-599
   podDisruptionBudget:
     enabled: true
     minAvailable: 1

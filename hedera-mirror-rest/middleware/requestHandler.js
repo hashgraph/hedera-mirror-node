@@ -29,10 +29,10 @@ const {httpStatusCodes} = require('../constants');
 const requestLogger = async (req, res, next) => {
   const requestId = await randomString(8);
   httpContext.set(constants.requestIdLabel, requestId);
-  logger.info(`${req.ip} ${req.method} ${req.originalUrl}`);
 
   // set default http OK code for reference
   res.locals.statusCode = httpStatusCodes.OK.code;
+  res.locals[constants.requestStartTime] = Date.now();
 };
 
 /**

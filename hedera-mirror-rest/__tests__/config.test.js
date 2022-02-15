@@ -59,7 +59,7 @@ afterEach(() => {
 const assertCustomConfig = (actual, customConfig) => {
   // fields custom doesn't override
   expect(actual.response.includeHostInLink).toBe(false);
-  expect(actual.log.level).toBe('debug');
+  expect(actual.log.level).toBe('info');
 
   // fields overridden by custom
   expect(actual.shard).toBe(customConfig.hedera.mirror.rest.shard);
@@ -72,7 +72,7 @@ describe('Load YAML configuration:', () => {
     const config = require('../config');
     expect(config.shard).toBe(0);
     expect(config.response.includeHostInLink).toBe(false);
-    expect(config.log.level).toBe('debug');
+    expect(config.log.level).toBe('info');
   });
 
   test('./application.yml', () => {
@@ -103,9 +103,9 @@ describe('Load environment configuration:', () => {
   });
 
   test('String', () => {
-    process.env = {HEDERA_MIRROR_REST_LOG_LEVEL: 'info'};
+    process.env = {HEDERA_MIRROR_REST_LOG_LEVEL: 'warn'};
     const config = require('../config');
-    expect(config.log.level).toBe('info');
+    expect(config.log.level).toBe('warn');
   });
 
   test('Boolean', () => {

@@ -37,10 +37,10 @@ import reactor.core.publisher.Mono;
 @Named
 class LoggingFilter implements WebFilter {
 
+    static final String X_FORWARDED_FOR = "X-Forwarded-For";
     private static final String ACTUATOR_PATH = "/actuator/";
     private static final String LOCALHOST = "127.0.0.1";
     private static final String LOG_FORMAT = "{} {} {} in {} ms: {}";
-    private static final String X_FORWARDED_FOR = "X-Forwarded-For";
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
