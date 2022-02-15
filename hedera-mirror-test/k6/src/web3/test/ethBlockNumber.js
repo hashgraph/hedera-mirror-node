@@ -21,18 +21,27 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {isNonErrorResponse} from "./common.js";
+
+const url = __ENV.BASE_URL;
 
 const payload = JSON.stringify({
   id: 1,
   jsonrpc: "2.0",
   method: "eth_blockNumber",
+  params: []
 });
-const url = __ENV.BASE_URL;
+
+const httpParams = {
+  headers: {
+    'Content-Type': 'application/xml',
+  },
+};
 
 const {options, run} = new TestScenarioBuilder()
   .name('eth_blockNumber') // use unique scenario name among all tests
-  .request(() => http.post(url, payload))
-  .check('eth_blockNumber', (r) => r.status === 200)
+  .request(() => http.post(url, payload, httpParams))
+  .check('eth_blockNumber', (r) => isNonErrorResponse(r))
   .build();
 
 export {options, run};
