@@ -21,6 +21,9 @@
 package persistence
 
 const (
-	genesisTimestampQuery = "select min(consensus_timestamp) as timestamp from account_balance_file"
-	genesisTimestampCte   = " genesis as (" + genesisTimestampQuery + ") "
+	genesisTimestampQuery = `select consensus_timestamp as timestamp
+                             from account_balance_file
+                             order by consensus_timestamp
+                             limit 1`
+	genesisTimestampCte = " genesis as (" + genesisTimestampQuery + ") "
 )

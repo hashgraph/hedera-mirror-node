@@ -69,9 +69,11 @@ const (
           d.*,
           (
             with snapshot as (
-              select max(abf.consensus_timestamp) as timestamp
+              select abf.consensus_timestamp as timestamp
               from account_balance_file as abf
               where abf.consensus_timestamp < d.consensus_timestamp
+              order by abf.consensus_timestamp desc
+              limit 1
             )
             select
               coalesce((

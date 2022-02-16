@@ -84,8 +84,11 @@ const (
                                 ) as associations
                               ) as token_associations`
 	latestBalanceBeforeConsensus = "with" + genesisTimestampCte + `, abm as (
-                                      select max(consensus_timestamp)
-                                      from account_balance_file where consensus_timestamp <= @timestamp
+                                      select consensus_timestamp as max
+                                      from account_balance_file
+                                      where consensus_timestamp <= @timestamp
+                                      order by consensus_timestamp desc
+                                      limit 1
                                     )
                                     select
                                       abm.max consensus_timestamp,

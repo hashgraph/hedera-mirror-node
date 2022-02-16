@@ -24,7 +24,6 @@ import "github.com/jackc/pgtype"
 
 const (
 	EntityTypeAccount  = "ACCOUNT"
-	EntityTypeContract = "CONTRACT"
 	EntityTypeFile     = "FILE"
 	EntityTypeSchedule = "SCHEDULE"
 	EntityTypeToken    = "TOKEN"

@@ -101,7 +101,8 @@ script [wait-for-mirror-node.sh](/hedera-mirror-rosetta/scripts/wait-for-mirror-
 mirror node syncing has started when the genesis information is available.
 
 A sample [configuration file](/hedera-mirror-rosetta/scripts/validation/testnet/validation.json) is provided to run
-rosetta-cli tests.
+rosetta-cli tests. Please refer to [the official guide](https://docs.cloud.coinbase.com/rosetta/docs/configuration-file)
+for the options.
 
 You can run the rosetta-cli `check:data` command as is. The data configuration section is set with `"start_index": 1`
 to work around the known `rosetta-cli` performance issue of loading large genesis account balance file. As an
