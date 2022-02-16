@@ -44,11 +44,93 @@ const (
 const (
 	andTransactionHashFilter  = " and transaction_hash = @hash"
 	orderByConsensusTimestamp = " order by consensus_timestamp"
+	// selectDissociateTokenTransfersInTimestampRange selects the token transfers and nft transfers for successful token
+	// dissociate which dissociates an account from tokens which are already deleted
+	selectDissociateTokenTransfersInTimestampRange = "with" + genesisTimestampCte + `
+      , success_dissociate as (
+        select entity_id as account_id, consensus_timestamp
+        from transaction
+        where type = 41 and result = 22
+           and consensus_timestamp >= @start and consensus_timestamp <= @end
+      ), dissociated_token as (
+        select ta.account_id, ta.token_id, t.type, t.decimals, sd.consensus_timestamp
+        from token_account ta
+        join success_dissociate sd
+          on ta.account_id = sd.account_id and ta.modified_timestamp = sd.consensus_timestamp
+        join token t
+          on t.token_id = ta.token_id
+        join entity e
+          on e.id = t.token_id and e.deleted is true
+            and sd.consensus_timestamp > lower(e.timestamp_range)
+        join genesis
+          on t.created_timestamp > timestamp
+      ), ft_balance as (
+        select
+          d.*,
+          (
+            with snapshot as (
+              select abf.consensus_timestamp as timestamp
+              from account_balance_file as abf
+              where abf.consensus_timestamp < d.consensus_timestamp
+              order by abf.consensus_timestamp desc
+              limit 1
+            )
+            select
+              coalesce((
+                select balance
+                from token_balance as tb
+                where tb.account_id = d.account_id and tb.token_id = d.token_id
+                  and tb.consensus_timestamp = snapshot.timestamp
+              ), 0) + (
+                select coalesce(sum(amount), 0)
+                from token_transfer as tt
+                where tt.account_id = d.account_id and tt.token_id = d.token_id
+                  and tt.consensus_timestamp > snapshot.timestamp
+                  and tt.consensus_timestamp < d.consensus_timestamp
+              )
+            from snapshot
+          ) balance
+        from (select * from dissociated_token where type = 'FUNGIBLE_COMMON') as d
+      ), ft_xfer as  (
+        select
+          consensus_timestamp,
+          json_agg(json_build_object(
+            'account_id', account_id,
+            'amount', -balance,
+            'decimals', decimals,
+            'token_id', token_id,
+            'type', type
+          ) order by token_id) as token_transfers
+        from ft_balance
+        where balance <> 0
+        group by consensus_timestamp
+      ), nft_xfer as (
+        select
+          consensus_timestamp,
+          json_agg(json_build_object(
+            'receiver_account_id', null,
+            'sender_account_id', nft.account_id,
+            'serial_number', nft.serial_number,
+            'token_id', nft.token_id
+          ) order by nft.token_id, nft.serial_number) as nft_transfers
+        from (select * from dissociated_token where type = 'NON_FUNGIBLE_UNIQUE') as d
+        join nft on nft.account_id = d.account_id and nft.token_id = d.token_id
+        where nft.deleted is null or nft.deleted is false or nft.modified_timestamp = d.consensus_timestamp
+        group by consensus_timestamp
+      )
+      select
+        coalesce(fx.consensus_timestamp, nx.consensus_timestamp) as consensus_timestamp,
+        coalesce(fx.token_transfers, '[]') as token_transfers,
+        coalesce(nx.nft_transfers, '[]') as nft_transfers
+      from ft_xfer fx
+      full outer join nft_xfer nx
+        on fx.consensus_timestamp = nx.consensus_timestamp
+      order by coalesce(fx.consensus_timestamp, nx.consensus_timestamp)`
 	// selectTransactionsInTimestampRange selects the transactions with its crypto transfers in json, non-fee transfers
 	// in json, token transfers in json, and optionally the token information when the transaction is token create,
 	// token delete, or token update. Note the three token transactions are the ones the entity_id in the transaction
 	// table is its related token id and require an extra rosetta operation
-	selectTransactionsInTimestampRange = `select
+	selectTransactionsInTimestampRange = "with" + genesisTimestampCte + `select
                                             t.consensus_timestamp,
                                             t.entity_id,
                                             t.payer_account_id,
@@ -58,7 +140,7 @@ const (
                                             coalesce((
                                               select json_agg(json_build_object(
                                                 'account_id', entity_id,
-                                                'amount', amount))
+                                                'amount', amount) order by entity_id)
                                               from crypto_transfer where consensus_timestamp = t.consensus_timestamp
                                             ), '[]') as crypto_transfers,
                                             case
@@ -66,7 +148,7 @@ const (
                                                   select json_agg(json_build_object(
                                                       'account_id', entity_id,
                                                       'amount', amount
-                                                    ))
+                                                    ) order by entity_id)
                                                   from non_fee_transfer
                                                   where consensus_timestamp = t.consensus_timestamp
                                                 ), '[]')
@@ -79,9 +161,10 @@ const (
                                                   'decimals', tk.decimals,
                                                   'token_id', tkt.token_id,
                                                   'type', tk.type
-                                                ))
+                                                ) order by account_id, tk.token_id)
                                               from token_transfer tkt
                                               join token tk on tk.token_id = tkt.token_id
+                                              join genesis on tk.created_timestamp > genesis.timestamp
                                               where tkt.consensus_timestamp = t.consensus_timestamp
                                             ), '[]') as token_transfers,
                                             coalesce((
@@ -90,9 +173,10 @@ const (
                                                   'sender_account_id', sender_account_id,
                                                   'serial_number', serial_number,
                                                   'token_id', tk.token_id
-                                                ))
+                                                ) order by tk.token_id, serial_number)
                                               from nft_transfer nftt
                                               join token tk on tk.token_id = nftt.token_id
+                                              join genesis on tk.created_timestamp > genesis.timestamp
                                               where nftt.consensus_timestamp = t.consensus_timestamp and serial_number <> -1
                                             ), '[]') as nft_transfers,
                                             case
@@ -105,6 +189,7 @@ const (
                                                     'type', type
                                                   )
                                                   from token
+                                                  join genesis on created_timestamp > genesis.timestamp
                                                   where token_id = t.entity_id
                                                 ), '{}')
                                               else '{}'
@@ -244,6 +329,10 @@ func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int
 		start = transactionsBatch[len(transactionsBatch)-1].ConsensusTimestamp + 1
 	}
 
+	if err := tr.processSuccessTokenDissociates(ctx, transactions, start, end); err != nil {
+		return nil, err
+	}
+
 	hashes := make([]string, 0)
 	sameHashMap := make(map[string][]*transaction)
 	for _, t := range transactions {
@@ -360,7 +449,7 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 			operations = append(operations, operation)
 		}
 
-		if transaction.Result == int16(transactionResultSuccess) {
+		if IsTransactionResultSuccessful(int32(transaction.Result)) {
 			tResult.EntityId = transaction.EntityId
 		}
 	}
@@ -435,6 +524,50 @@ func (tr *transactionRepository) appendTransferOperations(
 	return operations
 }
 
+func (tr *transactionRepository) processSuccessTokenDissociates(
+	ctx context.Context,
+	transactions []*transaction,
+	start int64,
+	end int64,
+) *rTypes.Error {
+	hasSuccessTokenDissociate := false
+	for _, txn := range transactions {
+		if txn.Type == domain.TransactionTypeTokenDissociate && IsTransactionResultSuccessful(int32(txn.Result)) {
+			hasSuccessTokenDissociate = true
+			break
+		}
+	}
+	if !hasSuccessTokenDissociate {
+		return nil
+	}
+
+	db, cancel := tr.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
+	tokenDissociateTransactions := make([]*transaction, 0)
+	if err := db.Raw(
+		selectDissociateTokenTransfersInTimestampRange,
+		sql.Named("start", start),
+		sql.Named("end", end),
+	).Scan(&tokenDissociateTransactions).Error; err != nil {
+		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
+		return hErrors.ErrDatabaseError
+	}
+
+	// replace NftTransfers and TokenTransfers for any matching transaction by consensus timestamp
+	// both transactions and tokenDissociateTransactions are sorted by consensus timestamp,
+	// and tokenDissociateTransactions is a subset of transactions
+	for t, d := 0, 0; t < len(transactions) && d < len(tokenDissociateTransactions); t++ {
+		if transactions[t].ConsensusTimestamp == tokenDissociateTransactions[d].ConsensusTimestamp {
+			transactions[t].NftTransfers = tokenDissociateTransactions[d].NftTransfers
+			transactions[t].TokenTransfers = tokenDissociateTransactions[d].TokenTransfers
+			d++
+		}
+	}
+
+	return nil
+}
+
 func IsTransactionResultSuccessful(result int32) bool {
 	return result == transactionResultSuccess
 }
@@ -453,17 +586,22 @@ func adjustCryptoTransfers(
 	nonFeeTransferMap map[int64]int64,
 ) []hbarTransfer {
 	cryptoTransferMap := make(map[int64]hbarTransfer)
+	accountIds := make([]int64, 0)
 	for _, transfer := range cryptoTransfers {
-		key := transfer.AccountId.EncodedId
-		cryptoTransferMap[key] = hbarTransfer{
+		accountId := transfer.AccountId.EncodedId
+		if _, ok := cryptoTransferMap[accountId]; !ok {
+			accountIds = append(accountIds, accountId)
+		}
+		cryptoTransferMap[accountId] = hbarTransfer{
 			AccountId: transfer.AccountId,
-			Amount:    transfer.Amount + cryptoTransferMap[key].Amount,
+			Amount:    transfer.Amount + cryptoTransferMap[accountId].Amount,
 		}
 	}
 
 	adjusted := make([]hbarTransfer, 0, len(cryptoTransfers))
-	for key, aggregated := range cryptoTransferMap {
-		amount := aggregated.Amount - nonFeeTransferMap[key]
+	for _, accountId := range accountIds {
+		aggregated := cryptoTransferMap[accountId]
+		amount := aggregated.Amount - nonFeeTransferMap[accountId]
 		if amount != 0 {
 			adjusted = append(adjusted, hbarTransfer{
 				AccountId: aggregated.AccountId,

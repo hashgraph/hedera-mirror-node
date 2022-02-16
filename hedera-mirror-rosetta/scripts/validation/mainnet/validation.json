@@ -1,0 +1,30 @@
+{
+  "network": {
+    "blockchain": "Hedera",
+    "network": "mainnet",
+    "sub_network_identifier": {
+      "network": "shard 0 realm 0"
+    }
+  },
+  "data_directory": "./data",
+  "retry_elapsed_time": 7500,
+  "online_url": "http://localhost:5700",
+  "http_timeout": 300,
+  "max_online_connections": 256,
+  "max_retries": 25,
+  "max_sync_concurrency": 32,
+  "memory_limit_disabled": true,
+  "seen_block_workers": 32,
+  "serial_block_workers": 32,
+  "tip_delay": 20,
+  "data": {
+    "active_reconciliation_concurrency": 64,
+    "inactive_reconciliation_concurrency": 4,
+    "inactive_reconciliation_frequency": 250,
+    "pruning_disabled": true,
+    "start_index": 1,
+    "end_conditions": {
+      "tip": true
+    }
+  }
+}

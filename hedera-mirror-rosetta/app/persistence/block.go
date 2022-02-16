@@ -58,16 +58,16 @@ const (
 
 	// selectGenesis - Selects the first block whose consensus_end is after the genesis account balance
 	// timestamp. Return the record file with adjusted consensus start
-	selectGenesis string = `select
+	selectGenesis string = "with" + genesisTimestampCte + `select
                               hash,
                               index,
                               case
-                                when genesis.min >= rf.consensus_start then genesis.min + 1
+                                when genesis.timestamp >= rf.consensus_start then genesis.timestamp + 1
                                 else rf.consensus_start
                               end consensus_start
                             from record_file rf
-                            join (select min(consensus_timestamp) from account_balance_file) genesis
-                              on consensus_end > genesis.min
+                            join genesis
+                              on consensus_end > genesis.timestamp
                             order by consensus_end
                             limit 1`
 
