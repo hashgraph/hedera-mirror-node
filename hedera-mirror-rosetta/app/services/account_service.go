@@ -72,19 +72,6 @@ func (a *AccountAPIService) AccountBalance(
 		return nil, err
 	}
 
-	tokenSet := make(map[int64]bool)
-	for _, balance := range balances {
-		if tokenAmount, ok := balance.(*types.TokenAmount); ok {
-			tokenSet[tokenAmount.TokenId.EncodedId] = true
-		}
-	}
-
-	tokenBalances, err := a.getAdditionalTokenBalances(ctx, account.EncodedId, block.ConsensusEndNanos, tokenSet)
-	if err != nil {
-		return nil, err
-	}
-	balances = append(balances, tokenBalances...)
-
 	return &rTypes.AccountBalanceResponse{
 		BlockIdentifier: &rTypes.BlockIdentifier{
 			Index: block.Index,
@@ -95,39 +82,10 @@ func (a *AccountAPIService) AccountBalance(
 }
 
 func (a *AccountAPIService) AccountCoins(
-	ctx context.Context,
-	request *rTypes.AccountCoinsRequest,
+	_ context.Context,
+	_ *rTypes.AccountCoinsRequest,
 ) (*rTypes.AccountCoinsResponse, *rTypes.Error) {
 	return nil, errors.ErrNotImplemented
-}
-
-// getAdditionalTokenBalances get the additional token balances with 0 amount for tokens the account has ever owned by
-// the end of the current block and not in the tokenSet, i.e., tokens the account has dissociated with while rosetta
-// validation requires an implementation to still show the 0 balance
-func (a *AccountAPIService) getAdditionalTokenBalances(
-	ctx context.Context,
-	accountId int64,
-	consensusEnd int64,
-	tokenSet map[int64]bool,
-) ([]types.Amount, *rTypes.Error) {
-	tokens, err := a.accountRepo.RetrieveEverOwnedTokensByBlock(ctx, accountId, consensusEnd)
-	if err != nil {
-		return nil, err
-	}
-
-	if len(tokens) == 0 {
-		return []types.Amount{}, nil
-	}
-
-	tokenBalances := make([]types.Amount, 0)
-	for _, token := range tokens {
-		if !tokenSet[token.TokenId.EncodedId] {
-			tokenBalances = append(tokenBalances, types.NewTokenAmount(token, 0))
-			tokenSet[token.TokenId.EncodedId] = true
-		}
-	}
-
-	return tokenBalances, nil
 }
 
 func (a *AccountAPIService) toRosettaBalances(balances []types.Amount) []*rTypes.Amount {

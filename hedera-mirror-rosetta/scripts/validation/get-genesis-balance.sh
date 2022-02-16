@@ -30,23 +30,6 @@ from genesis_balance
 EOF
 )
 
-genesis_token_balance_query=$(cat <<EOF
-\set ON_ERROR_STOP on
-select json_agg(json_build_object(
-  'id', account_id::text,
-  'token', tb.token_id::text,
-  'decimals', t.decimals,
-  'value', balance::text,
-  'type', t.type
-))
-from token_balance tb
-join token t on t.token_id = tb.token_id
-where tb.consensus_timestamp = :genesis_timestamp and
-  tb.account_id in (:account_ids) and
-  balance <> 0
-EOF
-)
-
 network=${1:-demo}
 parent_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P)"
 psql_cmd="psql -h localhost -U mirror_rosetta mirror_node -t -P format=unaligned"
@@ -61,13 +44,6 @@ do
     # get genesis hbar balances from genesis account balance file
     account_balances=$(echo "$genesis_hbar_balance_query" | $psql_cmd -v genesis_timestamp="$genesis_timestamp")
     echo "account balances - $(echo "$account_balances" | jq . )"
-
-    # get genesis token balances from genesis account balance file
-    account_ids=$(echo "$account_balances" | jq -r '[.[].id] | join(",")')
-    token_balances=$(echo "$genesis_token_balance_query" \
-      | $psql_cmd -v account_ids="$account_ids" -v genesis_timestamp="$genesis_timestamp")
-    echo "token_balances - $(echo "$token_balances" | jq . )"
-
     break
   fi
 
@@ -84,9 +60,4 @@ hbar_json=$(echo "$account_balances" | \
   jq --argjson currency "$currency" \
   '[.[] | .account_identifier.address=("0.0." + .id) | del(.id) ] | .[].currency=$currency')
 
-token_json=$(echo "$token_balances" | \
-  jq 'select (.!=null) | [.[] | .account_identifier.address=("0.0." + .id) | del(.id)
-    | .currency={symbol: ("0.0." + .token), decimals: .decimals, metadata: {type: .type}}
-    | del(.token,.decimals,.type)]')
-
-echo "$hbar_json $token_json" | jq -s add > "$parent_path/$network/data_genesis_balances.json"
+echo "$hbar_json" > "$parent_path/$network/data_genesis_balances.json"
