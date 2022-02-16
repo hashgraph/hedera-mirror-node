@@ -34,5 +34,5 @@ func TestEntityTableName(t *testing.T) {
 func TestEntityGetModifiedTimestamp(t *testing.T) {
 	timestamp := int64(100)
 	entity := Entity{TimestampRange: pgtype.Int8range{Lower: pgtype.Int8{Int: timestamp, Status: pgtype.Present}}}
-	assert.Equal(t, int64(100), entity.GetModifiedTimestamp())
+	assert.Equal(t, timestamp, entity.GetModifiedTimestamp())
 }

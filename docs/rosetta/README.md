@@ -88,7 +88,7 @@ Configure and run the server in online mode:
 
 ```shell
 docker run -d -e MODE=online -e NETWORK=testnet \
--v $(pwd)/application.yml:/app/importer/application.yml \
+-v ${PWD}/application.yml:/app/importer/application.yml \
 -p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.49.1
 ```
 
@@ -100,11 +100,14 @@ This can be done using the shell
 script [wait-for-mirror-node.sh](/hedera-mirror-rosetta/scripts/wait-for-mirror-node.sh). The script will report that
 mirror node syncing has started when the genesis information is available.
 
-In order to run the rosetta-cli `check:data` command, run the
-[script](/hedera-mirror-rosetta/scripts/validation/get-genesis-balance.sh) with the associated
-[configuration file](/hedera-mirror-rosetta/scripts/validation/testnet/validation.json) to get the genesis account
-balance file. Once the `get-genesis-balance.sh testnet` command is executed, it'll write the file
-to `testnet/data_genesis_balances.json`. Note the script uses PostgreSQL's command line client psql to query the
+A sample [configuration file](/hedera-mirror-rosetta/scripts/validation/testnet/validation.json) is provided to run
+rosetta-cli tests.
+
+You can run the rosetta-cli `check:data` command as is. The data configuration section is set with `"start_index": 1`
+to work around the known `rosetta-cli` performance issue of loading large genesis account balance file. As an
+alternative, use the [script](/hedera-mirror-rosetta/scripts/validation/get-genesis-balance.sh) to get the
+genesis account balance file. Once the `get-genesis-balance.sh testnet` command is executed, it'll write the file to
+`testnet/data_genesis_balances.json`. Note the script uses PostgreSQL's command line client psql to query the
 database for genesis account balance information, so please install psql beforehand.
 
 In order to run the rosetta-cli `check:construction` command with the DSL spec in `testnet`/`testnet.ros`, you need two

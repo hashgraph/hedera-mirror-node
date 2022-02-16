@@ -164,7 +164,7 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 	balanceChangeEndTimestamp := consensusEnd
 	balanceSnapshotEndTimestamp := consensusEnd
 	if entity != nil && entity.Deleted != nil && *entity.Deleted && entity.TimestampRange.Lower.Int <= consensusEnd {
-		// if an account / contract is deleted at encodedTokenId1, a balance snapshot at encodedTokenId1 (if exists) won't have info for the
+		// if an account / contract is deleted at t1, a balance snapshot at t1 (if exists) won't have info for the
 		// entity, thus look for a balance snapshot at or before the deleted timestamp - 1
 		// however, the balanceChangeEndTimestamp should be the deletion timestamp since the crypto delete transaction
 		// may have a transfer which moves the remaining hbar balance to another account
@@ -279,8 +279,8 @@ func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accou
 	}
 
 	tokenAmountMap := map[string]map[int64]*types.TokenAmount{
-		domain.TokenTypeFungibleCommon:    make(map[int64]*types.TokenAmount),
-		domain.TokenTypeNonFungibleUnique: make(map[int64]*types.TokenAmount),
+		domain.TokenTypeFungibleCommon:    {},
+		domain.TokenTypeNonFungibleUnique: {},
 	}
 	for _, tokenAmount := range tokenAmounts {
 		tokenAmountMap[tokenAmount.Type][tokenAmount.TokenId.EncodedId] = tokenAmount
@@ -369,7 +369,7 @@ func (ar *accountRepository) getNftBalance(
 	for _, nftTransfer := range nftTransfers {
 		tokenId := nftTransfer.TokenId.EncodedId
 		if ta, ok := tokenAssociationMap[tokenId]; ok && !ta.Associated {
-			// skip  dissociated tokens
+			// skip dissociated tokens
 			continue
 		}
 
@@ -413,8 +413,7 @@ func getUpdatedTokenAmounts(
 	for tokenId, ta := range tokenAssociationMap {
 		_, exist := tokenAmountMap[tokenId]
 		if (exist && !ta.Associated) || !exist {
-			// set / add a 0 amount for the fungible token if it's no longer associated or there's no existing
-			// TokenAmount for it
+			// set / add a 0 amount for the token if it's no longer associated or there's no existing TokenAmount for it
 			tokenAmountMap[tokenId] = &types.TokenAmount{
 				Decimals: ta.Decimals,
 				TokenId:  ta.TokenId,
