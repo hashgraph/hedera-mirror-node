@@ -21,13 +21,15 @@
 package persistence
 
 import (
+	"encoding/hex"
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/db"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
+	tdomain "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -39,10 +41,10 @@ const (
 )
 
 var (
-	firstAccount, _          = types.NewAccountFromEncodedID(12345)
-	secondAccount, _         = types.NewAccountFromEncodedID(54321)
-	nodeAccount, _           = types.NewAccountFromEncodedID(3)
-	treasuryAccount, _       = types.NewAccountFromEncodedID(98)
+	firstAccount             = types.Account{EntityId: domain.MustDecodeEntityId(12345)}
+	secondAccount            = types.Account{EntityId: domain.MustDecodeEntityId(54321)}
+	nodeAccount              = types.Account{EntityId: domain.MustDecodeEntityId(3)}
+	treasuryAccount          = types.Account{EntityId: domain.MustDecodeEntityId(98)}
 	tokenId1                 = domain.MustDecodeEntityId(25636)
 	tokenId2                 = domain.MustDecodeEntityId(26700)
 	tokenId3                 = domain.MustDecodeEntityId(26750) // nft
@@ -210,6 +212,270 @@ func (suite *transactionRepositorySuite) TestFindBetween() {
 	assertTransactions(suite.T(), expected, actual)
 }
 
+func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGenesisTimestamp() {
+	// given
+	// token1 created at genesisTimestamp - 1 and token2 created at genesisTimestamp
+	genesisTimestamp := int64(100)
+	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
+	tdomain.NewTokenBuilder(dbClient, encodedTokenId1, genesisTimestamp-1, treasury).Persist()
+	tdomain.NewTokenBuilder(dbClient, encodedTokenId2, genesisTimestamp, treasury).Persist()
+
+	transaction := tdomain.NewTransactionBuilder(dbClient, treasury, genesisTimestamp+10).Persist()
+	// add token transfers, should not be included in Transaction.Operations
+	transferTimestamp := transaction.ConsensusTimestamp
+	tdomain.NewTokenTransferBuilder(dbClient).
+		AccountId(account1).
+		Amount(10).
+		TokenId(encodedTokenId1).
+		Timestamp(transferTimestamp).
+		Persist()
+	tdomain.NewTokenTransferBuilder(dbClient).
+		AccountId(treasury).
+		Amount(-10).
+		TokenId(encodedTokenId1).
+		Timestamp(transferTimestamp).
+		Persist()
+	tdomain.NewTokenTransferBuilder(dbClient).
+		AccountId(account1).
+		Amount(10).
+		TokenId(encodedTokenId2).
+		Timestamp(transferTimestamp).
+		Persist()
+	tdomain.NewTokenTransferBuilder(dbClient).
+		AccountId(treasury).
+		Amount(-10).
+		TokenId(encodedTokenId2).
+		Timestamp(transferTimestamp).
+		Persist()
+	// add crypto transfers
+	tdomain.NewCryptoTransferBuilder(dbClient).Amount(-20).EntityId(treasury).Timestamp(transferTimestamp).Persist()
+	tdomain.NewCryptoTransferBuilder(dbClient).Amount(20).EntityId(3).Timestamp(transferTimestamp).Persist()
+
+	expected := []*types.Transaction{
+		{
+			Hash: tools.SafeAddHexPrefix(hex.EncodeToString(transaction.TransactionHash)),
+			Operations: []*types.Operation{
+				{
+					Account: types.Account{EntityId: domain.MustDecodeEntityId(3)},
+					Amount:  &types.HbarAmount{Value: 20},
+					Type:    types.OperationTypeCryptoTransfer,
+					Status:  resultSuccess,
+				},
+				{
+					Account: types.Account{EntityId: domain.MustDecodeEntityId(treasury)},
+					Amount:  &types.HbarAmount{Value: -20},
+					Index:   1,
+					Type:    types.OperationTypeCryptoTransfer,
+					Status:  resultSuccess,
+				},
+			},
+		},
+	}
+	t := NewTransactionRepository(dbClient)
+
+	// when
+	actual, err := t.FindBetween(defaultContext, transaction.ConsensusTimestamp, transaction.ConsensusTimestamp)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.ElementsMatch(suite.T(), expected, actual)
+}
+
+func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenTransfer() {
+	// given
+	// the disappearing token/nft transfers are in the corresponding db table
+	genesisTimestamp := int64(100)
+	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
+
+	token1 := tdomain.NewTokenBuilder(dbClient, encodedTokenId1, genesisTimestamp+1, treasury).Persist()
+	tdomain.NewEntityBuilderFromToken(dbClient, token1).Deleted(true).ModifiedAfter(100).Persist()
+
+	token2 := tdomain.NewTokenBuilder(dbClient, encodedTokenId2, genesisTimestamp+2, treasury).
+		Type(domain.TokenTypeNonFungibleUnique).
+		Persist()
+	entity2 := tdomain.NewEntityBuilderFromToken(dbClient, token2).Deleted(true).ModifiedAfter(100).Persist()
+
+	// token accounts
+	dissociateTimestamp := entity2.GetModifiedTimestamp() + 100
+	tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId1, token1.CreatedTimestamp+1).
+		Associated(false, dissociateTimestamp).
+		Persist()
+	tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId2, token2.CreatedTimestamp+1).
+		Associated(false, dissociateTimestamp).
+		Persist()
+
+	// token1 received
+	tdomain.NewTokenTransferBuilder(dbClient).
+		AccountId(account1).
+		Amount(10).
+		TokenId(encodedTokenId1).
+		Timestamp(token1.CreatedTimestamp + 10).
+		Persist()
+	// token1 disappearing transfer at dissociation
+	tdomain.NewTokenTransferBuilder(dbClient).
+		AccountId(account1).
+		Amount(-10).
+		TokenId(encodedTokenId1).
+		Timestamp(dissociateTimestamp).
+		Persist()
+	// token2 disappearing transfers at dissociation
+	tdomain.NewNftTransferBuilder(dbClient).
+		SenderAccountId(account1).
+		TokenId(encodedTokenId2).
+		SerialNumber(1).
+		Timestamp(dissociateTimestamp).
+		Persist()
+	tdomain.NewNftTransferBuilder(dbClient).
+		SenderAccountId(account1).
+		TokenId(encodedTokenId2).
+		SerialNumber(2).
+		Timestamp(dissociateTimestamp).
+		Persist()
+
+	// nft marked as deleted at dissociate timestamp
+	tdomain.NewNftBuilder(dbClient, encodedTokenId2, 1, token2.CreatedTimestamp+10).
+		AccountId(account1).
+		Deleted(true).
+		ModifiedTimestamp(dissociateTimestamp).
+		Persist()
+	tdomain.NewNftBuilder(dbClient, encodedTokenId2, 2, token2.CreatedTimestamp+10).
+		AccountId(account1).
+		Deleted(true).
+		ModifiedTimestamp(dissociateTimestamp).
+		Persist()
+
+	// the dissociate transaction
+	transaction := tdomain.NewTransactionBuilder(dbClient, account1, dissociateTimestamp-10).
+		ConsensusTimestamp(dissociateTimestamp).
+		EntityId(account1).
+		Type(domain.TransactionTypeTokenDissociate).
+		Persist()
+
+	account1EntityId := domain.MustDecodeEntityId(account1)
+	expected := []*types.Transaction{
+		{
+			EntityId: &account1EntityId,
+			Hash:     tools.SafeAddHexPrefix(hex.EncodeToString(transaction.TransactionHash)),
+			Operations: []*types.Operation{
+				{
+					Account: types.Account{EntityId: account1EntityId},
+					Amount:  types.NewTokenAmount(token1, -10),
+					Type:    types.OperationTypeTokenDissociate,
+					Status:  resultSuccess,
+				},
+				{
+					Account: types.Account{EntityId: account1EntityId},
+					Amount:  types.NewTokenAmount(token2, -1).SetSerialNumbers([]int64{1}),
+					Index:   1,
+					Type:    types.OperationTypeTokenDissociate,
+					Status:  resultSuccess,
+				},
+				{
+					Account: types.Account{EntityId: account1EntityId},
+					Amount:  types.NewTokenAmount(token2, -1).SetSerialNumbers([]int64{2}),
+					Index:   2,
+					Type:    types.OperationTypeTokenDissociate,
+					Status:  resultSuccess,
+				},
+			},
+		},
+	}
+	t := NewTransactionRepository(dbClient)
+
+	// when
+	actual, err := t.FindBetween(defaultContext, dissociateTimestamp, dissociateTimestamp)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.ElementsMatch(suite.T(), expected, actual)
+}
+
+func (suite *transactionRepositorySuite) TestFindBetweenMissingDisappearingTokenTransfer() {
+	// given
+	// the disappearing token/nft transfers are missing
+	genesisTimestamp := int64(100)
+	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
+
+	token1 := tdomain.NewTokenBuilder(dbClient, encodedTokenId1, genesisTimestamp+1, treasury).Persist()
+	tdomain.NewEntityBuilderFromToken(dbClient, token1).Deleted(true).ModifiedAfter(100).Persist()
+
+	token2 := tdomain.NewTokenBuilder(dbClient, encodedTokenId2, genesisTimestamp+2, treasury).
+		Type(domain.TokenTypeNonFungibleUnique).
+		Persist()
+	entity2 := tdomain.NewEntityBuilderFromToken(dbClient, token2).Deleted(true).ModifiedAfter(100).Persist()
+
+	// token accounts
+	dissociateTimestamp := entity2.GetModifiedTimestamp() + 100
+	tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId1, token1.CreatedTimestamp+1).
+		Associated(false, dissociateTimestamp).
+		Persist()
+	tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId2, token2.CreatedTimestamp+1).
+		Associated(false, dissociateTimestamp).
+		Persist()
+
+	// token1 received
+	tdomain.NewTokenTransferBuilder(dbClient).
+		AccountId(account1).
+		Amount(10).
+		TokenId(encodedTokenId1).
+		Timestamp(token1.CreatedTimestamp + 10).
+		Persist()
+
+	// nft owned by account1 are not deleted
+	tdomain.NewNftBuilder(dbClient, encodedTokenId2, 1, token2.CreatedTimestamp+10).
+		AccountId(account1).
+		Persist()
+	tdomain.NewNftBuilder(dbClient, encodedTokenId2, 2, token2.CreatedTimestamp+10).
+		AccountId(account1).
+		Deleted(false).
+		Persist()
+
+	// the dissociate transaction
+	transaction := tdomain.NewTransactionBuilder(dbClient, account1, dissociateTimestamp-10).
+		ConsensusTimestamp(dissociateTimestamp).
+		EntityId(account1).
+		Type(domain.TransactionTypeTokenDissociate).
+		Persist()
+
+	account1EntityId := domain.MustDecodeEntityId(account1)
+	expected := []*types.Transaction{
+		{
+			EntityId: &account1EntityId,
+			Hash:     tools.SafeAddHexPrefix(hex.EncodeToString(transaction.TransactionHash)),
+			Operations: []*types.Operation{
+				{
+					Account: types.Account{EntityId: account1EntityId},
+					Amount:  types.NewTokenAmount(token1, -10),
+					Type:    types.OperationTypeTokenDissociate,
+					Status:  resultSuccess,
+				},
+				{
+					Account: types.Account{EntityId: account1EntityId},
+					Amount:  types.NewTokenAmount(token2, -1).SetSerialNumbers([]int64{1}),
+					Index:   1,
+					Type:    types.OperationTypeTokenDissociate,
+					Status:  resultSuccess,
+				},
+				{
+					Account: types.Account{EntityId: account1EntityId},
+					Amount:  types.NewTokenAmount(token2, -1).SetSerialNumbers([]int64{2}),
+					Index:   2,
+					Type:    types.OperationTypeTokenDissociate,
+					Status:  resultSuccess,
+				},
+			},
+		},
+	}
+	t := NewTransactionRepository(dbClient)
+
+	// when
+	actual, err := t.FindBetween(defaultContext, dissociateTimestamp, dissociateTimestamp)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.ElementsMatch(suite.T(), expected, actual)
+}
+
 func (suite *transactionRepositorySuite) TestFindBetweenNoTokenEntity() {
 	// given
 	expected := suite.setupDb(false)
@@ -317,6 +583,10 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		validStartNs += nanos
 	}
 
+	// create account balance file
+	genesisTimestamp := consensusStart - 200
+	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
+
 	// successful crypto transfer transaction
 	consensusTimestamp = consensusStart + 1
 	validStartNs = consensusStart - 10
@@ -368,15 +638,10 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	// a successful crypto transfer + token transfer transaction
 	tick(1)
 	if createTokenEntity {
-		token1 = &domain.Token{
-			TokenId:           tokenId1,
-			Decimals:          tokenDecimals,
-			InitialSupply:     tokenInitialSupply,
-			SupplyType:        domain.TokenSupplyTypeInfinite,
-			TreasuryAccountId: treasuryAccount.EntityId,
-			Type:              domain.TokenTypeFungibleCommon,
-		}
-		db.CreateDbRecords(dbClient, token1)
+		tdomain.NewTokenBuilder(dbClient, tokenId1.EncodedId, genesisTimestamp+2, treasuryAccount.EncodedId).
+			Decimals(tokenDecimals).
+			InitialSupply(tokenInitialSupply).
+			Persist()
 	}
 
 	cryptoTransfers = []domain.CryptoTransfer{
@@ -430,17 +695,12 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 	expectedTransaction2 := &types.Transaction{Hash: "0x0a0b0c", Operations: operations2}
 
+	tdomain.NewTokenBuilder(dbClient, tokenId2.EncodedId, genesisTimestamp+3, firstAccount.EncodedId).
+		Decimals(tokenDecimals).
+		InitialSupply(tokenInitialSupply).
+		Persist()
+
 	// token create transaction
-	token2 := &domain.Token{
-		TokenId:           tokenId2,
-		Decimals:          tokenDecimals,
-		InitialSupply:     tokenInitialSupply,
-		SupplyType:        domain.TokenSupplyTypeInfinite,
-		TreasuryAccountId: firstAccount.EntityId,
-		Type:              domain.TokenTypeFungibleCommon,
-	}
-	db.CreateDbRecords(dbClient, token2)
-	// add tokencreate transaction
 	tick(1)
 	cryptoTransfers = []domain.CryptoTransfer{
 		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityId: firstAccount.EntityId,
@@ -486,14 +746,9 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 
 	// nft create
-	token3 := &domain.Token{
-		TokenId:           tokenId3,
-		SupplyType:        domain.TokenSupplyTypeFinite,
-		TreasuryAccountId: firstAccount.EntityId,
-		Type:              domain.TokenTypeNonFungibleUnique,
-	}
-	db.CreateDbRecords(dbClient, token3)
-	// add tokencreate transaction
+	tdomain.NewTokenBuilder(dbClient, tokenId3.EncodedId, genesisTimestamp+4, firstAccount.EncodedId).
+		Type(domain.TokenTypeNonFungibleUnique).
+		Persist()
 	tick(1)
 	cryptoTransfers = []domain.CryptoTransfer{
 		{Amount: -15, ConsensusTimestamp: consensusTimestamp, EntityId: firstAccount.EntityId,

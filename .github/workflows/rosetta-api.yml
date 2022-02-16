@@ -135,7 +135,7 @@ jobs:
             -e NETWORK=testnet \
             -v /tmp/application_importer.yml:/app/importer/application.yml \
             -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
-            -p 5432:5432 -p 5700:5700 "${MODULE}:latest")
+            -p 5700:5700 "${MODULE}:latest")
           echo "ONLINE_CONTAINER_ID=$ONLINE_CONTAINER_ID" >> $GITHUB_ENV
 
       - name: Run Mirror Node in Offline Mode
@@ -151,9 +151,6 @@ jobs:
         run: ./scripts/wait-for-mirror-node.sh
         env:
           MAX_WAIT_SECONDS: 240
-
-      - name: Get Genesis Account Balances
-        run: ./scripts/validation/get-genesis-balance.sh testnet
 
       - name: Rosetta CLI Configuration
         run: |

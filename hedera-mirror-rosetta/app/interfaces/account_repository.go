@@ -25,7 +25,6 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 )
 
 // AccountRepository Interface that all AccountRepository structs must implement
@@ -37,10 +36,4 @@ type AccountRepository interface {
 	// if the account is deleted at T1 and T1 <= consensusEnd, the balance is calculated as
 	// balance = balanceAtLatestBalanceSnapshotBeforeT1 + balanceChangeBetweenSnapshotAndT1
 	RetrieveBalanceAtBlock(ctx context.Context, accountId, consensusEnd int64) ([]types.Amount, *rTypes.Error)
-
-	// RetrieveEverOwnedTokensByBlock returns the tokens the account has ever owned by the block's consensusEnd
-	RetrieveEverOwnedTokensByBlock(ctx context.Context, accountId, consensusEnd int64) (
-		[]domain.Token,
-		*rTypes.Error,
-	)
 }

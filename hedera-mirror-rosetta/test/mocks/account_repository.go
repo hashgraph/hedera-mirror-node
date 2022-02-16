@@ -25,7 +25,6 @@ import (
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -41,13 +40,4 @@ func (m *MockAccountRepository) RetrieveBalanceAtBlock(ctx context.Context, acco
 ) {
 	args := m.Called()
 	return args.Get(0).([]types.Amount), args.Get(1).(*rTypes.Error)
-}
-
-func (m *MockAccountRepository) RetrieveEverOwnedTokensByBlock(
-	ctx context.Context,
-	accountId int64,
-	consensusEnd int64,
-) ([]domain.Token, *rTypes.Error) {
-	args := m.Called()
-	return args.Get(0).([]domain.Token), args.Get(1).(*rTypes.Error)
 }

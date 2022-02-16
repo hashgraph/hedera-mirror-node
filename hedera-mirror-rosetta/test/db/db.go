@@ -68,8 +68,10 @@ func CreateDbRecords(dbClient interfaces.DbClient, records ...interface{}) {
 	}
 }
 
-func ExecSql(dbClient interfaces.DbClient, sql string) {
-	dbClient.GetDb().Exec(sql)
+func ExecSql(dbClient interfaces.DbClient, sqls ...string) {
+	for _, s := range sqls {
+		dbClient.GetDb().Exec(s)
+	}
 }
 
 // GetDbConfig returns the db config of the session
