@@ -3,12 +3,12 @@ set -eo pipefail
 
 function run_offline_mode() {
   echo "Running in offline mode"
-  supervisord --configuration /app/supervisord-offline.conf
+  exec supervisord --configuration /app/supervisord-offline.conf
 }
 
 function run_online_mode() {
   echo "Running in online mode"
-  supervisord --configuration /app/supervisord.conf
+  exec supervisord --configuration /app/supervisord.conf
 }
 
 function cleanup() {
@@ -60,7 +60,6 @@ function main() {
     export HEDERA_MIRROR_IMPORTER_NETWORK="${NETWORK}"
     export HEDERA_MIRROR_ROSETTA_NETWORK="${NETWORK}"
   fi
-
 
   case "${MODE}" in
     "offline")

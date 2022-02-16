@@ -18,26 +18,21 @@
  * ‍
  */
 
-package mocks
+package domain
 
-import (
-	"context"
+const tableNameNft = "nft"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/stretchr/testify/mock"
-)
-
-var NilError *rTypes.Error
-
-type MockAccountRepository struct {
-	mock.Mock
+type Nft struct {
+	AccountId         *EntityId
+	CreatedTimestamp  *int64
+	Deleted           *bool
+	ModifiedTimestamp int64
+	Metadata          []byte
+	SerialNumber      int64    `gorm:"primaryKey"`
+	TokenId           EntityId `gorm:"primaryKey"`
 }
 
-func (m *MockAccountRepository) RetrieveBalanceAtBlock(ctx context.Context, accountId int64, consensusEnd int64) (
-	[]types.Amount,
-	*rTypes.Error,
-) {
-	args := m.Called()
-	return args.Get(0).([]types.Amount), args.Get(1).(*rTypes.Error)
+// TableName returns nft table name
+func (Nft) TableName() string {
+	return tableNameNft
 }

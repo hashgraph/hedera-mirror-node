@@ -22,7 +22,15 @@ package domain
 
 import "github.com/jackc/pgtype"
 
-const entityTableName = "entity"
+const (
+	EntityTypeAccount  = "ACCOUNT"
+	EntityTypeFile     = "FILE"
+	EntityTypeSchedule = "SCHEDULE"
+	EntityTypeToken    = "TOKEN"
+	EntityTypeTopic    = "TOPIC"
+
+	entityTableName = "entity"
+)
 
 type Entity struct {
 	AutoRenewAccountId            *EntityId
@@ -43,6 +51,10 @@ type Entity struct {
 	SubmitKey                     []byte
 	TimestampRange                pgtype.Int8range
 	Type                          string
+}
+
+func (e Entity) GetModifiedTimestamp() int64 {
+	return e.TimestampRange.Lower.Int
 }
 
 func (Entity) TableName() string {
