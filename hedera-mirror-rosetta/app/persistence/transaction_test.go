@@ -642,15 +642,6 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			Decimals(tokenDecimals).
 			InitialSupply(tokenInitialSupply).
 			Persist()
-		// token := &domain.Token{
-		// 	TokenId:           tokenId1,
-		// 	Decimals:          tokenDecimals,
-		// 	InitialSupply:     tokenInitialSupply,
-		// 	SupplyType:        domain.TokenSupplyTypeInfinite,
-		// 	TreasuryAccountId: treasuryAccount.EntityId,
-		// 	Type:              domain.TokenTypeFungibleCommon,
-		// }
-		// db.CreateDbRecords(dbClient, token)
 	}
 
 	cryptoTransfers = []domain.CryptoTransfer{

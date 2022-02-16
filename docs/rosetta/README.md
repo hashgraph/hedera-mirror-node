@@ -88,7 +88,7 @@ Configure and run the server in online mode:
 
 ```shell
 docker run -d -e MODE=online -e NETWORK=testnet \
--v ./application.yml:/app/importer/application.yml \
+-v $(pwd)/application.yml:/app/importer/application.yml \
 -p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.49.1
 ```
 
