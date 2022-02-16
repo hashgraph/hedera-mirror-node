@@ -30,7 +30,6 @@ import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -64,19 +63,6 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         return contractResult;
-    }
-
-    /**
-     * Persist contract entities in createdContractIDs if it's prior to HAPI 0.23.0. After that the createdContractIDs
-     * list is also externalized as contract create child records so we only need to persist the complete contract
-     * entity from the child record.
-     *
-     * @param recordItem to check
-     * @return Whether the createdContractIDs list should be persisted.
-     */
-    private boolean shouldPersistCreatedContractIDs(RecordItem recordItem) {
-        return recordItem.isSuccessful() && entityProperties.getPersist().isContracts() &&
-                recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_23_0);
     }
 
     private List<Long> getCreatedContractIds(ContractFunctionResult functionResult) {
