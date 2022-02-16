@@ -1,21 +1,14 @@
 #!/bin/bash
 set -eo pipefail
 
-function _term() {
-  echo "Caught SIGTERM signal!"
-  kill -SIGTERM "$child" 2>/dev/null
-}
-
 function run_offline_mode() {
   echo "Running in offline mode"
-  supervisord --configuration /app/supervisord-offline.conf &
-  child=$!
+  exec supervisord --configuration /app/supervisord-offline.conf
 }
 
 function run_online_mode() {
   echo "Running in online mode"
-  supervisord --configuration /app/supervisord.conf &
-  child=$!
+  exec supervisord --configuration /app/supervisord.conf
 }
 
 function cleanup() {
@@ -63,8 +56,6 @@ function restore() {
 }
 
 function main() {
-  trap _term SIGTERM
-
   if [[ -n "${NETWORK}" ]]; then
     export HEDERA_MIRROR_IMPORTER_NETWORK="${NETWORK}"
     export HEDERA_MIRROR_ROSETTA_NETWORK="${NETWORK}"
@@ -79,8 +70,6 @@ function main() {
       run_online_mode
     ;;
   esac
-
-  wait "$child"
 }
 
 main
