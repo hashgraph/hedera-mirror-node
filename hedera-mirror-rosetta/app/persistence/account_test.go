@@ -238,6 +238,15 @@ func (suite *accountRepositorySuite) SetupTest() {
 			Persist()
 		transferTimestamp++
 	}
+	// add a self transfer
+	tdomain.NewNftTransferBuilder(dbClient).
+		ReceiverAccountId(account1).
+		SenderAccountId(account1).
+		SerialNumber(token3ReceivedSerials[0]).
+		Timestamp(transferTimestamp).
+		TokenId(encodedTokenId3).
+		Persist()
+	transferTimestamp++
 	// transfer serial 5 from account1 to treasury
 	for _, serial := range token3SentSerials {
 		tdomain.NewNftTransferBuilder(dbClient).
@@ -249,7 +258,7 @@ func (suite *accountRepositorySuite) SetupTest() {
 			Persist()
 		transferTimestamp++
 	}
-	// token6 transfer will not affect balance since token5 is created before first snapshot
+	// token6 transfer will not affect balance since token6 is created before first snapshot
 	tdomain.NewNftTransferBuilder(dbClient).
 		ReceiverAccountId(account1).
 		SenderAccountId(treasury).
@@ -331,6 +340,14 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAfterSecondSnapsh
 		Timestamp(secondSnapshotTimestamp + 4).
 		TokenId(encodedTokenId3).
 		Persist()
+	// add a self transfer
+	tdomain.NewNftTransferBuilder(dbClient).
+		ReceiverAccountId(account1).
+		SenderAccountId(account1).
+		SerialNumber(6).
+		Timestamp(secondSnapshotTimestamp + 5).
+		TokenId(encodedTokenId3).
+		Persist()
 	hbarAmount := &types.HbarAmount{Value: initialAccountBalance + sum(cryptoTransferAmounts)}
 	token1Amount := types.NewTokenAmount(token1, sum(token1TransferAmounts[:2])+10)
 	token2Amount := types.NewTokenAmount(token2, sum(token2TransferAmounts[:2])+12)
@@ -340,7 +357,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAfterSecondSnapsh
 	repo := NewAccountRepository(dbClient)
 
 	// when
-	actual, err := repo.RetrieveBalanceAtBlock(defaultContext, account1, secondSnapshotTimestamp+5)
+	actual, err := repo.RetrieveBalanceAtBlock(defaultContext, account1, secondSnapshotTimestamp+6)
 
 	// then
 	assert.Nil(suite.T(), err)

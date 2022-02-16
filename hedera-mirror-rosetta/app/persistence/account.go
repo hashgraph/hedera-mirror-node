@@ -383,11 +383,9 @@ func (ar *accountRepository) getNftBalance(
 				Type:    domain.TokenTypeNonFungibleUnique,
 			}
 		}
-		// add 1 if the account is the receiver, and subtract 1 if the account is the sender
-		change := int64(1)
-		if nftTransfer.SenderAccountId != nil && nftTransfer.SenderAccountId.EncodedId == accountId {
-			change = -1
-		}
+		// there may be historical self NftTransfer in record, i.e., sender and receiver are the same account
+		change := getNftChangeForAccount(nftTransfer.ReceiverAccountId, accountId) -
+			getNftChangeForAccount(nftTransfer.SenderAccountId, accountId)
 		balanceChangeMap[tokenId].Value += change
 	}
 
@@ -397,6 +395,13 @@ func (ar *accountRepository) getNftBalance(
 	}
 
 	return getUpdatedTokenAmounts(tokenAmountMap, nftValues, tokenAssociationMap), nil
+}
+
+func getNftChangeForAccount(subject *domain.EntityId, accountId int64) int64 {
+	if subject != nil && subject.EncodedId == accountId {
+		return 1
+	}
+	return 0
 }
 
 func getUpdatedTokenAmounts(
