@@ -29,6 +29,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -36,9 +37,9 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 @Named
 class ContractCreateTransactionHandler extends AbstractContractCallTransactionHandler {
 
-    ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                     EntityProperties entityProperties) {
-        super(entityIdService, entityListener, entityProperties);
+    ContractCreateTransactionHandler(ContractResultService contractResultService, EntityIdService entityIdService,
+                                     EntityListener entityListener, EntityProperties entityProperties) {
+        super(contractResultService, entityIdService, entityListener, entityProperties);
     }
 
     @Override
@@ -46,8 +47,7 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
         if (entityProperties.getPersist().isContracts()) {
             var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
-            ContractResult contractResult = getBaseContractResult(transaction, recordItem,
-                    recordItem.getRecord().getContractCreateResult());
+            ContractResult contractResult = getBaseContractResult(transaction, recordItem);
             contractResult.setAmount(transactionBody.getInitialBalance());
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());

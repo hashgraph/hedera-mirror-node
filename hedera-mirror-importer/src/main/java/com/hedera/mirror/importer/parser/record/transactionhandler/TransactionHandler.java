@@ -57,4 +57,10 @@ public interface TransactionHandler {
      */
     default void updateTransaction(Transaction transaction, RecordItem recordItem) {
     }
+
+    /**
+     * Override to update fields of the ContractResult's (domain) fields.
+     */
+    default void updateContractResult(ContractResult contractResult, RecordItem recordItem) {
+    }
 }

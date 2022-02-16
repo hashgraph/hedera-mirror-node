@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
@@ -29,30 +28,20 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @AllArgsConstructor
 @Named
 class TokenDissociateTransactionHandler implements TransactionHandler {
-    protected final EntityIdService entityIdService;
+    protected final ContractResultService contractResultService;
     protected final EntityProperties entityProperties;
 
     @Override
     public ContractResult getContractResult(Transaction transaction, RecordItem recordItem) {
         if (entityProperties.getPersist().isContractsPrecompileResults() &&
                 recordItem.getRecord().hasContractCallResult()) {
-
-            var functionResult = recordItem.getRecord().getContractCallResult();
-            if (functionResult != ContractFunctionResult.getDefaultInstance() && functionResult.hasContractID()) {
-                ContractResult contractResult = new ContractResult();
-                contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-                contractResult.setContractId(entityIdService.lookup(functionResult.getContractID()));
-                contractResult.setPayerAccountId(transaction.getPayerAccountId());
-
-                // amount, gasLimit and functionParameters are missing from proto and will be populated once added
-                return contractResult;
-            }
+            return contractResultService.getContractResult(recordItem);
         }
 
         return null;

@@ -49,12 +49,14 @@ class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
     @BeforeEach
     void beforeEach() {
-        when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
+        when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId))
+                .thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
     }
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractCallTransactionHandler(entityIdService, entityListener, entityProperties);
+        return new ContractCallTransactionHandler(contractResultService, entityIdService, entityListener,
+                entityProperties);
     }
 
     @Override

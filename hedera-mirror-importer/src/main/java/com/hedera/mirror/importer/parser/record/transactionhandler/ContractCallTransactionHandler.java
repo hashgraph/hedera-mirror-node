@@ -30,6 +30,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -37,9 +38,9 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 @Named
 class ContractCallTransactionHandler extends AbstractContractCallTransactionHandler {
 
-    ContractCallTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                   EntityProperties entityProperties) {
-        super(entityIdService, entityListener, entityProperties);
+    ContractCallTransactionHandler(ContractResultService contractResultService, EntityIdService entityIdService,
+                                   EntityListener entityListener, EntityProperties entityProperties) {
+        super(contractResultService, entityIdService, entityListener, entityProperties);
     }
 
     @Override
@@ -47,8 +48,7 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
         if (entityProperties.getPersist().isContracts()) {
             var transactionBody = recordItem.getTransactionBody().getContractCall();
 
-            ContractResult contractResult = getBaseContractResult(transaction, recordItem,
-                    recordItem.getRecord().getContractCallResult());
+            ContractResult contractResult = getBaseContractResult(transaction, recordItem);
             contractResult.setAmount(transactionBody.getAmount());
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getFunctionParameters()));
             contractResult.setGasLimit(transactionBody.getGas());

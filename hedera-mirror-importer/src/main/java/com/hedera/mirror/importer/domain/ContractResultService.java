@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,21 +20,13 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import javax.inject.Named;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 
-@Named
-class TokenRevokeKycTransactionHandler implements TransactionHandler {
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenRevokeKyc().getAccount());
-    }
-
-    @Override
-    public TransactionType getType() {
-        return TransactionType.TOKENREVOKEKYC;
-    }
+/**
+ * This service is used to centralize the conversion logic from record stream entities to its internal ContractResult
+ * representation.
+ */
+public interface ContractResultService {
+    ContractResult getContractResult(RecordItem recordItem);
 }

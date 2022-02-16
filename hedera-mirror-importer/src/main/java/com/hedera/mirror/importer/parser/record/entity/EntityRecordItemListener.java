@@ -1106,13 +1106,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (functionResult != ContractFunctionResult.getDefaultInstance() && functionResult.hasContractID()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
 
-            // expand upon base contractResult properties set
-            contractResult.setBloom(DomainUtils.toBytes(functionResult.getBloom()));
-            contractResult.setCallResult(DomainUtils.toBytes(functionResult.getContractCallResult()));
-            contractResult.setErrorMessage(functionResult.getErrorMessage());
-            contractResult.setFunctionResult(functionResult.toByteArray());
-            contractResult.setGasUsed(functionResult.getGasUsed());
-
             // contract call logs
             for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
                 ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);

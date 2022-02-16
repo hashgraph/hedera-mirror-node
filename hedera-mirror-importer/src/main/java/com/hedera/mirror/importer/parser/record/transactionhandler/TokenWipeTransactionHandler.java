@@ -20,41 +20,16 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
-import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @AllArgsConstructor
 @Named
 class TokenWipeTransactionHandler implements TransactionHandler {
-
-    protected final EntityIdService entityIdService;
-    protected final EntityProperties entityProperties;
-
-    @Override
-    public ContractResult getContractResult(Transaction transaction, RecordItem recordItem) {
-        if (entityProperties.getPersist().isContracts() && recordItem.getRecord().hasContractCallResult()) {
-
-            var functionResult = recordItem.getRecord().getContractCallResult();
-            if (functionResult != ContractFunctionResult.getDefaultInstance() && functionResult.hasContractID()) {
-                ContractResult contractResult = new ContractResult();
-                contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-                contractResult.setContractId(entityIdService.lookup(functionResult.getContractID()));
-                contractResult.setPayerAccountId(transaction.getPayerAccountId());
-                return contractResult;
-            }
-        }
-
-        return null;
-    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {

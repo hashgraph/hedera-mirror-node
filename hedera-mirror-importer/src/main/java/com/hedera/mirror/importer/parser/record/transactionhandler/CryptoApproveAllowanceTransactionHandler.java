@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import java.util.List;
 import javax.inject.Named;
 
-import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -37,11 +36,6 @@ class CryptoApproveAllowanceTransactionHandler extends AbstractAllowanceTransact
 
     public CryptoApproveAllowanceTransactionHandler(EntityListener entityListener) {
         super(entityListener);
-    }
-
-    @Override
-    public ContractResult getContractResult(Transaction transaction, RecordItem recordItem) {
-        return null;
     }
 
     @Override

@@ -24,7 +24,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityOperation;
@@ -40,11 +39,6 @@ abstract class AbstractEntityCrudTransactionHandler<T extends AbstractEntity> im
 
     @Getter
     private final TransactionType type;
-
-    @Override
-    public ContractResult getContractResult(Transaction transaction, RecordItem recordItem) {
-        return null;
-    }
 
     @Override
     public final void updateTransaction(Transaction transaction, RecordItem recordItem) {

@@ -32,7 +32,7 @@ class TokenAssociateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenAssociateTransactionHandler(entityIdService, entityProperties);
+        return new TokenAssociateTransactionHandler(contractResultService, entityProperties);
     }
 
     @Override
