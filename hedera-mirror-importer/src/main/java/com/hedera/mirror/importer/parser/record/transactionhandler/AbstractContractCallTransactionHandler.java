@@ -59,8 +59,9 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
 
     protected ContractResult getBaseContractResult(Transaction transaction, RecordItem recordItem) {
         ContractResult contractResult = contractResultService.getContractResult(recordItem);
-        contractResult.setContractId(transaction.getEntityId()); // overwrite for case of null entityId on failure
+        contractResult.setContractId(transaction.getEntityId()); // set for case of null entityId on failure
 
+        // update created contractId entities
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         boolean persist = shouldPersistCreatedContractIDs(recordItem);
 

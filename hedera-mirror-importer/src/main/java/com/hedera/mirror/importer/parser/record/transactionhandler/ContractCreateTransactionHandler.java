@@ -48,6 +48,8 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
             var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
             ContractResult contractResult = getBaseContractResult(transaction, recordItem);
+            
+            // set input values from transactionBody params
             contractResult.setAmount(transactionBody.getInitialBalance());
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
