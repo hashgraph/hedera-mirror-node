@@ -115,7 +115,7 @@ genesis account balance file. Once the `get-genesis-balance.sh testnet` command 
 
 The `get-genesis-balance.sh` script takes the following form
 
-`./get-genesis-balance.sh <network> <account_limit> <starting_timestamp> <transfer_window_ns>`
+`./get-genesis-balance.sh <network> <account_limit> <transfer_window_ns>`
 
 - `network` - The Hedera network to validate against. Options include `demo` or `testnet` with a default of `demo`
 - `account_limit` - The max number of accounts to list in the file. Default is 20.
