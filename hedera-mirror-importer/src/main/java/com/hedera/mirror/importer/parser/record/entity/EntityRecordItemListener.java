@@ -1107,8 +1107,6 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         // set function result related properties where applicable
         if (functionResult != ContractFunctionResult.getDefaultInstance() && functionResult.hasContractID()) {
-            long consensusTimestamp = recordItem.getConsensusTimestamp();
-
             // contract call logs
             List<ContractLog> contractLogs = contractResultService.getContractLogs(functionResult, contractResult);
             contractLogs.forEach(x -> entityListener.onContractLog(x));
