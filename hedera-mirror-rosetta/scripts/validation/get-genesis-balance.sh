@@ -4,8 +4,7 @@ set -euo pipefail
 # handle input argument defaults
 network=${1:-demo}
 account_limit=${2:-20}
-starting_timestamp=${3:-0}
-transfer_window_ns=${4:-604800000000000}
+transfer_window_ns=${3:-604800000000000}
 
 currency=$(cat <<EOF
 {
@@ -21,27 +20,8 @@ EOF
 genesis_timestamp_query=$(cat <<EOF
 select consensus_timestamp
 from account_balance_file
-where consensus_timestamp > :starting_timestamp
 order by consensus_timestamp asc
 limit 1
-EOF
-)
-
-applicable_accounts_query=$(cat <<EOF
-with recent_crypto_accounts as (
- select distinct(entity_id)
- from crypto_transfer where consensus_timestamp > :genesis_timestamp and consensus_timestamp <= :genesis_timestamp + :transfer_window_ns
- order by entity_id asc
- limit :account_limit
-),
-genesis_balance as (
-  select account_id, balance
-  from account_balance ab
-  join recent_crypto_accounts ct
-    on ct.entity_id = ab.account_id
-  where balance <> 0 and ab.consensus_timestamp = :genesis_timestamp
-  group by account_id,balance
-)
 EOF
 )
 
@@ -52,7 +32,24 @@ if [[ "$account_limit" == "0" ]]; then
       select account_id, balance
       from account_balance
       where balance <> 0 and consensus_timestamp = :genesis_timestamp
-      group by account_id, balance
+    )
+EOF
+  )
+else
+  applicable_accounts_query=$(cat <<EOF
+    with recent_crypto_accounts as (
+      select distinct(entity_id)
+      from crypto_transfer where consensus_timestamp > :genesis_timestamp and consensus_timestamp <= :genesis_timestamp + :transfer_window_ns
+      order by entity_id asc
+      limit :account_limit
+    ),
+    genesis_balance as (
+      select account_id, balance
+      from account_balance ab
+      join recent_crypto_accounts ct
+        on ct.entity_id = ab.account_id
+      where balance <> 0 and ab.consensus_timestamp = :genesis_timestamp
+      group by account_id,balance
     )
 EOF
   )
@@ -91,7 +88,7 @@ echo "localhost:5432:mirror_node:mirror_rosetta:mirror_rosetta_pass" > ~/.pgpass
 SECONDS=0
 while [[ $SECONDS -lt 120 ]];
 do
-  genesis_timestamp=$(echo "$genesis_timestamp_query" | $psql_cmd -v starting_timestamp="$starting_timestamp")
+  genesis_timestamp=$(echo "$genesis_timestamp_query" | $psql_cmd)
   echo "Retrieved genesis balance file timestamp ${genesis_timestamp}"
   if [[ -z "$genesis_timestamp" ]]; then
     echo "Failed to get genesis timestamp"
@@ -114,3 +111,4 @@ hbar_json=$(echo "$account_balances" | \
   '[.[] | .account_identifier.address=("0.0." + .id) | del(.id) ] | .[].currency=$currency')
 
 echo "$hbar_json" > "$parent_path/$network/data_genesis_balances.json"
+echo "Data genesis balances written after ${SECONDS}s"

@@ -105,27 +105,20 @@ rosetta-cli tests. Please refer to [the official guide](https://docs.cloud.coinb
 for the options.
 
 You can run the rosetta-cli `check:data` command as is. The data configuration section is set with `"start_index": 1`
-to work around the known `rosetta-cli` performance issue of loading large genesis account balance file. As an
-alternative, use the [script](/hedera-mirror-rosetta/scripts/validation/get-genesis-balance.sh) to get the genesis
-account balance file. Once the `get-genesis-balance.sh testnet` command is executed, it'll write the file to
+to work around the known `rosetta-cli` performance issue of loading large genesis account balance file.
+
+#### Genesis Balance File
+
+As an alternative, run the [script](/hedera-mirror-rosetta/scripts/validation/get-genesis-balance.sh) script to get the
+genesis account balance file. Once the `get-genesis-balance.sh testnet` command is executed, it'll write the file to
 `testnet/data_genesis_balances.json`. Note the script uses PostgreSQL's command line client psql to query the
-
-#### balance validation json
-
-In order to run the rosetta-cli `check:data` command or `check:construction` commands a genesis balance file is needed
-as a basic for validation. To obtain this run
-the [script](/hedera-mirror-rosetta/scripts/validation/get-genesis-balance.sh)
-with the associated
-[configuration file](/hedera-mirror-rosetta/scripts/validation/testnet/validation.json) to get the genesis account
-balance file.
 
 The `get-genesis-balance.sh` script takes the following form
 
 `./get-genesis-balance.sh <network> <account_limit> <starting_timestamp> <transfer_window_ns>`
 
-- `network` - The Hedera network to validate against. Option include `demo, testnet` with default of `demo`
+- `network` - The Hedera network to validate against. Options include `demo` or `testnet` with a default of `demo`
 - `account_limit` - The max number of accounts to list in the file. Default is 20.
-- `starting_timestamp` - The timestamp after which to take the first account balance file. Default is 0.
 - `transfer_window_ns` - The additional ns duration added to the `starting_timestamp` to search for accounts when an
   account limit is used. Default is 1 week i.e. 604800000000000 ns
 
