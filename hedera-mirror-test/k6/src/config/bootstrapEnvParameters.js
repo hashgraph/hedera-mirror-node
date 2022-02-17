@@ -55,6 +55,7 @@ function makeGetRequest(url){
 async function computeAccountParameters(configuration) {
   const accountPath = `${configuration.baseApiUrl}/accounts?balance=true&limit=1&order=desc`;
   const response = await makeGetRequest(accountPath);
+  console.log(JSON.stringify(response));
   if(response.accounts.length === 0){
     throw new Error(`No account has been found for the configuration: ${JSON.stringify(configuration)}`);
   }
@@ -164,8 +165,7 @@ export DEFAULT_PUBLICKEY=${testParameters.publicKey}
 export DEFAULT_SCHEDULE_ACCOUNT=${testParameters.scheduleAccount}
 export DEFAULT_SCHEDULE_ID=${testParameters.scheduleId}
 export DEFAULT_TOKEN=${testParameters.token}
-export DEFAULT_TRANSACTION=${testParameters.transaction}
-export BASE_URL=${configuration.baseApiUrl}`;
+export DEFAULT_TRANSACTION=${testParameters.transaction}`;
   fs.writeFileSync(envParametersFile, parameters);
   fs.fdatasyncSync(envParametersFile);
   fs.closeSync(envParametersFile);
