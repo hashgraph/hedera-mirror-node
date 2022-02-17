@@ -105,11 +105,35 @@ rosetta-cli tests. Please refer to [the official guide](https://docs.cloud.coinb
 for the options.
 
 You can run the rosetta-cli `check:data` command as is. The data configuration section is set with `"start_index": 1`
-to work around the known `rosetta-cli` performance issue of loading large genesis account balance file. As an
-alternative, use the [script](/hedera-mirror-rosetta/scripts/validation/get-genesis-balance.sh) to get the
+to work around the known `rosetta-cli` performance issue of loading large genesis account balance file.
+
+#### Genesis Balance File
+
+As an alternative, run the [script](/hedera-mirror-rosetta/scripts/validation/get-genesis-balance.sh) script to get the
 genesis account balance file. Once the `get-genesis-balance.sh testnet` command is executed, it'll write the file to
 `testnet/data_genesis_balances.json`. Note the script uses PostgreSQL's command line client psql to query the
+
+The `get-genesis-balance.sh` script takes the following form
+
+`./get-genesis-balance.sh <network> <account_limit> <transfer_window_ns>`
+
+- `network` - The Hedera network to validate against. Options include `demo` or `testnet` with a default of `demo`
+- `account_limit` - The max number of accounts to list in the file. Default is 20.
+- `transfer_window_ns` - The additional ns duration added to the `starting_timestamp` to search for accounts when an
+  account limit is used. Default is 1 week i.e. 604800000000000 ns
+
+Once the `get-genesis-balance.sh testnet` command is executed, it'll write the file
+to `testnet/data_genesis_balances.json`. Note the script uses PostgreSQL's command line client psql to query the
 database for genesis account balance information, so please install psql beforehand.
+
+#### check:data
+
+In order to run the rosetta-cli `check:data` command, run the following after obtaining the `data_genesis_balances.json`
+file.
+
+`./run-validation.sh testnet data`
+
+#### check:construction
 
 In order to run the rosetta-cli `check:construction` command with the DSL spec in `testnet`/`testnet.ros`, you need two
 testnet accounts with the private keys and set `prefunded_accounts` in `testnet/validation.json` as follows:
@@ -150,6 +174,10 @@ testnet accounts with the private keys and set `prefunded_accounts` in `testnet/
   }
 }
 ```
+
+After updating the `validation.json` file run
+
+`./run-validation.sh testnet construction`
 
 ## Acceptance Tests
 
