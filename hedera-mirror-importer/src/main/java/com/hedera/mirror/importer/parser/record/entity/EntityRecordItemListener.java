@@ -27,7 +27,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -99,6 +98,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
@@ -112,13 +112,13 @@ import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHa
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
 @ConditionOnEntityRecordParser
 public class EntityRecordItemListener implements RecordItemListener {
     private final AddressBookService addressBookService;
+    private final ContractResultService contractResultService;
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
@@ -136,8 +136,11 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     TransactionHandlerFactory transactionHandlerFactory,
                                     FileDataRepository fileDataRepository,
                                     EntityRepository entityRepository,
-                                    RecordParserProperties parserProperties) {
+                                    RecordParserProperties parserProperties,
+                                    EntityIdService entityIdService,
+                                    ContractResultService contractResultService) {
         this.addressBookService = addressBookService;
+        this.contractResultService = contractResultService;
         this.entityIdService = entityIdService;
         this.entityListener = entityListener;
         this.entityProperties = entityProperties;
@@ -1107,48 +1110,13 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
 
             // contract call logs
-            for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
-                ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
-
-                ContractLog contractLog = new ContractLog();
-                contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
-                contractLog.setConsensusTimestamp(consensusTimestamp);
-                contractLog.setContractId(entityIdService.lookup(contractLoginfo.getContractID()));
-                contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
-                contractLog.setIndex(index);
-                contractLog.setRootContractId(contractResult.getContractId());
-                contractLog.setPayerAccountId(contractResult.getPayerAccountId());
-                contractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
-                contractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
-                contractLog.setTopic2(Utility.getTopic(contractLoginfo, 2));
-                contractLog.setTopic3(Utility.getTopic(contractLoginfo, 3));
-
-                entityListener.onContractLog(contractLog);
-            }
+            List<ContractLog> contractLogs = contractResultService.getContractLogs(functionResult, contractResult);
+            contractLogs.forEach(x -> entityListener.onContractLog(x));
 
             // contract call state changes
-            for (int stateIndex = 0; stateIndex < functionResult.getStateChangesCount(); ++stateIndex) {
-                var contractStateChangeInfo = functionResult.getStateChanges(stateIndex);
-
-                var contractId = entityIdService.lookup(contractStateChangeInfo.getContractID());
-                for (var storageChange : contractStateChangeInfo.getStorageChangesList()) {
-                    ContractStateChange contractStateChange = new ContractStateChange();
-                    contractStateChange.setConsensusTimestamp(consensusTimestamp);
-                    contractStateChange.setContractId(contractId);
-                    contractStateChange.setPayerAccountId(contractResult.getPayerAccountId());
-                    contractStateChange.setSlot(DomainUtils.toBytes(storageChange.getSlot()));
-                    contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
-
-                    // If a value of zero is written the valueWritten will be present but the inner value will be
-                    // absent. If a value was read and not written this value will not be present.
-                    if (storageChange.hasValueWritten()) {
-                        contractStateChange
-                                .setValueWritten(DomainUtils.toBytes(storageChange.getValueWritten().getValue()));
-                    }
-
-                    entityListener.onContractStateChange(contractStateChange);
-                }
-            }
+            List<ContractStateChange> contractStateChanges = contractResultService
+                    .getContractStateChanges(functionResult, contractResult);
+            contractStateChanges.forEach(x -> entityListener.onContractStateChange(x));
         }
 
         // Always persist a contract result whether partial or complete

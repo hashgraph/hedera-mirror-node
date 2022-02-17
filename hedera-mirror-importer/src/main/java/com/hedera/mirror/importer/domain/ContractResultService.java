@@ -20,13 +20,23 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import java.util.List;
+
+import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 /**
- * This service is used to centralize the conversion logic from record stream entities to its internal ContractResult
- * representation.
+ * This service is used to centralize the conversion logic from record stream items to its internal ContractResult
+ * related representations.
  */
 public interface ContractResultService {
     ContractResult getContractResult(RecordItem recordItem);
+
+    List<ContractLog> getContractLogs(ContractFunctionResult functionResult, ContractResult contractResult);
+
+    List<ContractStateChange> getContractStateChanges(ContractFunctionResult functionResult,
+                                                      ContractResult contractResult);
 }
