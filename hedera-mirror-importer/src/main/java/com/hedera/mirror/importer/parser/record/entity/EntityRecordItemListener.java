@@ -119,7 +119,6 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 public class EntityRecordItemListener implements RecordItemListener {
     private final AddressBookService addressBookService;
     private final ContractResultService contractResultService;
-    private final EntityIdService entityIdService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
     private final EntityRepository entityRepository;
@@ -141,7 +140,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     ContractResultService contractResultService) {
         this.addressBookService = addressBookService;
         this.contractResultService = contractResultService;
-        this.entityIdService = entityIdService;
         this.entityListener = entityListener;
         this.entityProperties = entityProperties;
         this.entityRepository = entityRepository;
@@ -1109,12 +1107,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (functionResult != ContractFunctionResult.getDefaultInstance() && functionResult.hasContractID()) {
             // contract call logs
             List<ContractLog> contractLogs = contractResultService.getContractLogs(functionResult, contractResult);
-            contractLogs.forEach(x -> entityListener.onContractLog(x));
+            contractLogs.forEach(entityListener::onContractLog);
 
             // contract call state changes
             List<ContractStateChange> contractStateChanges = contractResultService
                     .getContractStateChanges(functionResult, contractResult);
-            contractStateChanges.forEach(x -> entityListener.onContractStateChange(x));
+            contractStateChanges.forEach(entityListener::onContractStateChange);
         }
 
         // Always persist a contract result whether partial or complete

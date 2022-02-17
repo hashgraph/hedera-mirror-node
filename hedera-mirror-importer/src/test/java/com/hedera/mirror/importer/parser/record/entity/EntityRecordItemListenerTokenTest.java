@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -467,7 +467,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.REVOKED);
     }
 
-    @Disabled
+    @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenAssociatePrecompile() {
         entityProperties.getPersist().setContractsPrecompileResults(true);
@@ -515,7 +515,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(latestTokenAccount(TOKEN_ID, PAYER2)).get().isEqualTo(expected);
     }
 
-    @Disabled
+    @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenDissociatePrecompile() {
         entityProperties.getPersist().setContractsPrecompileResults(true);
@@ -968,13 +968,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, INITIAL_SUPPLY + amount);
     }
 
-    @Disabled
+    @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenBurnFtsPrecompile() {
         tokenSupplyFtsPrecompile(false);
     }
 
-    @Disabled
+    @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenMintFtsPrecompile() {
         tokenSupplyFtsPrecompile(true);
@@ -1037,13 +1037,13 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .getBytes(), EntityId.of(PAYER), false);
     }
 
-    @Disabled
+    @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenBurnNftsPrecompile() {
         tokenSupplyNftsPrecompile(false);
     }
 
-    @Disabled
+    @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenMintNftsPrecompile() {
         tokenSupplyNftsPrecompile(true);
@@ -1119,7 +1119,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         tokenTransfer(assessedCustomFees, protoAssessedCustomFees, false, false);
     }
 
-    @Disabled
+    @Disabled("ContractFunctionResult is missing input fields")
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideAssessedCustomFees")
     void tokenTransferPrecompile(String name, List<AssessedCustomFee> assessedCustomFees,

@@ -48,6 +48,10 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     @Override
     public ContractResult getContractResult(RecordItem recordItem) {
+        if (recordItem == null) {
+            return null;
+        }
+
         ContractResult contractResult = new ContractResult();
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
@@ -71,8 +75,11 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     @Override
     public List<ContractLog> getContractLogs(ContractFunctionResult functionResult, ContractResult contractResult) {
-
         List<ContractLog> contractLogs = new ArrayList<>();
+        if (functionResult == null || contractResult == null) {
+            return contractLogs;
+        }
+
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
             ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
 
@@ -97,8 +104,11 @@ public class ContractResultServiceImpl implements ContractResultService {
     @Override
     public List<ContractStateChange> getContractStateChanges(ContractFunctionResult functionResult,
                                                              ContractResult contractResult) {
-
         List<ContractStateChange> contractStateChanges = new ArrayList<>();
+        if (functionResult == null || contractResult == null) {
+            return contractStateChanges;
+        }
+
         for (int stateIndex = 0; stateIndex < functionResult.getStateChangesCount(); ++stateIndex) {
             var contractStateChangeInfo = functionResult.getStateChanges(stateIndex);
 
@@ -125,6 +135,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         return contractStateChanges;
     }
 
+    @SuppressWarnings("deprecation")
     private List<Long> getCreatedContractIds(ContractFunctionResult functionResult) {
         List<Long> createdContractIds = new ArrayList<>();
         for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {

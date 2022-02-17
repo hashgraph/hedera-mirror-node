@@ -162,7 +162,7 @@ class ContractResultServiceImplTest extends IntegrationTest {
         ContractResult contractResult = domainBuilder.contractResult()
                 .customize(x -> x.contractId(EntityId.of(CONTRACT_ID))).get();
 
-        assertThat(contractResultService.getContractLogs(contractFunctionResult, contractResult)).hasSize(0);
+        assertThat(contractResultService.getContractLogs(contractFunctionResult, contractResult)).isEmpty();
     }
 
     @Test
@@ -170,7 +170,7 @@ class ContractResultServiceImplTest extends IntegrationTest {
         ContractResult contractResult = domainBuilder.contractResult()
                 .customize(x -> x.contractId(EntityId.of(CONTRACT_ID))).get();
 
-        assertThat(contractResultService.getContractLogs(null, contractResult)).hasSize(0);
+        assertThat(contractResultService.getContractLogs(null, contractResult)).isEmpty();
     }
 
     @Test
@@ -179,7 +179,7 @@ class ContractResultServiceImplTest extends IntegrationTest {
                 .setContractID(CONTRACT_ID)
                 .clearLogInfo());
 
-        assertThat(contractResultService.getContractLogs(contractFunctionResult, null)).hasSize(0);
+        assertThat(contractResultService.getContractLogs(contractFunctionResult, null)).isEmpty();
     }
 
     @Test
@@ -257,7 +257,7 @@ class ContractResultServiceImplTest extends IntegrationTest {
 
         assertThat(contractResultService
                 .getContractStateChanges(contractFunctionResult, contractResult))
-                .hasSize(0);
+                .isEmpty();
     }
 
     @Test
@@ -267,7 +267,7 @@ class ContractResultServiceImplTest extends IntegrationTest {
 
         assertThat(contractResultService
                 .getContractStateChanges(null, contractResult))
-                .hasSize(0);
+                .isEmpty();
     }
 
     @Test
@@ -278,7 +278,7 @@ class ContractResultServiceImplTest extends IntegrationTest {
 
         assertThat(contractResultService
                 .getContractStateChanges(contractFunctionResult, null))
-                .hasSize(0);
+                .isEmpty();
     }
 
     private ContractFunctionResult getContractFunctionResult(Consumer<ContractFunctionResult.Builder> customBuilder) {
