@@ -573,7 +573,7 @@ const getTransactions = async (req, res) => {
   }
 
   // Execute query
-  const {rows, sqlQuery} = await pool.queryQuietly(query.query, query.params);
+  const {rows, sqlQuery} = await pool.queryQuietly(query.query, query.params, constants.zeroRandomPageCostQueryHint);
   const transferList = createTransferLists(rows);
   const ret = {
     transactions: transferList.transactions,
