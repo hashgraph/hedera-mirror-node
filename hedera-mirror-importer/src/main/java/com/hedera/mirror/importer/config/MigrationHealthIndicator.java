@@ -33,11 +33,14 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 @RequiredArgsConstructor
 public class MigrationHealthIndicator extends BaseCallback implements HealthIndicator {
 
+    private static final Health DOWN = Health.down().build();
+    private static final Health UP = Health.up().build();
+
     private final AtomicBoolean complete = new AtomicBoolean(false);
 
     @Override
     public Health health() {
-        return complete.get() ? Health.up().build() : Health.down().build();
+        return complete.get() ? UP : DOWN;
     }
 
     @Override
