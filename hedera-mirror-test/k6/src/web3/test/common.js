@@ -18,6 +18,9 @@
  * ‍
  */
 
+const errorField = "error";
+const errorCodeField = "error_code";
+
 function isNonErrorResponse(response){
   //instead of doing multiple type checks,
   //lets just do the normal path and return false,
@@ -27,7 +30,7 @@ function isNonErrorResponse(response){
       return false;
     }
     const body = JSON.parse(response.body);
-    return body["error"] === undefined && body["error_code"] === undefined;
+    return body[errorField] === undefined && body[errorCodeField] === undefined;
   }
   catch(e){
     console.log(e);
