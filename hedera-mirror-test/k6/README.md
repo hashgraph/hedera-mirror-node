@@ -5,7 +5,7 @@ and web3.
 
 ## Install k6
 
-The k6 test engine ris needed to run the tests. Please follow
+The k6 test engine is needed to run the tests. Please follow
 the [official documentation](https://k6.io/docs/getting-started/installation/) to install k6.
 
 ## Run The Tests
