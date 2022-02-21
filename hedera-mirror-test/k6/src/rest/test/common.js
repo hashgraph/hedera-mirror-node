@@ -7,7 +7,7 @@ function isListNonEmpty(list){
     return false;
   }
 
-  return 0 < list.length;
+  return list.length > 0;
 }
 
 function extractListFromResponse(response, listName){
