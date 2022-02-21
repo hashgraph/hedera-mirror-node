@@ -33,7 +33,6 @@ function isNonErrorResponse(response){
     return body[errorField] === undefined && body[errorCodeField] === undefined;
   }
   catch(e){
-    console.log(e);
     return false;
   }
 }
