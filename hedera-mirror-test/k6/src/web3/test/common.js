@@ -19,7 +19,7 @@
  */
 
 const errorField = "error";
-const errorCodeField = "error_code";
+const resultField = "result";
 
 function isNonErrorResponse(response){
   //instead of doing multiple type checks,
@@ -30,7 +30,7 @@ function isNonErrorResponse(response){
       return false;
     }
     const body = JSON.parse(response.body);
-    return body[errorField] === undefined && body[errorCodeField] === undefined;
+    return body.hasOwnProperty(resultField) && !body.hasOwnProperty(errorField);
   }
   catch(e){
     return false;
