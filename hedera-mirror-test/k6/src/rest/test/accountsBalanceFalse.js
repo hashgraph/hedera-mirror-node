@@ -22,7 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
-import {responseHasNonEmptyList} from "./common.js";
+import {isValidListResponse} from "./common.js";
 
 const urlTag = '/accounts?balance=false';
 const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}`;
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('accountsBalanceFalse') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Accounts balance false OK', (r) => responseHasNonEmptyList(r, "accounts"))
+  .check('Accounts balance false OK', (r) => isValidListResponse(r, "accounts"))
   .build();
 
 export {options, run};

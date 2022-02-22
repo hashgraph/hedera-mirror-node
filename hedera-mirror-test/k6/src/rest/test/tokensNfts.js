@@ -22,7 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
-import {responseHasNonEmptyList} from "./common.js";
+import {isValidListResponse} from "./common.js";
 
 const url = `${__ENV.BASE_URL}${urlPrefix}/tokens/${__ENV.DEFAULT_NFT}/nfts`;
 const urlTag = '/tokens/{id}/nfts';
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('tokensNfts') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Tokens nfts OK', (r) => responseHasNonEmptyList(r, "nfts"))
+  .check('Tokens nfts OK', (r) => isValidListResponse(r, "nfts"))
   .build();
 
 export {options, run};

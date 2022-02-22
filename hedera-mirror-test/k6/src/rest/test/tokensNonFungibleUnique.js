@@ -22,7 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
-import {responseHasNonEmptyList} from "./common.js";
+import {isValidListResponse} from "./common.js";
 
 const urlTag = '/tokens?type=NON_FUNGIBLE_UNIQUE';
 const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}`;
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('tokensNonFungibleUnique') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Tokens NON_FUNGIBLE_UNIQUE OK', (r) => responseHasNonEmptyList(r, "tokens"))
+  .check('Tokens NON_FUNGIBLE_UNIQUE OK', (r) => isValidListResponse(r, "tokens"))
   .build();
 
 export {options, run};

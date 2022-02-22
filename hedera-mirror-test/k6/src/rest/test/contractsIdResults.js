@@ -22,7 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
-import {responseHasNonEmptyList} from "./common.js";
+import {isValidListResponse} from "./common.js";
 
 const url = `${__ENV.BASE_URL}${urlPrefix}/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results`;
 const urlTag = '/contracts/{id}/results';
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('contractsIdResults') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Contracts id results OK', (r) => responseHasNonEmptyList(r,"results"))
+  .check('Contracts id results OK', (r) => isValidListResponse(r,"results"))
   .build();
 
 export {options, run};

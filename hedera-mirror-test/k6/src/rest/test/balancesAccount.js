@@ -22,7 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
-import {responseHasListWithSize} from "./common.js";
+import {isValidListResponse} from "./common.js";
 
 const urlTag = '/balances';
 const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}?account.id=eq:${__ENV.DEFAULT_ACCOUNT}`;
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('balances_account') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Balances for specific account OK', (r) => responseHasListWithSize(r, "balances", 1))
+  .check('Balances for specific account OK', (r) => isValidListResponse(r, "balances", 1))
   .build();
 
 export {options, run};

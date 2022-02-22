@@ -22,7 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
-import {responseHasListWithValidSize} from "./common.js";
+import {isValidListResponse} from "./common.js";
 
 const urlTag = '/transactions';
 const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('transactions') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Transactions OK', (r) => responseHasListWithValidSize(r, "transactions"))
+  .check('Transactions OK', (r) => isValidListResponse(r, "transactions"))
   .build();
 
 export {options, run};
