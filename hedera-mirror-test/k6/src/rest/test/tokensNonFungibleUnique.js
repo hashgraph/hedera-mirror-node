@@ -21,7 +21,7 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix,tokenListName} from './constants.js';
+import {tokenListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const urlTag = '/tokens?type=NON_FUNGIBLE_UNIQUE';

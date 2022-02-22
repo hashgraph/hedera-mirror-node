@@ -20,8 +20,8 @@
 
 import http from "k6/http";
 
-import { TestScenarioBuilder } from '../../lib/common.js';
-import {urlPrefix, messageListName} from './constants.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
+import {messageListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const url = `${__ENV.BASE_URL}${urlPrefix}/topics/${__ENV.DEFAULT_TOPIC}/messages/${__ENV.DEFAULT_TOPIC_SEQUENCE}`;

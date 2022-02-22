@@ -21,7 +21,7 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix, transactionListName} from './constants.js';
+import {transactionListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const urlTag = '/transactions';

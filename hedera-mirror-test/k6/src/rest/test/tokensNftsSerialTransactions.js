@@ -21,7 +21,7 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix,transactionListName} from './constants.js';
+import {transactionListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const url = `${__ENV.BASE_URL}${urlPrefix}/tokens/${__ENV.DEFAULT_NFT}/nfts/${__ENV.DEFAULT_NFT_SERIAL}/transactions`;

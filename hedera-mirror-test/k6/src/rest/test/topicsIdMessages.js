@@ -21,7 +21,7 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix, messageListName} from './constants.js';
+import {messageListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const url = `${__ENV.BASE_URL}${urlPrefix}/topics/${__ENV.DEFAULT_TOPIC}/messages?limit=${__ENV.DEFAULT_LIMIT}`;

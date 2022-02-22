@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('contractsIdResultsLogs') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Contracts id results logs OK', (r) => isValidListResponse(r,logListName))
+  .check('Contracts id results logs OK', (r) => isValidListResponse(r, logListName))
   .build();
 
 export {options, run};

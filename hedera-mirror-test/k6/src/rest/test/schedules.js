@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('schedules') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Schedules OK', (r) => isValidListResponse(r,scheduleListName))
+  .check('Schedules OK', (r) => isValidListResponse(r, scheduleListName))
   .build();
 
 export {options, run};

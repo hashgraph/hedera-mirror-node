@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('tokensFungibleCommon') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Tokens FUNGIBLE_COMMON OK', (r) => isValidListResponse(r,tokenListName))
+  .check('Tokens FUNGIBLE_COMMON OK', (r) => isValidListResponse(r, tokenListName))
   .build();
 
 export {options, run};

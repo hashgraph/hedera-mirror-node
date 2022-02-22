@@ -1,7 +1,7 @@
 const statusField = "status";
 
 function isSuccess(response) {
-  if(!response.hasOwnProperty(statusField)){
+  if (!response.hasOwnProperty(statusField)) {
     return false
   }
 
@@ -9,7 +9,7 @@ function isSuccess(response) {
 }
 
 function isValidListResponse(response, listName) {
-  if(!isSuccess(response)){
+  if (!isSuccess(response)) {
     return false;
   }
 
@@ -23,4 +23,4 @@ function isValidListResponse(response, listName) {
   return list.length > 0;
 }
 
-export { isValidListResponse, isSuccess };
+export {isValidListResponse, isSuccess};
