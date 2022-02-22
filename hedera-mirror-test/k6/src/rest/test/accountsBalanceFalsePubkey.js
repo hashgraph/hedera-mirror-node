@@ -22,7 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
-import {responseHasListWithSize} from "./common.js";
+import {responseHasNonEmptyList} from "./common.js";
 
 const urlTag = '/accounts?balance=false&account.publickey={publicKey}';
 const url = `${__ENV.BASE_URL}${urlPrefix}/accounts?balance=false&account.publickey=${__ENV.DEFAULT_PUBLICKEY}`;
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('accountsBalanceFalsePubkey') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Accounts balance false with publickey OK', (r) => responseHasListWithSize(r, "accounts", 1))
+  .check('Accounts balance false with publickey OK', (r) => responseHasNonEmptyList(r, "accounts", 1))
   .build();
 
 export {options, run};
