@@ -64,14 +64,6 @@ class MetricsConfiguration {
         return DefaultClientResources.builder().commandLatencyRecorder(commandLatencyRecorder).build();
     }
 
-    // Override default ClientResources to disable histogram metrics
-    @Bean(destroyMethod = "shutdown")
-    ClientResources clientResources(MeterRegistry meterRegistry) {
-        MicrometerOptions options = MicrometerOptions.builder().build();
-        var commandLatencyRecorder = new MicrometerCommandLatencyRecorder(meterRegistry, options);
-        return DefaultClientResources.builder().commandLatencyRecorder(commandLatencyRecorder).build();
-    }
-
     @Bean
     MeterBinder processMemoryMetrics() {
         return new ProcessMemoryMetrics();
