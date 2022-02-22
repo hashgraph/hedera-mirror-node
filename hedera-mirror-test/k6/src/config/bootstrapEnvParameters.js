@@ -22,6 +22,8 @@ const http = require('http');
 const https = require('https');
 const fs = require('fs');
 
+const outputFile = "config.env";
+
 function validateConfiguration(configuration){
   if(configuration.env === null){
     throw new Error("You must provide an environment. Example: -env testnet");
@@ -174,8 +176,8 @@ async function computeTestParameters(configuration){
   };
 }
 
-function writeTestParametersToDisk(testParameters, configuration){
-  const envParametersFile = fs.openSync(`${__dirname}/${configuration.env}.env`, 'w', 0o700);
+function writeTestParametersToDisk(testParameters){
+  const envParametersFile = fs.openSync(`${__dirname}/${outputFile}`, 'w', 0o700);
   const parameters = `export DEFAULT_ACCOUNT=${testParameters.account}
 export DEFAULT_ACCOUNT_BALANCE=${testParameters.accountBalance}
 export DEFAULT_CONTRACT_ID=${testParameters.contractId}
