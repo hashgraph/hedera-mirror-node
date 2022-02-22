@@ -63,9 +63,6 @@ from genesis_balance
 EOF
 )
 
-<<<<<<< HEAD
-network=${1:-demo}
-=======
 genesis_token_balance_query=$(cat <<EOF
 \set ON_ERROR_STOP on
 select json_agg(json_build_object(
@@ -83,7 +80,6 @@ where tb.consensus_timestamp = :genesis_timestamp and
 EOF
 )
 
->>>>>>> b791aa709de3dc9d26f9e8cb592fe102028cd831
 parent_path="$(cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P)"
 psql_cmd="psql -h localhost -U mirror_rosetta mirror_node -t -P format=unaligned"
 
