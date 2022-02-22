@@ -25,10 +25,6 @@ const fs = require('fs');
 const outputFile = "config.env";
 
 function validateConfiguration(configuration){
-  if(configuration.env === null){
-    throw new Error("You must provide an environment. Example: -env testnet");
-  }
-
   if(configuration.baseApiUrl === null){
     throw new Error("You must provide a base API URL. Example: -baseApiUrl https://testnet.mirrornode.hedera.com");
   }
@@ -36,18 +32,16 @@ function validateConfiguration(configuration){
 
 function computeConfigurationFromArgv(){
   const bootstrapArguments = process.argv || [];
+
   const configuration = {
-    env: null,
     baseApiUrl: null
   };
+
   //We can start at 2, because the first argument is the program executing the script,
   //and the second is the script being executed. Also, it is not needed to iterate
   //until the last position, because the last position should always be a value.
   for (let i = 2; i < bootstrapArguments.length-1; i += 2) {
-    if(bootstrapArguments[i] === "-env"){
-      configuration.env = bootstrapArguments[i+1];
-    }
-    else if(bootstrapArguments[i] === "-baseApiUrl"){
+    if(bootstrapArguments[i] === "-baseApiUrl"){
       configuration.baseApiUrl = bootstrapArguments[i+1];
     }
   }
@@ -77,7 +71,6 @@ function makeGetRequest(url){
 async function computeAccountParameters(configuration) {
   const accountPath = `${configuration.baseApiUrl}/accounts?balance=true&limit=1&order=desc`;
   const response = await makeGetRequest(accountPath);
-  console.log(JSON.stringify(response));
   if(response.accounts.length === 0){
     throw new Error(`No account has been found for the configuration: ${JSON.stringify(configuration)}`);
   }
@@ -195,5 +188,5 @@ export DEFAULT_TRANSACTION=${testParameters.transaction}`;
 
 const configuration = computeConfigurationFromArgv();
 computeTestParameters(configuration)
-  .then(testParameters => writeTestParametersToDisk(testParameters, configuration))
+  .then(testParameters => writeTestParametersToDisk(testParameters))
   .catch(console.log);
