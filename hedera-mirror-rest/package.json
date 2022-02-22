@@ -32,7 +32,7 @@
     "express-http-context": "^1.2.4",
     "express-openapi-validator": "^4.13.5",
     "extend": "^3.0.2",
-    "follow-redirects": "^1.14.8",
+    "follow-redirects": "^1.14.9",
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
     "json-schema": "^0.4.0",
