@@ -28,14 +28,16 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnCloudPlatform;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
+import org.springframework.boot.cloud.CloudPlatform;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -67,20 +69,21 @@ public class MirrorImporterConfiguration {
 
     @PostConstruct
     void init() {
-        // Start the web server ASAP so kubernetes liveness probe is up before long-running migrations
+        // Start the web server ASAP so kubernetes probes are up before long-running migrations
         if (webServerStartStop != null) {
             webServerStartStop.start();
         }
     }
 
     @Bean
-    @Profile("kubernetes")
+    @ConditionalOnCloudPlatform(CloudPlatform.KUBERNETES)
+    @ConditionalOnProperty(prefix = "hedera.mirror.importer", name = "leaderElection", havingValue = "true")
     LeaderAspect leaderAspect() {
         return new LeaderAspect();
     }
 
     @Bean
-    @Profile("!kubernetes")
+    @ConditionalOnMissingBean
     LeaderService leaderService() {
         return Boolean.TRUE::booleanValue; // Leader election not available outside Kubernetes
     }
