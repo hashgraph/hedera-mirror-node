@@ -21,18 +21,17 @@
 const errorField = "error";
 const resultField = "result";
 
-function isNonErrorResponse(response){
+function isNonErrorResponse(response) {
   //instead of doing multiple type checks,
   //lets just do the normal path and return false,
   //if an exception happens.
-  try{
-    if(response.status !== 200){
+  try {
+    if (response.status !== 200) {
       return false;
     }
     const body = JSON.parse(response.body);
     return body.hasOwnProperty(resultField) && !body.hasOwnProperty(errorField);
-  }
-  catch(e){
+  } catch (e) {
     return false;
   }
 }

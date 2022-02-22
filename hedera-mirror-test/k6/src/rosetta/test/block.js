@@ -30,7 +30,7 @@ const payload = JSON.stringify({
 const urlTag = '/block';
 const url = __ENV.BASE_URL + urlTag;
 
-const {options,  run} = new TestScenarioBuilder()
+const {options, run} = new TestScenarioBuilder()
   .name('block') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.post(url, payload))
