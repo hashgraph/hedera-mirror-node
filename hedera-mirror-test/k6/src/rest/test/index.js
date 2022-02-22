@@ -30,6 +30,7 @@ import * as accountsBalanceNe from './accountsBalanceNe.js';
 import * as accountsId from './accountsId.js';
 import * as accountsIdNe from './accountsIdNe.js';
 import * as balances from './balances.js';
+import * as balancesAccount from './balancesAccount.js';
 import * as contracts from './contracts.js';
 import * as contractsId from './contractsId.js';
 import * as contractsIdResults from './contractsIdResults.js';
@@ -67,6 +68,7 @@ const tests = {
   accountsId,
   accountsIdNe,
   balances,
+  balancesAccount,
   contracts,
   contractsId,
   contractsIdResults,
