@@ -1,6 +1,6 @@
 const statusField = "status";
 
-function isSuccess(response){
+function isSuccess(response) {
   if(!response.hasOwnProperty(statusField)){
     return false
   }
