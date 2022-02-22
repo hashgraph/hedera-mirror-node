@@ -20,8 +20,8 @@
 
 import http from "k6/http";
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix} from './constants.js';
+import { TestScenarioBuilder } from '../../lib/common.js';
+import {urlPrefix, messageListName} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const url = `${__ENV.BASE_URL}${urlPrefix}/topics/${__ENV.DEFAULT_TOPIC}/messages/${__ENV.DEFAULT_TOPIC_SEQUENCE}`;
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('topicsIdMessagesSequence') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Topics id messages sequenceNumber OK', (r) => isValidListResponse(r, "messages"))
+  .check('Topics id messages sequenceNumber OK', (r) => isValidListResponse(r, messageListName))
   .build();
 
 

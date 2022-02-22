@@ -21,7 +21,7 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix} from './constants.js';
+import {contractListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const urlTag = '/contracts';
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('contracts') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Contracts OK', (r) => isValidListResponse(r, "contracts"))
+  .check('Contracts OK', (r) => isValidListResponse(r, contractListName))
   .build();
 
 export {options, run};

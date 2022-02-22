@@ -21,7 +21,7 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix} from './constants.js';
+import {urlPrefix, tokenListName} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const urlTag = '/tokens?token.id=ne:100000';
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('tokensTokenIdNe') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Tokens token id ne 100000 OK', (r) => isValidListResponse(r, "tokens"))
+  .check('Tokens token id ne 100000 OK', (r) => isValidListResponse(r, tokenListName))
   .build();
 
 export {options, run};

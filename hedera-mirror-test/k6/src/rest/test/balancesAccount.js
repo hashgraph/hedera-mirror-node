@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('balances_account') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Balances for specific account OK', (r) => isValidListResponse(r, "balances", 1))
+  .check('Balances for specific account OK', (r) => isValidListResponse(r, "balances"))
   .build();
 
 export {options, run};

@@ -21,7 +21,7 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix} from './constants.js';
+import {accountListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const urlTag = '/accounts';
@@ -45,7 +45,7 @@ const {options, run} = new TestScenarioBuilder()
 
     return response;
   })
-  .check('Accounts OK', (r) => isValidListResponse(r, "accounts"))
+  .check('Accounts OK', (r) => isValidListResponse(r, accountListName))
   .build();
 
 export {options, run};

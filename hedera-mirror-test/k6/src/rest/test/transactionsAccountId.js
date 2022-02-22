@@ -21,7 +21,7 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix} from './constants.js';
+import {urlPrefix, transactionListName} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const urlTag = '/transactions?account.id={accountId}';
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('transactionsAccountId') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Transactions by account id OK', (r) => isValidListResponse(r, "transactions"))
+  .check('Transactions by account id OK', (r) => isValidListResponse(r, transactionListName))
   .build();
 
 export {options, run};

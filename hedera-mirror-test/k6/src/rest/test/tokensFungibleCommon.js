@@ -21,7 +21,7 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix} from './constants.js';
+import {tokenListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const urlTag = '/tokens?type=FUNGIBLE_COMMON';
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('tokensFungibleCommon') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Tokens FUNGIBLE_COMMON OK', (r) => isValidListResponse(r,"tokens"))
+  .check('Tokens FUNGIBLE_COMMON OK', (r) => isValidListResponse(r,tokenListName))
   .build();
 
 export {options, run};
