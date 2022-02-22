@@ -22,6 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
+import {isSuccess} from "./common.js";
 
 const url = `${__ENV.BASE_URL}${urlPrefix}/accounts/${__ENV.DEFAULT_ACCOUNT}`;
 const urlTag = '/accounts/{accountId}';
@@ -30,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('accountsId') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Accounts Id OK', (r) => r.status === 200)
+  .check('Accounts Id OK', isSuccess)
   .build();
 
 

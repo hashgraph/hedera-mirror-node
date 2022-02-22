@@ -22,6 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
+import {isSuccess} from "./common.js";
 
 const urlTag = '/network/supply';
 const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}`;
@@ -30,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('networkSupply') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Network supply OK', (r) => r.status === 200)
+  .check('Network supply OK', isSuccess)
   .build();
 
 export {options, run};

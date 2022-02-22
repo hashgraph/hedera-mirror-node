@@ -22,6 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
+import {isSuccess} from "./common.js";
 
 const url = `${__ENV.BASE_URL}${urlPrefix}/tokens/${__ENV.DEFAULT_NFT}/nfts/${__ENV.DEFAULT_NFT_SERIAL}`;
 const urlTag = '/tokens/{id}/nfts/{serial}';
@@ -30,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('tokensNftsSerial') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request(() => http.get(url))
-  .check('Tokens nfts serial OK', (r) => r.status === 200)
+  .check('Tokens nfts serial OK', isSuccess)
   .build();
 
 export {options, run};
