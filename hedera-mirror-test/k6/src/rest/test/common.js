@@ -1,3 +1,5 @@
+const statusField = "status";
+
 function isListValid(list){
   return isListNonEmpty(list) && list.length <= __ENV.DEFAULT_LIMIT;
 }
@@ -11,7 +13,7 @@ function isListNonEmpty(list){
 }
 
 function extractListFromResponse(response, listName){
-  if(response.status !== 200){
+  if(!isSuccess(response)){
     return null;
   }
   const body = JSON.parse(response.body);
@@ -30,7 +32,6 @@ function responseHasNonEmptyList(response, listName){
 }
 
 function responseHasListWithSize(response, listName, size){
-
   const list = extractListFromResponse(response, listName);
   if(!Array.isArray(list)){
     return false;
@@ -39,4 +40,12 @@ function responseHasListWithSize(response, listName, size){
   return list.length === size;
 }
 
-export { responseHasListWithValidSize, responseHasNonEmptyList, responseHasListWithSize };
+function isSuccess(response){
+  if(!response.hasOwnProperty(statusField)){
+    return false
+  }
+
+  return response.status >= 200 && response.status < 300;
+}
+
+export { responseHasListWithValidSize, responseHasNonEmptyList, responseHasListWithSize, isSuccess };
