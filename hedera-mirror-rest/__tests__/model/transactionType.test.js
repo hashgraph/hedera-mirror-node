@@ -24,7 +24,7 @@ const proto = require('@hashgraph/proto');
 const {TransactionType} = require('../../model');
 const {InvalidArgumentError} = require('../../errors/invalidArgumentError');
 
-const hederaFunctionalityLength = 67;
+const hederaFunctionalityLength = 69;
 const cryptoCreateAccountProtoId = 11;
 const unknownProtoId = 9999999;
 
