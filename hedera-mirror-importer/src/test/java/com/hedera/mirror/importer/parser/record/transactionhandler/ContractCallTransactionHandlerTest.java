@@ -55,8 +55,7 @@ class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractCallTransactionHandler(contractResultService, entityIdService, entityListener,
-                entityProperties);
+        return new ContractCallTransactionHandler(entityIdService);
     }
 
     @Override

@@ -22,44 +22,17 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
-class ContractCallTransactionHandler extends AbstractContractCallTransactionHandler {
-
-    ContractCallTransactionHandler(ContractResultService contractResultService, EntityIdService entityIdService,
-                                   EntityListener entityListener, EntityProperties entityProperties) {
-        super(contractResultService, entityIdService, entityListener, entityProperties);
-    }
-
-    @Override
-    public ContractResult getContractResult(Transaction transaction, RecordItem recordItem) {
-        if (entityProperties.getPersist().isContracts()) {
-            var transactionBody = recordItem.getTransactionBody().getContractCall();
-
-            ContractResult contractResult = getBaseContractResult(transaction, recordItem);
-
-            // set input values from transactionBody params
-            contractResult.setAmount(transactionBody.getAmount());
-            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getFunctionParameters()));
-            contractResult.setGasLimit(transactionBody.getGas());
-
-            return contractResult;
-        }
-
-        return null;
-    }
+@RequiredArgsConstructor
+class ContractCallTransactionHandler implements TransactionHandler {
+    protected final EntityIdService entityIdService;
 
     /**
      * First attempts to extract the contract ID from the receipt, which was populated in HAPI 0.23 for contract calls.
@@ -80,11 +53,5 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
     @Override
     public TransactionType getType() {
         return TransactionType.CONTRACTCALL;
-    }
-
-    // Will only be called for child created contract IDs.
-    @Override
-    protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
-        entityListener.onContract(contract);
     }
 }

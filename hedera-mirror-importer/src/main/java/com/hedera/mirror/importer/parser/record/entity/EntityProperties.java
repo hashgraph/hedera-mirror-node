@@ -45,7 +45,7 @@ public class EntityProperties {
 
         private boolean contracts = true;
 
-        private boolean contractsPrecompileResults = false;
+        private boolean contractResults = false;
 
         private boolean cryptoTransferAmounts = true;
 

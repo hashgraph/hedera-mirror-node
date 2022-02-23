@@ -23,41 +23,25 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
-class ContractCreateTransactionHandler extends AbstractContractCallTransactionHandler {
+class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
+    protected final EntityProperties entityProperties;
+    protected final EntityIdService entityIdService;
 
-    ContractCreateTransactionHandler(ContractResultService contractResultService, EntityIdService entityIdService,
-                                     EntityListener entityListener, EntityProperties entityProperties) {
-        super(contractResultService, entityIdService, entityListener, entityProperties);
-    }
-
-    @Override
-    public ContractResult getContractResult(Transaction transaction, RecordItem recordItem) {
-        if (entityProperties.getPersist().isContracts()) {
-            var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
-
-            ContractResult contractResult = getBaseContractResult(transaction, recordItem);
-            
-            // set input values from transactionBody params
-            contractResult.setAmount(transactionBody.getInitialBalance());
-            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
-            contractResult.setGasLimit(transactionBody.getGas());
-
-            return contractResult;
-        }
-
-        return null;
+    ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
+                                     EntityProperties entityProperties) {
+        super(entityListener, TransactionType.CONTRACTCREATEINSTANCE);
+        this.entityProperties = entityProperties;
+        this.entityIdService = entityIdService;
     }
 
     @Override
@@ -75,43 +59,34 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
      * know how much gas was used and the call result regardless.
      */
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    public void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
-        long consensusTimestamp = recordItem.getConsensusTimestamp();
-        EntityId entityId = transaction.getEntityId();
         transaction.setInitialBalance(transactionBody.getInitialBalance());
-
-        if (entityProperties.getPersist().isContracts() && recordItem.isSuccessful() && !EntityId.isEmpty(entityId)) {
-            doUpdateEntity(getContract(entityId, consensusTimestamp), recordItem);
-        }
     }
 
     @Override
     protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
-        var contractCreateResult = recordItem.getRecord().getContractCreateResult();
-        var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+        if (entityProperties.getPersist().isContracts() && recordItem.isSuccessful()) {
+            var contractCreateResult = recordItem.getRecord().getContractCreateResult();
+            var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+            if (transactionBody.hasAutoRenewPeriod()) {
+                contract.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
+            }
+            if (transactionBody.hasAdminKey()) {
+                contract.setKey(transactionBody.getAdminKey().toByteArray());
+            }
+            if (transactionBody.hasProxyAccountID()) {
+                contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
+            }
+            if (transactionBody.hasFileID()) {
+                contract.setFileId(EntityId.of(transactionBody.getFileID()));
+            }
+            if (contractCreateResult.hasEvmAddress()) {
+                contract.setEvmAddress(DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()));
+            }
 
-        if (transactionBody.hasAutoRenewPeriod()) {
-            contract.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
+            contract.setMemo(transactionBody.getMemo());
+            entityListener.onContract(contract);
         }
-
-        if (transactionBody.hasAdminKey()) {
-            contract.setKey(transactionBody.getAdminKey().toByteArray());
-        }
-
-        if (transactionBody.hasProxyAccountID()) {
-            contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
-        }
-
-        if (transactionBody.hasFileID()) {
-            contract.setFileId(EntityId.of(transactionBody.getFileID()));
-        }
-
-        if (contractCreateResult.hasEvmAddress()) {
-            contract.setEvmAddress(DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()));
-        }
-
-        contract.setMemo(transactionBody.getMemo());
-        entityListener.onContract(contract);
     }
 }

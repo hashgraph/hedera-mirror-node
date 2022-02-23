@@ -26,7 +26,6 @@ import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -64,10 +63,6 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 
-import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.contract.ContractLog;
-import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -249,7 +244,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertAutomaticTokenAssociations(recordItem);
         }
 
-        insertContractResult(recordItem, transactionHandler.getContractResult(transaction, recordItem));
+        insertContractResult(recordItem, transactionHandler.getEntity(recordItem));
 
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
@@ -1084,37 +1079,9 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    protected Contract getContract(EntityId contractId, long consensusTimestamp) {
-        Contract contract = contractId.toEntity();
-        contract.setCreatedTimestamp(consensusTimestamp);
-        contract.setDeleted(false);
-        contract.setTimestampLower(consensusTimestamp);
-        return contract;
-    }
-
-    private void insertContractResult(RecordItem recordItem, ContractResult contractResult) {
-        if (contractResult == null) {
-            // not a contract create/call/precompiled
-            return;
+    private void insertContractResult(RecordItem recordItem, EntityId contractEntityId) {
+        if (entityProperties.getPersist().isContracts()) {
+            contractResultService.process(recordItem, contractEntityId);
         }
-
-        var transactionRecord = recordItem.getRecord();
-        var functionResult = transactionRecord.hasContractCreateResult() ?
-                transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
-
-        // set function result related properties where applicable
-        if (functionResult != ContractFunctionResult.getDefaultInstance() && functionResult.hasContractID()) {
-            // contract call logs
-            List<ContractLog> contractLogs = contractResultService.getContractLogs(functionResult, contractResult);
-            contractLogs.forEach(entityListener::onContractLog);
-
-            // contract call state changes
-            List<ContractStateChange> contractStateChanges = contractResultService
-                    .getContractStateChanges(functionResult, contractResult);
-            contractStateChanges.forEach(entityListener::onContractStateChange);
-        }
-
-        // Always persist a contract result whether partial or complete
-        entityListener.onContractResult(contractResult);
     }
 }

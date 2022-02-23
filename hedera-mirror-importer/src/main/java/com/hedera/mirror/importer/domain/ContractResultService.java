@@ -20,12 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import java.util.List;
-
-import com.hedera.mirror.common.domain.contract.ContractLog;
-import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 /**
@@ -33,10 +28,5 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
  * related representations.
  */
 public interface ContractResultService {
-    ContractResult getContractResult(RecordItem recordItem);
-
-    List<ContractLog> getContractLogs(ContractFunctionResult functionResult, ContractResult contractResult);
-
-    List<ContractStateChange> getContractStateChanges(ContractFunctionResult functionResult,
-                                                      ContractResult contractResult);
+    void process(RecordItem recordItem, EntityId entityId);
 }

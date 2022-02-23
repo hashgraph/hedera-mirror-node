@@ -392,7 +392,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @AfterEach
     void after() {
-        entityProperties.getPersist().setContractsPrecompileResults(false);
+        entityProperties.getPersist().setContractResults(false);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -470,7 +470,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenAssociatePrecompile() {
-        entityProperties.getPersist().setContractsPrecompileResults(true);
+        entityProperties.getPersist().setContractResults(true);
         createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, true, true);
 
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER2);
@@ -518,7 +518,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenDissociatePrecompile() {
-        entityProperties.getPersist().setContractsPrecompileResults(true);
+        entityProperties.getPersist().setContractResults(true);
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, false, INITIAL_SUPPLY);
 
@@ -981,7 +981,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void tokenSupplyFtsPrecompile(boolean isMint) {
-        entityProperties.getPersist().setContractsPrecompileResults(true);
+        entityProperties.getPersist().setContractResults(true);
 
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, false, INITIAL_SUPPLY);
@@ -1050,7 +1050,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void tokenSupplyNftsPrecompile(boolean isMint) {
-        entityProperties.getPersist().setContractsPrecompileResults(true);
+        entityProperties.getPersist().setContractResults(true);
 
         // given
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP,
@@ -1124,7 +1124,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @MethodSource("provideAssessedCustomFees")
     void tokenTransferPrecompile(String name, List<AssessedCustomFee> assessedCustomFees,
                                  List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees) {
-        entityProperties.getPersist().setContractsPrecompileResults(true);
+        entityProperties.getPersist().setContractResults(true);
         tokenTransfer(assessedCustomFees, protoAssessedCustomFees, false, true);
     }
 

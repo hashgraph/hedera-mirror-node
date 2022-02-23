@@ -23,29 +23,13 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import javax.inject.Named;
 import lombok.AllArgsConstructor;
 
-import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.domain.ContractResultService;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @AllArgsConstructor
 @Named
 class CryptoTransferTransactionHandler implements TransactionHandler {
-    protected final ContractResultService contractResultService;
-    protected final EntityProperties entityProperties;
-
-    @Override
-    public ContractResult getContractResult(Transaction transaction, RecordItem recordItem) {
-        if (entityProperties.getPersist().isContractsPrecompileResults() &&
-                recordItem.getRecord().hasContractCallResult()) {
-            return contractResultService.getContractResult(recordItem);
-        }
-
-        return null;
-    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
