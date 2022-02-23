@@ -458,9 +458,8 @@ terminationGracePeriodSeconds: 30
 
 tolerations: []
 
-# Will have more than one replica in production, so need a rolling update to ensure at least one pod is ready
 updateStrategy:
-  type: RollingUpdate
+  type: Recreate
 
 # Volumes to add to the container. The key is the volume name and the value is the volume mount definition. The same keys should also appear in volumes below.
 volumeMounts:
