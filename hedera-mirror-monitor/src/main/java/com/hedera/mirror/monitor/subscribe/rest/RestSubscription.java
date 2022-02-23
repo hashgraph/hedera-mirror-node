@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.subscribe.rest;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -47,10 +47,11 @@ class RestSubscription extends AbstractScenario<RestSubscriberProperties, Mirror
 
     @Override
     public void onError(Throwable t) {
-        log.warn("Error subscribing to REST API: {}", t.getMessage());
+        String message = t.getMessage();
 
         if (Exceptions.isRetryExhausted(t) && t.getCause() != null) {
             t = t.getCause();
+            message += " " + t.getMessage();
         }
 
         String error = t.getClass().getSimpleName();
@@ -59,6 +60,7 @@ class RestSubscription extends AbstractScenario<RestSubscriberProperties, Mirror
             error = String.valueOf(((WebClientResponseException) t).getStatusCode().value());
         }
 
+        log.warn("Subscription {} failed: {}", this, message);
         errors.add(error);
     }
 

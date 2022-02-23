@@ -43,12 +43,14 @@ public class MirrorProperties {
     @NotNull
     private Path dataPath = Paths.get(".", "data");
 
+    @NotNull
+    private Instant endDate = Utility.MAX_INSTANT_LONG;
+
     private boolean importHistoricalAccountInfo = true;
 
     private Path initialAddressBook;
 
-    @NotNull
-    private Instant verifyHashAfter = Instant.EPOCH;
+    private boolean leaderElection = false;
 
     @NotNull
     private HederaNetwork network = HederaNetwork.DEMO;
@@ -56,27 +58,30 @@ public class MirrorProperties {
     @Min(0)
     private long shard = 0L;
 
-    private Long topicRunningHashV2AddedTimestamp;
-
     private Instant startDate;
 
     @DurationMin(seconds = 0L)
     @NotNull
     private Duration startDateAdjustment = Duration.ofSeconds(30L);
 
+    private Long topicRunningHashV2AddedTimestamp;
+
     @NotNull
-    private Instant endDate = Utility.MAX_INSTANT_LONG;
+    private Instant verifyHashAfter = Instant.EPOCH;
 
     @Getter
     @RequiredArgsConstructor
     public enum HederaNetwork {
-        DEMO("hedera-demo-streams", true),
-        MAINNET("hedera-mainnet-streams", false),
-        TESTNET("hedera-stable-testnet-streams-2020-08-27", false),
-        PREVIEWNET("hedera-preview-testnet-streams", false),
-        OTHER("", false); // Pre-prod or ad hoc environments
+        DEMO("hedera-demo-streams"),
+        MAINNET("hedera-mainnet-streams"),
+        PREVIEWNET("hedera-preview-testnet-streams"),
+        OTHER(""), // Pre-prod or ad hoc environments
+        TESTNET("hedera-stable-testnet-streams-2020-08-27");
 
         private final String bucketName;
-        private final Boolean allowAnonymousAccess;
+
+        public boolean isAllowAnonymousAccess() {
+            return this == DEMO;
+        }
     }
 }

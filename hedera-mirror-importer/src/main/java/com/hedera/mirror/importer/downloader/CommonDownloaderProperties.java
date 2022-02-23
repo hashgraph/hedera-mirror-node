@@ -41,20 +41,20 @@ public class CommonDownloaderProperties {
 
     private String accessKey;
 
+    private Boolean allowAnonymousAccess;
+
     private String bucketName;
 
-    public String getBucketName() {
-        return StringUtils.isNotBlank(bucketName) ? bucketName : mirrorProperties.getNetwork().getBucketName();
-    }
+    @NotNull
+    private CloudProvider cloudProvider = CloudProvider.S3;
 
     @Max(1)
     @Min(0)
     private float consensusRatio = (float) 1 / 3;
 
-    @NotNull
-    private CloudProvider cloudProvider = CloudProvider.S3;
-
     private String endpointOverride;
+
+    private String gcpProjectId;
 
     @Min(0)
     private int maxConcurrency = 1000; // aws sdk default = 50
@@ -63,21 +63,22 @@ public class CommonDownloaderProperties {
 
     private String secretKey;
 
-    private String gcpProjectId;
+    public String getBucketName() {
+        return StringUtils.isNotBlank(bucketName) ? bucketName : mirrorProperties.getNetwork().getBucketName();
+    }
 
-    private Boolean allowAnonymousAccess;
-
+    /*
+     * If the cloud provider is GCP, it must use the static provider.  If the static credentials are both present,
+     * force the mirror node to use the static provider.
+     */
     public boolean isStaticCredentials() {
-        //If the cloud provider is GCP, it must use the static provider.  If the static credentials are both present,
-        //force the mirror node to use the static provider.
         return cloudProvider == CommonDownloaderProperties.CloudProvider.GCP ||
-                (StringUtils.isNotBlank(accessKey) && StringUtils
-                        .isNotBlank(secretKey));
+                (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey));
     }
 
     public boolean isAnonymousCredentials() {
         return allowAnonymousAccess != null ? allowAnonymousAccess : mirrorProperties.getNetwork()
-                .getAllowAnonymousAccess();
+                .isAllowAnonymousAccess();
     }
 
     @Getter

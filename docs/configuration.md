@@ -78,6 +78,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.endDate`                                     | 2262-04-11T23:47:16.854775807Z | The end date (inclusive) of the data to import. Items after this date will be ignored. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
 | `hedera.mirror.importer.importHistoricalAccountInfo`                 | true                    | Import historical account information that occurred before the last stream reset. Skipped if `startDate` is unset or after 2019-09-14T00:00:10Z. |
 | `hedera.mirror.importer.initialAddressBook`                          | ""                      | The path to the bootstrap address book used to override the built-in address book              |
+| `hedera.mirror.importer.leaderElection`                              | false                   | Whether leader election should be used in Kubernetes environments to ensure only one replica processes data at a time |
 | `hedera.mirror.importer.network`                                     | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
 | `hedera.mirror.importer.parser.balance.batchSize`                    | 200000                  | The number of balances to store in memory before saving to the database                        |
 | `hedera.mirror.importer.parser.balance.enabled`                      | true                    | Whether to enable balance file parsing                                                         |
@@ -276,9 +277,9 @@ Name                                                            | Default | Desc
 `hedera.mirror.monitor.subscribe.grpc.<name>.duration`          |         | How long to stay subscribed to the API
 `hedera.mirror.monitor.subscribe.grpc.<name>.enabled`           | true    | Whether this subscribe scenario is enabled
 `hedera.mirror.monitor.subscribe.grpc.<name>.limit`             | 0       | How many transactions to receive before halting. 0 for unlimited
-`hedera.mirror.monitor.subscribe.grpc.<name>.retry.maxAttempts` | 16      | How many consecutive retry attempts before giving up connecting to the API
+`hedera.mirror.monitor.subscribe.grpc.<name>.retry.maxAttempts` | 2^63 - 1 | How many consecutive retry attempts before giving up connecting to the API
 `hedera.mirror.monitor.subscribe.grpc.<name>.retry.maxBackoff`  | 8s      | The maximum amount of time to wait between retry attempts
-`hedera.mirror.monitor.subscribe.grpc.<name>.retry.minBackoff`  | 250ms   | The initial amount of time to wait between retry attempts
+`hedera.mirror.monitor.subscribe.grpc.<name>.retry.minBackoff`  | 500ms   | The initial amount of time to wait between retry attempts
 `hedera.mirror.monitor.subscribe.grpc.<name>.startTime`         |         | The start time passed to the gRPC API. Defaults to current time if not set
 `hedera.mirror.monitor.subscribe.grpc.<name>.subscribers`       | 1       | How many concurrent subscribers should be instantiated for this scenario
 `hedera.mirror.monitor.subscribe.grpc.<name>.topicId`           |         | Which topic to subscribe to
@@ -288,8 +289,8 @@ Name                                                            | Default | Desc
 `hedera.mirror.monitor.subscribe.rest.<name>.limit`             | 0       | How many transactions to receive before halting. 0 for unlimited
 `hedera.mirror.monitor.subscribe.rest.<name>.publishers`        | []      | A list of publisher scenario names to consider for sampling
 `hedera.mirror.monitor.subscribe.rest.<name>.retry.maxAttempts` | 16      | How many consecutive retry attempts before giving up connecting to the API
-`hedera.mirror.monitor.subscribe.rest.<name>.retry.maxBackoff`  | 8s      | The maximum amount of time to wait between retry attempts
-`hedera.mirror.monitor.subscribe.rest.<name>.retry.minBackoff`  | 250ms   | The initial amount of time to wait between retry attempts
+`hedera.mirror.monitor.subscribe.rest.<name>.retry.maxBackoff`  | 1s      | The maximum amount of time to wait between retry attempts
+`hedera.mirror.monitor.subscribe.rest.<name>.retry.minBackoff`  | 500ms   | The initial amount of time to wait between retry attempts
 `hedera.mirror.monitor.subscribe.rest.<name>.samplePercent`     | 1.0     | The percentage of transactions to verify against the API. Accepts values between 0-1
 `hedera.mirror.monitor.subscribe.rest.<name>.timeout`           | 5s      | Maximum amount of time to wait for a API call to retrieve data
 `hedera.mirror.monitor.subscribe.statusFrequency`               | 10s     | How often to log subscription statistics
