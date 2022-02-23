@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.36.1'
+      version: '0.37.1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -37,11 +37,9 @@ spec:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
-        MANAGEMENT_ENDPOINT_HEALTH_GROUP_LIVENESS_INCLUDE: "ping"
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
-        HEDERA_MIRROR_MONITOR_NODE_VALIDATION_FREQUENCY: "365d"
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_PROPERTIES_TOPICID: "0.0.368908"
         HEDERA_MIRROR_MONITOR_SUBSCRIBE_GRPC_HCS_TOPICID: "0.0.368908"
       prometheusRules:
