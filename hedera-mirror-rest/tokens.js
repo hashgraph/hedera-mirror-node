@@ -339,8 +339,7 @@ const getTokensRequest = async (req, res) => {
   const nextLink = utils.getPaginationLink(
     req,
     tokens.length !== limit,
-    constants.filterKeys.TOKEN_ID,
-    lastTokenId,
+    [utils.getLastObject(constants.filterKeys.TOKEN_ID, lastTokenId)],
     order
   );
 
@@ -609,8 +608,7 @@ const getTokenBalances = async (req, res) => {
   response.links.next = utils.getPaginationLink(
     req,
     response.balances.length !== limit,
-    constants.filterKeys.ACCOUNT_ID,
-    anchorAccountId,
+    [utils.getLastObject(constants.filterKeys.ACCOUNT_ID, anchorAccountId)],
     order
   );
 
@@ -732,8 +730,7 @@ const getNftTokensRequest = async (req, res) => {
   response.links.next = utils.getPaginationLink(
     req,
     response.nfts.length !== limit,
-    constants.filterKeys.SERIAL_NUMBER,
-    anchorSerialNumber,
+    [utils.getLastObject(constants.filterKeys.SERIAL_NUMBER, anchorSerialNumber)],
     order
   );
 
@@ -937,8 +934,7 @@ const getNftTransferHistoryRequest = async (req, res) => {
   response.links.next = utils.getPaginationLink(
     req,
     response.transactions.length !== limit,
-    constants.filterKeys.TIMESTAMP,
-    anchorTimestamp,
+    [utils.getLastObject(constants.filterKeys.TIMESTAMP, anchorTimestamp)],
     order
   );
 

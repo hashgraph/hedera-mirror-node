@@ -1213,3 +1213,151 @@ describe('Utils test - utils.checkTimestampRange', () => {
     );
   });
 });
+
+describe('Utils getLastObject', () => {
+  test('Verify empty response for tokenId', () => {
+    expect(utils.getLastObject(constants.filterKeys.TOKENID, 1)).toStrictEqual({
+      lastField: 'tokenid',
+      lastValue: 1,
+    });
+  });
+
+  test('Verify empty response for serialNumber', () => {
+    expect(utils.getLastObject(constants.filterKeys.SERIAL_NUMBER, 2)).toStrictEqual({
+      lastField: 'serialnumber',
+      lastValue: 2,
+    });
+  });
+});
+
+describe('Utils getNextParamQueries', () => {
+  const testSpecs = [
+    {
+      name: 'limit (eq) only with ASC',
+      args: [
+        constants.orderFilterValues.ASC,
+        {
+          limit: 10,
+        },
+        [utils.getLastObject(constants.filterKeys.ACCOUNT_ID, 3)],
+      ],
+      expected: '?limit=10&account.id=gt:3',
+    },
+    {
+      name: 'limit (eq) with DESC',
+      args: [
+        constants.orderFilterValues.DESC,
+        {
+          limit: 10,
+          order: 'desc',
+        },
+        [utils.getLastObject(constants.filterKeys.ACCOUNT_ID, 3)],
+      ],
+      expected: '?limit=10&order=desc&account.id=lt:3',
+    },
+    {
+      name: 'order only with DESC',
+      args: [
+        constants.orderFilterValues.DESC,
+        {
+          order: 'desc',
+        },
+        [utils.getLastObject(constants.filterKeys.TOKENID, 3)],
+      ],
+      expected: '?order=desc&tokenid=lt:3',
+    },
+    {
+      name: 'tokenId (gt) only with ASC',
+      args: [constants.orderFilterValues.ASC, {}, [utils.getLastObject(constants.filterKeys.TOKENID, 3)]],
+      expected: '?tokenid=gt:3',
+    },
+    {
+      name: 'tokenId (lte) only with DESC',
+      args: [
+        constants.orderFilterValues.DESC,
+        {
+          order: 'desc',
+        },
+        [utils.getLastObject(constants.filterKeys.TOKENID, 3)],
+      ],
+      expected: '?order=desc&tokenid=lt:3',
+    },
+    {
+      name: 'tokenId (eq) and serial (gt) combo with ASC',
+      args: [
+        constants.orderFilterValues.ASC,
+        {
+          tokenid: 2,
+          serialnumber: 'gt:1',
+        },
+        [
+          utils.getLastObject(constants.filterKeys.TOKENID, 2),
+          utils.getLastObject(constants.filterKeys.SERIAL_NUMBER, 4),
+        ],
+      ],
+      expected: '?tokenid=2&serialnumber=gt:4',
+    },
+    {
+      name: 'tokenId (lte) and serial (gte) combo with ASC',
+      args: [
+        constants.orderFilterValues.ASC,
+        {
+          tokenid: 'lte:5',
+          serialnumber: 'gte:1',
+        },
+        [
+          utils.getLastObject(constants.filterKeys.TOKENID, 2),
+          utils.getLastObject(constants.filterKeys.SERIAL_NUMBER, 4),
+        ],
+      ],
+      expected: '?tokenid=lte:5&tokenid=gt:2&serialnumber=gt:4',
+    },
+    {
+      name: 'tokenId (lte) and serial (gte) combo with DESC',
+      args: [
+        constants.orderFilterValues.DESC,
+        {
+          tokenid: 'lte:5',
+          serialnumber: 'gte:1',
+        },
+        [
+          utils.getLastObject(constants.filterKeys.TOKENID, 2),
+          utils.getLastObject(constants.filterKeys.SERIAL_NUMBER, 4),
+        ],
+      ],
+      expected: '?serialnumber=gte:1&serialnumber=lt:4&tokenid=lt:2',
+    },
+    {
+      name: 'serialnumber (gt) and serial (lt) with DESC',
+      args: [
+        constants.orderFilterValues.DESC,
+        {
+          serialnumber: 'gt:1',
+          'account.id': 1001,
+          order: 'desc',
+          limit: 2,
+        },
+        [utils.getLastObject(constants.filterKeys.SERIAL_NUMBER, 3)],
+      ],
+      expected: '?serialnumber=gt:1&serialnumber=lt:3&account.id=1001&order=desc&limit=2',
+    },
+    {
+      name: 'serialnumber (gt) and serial (lt) with DESC',
+      args: [
+        constants.orderFilterValues.ASC,
+        {
+          'account.id': ['gte:0.0.18', 'lt:0.0.21'],
+          limit: 2,
+        },
+        [utils.getLastObject(constants.filterKeys.ACCOUNT_ID, '0.0.19')],
+      ],
+      expected: '?account.id=lt:0.0.21&account.id=gt:0.0.19&limit=2',
+    },
+  ];
+
+  testSpecs.forEach((spec) => {
+    test(spec.name, () => {
+      expect(utils.getNextParamQueries(...spec.args)).toEqual(spec.expected);
+    });
+  });
+});

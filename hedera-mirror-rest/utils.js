@@ -551,12 +551,12 @@ const convertMySqlStyleQueryToPostgres = (sqlQuery, startIndex = 1) => {
  * @param {HTTPRequest} req HTTP query request object
  * @param {Boolean} isEnd Is the next link valid or not
  * @param {String} field The query parameter field name
- * @param {Any} lastValue THe last val for the 'next' queries in the pagination.
+ * @param {Object} lastObjects List of lastObjects containing the last values for query param keys
  * @param {String} order Order of sorting the results
  * @return {String} next Fully formed link to the next page
  * @return {[]} list of last objects
  */
-const getPaginationLink = (req, isEnd, lastObjects, lastValue, order) => {
+const getPaginationLink = (req, isEnd, lastObjects, order) => {
   let urlPrefix;
   if (config.port !== undefined && config.response.includeHostInLink) {
     urlPrefix = `${req.protocol}://${req.hostname}:${config.port}`;
@@ -567,44 +567,7 @@ const getPaginationLink = (req, isEnd, lastObjects, lastValue, order) => {
   let next = '';
 
   if (!isEnd) {
-    const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
-    const insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
-
-    for (const [field, lastValue] of Object.entries(lastObjects)) {
-      // Go through the query parameters, and if there is a 'field=gt:xxxx' (asc order)
-      // or 'field=lt:xxxx' (desc order) fields, then remove that, to be replaced by the
-      // new continuation value
-      for (const [q, v] of Object.entries(req.query)) {
-        if (Array.isArray(v)) {
-          for (const vv of v) {
-            if (q === field && pattern.test(vv)) {
-              req.query[q] = req.query[q].filter(function (value, index, arr) {
-                return value != vv;
-              });
-            }
-          }
-        } else if (q === field && pattern.test(v)) {
-          delete req.query[q];
-        }
-      }
-
-      // And add back the continuation value as 'field=gt:x' (asc order) or
-      // 'field=lt:x' (desc order)
-      if (field in req.query) {
-        req.query[field] = [].concat(req.query[field]).concat(`${insertedPattern}:${lastValue}`);
-      } else {
-        req.query[field] = `${insertedPattern}:${lastValue}`;
-      }
-    }
-
-    // Reconstruct the query string
-    for (const [q, v] of Object.entries(req.query)) {
-      if (Array.isArray(v)) {
-        v.forEach((vv) => (next += `${(next === '' ? '?' : '&') + q}=${vv}`));
-      } else {
-        next += `${(next === '' ? '?' : '&') + q}=${v}`;
-      }
-    }
+    next = getNextParamQueries(order, req.query, lastObjects);
 
     // remove the '/' at the end of req.path
     const path = req.path.endsWith('/') ? req.path.slice(0, -1) : req.path;
@@ -618,6 +581,54 @@ const getLastObject = (field, value) => {
     lastField: field,
     lastValue: value,
   };
+};
+
+const getNextParamQueries = (order, reqQuery, lastObjects) => {
+  let next = '';
+
+  const gtLtPattern = /(g|l)t[e]?:/;
+  const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
+  const insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
+
+  for (const lastObject of lastObjects) {
+    const field = lastObject.lastField;
+    const lastValue = lastObject.lastValue;
+    // Go through the query parameters, and if there is a 'field=gt:xxxx' (asc order)
+    // or 'field=lt:xxxx' (desc order) fields, then remove that, to be replaced by the
+    // new continuation value
+    const fieldValues = reqQuery[field];
+    const patternMatch = pattern.test(fieldValues);
+    if (Array.isArray(fieldValues)) {
+      for (const vv of fieldValues) {
+        if (pattern.test(vv)) {
+          reqQuery[field] = reqQuery[field].filter(function (value, index, arr) {
+            return value != vv;
+          });
+        }
+      }
+    } else if (patternMatch) {
+      delete reqQuery[field];
+    }
+
+    if (field in reqQuery) {
+      if (gtLtPattern.test(fieldValues)) {
+        reqQuery[field] = [].concat(reqQuery[field]).concat(`${insertedPattern}:${lastValue}`);
+      }
+    } else {
+      reqQuery[field] = `${insertedPattern}:${lastValue}`;
+    }
+  }
+
+  // Reconstruct the query string
+  for (const [q, v] of Object.entries(reqQuery)) {
+    if (Array.isArray(v)) {
+      v.forEach((vv) => (next += `${(next === '' ? '?' : '&') + q}=${vv}`));
+    } else {
+      next += `${(next === '' ? '?' : '&') + q}=${v}`;
+    }
+  }
+
+  return next;
 };
 
 /**
@@ -1157,7 +1168,10 @@ if (isTestEnv()) {
     buildFilters,
     formatComparator,
     formatFilters,
+    getLastObject,
     getLimitParamValue,
+    getNextParamQueries,
+    getPaginationLink,
     validateAndParseFilters,
     validateFilters,
   });

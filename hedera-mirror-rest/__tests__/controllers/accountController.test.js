@@ -136,7 +136,7 @@ describe('extractNftsQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: ['account_id = $1', 'serial_number > $2', 'serial_number in ($3,$4)'],
-        params: [4, '1', '2', '3'],
+        params: [4, '3', '1', '2'],
       },
     },
   ];

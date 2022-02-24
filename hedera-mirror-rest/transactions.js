@@ -583,8 +583,7 @@ const getTransactions = async (req, res) => {
     next: utils.getPaginationLink(
       req,
       ret.transactions.length !== query.limit,
-      constants.filterKeys.TIMESTAMP,
-      transferList.anchorSecNs,
+      [utils.getLastObject(constants.filterKeys.TIMESTAMP, transferList.anchorSecNs)],
       query.order
     ),
   };

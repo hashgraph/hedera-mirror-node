@@ -364,8 +364,7 @@ const getAccounts = async (req, res) => {
     next: utils.getPaginationLink(
       req,
       ret.accounts.length !== limitAndOrderQuery.limit,
-      constants.filterKeys.ACCOUNT_ID,
-      anchorAcc,
+      [utils.getLastObject(constants.filterKeys.ACCOUNT_ID, anchorAcc)],
       limitAndOrderQuery.order
     ),
   };
@@ -529,8 +528,7 @@ const getOneAccount = async (req, res) => {
     next: utils.getPaginationLink(
       req,
       ret.transactions.length !== limit,
-      constants.filterKeys.TIMESTAMP,
-      anchorSecNs,
+      [utils.getLastObject(constants.filterKeys.TIMESTAMP, anchorSecNs)],
       order
     ),
   };
