@@ -23,6 +23,7 @@ import http from "k6/http";
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {contractListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
+import {setupTestParameters} from "../../config/bootstrapEnvParameters";
 
 const urlTag = '/contracts';
 
@@ -37,3 +38,5 @@ const {options, run} = new TestScenarioBuilder()
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

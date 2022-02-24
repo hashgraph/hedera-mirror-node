@@ -23,6 +23,7 @@ import http from "k6/http";
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
 import {isSuccess} from "./common.js";
+import {setupTestParameters} from "../../config/bootstrapEnvParameters";
 
 const urlTag = '/accounts/{accountId}';
 
@@ -38,3 +39,5 @@ const {options, run} = new TestScenarioBuilder()
 
 
 export {options, run};
+
+export const setup = setupTestParameters;

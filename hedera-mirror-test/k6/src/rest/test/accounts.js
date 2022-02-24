@@ -23,7 +23,7 @@ import http from "k6/http";
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {accountListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
-import {bootstrap} from "../../config/bootstrapEnvParameters.js";
+import {setupTestParameters} from "../../config/bootstrapEnvParameters.js";
 
 const urlTag = '/accounts';
 let nextLink;
@@ -50,3 +50,5 @@ const {options, run} = new TestScenarioBuilder()
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

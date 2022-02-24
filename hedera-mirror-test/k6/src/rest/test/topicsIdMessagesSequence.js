@@ -23,6 +23,7 @@ import http from "k6/http";
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {messageListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
+import {setupTestParameters} from "../../config/bootstrapEnvParameters";
 
 const urlTag = '/topics/{id}/messages/{sequenceNumber}';
 
@@ -38,3 +39,5 @@ const {options, run} = new TestScenarioBuilder()
 
 
 export {options, run};
+
+export const setup = setupTestParameters;
