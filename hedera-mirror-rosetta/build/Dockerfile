@@ -7,7 +7,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 # GIT_REF can be a branch or a tag
 ARG GIT_REF=main
 RUN apt-get update && apt-get install -y gcc git openjdk-11-jdk-headless
-RUN git clone -b ${GIT_REF} --depth 1 https://github.com/hashgraph/hedera-mirror-node
+# RUN git clone -b ${GIT_REF} --depth 1 https://github.com/hashgraph/hedera-mirror-node
+RUN git clone -b ${GIT_REF} --depth 1 https://github.com/xin-hedera/hedera-mirror-node
 WORKDIR /hedera-mirror-node
 RUN ./mvnw clean package -DskipTests -pl hedera-mirror-importer,hedera-mirror-rosetta
 WORKDIR /app
@@ -27,6 +28,7 @@ FROM ubuntu:20.04 as runner
 # Add the PostgreSQL PGP key to verify their Debian packages.
 # It should be the same key as https://www.postgresql.org/media/keys/ACCC4CF8.asc
 ARG DEBIAN_FRONTEND=noninteractive
+ENV PG_CLUSTER_NAME=rosetta
 ENV PG_VERSION=14
 RUN apt-get update \
     && apt-get install -y ca-certificates curl gnupg lsb-release \
@@ -41,8 +43,9 @@ COPY --from=builder /app /app
 RUN useradd -s /bin/bash importer && useradd -s /bin/bash rosetta
 
 ENV PATH="/usr/lib/postgresql/${PG_VERSION}/bin:${PATH}"
-ENV PGCONF="/data"
-ENV PGDATA=${PGCONF}
+ENV PGCONF="/data/conf"
+ENV PGDATA="/data/data"
+RUN rm -fr /etc/postgresql/${PG_VERSION}/main
 
 USER root
 WORKDIR /app

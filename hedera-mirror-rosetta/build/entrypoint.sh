@@ -21,14 +21,24 @@ function cleanup() {
 
 function init_db() {
   echo "Initializing database"
-  if [[ -f "${PGCONF}/PG_VERSION" ]]; then
+  if [[ -f "${PGDATA}/PG_VERSION" ]]; then
     echo "Database is already initialzed"
     return
   fi
 
-  mkdir -p "${PGCONF}/conf.d" && cp /app/pg_hba.conf "${PGCONF}" && cp /app/postgresql.conf "${PGCONF}/conf.d"
-  chown -R postgres.postgres "${PGCONF}"
-  /etc/init.d/postgresql start && /app/scripts/init.sh && /etc/init.d/postgresql stop
+  echo "Creating cluster '${PG_CLUSTER_NAME}' with data directory '${PGDATA}'"
+  mkdir -p "${PGCONF}" "${PGDATA}" && chown -R postgres:postgres "${PGCONF}" "${PGDATA}"
+  su postgres -c "pg_createcluster -d ${PGDATA} --start-conf auto ${PG_VERSION} ${PG_CLUSTER_NAME}"
+  # mv conf to $PGCONF and link it
+  PG_CLUSTER_CONF=/etc/postgresql/${PG_VERSION}/${PG_CLUSTER_NAME}
+  cp -pr ${PG_CLUSTER_CONF}/* ${PGCONF} && \
+    rm -fr ${PG_CLUSTER_CONF} && \
+    ln -s ${PGCONF} ${PG_CLUSTER_CONF}
+  su postgres -c 'cp /app/pg_hba.conf ${PGCONF} && cp /app/postgresql.conf ${PGCONF}/conf.d'
+
+  /etc/init.d/postgresql start && \
+    su postgres -c 'PATH=/usr/lib/postgresql/${PG_VERSION}/bin:${PATH} /app/scripts/init.sh' && \
+    /etc/init.d/postgresql stop
 
   echo "Initialized database"
 }
@@ -41,7 +51,7 @@ function restore() {
 
   DATA_DIR="data_dump"
   TMPDIR=$(mktemp -d)
-  export PGPASSWORD="${HEDERA_MIRROR_IMPORTER_DB_OWNERPASSWORD:-mirror_node_pass}"
+  export PGPASSWORD="${HEDERA_MIRROR_IMPORTER_DB_PASSWORD:-mirror_node_pass}"
 
   cp /app/postgresql-restore.conf "${PGCONF}/conf.d/postgresql.conf"
   /etc/init.d/postgresql start
