@@ -27,7 +27,7 @@ FROM ubuntu:20.04 as runner
 # Add the PostgreSQL PGP key to verify their Debian packages.
 # It should be the same key as https://www.postgresql.org/media/keys/ACCC4CF8.asc
 ARG DEBIAN_FRONTEND=noninteractive
-ENV PG_VERSION=13
+ENV PG_VERSION=14
 RUN apt-get update \
     && apt-get install -y ca-certificates curl gnupg lsb-release \
     && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8 \
@@ -41,21 +41,12 @@ COPY --from=builder /app /app
 RUN useradd -s /bin/bash importer && useradd -s /bin/bash rosetta
 
 ENV PATH="/usr/lib/postgresql/${PG_VERSION}/bin:${PATH}"
-ENV PGCONF="/var/lib/postgresql/${PG_VERSION}/main"
+ENV PGCONF="/data"
 ENV PGDATA=${PGCONF}
-
-USER postgres
-RUN cp -r /etc/postgresql/${PG_VERSION}/main/* ${PGCONF} \
-    && rm -fr /etc/postgresql/${PG_VERSION}/main \
-    && ln -s ${PGCONF} /etc/postgresql/${PG_VERSION}/main \
-    && cp /app/pg_hba.conf ${PGCONF}/ \
-    && cp /app/postgresql.conf ${PGCONF}/conf.d
-# Init db script
-RUN /etc/init.d/postgresql start && /app/scripts/init.sh && /etc/init.d/postgresql stop
 
 USER root
 WORKDIR /app
 
 # Expose the ports (DB)(Rosetta)
 EXPOSE 5432 5700
-ENTRYPOINT [ "./run_supervisord.sh" ]
+ENTRYPOINT [ "./entrypoint.sh" ]

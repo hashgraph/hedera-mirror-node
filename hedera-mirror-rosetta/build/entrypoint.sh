@@ -19,6 +19,20 @@ function cleanup() {
   echo "Cleanup complete"
 }
 
+function init_db() {
+  echo "Initializing database"
+  if [[ -f "${PGCONF}/PG_VERSION" ]]; then
+    echo "Database is already initialzed"
+    return
+  fi
+
+  mkdir -p "${PGCONF}/conf.d" && cp /app/pg_hba.conf "${PGCONF}" && cp /app/postgresql.conf "${PGCONF}/conf.d"
+  chown -R postgres.postgres "${PGCONF}"
+  /etc/init.d/postgresql start && /app/scripts/init.sh && /etc/init.d/postgresql stop
+
+  echo "Initialized database"
+}
+
 function restore() {
   if [[ -z "${RESTORE}" ]]; then
     echo "Skipping database restore"
@@ -61,11 +75,20 @@ function main() {
     export HEDERA_MIRROR_ROSETTA_NETWORK="${NETWORK}"
   fi
 
+  if [[ -n "${OWNER_PASSWORD}" ]]; then
+    export HEDERA_MIRROR_IMPORTER_DB_PASSWORD="${OWNER_PASSWORD}"
+  fi
+
+  if [[ -n "${ROSETTA_PASSWORD}" ]]; then
+    export HEDERA_MIRROR_ROSETTA_DB_PASSWORD="${ROSETTA_PASSWORD}"
+  fi
+
   case "${MODE}" in
     "offline")
       run_offline_mode
     ;;
     *)
+      init_db
       restore
       run_online_mode
     ;;
