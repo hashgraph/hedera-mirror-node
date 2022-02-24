@@ -25,12 +25,14 @@ import {accountListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const urlTag = '/accounts?account.balance=gt:0';
-const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}`;
 
 const {options, run} = new TestScenarioBuilder()
   .name('accountsBalanceGt0') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}`;
+    return http.get(url);
+  })
   .check('Accounts balance gt:0 OK', (r) => isValidListResponse(r, accountListName))
   .build();
 

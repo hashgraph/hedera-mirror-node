@@ -18,14 +18,14 @@
  * ‍
  */
 
-export const urlPrefix = '/api/v1';
-export const transactionListName = "transactions";
-export const messageListName = "messages";
-export const tokenListName = "tokens";
-export const nftListName = "nfts";
-export const balanceListName = "balances";
-export const scheduleListName = "schedules";
-export const logListName = "logs";
-export const resultListName = "results";
-export const contractListName = "contracts";
 export const accountListName = "accounts";
+export const balanceListName = "balances";
+export const contractListName = "contracts";
+export const logListName = "logs";
+export const messageListName = "messages";
+export const nftListName = "nfts";
+export const resultListName = "results";
+export const scheduleListName = "schedules";
+export const tokenListName = "tokens";
+export const transactionListName = "transactions";
+export const urlPrefix = '/api/v1';

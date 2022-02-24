@@ -24,13 +24,15 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {accountListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/accounts?account.id=ne:${__ENV.DEFAULT_ACCOUNT}&order=desc`;
 const urlTag = '/accounts?account.id=ne:{accountId}&order=desc';
 
 const {options, run} = new TestScenarioBuilder()
   .name('accountsIdNe') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/accounts?account.id=ne:${testParameters['DEFAULT_ACCOUNT_ID']}&order=desc`;
+    return http.get(url);
+  })
   .check('Accounts ne: accountId order desc OK', (r) => isValidListResponse(r, accountListName))
   .build();
 

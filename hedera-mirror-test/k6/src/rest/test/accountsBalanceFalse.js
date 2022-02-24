@@ -25,12 +25,11 @@ import {accountListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const urlTag = '/accounts?balance=false';
-const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}`;
 
 const {options, run} = new TestScenarioBuilder()
   .name('accountsBalanceFalse') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => http.get(`${testParameters['BASE_URL']}${urlPrefix}${urlTag}`))
   .check('Accounts balance false OK', (r) => isValidListResponse(r, accountListName))
   .build();
 

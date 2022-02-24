@@ -24,13 +24,15 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
 import {isSuccess} from "./common.js";
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/tokens/${__ENV.DEFAULT_NFT}/nfts/${__ENV.DEFAULT_NFT_SERIAL}`;
 const urlTag = '/tokens/{id}/nfts/{serial}';
 
 const {options, run} = new TestScenarioBuilder()
   .name('tokensNftsSerial') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/tokens/${testParameters['DEFAULT_NFT_ID']}/nfts/${testParameters['DEFAULT_NFT_SERIAL']}`;
+    return http.get(url);
+  })
   .check('Tokens nfts serial OK', isSuccess)
   .build();
 

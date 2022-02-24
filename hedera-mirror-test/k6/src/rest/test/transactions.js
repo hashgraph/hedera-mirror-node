@@ -25,12 +25,14 @@ import {transactionListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const urlTag = '/transactions';
-const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
 
 const {options, run} = new TestScenarioBuilder()
   .name('transactions') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}?limit=${testParameters['LIST_LENGTH_LIMIT']}`;
+    return http.get(url);
+  })
   .check('Transactions OK', (r) => isValidListResponse(r, transactionListName))
   .build();
 

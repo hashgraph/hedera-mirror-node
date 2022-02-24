@@ -184,8 +184,8 @@ function TestScenarioBuilder () {
     const that = this;
     return {
       options: getOptionsWithScenario(that._name, that._tags),
-      run: function () {
-        const response = that._request();
+      run: function (testParameters) {
+        const response = that._request(testParameters);
         check(response, that._checks);
       },
     };

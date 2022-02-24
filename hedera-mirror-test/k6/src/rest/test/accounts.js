@@ -23,18 +23,19 @@ import http from "k6/http";
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {accountListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
+import {bootstrap} from "../../config/bootstrapEnvParameters.js";
 
 const urlTag = '/accounts';
-
 let nextLink;
 
 const {options, run} = new TestScenarioBuilder()
   .name('accounts') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => {
-    let url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}?limit=${__ENV.DEFAULT_LIMIT}`;
+  .request((testParameters) => {
+    const baseUrl = testParameters['BASE_URL'];
+    let url = `${baseUrl}${urlPrefix}${urlTag}?limit=${testParameters['LIST_LENGTH_LIMIT']}`;
     if (nextLink) {
-      url = __ENV.BASE_URL + nextLink;
+      url = baseUrl + nextLink;
     }
 
     const response = http.get(url);

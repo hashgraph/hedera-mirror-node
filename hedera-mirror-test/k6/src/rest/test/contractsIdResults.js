@@ -24,13 +24,15 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {resultListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results`;
 const urlTag = '/contracts/{id}/results';
 
 const {options, run} = new TestScenarioBuilder()
   .name('contractsIdResults') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/contracts/${testParameters['DEFAULT_CONTRACT_ID']}/results`;
+    return http.get(url);
+  })
   .check('Contracts id results OK', (r) => isValidListResponse(r, resultListName))
   .build();
 

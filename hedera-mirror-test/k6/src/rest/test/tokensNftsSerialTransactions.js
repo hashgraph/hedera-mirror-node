@@ -24,13 +24,15 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {transactionListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/tokens/${__ENV.DEFAULT_NFT}/nfts/${__ENV.DEFAULT_NFT_SERIAL}/transactions`;
 const urlTag = '/tokens/{id}/nfts/{serial}/transactions';
 
 const {options, run} = new TestScenarioBuilder()
   .name('tokensNftsSerialTransactions') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/tokens/${testParameters['DEFAULT_NFT_ID']}/nfts/${testParameters['DEFAULT_NFT_SERIAL']}/transactions`;
+    return http.get(url);
+  })
   .check('Tokens nfts serial transactions OK', (r) => isValidListResponse(r, transactionListName))
   .build();
 

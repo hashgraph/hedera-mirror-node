@@ -24,13 +24,15 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
 import {isSuccess} from "./common.js";
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/transactions/${__ENV.DEFAULT_TRANSACTION}`;
 const urlTag = '/transactions/{id}';
 
 const {options, run} = new TestScenarioBuilder()
   .name('transactionsId') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/transactions/${testParameters['DEFAULT_TRANSACTION_ID']}`;
+    return http.get(url);
+  })
   .check('Transactions id OK', isSuccess)
   .build();
 

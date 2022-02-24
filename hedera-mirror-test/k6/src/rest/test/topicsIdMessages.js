@@ -24,13 +24,15 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {messageListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/topics/${__ENV.DEFAULT_TOPIC}/messages?limit=${__ENV.DEFAULT_LIMIT}`;
 const urlTag = '/topics/{id}/messages';
 
 const {options, run} = new TestScenarioBuilder()
   .name('topicsIdMessages') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/topics/${testParameters['DEFAULT_TOPIC_ID']}/messages?limit=${testParameters['LIST_LENGTH_LIMIT']}`;
+    return http.get(url);
+  })
   .check('Topics id messages OK', (r) => isValidListResponse(r, messageListName))
   .build();
 

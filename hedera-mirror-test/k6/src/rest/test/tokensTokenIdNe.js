@@ -25,12 +25,14 @@ import {tokenListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
 const urlTag = '/tokens?token.id=ne:100000';
-const url = `${__ENV.BASE_URL}${urlPrefix}${urlTag}`;
 
 const {options, run} = new TestScenarioBuilder()
   .name('tokensTokenIdNe') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}`;
+    return http.get(url);
+  })
   .check('Tokens token id ne 100000 OK', (r) => isValidListResponse(r, tokenListName))
   .build();
 

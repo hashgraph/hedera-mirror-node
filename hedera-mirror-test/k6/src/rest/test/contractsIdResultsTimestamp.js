@@ -24,13 +24,15 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
 import {isSuccess} from "./common.js";
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/contracts/${__ENV.DEFAULT_CONTRACT_ID}/results/${__ENV.DEFAULT_CONTRACT_TIMESTAMP}`;
 const urlTag = '/contracts/{id}/results/{timestamp}';
 
 const {options, run} = new TestScenarioBuilder()
   .name('contractsIdResultsTimestamp') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/contracts/${testParameters['DEFAULT_CONTRACT_ID']}/results/${testParameters['DEFAULT_CONTRACT_TIMESTAMP']}`;
+    return http.get(url);
+  })
   .check('Contracts id results timestamp OK', isSuccess)
   .build();
 

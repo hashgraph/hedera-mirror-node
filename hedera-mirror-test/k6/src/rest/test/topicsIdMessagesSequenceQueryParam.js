@@ -24,13 +24,15 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {messageListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/topics/${__ENV.DEFAULT_TOPIC}/messages?sequencenumber=${__ENV.DEFAULT_TOPIC_SEQUENCE}`;
 const urlTag = '/topics/{id}/messages?sequencenumber={sequenceNumber}';
 
 const {options, run} = new TestScenarioBuilder()
   .name('topicsIdMessagesSequenceQueryParam') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/topics/${testParameters['DEFAULT_TOPIC_ID']}/messages?sequencenumber=${testParameters['DEFAULT_TOPIC_SEQUENCE']}`;
+    return http.get(url);
+  })
   .check('Topics id messages sequenceNumber query param OK', (r) => isValidListResponse(r, messageListName))
   .build();
 

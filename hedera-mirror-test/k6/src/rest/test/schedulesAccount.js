@@ -24,13 +24,15 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {scheduleListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/schedules?account.id=gte:${__ENV.DEFAULT_SCHEDULE_ACCOUNT}`;
 const urlTag = '/schedules?account.id=gte:{accountId}';
 
 const {options, run} = new TestScenarioBuilder()
   .name('schedulesAccount') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/schedules?account.id=gte:${testParameters['DEFAULT_SCHEDULE_ACCOUNT_ID']}`;
+    return http.get(url);
+  })
   .check('Schedules account OK', (r) => isValidListResponse(r, scheduleListName))
   .build();
 

@@ -24,13 +24,15 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {balanceListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/tokens/${__ENV.DEFAULT_TOKEN}/balances`;
 const urlTag = '/tokens/{id}/balances';
 
 const {options, run} = new TestScenarioBuilder()
   .name('tokensIdBalances') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/tokens/${testParameters['DEFAULT_TOKEN_ID']}/balances`;
+    return http.get(url);
+  })
   .check('Tokens id balances OK', (r) => isValidListResponse(r, balanceListName))
   .build();
 

@@ -24,13 +24,15 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from './constants.js';
 import {isSuccess} from "./common.js";
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/tokens/${__ENV.DEFAULT_TOKEN}`;
 const urlTag = '/tokens/{id}';
 
 const {options, run} = new TestScenarioBuilder()
   .name('tokensId') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/tokens/${testParameters['DEFAULT_TOKEN_ID']}`;
+    return http.get(url);
+  })
   .check('Tokens id OK', isSuccess)
   .build();
 

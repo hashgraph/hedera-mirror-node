@@ -24,13 +24,15 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {accountListName, urlPrefix} from './constants.js';
 import {isValidListResponse} from "./common.js";
 
-const url = `${__ENV.BASE_URL}${urlPrefix}/accounts?account.balance=gt:0&account.publickey=${__ENV.DEFAULT_PUBLICKEY}`;
 const urlTag = '/accounts?account.balance=gt:0&account.publickey={publicKey}';
 
 const {options, run} = new TestScenarioBuilder()
   .name('accountsBalanceGt0Pubkey') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.get(url))
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/accounts?account.balance=gt:0&account.publickey=${testParameters['DEFAULT_PUBLIC_KEY']}`;
+    return http.get(url);
+  })
   .check('Accounts balance gt:0 with publickey OK', (r) => isValidListResponse(r, accountListName))
   .build();
 
