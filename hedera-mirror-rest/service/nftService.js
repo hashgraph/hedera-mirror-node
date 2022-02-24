@@ -23,16 +23,62 @@
 const _ = require('lodash');
 
 const {Nft} = require('../model');
+const BaseService = require('./baseService');
 
 /**
  * Nft business model
  */
-class NftService {
+class NftService extends BaseService {
   static nftByIdQuery = 'select * from nft where token_id = $1 and serial_number = $2';
+  static nftsByAccountIdQuery = 'select * from nft where account_id = $1';
+
+  static nftQuery = `select
+    ${Nft.ACCOUNT_ID},
+    ${Nft.CREATED_TIMESTAMP},
+    ${Nft.DELETED},
+    ${Nft.METADATA},
+    ${Nft.MODIFIED_TIMESTAMP},
+    ${Nft.SERIAL_NUMBER},
+    ${Nft.TOKEN_ID}
+    from ${Nft.tableName}`;
 
   async getNft(tokenId, serialNumber) {
     const {rows} = await pool.queryQuietly(NftService.nftByIdQuery, [tokenId, serialNumber]);
     return _.isEmpty(rows) ? null : new Nft(rows[0]);
+  }
+
+  getNftsFiltersQuery(whereConditions, whereParams, nftOrder, limit) {
+    const params = whereParams;
+    const orderClause = [super.getOrderByQuery(Nft.TOKEN_ID, nftOrder), `${Nft.SERIAL_NUMBER} ${nftOrder}`].join(', ');
+    const query = [
+      NftService.nftQuery,
+      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
+      orderClause,
+      super.getLimitQuery(params.length + 1),
+    ].join('\n');
+    params.push(limit);
+
+    return [query, params];
+  }
+
+  /**
+   * Retrieves nfts based on various filters
+   *
+   * @param whereConditions the conditions to build a where clause out of
+   * @param whereParams the parameters for the where clause
+   * @param nftOrder the sorting order for field token_id and serial
+   * @param limit the limit parameter for the query
+   * @returns {Promise<*[]|*>} the result of the getNftsByFilters query
+   */
+  async getNftsByFilters(
+    whereConditions = [],
+    whereParams = [],
+    nftOrder = orderFilterValues.ASC,
+    limit = defaultLimit
+  ) {
+    const [query, params] = this.getNftsFiltersQuery(whereConditions, whereParams, nftOrder, limit);
+    const rows = await super.getRows(query, params, 'getNftsByFilters');
+    return rows.map((nft) => new Nft(nft));
   }
 }
 

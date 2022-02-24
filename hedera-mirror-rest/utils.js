@@ -554,8 +554,9 @@ const convertMySqlStyleQueryToPostgres = (sqlQuery, startIndex = 1) => {
  * @param {Any} lastValue THe last val for the 'next' queries in the pagination.
  * @param {String} order Order of sorting the results
  * @return {String} next Fully formed link to the next page
+ * @return {[]} list of last objects
  */
-const getPaginationLink = (req, isEnd, field, lastValue, order) => {
+const getPaginationLink = (req, isEnd, lastObjects, lastValue, order) => {
   let urlPrefix;
   if (config.port !== undefined && config.response.includeHostInLink) {
     urlPrefix = `${req.protocol}://${req.hostname}:${config.port}`;
@@ -569,29 +570,31 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
     const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
     const insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
 
-    // Go through the query parameters, and if there is a 'field=gt:xxxx' (asc order)
-    // or 'field=lt:xxxx' (desc order) fields, then remove that, to be replaced by the
-    // new continuation value
-    for (const [q, v] of Object.entries(req.query)) {
-      if (Array.isArray(v)) {
-        for (const vv of v) {
-          if (q === field && pattern.test(vv)) {
-            req.query[q] = req.query[q].filter(function (value, index, arr) {
-              return value != vv;
-            });
+    for (const [field, lastValue] of Object.entries(lastObjects)) {
+      // Go through the query parameters, and if there is a 'field=gt:xxxx' (asc order)
+      // or 'field=lt:xxxx' (desc order) fields, then remove that, to be replaced by the
+      // new continuation value
+      for (const [q, v] of Object.entries(req.query)) {
+        if (Array.isArray(v)) {
+          for (const vv of v) {
+            if (q === field && pattern.test(vv)) {
+              req.query[q] = req.query[q].filter(function (value, index, arr) {
+                return value != vv;
+              });
+            }
           }
+        } else if (q === field && pattern.test(v)) {
+          delete req.query[q];
         }
-      } else if (q === field && pattern.test(v)) {
-        delete req.query[q];
       }
-    }
 
-    // And add back the continuation value as 'field=gt:x' (asc order) or
-    // 'field=lt:x' (desc order)
-    if (field in req.query) {
-      req.query[field] = [].concat(req.query[field]).concat(`${insertedPattern}:${lastValue}`);
-    } else {
-      req.query[field] = `${insertedPattern}:${lastValue}`;
+      // And add back the continuation value as 'field=gt:x' (asc order) or
+      // 'field=lt:x' (desc order)
+      if (field in req.query) {
+        req.query[field] = [].concat(req.query[field]).concat(`${insertedPattern}:${lastValue}`);
+      } else {
+        req.query[field] = `${insertedPattern}:${lastValue}`;
+      }
     }
 
     // Reconstruct the query string
@@ -608,6 +611,13 @@ const getPaginationLink = (req, isEnd, field, lastValue, order) => {
     next = urlPrefix + req.baseUrl + path + next;
   }
   return next === '' ? null : next;
+};
+
+const getLastObject = (field, value) => {
+  return {
+    lastField: field,
+    lastValue: value,
+  };
 };
 
 /**
@@ -1103,6 +1113,7 @@ module.exports = {
   encodeUtf8,
   encodeKey,
   filterValidityChecks,
+  getLastObject,
   getNullableNumber,
   getPaginationLink,
   getPoolClass,

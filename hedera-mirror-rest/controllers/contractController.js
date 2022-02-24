@@ -96,7 +96,7 @@ const fileDataQuery = `select
  * Extracts the sql where clause, params, order and limit values to be used from the provided contract query
  * param filters
  * @param filters
- * @return {{limit: number, params: number[], filterQuery: string, order: string}}
+ * @return {{filterQuery: string, params: number[], order: string, limit: number, limitQuery: string}}
  */
 const extractSqlFromContractFilters = (filters) => {
   const filterQuery = {
