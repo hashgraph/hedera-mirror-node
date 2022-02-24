@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -43,6 +44,12 @@ public interface TransactionHandler {
      * @return the transaction type associated with this handler
      */
     TransactionType getType();
+
+    /**
+     * Override to update fields of the ContractResult's (domain) fields.
+     */
+    default void updateContractResult(ContractResult contractResult, RecordItem recordItem) {
+    }
 
     /**
      * Override to update fields of the Transaction's (domain) fields.

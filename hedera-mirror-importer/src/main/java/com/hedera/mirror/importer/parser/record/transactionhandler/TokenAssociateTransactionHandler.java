@@ -21,13 +21,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import javax.inject.Named;
-import lombok.AllArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 
-@AllArgsConstructor
 @Named
 class TokenAssociateTransactionHandler implements TransactionHandler {
 

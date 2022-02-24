@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -27,6 +28,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Named;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
@@ -40,6 +42,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -47,12 +50,12 @@ import com.hedera.mirror.importer.util.Utility;
 @RequiredArgsConstructor
 public class ContractResultServiceImpl implements ContractResultService {
 
-    protected final EntityProperties entityProperties;
+    private final EntityProperties entityProperties;
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
 
     @Override
-    public void process(RecordItem recordItem, EntityId entityId) {
+    public void process(@NonNull RecordItem recordItem, EntityId entityId, TransactionHandler transactionHandler) {
         var transactionRecord = recordItem.getRecord();
 
         var functionResult = transactionRecord.hasContractCreateResult() ?
@@ -72,7 +75,7 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         // contractResult
         ContractResult contractResult = getContractResult(recordItem, entityId, functionResult);
-        updateContractFunctionWithTransactionInput(recordItem.getTransactionBody(), contractResult);
+        transactionHandler.updateContractResult(contractResult, recordItem);
         entityListener.onContractResult(contractResult);
 
         // contractLog
@@ -82,26 +85,9 @@ public class ContractResultServiceImpl implements ContractResultService {
         processContractStateChanges(functionResult, contractResult);
     }
 
-    private void updateContractFunctionWithTransactionInput(TransactionBody transactionBody,
-                                                            ContractResult contractResult) {
-        if (transactionBody.hasContractCall()) {
-            var contractCallTransactionBody = transactionBody.getContractCall();
-            contractResult.setAmount(contractCallTransactionBody.getAmount());
-            contractResult.setFunctionParameters(
-                    DomainUtils.toBytes(contractCallTransactionBody.getFunctionParameters()));
-            contractResult.setGasLimit(contractCallTransactionBody.getGas());
-        } else if (transactionBody.hasContractCreateInstance()) {
-            var contractCreateTransactionBody = transactionBody.getContractCreateInstance();
-            contractResult.setAmount(contractCreateTransactionBody.getInitialBalance());
-            contractResult.setFunctionParameters(
-                    DomainUtils.toBytes(contractCreateTransactionBody.getConstructorParameters()));
-            contractResult.setGasLimit(contractCreateTransactionBody.getGas());
-        }
-    }
-
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
         return contractFunctionResult != ContractFunctionResult.getDefaultInstance() &&
-                contractFunctionResult.hasContractID();
+                contractFunctionResult.getContractCallResult() != ByteString.EMPTY;
     }
 
     private boolean isPrecompileCall(TransactionBody transactionBody) {
@@ -118,7 +104,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
 
-        if (functionResult != ContractFunctionResult.getDefaultInstance() && functionResult.hasContractID()) {
+        if (isValidContractFunctionResult(functionResult)) {
             // amount, gasLimit and functionParameters are missing from record proto and will be populated once added
             contractResult.setBloom(DomainUtils.toBytes(functionResult.getBloom()));
             contractResult.setCallResult(DomainUtils.toBytes(functionResult.getContractCallResult()));
@@ -167,11 +153,9 @@ public class ContractResultServiceImpl implements ContractResultService {
             return;
         }
 
-        for (int stateIndex = 0; stateIndex < functionResult.getStateChangesCount(); ++stateIndex) {
-            var contractStateChangeInfo = functionResult.getStateChanges(stateIndex);
-
-            var contractId = entityIdService.lookup(contractStateChangeInfo.getContractID());
-            for (var storageChange : contractStateChangeInfo.getStorageChangesList()) {
+        for (var stateChange : functionResult.getStateChangesList()) {
+            var contractId = entityIdService.lookup(stateChange.getContractID());
+            for (var storageChange : stateChange.getStorageChangesList()) {
                 ContractStateChange contractStateChange = new ContractStateChange();
                 contractStateChange.setConsensusTimestamp(contractResult.getConsensusTimestamp());
                 contractStateChange.setContractId(contractId);

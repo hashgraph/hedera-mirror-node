@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -34,8 +35,8 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
-    protected final EntityProperties entityProperties;
-    protected final EntityIdService entityIdService;
+    private final EntityProperties entityProperties;
+    private final EntityIdService entityIdService;
 
     ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                      EntityProperties entityProperties) {
@@ -69,18 +70,23 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         if (entityProperties.getPersist().isContracts() && recordItem.isSuccessful()) {
             var contractCreateResult = recordItem.getRecord().getContractCreateResult();
             var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+
             if (transactionBody.hasAutoRenewPeriod()) {
                 contract.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
             }
+
             if (transactionBody.hasAdminKey()) {
                 contract.setKey(transactionBody.getAdminKey().toByteArray());
             }
+
             if (transactionBody.hasProxyAccountID()) {
                 contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
             }
+
             if (transactionBody.hasFileID()) {
                 contract.setFileId(EntityId.of(transactionBody.getFileID()));
             }
+
             if (contractCreateResult.hasEvmAddress()) {
                 contract.setEvmAddress(DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()));
             }
@@ -88,5 +94,14 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             contract.setMemo(transactionBody.getMemo());
             entityListener.onContract(contract);
         }
+    }
+
+    @Override
+    public void updateContractResult(ContractResult contractResult, RecordItem recordItem) {
+        var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+        contractResult.setAmount(transactionBody.getInitialBalance());
+        contractResult.setFunctionParameters(
+                DomainUtils.toBytes(transactionBody.getConstructorParameters()));
+        contractResult.setGasLimit(transactionBody.getGas());
     }
 }

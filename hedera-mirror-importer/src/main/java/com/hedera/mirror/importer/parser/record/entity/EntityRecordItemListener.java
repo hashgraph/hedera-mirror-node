@@ -244,7 +244,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertAutomaticTokenAssociations(recordItem);
         }
 
-        insertContractResult(recordItem, transactionHandler.getEntity(recordItem));
+        insertContractResult(recordItem, transactionHandler.getEntity(recordItem), transactionHandler);
 
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
@@ -1079,9 +1079,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private void insertContractResult(RecordItem recordItem, EntityId contractEntityId) {
+    private void insertContractResult(RecordItem recordItem, EntityId contractEntityId,
+                                      TransactionHandler transactionHandler) {
         if (entityProperties.getPersist().isContracts()) {
-            contractResultService.process(recordItem, contractEntityId);
+            contractResultService.process(recordItem, contractEntityId, transactionHandler);
         }
     }
 }
