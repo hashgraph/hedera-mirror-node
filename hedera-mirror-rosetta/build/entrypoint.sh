@@ -30,7 +30,7 @@ function init_db() {
     return
   fi
 
-  echo "Creating cluster '${PG_CLUSTER_NAME}' with config dir '${PGCONF}' and data dir '${PGDATA}'"
+  echo "Creating cluster '${PG_CLUSTER_NAME}' with data dir '${PGDATA}'"
   mkdir -p "${PGDATA}" && chown -R postgres:postgres "${PGDATA}"
   su postgres -c "pg_createcluster -d ${PGDATA} --start-conf auto ${PG_VERSION} ${PG_CLUSTER_NAME}"
   # mv conf to $PGDATA and link it

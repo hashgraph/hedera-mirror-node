@@ -24,7 +24,7 @@ RUN mkdir importer rosetta scripts \
 
 FROM ubuntu:20.04 as runner
 
-# ---------------------- Install Deps & PosgreSQL ------------------------ #
+# ---------------------- Install Deps & PostgreSQL ------------------------ #
 # Add the PostgreSQL PGP key to verify their Debian packages.
 # It should be the same key as https://www.postgresql.org/media/keys/ACCC4CF8.asc
 ARG DEBIAN_FRONTEND=noninteractive
@@ -46,9 +46,9 @@ ENV PATH="/usr/lib/postgresql/${PG_VERSION}/bin:${PATH}"
 ENV PGDATA="/data"
 ENV PGCONF=${PGDATA}
 RUN rm -fr /etc/postgresql/${PG_VERSION}/main
-VOLUMN /data
+VOLUME /data
 
-# Set stats_temp_directory to the default with is "pg_stat_tmp" relative to the postgresql.conf file
+# Set stats_temp_directory to the default, i.e., "pg_stat_tmp" relative to the postgresql.conf file
 RUN sed -i 's/^stats_temp_directory/#stats_temp_directory/g' /etc/postgresql-common/createcluster.conf
 
 USER root
