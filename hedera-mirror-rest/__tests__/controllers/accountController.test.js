@@ -20,8 +20,6 @@
 
 'use strict';
 
-const {Range} = require('pg-range');
-
 const {
   response: {
     limit: {default: defaultLimit},
@@ -29,13 +27,12 @@ const {
 } = require('../../config');
 const constants = require('../../constants');
 const accountCtrl = require('../../controllers/accountController');
-const {assertSqlQueryEqual} = require('../testutils');
 const utils = require('../../utils');
-const {Nft} = require('../../model');
 
 describe('extractNftsQuery', () => {
+  const accountIdFilter = 'account_id = $1';
   const defaultExpected = {
-    conditions: ['account_id = $1'],
+    conditions: [accountIdFilter],
     params: [],
     order: constants.orderFilterValues.ASC,
     limit: defaultLimit,
@@ -77,7 +74,7 @@ describe('extractNftsQuery', () => {
       expected: {
         ...defaultExpected,
         order: constants.orderFilterValues.ASC,
-        conditions: ['account_id = $1'],
+        conditions: [accountIdFilter],
         params: [2],
       },
     },
@@ -106,7 +103,7 @@ describe('extractNftsQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['account_id = $1', 'token_id > $2', 'token_id in ($3,$4)'],
+        conditions: [accountIdFilter, 'token_id > $2', 'token_id in ($3,$4)'],
         params: [3, '1000', '1001', '1002'],
       },
     },
@@ -135,7 +132,7 @@ describe('extractNftsQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['account_id = $1', 'serial_number > $2', 'serial_number in ($3,$4)'],
+        conditions: [accountIdFilter, 'serial_number > $2', 'serial_number in ($3,$4)'],
         params: [4, '3', '1', '2'],
       },
     },

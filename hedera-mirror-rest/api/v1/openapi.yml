@@ -2360,6 +2360,7 @@ components:
     serialNumberWithOperatorQueryParam:
       name: serialnumber
       in: query
+      explode: true
       description: The nft serial number (64 bit type)
       examples:
         noValue:
@@ -2387,10 +2388,8 @@ components:
           summary: Example of serialNum less than or equals operator
           value: lte:700
       schema:
-        type: array
-        items:
-          type: string
-          pattern: ^((eq|gt|gte|lt|lte|ne):)?\d{1,19})?$
+        type: string
+        pattern: ^((eq|gt|gte|lt|lte|ne):)?\d{1,19}?$
     timestampQueryParam:
       description: The consensus timestamp in seconds.nanoseconds format with an optional comparison operator
       name: timestamp
