@@ -23,7 +23,7 @@ import {textSummary} from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
 
 import {markdownReport} from '../lib/common.js';
 import {funcs, options, scenarioDurationGauge} from './test/index.js';
-import {setupTestParameters} from "../config/bootstrapEnvParameters.js";
+import {setupTestParameters} from "./test/bootstrapEnvParameters.js";
 
 function handleSummary(data) {
   return {

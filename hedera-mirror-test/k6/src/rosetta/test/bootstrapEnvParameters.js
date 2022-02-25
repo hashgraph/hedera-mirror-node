@@ -18,25 +18,8 @@
  * ‍
  */
 
-import http from "k6/http";
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix} from '../../lib/constants.js';
-import {isSuccess} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const urlTag = '/network/supply';
+const setupTestParameters = () => {};
 
-const {options, run} = new TestScenarioBuilder()
-  .name('networkSupply') // use unique scenario name among all tests
-  .tags({url: urlTag})
-  .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}`;
-    return http.get(url);
-  })
-  .check('Network supply OK', isSuccess)
-  .build();
-
-export {options, run};
-
-export const setup = setupTestParameters;
+export {setupTestParameters};

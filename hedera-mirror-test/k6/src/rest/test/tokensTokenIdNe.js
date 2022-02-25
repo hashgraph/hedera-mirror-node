@@ -21,9 +21,9 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {tokenListName, urlPrefix} from './constants.js';
+import {tokenListName, urlPrefix} from '../../lib/constants.js';
 import {isValidListResponse} from "./common.js";
-import {setupTestParameters} from "../../config/bootstrapEnvParameters";
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
 const urlTag = '/tokens?token.id=ne:100000';
 
