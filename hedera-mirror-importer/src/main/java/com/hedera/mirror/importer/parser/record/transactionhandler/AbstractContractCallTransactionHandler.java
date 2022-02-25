@@ -27,6 +27,8 @@ import com.hederahashgraph.api.proto.java.StorageChange;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
@@ -35,12 +37,14 @@ import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.util.Utility;
 
+@Log4j2
 @RequiredArgsConstructor
 abstract class AbstractContractCallTransactionHandler implements TransactionHandler {
 
@@ -53,18 +57,21 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
                                           ContractFunctionResult functionResult) {
         // set function result related properties where applicable
         if (functionResult != ContractFunctionResult.getDefaultInstance()) {
+            var rootContractId = contractResult.getContractId();
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             List<Long> createdContractIds = new ArrayList<>();
             boolean persist = shouldPersistCreatedContractIDs(recordItem);
 
             for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
                 EntityId contractId = entityIdService.lookup(createdContractId);
-                createdContractIds.add(contractId.getId());
 
-                // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
-                if (persist && !EntityId.isEmpty(contractId) && !contractId.equals(
-                        contractResult.getContractId())) {
-                    doUpdateEntity(getContract(contractId, consensusTimestamp), recordItem);
+                if (!EntityId.isEmpty(contractId)) {
+                    createdContractIds.add(contractId.getId());
+
+                    // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
+                    if (persist && !contractId.equals(contractResult.getContractId())) {
+                        doUpdateEntity(getContract(contractId, consensusTimestamp), recordItem);
+                    }
                 }
             }
 
@@ -82,10 +89,10 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
                 ContractLog contractLog = new ContractLog();
                 contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
                 contractLog.setConsensusTimestamp(consensusTimestamp);
-                contractLog.setContractId(entityIdService.lookup(contractLoginfo.getContractID()));
+                contractLog.setContractId(lookup(rootContractId, contractLoginfo.getContractID()));
                 contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
                 contractLog.setIndex(index);
-                contractLog.setRootContractId(contractResult.getContractId());
+                contractLog.setRootContractId(rootContractId);
                 contractLog.setPayerAccountId(contractResult.getPayerAccountId());
                 contractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
                 contractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
@@ -99,7 +106,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
             for (int stateIndex = 0; stateIndex < functionResult.getStateChangesCount(); ++stateIndex) {
                 var contractStateChangeInfo = functionResult.getStateChanges(stateIndex);
 
-                var contractId = entityIdService.lookup(contractStateChangeInfo.getContractID());
+                var contractId = lookup(rootContractId, contractStateChangeInfo.getContractID());
                 for (int storageIndex = 0; storageIndex < contractStateChangeInfo
                         .getStorageChangesCount(); ++storageIndex) {
                     StorageChange storageChange = contractStateChangeInfo.getStorageChanges(storageIndex);
@@ -125,6 +132,53 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
 
         // Always persist a contract result whether partial or complete
         entityListener.onContractResult(contractResult);
+    }
+
+    /**
+     * This method works around a services issue that occurs when events emitted by a CREATE2 contract produce an
+     * invalid ContractID. The EVM generated logs contain the 20 byte CREATE2 EVM address and services does not properly
+     * convert this back to the 'shard.realm.num' format that should always be present in the record. A similar issue
+     * occurs for state changes.
+     * <p>
+     * We work around this issue by converting the invalid 'shard.realm.num' format back to an EVM address and look it
+     * up in the database. If the invalid contract ID is produced by a CREATE2 constructor invocation, it won't be
+     * present in the database yet and our only recourse is to fall back to using the root contract ID.
+     * <p>
+     * This issue never made it to mainnet, so this code should be deleted after testnet is reset.
+     *
+     * @param rootContractId The contract create or call that initiated the transaction.
+     * @param contractId     The contract ID that appears somewhere in the ContractFunctionResult.
+     * @return The converted entity ID.
+     */
+    private EntityId lookup(EntityId rootContractId, ContractID contractId) {
+        try {
+            // We won't always get a negative or very large number to cause an InvalidEntityException
+            if (contractId.getShardNum() != 0 || contractId.getRealmNum() != 0 || contractId.getContractNum() <= 0) {
+                return fallbackLookup(rootContractId, contractId);
+            }
+            return entityIdService.lookup(contractId);
+        } catch (RuntimeException e) {
+            if (e.getCause() instanceof InvalidEntityException) {
+                return fallbackLookup(rootContractId, contractId);
+            }
+            throw e;
+        }
+    }
+
+    private EntityId fallbackLookup(EntityId rootContractId, ContractID contractId) {
+        byte[] evmAddress = DomainUtils.toEvmAddress(contractId);
+        log.warn("Invalid ContractID {}.{}.{}. Attempting conversion to EVM address: {}",
+                contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum(),
+                Hex.encodeHexString(evmAddress));
+
+        var evmAddressId = ContractID.newBuilder()
+                .setShardNum(rootContractId.getShardNum())
+                .setRealmNum(rootContractId.getRealmNum())
+                .setEvmAddress(DomainUtils.fromBytes(evmAddress))
+                .build();
+
+        var entityId = entityIdService.lookup(evmAddressId);
+        return !EntityId.isEmpty(entityId) ? entityId : rootContractId;
     }
 
     protected abstract void doUpdateEntity(Contract contract, RecordItem recordItem);

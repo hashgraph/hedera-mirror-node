@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,12 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
+import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -29,9 +34,13 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
+import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -69,5 +78,43 @@ class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest 
         when(entityIdService.lookup(contractIdReceipt, contractIdBody)).thenReturn(expectedEntityId);
         EntityId entityId = transactionHandler.getEntity(recordItem);
         assertThat(entityId).isEqualTo(expectedEntityId);
+    }
+
+    @CsvSource({
+            "-1,-1,-1,1000,1000",
+            "1,1,1,1000,1000",
+            "0,0,9223372036854775807,1000,1000",
+            "0,0,-1,0,2",
+    })
+    @ParameterizedTest
+    void create2ContractIdWorkaround(long shard, long realm, long num, long resolvedNum, long expectedNum) {
+        var invalidContractId = ContractID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
+                .setContractNum(num)
+                .build();
+        var evmAddress = ContractID.newBuilder().setEvmAddress(fromBytes(toEvmAddress(invalidContractId))).build();
+        var expectedId = EntityId.of(expectedNum, CONTRACT);
+        var resolvedId = EntityId.of(resolvedNum, CONTRACT);
+
+        var transaction = domainBuilder.transaction().get();
+        var recordItem = recordItemBuilder.contractCall()
+                .record(r -> {
+                    r.getContractCallResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
+                    r.getContractCallResultBuilder().getStateChangesBuilder(0).setContractID(invalidContractId);
+                    r.getContractCallResultBuilder().removeLogInfo(1);
+                })
+                .build();
+
+        if (shard == 0 && realm == 0 && num > 0) {
+            when(entityIdService.lookup(invalidContractId)).thenThrow(new RuntimeException(new InvalidEntityException("")));
+        }
+        when(entityIdService.lookup(evmAddress)).thenReturn(resolvedId);
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        verify(entityListener).onContractLog(assertArg(l -> assertThat(l.getContractId()).isEqualTo(expectedId)));
+        verify(entityListener, times(2)).onContractStateChange(assertArg(s ->
+                assertThat(s.getContractId()).isEqualTo(expectedId.getId())));
+        verify(entityListener).onContractResult(isA(ContractResult.class));
     }
 }

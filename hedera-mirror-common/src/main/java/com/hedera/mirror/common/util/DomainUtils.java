@@ -25,6 +25,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -243,16 +244,28 @@ public class DomainUtils {
         return null;
     }
 
+    public static byte[] toEvmAddress(ContractID contractId) {
+        if (contractId == null || contractId == ContractID.getDefaultInstance()) {
+            throw new InvalidEntityException("Invalid ContractID");
+        }
+
+        return toEvmAddress((int) contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum());
+    }
+
     public static byte[] toEvmAddress(EntityId contractId) {
         if (EntityId.isEmpty(contractId)) {
             throw new InvalidEntityException("Empty contractId");
         }
 
+        return toEvmAddress(contractId.getShardNum().intValue(), contractId.getRealmNum(), contractId.getEntityNum());
+    }
+
+    private static byte[] toEvmAddress(int shard, long realm, long num) {
         byte[] evmAddress = new byte[EVM_ADDRESS_LENGTH];
         ByteBuffer buffer = ByteBuffer.wrap(evmAddress);
-        buffer.putInt(contractId.getShardNum().intValue());
-        buffer.putLong(contractId.getRealmNum());
-        buffer.putLong(contractId.getEntityNum());
+        buffer.putInt(shard);
+        buffer.putLong(realm);
+        buffer.putLong(num);
         return evmAddress;
     }
 
