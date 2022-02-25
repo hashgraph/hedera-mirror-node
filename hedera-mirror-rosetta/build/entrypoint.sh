@@ -21,16 +21,19 @@ function cleanup() {
 
 function init_db() {
   echo "Initializing database"
+
+  PG_CLUSTER_CONF=/etc/postgresql/${PG_VERSION}/${PG_CLUSTER_NAME}
   if [[ -f "${PGDATA}/PG_VERSION" ]]; then
+    # relink the config dir just in case it's a newly created container with existing mapped /data dir
+    ln -sf ${PGCONF} ${PG_CLUSTER_CONF}
     echo "Database is already initialzed"
     return
   fi
 
-  echo "Creating cluster '${PG_CLUSTER_NAME}' with data directory '${PGDATA}'"
+  echo "Creating cluster '${PG_CLUSTER_NAME}' with config dir '${PGCONF}' and data dir '${PGDATA}'"
   mkdir -p "${PGCONF}" "${PGDATA}" && chown -R postgres:postgres "${PGCONF}" "${PGDATA}"
   su postgres -c "pg_createcluster -d ${PGDATA} --start-conf auto ${PG_VERSION} ${PG_CLUSTER_NAME}"
   # mv conf to $PGCONF and link it
-  PG_CLUSTER_CONF=/etc/postgresql/${PG_VERSION}/${PG_CLUSTER_NAME}
   cp -pr ${PG_CLUSTER_CONF}/* ${PGCONF} && \
     rm -fr ${PG_CLUSTER_CONF} && \
     ln -s ${PGCONF} ${PG_CLUSTER_CONF}
