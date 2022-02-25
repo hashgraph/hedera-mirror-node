@@ -26,7 +26,6 @@ import (
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 )
@@ -85,7 +84,7 @@ func (a *AccountAPIService) AccountCoins(
 	_ context.Context,
 	_ *rTypes.AccountCoinsRequest,
 ) (*rTypes.AccountCoinsResponse, *rTypes.Error) {
-	return nil, errors.ErrNotImplemented
+	return &rTypes.AccountCoinsResponse{}, nil
 }
 
 func (a *AccountAPIService) toRosettaBalances(balances []types.Amount) []*rTypes.Amount {
