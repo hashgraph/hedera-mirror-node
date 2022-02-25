@@ -25,19 +25,19 @@ function init_db() {
   PG_CLUSTER_CONF=/etc/postgresql/${PG_VERSION}/${PG_CLUSTER_NAME}
   if [[ -f "${PGDATA}/PG_VERSION" ]]; then
     # relink the config dir just in case it's a newly created container with existing mapped /data dir
-    ln -sf ${PGCONF} ${PG_CLUSTER_CONF}
+    ln -sTf ${PGDATA} ${PG_CLUSTER_CONF}
     echo "Database is already initialzed"
     return
   fi
 
   echo "Creating cluster '${PG_CLUSTER_NAME}' with config dir '${PGCONF}' and data dir '${PGDATA}'"
-  mkdir -p "${PGCONF}" "${PGDATA}" && chown -R postgres:postgres "${PGCONF}" "${PGDATA}"
+  mkdir -p "${PGDATA}" && chown -R postgres:postgres "${PGDATA}"
   su postgres -c "pg_createcluster -d ${PGDATA} --start-conf auto ${PG_VERSION} ${PG_CLUSTER_NAME}"
-  # mv conf to $PGCONF and link it
-  cp -pr ${PG_CLUSTER_CONF}/* ${PGCONF} && \
+  # mv conf to $PGDATA and link it
+  cp -pr ${PG_CLUSTER_CONF}/* ${PGDATA} && \
     rm -fr ${PG_CLUSTER_CONF} && \
-    ln -s ${PGCONF} ${PG_CLUSTER_CONF}
-  su postgres -c 'cp /app/pg_hba.conf ${PGCONF} && cp /app/postgresql.conf ${PGCONF}/conf.d'
+    ln -s ${PGDATA} ${PG_CLUSTER_CONF}
+  su postgres -c 'cp /app/pg_hba.conf ${PGDATA} && cp /app/postgresql.conf ${PGDATA}/conf.d'
 
   /etc/init.d/postgresql start && \
     su postgres -c 'PATH=/usr/lib/postgresql/${PG_VERSION}/bin:${PATH} /app/scripts/init.sh' && \

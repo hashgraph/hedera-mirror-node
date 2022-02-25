@@ -43,9 +43,13 @@ COPY --from=builder /app /app
 RUN useradd -s /bin/bash importer && useradd -s /bin/bash rosetta
 
 ENV PATH="/usr/lib/postgresql/${PG_VERSION}/bin:${PATH}"
-ENV PGCONF="/data/conf"
-ENV PGDATA="/data/data"
+ENV PGDATA="/data"
+ENV PGCONF=${PGDATA}
 RUN rm -fr /etc/postgresql/${PG_VERSION}/main
+VOLUMN /data
+
+# Set stats_temp_directory to the default with is "pg_stat_tmp" relative to the postgresql.conf file
+RUN sed -i 's/^stats_temp_directory/#stats_temp_directory/g' /etc/postgresql-common/createcluster.conf
 
 USER root
 WORKDIR /app
