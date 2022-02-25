@@ -1,5 +1,5 @@
 {
-  "description": "Account NFT api call for a specific token",
+  "description": "Account NFT api call for a serial number range with a missing token",
   "setup": {
     "entities": [
       {
@@ -66,25 +66,20 @@
     ]
   },
   "urls": [
-    "/api/v1/accounts/0.0.1001/nfts?token.id=2500",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=ne:1500",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=gte:2500"
+    "/api/v1/accounts/0.0.1001/nfts?serialnumber=3",
+    "/api/v1/accounts/0.0.1001/nfts?serialnumber=gte:2",
+    "/api/v1/accounts/0.0.1001/nfts?serialnumber=gte:2&serialnumber=lte:5",
+    "/api/v1/accounts/0.0.1001/nfts?token.id=gt:1&serialnumber=3",
+    "/api/v1/accounts/0.0.1001/nfts?token.id=ne:1&serialnumber=3"
   ],
-  "responseStatus": 200,
+  "responseStatus": 400,
   "responseJson": {
-    "nfts": [
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890.000000007",
-        "deleted": false,
-        "metadata": "czE=",
-        "modified_timestamp": "1234567890.000000007",
-        "serial_number": 1,
-        "token_id": "0.0.2500"
-      }
-    ],
-    "links": {
-      "next": null
+    "_status": {
+      "messages": [
+        {
+          "message": "Cannot search NFTs with serialnumber without also specifying a single tokenId value"
+        }
+      ]
     }
   }
 }

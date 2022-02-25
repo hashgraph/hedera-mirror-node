@@ -66,6 +66,7 @@
     ]
   },
   "urls": [
+    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=3",
     "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=gt:1",
     "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=gte:2",
     "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=gte:2&serialnumber=lte:5"

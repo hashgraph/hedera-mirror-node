@@ -36,7 +36,7 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 // models
-const {CustomFee, Entity, Nft, NftTransfer, Token, Transaction, TransactionType} = require('./model');
+const {CustomFee, Entity, Nft, NftTransfer, Token, Transaction} = require('./model');
 
 // middleware
 const {httpStatusCodes} = require('./constants');

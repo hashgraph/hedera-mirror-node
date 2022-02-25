@@ -2361,7 +2361,7 @@ components:
       name: serialnumber
       in: query
       explode: true
-      description: The nft serial number (64 bit type)
+      description: The nft serial number (64 bit type). Requires a tokenId value also be populated.
       examples:
         noValue:
           summary: --

@@ -92,6 +92,8 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
   const serialNumberFullName = Nft.SERIAL_NUMBER;
   const serialNumberInValues = [];
 
+  let hasSerialNumber = false;
+  let tokenIdFilter = null;
   for (const filter of filters) {
     if (_.isNil(paramSupportMap[filter.key])) {
       // param not supported for current endpoint
@@ -102,10 +104,12 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
       case constants.filterKeys.SERIAL_NUMBER:
         // handle repeated values
         updateConditionsAndParamsWithInValues(filter, serialNumberInValues, params, conditions, serialNumberFullName);
+        hasSerialNumber = true;
         break;
       case constants.filterKeys.TOKEN_ID:
         // handle repeated values
         updateConditionsAndParamsWithInValues(filter, tokenInValues, params, conditions, nftTokenIdFullName);
+        tokenIdFilter = filter;
         break;
       case constants.filterKeys.LIMIT:
         limit = filter.value;
@@ -116,6 +120,12 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
       default:
         break;
     }
+  }
+
+  if (hasSerialNumber && (_.isNil(tokenIdFilter) || tokenIdFilter.operator !== utils.opsMap.eq)) {
+    throw new InvalidArgumentError(
+      `Cannot search NFTs with serialnumber without also specifying a single tokenId value`
+    );
   }
 
   // update query with repeated values

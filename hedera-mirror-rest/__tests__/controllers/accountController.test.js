@@ -108,9 +108,19 @@ describe('extractNftsQuery', () => {
       },
     },
     {
-      name: 'serialnumber',
+      name: 'token and serialnumber',
       input: {
         filters: [
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.eq,
+            value: '1001',
+          },
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.eq,
+            value: '1002',
+          },
           {
             key: constants.filterKeys.SERIAL_NUMBER,
             operator: utils.opsMap.eq,
@@ -132,8 +142,8 @@ describe('extractNftsQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [accountIdFilter, 'serial_number > $2', 'serial_number in ($3,$4)'],
-        params: [4, '3', '1', '2'],
+        conditions: [accountIdFilter, 'serial_number > $2', 'token_id in ($3,$4)', 'serial_number in ($5,$6)'],
+        params: [4, '3', '1001', '1002', '1', '2'],
       },
     },
   ];
@@ -147,6 +157,56 @@ describe('extractNftsQuery', () => {
           accountCtrl.nftsByAccountIdParamSupportMap
         )
       ).toEqual(spec.expected);
+    });
+  });
+});
+
+describe('extractNftsQuery throws', () => {
+  const specs = [
+    {
+      name: 'bad token id with serialnumber',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.SERIAL_NUMBER,
+            operator: utils.opsMap.eq,
+            value: '1',
+          },
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.gt,
+            value: '3',
+          },
+        ],
+        accountId: 4,
+        paramSupportMap: accountCtrl.nftsByAccountIdParamSupportMap,
+      },
+    },
+    {
+      name: 'serialnumber with missing tokenId',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.SERIAL_NUMBER,
+            operator: utils.opsMap.eq,
+            value: '1',
+          },
+        ],
+        accountId: 4,
+        paramSupportMap: accountCtrl.nftsByAccountIdParamSupportMap,
+      },
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(() =>
+        accountCtrl.extractNftsQuery(
+          spec.input.filters,
+          spec.input.accountId,
+          accountCtrl.nftsByAccountIdParamSupportMap
+        )
+      ).toThrowErrorMatchingSnapshot();
     });
   });
 });
