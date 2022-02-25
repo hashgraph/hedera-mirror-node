@@ -249,6 +249,10 @@ public class DomainUtils {
             throw new InvalidEntityException("Invalid ContractID");
         }
 
+        if (contractId.getContractCase() == ContractID.ContractCase.EVM_ADDRESS) {
+            return toBytes(contractId.getEvmAddress());
+        }
+
         return toEvmAddress((int) contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum());
     }
 

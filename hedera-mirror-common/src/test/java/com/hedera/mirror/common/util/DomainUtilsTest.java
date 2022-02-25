@@ -295,10 +295,13 @@ class DomainUtilsTest {
     }
 
     @Test
-    void toEvmAddressContractID() {
-        ContractID contractId = ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(255).build();
+    void toEvmAddressContractID() throws Exception {
         String expected = "00000001000000000000000200000000000000FF";
+        ContractID contractId = ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(255).build();
+        ContractID contractIdEvm = ContractID.newBuilder()
+                .setEvmAddress(DomainUtils.fromBytes(Hex.decodeHex(expected))).build();
         assertThat(DomainUtils.toEvmAddress(contractId)).asHexString().isEqualTo(expected);
+        assertThat(DomainUtils.toEvmAddress(contractIdEvm)).asHexString().isEqualTo(expected);
         assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress((ContractID) null));
         assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress(ContractID.getDefaultInstance()));
     }

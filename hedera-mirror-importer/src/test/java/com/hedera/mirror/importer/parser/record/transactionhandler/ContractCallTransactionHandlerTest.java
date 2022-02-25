@@ -106,7 +106,7 @@ class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 })
                 .build();
 
-        if (shard == 0 && realm == 0 && num > 0) {
+        if (shard == 0 && realm == 0) {
             when(entityIdService.lookup(invalidContractId)).thenThrow(new RuntimeException(new InvalidEntityException("")));
         }
         when(entityIdService.lookup(evmAddress)).thenReturn(resolvedId);

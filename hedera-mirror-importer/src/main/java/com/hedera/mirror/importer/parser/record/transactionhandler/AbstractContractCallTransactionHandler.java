@@ -153,7 +153,7 @@ abstract class AbstractContractCallTransactionHandler implements TransactionHand
     private EntityId lookup(EntityId rootContractId, ContractID contractId) {
         try {
             // We won't always get a negative or very large number to cause an InvalidEntityException
-            if (contractId.getShardNum() != 0 || contractId.getRealmNum() != 0 || contractId.getContractNum() <= 0) {
+            if (contractId.getShardNum() != 0 || contractId.getRealmNum() != 0) {
                 return fallbackLookup(rootContractId, contractId);
             }
             return entityIdService.lookup(contractId);
