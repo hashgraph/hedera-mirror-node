@@ -124,11 +124,25 @@ const bootstrap = (baseApiUrl) => {
   return buildConfigObject(testParameters);
 };
 
+
+const validateEnvProperty = (propertyName) => {
+  if (!__ENV.hasOwnProperty(propertyName)) {
+    throw new Error(`You must set a value for the environment property: ${propertyName}`);
+  }
+}
+
 const setupTestParameters = () => {
-  const testParameters = {};
-  Object.assign(testParameters, __ENV);
-  Object.assign(testParameters, bootstrap(testParameters['BASE_URL']));
-  return testParameters;
+  //verify if all the data that must be in __ENV is actually there;
+  validateEnvProperty('DEFAULT_TOPIC_ID');
+  validateEnvProperty('DEFAULT_TOPIC_SEQUENCE');
+  validateEnvProperty('DEFAULT_TOPIC_TIMESTAMP');
+
+  const testParametersMap = bootstrap(__ENV['BASE_URL']);
+  return Object.assign(testParametersMap, {
+    DEFAULT_TOPIC_ID: __ENV.DEFAULT_TOPIC_ID,
+    DEFAULT_TOPIC_SEQUENCE: __ENV.DEFAULT_TOPIC_SEQUENCE,
+    DEFAULT_TOPIC_TIMESTAMP: __ENV.DEFAULT_TOPIC_TIMESTAMP
+  });
 };
 
 export {setupTestParameters};
