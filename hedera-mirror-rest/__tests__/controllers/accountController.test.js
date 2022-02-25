@@ -37,7 +37,7 @@ describe('extractNftsQuery', () => {
   const defaultExpected = {
     conditions: ['account_id = $1'],
     params: [],
-    order: constants.orderFilterValues.DESC,
+    order: constants.orderFilterValues.ASC,
     limit: defaultLimit,
   };
 

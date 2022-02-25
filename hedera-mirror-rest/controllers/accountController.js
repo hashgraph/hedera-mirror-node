@@ -45,6 +45,9 @@ const nftsByAccountIdParamSupportMap = {
   ...defaultParamSupportMap,
 };
 
+// errors
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+
 const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams, existingConditions, fullName) => {
   if (filter.operator === utils.opsMap.eq) {
     // aggregate '=' conditions and use the sql 'in' operator
@@ -71,13 +74,13 @@ const updateQueryFiltersWithInValues = (existingParams, existingConditions, inva
  * Extracts SQL where conditions, params, order, and limit
  *
  * @param {[]} filters parsed and validated filters
- * @param {[]} accountId parsed accountId from path
+ * @param {Number} accountId parsed accountId from path
  * @param {string} contractId encoded contract ID
  * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
  */
 const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupportMap) => {
   let limit = defaultLimit;
-  let order = constants.orderFilterValues.DESC;
+  let order = constants.orderFilterValues.ASC;
   const conditions = [`${Nft.ACCOUNT_ID} = $1`];
   const params = [accountId];
 
@@ -127,6 +130,53 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
   };
 };
 
+const validateAccountNftsQueryFilter = (param, op, val) => {
+  let ret = false;
+
+  if (op === undefined || val === undefined) {
+    return ret;
+  }
+
+  // Validate operator
+  if (!utils.isValidOperatorQuery(op)) {
+    return ret;
+  }
+
+  // Validate the value
+  switch (param) {
+    case constants.filterKeys.ACCOUNT_ID:
+      ret = EntityId.isValidEntityId(val);
+      break;
+    case constants.filterKeys.LIMIT:
+      ret = utils.isPositiveLong(val);
+      break;
+    case constants.filterKeys.ORDER:
+      // Acceptable words: asc or desc
+      ret = utils.isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
+      break;
+    case constants.filterKeys.SERIAL_NUMBER:
+      ret = utils.isPositiveLong(val);
+      break;
+    case constants.filterKeys.TOKEN_ID:
+      ret = EntityId.isValidEntityId(val);
+      break;
+    default:
+      // Every token parameter should be included here. Otherwise, it will not be accepted.
+      break;
+  }
+
+  return ret;
+};
+
+const getAndValidateAccountIdRequestPathParam = (accountId) => {
+  const accountIdString = accountId;
+  if (!EntityId.isValidEntityId(accountIdString)) {
+    throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID);
+  }
+
+  return EntityId.parse(accountIdString, constants.filterKeys.TOKENID).getEncodedId();
+};
+
 /**
  * Handler function for /accounts/:accountId/nfts API
  * @param {Request} req HTTP request object
@@ -134,23 +184,17 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
  * @returns {Promise<void>}
  */
 const getNftsByAccountId = async (req, res) => {
-  utils.validateReq(req);
   // extract filters from query param
-  const accountId = EntityId.parse(req.params.accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId();
+  const accountId = getAndValidateAccountIdRequestPathParam(req.params.accountId);
 
   // extract filters from query param
-  const filters = utils.buildAndValidateFilters(req.query);
-  const {conditions, params, order, limit} = extractNftsQuery(
-    filters,
-    [`${Nft.getFullName(Nft.ACCOUNT_ID)} = $1`],
-    [accountId],
-    nftsByAccountIdParamSupportMap
-  );
+  const filters = utils.buildAndValidateFilters(req.query, validateAccountNftsQueryFilter);
+  const {conditions, params, order, limit} = extractNftsQuery(filters, accountId, nftsByAccountIdParamSupportMap);
 
   // get transactions using id and nonce, exclude duplicate transactions. there can be at most one
   const nfts = await NftService.getNftsByFilters(conditions, params, order, limit);
   const response = {
-    results: nfts.map((nft) => new NftViewModel(nft)),
+    nfts: nfts.map((nft) => new NftViewModel(nft)),
     links: {
       next: null,
     },

@@ -1,0 +1,31 @@
+{
+  "description": "Account NFT api call for tokens with invalid params",
+  "setup": {
+    "entities": [],
+    "tokens": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "nfts": []
+  },
+  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=x&serialnumber=y&order=12&limit=a",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: token.id"
+        },
+        {
+          "message": "Invalid parameter: serialnumber"
+        },
+        {
+          "message": "Invalid parameter: order"
+        },
+        {
+          "message": "Invalid parameter: limit"
+        }
+      ]
+    }
+  }
+}

@@ -51,7 +51,7 @@ const {requestLogger, requestQueryParser} = require('./middleware/requestHandler
 const fs = require('fs');
 
 // routes
-const {ContractRoutes} = require('./routes');
+const {AccountRoutes, ContractRoutes} = require('./routes');
 
 // Logger
 const logger = log4js.getLogger();
@@ -150,6 +150,7 @@ if (config.metrics.enabled) {
 // accounts routes
 app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
 app.getAsync(`${apiPrefix}/accounts/:accountAliasOrAccountId`, accounts.getOneAccount);
+app.useAsync(`${apiPrefix}/${AccountRoutes.resource}`, AccountRoutes.router);
 
 // balances routes
 app.getAsync(`${apiPrefix}/balances`, balances.getBalances);

@@ -218,6 +218,9 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.SCHEDULED:
       ret = isValidBooleanOpAndValue(op, val);
       break;
+    case constants.filterKeys.SERIAL_NUMBER:
+      ret = isPositiveLong(val);
+      break;
     case constants.filterKeys.TOKEN_ID:
       ret = EntityId.isValidEntityId(val);
       break;
