@@ -7,7 +7,8 @@ ARG DEBIAN_FRONTEND=noninteractive
 # GIT_REF can be a branch or a tag
 ARG GIT_REF=main
 RUN apt-get update && apt-get install -y gcc git openjdk-11-jdk-headless
-RUN git clone -b ${GIT_REF} --depth 1 https://github.com/hashgraph/hedera-mirror-node
+# RUN git clone -b ${GIT_REF} --depth 1 https://github.com/hashgraph/hedera-mirror-node
+RUN git clone -b ${GIT_REF} --depth 1 https://github.com/xin-hedera/hedera-mirror-node
 WORKDIR /hedera-mirror-node
 RUN ./mvnw clean package -DskipTests -pl hedera-mirror-importer,hedera-mirror-rosetta
 WORKDIR /app
@@ -23,11 +24,12 @@ RUN mkdir importer rosetta scripts \
 
 FROM ubuntu:20.04 as runner
 
-# ---------------------- Install Deps & PosgreSQL ------------------------ #
+# ---------------------- Install Deps & PostgreSQL ------------------------ #
 # Add the PostgreSQL PGP key to verify their Debian packages.
 # It should be the same key as https://www.postgresql.org/media/keys/ACCC4CF8.asc
 ARG DEBIAN_FRONTEND=noninteractive
-ENV PG_VERSION=13
+ENV PG_CLUSTER_NAME=rosetta
+ENV PG_VERSION=14
 RUN apt-get update \
     && apt-get install -y ca-certificates curl gnupg lsb-release \
     && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8 \
@@ -41,21 +43,17 @@ COPY --from=builder /app /app
 RUN useradd -s /bin/bash importer && useradd -s /bin/bash rosetta
 
 ENV PATH="/usr/lib/postgresql/${PG_VERSION}/bin:${PATH}"
-ENV PGCONF="/var/lib/postgresql/${PG_VERSION}/main"
-ENV PGDATA=${PGCONF}
+ENV PGDATA="/data"
+ENV PGCONF=${PGDATA}
+RUN rm -fr /etc/postgresql/${PG_VERSION}/main
+VOLUME /data
 
-USER postgres
-RUN cp -r /etc/postgresql/${PG_VERSION}/main/* ${PGCONF} \
-    && rm -fr /etc/postgresql/${PG_VERSION}/main \
-    && ln -s ${PGCONF} /etc/postgresql/${PG_VERSION}/main \
-    && cp /app/pg_hba.conf ${PGCONF}/ \
-    && cp /app/postgresql.conf ${PGCONF}/conf.d
-# Init db script
-RUN /etc/init.d/postgresql start && /app/scripts/init.sh && /etc/init.d/postgresql stop
+# Set stats_temp_directory to the default, i.e., "pg_stat_tmp" relative to the postgresql.conf file
+RUN sed -i 's/^stats_temp_directory/#stats_temp_directory/g' /etc/postgresql-common/createcluster.conf
 
 USER root
 WORKDIR /app
 
 # Expose the ports (DB)(Rosetta)
 EXPOSE 5432 5700
-ENTRYPOINT [ "./run_supervisord.sh" ]
+ENTRYPOINT [ "./entrypoint.sh" ]
