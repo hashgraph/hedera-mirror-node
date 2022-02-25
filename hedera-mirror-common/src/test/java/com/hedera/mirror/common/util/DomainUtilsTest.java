@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Internal;
 import com.google.protobuf.UnsafeByteOperations;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
@@ -285,16 +286,24 @@ class DomainUtilsTest {
     }
 
     @Test
-    void toEvmAddress() {
+    void toEvmAddressEntityId() {
         EntityId contractId = EntityId.of(1, 2, 255, EntityType.CONTRACT);
         String expected = "00000001000000000000000200000000000000FF";
         assertThat(DomainUtils.toEvmAddress(contractId)).asHexString().isEqualTo(expected);
+        assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress((EntityId) null));
+        assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress(EntityId.EMPTY));
     }
 
     @Test
-    void toEvmAddressThrows() {
-        assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress(null));
-        assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress(EntityId.EMPTY));
+    void toEvmAddressContractID() throws Exception {
+        String expected = "00000001000000000000000200000000000000FF";
+        ContractID contractId = ContractID.newBuilder().setShardNum(1).setRealmNum(2).setContractNum(255).build();
+        ContractID contractIdEvm = ContractID.newBuilder()
+                .setEvmAddress(DomainUtils.fromBytes(Hex.decodeHex(expected))).build();
+        assertThat(DomainUtils.toEvmAddress(contractId)).asHexString().isEqualTo(expected);
+        assertThat(DomainUtils.toEvmAddress(contractIdEvm)).asHexString().isEqualTo(expected);
+        assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress((ContractID) null));
+        assertThrows(InvalidEntityException.class, () -> DomainUtils.toEvmAddress(ContractID.getDefaultInstance()));
     }
 
     @Test
