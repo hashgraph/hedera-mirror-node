@@ -44,7 +44,8 @@ RUN useradd -s /bin/bash importer && useradd -s /bin/bash rosetta
 
 ENV PATH="/usr/lib/postgresql/${PG_VERSION}/bin:${PATH}"
 ENV PGDATA="/data"
-ENV PGCONF=${PGDATA}
+ENV PGCONF=$PGDATA
+RUN mkdir -p "$PGDATA" && chown -R postgres:postgres "$PGDATA" && chmod 700 "$PGDATA"
 RUN rm -fr /etc/postgresql/${PG_VERSION}/main
 VOLUME /data
 

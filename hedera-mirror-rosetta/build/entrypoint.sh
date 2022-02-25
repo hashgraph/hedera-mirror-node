@@ -31,17 +31,16 @@ function init_db() {
   fi
 
   echo "Creating cluster '${PG_CLUSTER_NAME}' with data dir '${PGDATA}'"
-  mkdir -p "${PGDATA}" && chown -R postgres:postgres "${PGDATA}"
   su postgres -c "pg_createcluster -d ${PGDATA} --start-conf auto ${PG_VERSION} ${PG_CLUSTER_NAME}"
   # mv conf to $PGDATA and link it
-  cp -pr ${PG_CLUSTER_CONF}/* ${PGDATA} && \
-    rm -fr ${PG_CLUSTER_CONF} && \
-    ln -s ${PGDATA} ${PG_CLUSTER_CONF}
+  cp -pr ${PG_CLUSTER_CONF}/* ${PGDATA}
+  rm -fr ${PG_CLUSTER_CONF}
+  ln -s ${PGDATA} ${PG_CLUSTER_CONF}
   su postgres -c 'cp /app/pg_hba.conf ${PGDATA} && cp /app/postgresql.conf ${PGDATA}/conf.d'
 
-  /etc/init.d/postgresql start && \
-    su postgres -c 'PATH=/usr/lib/postgresql/${PG_VERSION}/bin:${PATH} /app/scripts/init.sh' && \
-    /etc/init.d/postgresql stop
+  /etc/init.d/postgresql start
+  su postgres -c 'PATH=/usr/lib/postgresql/${PG_VERSION}/bin:${PATH} /app/scripts/init.sh'
+  /etc/init.d/postgresql stop
 
   echo "Initialized database"
 }

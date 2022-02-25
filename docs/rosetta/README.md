@@ -84,12 +84,15 @@ Configure and run the server in online mode:
    the [backup](/docs/database.md#backup) section of the database upgrade documentation. The container database should
    be empty otherwise the restore process will be skipped.
 
-5. Run the server from the all-in-one docker image with the appropriate `NETWORK` specified:
+5. To use custom passwords for the database owner (used by importer) and the rosetta user (used by rosetta server), set
+   env variables `OWNER_PASSWORD` and `ROSETTA_PASSWORD` accordingly.
+
+6. Run the server from the all-in-one docker image with the appropriate `NETWORK` specified:
 
 ```shell
 docker run -d -e MODE=online -e NETWORK=testnet \
--v ${PWD}/application.yml:/app/importer/application.yml \
--p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.49.1
+  -v ${PWD}/application.yml:/app/importer/application.yml \
+  -p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.49.1
 ```
 
 The server should be reachable at http://localhost:5700. Note the server can also run in offline mode by
