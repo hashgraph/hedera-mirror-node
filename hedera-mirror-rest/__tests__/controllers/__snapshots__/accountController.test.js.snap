@@ -3,5 +3,3 @@
 exports[`extractNftsQuery throws bad token id with serialnumber 1`] = `"Cannot search NFTs with serialnumber without also specifying a single tokenId value"`;
 
 exports[`extractNftsQuery throws serialnumber with missing tokenId 1`] = `"Cannot search NFTs with serialnumber without also specifying a single tokenId value"`;
-
-exports[`extractNftsQuery throws tserialnumber with missing tokenId 1`] = `"Cannot search NFTs with serialnumber without also specifying a single tokenId value"`;
