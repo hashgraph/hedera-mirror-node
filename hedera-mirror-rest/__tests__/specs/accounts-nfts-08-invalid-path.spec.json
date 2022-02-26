@@ -1,0 +1,29 @@
+{
+  "description": "Account NFT api call for tokens with invalid path",
+  "setup": {
+    "entities": [],
+    "tokens": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "nfts": []
+  },
+  "urls": [
+    "/api/v1/accounts/x/nfts",
+    "/api/v1/accounts/0.x/nfts",
+    "/api/v1/accounts/0.0.x/nfts",
+    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL/nfts",
+    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL/nfts",
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL/nfts"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: accountAliasOrAccountId"
+        }
+      ]
+    }
+  }
+}

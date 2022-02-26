@@ -1,13 +1,17 @@
 {
   "description": "Account NFT api call for all tokens",
   "setup": {
-    "entities": [
+    "accounts": [
       {
-        "num": 1001
+        "num": 1001,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
       },
       {
         "num": 2001
-      },
+      }
+    ],
+    "entities": [
       {
         "num": 1500,
         "type": "TOKEN"
@@ -66,6 +70,14 @@
     ]
   },
   "url": "/api/v1/accounts/0.0.1001/nfts",
+  "urls": [
+    "/api/v1/accounts/1001/nfts",
+    "/api/v1/accounts/0.1001/nfts",
+    "/api/v1/accounts/0.0.1001/nfts",
+    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/nfts",
+    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/nfts",
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/nfts"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "nfts": [

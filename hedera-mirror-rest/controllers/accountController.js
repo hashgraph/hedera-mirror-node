@@ -22,6 +22,7 @@
 
 const _ = require('lodash');
 
+const AccountAlias = require('../accountAlias');
 const {
   response: {
     limit: {default: defaultLimit},
@@ -47,6 +48,7 @@ const nftsByAccountIdParamSupportMap = {
 
 // errors
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+const {NotFoundError} = require('../errors/notFoundError');
 
 const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams, existingConditions, fullName) => {
   if (filter.operator === utils.opsMap.eq) {
@@ -93,7 +95,13 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
   const serialNumberInValues = [];
 
   let hasSerialNumber = false;
-  let tokenIdFilter = null;
+
+  // default filter to compare against
+  let tokenIdFilter = {
+    operator: '',
+    value: null,
+  };
+
   for (const filter of filters) {
     if (_.isNil(paramSupportMap[filter.key])) {
       // param not supported for current endpoint
@@ -122,7 +130,7 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
     }
   }
 
-  if (hasSerialNumber && (_.isNil(tokenIdFilter) || tokenIdFilter.operator !== utils.opsMap.eq)) {
+  if (hasSerialNumber && (_.isNil(tokenIdFilter.value) || tokenIdFilter.operator !== utils.opsMap.eq)) {
     throw new InvalidArgumentError(
       `Cannot search NFTs with serialnumber without also specifying a single tokenId value`
     );
@@ -178,24 +186,81 @@ const validateAccountNftsQueryFilter = (param, op, val) => {
   return ret;
 };
 
-const getAndValidateAccountIdRequestPathParam = (accountId) => {
-  const accountIdString = accountId;
-  if (!EntityId.isValidEntityId(accountIdString)) {
-    throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID);
-  }
+/**
+ * Gets the query to find the alive entity matching the account alias string.
+ * @param {string} accountAliasStr
+ * @return {{query: string, params: *[]}}
+ */
+const getAccountAliasQuery = (accountAlias) => {
+  const columns = ['shard', 'realm', 'alias'];
+  const conditions = ['deleted <> true'];
+  const params = [];
 
-  return EntityId.parse(accountIdString, constants.filterKeys.TOKENID).getEncodedId();
+  columns
+    .filter((column) => accountAlias[column] !== null)
+    .forEach((column) => {
+      const length = params.push(accountAlias[column]);
+      conditions.push(`${column} = $${length}`);
+    });
+
+  const query = `select id from entity where ${conditions.join(' and ')}`;
+  return {query, params};
 };
 
 /**
- * Handler function for /accounts/:accountId/nfts API
+ * Gets the encoded account id from the account alias string. Throws {@link InvalidArgumentError} if the account alias
+ * string is invalid,
+ * @param {string} accountAlias the account alias string
+ * @return {Promise}
+ */
+const getAccountIdFromAccountAlias = async (accountAlias) => {
+  const {query, params} = getAccountAliasQuery(accountAlias);
+
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getAccountIdFromAccountAlias query: ${query} ${JSON.stringify(params)}`);
+  }
+
+  const {rows} = await pool.queryQuietly(query, params);
+  if (rows.length === 0) {
+    throw new NotFoundError();
+  } else if (rows.length > 1) {
+    logger.error(`Incorrect db state: ${rows.length} alive entities matching alias ${accountAlias}`);
+    throw new Error();
+  }
+
+  return rows[0].id;
+};
+
+const getAndValidateAccountIdRequestPathParam = async (accountIdString) => {
+  let accountIdOrAlias = null;
+  if (EntityId.isValidEntityId(accountIdString)) {
+    accountIdOrAlias = accountIdString;
+  } else if (AccountAlias.isValid(accountIdString)) {
+    try {
+      accountIdOrAlias = await getAccountIdFromAccountAlias(AccountAlias.fromString(accountIdString));
+    } catch (err) {
+      if (err instanceof InvalidArgumentError) {
+        throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID_OR_ALIAS);
+      }
+      // rethrow any other error
+      throw err;
+    }
+  } else {
+    throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID_OR_ALIAS);
+  }
+
+  return EntityId.parse(accountIdOrAlias, constants.filterKeys.ACCOUNT_ID).getEncodedId();
+};
+
+/**
+ * Handler function for /accounts/:accountAliasOrAccountId/nfts API
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @returns {Promise<void>}
  */
 const getNftsByAccountId = async (req, res) => {
   // extract filters from query param
-  const accountId = getAndValidateAccountIdRequestPathParam(req.params.accountId);
+  const accountId = await getAndValidateAccountIdRequestPathParam(req.params.accountAliasOrAccountId);
 
   // extract filters from query param
   const filters = utils.buildAndValidateFilters(req.query, validateAccountNftsQueryFilter);
@@ -231,6 +296,7 @@ module.exports = {
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
     extractNftsQuery,
+    getAndValidateAccountIdRequestPathParam,
     nftsByAccountIdParamSupportMap,
   });
 }

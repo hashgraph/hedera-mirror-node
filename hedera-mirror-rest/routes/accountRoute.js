@@ -27,7 +27,7 @@ const {AccountController} = require('../controllers');
 const router = Router();
 
 const resource = 'accounts';
-router.getAsync('/:accountId/nfts', AccountController.getNftsByAccountId);
+router.getAsync('/:accountAliasOrAccountId/nfts', AccountController.getNftsByAccountId);
 
 module.exports = {
   resource,

@@ -26,6 +26,7 @@ const MAX_INT32 = 2147483647;
 const filterKeys = {
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_ID: 'account.id',
+  ACCOUNT_ID_OR_ALIAS: 'accountAliasOrAccountId',
   ACCOUNT_PUBLICKEY: 'account.publickey',
   BALANCE: 'balance',
   CONTRACTID: 'contractid',
