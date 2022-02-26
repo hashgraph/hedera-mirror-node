@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -611,6 +611,42 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .extracting(NonFeeTransfer.Id::getEntityId)
                         .extracting(EntityId::getEntityNum)
                         .contains(accountId1.getAccountNum(), entity.getNum())
+        );
+    }
+
+    @Test
+    void cryptoTransferWithUnknownAlias() {
+        // given
+        // both accounts have alias, and only account2's alias is in db
+        entityProperties.getPersist().setCryptoTransferAmounts(true);
+        entityProperties.getPersist().setNonFeeTransfers(true);
+        Entity account1 = domainBuilder.entity().get();
+        Entity account2 = domainBuilder.entity().persist();
+
+        // crypto transfer from known account1 alias to account2 alias
+        Transaction transaction = buildTransaction(builder -> builder.getCryptoTransferBuilder().getTransfersBuilder()
+                .addAccountAmounts(accountAliasAmount(DomainUtils.fromBytes(account1.getAlias()), 100))
+                .addAccountAmounts(accountAliasAmount(DomainUtils.fromBytes(account2.getAlias()), -100)));
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord transactionRecord = buildTransactionRecord(r -> r.getTransferListBuilder()
+                        .addAccountAmounts(accountAmount(account1.getNum(), 100))
+                        .addAccountAmounts(accountAmount(account2.getNum(), -100)),
+                transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
+
+        // when
+        parseRecordItemsAndCommit(List.of(new RecordItem(transaction, transactionRecord)));
+
+        // then
+        // only account2's non fee transfer should persist to db
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(5, cryptoTransferRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, transactionRecord),
+                () -> assertThat(nonFeeTransferRepository.findAll())
+                        .extracting(NonFeeTransfer::getId)
+                        .extracting(NonFeeTransfer.Id::getEntityId)
+                        .extracting(EntityId::getEntityNum)
+                        .containsOnly(account2.getNum())
         );
     }
 

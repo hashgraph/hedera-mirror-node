@@ -92,6 +92,7 @@ import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
+import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
@@ -290,14 +291,19 @@ public class EntityRecordItemListener implements RecordItemListener {
         var transactionRecord = recordItem.getRecord();
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
-                EntityId entityId = getAccountId(aa.getAccountID());
+                try {
+                    EntityId entityId = getAccountId(aa.getAccountID());
 
-                NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
-                nonFeeTransfer.setAmount(aa.getAmount());
-                nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, entityId));
-                nonFeeTransfer.setIsApproval(aa.getIsApproval());
-                nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
-                entityListener.onNonFeeTransfer(nonFeeTransfer);
+                    NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
+                    nonFeeTransfer.setAmount(aa.getAmount());
+                    nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, entityId));
+                    nonFeeTransfer.setIsApproval(aa.getIsApproval());
+                    nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
+                    entityListener.onNonFeeTransfer(nonFeeTransfer);
+                } catch (AliasNotFoundException ex) {
+                    // Most likely it's a partial mirror node which doesn't have the alias to account id mapping
+                    log.warn(ex.getMessage());
+                }
             }
         }
     }
@@ -310,7 +316,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 var alias = DomainUtils.toBytes(accountID.getAlias());
                 return entityRepository.findByAlias(alias)
                         .map(id -> EntityId.of(id, EntityType.ACCOUNT))
-                        .orElseThrow(() -> new InvalidDatasetException("AccountID not present for alias: " + Hex.encodeHexString(alias)));
+                        .orElseThrow(() -> new AliasNotFoundException(Hex.encodeHexString(alias)));
             default:
                 throw new InvalidDatasetException("Unsupported AccountID: " + accountID);
         }
