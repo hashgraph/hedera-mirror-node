@@ -54,7 +54,9 @@ const formatBalancesResult = (req, result, limit, order) => {
     next: utils.getPaginationLink(
       req,
       ret.balances.length !== limit,
-      [utils.getLastObject(constants.filterKeys.ACCOUNT_ID, anchorAccountId)],
+      {
+        [constants.filterKeys.ACCOUNT_ID]: anchorAccountId,
+      },
       order
     ),
   };

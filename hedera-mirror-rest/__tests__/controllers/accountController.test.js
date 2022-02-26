@@ -34,7 +34,7 @@ describe('extractNftsQuery', () => {
   const defaultExpected = {
     conditions: [accountIdFilter],
     params: [],
-    order: constants.orderFilterValues.ASC,
+    order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
   };
 
@@ -207,50 +207,6 @@ describe('extractNftsQuery throws', () => {
           accountCtrl.nftsByAccountIdParamSupportMap
         )
       ).toThrowErrorMatchingSnapshot();
-    });
-  });
-});
-
-describe('getAndValidateAccountIdRequestPathParam', () => {
-  const accountIdFilter = 'account_id = $1';
-  const defaultExpected = {
-    conditions: [accountIdFilter],
-    params: [],
-    order: constants.orderFilterValues.ASC,
-    limit: defaultLimit,
-  };
-
-  const specs = [
-    {
-      name: 'limit',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.LIMIT,
-            operator: utils.opsMap.eq,
-            value: 20,
-          },
-        ],
-        accountId: 1,
-        paramSupportMap: accountCtrl.nftsByAccountIdParamSupportMap,
-      },
-      expected: {
-        ...defaultExpected,
-        limit: 20,
-        params: [1],
-      },
-    },
-  ];
-
-  specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(
-        accountCtrl.extractNftsQuery(
-          spec.input.filters,
-          spec.input.accountId,
-          accountCtrl.nftsByAccountIdParamSupportMap
-        )
-      ).toEqual(spec.expected);
     });
   });
 });

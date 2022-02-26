@@ -51,10 +51,10 @@ paths:
       operationId: listNftByAccountId
       parameters:
         - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
-        - $ref: '#/components/parameters/tokenIdPathParam'
-        - $ref: '#/components/parameters/serialNumberWithOperatorQueryParam'
+        - $ref: '#/components/parameters/tokenIdQueryParam'
+        - $ref: '#/components/parameters/serialNumberQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
       responses:
         200:
           description: OK
@@ -2347,17 +2347,6 @@ components:
         minimum: 1
         maximum: 9223372036854775807
     serialNumberQueryParam:
-      name: serialnumber
-      in: query
-      description: The nft serial number (64 bit type)
-      example: 2
-      schema:
-        type: integer
-        format: int64
-        default: 1
-        minimum: 1
-        maximum: 9223372036854775807
-    serialNumberWithOperatorQueryParam:
       name: serialnumber
       in: query
       explode: true

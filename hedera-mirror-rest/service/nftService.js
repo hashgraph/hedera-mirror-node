@@ -24,6 +24,12 @@ const _ = require('lodash');
 
 const {Nft} = require('../model');
 const BaseService = require('./baseService');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('../config');
+const {orderFilterValues} = require('../constants');
 
 /**
  * Nft business model
@@ -73,7 +79,7 @@ class NftService extends BaseService {
   async getNftsByFilters(
     whereConditions = [],
     whereParams = [],
-    nftOrder = orderFilterValues.ASC,
+    nftOrder = orderFilterValues.DESC,
     limit = defaultLimit
   ) {
     const [query, params] = this.getNftsFiltersQuery(whereConditions, whereParams, nftOrder, limit);

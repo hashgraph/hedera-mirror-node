@@ -83,12 +83,12 @@
     "nfts": [
       {
         "account_id": "0.0.1001",
-        "created_timestamp": "1234567890.000000005",
+        "created_timestamp": "1234567890.000000007",
         "deleted": false,
-        "metadata": "bTE=",
-        "modified_timestamp": "1234567890.000000005",
+        "metadata": "czE=",
+        "modified_timestamp": "1234567890.000000007",
         "serial_number": 1,
-        "token_id": "0.0.1500"
+        "token_id": "0.0.2500"
       },
       {
         "account_id": "0.0.1001",
@@ -101,12 +101,12 @@
       },
       {
         "account_id": "0.0.1001",
-        "created_timestamp": "1234567890.000000007",
+        "created_timestamp": "1234567890.000000005",
         "deleted": false,
-        "metadata": "czE=",
-        "modified_timestamp": "1234567890.000000007",
+        "metadata": "bTE=",
+        "modified_timestamp": "1234567890.000000005",
         "serial_number": 1,
-        "token_id": "0.0.2500"
+        "token_id": "0.0.1500"
       }
     ],
     "links": {

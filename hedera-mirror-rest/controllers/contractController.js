@@ -346,7 +346,9 @@ const getContracts = async (req, res) => {
   response.links.next = utils.getPaginationLink(
     req,
     response.contracts.length !== limit,
-    [utils.getLastObject(constants.filterKeys.CONTRACT_ID, lastContractId)],
+    {
+      [constants.filterKeys.CONTRACT_ID]: lastContractId,
+    },
     order
   );
 
@@ -542,7 +544,9 @@ const getContractResultsById = async (req, res) => {
     response.links.next = utils.getPaginationLink(
       req,
       response.results.length !== limit,
-      [utils.getLastObject(constants.filterKeys.TIMESTAMP, lastContractResultTimestamp)],
+      {
+        [constants.filterKeys.TIMESTAMP]: lastContractResultTimestamp,
+      },
       order
     );
   }

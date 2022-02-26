@@ -579,13 +579,6 @@ const getPaginationLink = (req, isEnd, lastObjects, order) => {
   return next === '' ? null : next;
 };
 
-const getLastObject = (field, value) => {
-  return {
-    lastField: field,
-    lastValue: value,
-  };
-};
-
 const getNextParamQueries = (order, reqQuery, lastObjects) => {
   let next = '';
 
@@ -593,9 +586,7 @@ const getNextParamQueries = (order, reqQuery, lastObjects) => {
   const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
   const insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
 
-  for (const lastObject of lastObjects) {
-    const field = lastObject.lastField;
-    const lastValue = lastObject.lastValue;
+  for (const [field, lastValue] of Object.entries(lastObjects)) {
     // Go through the query parameters, and if there is a 'field=gt:xxxx' (asc order)
     // or 'field=lt:xxxx' (desc order) fields, then remove that, to be replaced by the
     // new continuation value
@@ -1127,7 +1118,6 @@ module.exports = {
   encodeUtf8,
   encodeKey,
   filterValidityChecks,
-  getLastObject,
   getNullableNumber,
   getPaginationLink,
   getPoolClass,
@@ -1171,7 +1161,6 @@ if (isTestEnv()) {
     buildFilters,
     formatComparator,
     formatFilters,
-    getLastObject,
     getLimitParamValue,
     getNextParamQueries,
     getPaginationLink,

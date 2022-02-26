@@ -244,7 +244,9 @@ const getSchedules = async (req, res) => {
   schedulesResponse.links.next = utils.getPaginationLink(
     req,
     schedulesResponse.schedules.length !== limit,
-    [utils.getLastObject(constants.filterKeys.SCHEDULE_ID, lastScheduleId)],
+    {
+      [constants.filterKeys.SCHEDULE_ID]: lastScheduleId,
+    },
     order
   );
 

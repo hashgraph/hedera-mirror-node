@@ -82,7 +82,7 @@ const updateQueryFiltersWithInValues = (existingParams, existingConditions, inva
  */
 const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupportMap) => {
   let limit = defaultLimit;
-  let order = constants.orderFilterValues.ASC;
+  let order = constants.orderFilterValues.DESC;
   const conditions = [`${Nft.ACCOUNT_ID} = $1`];
   const params = [accountId];
 
@@ -279,10 +279,10 @@ const getNftsByAccountId = async (req, res) => {
     const lastRow = _.last(response.results);
     const lastNftTimestamp = lastRow !== undefined ? lastRow.created_timestamp : null;
     const lastSerial = lastRow !== undefined ? lastRow.serial_number : null;
-    const last = [
-      utils.getLastObject(constants.filterKeys.TOKENID, lastNftTimestamp),
-      utils.getLastObject(constants.filterKeys.SERIAL_NUMBER, lastSerial),
-    ];
+    const last = {
+      [constants.filterKeys.TOKEN_ID]: lastNftTimestamp,
+      [constants.filterKeys.SERIAL_NUMBER]: lastSerial,
+    };
     response.links.next = utils.getPaginationLink(req, response.results.length !== limit, last, order);
   }
 
