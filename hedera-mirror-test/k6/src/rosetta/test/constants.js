@@ -23,10 +23,6 @@ const accountIdentifier = {
   metadata: {},
 };
 
-const blockIdentifier = {
-  index: parseInt(__ENV.ROSETTA_BLOCK_INDEX),
-  hash: __ENV.ROSETTA_BLOCK_HASH,
-};
 
 const currencyHbar = {
   symbol: 'HBAR',
@@ -44,48 +40,14 @@ const networkIdentifier = {
   }
 };
 
-const operations = [
-  {
-    operation_identifier: {index: 0},
-    type: 'CRYPTOTRANSFER',
-    account: accountIdentifier,
-    amount: {
-      value: '-100',
-      currency: currencyHbar,
-    }
-  },
-  {
-    operation_identifier: {index: 1},
-    type: 'CRYPTOTRANSFER',
-    account: {
-      address: '0.0.10000',
-      metadata: {},
-    },
-    amount: {
-      value: '100',
-      currency: currencyHbar,
-    }
-  }
-];
-
 const publicKey = {
   hex_bytes: __ENV.ROSETTA_ACCOUNT_PUBLIC_KEY,
   curve_type: 'edwards25519',
 };
 
-const signatureType = 'ed25519';
-
-const transactionIdentifier = {
-  hash: __ENV.ROSETTA_TRANSACTION_HASH,
-};
-
 export {
   accountIdentifier,
-  blockIdentifier,
   currencyHbar,
   networkIdentifier,
-  operations,
-  publicKey,
-  signatureType,
-  transactionIdentifier
+  publicKey
 };

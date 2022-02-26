@@ -19,7 +19,71 @@
  */
 
 
+import {
+  computeAccountParameters,
+  computeBlockFromNetwork,
+  computeTransactionFromBlock,
+  validateEnvProperty
+} from "../../lib/parameters.js";
+import {accountIdentifier, currencyHbar} from "./constants.js";
+import {urlPrefix} from "../../lib/constants.js";
 
-const setupTestParameters = () => {};
+const setupTestParameters = () => {
+  validateEnvProperty('BASE_URL');
+  __ENV['NETWORK'] = __ENV['NETWORK'] || 'mainnet';
+  const accountParameters = computeAccountParameters({baseApiUrl: `${__ENV['BASE_URL']}${urlPrefix}`});
+
+  const blockIdentifier = computeBlockFromNetwork(__ENV['BASE_URL'], __ENV['NETWORK']);
+  const networkIdentifier = {
+    blockchain: 'Hedera',
+    network: __ENV.NETWORK,
+    sub_network_identifier: {
+      network: 'shard 0 realm 0',
+    }
+  };
+  const transactionIdentifier = computeTransactionFromBlock(__ENV['BASE_URL'], networkIdentifier, blockIdentifier);
+  return {
+    BASE_URL: __ENV['BASE_URL'],
+    accountIdentifier: {
+      address: `0.0.${accountParameters.account}`,
+      metadata: {},
+    },
+    blockIdentifier,
+    networkIdentifier,
+    operations: [
+      {
+        operation_identifier: {index: 0},
+        type: 'CRYPTOTRANSFER',
+        account: accountIdentifier,
+        amount: {
+          value: '-100',
+          currency: currencyHbar,
+        }
+      },
+      {
+        operation_identifier: {index: 1},
+        type: 'CRYPTOTRANSFER',
+        account: {
+          address: '0.0.10000',
+          metadata: {},
+        },
+        amount: {
+          value: '100',
+          currency: currencyHbar,
+        }
+      }
+    ],
+    publicKey: {
+      hex_bytes: __ENV['ROSETTA_ACCOUNT_PUBLIC_KEY'] || 'eba8cc093a83a4ca5e813e30d8c503babb35c22d57d34b6ec5ac0303a6aaba77',
+      curve_type: 'edwards25519'
+    },
+    signatureType: 'ed25519',
+    signingTransaction: __ENV['ROSETTA_SIGNING_PAYLOAD'] || '967f26876ad492cc27b4c384dc962f443bcc9be33cbb7add3844bc864de047340e7a78c0fbaf40ab10948dc570bbc25edb505f112d0926dffb65c93199e6d507',
+    signedTransaction: __ENV['ROSETTA_SIGNED_TRANSACTION'] || '0x0aaa012aa7010a3d0a140a0c08feafcb840610ae86c0db03120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f12660a640a20eba8cc093a83a4ca5e813e30d8c503babb35c22d57d34b6ec5ac0303a6aaba771a40793de745bc19dd8fe8e817891f51b8fe1e259c2e6428bd7fa075b181585a2d40e3666a7c9a1873abb5433ffe1414502836d8d37082eaf94a648b530e9fa78108',
+    transactionIdentifier,
+    transactionSignature: __ENV['ROSETTA_TRANSACTION_SIGNATURE'] || '793de745bc19dd8fe8e817891f51b8fe1e259c2e6428bd7fa075b181585a2d40e3666a7c9a1873abb5433ffe1414502836d8d37082eaf94a648b530e9fa78108',
+    unsignedTransaction: __ENV['ROSETTA_UNSIGNED_TRANSACTION'] || '0a432a410a3d0a140a0c08feafcb840610ae86c0db03120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f1200'
+  };
+};
 
 export {setupTestParameters};

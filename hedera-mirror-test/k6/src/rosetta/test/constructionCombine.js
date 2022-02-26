@@ -21,33 +21,37 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import * as constants from './constants.js';
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-// the public key doesn't have to belong to the account in the payload since it's merely used to verify the signature
-const payload = JSON.stringify({
-  network_identifier: constants.networkIdentifier,
-  unsigned_transaction: __ENV.ROSETTA_UNSIGNED_TRANSACTION,
-  signatures: [
-    {
-      signing_payload: {
-        account_identifier: constants.accountIdentifier,
-        hex_bytes: __ENV.ROSETTA_SIGNING_PAYLOAD,
-        signature_type: constants.signatureType,
-      },
-      public_key: constants.publicKey,
-      signature_type: constants.signatureType,
-      hex_bytes: __ENV.ROSETTA_TRANSACTION_SIGNATURE,
-    },
-  ],
-});
-const urlTag = '/construction/combine';
-const url = __ENV.BASE_URL + urlTag;
+const urlTag = '/rosetta/construction/combine';
 
 const {options, run} = new TestScenarioBuilder()
   .name('constructionCombine') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.post(url, payload))
+  .request((testParameters) => {
+    const url = testParameters.BASE_URL + urlTag;
+    // the public key doesn't have to belong to the account in the payload since it's merely used to verify the signature
+    const payload = JSON.stringify({
+      network_identifier: testParameters.networkIdentifier,
+      unsigned_transaction: testParameters.unsignedTransaction,
+      signatures: [
+        {
+          signing_payload: {
+            account_identifier: testParameters.accountIdentifier,
+            hex_bytes: testParameters.signingTransaction,
+            signature_type: testParameters.signatureType,
+          },
+          public_key: testParameters.publicKey,
+          signature_type: testParameters.signatureType,
+          hex_bytes: testParameters.transactionSignature,
+        },
+      ],
+    });
+    return http.post(url, payload);
+  })
   .check('ConstructionCombine OK', (r) => r.status === 200)
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

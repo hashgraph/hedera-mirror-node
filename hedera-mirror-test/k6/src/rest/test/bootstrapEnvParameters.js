@@ -24,7 +24,8 @@ import {
   computeFungibleTokenParameters,
   computeNftParameters,
   computeScheduleParameters,
-  computeTransactionParameters
+  computeTransactionParameters,
+  validateEnvProperty
 } from "../../lib/parameters.js";
 
 const computeTestParameters = (configuration) =>
@@ -57,12 +58,6 @@ const bootstrap = (baseApiUrl) => {
   return buildConfigObject(testParameters);
 };
 
-
-const validateEnvProperty = (propertyName) => {
-  if (!__ENV.hasOwnProperty(propertyName)) {
-    throw new Error(`You must set a value for the environment property: ${propertyName}`);
-  }
-}
 
 const setupTestParameters = () => {
   //verify if all the data that must be in __ENV is actually there;

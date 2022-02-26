@@ -21,21 +21,25 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import * as constants from './constants.js';
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const payload = JSON.stringify({
-  block_identifier: constants.blockIdentifier,
-  network_identifier: constants.networkIdentifier,
-  transaction_identifier: constants.transactionIdentifier,
-});
-const urlTag = '/block/transaction';
-const url = __ENV.BASE_URL + urlTag;
+const urlTag = '/rosetta/block/transaction';
 
 const {options, run} = new TestScenarioBuilder()
   .name('blockTransaction') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.post(url, payload))
+  .request((testParameters) => {
+    const url = testParameters.BASE_URL + urlTag;
+    const payload = JSON.stringify({
+      block_identifier: testParameters.blockIdentifier,
+      network_identifier: testParameters.networkIdentifier,
+      transaction_identifier: testParameters.transactionIdentifier,
+    });
+    return http.post(url, payload);
+  })
   .check('BlockTransaction OK', (r) => r.status === 200)
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

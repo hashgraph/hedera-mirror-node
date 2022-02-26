@@ -42,6 +42,10 @@ const getFirstEntity = (entityPath, key) => {
 export const computeAccountParameters = (configuration) => {
   const accountPath = `${configuration.baseApiUrl}/accounts?balance=true&limit=1&order=desc`;
   const firstAccount = getFirstEntity(accountPath, accountListName);
+
+  firstAccount.key = {
+    key: ''
+  };
   return {
     account: firstAccount.account,
     accountBalance: firstAccount.balance.balance || 0,
@@ -92,4 +96,55 @@ export const computeTransactionParameters = (configuration) => {
   return {
     transaction: firstTransaction.transaction_id
   };
+};
+
+function getValidResponse(requestUrl, requestBody) {
+  const response = http.post(requestUrl, JSON.stringify(requestBody));
+  if (response.status !== 200) {
+    throw new Error(`${response.status} received when getting the network status`);
+  }
+  return JSON.parse(response.body);
+}
+
+export const computeBlockFromNetwork = (rosettaApiUrl, network) => {
+  const requestUrl = `${rosettaApiUrl}/rosetta/network/status`;
+  const requestBody = {
+    "network_identifier": {
+      "blockchain": "Hedera",
+      "network": network,
+      "sub_network_identifier": {
+        "network": "shard 0 realm 0"
+      }
+    },
+    "metadata": {}
+  };
+  const response = getValidResponse(requestUrl, requestBody);
+  return {
+    index: parseInt(response.current_block_identifier.index),
+    hash: response.current_block_identifier.hash
+  };
+};
+
+export const computeTransactionFromBlock = (rosettaApiUrl, networkIdentifier, blockIdentifier) => {
+  const requestUrl = `${rosettaApiUrl}/rosetta/block`;
+  const requestBody = {
+    network_identifier: networkIdentifier,
+    block_identifier: blockIdentifier
+  };
+  const response = getValidResponse(requestUrl, requestBody);
+  const transactions = response.block.transactions;
+  if (!transactions || transactions.length === 0) {
+    throw new Error(`It was not possible to find a transaction with the block identifier: ${JSON.stringify(blockIdentifier)}`);
+  }
+  return {
+    transactionIdentifier: {
+      hash: transactions[0].transaction_identifier.hash
+    }
+  }
+}
+
+export const validateEnvProperty = (propertyName) => {
+  if (!__ENV.hasOwnProperty(propertyName)) {
+    throw new Error(`You must set a value for the environment property: ${propertyName}`);
+  }
 };

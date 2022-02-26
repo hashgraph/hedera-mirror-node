@@ -21,21 +21,25 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {networkIdentifier} from './constants.js';
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const payload = JSON.stringify({
-  network_identifier: networkIdentifier,
-  metadata: {},
-});
-const urlTag = '/network/status';
-const url = __ENV.BASE_URL + urlTag;
+const urlTag = '/rosetta/network/status';
 
 const {options, run} = new TestScenarioBuilder()
   .name('networkStatus') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.post(url, payload))
+  .request((testParameters) => {
+    const url = testParameters.BASE_URL + urlTag;
+    const payload = JSON.stringify({
+      network_identifier: testParameters.networkIdentifier,
+      metadata: {},
+    });
+    return http.post(url, payload);
+  })
   .check('NetworkStatus OK', (r) => r.status === 200)
   .build();
 
 
 export {options, run};
+
+export const setup = setupTestParameters;

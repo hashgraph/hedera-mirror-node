@@ -21,20 +21,24 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import * as constants from './constants.js';
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const payload = JSON.stringify({
-  block_identifier: constants.blockIdentifier,
-  network_identifier: constants.networkIdentifier,
-});
-const urlTag = '/block';
-const url = __ENV.BASE_URL + urlTag;
+const urlTag = '/rosetta/block';
 
 const {options, run} = new TestScenarioBuilder()
   .name('block') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.post(url, payload))
+  .request((testParameters) => {
+    const url = testParameters.BASE_URL + urlTag;
+    const payload = JSON.stringify({
+      block_identifier: testParameters.blockIdentifier,
+      network_identifier: testParameters.networkIdentifier,
+    });
+    return http.post(url, payload);
+  })
   .check('Block OK', (r) => r.status === 200)
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

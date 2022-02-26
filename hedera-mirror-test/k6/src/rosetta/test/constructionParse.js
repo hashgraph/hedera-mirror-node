@@ -21,21 +21,25 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import * as constants from './constants.js';
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const payload = JSON.stringify({
-  network_identifier: constants.networkIdentifier,
-  signed: true,
-  transaction: __ENV.ROSETTA_SIGNED_TRANSACTION,
-});
-const urlTag = '/construction/parse';
-const url = __ENV.BASE_URL + urlTag;
+const urlTag = '/rosetta/construction/parse';
 
 const {options, run} = new TestScenarioBuilder()
   .name('constructionParse') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.post(url, payload))
+  .request((testParameters) => {
+    const url = testParameters.BASE_URL + urlTag;
+    const payload = JSON.stringify({
+      network_identifier: testParameters.networkIdentifier,
+      signed: true,
+      transaction: testParameters.signedTransaction,
+    });
+    return http.post(url, payload);
+  })
   .check('ConstructionParse OK', (r) => r.status === 200)
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

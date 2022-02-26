@@ -21,16 +21,21 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
 const payload = JSON.stringify({metadata: {}});
-const urlTag = '/network/list';
-const url = __ENV.BASE_URL + urlTag;
+const urlTag = '/rosetta/network/list';
 
 const {options, run} = new TestScenarioBuilder()
   .name('networkList') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.post(url, payload))
+  .request((testParameters) => {
+    const url = testParameters.BASE_URL + urlTag;
+    return http.post(url, payload);
+  })
   .check('NetworkList OK', (r) => r.status === 200)
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;

@@ -21,20 +21,24 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import * as constants from './constants.js';
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const payload = JSON.stringify({
-  network_identifier: constants.networkIdentifier,
-  operations: constants.operations,
-});
-const urlTag = '/construction/preprocess';
-const url = __ENV.BASE_URL + urlTag;
+const urlTag = '/rosetta/construction/preprocess';
 
 const {options, run} = new TestScenarioBuilder()
   .name('constructionPreprocess') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request(() => http.post(url, payload))
+  .request((testParameters) => {
+    const payload = JSON.stringify({
+      network_identifier: testParameters.networkIdentifier,
+      operations: testParameters.operations,
+    });
+    const url = testParameters.BASE_URL + urlTag;
+    return http.post(url, payload);
+  })
   .check('ConstructionPreprocess OK', (r) => r.status === 200)
   .build();
 
 export {options, run};
+
+export const setup = setupTestParameters;
