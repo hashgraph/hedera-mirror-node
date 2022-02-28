@@ -69,7 +69,6 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.1001/nfts",
   "urls": [
     "/api/v1/accounts/1001/nfts",
     "/api/v1/accounts/0.1001/nfts",

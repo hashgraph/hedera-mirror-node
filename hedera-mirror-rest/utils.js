@@ -554,12 +554,12 @@ const convertMySqlStyleQueryToPostgres = (sqlQuery, startIndex = 1) => {
  * @param {HTTPRequest} req HTTP query request object
  * @param {Boolean} isEnd Is the next link valid or not
  * @param {String} field The query parameter field name
- * @param {Object} lastObjects List of lastObjects containing the last values for query param keys
+ * @param {Object} lastValueMap Map of key value pairs representing last values of columns that may be filtered on
  * @param {String} order Order of sorting the results
  * @return {String} next Fully formed link to the next page
  * @return {[]} list of last objects
  */
-const getPaginationLink = (req, isEnd, lastObjects, order) => {
+const getPaginationLink = (req, isEnd, lastValueMap, order) => {
   let urlPrefix;
   if (config.port !== undefined && config.response.includeHostInLink) {
     urlPrefix = `${req.protocol}://${req.hostname}:${config.port}`;
@@ -570,7 +570,7 @@ const getPaginationLink = (req, isEnd, lastObjects, order) => {
   let next = '';
 
   if (!isEnd) {
-    next = getNextParamQueries(order, req.query, lastObjects);
+    next = getNextParamQueries(order, req.query, lastValueMap);
 
     // remove the '/' at the end of req.path
     const path = req.path.endsWith('/') ? req.path.slice(0, -1) : req.path;
@@ -593,10 +593,10 @@ const getNextParamQueries = (order, reqQuery, lastObjects) => {
     const fieldValues = reqQuery[field];
     const patternMatch = pattern.test(fieldValues);
     if (Array.isArray(fieldValues)) {
-      for (const vv of fieldValues) {
-        if (pattern.test(vv)) {
+      for (const fieldValue of fieldValues) {
+        if (pattern.test(fieldValue)) {
           reqQuery[field] = reqQuery[field].filter(function (value, index, arr) {
-            return value != vv;
+            return value != fieldValue;
           });
         }
       }

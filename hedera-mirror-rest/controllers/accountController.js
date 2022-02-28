@@ -77,7 +77,7 @@ const updateQueryFiltersWithInValues = (existingParams, existingConditions, inva
  *
  * @param {[]} filters parsed and validated filters
  * @param {Number} accountId parsed accountId from path
- * @param {string} contractId encoded contract ID
+ * @param {Object} paramSupportMap map of supported filter param queries
  * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
  */
 const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupportMap) => {
@@ -151,10 +151,10 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
 
 /**
  * Retrieve a unique identifying string for a filter using it's key and comparison operator
- * e.g. 'token.id-eq', 'serialnumber-gte'
- * Note gt & gte are equivalent, as are lt & lte
+ * e.g. 'token.id-=', 'serialnumber->='
+ * Note gt & gte are equivalent, as are lt & lte when mergeOrEqualComparisons  is true
  * @param {Object} filter
- * @param {boolean} mergeOrEqualComparisons flag to treat gt & gte as equivalent, aswell as lt & lte
+ * @param {boolean} mergeOrEqualComparisons flag to treat gt & gte as equivalent, as well as lt & lte
  * @returns {string}
  */
 const getFilterKeyOpString = (filter, mergeOrEqualComparisons = true) => {

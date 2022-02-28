@@ -1,5 +1,5 @@
 {
-  "description": "Account NFT api call with multiple serial number range filters",
+  "description": "Account NFT api call with multiple token range filters",
   "setup": {
     "entities": [],
     "tokens": [],
