@@ -24,7 +24,6 @@ import (
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -36,25 +35,18 @@ func TestNewMempoolAPIService(t *testing.T) {
 
 func TestMempool(t *testing.T) {
 	// when:
-	res, e := NewMempoolAPIService().Mempool(nil, nil)
+	res, e := NewMempoolAPIService().Mempool(defaultContext, &rTypes.NetworkRequest{})
 
 	// then:
-	assert.Equal(
-		t,
-		&rTypes.MempoolResponse{
-			TransactionIdentifiers: []*rTypes.TransactionIdentifier{},
-		},
-		res,
-	)
-
 	assert.Nil(t, e)
+	assert.Equal(t, &rTypes.MempoolResponse{TransactionIdentifiers: []*rTypes.TransactionIdentifier{}}, res)
 }
 
 func TestMempoolTransaction(t *testing.T) {
 	// when:
-	res, e := NewMempoolAPIService().MempoolTransaction(nil, nil)
+	res, e := NewMempoolAPIService().MempoolTransaction(defaultContext, &rTypes.MempoolTransactionRequest{})
 
 	// then:
-	assert.Equal(t, errors.ErrTransactionNotFound, e)
-	assert.Nil(t, res)
+	assert.Nil(t, e)
+	assert.Equal(t, &rTypes.MempoolTransactionResponse{}, res)
 }

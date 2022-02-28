@@ -400,11 +400,11 @@ func TestConstructionDerive(t *testing.T) {
 	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, nil)
 
 	// when:
-	res, e := service.ConstructionDerive(nil, nil)
+	res, err := service.ConstructionDerive(defaultContext, &types.ConstructionDeriveRequest{})
 
 	// then:
-	assert.Nil(t, res)
-	assert.Equal(t, errors.ErrNotImplemented, e)
+	assert.Nil(t, err)
+	assert.Equal(t, &types.ConstructionDeriveResponse{}, res)
 }
 
 func TestConstructionHash(t *testing.T) {
