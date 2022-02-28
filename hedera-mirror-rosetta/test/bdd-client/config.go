@@ -49,7 +49,7 @@ hedera:
         server:
            dataRetry:
              backOff: 1s
-             max: 20
+             max: 60
            offlineUrl: http://localhost:5701
            onlineUrl: http://localhost:5700
            httpTimeout: 25s
