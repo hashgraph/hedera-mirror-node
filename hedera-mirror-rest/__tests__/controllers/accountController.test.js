@@ -164,17 +164,36 @@ describe('extractNftsQuery', () => {
 describe('extractNftsQuery throws', () => {
   const specs = [
     {
-      name: 'bad token id with serialnumber',
+      name: 'repeated token range filter',
       input: {
         filters: [
           {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.eq,
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.gt,
             value: '1',
           },
           {
             key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.gt,
+            operator: utils.opsMap.gte,
+            value: '3',
+          },
+        ],
+        accountId: 4,
+        paramSupportMap: accountCtrl.nftsByAccountIdParamSupportMap,
+      },
+    },
+    {
+      name: 'repeated serial number range filter',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.SERIAL_NUMBER,
+            operator: utils.opsMap.lt,
+            value: '1',
+          },
+          {
+            key: constants.filterKeys.SERIAL_NUMBER,
+            operator: utils.opsMap.lte,
             value: '3',
           },
         ],
@@ -206,6 +225,239 @@ describe('extractNftsQuery throws', () => {
           spec.input.accountId,
           accountCtrl.nftsByAccountIdParamSupportMap
         )
+      ).toThrowErrorMatchingSnapshot();
+    });
+  });
+});
+
+describe('getFilterKeyOpString', () => {
+  const specs = [
+    {
+      name: 'limit',
+      input: {
+        filter: {
+          key: constants.filterKeys.LIMIT,
+          operator: utils.opsMap.eq,
+          value: 20,
+        },
+        merge: false,
+      },
+      expected: 'limit-=',
+    },
+    {
+      name: 'limit merge',
+      input: {
+        filter: {
+          key: constants.filterKeys.LIMIT,
+          operator: utils.opsMap.eq,
+          value: 20,
+        },
+        merge: true,
+      },
+      expected: 'limit-=',
+    },
+    {
+      name: 'order asc',
+      input: {
+        filter: {
+          key: constants.filterKeys.ORDER,
+          operator: utils.opsMap.eq,
+          value: constants.orderFilterValues.ASC,
+        },
+        merge: false,
+      },
+      expected: 'order-=',
+    },
+    {
+      name: 'order desc merge',
+      input: {
+        filter: {
+          key: constants.filterKeys.ORDER,
+          operator: utils.opsMap.eq,
+          value: constants.orderFilterValues.DESC,
+        },
+        merge: true,
+      },
+      expected: 'order-=',
+    },
+    {
+      name: 'token.id gt',
+      input: {
+        filter: {
+          key: constants.filterKeys.TOKEN_ID,
+          operator: utils.opsMap.gt,
+          value: '1001',
+        },
+        merge: false,
+      },
+      expected: 'token.id->',
+    },
+    {
+      name: 'token.id gte',
+      input: {
+        filter: {
+          key: constants.filterKeys.TOKEN_ID,
+          operator: utils.opsMap.gte,
+          value: '1001',
+        },
+        merge: false,
+      },
+      expected: 'token.id->=',
+    },
+    {
+      name: 'token.id gte merge',
+      input: {
+        filter: {
+          key: constants.filterKeys.TOKEN_ID,
+          operator: utils.opsMap.gte,
+          value: '1001',
+        },
+        merge: true,
+      },
+      expected: 'token.id->',
+    },
+    {
+      name: 'serialnumber lt',
+      input: {
+        filter: {
+          key: constants.filterKeys.SERIAL_NUMBER,
+          operator: utils.opsMap.lt,
+          value: '1001',
+        },
+        merge: false,
+      },
+      expected: 'serialnumber-<',
+    },
+    {
+      name: 'serialnumber lte',
+      input: {
+        filter: {
+          key: constants.filterKeys.SERIAL_NUMBER,
+          operator: utils.opsMap.lte,
+          value: '1001',
+        },
+        merge: false,
+      },
+      expected: 'serialnumber-<=',
+    },
+    {
+      name: 'serialnumber lte merge',
+      input: {
+        filter: {
+          key: constants.filterKeys.SERIAL_NUMBER,
+          operator: utils.opsMap.lte,
+          value: '1001',
+        },
+        merge: true,
+      },
+      expected: 'serialnumber-<',
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(accountCtrl.getFilterKeyOpString(spec.input.filter, spec.input.merge)).toEqual(spec.expected);
+    });
+  });
+});
+
+describe('validateSingleFilterKeyOccurence not throw', () => {
+  const specs = [
+    {
+      name: 'token.id gt',
+      input: {
+        filterMap: {
+          'token.id-<': true,
+        },
+        filter: {
+          key: constants.filterKeys.TOKEN_ID,
+          operator: utils.opsMap.gt,
+          value: 20,
+        },
+      },
+    },
+    {
+      name: 'token.id gte',
+      input: {
+        filterMap: {
+          'token.id-<=': true,
+        },
+        filter: {
+          key: constants.filterKeys.TOKEN_ID,
+          operator: utils.opsMap.gte,
+          value: 20,
+        },
+      },
+    },
+    {
+      name: 'serialnumber lt',
+      input: {
+        filterMap: {
+          'serialnumber->': true,
+        },
+        filter: {
+          key: constants.filterKeys.SERIAL_NUMBER,
+          operator: utils.opsMap.lt,
+          value: 20,
+        },
+      },
+    },
+    {
+      name: 'serialnumber lte',
+      input: {
+        filterMap: {
+          'serialnumber->=': true,
+        },
+        filter: {
+          key: constants.filterKeys.SERIAL_NUMBER,
+          operator: utils.opsMap.lte,
+          value: 20,
+        },
+      },
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(() => accountCtrl.validateSingleFilterKeyOccurence(spec.input.filterMap, spec.input.filter)).not.toThrow();
+    });
+  });
+});
+
+describe('validateSingleFilterKeyOccurence throw', () => {
+  const specs = [
+    {
+      name: 'token.id gt',
+      input: {
+        filterMap: {
+          'token.id->': true,
+        },
+        filter: {
+          key: constants.filterKeys.TOKEN_ID,
+          operator: utils.opsMap.gt,
+          value: 20,
+        },
+      },
+    },
+    {
+      name: 'serialnumber lt',
+      input: {
+        filterMap: {
+          'serialnumber-<': true,
+        },
+        filter: {
+          key: constants.filterKeys.SERIAL_NUMBER,
+          operator: utils.opsMap.lt,
+          value: 20,
+        },
+      },
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(() =>
+        accountCtrl.validateSingleFilterKeyOccurence(spec.input.filterMap, spec.input.filter)
       ).toThrowErrorMatchingSnapshot();
     });
   });

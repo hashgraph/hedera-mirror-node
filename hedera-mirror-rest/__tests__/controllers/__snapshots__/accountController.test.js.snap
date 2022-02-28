@@ -1,5 +1,11 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`extractNftsQuery throws bad token id with serialnumber 1`] = `"Cannot search NFTs with serialnumber without also specifying a single tokenId value"`;
+exports[`extractNftsQuery throws repeated serial number range filter 1`] = `"Multiple range params not allowed for serialnumber"`;
 
-exports[`extractNftsQuery throws serialnumber with missing tokenId 1`] = `"Cannot search NFTs with serialnumber without also specifying a single tokenId value"`;
+exports[`extractNftsQuery throws repeated token range filter 1`] = `"Multiple range params not allowed for token.id"`;
+
+exports[`extractNftsQuery throws serialnumber with missing tokenId 1`] = `"Cannot search NFTs with serialnumber without a tokenId parameter filter"`;
+
+exports[`validateSingleFilterKeyOccurence throw serialnumber lt 1`] = `"Multiple range params not allowed for serialnumber"`;
+
+exports[`validateSingleFilterKeyOccurence throw token.id gt 1`] = `"Multiple range params not allowed for token.id"`;

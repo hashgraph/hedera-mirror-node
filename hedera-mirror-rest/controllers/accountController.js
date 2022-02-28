@@ -95,12 +95,9 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
   const serialNumberInValues = [];
 
   let hasSerialNumber = false;
+  let hasTokenNumber = false;
 
-  // default filter to compare against
-  let tokenIdFilter = {
-    operator: '',
-    value: null,
-  };
+  const oneOperatorValues = {};
 
   for (const filter of filters) {
     if (_.isNil(paramSupportMap[filter.key])) {
@@ -113,11 +110,17 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
         // handle repeated values
         updateConditionsAndParamsWithInValues(filter, serialNumberInValues, params, conditions, serialNumberFullName);
         hasSerialNumber = true;
+        // limit serialnumber lt(e)|gt(e) filters to one occurence
+        validateSingleFilterKeyOccurence(oneOperatorValues, filter);
+        oneOperatorValues[getFilterKeyOpString(filter)] = true;
         break;
       case constants.filterKeys.TOKEN_ID:
         // handle repeated values
         updateConditionsAndParamsWithInValues(filter, tokenInValues, params, conditions, nftTokenIdFullName);
-        tokenIdFilter = filter;
+        hasTokenNumber = true;
+        // limit tokenId lt(e)|gt(e) filters to one occurence
+        validateSingleFilterKeyOccurence(oneOperatorValues, filter);
+        oneOperatorValues[getFilterKeyOpString(filter)] = true;
         break;
       case constants.filterKeys.LIMIT:
         limit = filter.value;
@@ -130,10 +133,8 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
     }
   }
 
-  if (hasSerialNumber && (_.isNil(tokenIdFilter.value) || tokenIdFilter.operator !== utils.opsMap.eq)) {
-    throw new InvalidArgumentError(
-      `Cannot search NFTs with serialnumber without also specifying a single tokenId value`
-    );
+  if (hasSerialNumber && !hasTokenNumber) {
+    throw new InvalidArgumentError(`Cannot search NFTs with serialnumber without a tokenId parameter filter`);
   }
 
   // update query with repeated values
@@ -146,6 +147,35 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
     order: order,
     limit: limit,
   };
+};
+
+/**
+ * Retrieve a unique identifying string for a filter using it's key and comparison operator
+ * e.g. 'token.id-eq', 'serialnumber-gte'
+ * Note gt & gte are equivalent, as are lt & lte
+ * @param {Object} filter
+ * @param {boolean} mergeOrEqualComparisons flag to treat gt & gte as equivalent, aswell as lt & lte
+ * @returns {string}
+ */
+const getFilterKeyOpString = (filter, mergeOrEqualComparisons = true) => {
+  const rangeRegex = /(>|<)(=)?/;
+  const comparisonString = mergeOrEqualComparisons ? filter.operator.replace(rangeRegex, '$1') : filter.operator;
+  return `${filter.key}-${comparisonString.trim()}`;
+};
+
+/**
+ * Verify there's only a single occurence of a given non-eq filter in the map using its unique string identifier
+ * @param {Object} filterMap Map of observer filters
+ * @param {String} filter Current filter
+ */
+const validateSingleFilterKeyOccurence = (filterMap, filter) => {
+  if (filter.operator === utils.opsMap.eq) {
+    return;
+  }
+
+  if (filterMap[getFilterKeyOpString(filter)]) {
+    throw new InvalidArgumentError(`Multiple range params not allowed for ${filter.key}`);
+  }
 };
 
 const validateAccountNftsQueryFilter = (param, op, val) => {
@@ -297,6 +327,8 @@ if (utils.isTestEnv()) {
   Object.assign(module.exports, {
     extractNftsQuery,
     getAndValidateAccountIdRequestPathParam,
+    getFilterKeyOpString,
     nftsByAccountIdParamSupportMap,
+    validateSingleFilterKeyOccurence,
   });
 }

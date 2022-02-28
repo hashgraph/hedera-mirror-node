@@ -68,16 +68,14 @@
   "urls": [
     "/api/v1/accounts/0.0.1001/nfts?serialnumber=3",
     "/api/v1/accounts/0.0.1001/nfts?serialnumber=gte:2",
-    "/api/v1/accounts/0.0.1001/nfts?serialnumber=gte:2&serialnumber=lte:5",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=gt:1&serialnumber=3",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=ne:1&serialnumber=3"
+    "/api/v1/accounts/0.0.1001/nfts?serialnumber=gte:2&serialnumber=lte:5"
   ],
   "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Cannot search NFTs with serialnumber without also specifying a single tokenId value"
+          "message": "Cannot search NFTs with serialnumber without a tokenId parameter filter"
         }
       ]
     }
