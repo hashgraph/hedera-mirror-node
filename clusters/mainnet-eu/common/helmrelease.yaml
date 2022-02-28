@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.37.1'
+      version: '0.38.1'
   install:
     crds: CreateReplace
   interval: 1m
@@ -52,13 +52,6 @@ spec:
             external_labels:
               cluster: mainnet-eu
     traefik:
-      globalArguments:
-        - --entryPoints.web.forwardedHeaders.insecure
-        - --entryPoints.websecure.forwardedHeaders.insecure
-      logs:
-        access:
-          filters:
-            statuscodes: 300-599
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-eu"} } }'
