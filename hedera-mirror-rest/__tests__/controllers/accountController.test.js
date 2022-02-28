@@ -233,7 +233,7 @@ describe('extractNftsQuery throws', () => {
 describe('getFilterKeyOpString', () => {
   const specs = [
     {
-      name: 'limit',
+      name: 'limit key',
       input: {
         filter: {
           key: constants.filterKeys.LIMIT,
@@ -245,7 +245,7 @@ describe('getFilterKeyOpString', () => {
       expected: 'limit-=',
     },
     {
-      name: 'limit merge',
+      name: 'limit key w merge',
       input: {
         filter: {
           key: constants.filterKeys.LIMIT,
@@ -257,7 +257,7 @@ describe('getFilterKeyOpString', () => {
       expected: 'limit-=',
     },
     {
-      name: 'order asc',
+      name: 'order key w asc',
       input: {
         filter: {
           key: constants.filterKeys.ORDER,
@@ -269,7 +269,7 @@ describe('getFilterKeyOpString', () => {
       expected: 'order-=',
     },
     {
-      name: 'order desc merge',
+      name: 'order key w desc merge',
       input: {
         filter: {
           key: constants.filterKeys.ORDER,
@@ -281,7 +281,7 @@ describe('getFilterKeyOpString', () => {
       expected: 'order-=',
     },
     {
-      name: 'token.id gt',
+      name: 'token.id key w gt',
       input: {
         filter: {
           key: constants.filterKeys.TOKEN_ID,
@@ -305,7 +305,7 @@ describe('getFilterKeyOpString', () => {
       expected: 'token.id->=',
     },
     {
-      name: 'token.id gte merge',
+      name: 'token.id key w gte merge',
       input: {
         filter: {
           key: constants.filterKeys.TOKEN_ID,
@@ -317,7 +317,7 @@ describe('getFilterKeyOpString', () => {
       expected: 'token.id->',
     },
     {
-      name: 'serialnumber lt',
+      name: 'serialnumber key w lt',
       input: {
         filter: {
           key: constants.filterKeys.SERIAL_NUMBER,
@@ -329,7 +329,7 @@ describe('getFilterKeyOpString', () => {
       expected: 'serialnumber-<',
     },
     {
-      name: 'serialnumber lte',
+      name: 'serialnumber key w lte',
       input: {
         filter: {
           key: constants.filterKeys.SERIAL_NUMBER,
@@ -341,7 +341,7 @@ describe('getFilterKeyOpString', () => {
       expected: 'serialnumber-<=',
     },
     {
-      name: 'serialnumber lte merge',
+      name: 'serialnumber key w lte merge',
       input: {
         filter: {
           key: constants.filterKeys.SERIAL_NUMBER,
@@ -364,7 +364,7 @@ describe('getFilterKeyOpString', () => {
 describe('validateSingleFilterKeyOccurence not throw', () => {
   const specs = [
     {
-      name: 'token.id gt',
+      name: 'token.id gt single occurence',
       input: {
         filterMap: {
           'token.id-<': true,
@@ -377,7 +377,7 @@ describe('validateSingleFilterKeyOccurence not throw', () => {
       },
     },
     {
-      name: 'token.id gte',
+      name: 'token.id gte single occurence',
       input: {
         filterMap: {
           'token.id-<=': true,
@@ -390,7 +390,7 @@ describe('validateSingleFilterKeyOccurence not throw', () => {
       },
     },
     {
-      name: 'serialnumber lt',
+      name: 'serialnumber lt single occurence',
       input: {
         filterMap: {
           'serialnumber->': true,
@@ -403,7 +403,7 @@ describe('validateSingleFilterKeyOccurence not throw', () => {
       },
     },
     {
-      name: 'serialnumber lte',
+      name: 'serialnumber lte single occurence',
       input: {
         filterMap: {
           'serialnumber->=': true,
@@ -427,7 +427,7 @@ describe('validateSingleFilterKeyOccurence not throw', () => {
 describe('validateSingleFilterKeyOccurence throw', () => {
   const specs = [
     {
-      name: 'token.id gt',
+      name: 'token.id multiple occurence',
       input: {
         filterMap: {
           'token.id->': true,
@@ -440,7 +440,7 @@ describe('validateSingleFilterKeyOccurence throw', () => {
       },
     },
     {
-      name: 'serialnumber lt',
+      name: 'serialnumber multiple occurence',
       input: {
         filterMap: {
           'serialnumber-<': true,

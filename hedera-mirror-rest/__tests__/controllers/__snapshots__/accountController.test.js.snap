@@ -8,4 +8,8 @@ exports[`extractNftsQuery throws serialnumber with missing tokenId 1`] = `"Canno
 
 exports[`validateSingleFilterKeyOccurence throw serialnumber lt 1`] = `"Multiple range params not allowed for serialnumber"`;
 
+exports[`validateSingleFilterKeyOccurence throw serialnumber multiple occurence 1`] = `"Multiple range params not allowed for serialnumber"`;
+
 exports[`validateSingleFilterKeyOccurence throw token.id gt 1`] = `"Multiple range params not allowed for token.id"`;
+
+exports[`validateSingleFilterKeyOccurence throw token.id multiple occurence 1`] = `"Multiple range params not allowed for token.id"`;
