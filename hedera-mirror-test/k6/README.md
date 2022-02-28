@@ -1,3 +1,4 @@
+
 # K6 Performance Tests
 
 This module covers the [k6](https://k6.io/) based performance tests for Mirror Node APIs including rest, rosetta,
@@ -18,26 +19,27 @@ the tests of an API as a test suite. You can also run tests one at a time.
 To run a test suite, such as rosetta, use the following command.
 
 ```shell
-source src/rosetta/k6.env
-k6 run src/rosetta/apis.js
+DEFAULT_DURATION=1s \
+DEFAULT_VUS=1 \
+BASE_URL=https://testnet.mirrornode.hedera.com \
+LIST_LENGTH_LIMIT=100 \
+DEFAULT_TOPIC_ID=0.0.120438 \
+DEFAULT_TOPIC_SEQUENCE=530610102 \
+DEFAULT_TOPIC_TIMESTAMP=1642481343.874648000 k6 run src/rest/apis.js
 ```
 
-The `k6.env` file contains sensible default values for environment variables used in the tests. Some are network
-dependent. Adjust the values if needed. If you don't want to use the default values, you can query the target
-environment for environment specific parameters, this can be done by using the `src/bootstrapEnvParameters.js`.
-Example:
-```shell
-source src/rosetta/k6.env
-../../hedera-mirror-rest/node/node src/config/bootstrapEnvParameters.js -env mainnet -baseApiUrl https://mainnet-public.mirrornode.hedera.com/api/v1
-source src/configs/mainnet.env
-k6 run src/rosetta/apis.js
-```
+The parameters:
 
-The commands above will query the main net environment by using the given API URL, and build the
-`src/configs/mainnet.env` file with a list of `export` commands for the environment variables.
-The command `source src/configs/mainnet.env` will overwrite the value of some environment variables already exported
-by the command `source src/rosetta/k6.env`, at the moment the `bootstrapEnvParameters.js` script is able to overwrite
-the values of the following env variables:
+- DEFAULT_DURATION
+- DEFAULT_VUS
+- BASE_URL
+- LIST_LENGTH_LIMIT
+- DEFAULT_TOPIC_ID
+- DEFAULT_TOPIC_SEQUENCE
+- DEFAULT_TOPIC_TIMESTAMP
+
+Are required to run the tests, but the following parameters are retrieved during the setup process.
+
 - DEFAULT_ACCOUNT
 - DEFAULT_ACCOUNT_BALANCE
 - DEFAULT_CONTRACT_ID
