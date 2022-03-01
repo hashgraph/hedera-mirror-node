@@ -25,7 +25,8 @@ import {
   computeNftParameters,
   computeScheduleParameters,
   computeTransactionParameters,
-  setDefaultValuesForEnvParameters
+  setDefaultValuesForEnvParameters,
+  validateEnvProperty
 } from "../../lib/parameters.js";
 
 const computeTestParameters = (configuration) =>

@@ -149,3 +149,9 @@ export const setDefaultValuesForEnvParameters = () => {
   __ENV['DEFAULT_VUS'] = __ENV['DEFAULT_VUS'] = 10;
   __ENV['DEFAULT_LIMIT'] = __ENV['DEFAULT_LIMIT'] = 100;
 }
+
+export const validateEnvProperty = (propertyName) => {
+  if (!__ENV.hasOwnProperty(propertyName)) {
+    throw new Error(`You must set a value for the environment property: ${propertyName}`);
+  }
+};

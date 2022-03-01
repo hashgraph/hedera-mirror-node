@@ -40,16 +40,17 @@ The parameters:
 
 Are required to run the tests, but the following parameters are retrieved during the setup process.
 
-- DEFAULT_ACCOUNT
+- DEFAULT_ACCOUNT_ID
 - DEFAULT_ACCOUNT_BALANCE
 - DEFAULT_CONTRACT_ID
-- DEFAULT_NFT
+- DEFAULT_CONTRACT_TIMESTAMP
+- DEFAULT_NFT_ID
 - DEFAULT_NFT_SERIAL
-- DEFAULT_PUBLICKEY
-- DEFAULT_SCHEDULE_ACCOUNT
+- DEFAULT_PUBLIC_KEY
+- DEFAULT_SCHEDULE_ACCOUNT_ID
 - DEFAULT_SCHEDULE_ID
-- DEFAULT_TOKEN
-- DEFAULT_TRANSACTION
+- DEFAULT_TOKEN_ID
+- DEFAULT_TRANSACTION_ID
 
 The test suite will run the tests sequentially with a configurable graceful stop time in between, so they don't
 interfere with each other.
