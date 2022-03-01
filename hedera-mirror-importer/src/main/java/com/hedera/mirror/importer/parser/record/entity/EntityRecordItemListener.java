@@ -302,12 +302,13 @@ public class EntityRecordItemListener implements RecordItemListener {
                 } catch (AliasNotFoundException ex) {
                     switch (partialDataAction) {
                         case DEFAULT:
-                            log.warn(ex.getMessage() + ", action " + partialDataAction);
+                            log.warn("Setting non-fee transfer account to default value due to partial data issue: {}",
+                                    ex.getMessage());
                             break;
                         case ERROR:
                             throw ex;
                         case SKIP:
-                            log.warn(ex.getMessage() + ", action " + partialDataAction);
+                            log.warn("Skipping non-fee transfer due to partial data issue: {}", ex.getMessage());
                             continue;
                     }
                 }
