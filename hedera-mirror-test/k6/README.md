@@ -28,6 +28,24 @@ DEFAULT_TOPIC_SEQUENCE=530610102 \
 DEFAULT_TOPIC_TIMESTAMP=1642481343.874648000 k6 run src/rest/apis.js
 ```
 
+Another option is to have a parameters file named `parameters.env` with the content:
+
+```shell
+export DEFAULT_DURATION=1s
+export DEFAULT_VUS=1
+export BASE_URL=https://testnet.mirrornode.hedera.com
+export DEFAULT_LIMIT=100
+export DEFAULT_TOPIC_ID=0.0.120438
+export DEFAULT_TOPIC_SEQUENCE=530610102
+```
+
+And execute k6 after exporting the values for the env variables:
+
+```shell
+source parameters.env
+k6 run src/rest/apis.js
+```
+
 The parameters:
 
 - DEFAULT_DURATION
