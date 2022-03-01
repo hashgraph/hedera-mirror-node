@@ -143,8 +143,9 @@ export const computeTransactionFromBlock = (rosettaApiUrl, networkIdentifier, bl
   }
 }
 
-export const validateEnvProperty = (propertyName) => {
-  if (!__ENV.hasOwnProperty(propertyName)) {
-    throw new Error(`You must set a value for the environment property: ${propertyName}`);
-  }
-};
+export const setDefaultValuesForEnvParameters = () => {
+  __ENV['BASE_URL'] = __ENV['BASE_URL'] || "http://localhost";
+  __ENV['DEFAULT_DURATION'] = __ENV['DEFAULT_DURATION'] = "120s";
+  __ENV['DEFAULT_VUS'] = __ENV['DEFAULT_VUS'] = 10;
+  __ENV['DEFAULT_LIMIT'] = __ENV['DEFAULT_LIMIT'] = 100;
+}

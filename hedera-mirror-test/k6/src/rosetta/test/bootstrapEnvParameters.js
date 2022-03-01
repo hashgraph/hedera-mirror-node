@@ -23,13 +23,13 @@ import {
   computeAccountParameters,
   computeBlockFromNetwork,
   computeTransactionFromBlock,
-  validateEnvProperty
+  setDefaultValuesForEnvParameters
 } from "../../lib/parameters.js";
 import {accountIdentifier, currencyHbar} from "./constants.js";
 import {urlPrefix} from "../../lib/constants.js";
 
 const setupTestParameters = () => {
-  validateEnvProperty('BASE_URL');
+  setDefaultValuesForEnvParameters();
   __ENV['NETWORK'] = __ENV['NETWORK'] || 'mainnet';
   const accountParameters = computeAccountParameters({baseApiUrl: `${__ENV['BASE_URL']}${urlPrefix}`});
 

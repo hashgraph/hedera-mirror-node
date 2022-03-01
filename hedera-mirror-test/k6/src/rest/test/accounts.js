@@ -33,7 +33,7 @@ const {options, run} = new TestScenarioBuilder()
   .tags({url: urlTag})
   .request((testParameters) => {
     const baseUrl = testParameters['BASE_URL'];
-    let url = `${baseUrl}${urlPrefix}${urlTag}?limit=${testParameters['LIST_LENGTH_LIMIT']}`;
+    let url = `${baseUrl}${urlPrefix}${urlTag}?limit=${testParameters['DEFAULT_LIMIT']}`;
     if (nextLink) {
       url = baseUrl + nextLink;
     }

@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('topicsIdMessages') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/topics/${testParameters['DEFAULT_TOPIC_ID']}/messages?limit=${testParameters['LIST_LENGTH_LIMIT']}`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/topics/${testParameters['DEFAULT_TOPIC_ID']}/messages?limit=${testParameters['DEFAULT_LIMIT']}`;
     return http.get(url);
   })
   .check('Topics id messages OK', (r) => isValidListResponse(r, messageListName))

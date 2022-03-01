@@ -25,7 +25,7 @@ import {
   computeNftParameters,
   computeScheduleParameters,
   computeTransactionParameters,
-  validateEnvProperty
+  setDefaultValuesForEnvParameters
 } from "../../lib/parameters.js";
 
 const computeTestParameters = (configuration) =>
@@ -58,11 +58,8 @@ const bootstrap = (baseApiUrl) => {
   return buildConfigObject(testParameters);
 };
 
-
 const setupTestParameters = () => {
-  //verify if all the data that must be in __ENV is actually there;
-  validateEnvProperty('BASE_URL');
-  validateEnvProperty('LIST_LENGTH_LIMIT');
+  setDefaultValuesForEnvParameters();
   validateEnvProperty('DEFAULT_TOPIC_ID');
   validateEnvProperty('DEFAULT_TOPIC_SEQUENCE');
   validateEnvProperty('DEFAULT_TOPIC_TIMESTAMP');
@@ -70,7 +67,7 @@ const setupTestParameters = () => {
   const testParametersMap = bootstrap(__ENV['BASE_URL']);
   return Object.assign(testParametersMap, {
     BASE_URL: __ENV.BASE_URL,
-    LIST_LENGTH_LIMIT: __ENV.LIST_LENGTH_LIMIT,
+    DEFAULT_LIMIT: __ENV.DEFAULT_LIMIT,
     DEFAULT_TOPIC_ID: __ENV.DEFAULT_TOPIC_ID,
     DEFAULT_TOPIC_SEQUENCE: __ENV.DEFAULT_TOPIC_SEQUENCE,
     DEFAULT_TOPIC_TIMESTAMP: __ENV.DEFAULT_TOPIC_TIMESTAMP

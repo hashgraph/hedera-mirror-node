@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('transactionsAccountId') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/transactions?account.id=${testParameters['DEFAULT_ACCOUNT_ID']}&limit=${testParameters['LIST_LENGTH_LIMIT']}`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/transactions?account.id=${testParameters['DEFAULT_ACCOUNT_ID']}&limit=${testParameters['DEFAULT_LIMIT']}`;
     return http.get(url);
   })
   .check('Transactions by account id OK', (r) => isValidListResponse(r, transactionListName))

@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('contracts') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}?limit=${testParameters['LIST_LENGTH_LIMIT']}`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}?limit=${testParameters['DEFAULT_LIMIT']}`;
     return http.get(url);
   })
   .check('Contracts OK', (r) => isValidListResponse(r, contractListName))
