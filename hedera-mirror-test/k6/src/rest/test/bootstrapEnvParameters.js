@@ -43,7 +43,7 @@ const buildConfigObject = (testParameters) => ({
   DEFAULT_ACCOUNT_ID: testParameters.account,
   DEFAULT_ACCOUNT_BALANCE: testParameters.accountBalance,
   DEFAULT_CONTRACT_ID: testParameters.contractId,
-  DEFAULT_CONTRACT_TIMESTAMP: testParameters.DEFAULT_CONTRACT_TIMESTAMP,
+  DEFAULT_CONTRACT_TIMESTAMP: testParameters.contractTimestamp,
   DEFAULT_NFT_ID: testParameters.nft,
   DEFAULT_NFT_SERIAL: testParameters.nftSerial,
   DEFAULT_PUBLIC_KEY: testParameters.publicKey,
