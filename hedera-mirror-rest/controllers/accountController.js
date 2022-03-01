@@ -36,16 +36,6 @@ const {Nft} = require('../model');
 const {NftService} = require('../service');
 const {NftViewModel} = require('../viewmodel');
 
-const defaultParamSupportMap = {
-  [constants.filterKeys.LIMIT]: true,
-  [constants.filterKeys.ORDER]: true,
-};
-const nftsByAccountIdParamSupportMap = {
-  [constants.filterKeys.TOKEN_ID]: true,
-  [constants.filterKeys.SERIAL_NUMBER]: true,
-  ...defaultParamSupportMap,
-};
-
 // errors
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
@@ -80,7 +70,7 @@ const updateQueryFiltersWithInValues = (existingParams, existingConditions, inva
  * @param {Object} paramSupportMap map of supported filter param queries
  * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
  */
-const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupportMap) => {
+const extractNftsQuery = (filters, accountId) => {
   let limit = defaultLimit;
   let order = constants.orderFilterValues.DESC;
   const conditions = [`${Nft.ACCOUNT_ID} = $1`];
@@ -100,11 +90,6 @@ const extractNftsQuery = (filters, accountId, paramSupportMap = defaultParamSupp
   const oneOperatorValues = {};
 
   for (const filter of filters) {
-    if (_.isNil(paramSupportMap[filter.key])) {
-      // param not supported for current endpoint
-      continue;
-    }
-
     switch (filter.key) {
       case constants.filterKeys.SERIAL_NUMBER:
         // handle repeated values
@@ -176,44 +161,6 @@ const validateSingleFilterKeyOccurence = (filterMap, filter) => {
   if (filterMap[getFilterKeyOpString(filter)]) {
     throw new InvalidArgumentError(`Multiple range params not allowed for ${filter.key}`);
   }
-};
-
-const validateAccountNftsQueryFilter = (param, op, val) => {
-  let ret = false;
-
-  if (op === undefined || val === undefined) {
-    return ret;
-  }
-
-  // Validate operator
-  if (!utils.isValidOperatorQuery(op)) {
-    return ret;
-  }
-
-  // Validate the value
-  switch (param) {
-    case constants.filterKeys.ACCOUNT_ID:
-      ret = EntityId.isValidEntityId(val);
-      break;
-    case constants.filterKeys.LIMIT:
-      ret = utils.isPositiveLong(val);
-      break;
-    case constants.filterKeys.ORDER:
-      // Acceptable words: asc or desc
-      ret = utils.isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
-      break;
-    case constants.filterKeys.SERIAL_NUMBER:
-      ret = utils.isPositiveLong(val);
-      break;
-    case constants.filterKeys.TOKEN_ID:
-      ret = EntityId.isValidEntityId(val);
-      break;
-    default:
-      // Every token parameter should be included here. Otherwise, it will not be accepted.
-      break;
-  }
-
-  return ret;
 };
 
 /**
@@ -293,8 +240,8 @@ const getNftsByAccountId = async (req, res) => {
   const accountId = await getAndValidateAccountIdRequestPathParam(req.params.accountAliasOrAccountId);
 
   // extract filters from query param
-  const filters = utils.buildAndValidateFilters(req.query, validateAccountNftsQueryFilter);
-  const {conditions, params, order, limit} = extractNftsQuery(filters, accountId, nftsByAccountIdParamSupportMap);
+  const filters = utils.buildAndValidateFilters(req.query);
+  const {conditions, params, order, limit} = extractNftsQuery(filters, accountId);
 
   // get transactions using id and nonce, exclude duplicate transactions. there can be at most one
   const nfts = await NftService.getNftsByFilters(conditions, params, order, limit);
@@ -305,15 +252,15 @@ const getNftsByAccountId = async (req, res) => {
     },
   };
 
-  if (!_.isEmpty(response.results)) {
-    const lastRow = _.last(response.results);
-    const lastNftTimestamp = lastRow !== undefined ? lastRow.created_timestamp : null;
+  if (!_.isEmpty(response.nfts)) {
+    const lastRow = _.last(response.nfts);
+    const lastTokenId = lastRow !== undefined ? lastRow.token_id : null;
     const lastSerial = lastRow !== undefined ? lastRow.serial_number : null;
     const last = {
-      [constants.filterKeys.TOKEN_ID]: lastNftTimestamp,
+      [constants.filterKeys.TOKEN_ID]: lastTokenId,
       [constants.filterKeys.SERIAL_NUMBER]: lastSerial,
     };
-    response.links.next = utils.getPaginationLink(req, response.results.length !== limit, last, order);
+    response.links.next = utils.getPaginationLink(req, response.nfts.length !== limit, last, order);
   }
 
   res.locals[constants.responseDataLabel] = response;
@@ -328,7 +275,6 @@ if (utils.isTestEnv()) {
     extractNftsQuery,
     getAndValidateAccountIdRequestPathParam,
     getFilterKeyOpString,
-    nftsByAccountIdParamSupportMap,
     validateSingleFilterKeyOccurence,
   });
 }
