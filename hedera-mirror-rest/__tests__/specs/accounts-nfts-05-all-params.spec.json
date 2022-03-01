@@ -89,7 +89,7 @@
       }
     ],
     "links": {
-      "next": null
+      "next": "/api/v1/accounts/0.0.1001/nfts?token.id=1500&order=asc&limit=2&serialnumber=gt:3"
     }
   }
 }

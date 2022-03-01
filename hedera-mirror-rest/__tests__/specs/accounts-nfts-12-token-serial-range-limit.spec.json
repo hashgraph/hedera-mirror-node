@@ -1,0 +1,141 @@
+{
+  "description": "Account NFT api call for all tokens with valid token and serialnumber range and limit",
+  "setup": {
+    "accounts": [
+      {
+        "num": 1001,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
+      },
+      {
+        "num": 2001
+      }
+    ],
+    "entities": [
+      {
+        "num": 1500,
+        "type": "TOKEN"
+      },
+      {
+        "num": 2500,
+        "type": "TOKEN"
+      }
+    ],
+    "tokens": [
+      {
+        "token_id": "0.0.1500",
+        "symbol": "FIRSTMOVERLPDJH",
+        "created_timestamp": "1234567890000000003",
+        "type": "NON_FUNGIBLE_UNIQUE"
+      },
+      {
+        "token_id": "0.0.2500",
+        "symbol": "ORIGINALRDKSE",
+        "created_timestamp": "1234567890000000004",
+        "type": "NON_FUNGIBLE_UNIQUE"
+      }
+    ],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "nfts": [
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000000",
+        "metadata": "a1",
+        "serial_number": 1,
+        "token_id": "0.0.1000"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000001",
+        "metadata": "m1",
+        "serial_number": 1,
+        "token_id": "0.0.1500"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000001",
+        "metadata": "m2",
+        "serial_number": 2,
+        "token_id": "0.0.1500"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000001",
+        "metadata": "m3",
+        "serial_number": 3,
+        "token_id": "0.0.1500"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000002",
+        "metadata": "o2",
+        "serial_number": 1,
+        "token_id": "0.0.2000"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000002",
+        "metadata": "o4",
+        "serial_number": 2,
+        "token_id": "0.0.2000"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000002",
+        "metadata": "m6",
+        "serial_number": 3,
+        "token_id": "0.0.2000"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000003",
+        "metadata": "s3",
+        "serial_number": 4,
+        "token_id": "0.0.2500"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000003",
+        "metadata": "s4",
+        "serial_number": 5,
+        "token_id": "0.0.2500"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000003",
+        "metadata": "s5",
+        "serial_number": 6,
+        "token_id": "0.0.2500"
+      }
+    ]
+  },
+  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gt:1000&token.id=lte:2500&serialnumber=gte:3&serialnumber=lt:5&limit=2&order=asc",
+  "responseStatus": 200,
+  "responseJson": {
+    "nfts": [
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000001",
+        "deleted": false,
+        "metadata": "bTM=",
+        "modified_timestamp": "1234567890.000000001",
+        "serial_number": 3,
+        "token_id": "0.0.1500"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000002",
+        "deleted": false,
+        "metadata": "bTY=",
+        "modified_timestamp": "1234567890.000000002",
+        "serial_number": 3,
+        "token_id": "0.0.2000"
+      }
+    ],
+    "links": {
+      "next": "/api/v1/accounts/0.0.1001/nfts?token.id=lte:2500&token.id=gt:0.0.2000&serialnumber=lt:5&serialnumber=gt:3&limit=2&order=asc"
+    }
+  }
+}

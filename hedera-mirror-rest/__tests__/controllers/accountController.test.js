@@ -50,7 +50,6 @@ describe('extractNftsQuery', () => {
           },
         ],
         accountId: 1,
-        paramSupportMap: accountCtrl.nftsByAccountIdParamSupportMap,
       },
       expected: {
         ...defaultExpected,
@@ -69,7 +68,6 @@ describe('extractNftsQuery', () => {
           },
         ],
         accountId: 2,
-        paramSupportMap: accountCtrl.nftsByAccountIdParamSupportMap,
       },
       expected: {
         ...defaultExpected,
@@ -99,7 +97,6 @@ describe('extractNftsQuery', () => {
           },
         ],
         accountId: 3,
-        paramSupportMap: accountCtrl.nftsByAccountIdParamSupportMap,
       },
       expected: {
         ...defaultExpected,
@@ -138,7 +135,6 @@ describe('extractNftsQuery', () => {
           },
         ],
         accountId: 4,
-        paramSupportMap: accountCtrl.nftsByAccountIdParamSupportMap,
       },
       expected: {
         ...defaultExpected,
@@ -150,13 +146,7 @@ describe('extractNftsQuery', () => {
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      expect(
-        accountCtrl.extractNftsQuery(
-          spec.input.filters,
-          spec.input.accountId,
-          accountCtrl.nftsByAccountIdParamSupportMap
-        )
-      ).toEqual(spec.expected);
+      expect(accountCtrl.extractNftsQuery(spec.input.filters, spec.input.accountId)).toEqual(spec.expected);
     });
   });
 });
@@ -179,7 +169,6 @@ describe('extractNftsQuery throws', () => {
           },
         ],
         accountId: 4,
-        paramSupportMap: accountCtrl.nftsByAccountIdParamSupportMap,
       },
     },
     {
@@ -198,7 +187,6 @@ describe('extractNftsQuery throws', () => {
           },
         ],
         accountId: 4,
-        paramSupportMap: accountCtrl.nftsByAccountIdParamSupportMap,
       },
     },
     {
@@ -212,7 +200,6 @@ describe('extractNftsQuery throws', () => {
           },
         ],
         accountId: 4,
-        paramSupportMap: accountCtrl.nftsByAccountIdParamSupportMap,
       },
     },
   ];
@@ -220,11 +207,7 @@ describe('extractNftsQuery throws', () => {
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
       expect(() =>
-        accountCtrl.extractNftsQuery(
-          spec.input.filters,
-          spec.input.accountId,
-          accountCtrl.nftsByAccountIdParamSupportMap
-        )
+        accountCtrl.extractNftsQuery(spec.input.filters, spec.input.accountId)
       ).toThrowErrorMatchingSnapshot();
     });
   });

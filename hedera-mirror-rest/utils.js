@@ -50,6 +50,8 @@ const opsMap = {
   ne: ' != ',
 };
 
+const gtLtPattern = /(g|l)t[e]?:/;
+
 /**
  * Check if the given number is numeric
  * @param {String} n Number to test
@@ -579,41 +581,13 @@ const getPaginationLink = (req, isEnd, lastValueMap, order) => {
   return next === '' ? null : next;
 };
 
-const getNextParamQueries = (order, reqQuery, lastObjects) => {
+/**
+ * Construct the query string from the query object
+ * @param {Object} reqQuery request query object
+ * @returns url string
+ */
+const constructStringFromUrlQuery = (reqQuery) => {
   let next = '';
-
-  const gtLtPattern = /(g|l)t[e]?:/;
-  const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
-  const insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
-
-  for (const [field, lastValue] of Object.entries(lastObjects)) {
-    // Go through the query parameters, and if there is a 'field=gt:xxxx' (asc order)
-    // or 'field=lt:xxxx' (desc order) fields, then remove that, to be replaced by the
-    // new continuation value
-    const fieldValues = reqQuery[field];
-    const patternMatch = pattern.test(fieldValues);
-    if (Array.isArray(fieldValues)) {
-      for (const fieldValue of fieldValues) {
-        if (pattern.test(fieldValue)) {
-          reqQuery[field] = reqQuery[field].filter(function (value, index, arr) {
-            return value != fieldValue;
-          });
-        }
-      }
-    } else if (patternMatch) {
-      delete reqQuery[field];
-    }
-
-    if (field in reqQuery) {
-      if (gtLtPattern.test(fieldValues)) {
-        reqQuery[field] = [].concat(reqQuery[field]).concat(`${insertedPattern}:${lastValue}`);
-      }
-    } else {
-      reqQuery[field] = `${insertedPattern}:${lastValue}`;
-    }
-  }
-
-  // Reconstruct the query string
   for (const [q, v] of Object.entries(reqQuery)) {
     if (Array.isArray(v)) {
       v.forEach((vv) => (next += `${(next === '' ? '?' : '&') + q}=${vv}`));
@@ -623,6 +597,45 @@ const getNextParamQueries = (order, reqQuery, lastObjects) => {
   }
 
   return next;
+};
+
+/**
+ * Go through the query parameters, and if there is a 'field=gt:xxxx' (asc order)
+ * or 'field=lt:xxxx' (desc order) fields, then remove that, to be replaced by the new continuation value
+ */
+const updateReqQuery = (reqQuery, field, pattern, insertValue) => {
+  const fieldValues = reqQuery[field];
+  const patternMatch = pattern.test(fieldValues);
+  if (Array.isArray(fieldValues)) {
+    for (const fieldValue of fieldValues) {
+      if (pattern.test(fieldValue)) {
+        reqQuery[field] = reqQuery[field].filter(function (value, index, arr) {
+          return value !== fieldValue;
+        });
+      }
+    }
+  } else if (patternMatch) {
+    delete reqQuery[field];
+  }
+
+  if (field in reqQuery) {
+    if (gtLtPattern.test(fieldValues)) {
+      reqQuery[field] = [].concat(reqQuery[field]).concat(insertValue);
+    }
+  } else {
+    reqQuery[field] = insertValue;
+  }
+};
+
+const getNextParamQueries = (order, reqQuery, lastObjects) => {
+  const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
+  const insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
+
+  for (const [field, lastValue] of Object.entries(lastObjects)) {
+    updateReqQuery(reqQuery, field, pattern, `${insertedPattern}:${lastValue}`);
+  }
+
+  return constructStringFromUrlQuery(reqQuery);
 };
 
 /**
