@@ -18,12 +18,6 @@
  * ‍
  */
 
-const accountIdentifier = {
-  address: `0.0.${__ENV.ROSETTA_ACCOUNT_NUM != null ? __ENV.ROSETTA_ACCOUNT_NUM : 98}`,
-  metadata: {},
-};
-
-
 const currencyHbar = {
   symbol: 'HBAR',
   decimals: 8,
@@ -32,22 +26,6 @@ const currencyHbar = {
   },
 };
 
-const networkIdentifier = {
-  blockchain: 'Hedera',
-  network: __ENV.ROSETTA_NETWORK != null ? __ENV.ROSETTA_NETWORK : 'mainnet',
-  sub_network_identifier: {
-    network: 'shard 0 realm 0',
-  }
-};
-
-const publicKey = {
-  hex_bytes: __ENV.ROSETTA_ACCOUNT_PUBLIC_KEY,
-  curve_type: 'edwards25519',
-};
-
 export {
-  accountIdentifier,
-  currencyHbar,
-  networkIdentifier,
-  publicKey
+  currencyHbar
 };

@@ -25,7 +25,7 @@ import {
   computeTransactionFromBlock,
   setDefaultValuesForEnvParameters
 } from "../../lib/parameters.js";
-import {accountIdentifier, currencyHbar} from "./constants.js";
+import {currencyHbar} from "./constants.js";
 import {urlPrefix} from "../../lib/constants.js";
 
 const setupTestParameters = () => {
