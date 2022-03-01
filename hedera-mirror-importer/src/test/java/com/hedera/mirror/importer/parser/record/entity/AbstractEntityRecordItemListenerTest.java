@@ -46,7 +46,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
@@ -112,9 +111,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     @Resource
     protected EntityRepository entityRepository;
-
-    @Resource
-    private JdbcOperations jdbcOperations;
 
     @Resource
     protected LiveHashRepository liveHashRepository;

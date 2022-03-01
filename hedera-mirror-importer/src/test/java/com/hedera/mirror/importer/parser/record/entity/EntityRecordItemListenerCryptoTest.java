@@ -645,7 +645,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         List<EntityId> expectedEntityIds = partialDataAction == PartialDataAction.DEFAULT ?
                 Arrays.asList(account2.toEntityId(), null) : List.of(account2.toEntityId());
 
-
         // when
         parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
 
