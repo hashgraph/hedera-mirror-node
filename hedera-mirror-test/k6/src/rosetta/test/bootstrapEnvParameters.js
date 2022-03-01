@@ -28,9 +28,13 @@ import {
 import {currencyHbar} from "./constants.js";
 import {urlPrefix} from "../../lib/constants.js";
 
-const setupTestParameters = () => {
+function setDefaultValuesForEnvParametersForRosettaTests() {
   setDefaultValuesForEnvParameters();
   __ENV['NETWORK'] = __ENV['NETWORK'] || 'mainnet';
+}
+
+const setupTestParameters = () => {
+  setDefaultValuesForEnvParametersForRosettaTests();
   const accountParameters = computeAccountParameters({baseApiUrl: `${__ENV['BASE_URL']}${urlPrefix}`});
 
   const blockIdentifier = computeBlockFromNetwork(__ENV['BASE_URL'], __ENV['NETWORK']);
@@ -45,7 +49,7 @@ const setupTestParameters = () => {
   return {
     BASE_URL: __ENV['BASE_URL'],
     accountIdentifier: {
-      address: `0.0.${accountParameters.account}`,
+      address: `0.0.${accountParameters.DEFAULT_ACCOUNT_ID}`,
       metadata: {},
     },
     blockIdentifier,

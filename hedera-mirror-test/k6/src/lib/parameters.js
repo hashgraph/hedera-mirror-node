@@ -46,9 +46,9 @@ export const computeAccountParameters = (configuration) => {
   const accountPath = `${configuration.baseApiUrl}/accounts?balance=true&limit=1&order=desc`;
   const firstAccount = getFirstEntity(accountPath, accountListName);
   return {
-    account: firstAccount.account,
-    accountBalance: firstAccount.balance.balance || 0,
-    publicKey: firstAccount.key.key
+    DEFAULT_ACCOUNT_ID: firstAccount.account,
+    DEFAULT_ACCOUNT_BALANCE: firstAccount.balance.balance || 0,
+    DEFAULT_PUBLIC_KEY: firstAccount.key.key
   };
 };
 
@@ -56,8 +56,8 @@ export const computeContractParameters = (configuration) => {
   const contractPath = `${configuration.baseApiUrl}/contracts?limit=1&order=desc`;
   const firstContract = getFirstEntity(contractPath, contractListName)
   return {
-    contractId: firstContract.contract_id,
-    contractTimestamp: firstContract.created_timestamp
+    DEFAULT_CONTRACT_ID: firstContract.contract_id,
+    DEFAULT_CONTRACT_TIMESTAMP: firstContract.created_timestamp
   };
 };
 
@@ -67,8 +67,8 @@ export const computeNftParameters = (configuration) => {
   const nftPath = `${configuration.baseApiUrl}/tokens/${firstNftFromTokenList.token_id}/nfts?limit=1&order=desc`;
   const firstNft = getFirstEntity(nftPath, nftListName);
   return {
-    nft: firstNftFromTokenList.token_id,
-    nftSerial: firstNft.serial_number
+    DEFAULT_NFT_ID: firstNftFromTokenList.token_id,
+    DEFAULT_NFT_SERIAL: firstNft.serial_number
   };
 };
 
@@ -76,8 +76,8 @@ export const computeScheduleParameters = (configuration) => {
   const schedulePath = `${configuration.baseApiUrl}/schedules?limit=1&order=desc`;
   const firstSchedule = getFirstEntity(schedulePath, scheduleListName);
   return {
-    scheduleAccount: firstSchedule.creator_account_id,
-    scheduleId: firstSchedule.schedule_id
+    DEFAULT_SCHEDULE_ACCOUNT_ID: firstSchedule.creator_account_id,
+    DEFAULT_SCHEDULE_ID: firstSchedule.schedule_id
   };
 };
 
@@ -85,7 +85,7 @@ export const computeFungibleTokenParameters = (configuration) => {
   const tokenPath = `${configuration.baseApiUrl}/tokens?type=FUNGIBLE_COMMON&limit=1&order=desc`;
   const firstToken = getFirstEntity(tokenPath, tokenListName);
   return {
-    token: firstToken.token_id
+    DEFAULT_TOKEN_ID: firstToken.token_id
   };
 };
 
@@ -93,7 +93,7 @@ export const computeTransactionParameters = (configuration) => {
   const tokenPath = `${configuration.baseApiUrl}/transactions?limit=1&transactiontype=cryptotransfer&order=desc`;
   const firstTransaction = getFirstEntity(tokenPath, transactionListName)
   return {
-    transaction: firstTransaction.transaction_id
+    DEFAULT_TRANSACTION_ID: firstTransaction.transaction_id
   };
 };
 

@@ -39,33 +39,13 @@ const computeTestParameters = (configuration) =>
     computeTransactionParameters(configuration)
   );
 
-const buildConfigObject = (testParameters) => ({
-  DEFAULT_ACCOUNT_ID: testParameters.account,
-  DEFAULT_ACCOUNT_BALANCE: testParameters.accountBalance,
-  DEFAULT_CONTRACT_ID: testParameters.contractId,
-  DEFAULT_CONTRACT_TIMESTAMP: testParameters.contractTimestamp,
-  DEFAULT_NFT_ID: testParameters.nft,
-  DEFAULT_NFT_SERIAL: testParameters.nftSerial,
-  DEFAULT_PUBLIC_KEY: testParameters.publicKey,
-  DEFAULT_SCHEDULE_ACCOUNT_ID: testParameters.scheduleAccount,
-  DEFAULT_SCHEDULE_ID: testParameters.scheduleId,
-  DEFAULT_TOKEN_ID: testParameters.token,
-  DEFAULT_TRANSACTION_ID: testParameters.transaction
-});
-
-const bootstrap = (baseApiUrl) => {
-  const configuration = {baseApiUrl: `${baseApiUrl}/api/v1`};
-  const testParameters = computeTestParameters(configuration);
-  return buildConfigObject(testParameters);
-};
-
 const setupTestParameters = () => {
   setDefaultValuesForEnvParameters();
   validateEnvProperty('DEFAULT_TOPIC_ID');
   validateEnvProperty('DEFAULT_TOPIC_SEQUENCE');
   validateEnvProperty('DEFAULT_TOPIC_TIMESTAMP');
 
-  const testParametersMap = bootstrap(__ENV['BASE_URL']);
+  const testParametersMap = computeTestParameters({baseApiUrl: `${baseApiUrl}/api/v1`});
   return Object.assign(testParametersMap, {
     BASE_URL: __ENV.BASE_URL,
     DEFAULT_LIMIT: __ENV.DEFAULT_LIMIT,
