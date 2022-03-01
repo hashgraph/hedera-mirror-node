@@ -21,12 +21,10 @@ package com.hedera.mirror.common.domain.transaction;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import java.io.Serializable;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
-import javax.persistence.Embeddable;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.Id;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,6 +33,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
@@ -42,13 +41,16 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 @Data
 @Entity
 @NoArgsConstructor
-public class NonFeeTransfer implements Persistable<NonFeeTransfer.Id> {
+public class NonFeeTransfer implements Persistable<Long> {
 
     private Long amount;
 
-    @EmbeddedId
-    @JsonUnwrapped
-    private NonFeeTransfer.Id id;
+    @Id
+    private Long consensusTimestamp;
+
+    @Convert(converter = AccountIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
+    private EntityId entityId;
 
     private Boolean isApproval;
 
@@ -57,20 +59,13 @@ public class NonFeeTransfer implements Persistable<NonFeeTransfer.Id> {
 
     @JsonIgnore
     @Override
-    public boolean isNew() {
-        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
+    public Long getId() {
+        return consensusTimestamp;
     }
 
-    @Data
-    @Embeddable
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Id implements Serializable {
-        private static final long serialVersionUID = 1338656168003907379L;
-
-        private long consensusTimestamp;
-
-        @Convert(converter = AccountIdConverter.class)
-        private EntityId entityId;
+    @JsonIgnore
+    @Override
+    public boolean isNew() {
+        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
 }

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.exception;
+package com.hedera.mirror.importer.parser;
 
 /*-
  * ‌
@@ -20,15 +20,8 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class AliasNotFoundException extends ImporterException {
-
-    private static final long serialVersionUID = 262691996461413516L;
-
-    public AliasNotFoundException(String alias) {
-        super(getMessage(alias));
-    }
-
-    private static String getMessage(String alias) {
-        return String.format("Account with alias '%s' not found", alias);
-    }
+public enum PartialDataAction {
+    DEFAULT,
+    ERROR,
+    SKIP,
 }

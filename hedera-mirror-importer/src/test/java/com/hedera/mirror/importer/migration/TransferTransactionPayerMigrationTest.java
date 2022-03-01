@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.migration;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -265,39 +265,49 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         persistNonFeeTransfers(List.of(
                 // assessed custom fee only transfer
                 domainBuilder.nonFeeTransfer().customize(n -> n
+                        .consensusTimestamp(transfer1.getConsensusTimestamp())
                         .amount(senderPaymentAmount)
-                        .id(new NonFeeTransfer.Id(transfer1.getConsensusTimestamp(), senderId))).get(),
+                        .entityId(senderId)).get(),
                 domainBuilder.nonFeeTransfer().customize(n -> n
                         .amount(receivedAmount)
-                        .id(new NonFeeTransfer.Id(transfer1.getConsensusTimestamp(), receiverId))).get(),
+                        .consensusTimestamp(transfer1.getConsensusTimestamp())
+                        .entityId(receiverId)).get(),
                 // crypto only transfer
                 domainBuilder.nonFeeTransfer().customize(n -> n
                         .amount(senderPaymentAmount)
-                        .id(new NonFeeTransfer.Id(transfer2.getConsensusTimestamp(), senderId))).get(),
+                        .consensusTimestamp(transfer2.getConsensusTimestamp())
+                        .entityId(senderId)).get(),
                 domainBuilder.nonFeeTransfer().customize(n -> n
                         .amount(receivedAmount)
-                        .id(new NonFeeTransfer.Id(transfer2.getConsensusTimestamp(), receiverId))).get(),
+                        .consensusTimestamp(transfer2.getConsensusTimestamp())
+                        .entityId(receiverId)).get(),
                 // nft transfer
                 domainBuilder.nonFeeTransfer().customize(n -> n
                         .amount(senderPaymentAmount)
-                        .id(new NonFeeTransfer.Id(transfer3.getConsensusTimestamp(), senderId))).get(),
+                        .consensusTimestamp(transfer3.getConsensusTimestamp())
+                        .entityId(senderId)).get(),
                 domainBuilder.nonFeeTransfer().customize(n -> n
                         .amount(receivedAmount)
-                        .id(new NonFeeTransfer.Id(transfer3.getConsensusTimestamp(), receiverId))).get(),
+                        .consensusTimestamp(transfer3.getConsensusTimestamp())
+                        .entityId(receiverId)).get(),
                 // token transfer
                 domainBuilder.nonFeeTransfer().customize(n -> n
                         .amount(senderPaymentAmount)
-                        .id(new NonFeeTransfer.Id(transfer4.getConsensusTimestamp(), senderId))).get(),
+                        .consensusTimestamp(transfer4.getConsensusTimestamp())
+                        .entityId(senderId)).get(),
                 domainBuilder.nonFeeTransfer().customize(n -> n
                         .amount(receivedAmount)
-                        .id(new NonFeeTransfer.Id(transfer4.getConsensusTimestamp(), receiverId))).get(),
+                        .consensusTimestamp(transfer4.getConsensusTimestamp())
+                        .entityId(receiverId)).get(),
                 // all transfers
                 domainBuilder.nonFeeTransfer().customize(n -> n
                         .amount(senderPaymentAmount)
-                        .id(new NonFeeTransfer.Id(transfer5.getConsensusTimestamp(), senderId))).get(),
+                        .consensusTimestamp(transfer5.getConsensusTimestamp())
+                        .entityId(senderId)).get(),
                 domainBuilder.nonFeeTransfer().customize(n -> n
                         .amount(receivedAmount)
-                        .id(new NonFeeTransfer.Id(transfer5.getConsensusTimestamp(), receiverId))).get()
+                        .consensusTimestamp(transfer5.getConsensusTimestamp())
+                        .entityId(receiverId)).get()
         ));
 
         persistNftTransfers(List.of(
@@ -408,7 +418,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
         assertThat(findNftTransfers())
                 .containsExactlyInAnyOrderElementsOf(expectedNftTransfers);
 
-        assertThat(findNonFeeTransfers())
+        assertThat(findNonFeeTransfersAsSharedTransfers())
                 .containsExactlyInAnyOrderElementsOf(expectedNonFeeTransfers);
 
         assertThat(findTokenTransfers())
@@ -484,8 +494,8 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                     "insert into non_fee_transfer (amount, entity_id, consensus_timestamp)" +
                             " values (?,?,?)",
                     nonFeeTransfer.getAmount(),
-                    id.getEntityId().getId(),
-                    id.getConsensusTimestamp()
+                    nonFeeTransfer.getEntityId().getId(),
+                    nonFeeTransfer.getConsensusTimestamp()
             );
         }
     }
@@ -557,7 +567,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 });
     }
 
-    private List<SharedTransfer> findNonFeeTransfers() {
+    private List<SharedTransfer> findNonFeeTransfersAsSharedTransfers() {
         return jdbcOperations.query(
                 "select * from non_fee_transfer",
                 (rs, rowNum) -> {
