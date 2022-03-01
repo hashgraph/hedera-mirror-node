@@ -213,6 +213,6 @@ func (suite *accountServiceSuite) TestAccountCoins() {
 	result, err := suite.accountService.AccountCoins(nil, &rTypes.AccountCoinsRequest{})
 
 	// then:
-	assert.Nil(suite.T(), result)
-	assert.Equal(suite.T(), errors.ErrNotImplemented, err)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), &rTypes.AccountCoinsResponse{}, result)
 }

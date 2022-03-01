@@ -102,10 +102,10 @@ func (c *constructionAPIService) ConstructionCombine(
 
 // ConstructionDerive implements the /construction/derive endpoint.
 func (c *constructionAPIService) ConstructionDerive(
-	ctx context.Context,
-	request *rTypes.ConstructionDeriveRequest,
+	_ context.Context,
+	_ *rTypes.ConstructionDeriveRequest,
 ) (*rTypes.ConstructionDeriveResponse, *rTypes.Error) {
-	return nil, errors.ErrNotImplemented
+	return &rTypes.ConstructionDeriveResponse{}, nil
 }
 
 // ConstructionHash implements the /construction/hash endpoint.
@@ -137,9 +137,7 @@ func (c *constructionAPIService) ConstructionMetadata(
 		return nil, errors.ErrEndpointNotSupportedInOfflineMode
 	}
 
-	return &rTypes.ConstructionMetadataResponse{
-		Metadata: make(map[string]interface{}),
-	}, nil
+	return &rTypes.ConstructionMetadataResponse{Metadata: make(map[string]interface{})}, nil
 }
 
 // ConstructionParse implements the /construction/parse endpoint.

@@ -97,7 +97,7 @@ The following table lists the available properties along with their default valu
 | `hedera.mirror.rosetta.test.operators[].id`             |                       | The operator account id, in the format of shard.realm.num                  |
 | `hedera.mirror.rosetta.test.operators[].privateKey`     |                       | The operator's private key in hex                                          |
 | `hedera.mirror.rosetta.test.server.dataRetry.backOff`   | 1s                    | The amount of time to wait between data request retries, if the request can be retried. |
-| `hedera.mirror.rosetta.test.server.dataRetry.max`       | 20                    | The max retries of a data request                                          |
+| `hedera.mirror.rosetta.test.server.dataRetry.max`       | 60                    | The max retries of a data request                                          |
 | `hedera.mirror.rosetta.test.server.httpTimeout`         | 25s                   | The timeout of an http request sent to the rosetta server                  |
 | `hedera.mirror.rosetta.test.server.network`             | {}                    | A map of main nodes with its service endpoint as the key and the node account id as its value |
 | `hedera.mirror.rosetta.test.server.offlineUrl`          | http://localhost:5701 | The url of the offline rosetta server                                      |

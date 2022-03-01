@@ -50,18 +50,18 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.6.3</version>
+        <version>2.6.4</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
     <properties>
-        <dependency-check.version>6.5.3</dependency-check.version>
+        <dependency-check.version>7.0.0</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
-        <docker-maven-plugin.version>0.39.0</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.39.1</docker-maven-plugin.version>
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.0.20</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.1.0</embedded.testcontainers.version>
         <flyway.version>7.15.0</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
