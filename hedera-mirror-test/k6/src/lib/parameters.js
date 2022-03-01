@@ -42,10 +42,6 @@ const getFirstEntity = (entityPath, key) => {
 export const computeAccountParameters = (configuration) => {
   const accountPath = `${configuration.baseApiUrl}/accounts?balance=true&limit=1&order=desc`;
   const firstAccount = getFirstEntity(accountPath, accountListName);
-
-  firstAccount.key = {
-    key: ''
-  };
   return {
     account: firstAccount.account,
     accountBalance: firstAccount.balance.balance || 0,
