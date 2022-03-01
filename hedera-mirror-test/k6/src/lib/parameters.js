@@ -31,6 +31,9 @@ import {
 
 const getFirstEntity = (entityPath, key) => {
   const response = http.get(entityPath);
+  if (response.status !== 200) {
+    throw new Error(`Error response for get request at ${entityPath}`);
+  }
   const body = JSON.parse(response.body);
   const entity = body[key];
   if (entity.length === 0) {
