@@ -1,5 +1,5 @@
 {
-  "description": "Account NFT api call for all tokens with valid token and serialnumber range and limit",
+  "description": "Account NFT api call for all tokens with valid token range",
   "setup": {
     "accounts": [
       {
@@ -111,17 +111,44 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gte:1000&token.id=lte:2500&serialnumber=gt:3&serialnumber=lt:5&limit=2&order=asc",
+  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gt:1000&token.id=lt:2500",
   "responseStatus": 200,
   "responseJson": {
     "nfts": [
       {
         "account_id": "0.0.1001",
-        "created_timestamp": "1234567890.000000001",
+        "created_timestamp": "1234567890.000000006",
         "deleted": false,
-        "metadata": "bTE=",
-        "modified_timestamp": "1234567890.000000001",
+        "metadata": "bTY=",
+        "modified_timestamp": "1234567890.000000006",
+        "serial_number": 3,
+        "token_id": "0.0.2000"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000005",
+        "deleted": false,
+        "metadata": "bzQ=",
+        "modified_timestamp": "1234567890.000000005",
+        "serial_number": 2,
+        "token_id": "0.0.2000"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000004",
+        "deleted": false,
+        "metadata": "bzI=",
+        "modified_timestamp": "1234567890.000000004",
         "serial_number": 1,
+        "token_id": "0.0.2000"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000003",
+        "deleted": false,
+        "metadata": "bTM=",
+        "modified_timestamp": "1234567890.000000003",
+        "serial_number": 3,
         "token_id": "0.0.1500"
       },
       {
@@ -132,10 +159,19 @@
         "modified_timestamp": "1234567890.000000002",
         "serial_number": 2,
         "token_id": "0.0.1500"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000001",
+        "deleted": false,
+        "metadata": "bTE=",
+        "modified_timestamp": "1234567890.000000001",
+        "serial_number": 1,
+        "token_id": "0.0.1500"
       }
     ],
     "links": {
-      "next": "/api/v1/accounts/0.0.1001/nfts?token.id=lte:2500&token.id=gte:0.0.1500&serialnumber=lt:5&serialnumber=gt:2&limit=2&order=asc"
+      "next": null
     }
   }
 }

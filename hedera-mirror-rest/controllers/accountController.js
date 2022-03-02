@@ -323,9 +323,11 @@ const getNftsByAccountId = async (req, res) => {
     const lastSerial = lastRow !== undefined ? lastRow.serial_number : null;
     const last = {
       [constants.filterKeys.TOKEN_ID]: lastTokenId,
-      [constants.filterKeys.SERIAL_NUMBER]: lastSerial + 1, // offset by 1 to support inclusve gte|lte comparison
+      [constants.filterKeys.SERIAL_NUMBER]: lastSerial,
     };
-    response.links.next = utils.getPaginationLink(req, response.nfts.length !== limit, last, order, true);
+    response.links.next = utils.getPaginationLink(req, response.nfts.length !== limit, last, order, {
+      [constants.filterKeys.TOKEN_ID]: true,
+    });
   }
 
   res.locals[constants.responseDataLabel] = response;

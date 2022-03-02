@@ -29,8 +29,10 @@ const constants = require('../../constants');
 const accountCtrl = require('../../controllers/accountController');
 const utils = require('../../utils');
 
+const accountIdFilter = 'account_id = $1';
+const tokenIdFilter = 'token_id = $2';
+
 describe('extractNftsQuery', () => {
-  const accountIdFilter = 'account_id = $1';
   const defaultExpected = {
     conditions: [accountIdFilter],
     params: [],
@@ -90,7 +92,7 @@ describe('extractNftsQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [accountIdFilter, 'token_id = $2'],
+        conditions: [accountIdFilter, tokenIdFilter],
         params: [3, '1000'],
       },
     },
@@ -113,7 +115,7 @@ describe('extractNftsQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [accountIdFilter, 'token_id = $2', 'serial_number = $3'],
+        conditions: [accountIdFilter, tokenIdFilter, 'serial_number = $3'],
         params: [4, '1001', '1'],
       },
     },
@@ -127,7 +129,6 @@ describe('extractNftsQuery', () => {
 });
 
 describe('extractNftMultiUnionQuery', () => {
-  const accountIdFilter = 'account_id = $1';
   const defaultExpected = {
     conditions: [accountIdFilter],
     params: [],
@@ -199,7 +200,7 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         lower: {
           ...defaultExpected,
-          conditions: [accountIdFilter, 'token_id = $2'],
+          conditions: [accountIdFilter, tokenIdFilter],
           params: [3, '1001'],
         },
         inner: {
@@ -212,6 +213,24 @@ describe('extractNftMultiUnionQuery', () => {
         limit: defaultLimit,
       },
     },
+  ];
+
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(accountCtrl.extractNftMultiUnionQuery(spec.input.filters, spec.input.accountId)).toEqual(spec.expected);
+    });
+  });
+});
+
+describe('extractNftMultiUnionQuery range bounds', () => {
+  const defaultExpected = {
+    conditions: [accountIdFilter],
+    params: [],
+    order: constants.orderFilterValues.DESC,
+    limit: defaultLimit,
+  };
+
+  const specs = [
     {
       name: 'token and serialnumber lower and inner',
       input: {
@@ -232,7 +251,7 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         lower: {
           ...defaultExpected,
-          conditions: [accountIdFilter, 'token_id = $2', 'serial_number > $3'],
+          conditions: [accountIdFilter, tokenIdFilter, 'serial_number > $3'],
           params: [3, '1000', '1'],
         },
         inner: {
@@ -308,7 +327,7 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         lower: {
           ...defaultExpected,
-          conditions: [accountIdFilter, 'token_id = $2', 'serial_number > $3'],
+          conditions: [accountIdFilter, tokenIdFilter, 'serial_number > $3'],
           params: [4, '1000', '10'],
         },
         inner: {
@@ -403,6 +422,19 @@ describe('extractNftMultiUnionQuery throws', () => {
         accountId: 3,
       },
     },
+  ];
+
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(() =>
+        accountCtrl.extractNftMultiUnionQuery(spec.input.filters, spec.input.accountId)
+      ).toThrowErrorMatchingSnapshot();
+    });
+  });
+});
+
+describe('extractNftMultiUnionQuery range bound throws', () => {
+  const specs = [
     {
       name: 'token.id gt(e) repeated',
       input: {

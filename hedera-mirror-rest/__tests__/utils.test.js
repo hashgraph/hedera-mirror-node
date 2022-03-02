@@ -1226,6 +1226,7 @@ describe('Utils getNextParamQueries', () => {
         {
           [constants.filterKeys.ACCOUNT_ID]: 3,
         },
+        {},
       ],
       expected: '?limit=10&account.id=gt:3',
     },
@@ -1240,6 +1241,7 @@ describe('Utils getNextParamQueries', () => {
         {
           [constants.filterKeys.ACCOUNT_ID]: 3,
         },
+        {},
       ],
       expected: '?limit=10&order=desc&account.id=lt:3',
     },
@@ -1253,6 +1255,7 @@ describe('Utils getNextParamQueries', () => {
         {
           [constants.filterKeys.TOKEN_ID]: 3,
         },
+        {},
       ],
       expected: '?order=desc&token.id=lt:3',
     },
@@ -1264,6 +1267,7 @@ describe('Utils getNextParamQueries', () => {
         {
           [constants.filterKeys.TOKEN_ID]: 3,
         },
+        {},
       ],
       expected: '?token.id=gt:3',
     },
@@ -1277,6 +1281,7 @@ describe('Utils getNextParamQueries', () => {
         {
           [constants.filterKeys.TOKEN_ID]: 3,
         },
+        {},
       ],
       expected: '?order=desc&token.id=lt:3',
     },
@@ -1292,6 +1297,7 @@ describe('Utils getNextParamQueries', () => {
           [constants.filterKeys.TOKEN_ID]: 2,
           [constants.filterKeys.SERIAL_NUMBER]: 4,
         },
+        {},
       ],
       expected: '?token.id=2&serialnumber=gt:4',
     },
@@ -1307,6 +1313,7 @@ describe('Utils getNextParamQueries', () => {
           [constants.filterKeys.TOKEN_ID]: 2,
           [constants.filterKeys.SERIAL_NUMBER]: 4,
         },
+        {},
       ],
       expected: '?token.id=lte:5&token.id=gt:2&serialnumber=gt:4',
     },
@@ -1322,6 +1329,7 @@ describe('Utils getNextParamQueries', () => {
           [constants.filterKeys.TOKEN_ID]: 2,
           [constants.filterKeys.SERIAL_NUMBER]: 4,
         },
+        {},
       ],
       expected: '?serialnumber=gte:1&serialnumber=lt:4&token.id=lt:2',
     },
@@ -1338,6 +1346,7 @@ describe('Utils getNextParamQueries', () => {
         {
           [constants.filterKeys.SERIAL_NUMBER]: 3,
         },
+        {},
       ],
       expected: '?serialnumber=gt:1&serialnumber=lt:3&account.id=1001&order=desc&limit=2',
     },
@@ -1352,11 +1361,12 @@ describe('Utils getNextParamQueries', () => {
         {
           [constants.filterKeys.ACCOUNT_ID]: '0.0.19',
         },
+        {},
       ],
       expected: '?account.id=lt:0.0.21&account.id=gt:0.0.19&limit=2',
     },
     {
-      name: 'test',
+      name: 'serialnumber (gte) and serial (lte) with ASC and inclusive',
       args: [
         constants.orderFilterValues.ASC,
         {
@@ -1369,9 +1379,11 @@ describe('Utils getNextParamQueries', () => {
           [constants.filterKeys.SERIAL_NUMBER]: 3,
           [constants.filterKeys.TOKEN_ID]: 100,
         },
-        true,
+        {
+          [constants.filterKeys.TOKEN_ID]: true,
+        },
       ],
-      expected: '?order=asc&limit=2&serialnumber=gte:3&token.id=gte:100',
+      expected: '?order=asc&limit=2&serialnumber=gt:3&token.id=gte:100',
     },
   ];
 

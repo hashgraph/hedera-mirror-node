@@ -103,7 +103,7 @@ class NftService extends BaseService {
       allQueries = allQueries.reverse();
     }
 
-    let unionQuery = allQueries.filter((x) => !!x).join('\nunion\n');
+    let unionQuery = allQueries.filter((x) => !!x).join('\nunion all\n');
 
     if (!_.isNil(inner)) {
       unionQuery = unionQuery

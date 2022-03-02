@@ -558,10 +558,10 @@ const convertMySqlStyleQueryToPostgres = (sqlQuery, startIndex = 1) => {
  * @param {String} field The query parameter field name
  * @param {Object} lastValueMap Map of key value pairs representing last values of columns that may be filtered on
  * @param {String} order Order of sorting the results
+ * @param {Object} inclusiveKeys map of keys to adopt inclusive comparion parmaeters
  * @return {String} next Fully formed link to the next page
- * @return {String} next url link
  */
-const getPaginationLink = (req, isEnd, lastValueMap, order, inclusive = false) => {
+const getPaginationLink = (req, isEnd, lastValueMap, order, inclusiveKeys = {}) => {
   let urlPrefix;
   if (config.port !== undefined && config.response.includeHostInLink) {
     urlPrefix = `${req.protocol}://${req.hostname}:${config.port}`;
@@ -572,7 +572,7 @@ const getPaginationLink = (req, isEnd, lastValueMap, order, inclusive = false) =
   let next = '';
 
   if (!isEnd) {
-    next = getNextParamQueries(order, req.query, lastValueMap, inclusive);
+    next = getNextParamQueries(order, req.query, lastValueMap, inclusiveKeys);
 
     // remove the '/' at the end of req.path
     const path = req.path.endsWith('/') ? req.path.slice(0, -1) : req.path;
@@ -627,16 +627,14 @@ const updateReqQuery = (reqQuery, field, pattern, insertValue) => {
   }
 };
 
-const getNextParamQueries = (order, reqQuery, lastValueMap, inclusive = false) => {
+const getNextParamQueries = (order, reqQuery, lastValueMap, inclusiveKeys) => {
   const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
   let insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
-  if (inclusive) {
-    insertedPattern = `${insertedPattern}e`;
-  }
 
   for (const [field, lastValue] of Object.entries(lastValueMap)) {
     if (!_.isNil(lastValue)) {
-      updateReqQuery(reqQuery, field, pattern, `${insertedPattern}:${lastValue}`);
+      const comparisonPattern = inclusiveKeys[field] === true ? `${insertedPattern}e` : insertedPattern;
+      updateReqQuery(reqQuery, field, pattern, `${comparisonPattern}:${lastValue}`);
     }
   }
 
