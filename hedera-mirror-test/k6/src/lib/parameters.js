@@ -247,4 +247,6 @@ export const setDefaultValuesForEnvParameters = () => {
   __ENV['DEFAULT_DURATION'] = __ENV['DEFAULT_DURATION'] || '120s';
   __ENV['DEFAULT_VUS'] = __ENV['DEFAULT_VUS'] || 10;
   __ENV['DEFAULT_LIMIT'] = __ENV['DEFAULT_LIMIT'] || 100;
+  __ENV['DEFAULT_PASS_RATE'] = __ENV['DEFAULT_PASS_RATE'] || 0.95;
+  __ENV['DEFAULT_MAX_DURATION'] = __ENV['DEFAULT_MAX_DURATION'] || 500;
 }
