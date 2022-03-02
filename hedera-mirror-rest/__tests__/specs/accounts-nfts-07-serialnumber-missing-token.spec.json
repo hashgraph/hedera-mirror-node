@@ -67,8 +67,10 @@
   },
   "urls": [
     "/api/v1/accounts/0.0.1001/nfts?serialnumber=3",
-    "/api/v1/accounts/0.0.1001/nfts?serialnumber=gte:2",
-    "/api/v1/accounts/0.0.1001/nfts?serialnumber=gte:2&serialnumber=lte:5"
+    "/api/v1/accounts/0.0.1001/nfts?serialnumber=lt:3",
+    "/api/v1/accounts/0.0.1001/nfts?serialnumber=lte:3",
+    "/api/v1/accounts/0.0.1001/nfts?serialnumber=gt:3",
+    "/api/v1/accounts/0.0.1001/nfts?serialnumber=gte:3"
   ],
   "responseStatus": 400,
   "responseJson": {

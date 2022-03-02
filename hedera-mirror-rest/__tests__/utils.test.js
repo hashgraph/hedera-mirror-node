@@ -1355,6 +1355,24 @@ describe('Utils getNextParamQueries', () => {
       ],
       expected: '?account.id=lt:0.0.21&account.id=gt:0.0.19&limit=2',
     },
+    {
+      name: 'test',
+      args: [
+        constants.orderFilterValues.ASC,
+        {
+          [constants.filterKeys.SERIAL_NUMBER]: 'gte:2',
+          [constants.filterKeys.TOKEN_ID]: 'gte:100',
+          [constants.filterKeys.ORDER]: 'asc',
+          [constants.filterKeys.LIMIT]: 2,
+        },
+        {
+          [constants.filterKeys.SERIAL_NUMBER]: 3,
+          [constants.filterKeys.TOKEN_ID]: 100,
+        },
+        true,
+      ],
+      expected: '?order=asc&limit=2&serialnumber=gte:3&token.id=gte:100',
+    },
   ];
 
   testSpecs.forEach((spec) => {

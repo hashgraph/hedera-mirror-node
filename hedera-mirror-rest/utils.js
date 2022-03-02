@@ -561,7 +561,7 @@ const convertMySqlStyleQueryToPostgres = (sqlQuery, startIndex = 1) => {
  * @return {String} next Fully formed link to the next page
  * @return {[]} list of last objects
  */
-const getPaginationLink = (req, isEnd, lastValueMap, order) => {
+const getPaginationLink = (req, isEnd, lastValueMap, order, inclusive = false) => {
   let urlPrefix;
   if (config.port !== undefined && config.response.includeHostInLink) {
     urlPrefix = `${req.protocol}://${req.hostname}:${config.port}`;
@@ -572,7 +572,7 @@ const getPaginationLink = (req, isEnd, lastValueMap, order) => {
   let next = '';
 
   if (!isEnd) {
-    next = getNextParamQueries(order, req.query, lastValueMap);
+    next = getNextParamQueries(order, req.query, lastValueMap, inclusive);
 
     // remove the '/' at the end of req.path
     const path = req.path.endsWith('/') ? req.path.slice(0, -1) : req.path;
@@ -627,9 +627,12 @@ const updateReqQuery = (reqQuery, field, pattern, insertValue) => {
   }
 };
 
-const getNextParamQueries = (order, reqQuery, lastObjects) => {
+const getNextParamQueries = (order, reqQuery, lastObjects, inclusive = false) => {
   const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
-  const insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
+  let insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
+  if (inclusive) {
+    insertedPattern = `${insertedPattern}e`;
+  }
 
   for (const [field, lastValue] of Object.entries(lastObjects)) {
     updateReqQuery(reqQuery, field, pattern, `${insertedPattern}:${lastValue}`);

@@ -172,6 +172,16 @@ const queryParamOperators = {
   gte: 'gte',
 };
 
+const queryParamOperatorPatterns = {
+  gt: />/,
+  gte: />=/,
+  gtorgte: />[=]?/,
+  lt: /</,
+  lte: /<=/,
+  ltorlte: /<[=]?/,
+  ne: /!=/,
+};
+
 module.exports = {
   MAX_INT32,
   characterEncoding,
@@ -186,6 +196,7 @@ module.exports = {
   networks,
   orderFilterValues,
   queryParamOperators,
+  queryParamOperatorPatterns,
   recordStreamPrefix,
   requestIdLabel,
   requestStartTime,

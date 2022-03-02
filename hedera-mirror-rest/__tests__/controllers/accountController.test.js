@@ -83,16 +83,6 @@ describe('extractNftsQuery', () => {
           {
             key: constants.filterKeys.TOKEN_ID,
             operator: utils.opsMap.eq,
-            value: '1001',
-          },
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.eq,
-            value: '1002',
-          },
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.gt,
             value: '1000',
           },
         ],
@@ -100,8 +90,8 @@ describe('extractNftsQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [accountIdFilter, 'token_id > $2', 'token_id in ($3,$4)'],
-        params: [3, '1000', '1001', '1002'],
+        conditions: [accountIdFilter, 'token_id in ($2)'],
+        params: [3, '1000'],
       },
     },
     {
@@ -114,32 +104,17 @@ describe('extractNftsQuery', () => {
             value: '1001',
           },
           {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.eq,
-            value: '1002',
-          },
-          {
             key: constants.filterKeys.SERIAL_NUMBER,
             operator: utils.opsMap.eq,
             value: '1',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.eq,
-            value: '2',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.gt,
-            value: '3',
           },
         ],
         accountId: 4,
       },
       expected: {
         ...defaultExpected,
-        conditions: [accountIdFilter, 'serial_number > $2', 'token_id in ($3,$4)', 'serial_number in ($5,$6)'],
-        params: [4, '3', '1001', '1002', '1', '2'],
+        conditions: [accountIdFilter, 'token_id in ($2)', 'serial_number in ($3)'],
+        params: [4, '1001', '1'],
       },
     },
   ];
@@ -151,52 +126,408 @@ describe('extractNftsQuery', () => {
   });
 });
 
-describe('extractNftsQuery throws', () => {
+describe('extractNftMultiUnionQuery', () => {
+  const accountIdFilter = 'account_id = $1';
+  const defaultExpected = {
+    conditions: [accountIdFilter],
+    params: [],
+    order: constants.orderFilterValues.DESC,
+    limit: defaultLimit,
+  };
+
   const specs = [
     {
-      name: 'repeated token range filter',
+      name: 'limit',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.LIMIT,
+            operator: utils.opsMap.eq,
+            value: 20,
+          },
+        ],
+        accountId: 1,
+      },
+      expected: {
+        lower: {
+          ...defaultExpected,
+          limit: 20,
+          params: [1],
+        },
+        inner: null,
+        upper: null,
+        order: constants.orderFilterValues.DESC,
+        limit: 20,
+      },
+    },
+    {
+      name: 'order asc',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.ORDER,
+            operator: utils.opsMap.eq,
+            value: constants.orderFilterValues.ASC,
+          },
+        ],
+        accountId: 2,
+      },
+      expected: {
+        lower: {
+          ...defaultExpected,
+          order: constants.orderFilterValues.ASC,
+          params: [2],
+        },
+        inner: null,
+        upper: null,
+        order: constants.orderFilterValues.ASC,
+        limit: defaultLimit,
+      },
+    },
+    {
+      name: 'token.id single',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.gte,
+            value: '1001',
+          },
+        ],
+        accountId: 3,
+      },
+      expected: {
+        lower: {
+          ...defaultExpected,
+          conditions: [accountIdFilter, 'token_id in ($2)'],
+          params: [3, '1001'],
+        },
+        inner: {
+          ...defaultExpected,
+          conditions: ['account_id = $4', 'token_id > $5'],
+          params: [3, '1001'],
+        },
+        upper: null,
+        order: constants.orderFilterValues.DESC,
+        limit: defaultLimit,
+      },
+    },
+    {
+      name: 'token and serialnumber lower and inner',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.gte,
+            value: '1000',
+          },
+          {
+            key: constants.filterKeys.SERIAL_NUMBER,
+            operator: utils.opsMap.gt,
+            value: '1',
+          },
+        ],
+        accountId: 3,
+      },
+      expected: {
+        lower: {
+          ...defaultExpected,
+          conditions: [accountIdFilter, 'serial_number > $2', 'token_id in ($3)'],
+          params: [3, '1', '1000'],
+        },
+        inner: {
+          ...defaultExpected,
+          conditions: ['account_id = $5', 'token_id > $6'],
+          params: [3, '1000'],
+        },
+        upper: null,
+        order: constants.orderFilterValues.DESC,
+        limit: defaultLimit,
+      },
+    },
+    {
+      name: 'token and serialnumber inner and upper',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.lte,
+            value: '1000',
+          },
+          {
+            key: constants.filterKeys.SERIAL_NUMBER,
+            operator: utils.opsMap.lt,
+            value: '10',
+          },
+        ],
+        accountId: 3,
+      },
+      expected: {
+        lower: null,
+        inner: {
+          ...defaultExpected,
+          conditions: [accountIdFilter, 'token_id < $2'],
+          params: [3, '1000'],
+        },
+        upper: {
+          ...defaultExpected,
+          conditions: ['account_id = $4', 'serial_number < $5', 'token_id in ($6)'],
+          params: [3, '10', '1000'],
+        },
+        order: constants.orderFilterValues.DESC,
+        limit: defaultLimit,
+      },
+    },
+    {
+      name: 'token and serialnumber lower, inner and upper',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.gte,
+            value: '1000',
+          },
+          {
+            key: constants.filterKeys.SERIAL_NUMBER,
+            operator: utils.opsMap.gt,
+            value: '10',
+          },
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.lte,
+            value: '2000',
+          },
+          {
+            key: constants.filterKeys.SERIAL_NUMBER,
+            operator: utils.opsMap.lt,
+            value: '20',
+          },
+        ],
+        accountId: 4,
+      },
+      expected: {
+        lower: {
+          ...defaultExpected,
+          conditions: [accountIdFilter, 'serial_number > $2', 'token_id in ($3)'],
+          params: [4, '10', '1000'],
+        },
+        inner: {
+          ...defaultExpected,
+          conditions: ['account_id = $5', 'token_id > $6', 'token_id < $7'],
+          params: [4, '1000', '2000'],
+        },
+        upper: {
+          ...defaultExpected,
+          conditions: ['account_id = $9', 'serial_number < $10', 'token_id in ($11)'],
+          params: [4, '20', '2000'],
+        },
+        order: constants.orderFilterValues.DESC,
+        limit: defaultLimit,
+      },
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(accountCtrl.extractNftMultiUnionQuery(spec.input.filters, spec.input.accountId)).toEqual(spec.expected);
+    });
+  });
+});
+
+describe('extractNftMultiUnionQuery throws', () => {
+  const specs = [
+    {
+      name: 'limit',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.LIMIT,
+            operator: utils.opsMap.eq,
+            value: 20,
+          },
+          {
+            key: constants.filterKeys.LIMIT,
+            operator: utils.opsMap.eq,
+            value: 30,
+          },
+        ],
+        accountId: 1,
+      },
+    },
+    {
+      name: 'order asc',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.ORDER,
+            operator: utils.opsMap.eq,
+            value: constants.orderFilterValues.ASC,
+          },
+          {
+            key: constants.filterKeys.ORDER,
+            operator: utils.opsMap.eq,
+            value: constants.orderFilterValues.DESC,
+          },
+        ],
+        accountId: 2,
+      },
+    },
+    {
+      name: 'token.id ne',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.ne,
+            value: '1001',
+          },
+        ],
+        accountId: 3,
+      },
+    },
+    {
+      name: 'token.id eq repeated',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.eq,
+            value: '1001',
+          },
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.eq,
+            value: '1002',
+          },
+        ],
+        accountId: 3,
+      },
+    },
+    {
+      name: 'token.id gt(e) repeated',
       input: {
         filters: [
           {
             key: constants.filterKeys.TOKEN_ID,
             operator: utils.opsMap.gt,
-            value: '1',
+            value: '1001',
           },
           {
             key: constants.filterKeys.TOKEN_ID,
             operator: utils.opsMap.gte,
-            value: '3',
+            value: '1002',
           },
         ],
-        accountId: 4,
+        accountId: 3,
       },
     },
     {
-      name: 'repeated serial number range filter',
+      name: 'token.id lt(e) repeated',
       input: {
         filters: [
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.lt,
+            value: '1001',
+          },
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.lte,
+            value: '1002',
+          },
+        ],
+        accountId: 3,
+      },
+    },
+    {
+      name: 'serialnumber gt with no token.id gt(e)',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.eq,
+            value: '1000',
+          },
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.lte,
+            value: '1000',
+          },
+          {
+            key: constants.filterKeys.SERIAL_NUMBER,
+            operator: utils.opsMap.gt,
+            value: '1',
+          },
+        ],
+        accountId: 3,
+      },
+    },
+    {
+      name: 'serialnumber lt with no token.id lt(e)',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.eq,
+            value: '1000',
+          },
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.gte,
+            value: '1000',
+          },
           {
             key: constants.filterKeys.SERIAL_NUMBER,
             operator: utils.opsMap.lt,
             value: '1',
           },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.lte,
-            value: '3',
-          },
         ],
-        accountId: 4,
+        accountId: 3,
       },
     },
     {
-      name: 'serialnumber with missing tokenId',
+      name: 'token and serialnumber repeated range',
       input: {
         filters: [
           {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.gte,
+            value: '1000',
+          },
+          {
             key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.eq,
-            value: '1',
+            operator: utils.opsMap.gt,
+            value: '10',
+          },
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.lte,
+            value: '2000',
+          },
+          {
+            key: constants.filterKeys.SERIAL_NUMBER,
+            operator: utils.opsMap.lt,
+            value: '20',
+          },
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.gte,
+            value: '1001',
+          },
+          {
+            key: constants.filterKeys.SERIAL_NUMBER,
+            operator: utils.opsMap.gt,
+            value: '11',
+          },
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.lte,
+            value: '2001',
+          },
+          {
+            key: constants.filterKeys.SERIAL_NUMBER,
+            operator: utils.opsMap.lt,
+            value: '21',
           },
         ],
         accountId: 4,
@@ -207,7 +538,7 @@ describe('extractNftsQuery throws', () => {
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
       expect(() =>
-        accountCtrl.extractNftsQuery(spec.input.filters, spec.input.accountId)
+        accountCtrl.extractNftMultiUnionQuery(spec.input.filters, spec.input.accountId)
       ).toThrowErrorMatchingSnapshot();
     });
   });

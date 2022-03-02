@@ -1,5 +1,5 @@
 {
-  "description": "Account NFT api call for all tokens with valid token and serialnumber range and limit",
+  "description": "Account NFT api call for all tokens with valid token and serialnumber range",
   "setup": {
     "accounts": [
       {
@@ -42,100 +42,99 @@
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890000000000",
-        "metadata": "a1",
-        "serial_number": 1,
-        "token_id": "0.0.1000"
+        "metadata": "a2",
+        "serial_number": 2,
+        "token_id": "0.0.100"
       },
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890000000001",
-        "metadata": "m1",
-        "serial_number": 1,
-        "token_id": "0.0.1500"
+        "metadata": "a4",
+        "serial_number": 4,
+        "token_id": "0.0.100"
       },
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890000000002",
-        "metadata": "m2",
-        "serial_number": 2,
-        "token_id": "0.0.1500"
+        "metadata": "a5",
+        "serial_number": 5,
+        "token_id": "0.0.100"
       },
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890000000003",
-        "metadata": "m3",
-        "serial_number": 3,
-        "token_id": "0.0.1500"
+        "metadata": "m1",
+        "serial_number": 1,
+        "token_id": "0.0.101"
       },
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890000000004",
-        "metadata": "o2",
-        "serial_number": 1,
-        "token_id": "0.0.2000"
+        "metadata": "m2",
+        "serial_number": 3,
+        "token_id": "0.0.101"
       },
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890000000005",
-        "metadata": "o4",
-        "serial_number": 2,
-        "token_id": "0.0.2000"
-      },
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000006",
-        "metadata": "m6",
-        "serial_number": 3,
-        "token_id": "0.0.2000"
-      },
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000007",
-        "metadata": "s3",
+        "metadata": "m3",
         "serial_number": 4,
-        "token_id": "0.0.2500"
-      },
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000008",
-        "metadata": "s4",
-        "serial_number": 5,
-        "token_id": "0.0.2500"
-      },
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000009",
-        "metadata": "s5",
-        "serial_number": 6,
-        "token_id": "0.0.2500"
+        "token_id": "0.0.101"
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gte:1000&token.id=lte:2500&serialnumber=gt:3&serialnumber=lt:5&limit=2&order=asc",
+  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gte:100&serialnumber=gt:3",
   "responseStatus": 200,
   "responseJson": {
     "nfts": [
       {
         "account_id": "0.0.1001",
-        "created_timestamp": "1234567890.000000001",
+        "created_timestamp": "1234567890.000000005",
+        "deleted": false,
+        "metadata": "bTM=",
+        "modified_timestamp": "1234567890.000000005",
+        "serial_number": 4,
+        "token_id": "0.0.101"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000004",
+        "deleted": false,
+        "metadata": "bTI=",
+        "modified_timestamp": "1234567890.000000004",
+        "serial_number": 3,
+        "token_id": "0.0.101"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000003",
         "deleted": false,
         "metadata": "bTE=",
-        "modified_timestamp": "1234567890.000000001",
+        "modified_timestamp": "1234567890.000000003",
         "serial_number": 1,
-        "token_id": "0.0.1500"
+        "token_id": "0.0.101"
       },
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890.000000002",
         "deleted": false,
-        "metadata": "bTI=",
+        "metadata": "YTU=",
         "modified_timestamp": "1234567890.000000002",
-        "serial_number": 2,
-        "token_id": "0.0.1500"
+        "serial_number": 5,
+        "token_id": "0.0.100"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000001",
+        "deleted": false,
+        "metadata": "YTQ=",
+        "modified_timestamp": "1234567890.000000001",
+        "serial_number": 4,
+        "token_id": "0.0.100"
       }
     ],
     "links": {
-      "next": "/api/v1/accounts/0.0.1001/nfts?token.id=lte:2500&token.id=gte:0.0.1500&serialnumber=lt:5&serialnumber=gte:3&limit=2&order=asc"
+      "next": null
     }
   }
 }

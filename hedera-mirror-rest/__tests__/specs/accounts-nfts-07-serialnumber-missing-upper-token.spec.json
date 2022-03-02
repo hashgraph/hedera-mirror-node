@@ -1,5 +1,5 @@
 {
-  "description": "Account NFT api call for a specific token and serial number range",
+  "description": "Account NFT api call for a serial number range with a missing upper bound token",
   "setup": {
     "entities": [
       {
@@ -65,22 +65,18 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=3",
-  "responseStatus": 200,
+  "urls": [
+    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=lt:3",
+    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=lte:3"
+  ],
+  "responseStatus": 400,
   "responseJson": {
-    "nfts": [
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890.000000008",
-        "deleted": false,
-        "metadata": "bTM=",
-        "modified_timestamp": "1234567890.000000008",
-        "serial_number": 3,
-        "token_id": "0.0.1500"
-      }
-    ],
-    "links": {
-      "next": null
+    "_status": {
+      "messages": [
+        {
+          "message": "An upper bound serialnumber filter requires an upper bound tokenId parameter filter"
+        }
+      ]
     }
   }
 }
