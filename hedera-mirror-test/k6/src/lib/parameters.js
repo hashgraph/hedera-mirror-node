@@ -85,7 +85,7 @@ export const computeFungibleTokenParameters = (configuration) => {
   const tokenPath = `${configuration.baseApiUrl}/tokens?type=FUNGIBLE_COMMON&limit=1&order=desc`;
   const firstToken = getFirstEntity(tokenPath, tokenListName);
   return {
-    DEFAULT_TOKEN_ID: firstToken.token_id
+    DEFAULT_TOKEN_ID: firstToken.token_id,
   };
 };
 
@@ -94,6 +94,18 @@ export const computeTransactionParameters = (configuration) => {
   const firstTransaction = getFirstEntity(tokenPath, transactionListName)
   return {
     DEFAULT_TRANSACTION_ID: firstTransaction.transaction_id
+  };
+};
+
+export const computeTopicInfo = (configuration) => {
+  const transactionPath = `${configuration.baseApiUrl}/transactions?transactiontype=CONSENSUSSUBMITMESSAGE&result=success&limit=1&order=desc`;
+  const DEFAULT_TOPIC_ID = getFirstEntity(transactionPath).entity_id;
+  const topicMessagePath = `${configuration.baseApiUrl}/topics/${DEFAULT_TOPIC_ID}/messages`;
+  const firstTopicMessage = getFirstEntity(topicMessagePath);
+  return {
+    DEFAULT_TOPIC_ID,
+    DEFAULT_TOPIC_SEQUENCE: firstTopicMessage.sequence_number,
+    DEFAULT_TOPIC_TIMESTAMP: firstTopicMessage.consensus_timestamp
   };
 };
 
@@ -160,9 +172,3 @@ export const setDefaultValuesForEnvParameters = () => {
   __ENV['DEFAULT_VUS'] = __ENV['DEFAULT_VUS'] = 10;
   __ENV['DEFAULT_LIMIT'] = __ENV['DEFAULT_LIMIT'] = 100;
 }
-
-export const validateEnvProperty = (propertyName) => {
-  if (!__ENV.hasOwnProperty(propertyName)) {
-    throw new Error(`You must set a value for the environment property: ${propertyName}`);
-  }
-};

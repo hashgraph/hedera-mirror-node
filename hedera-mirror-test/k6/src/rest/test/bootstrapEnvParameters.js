@@ -23,10 +23,9 @@ import {
   computeContractParameters,
   computeFungibleTokenParameters,
   computeNftParameters,
-  computeScheduleParameters,
+  computeScheduleParameters, computeTopicInfo,
   computeTransactionParameters,
   setDefaultValuesForEnvParameters,
-  validateEnvProperty
 } from "../../lib/parameters.js";
 
 const computeTestParameters = (configuration) =>
@@ -36,14 +35,12 @@ const computeTestParameters = (configuration) =>
     computeNftParameters(configuration),
     computeScheduleParameters(configuration),
     computeFungibleTokenParameters(configuration),
-    computeTransactionParameters(configuration)
+    computeTransactionParameters(configuration),
+    computeTopicInfo(configuration)
   );
 
 const setupTestParameters = () => {
   setDefaultValuesForEnvParameters();
-  validateEnvProperty('DEFAULT_TOPIC_ID');
-  validateEnvProperty('DEFAULT_TOPIC_SEQUENCE');
-  validateEnvProperty('DEFAULT_TOPIC_TIMESTAMP');
 
   const testParametersMap = computeTestParameters({baseApiUrl: `${baseApiUrl}/api/v1`});
   return Object.assign(testParametersMap, {
