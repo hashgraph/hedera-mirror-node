@@ -16,16 +16,13 @@ the tests of an API as a test suite. You can also run tests one at a time.
 
 ### Test Suite
 
-To run a test suite, such as rosetta, use the following command.
+To run a test suite, such as rest, use the following command.
 
 ```shell
 DEFAULT_DURATION=1s \
 DEFAULT_VUS=1 \
 BASE_URL=https://testnet.mirrornode.hedera.com \
-DEFAULT_LIMIT=100 \
-DEFAULT_TOPIC_ID=0.0.120438 \
-DEFAULT_TOPIC_SEQUENCE=530610102 \
-DEFAULT_TOPIC_TIMESTAMP=1642481343.874648000 k6 run src/rest/apis.js
+DEFAULT_LIMIT=100 k6 run src/rest/apis.js
 ```
 
 Another option is to have a parameters file named `parameters.env` with the content:
@@ -35,8 +32,6 @@ export DEFAULT_DURATION=1s
 export DEFAULT_VUS=1
 export BASE_URL=https://testnet.mirrornode.hedera.com
 export DEFAULT_LIMIT=100
-export DEFAULT_TOPIC_ID=0.0.120438
-export DEFAULT_TOPIC_SEQUENCE=530610102
 ```
 
 And execute k6 after exporting the values for the env variables:
@@ -46,17 +41,20 @@ source parameters.env
 k6 run src/rest/apis.js
 ```
 
-The parameters:
+For not domain specific parameters like:
 
 - DEFAULT_DURATION
 - DEFAULT_VUS
 - BASE_URL
 - DEFAULT_LIMIT
-- DEFAULT_TOPIC_ID
-- DEFAULT_TOPIC_SEQUENCE
-- DEFAULT_TOPIC_TIMESTAMP
 
-Are required to run the tests, but the following parameters are retrieved during the setup process.
+The value can be set via environment variables. If no value is set, then a sane default will be used.
+
+For domain specific parameters the following rule is used:
+When the value of a parameter is set with an environment variable, the value will be used, but if no value is set for a
+particular parameter, then its value will be found by querying either the rest or rosetta APIs.
+
+The following parameters can be used to configure a rest test:
 
 - DEFAULT_ACCOUNT_ID
 - DEFAULT_ACCOUNT_BALANCE
@@ -68,7 +66,16 @@ Are required to run the tests, but the following parameters are retrieved during
 - DEFAULT_SCHEDULE_ACCOUNT_ID
 - DEFAULT_SCHEDULE_ID
 - DEFAULT_TOKEN_ID
+- DEFAULT_TOPIC_ID
+- DEFAULT_TOPIC_SEQUENCE
 - DEFAULT_TRANSACTION_ID
+
+The following parameters can be used to configure a rosetta test:
+
+- DEFAULT_BLOCK_INDEX
+- DEFAULT_BLOCK_HASH
+- DEFAULT_NETWORK
+- DEFAULT_TRANSACTION_HASH
 
 The test suite will run the tests sequentially with a configurable graceful stop time in between, so they don't
 interfere with each other.
