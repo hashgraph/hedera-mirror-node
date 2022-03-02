@@ -41,14 +41,11 @@ const computeTestParameters = (configuration) =>
 
 const setupTestParameters = () => {
   setDefaultValuesForEnvParameters();
-
+  const baseApiUrl = __ENV['BASE_URL'];
   const testParametersMap = computeTestParameters({baseApiUrl: `${baseApiUrl}/api/v1`});
   return Object.assign(testParametersMap, {
-    BASE_URL: __ENV.BASE_URL,
-    DEFAULT_LIMIT: __ENV.DEFAULT_LIMIT,
-    DEFAULT_TOPIC_ID: __ENV.DEFAULT_TOPIC_ID,
-    DEFAULT_TOPIC_SEQUENCE: __ENV.DEFAULT_TOPIC_SEQUENCE,
-    DEFAULT_TOPIC_TIMESTAMP: __ENV.DEFAULT_TOPIC_TIMESTAMP
+    BASE_URL: baseApiUrl,
+    DEFAULT_LIMIT: __ENV.DEFAULT_LIMIT
   });
 };
 

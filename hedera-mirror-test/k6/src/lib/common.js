@@ -18,8 +18,11 @@
  * ‍
  */
 
-import { check } from "k6";
-import { Gauge } from 'k6/metrics';
+import {check} from "k6";
+import {Gauge} from 'k6/metrics';
+import {setDefaultValuesForEnvParameters} from "./parameters.js";
+
+setDefaultValuesForEnvParameters();
 
 const SCENARIO_DURATION_METRIC_NAME = 'scenario_duration';
 

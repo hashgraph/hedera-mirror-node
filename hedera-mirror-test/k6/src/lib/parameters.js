@@ -22,7 +22,7 @@ import http from 'k6/http';
 
 import {
   accountListName,
-  contractListName,
+  contractListName, messageListName,
   nftListName,
   scheduleListName,
   tokenListName,
@@ -63,6 +63,7 @@ export const computeContractParameters = (configuration) => {
 
 export const computeNftParameters = (configuration) => {
   const tokenPath = `${configuration.baseApiUrl}/tokens?type=NON_FUNGIBLE_UNIQUE&limit=1&order=desc`;
+  console.log(tokenPath);
   const firstNftFromTokenList = getFirstEntity(tokenPath, tokenListName);
   const nftPath = `${configuration.baseApiUrl}/tokens/${firstNftFromTokenList.token_id}/nfts?limit=1&order=desc`;
   const firstNft = getFirstEntity(nftPath, nftListName);
@@ -99,9 +100,11 @@ export const computeTransactionParameters = (configuration) => {
 
 export const computeTopicInfo = (configuration) => {
   const transactionPath = `${configuration.baseApiUrl}/transactions?transactiontype=CONSENSUSSUBMITMESSAGE&result=success&limit=1&order=desc`;
-  const DEFAULT_TOPIC_ID = getFirstEntity(transactionPath).entity_id;
+  console.log(transactionPath);
+  const DEFAULT_TOPIC_ID = getFirstEntity(transactionPath, transactionListName).entity_id;
   const topicMessagePath = `${configuration.baseApiUrl}/topics/${DEFAULT_TOPIC_ID}/messages`;
-  const firstTopicMessage = getFirstEntity(topicMessagePath);
+  console.log(topicMessagePath);
+  const firstTopicMessage = getFirstEntity(topicMessagePath, messageListName);
   return {
     DEFAULT_TOPIC_ID,
     DEFAULT_TOPIC_SEQUENCE: firstTopicMessage.sequence_number,
@@ -167,8 +170,8 @@ export const computeNetworkInfo = (rosettaApiUrl) => {
 }
 
 export const setDefaultValuesForEnvParameters = () => {
-  __ENV['BASE_URL'] = __ENV['BASE_URL'] || "http://localhost";
-  __ENV['DEFAULT_DURATION'] = __ENV['DEFAULT_DURATION'] = "120s";
-  __ENV['DEFAULT_VUS'] = __ENV['DEFAULT_VUS'] = 10;
-  __ENV['DEFAULT_LIMIT'] = __ENV['DEFAULT_LIMIT'] = 100;
+  __ENV['BASE_URL'] = __ENV['BASE_URL'] || 'http://localhost';
+  __ENV['DEFAULT_DURATION'] = __ENV['DEFAULT_DURATION'] || '120s';
+  __ENV['DEFAULT_VUS'] = __ENV['DEFAULT_VUS'] || 10;
+  __ENV['DEFAULT_LIMIT'] = __ENV['DEFAULT_LIMIT'] || 100;
 }
