@@ -26,25 +26,13 @@ import {isValidListResponse} from "./common.js";
 import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
 const urlTag = '/accounts';
-let nextLink;
 
 const {options, run} = new TestScenarioBuilder()
   .name('accounts') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const baseUrl = testParameters['BASE_URL'];
-    let url = `${baseUrl}${urlPrefix}${urlTag}?limit=${testParameters['DEFAULT_LIMIT']}`;
-    if (nextLink) {
-      url = baseUrl + nextLink;
-    }
-
-    const response = http.get(url);
-    if (response.status === 200) {
-      const res = JSON.parse(response.body);
-      nextLink = res.links.next;
-    }
-
-    return response;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}?limit=${testParameters['DEFAULT_LIMIT']}`;
+    return http.get(url);
   })
   .check('Accounts OK', (r) => isValidListResponse(r, accountListName))
   .build();
