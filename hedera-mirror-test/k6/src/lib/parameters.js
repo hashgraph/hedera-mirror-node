@@ -76,7 +76,6 @@ export const computeAccountParameters = (configuration) =>
     () => {
       const accountPath = `${configuration.baseApiUrl}/accounts?balance=true&limit=1&order=desc`;
       const firstAccount = getFirstEntity(accountPath, accountListName);
-      firstAccount.key = {key: ''};
       return {
         DEFAULT_ACCOUNT_ID: firstAccount.account,
         DEFAULT_ACCOUNT_BALANCE: firstAccount.balance.balance || 0,
