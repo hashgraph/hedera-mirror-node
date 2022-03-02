@@ -80,38 +80,37 @@ describe('EntityService.getAccountFromAlias tests', () => {
     await expect(EntityService.getAccountFromAlias(defaultEntityAlias)).resolves.toMatchObject(defaultExpectedEntity);
   });
 
-  // test('EntityService.getAccountFromAlias - Duplicate alias', async () => {
-  //   const inputEntities = [
-  //     {
-  //       alias: defaultEntityAlias.base32Alias,
-  //       id: 3,
-  //       num: 3,
-  //       shard: 1,
-  //       realm: 2,
-  //     },
-  //     {
-  //       alias: defaultEntityAlias.base32Alias,
-  //       id: 4,
-  //       num: 4,
-  //       shard: 1,
-  //       realm: 2,
-  //     },
-  //   ];
-  //   await integrationDomainOps.loadEntities(inputEntities);
+  test('EntityService.getAccountFromAlias - Duplicate alias', async () => {
+    const inputEntities = [
+      {
+        alias: defaultEntityAlias.base32Alias,
+        id: 3,
+        num: 3,
+        shard: 1,
+        realm: 2,
+      },
+      {
+        alias: defaultEntityAlias.base32Alias,
+        id: 4,
+        num: 4,
+        shard: 1,
+        realm: 2,
+      },
+    ];
+    await integrationDomainOps.loadEntities(inputEntities);
 
-  //   expect(() => EntityService.getAccountFromAlias(defaultEntityAlias)).toThrowErrorMatchingSnapshot();
-  // });
+    await expect(() => EntityService.getAccountFromAlias(defaultEntityAlias)).rejects.toThrowErrorMatchingSnapshot();
+  });
 });
 
-// describe('EntityService.getAccountIdFromAlias tests', () => {
-//   test('EntityService.getAccountIdFromAlias - No match', async () => {
-//     const entityAlias = new AccountAlias('3', '4', 'abc');
-//     expect(() => EntityService.getAccountIdFromAlias(entityAlias)).toThrowErrorMatchingSnapshot();
-//   });
+describe('EntityService.getAccountIdFromAlias tests', () => {
+  test('EntityService.getAccountIdFromAlias - No match', async () => {
+    await expect(() => EntityService.getAccountIdFromAlias(defaultEntityAlias)).rejects.toThrowErrorMatchingSnapshot();
+  });
 
-//   test('EntityService.getAccountFromAlias - Matching id', async () => {
-//     await integrationDomainOps.loadEntities(defaultInputEntity);
+  test('EntityService.getAccountFromAlias - Matching id', async () => {
+    await integrationDomainOps.loadEntities(defaultInputEntity);
 
-//     await expect(EntityService.getAccountIdFromAlias(defaultEntityAlias)).resolves.toBe(defaultExpectedEntity.id);
-//   });
-// });
+    await expect(EntityService.getAccountIdFromAlias(defaultEntityAlias)).resolves.toBe(defaultExpectedEntity.id);
+  });
+});

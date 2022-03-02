@@ -36,19 +36,10 @@ class EntityService extends BaseService {
   }
 
   static entityFromAliasQuery = `select ${Entity.ID} 
-    from ${Entity.tableName} 
-    where coalesce(${Entity.DELETED}, false) <> true and ${Entity.ALIAS} = $1`;
+    from ${Entity.tableName}`;
 
-  /**
-   * Gets the query to find the alive entity matching the account alias string.
-   * @param {AccountAlias} accountAlias
-   * @return {{query: string, params: *[]}}
-   */
-  getAccountAliasQuery = (accountAlias) => {
-    const query = `select ${Entity.ID} from entity where coalesce(deleted, false) <> true and alias = $1`;
-    const params = [accountAlias.alias];
-    return {query, params};
-  };
+  static aliasColumns = [Entity.SHARD, Entity.REALM, Entity.ALIAS];
+  static aliasConditions = [`coalesce(${Entity.DELETED}, false) <> true`];
 
   /**
    * Retrieves the entity containing matching the given alias
@@ -57,13 +48,25 @@ class EntityService extends BaseService {
    * @return {Promise<Entity>} raw entity object
    */
   async getAccountFromAlias(accountAlias) {
-    const rows = await super.getRows(EntityService.entityFromAliasQuery, [accountAlias.alias], 'getAccountFromAlias');
+    const params = [];
+    const conditions = [].concat(EntityService.aliasConditions);
+
+    EntityService.aliasColumns
+      .filter((column) => accountAlias[column] !== null)
+      .forEach((column) => {
+        const length = params.push(accountAlias[column]);
+        conditions.push(`${column} = $${length}`);
+      });
+
+    const aliasQuery = `${EntityService.entityFromAliasQuery} where ${conditions.join(' and ')}`;
+
+    const rows = await super.getRows(aliasQuery, params, 'getAccountFromAlias');
 
     if (_.isEmpty(rows)) {
       return null;
     } else if (rows.length > 1) {
       logger.error(`Incorrect db state: ${rows.length} alive entities matching alias ${accountAlias}`);
-      throw new Error();
+      throw new Error(`Multiple alive entities matching alias`);
     }
 
     return new Entity(rows[0]);
@@ -75,14 +78,14 @@ class EntityService extends BaseService {
    * @param {AccountAlias} accountAlias the account alias object
    * @return {Promise}
    */
-  getAccountIdFromAlias = async (accountAlias) => {
+  async getAccountIdFromAlias(accountAlias) {
     const entity = await this.getAccountFromAlias(accountAlias);
     if (_.isNil(entity)) {
       throw new NotFoundError('No account with a matching alias found');
     }
 
     return entity.id;
-  };
+  }
 }
 
 module.exports = new EntityService();

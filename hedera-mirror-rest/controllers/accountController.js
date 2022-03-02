@@ -267,21 +267,6 @@ const validateSingleFilterKeyOccurence = (filterMap, filter) => {
 };
 
 /**
- * Gets the encoded account id from the account alias string. Throws {@link InvalidArgumentError} if the account alias
- * string is invalid,
- * @param {AccountAlias} accountAlias the account alias object
- * @return {Promise}
- */
-const getAccountIdFromAccountAlias = async (accountAlias) => {
-  const entity = await EntityService.getAccountFromAlias(accountAlias);
-  if (_.isNil(entity)) {
-    throw new NotFoundError('No account with a matching alias found');
-  }
-
-  return entity.id;
-};
-
-/**
  * Retrive and validate the accountIdOrAlias query param string
  * @param {String} accountIdString accountIdOrAlias query string
  * @returns {EntityId} entityId
@@ -292,11 +277,12 @@ const getAndValidateAccountIdRequestPathParam = async (accountIdString) => {
     accountIdOrAlias = accountIdString;
   } else if (AccountAlias.isValid(accountIdString)) {
     try {
-      accountIdOrAlias = await getAccountIdFromAccountAlias(AccountAlias.fromString(accountIdString));
+      accountIdOrAlias = await EntityService.getAccountIdFromAlias(AccountAlias.fromString(accountIdString));
     } catch (err) {
       if (err instanceof InvalidArgumentError) {
         throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID_OR_ALIAS);
       }
+
       // rethrow any other error
       throw err;
     }
