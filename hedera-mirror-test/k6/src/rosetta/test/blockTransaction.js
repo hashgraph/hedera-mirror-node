@@ -29,7 +29,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('blockTransaction') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = testParameters.BASE_URL + urlTag;
+    const url = testParameters.baseUrl + urlTag;
     const payload = JSON.stringify({
       block_identifier: testParameters.blockIdentifier,
       network_identifier: testParameters.networkIdentifier,

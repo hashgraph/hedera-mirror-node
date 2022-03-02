@@ -29,7 +29,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('constructionCombine') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = testParameters.BASE_URL + urlTag;
+    const url = testParameters.baseUrl + urlTag;
     // the public key doesn't have to belong to the account in the payload since it's merely used to verify the signature
     const payload = JSON.stringify({
       network_identifier: testParameters.networkIdentifier,

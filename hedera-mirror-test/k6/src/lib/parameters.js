@@ -142,6 +142,18 @@ export const computeTransactionFromBlock = (rosettaApiUrl, networkIdentifier, bl
   }
 }
 
+export const computeNetworkInfo = (rosettaApiUrl) => {
+  const requestUrl = `${rosettaApiUrl}/rosetta/network/list`;
+  const response = getValidResponse(requestUrl, {"metadata": {}});
+  const networks = response.network_identifiers;
+  if (networks.length === 0) {
+    throw new Error(`It was not possible to find a network at ${rosettaApiUrl}`);
+  }
+  return {
+    name: networks[0].network
+  };
+}
+
 export const setDefaultValuesForEnvParameters = () => {
   __ENV['BASE_URL'] = __ENV['BASE_URL'] || "http://localhost";
   __ENV['DEFAULT_DURATION'] = __ENV['DEFAULT_DURATION'] = "120s";

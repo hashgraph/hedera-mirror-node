@@ -30,7 +30,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('networkList') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = testParameters.BASE_URL + urlTag;
+    const url = testParameters.baseUrl + urlTag;
     return http.post(url, payload);
   })
   .check('NetworkList OK', (r) => r.status === 200)

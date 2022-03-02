@@ -23,35 +23,35 @@ import {
   computeAccountParameters,
   computeBlockFromNetwork,
   computeTransactionFromBlock,
+  computeNetworkInfo,
   setDefaultValuesForEnvParameters
 } from "../../lib/parameters.js";
 import {currencyHbar} from "./constants.js";
 import {urlPrefix} from "../../lib/constants.js";
 
-function setDefaultValuesForEnvParametersForRosettaTests() {
-  setDefaultValuesForEnvParameters();
-  __ENV['NETWORK'] = __ENV['NETWORK'] || 'mainnet';
-}
-
 const setupTestParameters = () => {
-  setDefaultValuesForEnvParametersForRosettaTests();
-  const accountParameters = computeAccountParameters({baseApiUrl: `${__ENV['BASE_URL']}${urlPrefix}`});
+  setDefaultValuesForEnvParameters();
 
-  const blockIdentifier = computeBlockFromNetwork(__ENV['BASE_URL'], __ENV['NETWORK']);
+  const baseUrl = __ENV['BASE_URL'];
+  const networkName = computeNetworkInfo().name;
+  const accountParameters = computeAccountParameters({baseApiUrl: `${baseUrl}${urlPrefix}`});
+
+  const blockIdentifier = computeBlockFromNetwork(baseUrl, networkName);
   const networkIdentifier = {
     blockchain: 'Hedera',
-    network: __ENV.NETWORK,
+    network: networkName,
     sub_network_identifier: {
       network: 'shard 0 realm 0',
     }
   };
-  const transactionIdentifier = computeTransactionFromBlock(__ENV['BASE_URL'], networkIdentifier, blockIdentifier);
+  const transactionIdentifier = computeTransactionFromBlock(baseUrl, networkIdentifier, blockIdentifier);
+  const accountIdentifier = {
+    address: `0.0.${accountParameters.DEFAULT_ACCOUNT_ID}`,
+    metadata: {},
+  };
   return {
-    BASE_URL: __ENV['BASE_URL'],
-    accountIdentifier: {
-      address: `0.0.${accountParameters.DEFAULT_ACCOUNT_ID}`,
-      metadata: {},
-    },
+    baseUrl,
+    accountIdentifier,
     blockIdentifier,
     networkIdentifier,
     operations: [
@@ -67,10 +67,7 @@ const setupTestParameters = () => {
       {
         operation_identifier: {index: 1},
         type: 'CRYPTOTRANSFER',
-        account: {
-          address: '0.0.10000',
-          metadata: {},
-        },
+        account: accountIdentifier,
         amount: {
           value: '100',
           currency: currencyHbar,

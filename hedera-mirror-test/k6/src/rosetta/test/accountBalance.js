@@ -29,7 +29,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('accountBalance') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = testParameters.BASE_URL + urlTag;
+    const url = testParameters.baseUrl + urlTag;
     const payload = JSON.stringify({
       account_identifier: testParameters.accountIdentifier,
       block_identifier: testParameters.blockIdentifier,

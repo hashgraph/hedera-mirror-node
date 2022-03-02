@@ -33,7 +33,7 @@ const {options, run} = new TestScenarioBuilder()
       network_identifier: testParameters.networkIdentifier,
       operations: testParameters.operations,
     });
-    const url = testParameters.BASE_URL + urlTag;
+    const url = testParameters.baseUrl + urlTag;
     return http.post(url, payload);
   })
   .check('ConstructionPreprocess OK', (r) => r.status === 200)
