@@ -314,7 +314,7 @@ create table if not exists non_fee_transfer
     amount              bigint  not null,
     consensus_timestamp bigint  not null,
     is_approval         boolean null,
-    entity_id           bigint  not null,
+    entity_id           bigint  null,
     payer_account_id    bigint  not null
 );
 comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';

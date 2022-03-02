@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -92,35 +92,43 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected static final String TRANSACTION_MEMO = "transaction memo";
 
     @Resource
-    protected DomainBuilder domainBuilder;
-    @Resource
-    protected TransactionRepository transactionRepository;
-    @Resource
-    protected EntityRepository entityRepository;
-    @Resource
     protected ContractRepository contractRepository;
+
     @Resource
     protected ContractResultRepository contractResultRepository;
+
     @Resource
     protected CryptoTransferRepository cryptoTransferRepository;
+
     @Resource
-    protected LiveHashRepository liveHashRepository;
+    protected DomainBuilder domainBuilder;
+
     @Resource
-    protected TopicMessageRepository topicMessageRepository;
-    @Resource
-    protected NonFeeTransferRepository nonFeeTransferRepository;
+    protected EntityProperties entityProperties;
 
     @Resource
     protected EntityRecordItemListener entityRecordItemListener;
 
     @Resource
-    protected EntityProperties entityProperties;
+    protected EntityRepository entityRepository;
+
+    @Resource
+    protected LiveHashRepository liveHashRepository;
+
+    @Resource
+    protected NonFeeTransferRepository nonFeeTransferRepository;
 
     @Resource
     protected RecordItemBuilder recordItemBuilder;
 
     @Resource
     protected RecordStreamFileListener recordStreamFileListener;
+
+    @Resource
+    protected TopicMessageRepository topicMessageRepository;
+
+    @Resource
+    protected TransactionRepository transactionRepository;
 
     @Resource
     private TransactionTemplate transactionTemplate;

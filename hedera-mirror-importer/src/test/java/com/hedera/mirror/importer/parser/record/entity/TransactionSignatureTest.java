@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -65,6 +65,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -116,9 +117,10 @@ class TransactionSignatureTest {
     void setup() {
         CommonParserProperties commonParserProperties = new CommonParserProperties();
         EntityProperties entityProperties = new EntityProperties();
+        RecordParserProperties parserProperties = new RecordParserProperties();
         entityRecordItemListener = new EntityRecordItemListener(commonParserProperties, entityProperties,
                 addressBookService, nonFeeTransferExtractionStrategy, entityListener, transactionHandlerFactory,
-                fileDataRepository, entityRepository);
+                fileDataRepository, entityRepository, parserProperties);
         defaultSignatureMap = getDefaultSignatureMap();
         defaultTransactionSignatures = defaultSignatureMap.getSigPairList()
                 .stream()

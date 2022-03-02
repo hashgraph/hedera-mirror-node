@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.subscribe.grpc;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -81,12 +81,12 @@ class GrpcSubscriber implements MirrorSubscriber {
         AbstractSubscriberProperties.RetryProperties retry = subscriberProperties.getRetry();
 
         return Flux.defer(() -> grpcClient.subscribe(subscription))
-                .doOnError(t -> log.error("Error subscribing {}: ", subscription, t))
                 .retryWhen(Retry.backoff(retry.getMaxAttempts(), retry.getMinBackoff())
                         .maxBackoff(retry.getMaxBackoff())
                         .filter(this::shouldRetry)
                         .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
                                 r.totalRetries() + 1, StringUtils.substringBefore(r.failure().getMessage(), "\n"))))
+                .doOnError(t -> log.error("Error subscribing {}: ", subscription, t))
                 .doOnSubscribe(s -> log.info("Starting subscriber {}: {}", subscription, subscriberProperties));
     }
 
