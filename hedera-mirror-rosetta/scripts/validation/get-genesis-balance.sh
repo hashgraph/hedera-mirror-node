@@ -111,4 +111,5 @@ hbar_json=$(echo "$account_balances" | \
   '[.[] | .account_identifier.address=("0.0." + .id) | del(.id) ] | .[].currency=$currency')
 
 echo "$hbar_json" > "$parent_path/$network/data_genesis_balances.json"
+
 echo "Data genesis balances written after ${SECONDS}s"

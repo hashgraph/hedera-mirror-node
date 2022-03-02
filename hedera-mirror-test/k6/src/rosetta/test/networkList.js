@@ -1,5 +1,3 @@
-package com.hedera.mirror.monitor.config;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -9,9 +7,9 @@ package com.hedera.mirror.monitor.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,22 +18,24 @@ package com.hedera.mirror.monitor.config;
  * ‍
  */
 
-import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
-import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
-import io.micrometer.core.instrument.binder.MeterBinder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import http from "k6/http";
 
-@Configuration
-class MetricsConfiguration {
+import {TestScenarioBuilder} from '../../lib/common.js';
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-    @Bean
-    MeterBinder processMemoryMetrics() {
-        return new ProcessMemoryMetrics();
-    }
+const payload = JSON.stringify({metadata: {}});
+const urlTag = '/rosetta/network/list';
 
-    @Bean
-    MeterBinder processThreadMetrics() {
-        return new ProcessThreadMetrics();
-    }
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('networkList') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request((testParameters) => {
+    const url = testParameters.baseUrl + urlTag;
+    return http.post(url, payload);
+  })
+  .check('NetworkList OK', (r) => r.status === 200)
+  .build();
+
+export {options, run};
+
+export const setup = setupTestParameters;

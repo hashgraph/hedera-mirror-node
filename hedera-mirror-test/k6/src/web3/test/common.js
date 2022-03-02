@@ -1,5 +1,3 @@
-package com.hedera.mirror.monitor.config;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -9,9 +7,9 @@ package com.hedera.mirror.monitor.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,22 +18,22 @@ package com.hedera.mirror.monitor.config;
  * ‍
  */
 
-import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
-import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
-import io.micrometer.core.instrument.binder.MeterBinder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+const errorField = "error";
+const resultField = "result";
 
-@Configuration
-class MetricsConfiguration {
-
-    @Bean
-    MeterBinder processMemoryMetrics() {
-        return new ProcessMemoryMetrics();
+function isNonErrorResponse(response) {
+  //instead of doing multiple type checks,
+  //lets just do the normal path and return false,
+  //if an exception happens.
+  try {
+    if (response.status !== 200) {
+      return false;
     }
-
-    @Bean
-    MeterBinder processThreadMetrics() {
-        return new ProcessThreadMetrics();
-    }
+    const body = JSON.parse(response.body);
+    return body.hasOwnProperty(resultField) && !body.hasOwnProperty(errorField);
+  } catch (e) {
+    return false;
+  }
 }
+
+export {isNonErrorResponse};

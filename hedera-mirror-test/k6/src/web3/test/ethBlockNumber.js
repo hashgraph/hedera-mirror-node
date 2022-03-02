@@ -1,5 +1,3 @@
-package com.hedera.mirror.monitor.config;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -9,9 +7,9 @@ package com.hedera.mirror.monitor.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,22 +18,30 @@ package com.hedera.mirror.monitor.config;
  * ‍
  */
 
-import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
-import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
-import io.micrometer.core.instrument.binder.MeterBinder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import http from "k6/http";
 
-@Configuration
-class MetricsConfiguration {
+import {TestScenarioBuilder} from '../../lib/common.js';
+import {isNonErrorResponse} from "./common.js";
 
-    @Bean
-    MeterBinder processMemoryMetrics() {
-        return new ProcessMemoryMetrics();
-    }
+const url = __ENV.BASE_URL;
 
-    @Bean
-    MeterBinder processThreadMetrics() {
-        return new ProcessThreadMetrics();
-    }
-}
+const payload = JSON.stringify({
+  id: 1,
+  jsonrpc: "2.0",
+  method: "eth_blockNumber",
+  params: []
+});
+
+const httpParams = {
+  headers: {
+    'Content-Type': 'application/json',
+  },
+};
+
+const {options, run} = new TestScenarioBuilder()
+  .name('eth_blockNumber') // use unique scenario name among all tests
+  .request(() => http.post(url, payload, httpParams))
+  .check('eth_blockNumber', (r) => isNonErrorResponse(r))
+  .build();
+
+export {options, run};
