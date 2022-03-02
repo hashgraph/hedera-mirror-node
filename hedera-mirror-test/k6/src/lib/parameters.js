@@ -29,12 +29,16 @@ import {
   transactionListName
 } from "./constants.js";
 
-const getFirstEntity = (entityPath, key) => {
-  const response = http.get(entityPath);
+const getValidResponse = (requestUrl, requestBody, httpVerbMethod) => {
+  const response = httpVerbMethod(requestUrl, JSON.stringify(requestBody));
   if (response.status !== 200) {
-    throw new Error(`Error response for get request at ${entityPath}`);
+    throw new Error(`${response.status} received when requesting ${requestUrl}`);
   }
-  const body = JSON.parse(response.body);
+  return JSON.parse(response.body);
+}
+
+const getFirstEntity = (entityPath, key) => {
+  const body = getValidResponse(entityPath, null, http.get);
   const entity = body[key];
   if (entity.length === 0) {
     throw new Error(`No ${key} were found in the response for request at ${entityPath}`);
@@ -42,129 +46,201 @@ const getFirstEntity = (entityPath, key) => {
   return entity[0];
 };
 
-export const computeAccountParameters = (configuration) => {
-  const accountPath = `${configuration.baseApiUrl}/accounts?balance=true&limit=1&order=desc`;
-  const firstAccount = getFirstEntity(accountPath, accountListName);
-  return {
-    DEFAULT_ACCOUNT_ID: firstAccount.account,
-    DEFAULT_ACCOUNT_BALANCE: firstAccount.balance.balance || 0,
-    DEFAULT_PUBLIC_KEY: firstAccount.key.key
-  };
-};
-
-export const computeContractParameters = (configuration) => {
-  const contractPath = `${configuration.baseApiUrl}/contracts?limit=1&order=desc`;
-  const firstContract = getFirstEntity(contractPath, contractListName)
-  return {
-    DEFAULT_CONTRACT_ID: firstContract.contract_id,
-    DEFAULT_CONTRACT_TIMESTAMP: firstContract.created_timestamp
-  };
-};
-
-export const computeNftParameters = (configuration) => {
-  const tokenPath = `${configuration.baseApiUrl}/tokens?type=NON_FUNGIBLE_UNIQUE&limit=1&order=desc`;
-  const firstNftFromTokenList = getFirstEntity(tokenPath, tokenListName);
-  const nftPath = `${configuration.baseApiUrl}/tokens/${firstNftFromTokenList.token_id}/nfts?limit=1&order=desc`;
-  const firstNft = getFirstEntity(nftPath, nftListName);
-  return {
-    DEFAULT_NFT_ID: firstNftFromTokenList.token_id,
-    DEFAULT_NFT_SERIAL: firstNft.serial_number
-  };
-};
-
-export const computeScheduleParameters = (configuration) => {
-  const schedulePath = `${configuration.baseApiUrl}/schedules?limit=1&order=desc`;
-  const firstSchedule = getFirstEntity(schedulePath, scheduleListName);
-  return {
-    DEFAULT_SCHEDULE_ACCOUNT_ID: firstSchedule.creator_account_id,
-    DEFAULT_SCHEDULE_ID: firstSchedule.schedule_id
-  };
-};
-
-export const computeFungibleTokenParameters = (configuration) => {
-  const tokenPath = `${configuration.baseApiUrl}/tokens?type=FUNGIBLE_COMMON&limit=1&order=desc`;
-  const firstToken = getFirstEntity(tokenPath, tokenListName);
-  return {
-    DEFAULT_TOKEN_ID: firstToken.token_id,
-  };
-};
-
-export const computeTransactionParameters = (configuration) => {
-  const tokenPath = `${configuration.baseApiUrl}/transactions?limit=1&transactiontype=cryptotransfer&order=desc`;
-  const firstTransaction = getFirstEntity(tokenPath, transactionListName)
-  return {
-    DEFAULT_TRANSACTION_ID: firstTransaction.transaction_id
-  };
-};
-
-export const computeTopicInfo = (configuration) => {
-  const transactionPath = `${configuration.baseApiUrl}/transactions?transactiontype=CONSENSUSSUBMITMESSAGE&result=success&limit=1&order=desc`;
-  const DEFAULT_TOPIC_ID = getFirstEntity(transactionPath, transactionListName).entity_id;
-  const topicMessagePath = `${configuration.baseApiUrl}/topics/${DEFAULT_TOPIC_ID}/messages`;
-  const firstTopicMessage = getFirstEntity(topicMessagePath, messageListName);
-  return {
-    DEFAULT_TOPIC_ID,
-    DEFAULT_TOPIC_SEQUENCE: firstTopicMessage.sequence_number,
-    DEFAULT_TOPIC_TIMESTAMP: firstTopicMessage.consensus_timestamp
-  };
-};
-
-function getValidResponse(requestUrl, requestBody) {
-  const response = http.post(requestUrl, JSON.stringify(requestBody));
-  if (response.status !== 200) {
-    throw new Error(`${response.status} received when getting the network status`);
-  }
-  return JSON.parse(response.body);
-}
-
-export const computeBlockFromNetwork = (rosettaApiUrl, network) => {
-  const requestUrl = `${rosettaApiUrl}/rosetta/network/status`;
-  const requestBody = {
-    "network_identifier": {
-      "blockchain": "Hedera",
-      "network": network,
-      "sub_network_identifier": {
-        "network": "shard 0 realm 0"
-      }
-    },
-    "metadata": {}
-  };
-  const response = getValidResponse(requestUrl, requestBody);
-  return {
-    index: parseInt(response.current_block_identifier.index),
-    hash: response.current_block_identifier.hash
-  };
-};
-
-export const computeTransactionFromBlock = (rosettaApiUrl, networkIdentifier, blockIdentifier) => {
-  const requestUrl = `${rosettaApiUrl}/rosetta/block`;
-  const requestBody = {
-    network_identifier: networkIdentifier,
-    block_identifier: blockIdentifier
-  };
-  const response = getValidResponse(requestUrl, requestBody);
-  const transactions = response.block.transactions;
-  if (!transactions || transactions.length === 0) {
-    throw new Error(`It was not possible to find a transaction with the block identifier: ${JSON.stringify(blockIdentifier)}`);
-  }
-  return {
-    transactionIdentifier: {
-      hash: transactions[0].transaction_identifier.hash
+const copyEnvParamsFromEnvMap = (propertyList) => {
+  const envProperties = {};
+  let allPropertiesFound = true;
+  for (const property of propertyList) {
+    if (__ENV.hasOwnProperty(property)) {
+      envProperties[property] = __ENV[property];
+    } else {
+      allPropertiesFound = false;
     }
   }
-}
-
-export const computeNetworkInfo = (rosettaApiUrl) => {
-  const requestUrl = `${rosettaApiUrl}/rosetta/network/list`;
-  const response = getValidResponse(requestUrl, {"metadata": {}});
-  const networks = response.network_identifiers;
-  if (networks.length === 0) {
-    throw new Error(`It was not possible to find a network at ${rosettaApiUrl}`);
-  }
   return {
-    name: networks[0].network
+    allPropertiesFound,
+    envProperties
   };
 }
+
+const computeProperties = (propertyList, fallback) => {
+  const copyResult = copyEnvParamsFromEnvMap(propertyList);
+  if (copyResult.allPropertiesFound) {
+    return copyResult.envProperties;
+  }
+  return Object.assign(copyResult.envProperties, fallback());
+}
+
+export const computeAccountParameters = (configuration) =>
+  computeProperties(
+    ['DEFAULT_ACCOUNT_ID', 'DEFAULT_ACCOUNT_BALANCE', 'DEFAULT_PUBLIC_KEY'],
+    () => {
+      const accountPath = `${configuration.baseApiUrl}/accounts?balance=true&limit=1&order=desc`;
+      const firstAccount = getFirstEntity(accountPath, accountListName);
+      firstAccount.key = {key: ''};
+      return {
+        DEFAULT_ACCOUNT_ID: firstAccount.account,
+        DEFAULT_ACCOUNT_BALANCE: firstAccount.balance.balance || 0,
+        DEFAULT_PUBLIC_KEY: firstAccount.key.key
+      };
+    });
+
+export const computeContractParameters = (configuration) =>
+  computeProperties(
+    ['DEFAULT_CONTRACT_ID', 'DEFAULT_CONTRACT_TIMESTAMP'],
+    () => {
+      const contractPath = `${configuration.baseApiUrl}/contracts?limit=1&order=desc`;
+      const firstContract = getFirstEntity(contractPath, contractListName)
+      return {
+        DEFAULT_CONTRACT_ID: firstContract.contract_id,
+        DEFAULT_CONTRACT_TIMESTAMP: firstContract.created_timestamp
+      };
+    }
+  );
+
+export const computeNftParameters = (configuration) => {
+  const tokenProperties = computeProperties(
+    ['DEFAULT_NFT_ID'],
+    () => {
+      const tokenPath = `${configuration.baseApiUrl}/tokens?type=NON_FUNGIBLE_UNIQUE&limit=1&order=desc`;
+      const firstNftFromTokenList = getFirstEntity(tokenPath, tokenListName);
+      return {DEFAULT_NFT_ID: firstNftFromTokenList.token_id};
+    }
+  );
+
+  const nftProperties = computeProperties(
+    ['DEFAULT_NFT_SERIAL'],
+    () => {
+      const nftPath = `${configuration.baseApiUrl}/tokens/${tokenProperties.DEFAULT_NFT_ID}/nfts?limit=1&order=desc`;
+      const firstNft = getFirstEntity(nftPath, nftListName);
+      return {DEFAULT_NFT_SERIAL: firstNft.serial_number};
+    }
+  );
+
+  return Object.assign(tokenProperties, nftProperties)
+};
+
+export const computeScheduleParameters = (configuration) =>
+  computeProperties(
+    ['DEFAULT_SCHEDULE_ACCOUNT_ID', 'DEFAULT_SCHEDULE_ID'],
+    () => {
+      const schedulePath = `${configuration.baseApiUrl}/schedules?limit=1&order=desc`;
+      const firstSchedule = getFirstEntity(schedulePath, scheduleListName);
+      return {
+        DEFAULT_SCHEDULE_ACCOUNT_ID: firstSchedule.creator_account_id,
+        DEFAULT_SCHEDULE_ID: firstSchedule.schedule_id
+      };
+    }
+  );
+
+export const computeFungibleTokenParameters = (configuration) =>
+  computeProperties(
+    ['DEFAULT_TOKEN_ID'],
+    () => {
+      const tokenPath = `${configuration.baseApiUrl}/tokens?type=FUNGIBLE_COMMON&limit=1&order=desc`;
+      const firstToken = getFirstEntity(tokenPath, tokenListName);
+      return {
+        DEFAULT_TOKEN_ID: firstToken.token_id,
+      };
+    }
+  );
+
+export const computeTransactionParameters = (configuration) =>
+  computeProperties(
+    ['DEFAULT_TRANSACTION_ID'],
+    () => {
+      const tokenPath = `${configuration.baseApiUrl}/transactions?limit=1&transactiontype=cryptotransfer&order=desc`;
+      const firstTransaction = getFirstEntity(tokenPath, transactionListName)
+      return {
+        DEFAULT_TRANSACTION_ID: firstTransaction.transaction_id
+      };
+    }
+  );
+
+export const computeTopicInfo = (configuration) => {
+  const transactionProperties = computeProperties(
+    ['DEFAULT_TOPIC_ID'],
+    () => {
+      const transactionPath = `${configuration.baseApiUrl}/transactions?transactiontype=CONSENSUSSUBMITMESSAGE&result=success&limit=1&order=desc`;
+      const DEFAULT_TOPIC_ID = getFirstEntity(transactionPath, transactionListName).entity_id;
+      return {DEFAULT_TOPIC_ID};
+    }
+  );
+
+  const topicProperties = computeProperties(
+    ['DEFAULT_TOPIC_SEQUENCE', 'DEFAULT_TOPIC_TIMESTAMP'],
+    () => {
+      const topicMessagePath = `${configuration.baseApiUrl}/topics/${transactionProperties.DEFAULT_TOPIC_ID}/messages`;
+      const firstTopicMessage = getFirstEntity(topicMessagePath, messageListName);
+      return {
+        DEFAULT_TOPIC_SEQUENCE: firstTopicMessage.sequence_number,
+        DEFAULT_TOPIC_TIMESTAMP: firstTopicMessage.consensus_timestamp
+      };
+    }
+  );
+
+  return Object.assign(transactionProperties, topicProperties);
+};
+
+export const computeBlockFromNetwork = (rosettaApiUrl, network) =>
+  computeProperties(
+    ['DEFAULT_BLOCK_INDEX', 'DEFAULT_BLOCK_HASH'],
+    () => {
+      const requestUrl = `${rosettaApiUrl}/rosetta/network/status`;
+      const requestBody = {
+        "network_identifier": {
+          "blockchain": "Hedera",
+          "network": network,
+          "sub_network_identifier": {
+            "network": "shard 0 realm 0"
+          }
+        },
+        "metadata": {}
+      };
+      const response = getValidResponse(requestUrl, requestBody, http.post);
+      return {
+        DEFAULT_BLOCK_INDEX: parseInt(response.current_block_identifier.index),
+        DEFAULT_BLOCK_HASH: response.current_block_identifier.hash
+      };
+    }
+  );
+
+export const computeTransactionFromBlock = (rosettaApiUrl, networkIdentifier, blockIdentifier) =>
+  computeProperties(
+    ['DEFAULT_TRANSACTION_HASH'],
+    () => {
+      const requestUrl = `${rosettaApiUrl}/rosetta/block`;
+      const requestBody = {
+        network_identifier: networkIdentifier,
+        block_identifier: blockIdentifier
+      };
+      const response = getValidResponse(requestUrl, requestBody, http.post);
+      const transactions = response.block.transactions;
+      if (!transactions || transactions.length === 0) {
+        throw new Error(`It was not possible to find a transaction with the block identifier: ${JSON.stringify(blockIdentifier)}`);
+      }
+      return {
+        DEFAULT_TRANSACTION_HASH: transactions[0].transaction_identifier.hash
+      };
+    }
+  );
+
+
+export const computeNetworkInfo = (rosettaApiUrl) =>
+  computeProperties(
+    ['DEFAULT_NETWORK'],
+    () => {
+      const requestUrl = `${rosettaApiUrl}/rosetta/network/list`;
+      const response = getValidResponse(requestUrl, {"metadata": {}}, http.post);
+      const networks = response.network_identifiers;
+      if (networks.length === 0) {
+        throw new Error(`It was not possible to find a network at ${rosettaApiUrl}`);
+      }
+      return {
+        DEFAULT_NETWORK: networks[0].network
+      };
+    }
+  );
+
 
 export const setDefaultValuesForEnvParameters = () => {
   __ENV['BASE_URL'] = __ENV['BASE_URL'] || 'http://localhost';
