@@ -1,5 +1,5 @@
 {
-  "description": "Account NFT api call with multiple serial number range filters",
+  "description": "Account NFT api call with multiple serial number filters",
   "setup": {
     "entities": [],
     "tokens": [],
@@ -9,6 +9,7 @@
     "nfts": []
   },
   "urls": [
+    "/api/v1/accounts/0.0.1001/nfts?serialnumber=2&serialnumber=3",
     "/api/v1/accounts/0.0.1001/nfts?serialnumber=gt:2&serialnumber=gt:3",
     "/api/v1/accounts/0.0.1001/nfts?serialnumber=gte:2&serialnumber=gte:3",
     "/api/v1/accounts/0.0.1001/nfts?serialnumber=gt:2&serialnumber=gte:3",

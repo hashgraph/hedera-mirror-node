@@ -1,5 +1,5 @@
 {
-  "description": "Account NFT api call for all tokens with valid token and serialnumber range",
+  "description": "Account NFT api call for all tokens with valid token and serialnumber lower boundary search",
   "setup": {
     "accounts": [
       {

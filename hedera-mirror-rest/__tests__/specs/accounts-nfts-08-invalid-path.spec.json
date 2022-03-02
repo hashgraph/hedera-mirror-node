@@ -1,5 +1,5 @@
 {
-  "description": "Account NFT api call for tokens with invalid path",
+  "description": "Account NFT api call for tokens with invalid token.id path",
   "setup": {
     "entities": [],
     "tokens": [],

@@ -33,7 +33,7 @@ const EntityId = require('../entityId');
 const utils = require('../utils');
 
 const {Nft} = require('../model');
-const {NftService} = require('../service');
+const {EntityService, NftService} = require('../service');
 const {NftViewModel} = require('../viewmodel');
 
 // errors
@@ -56,8 +56,7 @@ const updateConditionsAndParamsWithValues = (
  *
  * @param {[]} filters parsed and validated filters
  * @param {Number} accountId parsed accountId from path
- * @param {Object} paramSupportMap map of supported filter param queries
- * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
+ * @param {Number} startPosition param index start position
  */
 const extractNftsQuery = (filters, accountId, startPosition = 1) => {
   let limit = defaultLimit;
@@ -72,7 +71,6 @@ const extractNftsQuery = (filters, accountId, startPosition = 1) => {
 
     switch (filter.key) {
       case constants.filterKeys.SERIAL_NUMBER:
-        // handle repeated values
         updateConditionsAndParamsWithValues(
           filter,
           params,
@@ -82,7 +80,6 @@ const extractNftsQuery = (filters, accountId, startPosition = 1) => {
         );
         break;
       case constants.filterKeys.TOKEN_ID:
-        // handle repeated values
         updateConditionsAndParamsWithValues(
           filter,
           params,
@@ -110,6 +107,12 @@ const extractNftsQuery = (filters, accountId, startPosition = 1) => {
   };
 };
 
+/**
+ * Extract multiple queries to be combined in union
+ * @param {Object} filters req filters
+ * @param {*} accountId Encoded owner entityId
+ * @returns {{lower: Object, inner: Object, upper: Object, order: 'asc'|'desc', limit: number}}
+ */
 const extractNftMultiUnionQuery = (filters, accountId) => {
   let lowerTokenIdBound = null;
   let lowerSerialNumberBound = null;
@@ -131,7 +134,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
       throw new InvalidArgumentError(`Not equals (ne) comparison operator is not supported`);
     }
 
-    // limit eq|lt(e)|gt(e) filters to one occurence
+    // limit all query filters eq|lt(e)|gt(e) filters to one occurence
     validateSingleFilterKeyOccurence(oneOperatorValues, filter);
     oneOperatorValues[getFilterKeyOpString(filter)] = true;
 
@@ -148,20 +151,20 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
         break;
       case constants.filterKeys.TOKEN_ID:
         if (constants.queryParamOperatorPatterns.lte.test(filter.operator)) {
-          // set max token bound
+          // cache filter as an upper token bound for equality case
           upperTokenIdBound = {...filter};
           upperTokenIdBound.operator = utils.opsMap.eq;
 
-          // set inclusive bound
+          // cache filter as an upper token bound for less than case
           inclusiveUpperTokenIdBound = {...filter};
           inclusiveUpperTokenIdBound.operator = utils.opsMap.lt;
           noFilterQuery = false;
         } else if (constants.queryParamOperatorPatterns.gte.test(filter.operator)) {
-          // set min token bound
+          // cache filter as an lower token bound for equality case
           lowerTokenIdBound = {...filter};
           lowerTokenIdBound.operator = utils.opsMap.eq;
 
-          // set inclusive bound
+          // cache filter as an upper token bound for greater than case
           inclusiveLowerTokenIdBound = {...filter};
           inclusiveLowerTokenIdBound.operator = utils.opsMap.gt;
           noFilterQuery = false;
@@ -181,6 +184,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
     }
   }
 
+  // validate filter combination occurences
   if (hasSerialNumber && !hasTokenNumber) {
     throw new InvalidArgumentError(`Cannot search NFTs with serialnumber without a tokenId parameter filter`);
   }
@@ -206,6 +210,8 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
       !_.isNil(lowerSerialNumberBound) || !_.isNil(lowerTokenIdBound)
         ? extractNftsQuery([lowerTokenIdBound, lowerSerialNumberBound, orderFilter, limitFilter], accountId)
         : null;
+
+    // account for non zero based psql index and limit param index position to be injected
     paramCount = _.isNil(lower) ? 1 : lower.params.length + 2;
 
     inner =
@@ -216,7 +222,9 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
             paramCount
           )
         : null;
-    paramCount = paramCount + inner.params.length + 1;
+
+    // account for limit param index position to be injected
+    paramCount = paramCount + inner.params.length + 1; // limit offset
 
     upper =
       !_.isNil(upperSerialNumberBound) || !_.isNil(upperTokenIdBound)
@@ -259,38 +267,18 @@ const validateSingleFilterKeyOccurence = (filterMap, filter) => {
 };
 
 /**
- * Gets the query to find the alive entity matching the account alias string.
- * @param {AccountAlias} accountAlias
- * @return {{query: string, params: *[]}}
- */
-const getAccountAliasQuery = (accountAlias) => {
-  const query = `select id from entity where coalesce(deleted, false) <> true and alias = $1`;
-  const params = [accountAlias.alias];
-  return {query, params};
-};
-
-/**
  * Gets the encoded account id from the account alias string. Throws {@link InvalidArgumentError} if the account alias
  * string is invalid,
  * @param {AccountAlias} accountAlias the account alias object
  * @return {Promise}
  */
 const getAccountIdFromAccountAlias = async (accountAlias) => {
-  const {query, params} = getAccountAliasQuery(accountAlias);
-
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getAccountIdFromAccountAlias query: ${query} ${JSON.stringify(params)}`);
+  const entity = await EntityService.getAccountFromAlias(accountAlias);
+  if (_.isNil(entity)) {
+    throw new NotFoundError('No account with a matching alias found');
   }
 
-  const {rows} = await pool.queryQuietly(query, params);
-  if (rows.length === 0) {
-    throw new NotFoundError();
-  } else if (rows.length > 1) {
-    logger.error(`Incorrect db state: ${rows.length} alive entities matching alias ${accountAlias}`);
-    throw new Error();
-  }
-
-  return rows[0].id;
+  return entity.id;
 };
 
 /**
@@ -349,7 +337,7 @@ const getNftsByAccountId = async (req, res) => {
     const lastSerial = lastRow !== undefined ? lastRow.serial_number : null;
     const last = {
       [constants.filterKeys.TOKEN_ID]: lastTokenId,
-      [constants.filterKeys.SERIAL_NUMBER]: lastSerial + 1,
+      [constants.filterKeys.SERIAL_NUMBER]: lastSerial + 1, // offset by 1 to support inclusve gte|lte comparison
     };
     response.links.next = utils.getPaginationLink(req, response.nfts.length !== limit, last, order, true);
   }

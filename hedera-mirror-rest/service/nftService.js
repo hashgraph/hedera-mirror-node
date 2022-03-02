@@ -36,7 +36,6 @@ const {orderFilterValues} = require('../constants');
  */
 class NftService extends BaseService {
   static nftByIdQuery = 'select * from nft where token_id = $1 and serial_number = $2';
-  static nftsByAccountIdQuery = 'select * from nft where account_id = $1';
 
   static nftQuery = `select
     ${Nft.ACCOUNT_ID},

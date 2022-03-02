@@ -47,7 +47,26 @@ paths:
   /api/v1/accounts/{accountAliasOrAccountId}/nfts:
     get:
       summary: Get nfts for an account info
-      description: Returns information for all non-fungible tokens for an account
+      description: |
+        Returns information for all non-fungible tokens for an account.
+        When filtering there are some restrictions enforced to ensure correctness and scalability.
+
+        **The table below defines the restrictions and support for the NFT ownership endpoint**
+
+        | Query Param   | Comparison Operator | Support | Description           | Example |
+        | ------------- | ------------------- | ------- | --------------------- | ------- |
+        | token.id      | eq                  | Y       | Single occurence only | ?token.id=X |
+        |               | ne                  | N       |                       | |
+        |               | lt(e)               | Y       | Single occurence only | ?token.id=lte:X |
+        |               | gt(e)               | Y       | Single occurence only | ?token.id=gte:X |
+        | serialnumber  | eq                  | Y       | Single occurence only | ?serialnumber=lt:Y |
+        |               | ne                  | N       |                       | |
+        |               | lt(e)               | Y       | Single occurence only. Requires the presence of an **lte** **token.id** query | ?token.id=lte:X&serialnumber=lt:Y |
+        |               | gt(e)               | Y       | Single occurence only. Requires the presence of an **gte** **token.id** query | ?token.id=gte:X&serialnumber=gt:Y |
+
+        Note: When searching across a range for individual NFTs a **serialnumber** with an additional **token.id** query filter must be provided.
+        Both filters must be a single occurence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
+
       operationId: listNftByAccountId
       parameters:
         - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
@@ -64,6 +83,8 @@ paths:
                 $ref: '#/components/schemas/Nfts'
         400:
           $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
         - tokens
@@ -2361,9 +2382,6 @@ components:
         serialNumEqOperator:
           summary: Example of serialNum equals operator
           value: eq:200
-        serialNumNeOperator:
-          summary: Example of serialNum not equals operator
-          value: ne:300
         serialNumGtOperator:
           summary: Example of serialNum greater than operator
           value: gt:400
@@ -2378,7 +2396,7 @@ components:
           value: lte:700
       schema:
         type: string
-        pattern: ^((eq|gt|gte|lt|lte|ne):)?\d{1,19}?$
+        pattern: ^((eq|gt|gte|lt|lte):)?\d{1,19}?$
     timestampQueryParam:
       description: The consensus timestamp in seconds.nanoseconds format with an optional comparison operator
       name: timestamp

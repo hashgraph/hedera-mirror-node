@@ -1,5 +1,5 @@
 {
-  "description": "Account NFT api call for tokens with invalid params",
+  "description": "Account NFT api call for tokens with invalid param values",
   "setup": {
     "entities": [],
     "tokens": [],

@@ -1,5 +1,5 @@
 {
-  "description": "Account NFT api call for a specific token and serial number range",
+  "description": "Account NFT api call for a specific token and serial number",
   "setup": {
     "entities": [
       {

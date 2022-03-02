@@ -559,7 +559,7 @@ const convertMySqlStyleQueryToPostgres = (sqlQuery, startIndex = 1) => {
  * @param {Object} lastValueMap Map of key value pairs representing last values of columns that may be filtered on
  * @param {String} order Order of sorting the results
  * @return {String} next Fully formed link to the next page
- * @return {[]} list of last objects
+ * @return {String} next url link
  */
 const getPaginationLink = (req, isEnd, lastValueMap, order, inclusive = false) => {
   let urlPrefix;
@@ -627,15 +627,17 @@ const updateReqQuery = (reqQuery, field, pattern, insertValue) => {
   }
 };
 
-const getNextParamQueries = (order, reqQuery, lastObjects, inclusive = false) => {
+const getNextParamQueries = (order, reqQuery, lastValueMap, inclusive = false) => {
   const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
   let insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
   if (inclusive) {
     insertedPattern = `${insertedPattern}e`;
   }
 
-  for (const [field, lastValue] of Object.entries(lastObjects)) {
-    updateReqQuery(reqQuery, field, pattern, `${insertedPattern}:${lastValue}`);
+  for (const [field, lastValue] of Object.entries(lastValueMap)) {
+    if (!_.isNil(lastValue)) {
+      updateReqQuery(reqQuery, field, pattern, `${insertedPattern}:${lastValue}`);
+    }
   }
 
   return constructStringFromUrlQuery(reqQuery);

@@ -1,13 +1,17 @@
 {
-  "description": "Account NFT api call for a serial number range with a missing token filter",
+  "description": "Account NFT api call for all tokens",
   "setup": {
-    "entities": [
+    "accounts": [
       {
-        "num": 1001
+        "num": 1001,
+        "alias": "AGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
       },
       {
         "num": 2001
-      },
+      }
+    ],
+    "entities": [
       {
         "num": 1500,
         "type": "TOKEN"
@@ -66,18 +70,16 @@
     ]
   },
   "urls": [
-    "/api/v1/accounts/0.0.1001/nfts?serialnumber=3",
-    "/api/v1/accounts/0.0.1001/nfts?serialnumber=lt:3",
-    "/api/v1/accounts/0.0.1001/nfts?serialnumber=lte:3",
-    "/api/v1/accounts/0.0.1001/nfts?serialnumber=gt:3",
-    "/api/v1/accounts/0.0.1001/nfts?serialnumber=gte:3"
+    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/nfts",
+    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/nfts",
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/nfts"
   ],
-  "responseStatus": 400,
+  "responseStatus": 404,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Cannot search NFTs with serialnumber without a tokenId parameter filter"
+          "message": "No account with a matching alias found"
         }
       ]
     }
