@@ -67,26 +67,6 @@ class NftService extends BaseService {
     return [query, params];
   }
 
-  /**
-   * Retrieves nfts based on various filters
-   *
-   * @param whereConditions the conditions to build a where clause out of
-   * @param whereParams the parameters for the where clause
-   * @param nftOrder the sorting order for field token_id and serial
-   * @param limit the limit parameter for the query
-   * @returns {Promise<*[]|*>} the result of the getNftsByFilters query
-   */
-  async getNftsByFilters(
-    whereConditions = [],
-    whereParams = [],
-    nftOrder = orderFilterValues.DESC,
-    limit = defaultLimit
-  ) {
-    const [query, params] = this.getNftsFiltersQuery(whereConditions, whereParams, nftOrder, limit);
-    const rows = await super.getRows(query, params, 'getNftsByFilters');
-    return rows.map((nft) => new Nft(nft));
-  }
-
   async getNftOwnership(lower, inner, upper, order, limit) {
     let allParams = [];
     let allQueries = [];

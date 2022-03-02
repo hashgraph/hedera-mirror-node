@@ -40,39 +40,15 @@ const {NftViewModel} = require('../viewmodel');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
-const updateConditionsAndParamsWithInValues = (
+const updateConditionsAndParamsWithValues = (
   filter,
-  invalues,
   existingParams,
   existingConditions,
   fullName,
   position = existingParams.length
 ) => {
-  if (filter.operator === utils.opsMap.eq) {
-    // aggregate '=' conditions and use the sql 'in' operator
-    invalues.push(filter.value);
-  } else {
-    existingParams.push(filter.value);
-    existingConditions.push(`${fullName}${filter.operator}$${position}`);
-  }
-};
-
-const updateQueryFiltersWithInValues = (
-  existingParams,
-  existingConditions,
-  invalues,
-  fullName,
-  start = existingParams.length + 1
-) => {
-  if (!_.isNil(invalues) && !_.isEmpty(invalues)) {
-    // add the condition 'c.id in ()'
-    // const start = existingParams.length + 1; // start is the next positional index
-    existingParams.push(...invalues);
-    const positions = _.range(invalues.length)
-      .map((position) => position + start)
-      .map((position) => `$${position}`);
-    existingConditions.push(`${fullName} in (${positions})`);
-  }
+  existingParams.push(filter.value);
+  existingConditions.push(`${fullName}${filter.operator}$${position}`);
 };
 
 /**
@@ -89,14 +65,6 @@ const extractNftsQuery = (filters, accountId, startPosition = 1) => {
   const conditions = [`${Nft.ACCOUNT_ID} = $${startPosition}`];
   const params = [accountId];
 
-  // token_id
-  const nftTokenIdFullName = Nft.TOKEN_ID;
-  const tokenInValues = [];
-
-  // serialnumber
-  const serialNumberFullName = Nft.SERIAL_NUMBER;
-  const serialNumberInValues = [];
-
   for (const filter of filters) {
     if (_.isNil(filter)) {
       continue;
@@ -105,23 +73,21 @@ const extractNftsQuery = (filters, accountId, startPosition = 1) => {
     switch (filter.key) {
       case constants.filterKeys.SERIAL_NUMBER:
         // handle repeated values
-        updateConditionsAndParamsWithInValues(
+        updateConditionsAndParamsWithValues(
           filter,
-          serialNumberInValues,
           params,
           conditions,
-          serialNumberFullName,
+          Nft.SERIAL_NUMBER,
           startPosition + conditions.length
         );
         break;
       case constants.filterKeys.TOKEN_ID:
         // handle repeated values
-        updateConditionsAndParamsWithInValues(
+        updateConditionsAndParamsWithValues(
           filter,
-          tokenInValues,
           params,
           conditions,
-          nftTokenIdFullName,
+          Nft.TOKEN_ID,
           startPosition + conditions.length
         );
         break;
@@ -135,22 +101,6 @@ const extractNftsQuery = (filters, accountId, startPosition = 1) => {
         break;
     }
   }
-
-  // update query with repeated values
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    tokenInValues,
-    nftTokenIdFullName,
-    startPosition + conditions.length
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    serialNumberInValues,
-    serialNumberFullName,
-    startPosition + conditions.length
-  );
 
   return {
     conditions,
@@ -310,29 +260,19 @@ const validateSingleFilterKeyOccurence = (filterMap, filter) => {
 
 /**
  * Gets the query to find the alive entity matching the account alias string.
- * @param {string} accountAliasStr
+ * @param {AccountAlias} accountAlias
  * @return {{query: string, params: *[]}}
  */
 const getAccountAliasQuery = (accountAlias) => {
-  const columns = ['shard', 'realm', 'alias'];
-  const conditions = ['deleted <> true'];
-  const params = [];
-
-  columns
-    .filter((column) => accountAlias[column] !== null)
-    .forEach((column) => {
-      const length = params.push(accountAlias[column]);
-      conditions.push(`${column} = $${length}`);
-    });
-
-  const query = `select id from entity where ${conditions.join(' and ')}`;
+  const query = `select id from entity where coalesce(deleted, false) <> true and alias = $1`;
+  const params = [accountAlias.alias];
   return {query, params};
 };
 
 /**
  * Gets the encoded account id from the account alias string. Throws {@link InvalidArgumentError} if the account alias
  * string is invalid,
- * @param {string} accountAlias the account alias string
+ * @param {AccountAlias} accountAlias the account alias object
  * @return {Promise}
  */
 const getAccountIdFromAccountAlias = async (accountAlias) => {
@@ -353,6 +293,11 @@ const getAccountIdFromAccountAlias = async (accountAlias) => {
   return rows[0].id;
 };
 
+/**
+ * Retrive and validate the accountIdOrAlias query param string
+ * @param {String} accountIdString accountIdOrAlias query string
+ * @returns {EntityId} entityId
+ */
 const getAndValidateAccountIdRequestPathParam = async (accountIdString) => {
   let accountIdOrAlias = null;
   if (EntityId.isValidEntityId(accountIdString)) {

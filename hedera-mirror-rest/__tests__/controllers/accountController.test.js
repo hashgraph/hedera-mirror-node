@@ -90,7 +90,7 @@ describe('extractNftsQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [accountIdFilter, 'token_id in ($2)'],
+        conditions: [accountIdFilter, 'token_id = $2'],
         params: [3, '1000'],
       },
     },
@@ -113,7 +113,7 @@ describe('extractNftsQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [accountIdFilter, 'token_id in ($2)', 'serial_number in ($3)'],
+        conditions: [accountIdFilter, 'token_id = $2', 'serial_number = $3'],
         params: [4, '1001', '1'],
       },
     },
@@ -199,7 +199,7 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         lower: {
           ...defaultExpected,
-          conditions: [accountIdFilter, 'token_id in ($2)'],
+          conditions: [accountIdFilter, 'token_id = $2'],
           params: [3, '1001'],
         },
         inner: {
@@ -232,8 +232,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         lower: {
           ...defaultExpected,
-          conditions: [accountIdFilter, 'serial_number > $2', 'token_id in ($3)'],
-          params: [3, '1', '1000'],
+          conditions: [accountIdFilter, 'token_id = $2', 'serial_number > $3'],
+          params: [3, '1000', '1'],
         },
         inner: {
           ...defaultExpected,
@@ -271,8 +271,8 @@ describe('extractNftMultiUnionQuery', () => {
         },
         upper: {
           ...defaultExpected,
-          conditions: ['account_id = $4', 'serial_number < $5', 'token_id in ($6)'],
-          params: [3, '10', '1000'],
+          conditions: ['account_id = $4', 'token_id = $5', 'serial_number < $6'],
+          params: [3, '1000', '10'],
         },
         order: constants.orderFilterValues.DESC,
         limit: defaultLimit,
@@ -308,8 +308,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         lower: {
           ...defaultExpected,
-          conditions: [accountIdFilter, 'serial_number > $2', 'token_id in ($3)'],
-          params: [4, '10', '1000'],
+          conditions: [accountIdFilter, 'token_id = $2', 'serial_number > $3'],
+          params: [4, '1000', '10'],
         },
         inner: {
           ...defaultExpected,
@@ -318,8 +318,8 @@ describe('extractNftMultiUnionQuery', () => {
         },
         upper: {
           ...defaultExpected,
-          conditions: ['account_id = $9', 'serial_number < $10', 'token_id in ($11)'],
-          params: [4, '20', '2000'],
+          conditions: ['account_id = $9', 'token_id = $10', 'serial_number < $11'],
+          params: [4, '2000', '20'],
         },
         order: constants.orderFilterValues.DESC,
         limit: defaultLimit,
