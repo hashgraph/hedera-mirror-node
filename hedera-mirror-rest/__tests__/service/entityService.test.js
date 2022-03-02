@@ -55,28 +55,63 @@ beforeEach(async () => {
   await integrationDbOps.cleanUp(dbConfig.sqlConnection);
 });
 
+const defaultEntityAlias = new AccountAlias('1', '2', 'KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ');
+const defaultInputEntity = [
+  {
+    alias: defaultEntityAlias.base32Alias,
+    id: 3,
+    shard: 1,
+    realm: 2,
+  },
+];
+
+const defaultExpectedEntity = {
+  id: '281483566645248',
+};
+
 describe('EntityService.getAccountFromAlias tests', () => {
   test('EntityService.getAccountFromAlias - No match', async () => {
-    await expect(EntityService.getAccountFromAlias(1)).resolves.toBeNull();
+    await expect(EntityService.getAccountFromAlias({alias: '1'})).resolves.toBeNull();
   });
 
-  const entityAlias = new AccountAlias('1', '2', 'KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ');
-  const inputEntity = [
-    {
-      alias: entityAlias.base32Alias,
-      id: 3,
-      shard: 1,
-      realm: 2,
-    },
-  ];
+  test('EntityService.getAccountFromAlias - Matching entity', async () => {
+    await integrationDomainOps.loadEntities(defaultInputEntity);
 
-  const expectedEntity = {
-    id: '281483566645248',
-  };
-
-  test('EntityService.getAccountFromAlias - Row match w start', async () => {
-    await integrationDomainOps.loadEntities(inputEntity);
-
-    await expect(EntityService.getAccountFromAlias(entityAlias)).resolves.toMatchObject(expectedEntity);
+    await expect(EntityService.getAccountFromAlias(defaultEntityAlias)).resolves.toMatchObject(defaultExpectedEntity);
   });
+
+  // test('EntityService.getAccountFromAlias - Duplicate alias', async () => {
+  //   const inputEntities = [
+  //     {
+  //       alias: defaultEntityAlias.base32Alias,
+  //       id: 3,
+  //       num: 3,
+  //       shard: 1,
+  //       realm: 2,
+  //     },
+  //     {
+  //       alias: defaultEntityAlias.base32Alias,
+  //       id: 4,
+  //       num: 4,
+  //       shard: 1,
+  //       realm: 2,
+  //     },
+  //   ];
+  //   await integrationDomainOps.loadEntities(inputEntities);
+
+  //   expect(() => EntityService.getAccountFromAlias(defaultEntityAlias)).toThrowErrorMatchingSnapshot();
+  // });
 });
+
+// describe('EntityService.getAccountIdFromAlias tests', () => {
+//   test('EntityService.getAccountIdFromAlias - No match', async () => {
+//     const entityAlias = new AccountAlias('3', '4', 'abc');
+//     expect(() => EntityService.getAccountIdFromAlias(entityAlias)).toThrowErrorMatchingSnapshot();
+//   });
+
+//   test('EntityService.getAccountFromAlias - Matching id', async () => {
+//     await integrationDomainOps.loadEntities(defaultInputEntity);
+
+//     await expect(EntityService.getAccountIdFromAlias(defaultEntityAlias)).resolves.toBe(defaultExpectedEntity.id);
+//   });
+// });

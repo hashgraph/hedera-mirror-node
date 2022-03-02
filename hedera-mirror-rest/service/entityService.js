@@ -25,6 +25,8 @@ const _ = require('lodash');
 const BaseService = require('./baseService');
 const {Entity} = require('../model');
 
+const {NotFoundError} = require('../errors/notFoundError');
+
 /**
  * Entity retrieval business logic
  */
@@ -52,7 +54,7 @@ class EntityService extends BaseService {
    * Retrieves the entity containing matching the given alias
    *
    * @param {AccountAlias} accountAlias accountAlias
-   * @return {Promise<Object>} raw entity object
+   * @return {Promise<Entity>} raw entity object
    */
   async getAccountFromAlias(accountAlias) {
     const rows = await super.getRows(EntityService.entityFromAliasQuery, [accountAlias.alias], 'getAccountFromAlias');
@@ -66,6 +68,21 @@ class EntityService extends BaseService {
 
     return new Entity(rows[0]);
   }
+
+  /**
+   * Gets the encoded account id from the account alias string. Throws {@link InvalidArgumentError} if the account alias
+   * string is invalid,
+   * @param {AccountAlias} accountAlias the account alias object
+   * @return {Promise}
+   */
+  getAccountIdFromAlias = async (accountAlias) => {
+    const entity = await this.getAccountFromAlias(accountAlias);
+    if (_.isNil(entity)) {
+      throw new NotFoundError('No account with a matching alias found');
+    }
+
+    return entity.id;
+  };
 }
 
 module.exports = new EntityService();
