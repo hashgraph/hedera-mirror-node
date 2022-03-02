@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.exception;
 
 /*-
  * ‌
@@ -20,9 +20,15 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.springframework.data.repository.CrudRepository;
+public class AliasNotFoundException extends ImporterException {
 
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+    private static final long serialVersionUID = 262691996461413516L;
 
-public interface NonFeeTransferRepository extends CrudRepository<NonFeeTransfer, Long> {
+    public AliasNotFoundException(String alias) {
+        super(getMessage(alias));
+    }
+
+    private static String getMessage(String alias) {
+        return String.format("Account with alias '%s' not found", alias);
+    }
 }

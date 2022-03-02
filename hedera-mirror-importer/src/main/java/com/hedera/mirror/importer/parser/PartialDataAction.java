@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.parser;
 
 /*-
  * ‌
@@ -20,9 +20,8 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.springframework.data.repository.CrudRepository;
-
-import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
-
-public interface NonFeeTransferRepository extends CrudRepository<NonFeeTransfer, Long> {
+public enum PartialDataAction {
+    DEFAULT,
+    ERROR,
+    SKIP,
 }
