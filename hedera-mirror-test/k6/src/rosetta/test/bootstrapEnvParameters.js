@@ -33,7 +33,7 @@ const setupTestParameters = () => {
   setDefaultValuesForEnvParameters();
 
   const baseUrl = __ENV['BASE_URL'];
-  const networkName = computeNetworkInfo().name;
+  const networkName = computeNetworkInfo(baseUrl).name;
   const accountParameters = computeAccountParameters({baseApiUrl: `${baseUrl}${urlPrefix}`});
 
   const blockIdentifier = computeBlockFromNetwork(baseUrl, networkName);
