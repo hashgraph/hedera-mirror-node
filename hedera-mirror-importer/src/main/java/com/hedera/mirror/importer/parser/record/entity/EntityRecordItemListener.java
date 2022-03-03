@@ -170,7 +170,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
             if (body.hasCryptoCreateAccount() && recordItem.isSuccessful()) {
-                insertCryptoCreateTransferList(consensusTimestamp, recordItem);
+                 insertCryptoCreateTransferList(consensusTimestamp, recordItem);
             } else {
                 insertTransferList(consensusTimestamp, txRecord.getTransferList(), recordItem.getPayerAccountId());
             }
@@ -420,10 +420,6 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertCryptoCreateTransferList(long consensusTimestamp, RecordItem recordItem) {
         var record = recordItem.getRecord();
-        var body = recordItem.getTransactionBody();
-        long initialBalance = body.getCryptoCreateAccount().getInitialBalance();
-        EntityId createdAccount = EntityId.of(record.getReceipt().getAccountID());
-        boolean addInitialBalance = true;
         TransferList transferList = record.getTransferList();
 
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
@@ -433,22 +429,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             cryptoTransfer.setIsApproval(aa.getIsApproval());
             cryptoTransfer.setPayerAccountId(recordItem.getPayerAccountId());
             entityListener.onCryptoTransfer(cryptoTransfer);
-
-            // Don't manually add an initial balance transfer if the transfer list contains it already
-            if (initialBalance == aa.getAmount() && createdAccount.equals(account)) {
-                addInitialBalance = false;
-            }
-        }
-
-        if (addInitialBalance) {
-            CryptoTransfer transferOut = new CryptoTransfer(consensusTimestamp, -initialBalance, recordItem
-                    .getPayerAccountId());
-            transferOut.setPayerAccountId(recordItem.getPayerAccountId());
-            entityListener.onCryptoTransfer(transferOut);
-
-            CryptoTransfer transferIn = new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount);
-            transferIn.setPayerAccountId(recordItem.getPayerAccountId());
-            entityListener.onCryptoTransfer(transferIn);
         }
     }
 
