@@ -24,7 +24,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.lettuce.core.metrics.MicrometerCommandLatencyRecorder;
 import io.lettuce.core.metrics.MicrometerOptions;
 import io.micrometer.core.instrument.MeterRegistry;
-import lombok.RequiredArgsConstructor;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
 import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
@@ -47,10 +46,7 @@ import com.hedera.mirror.grpc.domain.StreamMessage;
 @AutoConfigureBefore(RedisAutoConfiguration.class)
 @AutoConfigureAfter({MetricsAutoConfiguration.class, CompositeMeterRegistryAutoConfiguration.class})
 @Configuration
-@RequiredArgsConstructor
 class RedisConfiguration {
-
-    private final ReactiveRedisConnectionFactory reactiveRedisConnectionFactory;
 
     // Override default auto-configuration to disable histogram metrics
     @Bean
@@ -68,7 +64,7 @@ class RedisConfiguration {
     }
 
     @Bean
-    ReactiveRedisOperations<String, StreamMessage> reactiveRedisOperations() {
+    ReactiveRedisOperations<String, StreamMessage> reactiveRedisOperations(ReactiveRedisConnectionFactory connectionFactory) {
         RedisSerializationContext<String, StreamMessage> serializationContext = RedisSerializationContext
                 .newSerializationContext()
                 .key((RedisSerializer) StringRedisSerializer.UTF_8)
@@ -76,6 +72,6 @@ class RedisConfiguration {
                 .hashKey(StringRedisSerializer.UTF_8)
                 .hashValue(redisSerializer())
                 .build();
-        return new ReactiveRedisTemplate<>(reactiveRedisConnectionFactory, serializationContext);
+        return new ReactiveRedisTemplate<>(connectionFactory, serializationContext);
     }
 }
