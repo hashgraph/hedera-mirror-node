@@ -75,7 +75,7 @@ public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
     /**
      * @deprecated in favor of using the no-arg constructor and setters
      */
-    @Deprecated
+    @Deprecated(forRemoval = true)
     public CryptoTransfer(long consensusTimestamp, long amount, EntityId entityId) {
         setConsensusTimestamp(consensusTimestamp);
         setAmount(amount);

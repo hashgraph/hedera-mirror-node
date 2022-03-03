@@ -32,14 +32,12 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
-@EnabledIfV1
 @Tag("migration")
 public class ErrataMigrationTest extends IntegrationTest {
 
@@ -136,7 +134,7 @@ public class ErrataMigrationTest extends IntegrationTest {
         errataMigration.onStart(); // Call to increase test coverage of no-op methods
         errataMigration.onError();
         errataMigration.onEnd(accountBalanceFile);
-        assertThat(accountBalanceFile.getTimeOffset()).isEqualTo(0);
+        assertThat(accountBalanceFile.getTimeOffset()).isZero();
     }
 
     private void assertBalanceOffsets(int expected) {
