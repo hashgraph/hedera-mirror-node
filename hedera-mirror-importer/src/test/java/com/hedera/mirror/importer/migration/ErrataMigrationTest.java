@@ -22,11 +22,12 @@ package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
@@ -38,29 +39,19 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 public class ErrataMigrationTest extends IntegrationTest {
 
     public static final long BAD_TIMESTAMP1 = 1568415600193620000L;
     private static final long BAD_TIMESTAMP2 = 1568528100472477002L;
 
-    @Resource
-    private AccountBalanceFileRepository accountBalanceFileRepository;
-
-    @Resource
-    private CryptoTransferRepository cryptoTransferRepository;
-
-    @Resource
-    private DomainBuilder domainBuilder;
-
-    @Resource
-    private ErrataMigration errataMigration;
-
-    @Resource
-    private MirrorProperties mirrorProperties;
-
-    @Resource
-    private TransactionRepository transactionRepository;
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
+    private final CryptoTransferRepository cryptoTransferRepository;
+    private final DomainBuilder domainBuilder;
+    private final ErrataMigration errataMigration;
+    private final MirrorProperties mirrorProperties;
+    private final TransactionRepository transactionRepository;
 
     private MirrorProperties.HederaNetwork hederaNetwork;
 

@@ -25,15 +25,10 @@ import static com.hedera.mirror.importer.reader.record.RecordFileReader.MAX_TRAN
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Stream;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -41,6 +36,7 @@ import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
@@ -58,17 +54,13 @@ import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceStreamFileListener {
 
+    @Value("classpath:errata/mainnet/balance-offsets.txt")
+    private final Resource balanceOffsets;
     private final EntityRecordItemListener entityRecordItemListener;
     private final NamedParameterJdbcOperations jdbcOperations;
     private final MirrorProperties mirrorProperties;
     private final RecordStreamFileListener recordStreamFileListener;
     private final Set<Long> timestamps = new HashSet<>();
-
-    @Value("classpath:errata/mainnet/balance-offsets.txt")
-    private Resource balanceOffsets;
-
-    @Value("classpath:errata/mainnet/missingtransactions")
-    private Resource missingTransactions;
 
     @Override
     public Integer getChecksum() {
@@ -132,27 +124,27 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
 
     private void missingTransactions() throws IOException {
         Set<Long> consensusTimestamps = new HashSet<>();
+        var resourceResolver = new PathMatchingResourcePatternResolver();
+        Resource[] resources = resourceResolver.getResources("classpath*:errata/mainnet/missingtransactions/*.bin");
         recordStreamFileListener.onStart();
-        Path path = missingTransactions.getFile().toPath();
 
-        try (Stream<File> files = Files.walk(path).map(Path::toFile).filter(File::isFile)) {
-            files.forEach(f -> {
-                log.info("Loading file: {}", f.getName());
+        for (Resource resource : resources) {
+            String name = resource.getFilename();
+            log.info("Loading file: {}", name);
 
-                try (var in = new ValidatedDataInputStream(new FileInputStream(f), f.getName())) {
-                    byte[] recordBytes = in.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "record");
-                    byte[] transactionBytes = in.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction");
-                    var transactionRecord = TransactionRecord.parseFrom(recordBytes);
-                    var transaction = Transaction.parseFrom(transactionBytes);
+            try (var in = new ValidatedDataInputStream(resource.getInputStream(), name)) {
+                byte[] recordBytes = in.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "record");
+                byte[] transactionBytes = in.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction");
+                var transactionRecord = TransactionRecord.parseFrom(recordBytes);
+                var transaction = Transaction.parseFrom(transactionBytes);
 
-                    var recordItem = new RecordItem(transaction, transactionRecord);
-                    entityRecordItemListener.onItem(recordItem);
-                    consensusTimestamps.add(recordItem.getConsensusTimestamp());
-                } catch (IOException e) {
-                    recordStreamFileListener.onError();
-                    throw new FileOperationException("Error parsing errata file", e);
-                }
-            });
+                var recordItem = new RecordItem(transaction, transactionRecord);
+                entityRecordItemListener.onItem(recordItem);
+                consensusTimestamps.add(recordItem.getConsensusTimestamp());
+            } catch (IOException e) {
+                recordStreamFileListener.onError();
+                throw new FileOperationException("Error parsing errata file " + name, e);
+            }
         }
 
         recordStreamFileListener.onEnd(null);
