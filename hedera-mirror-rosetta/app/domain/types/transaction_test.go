@@ -37,7 +37,7 @@ func exampleTransaction() *Transaction {
 	return &Transaction{
 		EntityId: &entityId,
 		Hash:     "somehash",
-		Operations: []*Operation{
+		Operations: OperationSlice{
 			{
 				AccountId: AccountId{},
 				Amount:    &HbarAmount{Value: int64(400)},

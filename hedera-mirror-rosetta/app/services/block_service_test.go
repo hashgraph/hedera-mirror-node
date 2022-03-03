@@ -110,7 +110,7 @@ func makeTransaction(entityId *domain.EntityId, hash string) *types.Transaction 
 	return &types.Transaction{
 		EntityId: entityId,
 		Hash:     hash,
-		Operations: []*types.Operation{
+		Operations: types.OperationSlice{
 			{
 				AccountId: account,
 				Amount:    &hbarAmount,

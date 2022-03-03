@@ -116,7 +116,7 @@ func TestTokenTransferGetAmount(t *testing.T) {
 	assert.Equal(t, getFungibleTokenAmount(10, 3, tokenId1), tokenTransfer.getAmount())
 }
 
-func assertOperationIndexes(t *testing.T, operations []*types.Operation) {
+func assertOperationIndexes(t *testing.T, operations types.OperationSlice) {
 	makeRange := func(len int) []int64 {
 		result := make([]int64, len)
 		for i := range result {
@@ -127,10 +127,10 @@ func assertOperationIndexes(t *testing.T, operations []*types.Operation) {
 
 	expected := makeRange(len(operations))
 	actual := make([]int64, len(operations))
-	for i, operation := range operations {
-		actual[i] = operation.Index
+	for i := range operations {
+		actual[i] = operations[i].Index
 		// side effect, clear operation's index
-		operation.Index = 0
+		operations[i].Index = 0
 	}
 
 	assert.Equal(t, expected, actual)
@@ -234,7 +234,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGe
 	expected := []*types.Transaction{
 		{
 			Hash: tools.SafeAddHexPrefix(hex.EncodeToString(transaction.TransactionHash)),
-			Operations: []*types.Operation{
+			Operations: types.OperationSlice{
 				{
 					AccountId: types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(3)),
 					Amount:    &types.HbarAmount{Value: 20},
@@ -337,7 +337,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenT
 		{
 			EntityId: &account1EntityId,
 			Hash:     tools.SafeAddHexPrefix(hex.EncodeToString(transaction.TransactionHash)),
-			Operations: []*types.Operation{
+			Operations: types.OperationSlice{
 				{
 					AccountId: account1Id,
 					Amount:    types.NewTokenAmount(token1, -10),
@@ -424,7 +424,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenMissingDisappearingToken
 		{
 			EntityId: &account1EntityId,
 			Hash:     tools.SafeAddHexPrefix(hex.EncodeToString(transaction.TransactionHash)),
-			Operations: []*types.Operation{
+			Operations: types.OperationSlice{
 				{
 					AccountId: account1Id,
 					Amount:    types.NewTokenAmount(token1, -10),
@@ -605,7 +605,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 11,
 		[]byte{0x1, 0x2, 0x3}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil, nil, nil)
 	operationType := types.OperationTypeCryptoTransfer
-	operations1 := []*types.Operation{
+	operations1 := types.OperationSlice{
 		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -135}, Type: operationType, Status: resultSuccess},
 		{AccountId: secondAccountId, Amount: &types.HbarAmount{Value: 135}, Type: operationType, Status: resultSuccess},
 		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType, Status: resultSuccess},
@@ -653,7 +653,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 22,
 		[]byte{0xa, 0xb, 0xc}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nonFeeTransfers,
 		tokenTransfers, nil)
-	operations2 := []*types.Operation{
+	operations2 := types.OperationSlice{
 		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -215}, Type: operationType, Status: resultSuccess},
 		{AccountId: secondAccountId, Amount: &types.HbarAmount{Value: 215}, Type: operationType, Status: resultSuccess},
 		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType, Status: resultSuccess},
@@ -664,13 +664,13 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	if createTokenEntity {
 		operations2 = append(
 			operations2,
-			&types.Operation{
+			types.Operation{
 				AccountId: firstAccountId,
 				Amount:    getFungibleTokenAmount(-160, tokenDecimals, tokenId1),
 				Type:      operationType,
 				Status:    resultSuccess,
 			},
-			&types.Operation{
+			types.Operation{
 				AccountId: secondAccountId,
 				Amount:    getFungibleTokenAmount(160, tokenDecimals, tokenId1),
 				Type:      operationType,
@@ -715,7 +715,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	expectedTransaction3 := &types.Transaction{
 		EntityId: &tokenId2,
 		Hash:     "0xaaccdd",
-		Operations: []*types.Operation{
+		Operations: types.OperationSlice{
 			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType,
 				Status: resultSuccess},
 			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
@@ -757,7 +757,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	expectedTransaction4 := &types.Transaction{
 		EntityId: &tokenId3,
 		Hash:     "0xaa1122",
-		Operations: []*types.Operation{
+		Operations: types.OperationSlice{
 			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType,
 				Status: resultSuccess},
 			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
@@ -790,7 +790,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	expectedTransaction5 := &types.Transaction{
 		EntityId: &tokenId3,
 		Hash:     "0xaa1133",
-		Operations: []*types.Operation{
+		Operations: types.OperationSlice{
 			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType,
 				Status: resultSuccess},
 			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
@@ -826,7 +826,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	operationType = types.OperationTypeCryptoTransfer
 	expectedTransaction6 := &types.Transaction{
 		Hash: "0xaa1166",
-		Operations: []*types.Operation{
+		Operations: types.OperationSlice{
 			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType,
 				Status: resultSuccess},
 			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},

@@ -106,7 +106,7 @@ func (c *compositeTransactionConstructor) validate(operations types.OperationSli
 		log.Errorf("Operation type %s is not supported", operationType)
 		return nil, errors.ErrOperationTypeUnsupported
 	}
-	
+
 	return h, nil
 }
 
