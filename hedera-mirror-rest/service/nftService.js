@@ -69,13 +69,13 @@ class NftService extends BaseService {
   async getNftOwnership(lower, inner, upper, order, limit) {
     let allParams = [];
     let allQueries = [];
-    if (!_.isNil(lower)) {
+    if (!_.isEmpty(lower)) {
       const [lowerQuery, lowerParams] = this.getNftsFiltersQuery(lower.conditions, lower.params, order, limit);
       allQueries = allQueries.concat(`(${lowerQuery})`);
       allParams = allParams.concat(lowerParams);
     }
 
-    if (!_.isNil(inner)) {
+    if (!_.isEmpty(inner)) {
       const [innerQuery, innerParams] = this.getNftsFiltersQuery(
         inner.conditions,
         inner.params,
@@ -87,7 +87,7 @@ class NftService extends BaseService {
       allParams = allParams.concat(innerParams);
     }
 
-    if (!_.isNil(upper)) {
+    if (!_.isEmpty(upper)) {
       const [upperQuery, upperParams] = this.getNftsFiltersQuery(
         upper.conditions,
         upper.params,
@@ -99,13 +99,10 @@ class NftService extends BaseService {
       allParams = allParams.concat(upperParams);
     }
 
-    if (order === orderFilterValues.ASC) {
-      allQueries = allQueries.reverse();
-    }
-
     let unionQuery = allQueries.filter((x) => !!x).join('\nunion all\n');
 
-    if (!_.isNil(inner)) {
+    // if more than 1 query was combined add an additional order and limit to format joined results
+    if (allQueries.length > 1) {
       unionQuery = unionQuery
         .concat(`\n${[super.getOrderByQuery(Nft.TOKEN_ID, order), `${Nft.SERIAL_NUMBER} ${order}`].join(', ')}`)
         .concat(`\n${super.getLimitQuery(allParams.length)}`);
