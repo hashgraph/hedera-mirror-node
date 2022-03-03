@@ -364,8 +364,9 @@ const getAccounts = async (req, res) => {
     next: utils.getPaginationLink(
       req,
       ret.accounts.length !== limitAndOrderQuery.limit,
-      constants.filterKeys.ACCOUNT_ID,
-      anchorAcc,
+      {
+        [constants.filterKeys.ACCOUNT_ID]: anchorAcc,
+      },
       limitAndOrderQuery.order
     ),
   };
@@ -529,8 +530,9 @@ const getOneAccount = async (req, res) => {
     next: utils.getPaginationLink(
       req,
       ret.transactions.length !== limit,
-      constants.filterKeys.TIMESTAMP,
-      anchorSecNs,
+      {
+        [constants.filterKeys.TIMESTAMP]: anchorSecNs,
+      },
       order
     ),
   };

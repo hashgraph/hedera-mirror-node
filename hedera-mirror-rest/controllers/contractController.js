@@ -96,7 +96,7 @@ const fileDataQuery = `select
  * Extracts the sql where clause, params, order and limit values to be used from the provided contract query
  * param filters
  * @param filters
- * @return {{limit: number, params: number[], filterQuery: string, order: string}}
+ * @return {{filterQuery: string, params: number[], order: string, limit: number, limitQuery: string}}
  */
 const extractSqlFromContractFilters = (filters) => {
   const filterQuery = {
@@ -346,8 +346,9 @@ const getContracts = async (req, res) => {
   response.links.next = utils.getPaginationLink(
     req,
     response.contracts.length !== limit,
-    constants.filterKeys.CONTRACT_ID,
-    lastContractId,
+    {
+      [constants.filterKeys.CONTRACT_ID]: lastContractId,
+    },
     order
   );
 
@@ -543,8 +544,9 @@ const getContractResultsById = async (req, res) => {
     response.links.next = utils.getPaginationLink(
       req,
       response.results.length !== limit,
-      constants.filterKeys.TIMESTAMP,
-      lastContractResultTimestamp,
+      {
+        [constants.filterKeys.TIMESTAMP]: lastContractResultTimestamp,
+      },
       order
     );
   }

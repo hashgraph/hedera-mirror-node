@@ -20,11 +20,16 @@
 
 'use strict';
 
+// external libraries
+const {Router} = require('@awaitjs/express');
+const {AccountController} = require('../controllers');
+
+const router = Router();
+
+const resource = 'accounts';
+router.getAsync('/:accountAliasOrAccountId/nfts', AccountController.getNftsByAccountId);
+
 module.exports = {
-  ContractService: require('./contractService'),
-  EntityService: require('./entityService'),
-  NftService: require('./nftService'),
-  RecordFileService: require('./recordFileService'),
-  TokenService: require('./tokenService'),
-  TransactionService: require('./transactionService'),
+  resource,
+  router,
 };

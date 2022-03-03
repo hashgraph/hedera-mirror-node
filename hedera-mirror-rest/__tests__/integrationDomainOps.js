@@ -1034,6 +1034,7 @@ module.exports = {
   addNft,
   addToken,
   loadContractResults,
+  loadEntities,
   loadRecordFiles,
   loadTransactions,
   loadContractLogs,
