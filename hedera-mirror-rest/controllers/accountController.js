@@ -39,6 +39,11 @@ const {NftViewModel} = require('../viewmodel');
 // errors
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
+const tokenSerialLowerRequirementMessage =
+  'A lower bound serialnumber filter requires a lower bound tokenId parameter filter';
+const tokenSerialUpperRequirementMessage =
+  'An upper bound serialnumber filter requires an upper bound tokenId parameter filter';
+
 const updateConditionsAndParamsWithValues = (
   filter,
   existingParams,
@@ -113,6 +118,24 @@ const cacheAndUpdateFilter = (cachedFilter, filter, newOperator = null) => {
   }
 };
 
+const validateSopportedOperator = (operator) => {
+  if (constants.queryParamOperatorPatterns.ne.test(operator)) {
+    throw new InvalidArgumentError(`Not equals (ne) comparison operator is not supported`);
+  }
+};
+
+const validateSerialNumberTokenFilterCombo = (serialNumberBound, tokenIdBound, message) => {
+  if (!_.isEmpty(serialNumberBound) && _.isEmpty(tokenIdBound)) {
+    throw new InvalidArgumentError(message);
+  }
+};
+
+const retrieveNftComponentQuery = (firstBoundary, secondBoundary, orderFilter, limitFilter, accountId, paramCount) => {
+  return !_.isEmpty(firstBoundary) || !_.isEmpty(secondBoundary)
+    ? extractNftsQuery([firstBoundary, secondBoundary, orderFilter, limitFilter], accountId, paramCount)
+    : null;
+};
+
 /**
  * Extract multiple queries to be combined in union
  * @param {Object} filters req filters
@@ -120,12 +143,12 @@ const cacheAndUpdateFilter = (cachedFilter, filter, newOperator = null) => {
  * @returns {{lower: Object, inner: Object, upper: Object, order: 'asc'|'desc', limit: number}}
  */
 const extractNftMultiUnionQuery = (filters, accountId) => {
-  let lowerTokenIdBound = {};
-  let lowerSerialNumberBound = {};
-  let upperTokenIdBound = {};
-  let upperSerialNumberBound = {};
-  let inclusiveLowerTokenIdBound = {};
-  let inclusiveUpperTokenIdBound = {};
+  const lowerTokenIdBound = {};
+  const lowerSerialNumberBound = {};
+  const upperTokenIdBound = {};
+  const upperSerialNumberBound = {};
+  const inclusiveLowerTokenIdBound = {};
+  const inclusiveUpperTokenIdBound = {};
   let orderFilter = null;
   let limitFilter = null;
   let noFilterQuery = true;
@@ -136,9 +159,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
   const oneOperatorValues = {};
 
   for (const filter of filters) {
-    if (constants.queryParamOperatorPatterns.ne.test(filter.operator)) {
-      throw new InvalidArgumentError(`Not equals (ne) comparison operator is not supported`);
-    }
+    validateSopportedOperator(filter.operator);
 
     // limit all query filters eq|lt(e)|gt(e) filters to one occurence
     validateSingleFilterKeyOccurence(oneOperatorValues, filter);
@@ -195,15 +216,9 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
     throw new InvalidArgumentError(`Cannot search NFTs with serialnumber without a tokenId parameter filter`);
   }
 
-  if (!_.isEmpty(lowerSerialNumberBound) && _.isEmpty(lowerTokenIdBound)) {
-    throw new InvalidArgumentError(`A lower bound serialnumber filter requires a lower bound tokenId parameter filter`);
-  }
+  validateSerialNumberTokenFilterCombo(lowerSerialNumberBound, lowerTokenIdBound, tokenSerialLowerRequirementMessage);
 
-  if (!_.isEmpty(upperSerialNumberBound) && _.isEmpty(upperTokenIdBound)) {
-    throw new InvalidArgumentError(
-      `An upper bound serialnumber filter requires an upper bound tokenId parameter filter`
-    );
-  }
+  validateSerialNumberTokenFilterCombo(upperSerialNumberBound, upperTokenIdBound, tokenSerialUpperRequirementMessage);
 
   let lower = null;
   let inner = null;
@@ -212,30 +227,29 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
   if (noFilterQuery) {
     lower = extractNftsQuery(filters, accountId);
   } else {
-    lower =
-      !_.isEmpty(lowerSerialNumberBound) || !_.isEmpty(lowerTokenIdBound)
-        ? extractNftsQuery([lowerTokenIdBound, lowerSerialNumberBound, orderFilter, limitFilter], accountId)
-        : null;
+    lower = retrieveNftComponentQuery(lowerTokenIdBound, lowerSerialNumberBound, orderFilter, limitFilter, accountId);
 
     // account for non zero based psql index and limit param index position to be injected
     paramCount = _.isNil(lower) ? 1 : lower.params.length + 2;
-
-    inner =
-      !_.isEmpty(inclusiveLowerTokenIdBound) || !_.isEmpty(inclusiveUpperTokenIdBound)
-        ? extractNftsQuery(
-            [inclusiveLowerTokenIdBound, inclusiveUpperTokenIdBound, orderFilter, limitFilter],
-            accountId,
-            paramCount
-          )
-        : null;
+    inner = retrieveNftComponentQuery(
+      inclusiveLowerTokenIdBound,
+      inclusiveUpperTokenIdBound,
+      orderFilter,
+      limitFilter,
+      accountId,
+      paramCount
+    );
 
     // account for limit param index position to be injected
-    paramCount = _.isNil(inner) ? paramCount : paramCount + inner.params.length + 1; // limit offset
-
-    upper =
-      !_.isEmpty(upperSerialNumberBound) || !_.isEmpty(upperTokenIdBound)
-        ? extractNftsQuery([upperTokenIdBound, upperSerialNumberBound, orderFilter, limitFilter], accountId, paramCount)
-        : null;
+    paramCount = _.isNil(inner) ? paramCount : paramCount + inner.params.length + 1;
+    upper = retrieveNftComponentQuery(
+      upperTokenIdBound,
+      upperSerialNumberBound,
+      orderFilter,
+      limitFilter,
+      accountId,
+      paramCount
+    );
   }
 
   return {
