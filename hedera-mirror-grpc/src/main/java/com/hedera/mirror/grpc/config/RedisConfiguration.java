@@ -52,7 +52,7 @@ class RedisConfiguration {
     @Bean
     ClientResourcesBuilderCustomizer lettuceMetrics(MeterRegistry meterRegistry) {
         MicrometerOptions options = MicrometerOptions.builder().histogram(false).build();
-        return (client) -> client.commandLatencyRecorder(new MicrometerCommandLatencyRecorder(meterRegistry, options));
+        return client -> client.commandLatencyRecorder(new MicrometerCommandLatencyRecorder(meterRegistry, options));
     }
 
     @Bean
