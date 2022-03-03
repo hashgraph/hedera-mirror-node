@@ -156,7 +156,7 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
         }
 
         recordStreamFileListener.onEnd(null);
-        var ids = new MapSqlParameterSource("timestamps", consensusTimestamps);
+        var ids = new MapSqlParameterSource("ids", consensusTimestamps);
         jdbcOperations.update("update crypto_transfer set errata = 'INSERT' where consensus_timestamp in (:ids)", ids);
         jdbcOperations.update("update transaction set errata = 'INSERT' where consensus_timestamp in (:ids)", ids);
         log.info("Inserted {} missing transactions", consensusTimestamps.size());
