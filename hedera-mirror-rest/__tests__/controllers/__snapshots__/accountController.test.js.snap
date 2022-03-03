@@ -1,14 +1,14 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`extractNftMultiUnionQuery range bound throws serialnumber gt with no token.id gt(e) 1`] = `"A lower bound serialnumber filter requires a lower bound tokenId parameter filter"`;
+exports[`extractNftMultiUnionQuery range bound throws serialnumber gt with no token.id gt(e) bound 1`] = `"A lower bound serialnumber filter requires a lower bound tokenId parameter filter"`;
 
-exports[`extractNftMultiUnionQuery range bound throws serialnumber lt with no token.id lt(e) 1`] = `"An upper bound serialnumber filter requires an upper bound tokenId parameter filter"`;
+exports[`extractNftMultiUnionQuery range bound throws serialnumber lt with no token.id lt(e) bound 1`] = `"An upper bound serialnumber filter requires an upper bound tokenId parameter filter"`;
 
-exports[`extractNftMultiUnionQuery range bound throws token and serialnumber repeated range 1`] = `"Multiple range params not allowed for token.id"`;
+exports[`extractNftMultiUnionQuery range bound throws token and serialnumber repeated range bound 1`] = `"Multiple range params not allowed for token.id"`;
 
-exports[`extractNftMultiUnionQuery range bound throws token.id gt(e) repeated 1`] = `"Multiple range params not allowed for token.id"`;
+exports[`extractNftMultiUnionQuery range bound throws token.id gt(e) repeated bound 1`] = `"Multiple range params not allowed for token.id"`;
 
-exports[`extractNftMultiUnionQuery range bound throws token.id lt(e) repeated 1`] = `"Multiple range params not allowed for token.id"`;
+exports[`extractNftMultiUnionQuery range bound throws token.id lt(e) repeated bound 1`] = `"Multiple range params not allowed for token.id"`;
 
 exports[`extractNftMultiUnionQuery throws limit 1`] = `"Multiple range params not allowed for limit"`;
 

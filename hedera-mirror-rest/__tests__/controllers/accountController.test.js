@@ -232,6 +232,35 @@ describe('extractNftMultiUnionQuery range bounds', () => {
 
   const specs = [
     {
+      name: 'token inner only',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.lt,
+            value: '777',
+          },
+          {
+            key: constants.filterKeys.TOKEN_ID,
+            operator: utils.opsMap.gt,
+            value: '111',
+          },
+        ],
+        accountId: 3,
+      },
+      expected: {
+        lower: null,
+        inner: {
+          ...defaultExpected,
+          conditions: [accountIdFilter, 'token_id > $2', 'token_id < $3'],
+          params: [3, '111', '777'],
+        },
+        upper: null,
+        order: constants.orderFilterValues.DESC,
+        limit: defaultLimit,
+      },
+    },
+    {
       name: 'token and serialnumber lower and inner',
       input: {
         filters: [
@@ -347,7 +376,7 @@ describe('extractNftMultiUnionQuery range bounds', () => {
   ];
 
   specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
+    test(`${spec.name} bound`, () => {
       expect(accountCtrl.extractNftMultiUnionQuery(spec.input.filters, spec.input.accountId)).toEqual(spec.expected);
     });
   });
@@ -568,7 +597,7 @@ describe('extractNftMultiUnionQuery range bound throws', () => {
   ];
 
   specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
+    test(`${spec.name} bound`, () => {
       expect(() =>
         accountCtrl.extractNftMultiUnionQuery(spec.input.filters, spec.input.accountId)
       ).toThrowErrorMatchingSnapshot();

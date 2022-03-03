@@ -629,7 +629,7 @@ const updateReqQuery = (reqQuery, field, pattern, insertValue) => {
 
 const getNextParamQueries = (order, reqQuery, lastValueMap, inclusiveKeys) => {
   const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
-  let insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
+  const insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
 
   for (const [field, lastValue] of Object.entries(lastValueMap)) {
     if (!_.isNil(lastValue)) {
