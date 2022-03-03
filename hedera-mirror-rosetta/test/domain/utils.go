@@ -18,27 +18,14 @@
  * ‍
  */
 
-package mocks
+package domain
 
-import (
-	"context"
+import "github.com/hashgraph/hedera-sdk-go/v2"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/stretchr/testify/mock"
-)
-
-var NilError *rTypes.Error
-
-type MockAccountRepository struct {
-	mock.Mock
-}
-
-func (m *MockAccountRepository) RetrieveBalanceAtBlock(
-	ctx context.Context,
-	accountId types.AccountId,
-	consensusEnd int64,
-) (types.AmountSlice, string, *rTypes.Error) {
-	args := m.Called()
-	return args.Get(0).(types.AmountSlice), args.Get(1).(string), args.Get(2).(*rTypes.Error)
+func GenEd25519KeyPair() (hedera.PrivateKey, hedera.PublicKey) {
+	sk, err := hedera.PrivateKeyGenerateEd25519()
+	if err != nil {
+		panic(err)
+	}
+	return sk, sk.PublicKey()
 }

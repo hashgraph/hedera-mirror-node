@@ -43,11 +43,11 @@ type transfer struct {
 	amount  types.Amount
 }
 
-type senderMap map[hedera.AccountID]int
+type senderMap map[string]types.AccountId
 
-func (m senderMap) toSenders() []hedera.AccountID {
-	senders := make([]hedera.AccountID, 0, len(m))
-	for sender := range m {
+func (m senderMap) toSenders() []types.AccountId {
+	senders := make([]types.AccountId, 0, len(m))
+	for _, sender := range m {
 		senders = append(senders, sender)
 	}
 	return senders
@@ -61,10 +61,8 @@ type nftTransfer struct {
 
 func (c *cryptoTransferTransactionConstructor) Construct(
 	_ context.Context,
-	nodeAccountId hedera.AccountID,
-	operations []*rTypes.Operation,
-	validStartNanos int64,
-) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
+	operations types.OperationSlice,
+) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
 	transfers, senders, rErr := c.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
@@ -102,15 +100,6 @@ func (c *cryptoTransferTransactionConstructor) Construct(
 		transaction.AddNftTransfer(nftTransfer.nftId, nftTransfer.sender, nftTransfer.receiver)
 	}
 
-	// set to a single node account ID, so later can add signature
-	_, err := transaction.
-		SetTransactionID(getTransactionId(senders[0], validStartNanos)).
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-		Freeze()
-	if err != nil {
-		return nil, nil, errors.ErrTransactionFreezeFailed
-	}
-
 	return transaction, senders, nil
 }
 
@@ -123,8 +112,8 @@ func (c *cryptoTransferTransactionConstructor) GetSdkTransactionType() string {
 }
 
 func (c *cryptoTransferTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
-	[]*rTypes.Operation,
-	[]hedera.AccountID,
+	types.OperationSlice,
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	transferTransaction, ok := transaction.(*hedera.TransferTransaction)
@@ -148,55 +137,59 @@ func (c *cryptoTransferTransactionConstructor) Parse(_ context.Context, transact
 	for _, nftTransfers := range nftTransferMap {
 		numOperations += len(nftTransfers) * 2
 	}
-	operations := make([]*rTypes.Operation, 0, numOperations)
-	senderMap := senderMap{}
+	operations := make(types.OperationSlice, 0, numOperations)
+	var rErr *rTypes.Error
 
 	for accountId, hbarAmount := range hbarTransferMap {
-		operations = c.addOperation(accountId, &types.HbarAmount{Value: hbarAmount.AsTinybar()}, operations, senderMap)
+		amount := &types.HbarAmount{Value: hbarAmount.AsTinybar()}
+		if operations, rErr = c.addOperation(accountId, amount, operations); rErr != nil {
+			return nil, nil, rErr
+		}
 	}
 
 	for token, tokenTransfers := range tokenTransferMap {
-		decimals, ok := tokenDecimals[token]
-		if !ok {
-			return nil, nil, errors.ErrInvalidToken
-		}
-		tokenId, err := domain.EntityIdOf(int64(token.Shard), int64(token.Realm), int64(token.Token))
+		domainToken, err := getDomainToken(token, tokenDecimals, domain.TokenTypeFungibleCommon)
 		if err != nil {
-			return nil, nil, errors.ErrInvalidToken
-		}
-		domainToken := domain.Token{
-			Decimals: int64(decimals),
-			TokenId:  tokenId,
-			Type:     domain.TokenTypeFungibleCommon,
+			return nil, nil, err
 		}
 		for _, tokenTransfer := range tokenTransfers {
 			tokenAmount := types.NewTokenAmount(domainToken, tokenTransfer.Amount)
-			operations = c.addOperation(tokenTransfer.AccountID, tokenAmount, operations, senderMap)
+			if operations, rErr = c.addOperation(tokenTransfer.AccountID, tokenAmount, operations); err != nil {
+				return nil, nil, rErr
+			}
 		}
 	}
 
 	for token, nftTransfers := range nftTransferMap {
-		tokenId, err := domain.EntityIdOf(int64(token.Shard), int64(token.Realm), int64(token.Token))
+		domainToken, err := getDomainToken(token, tokenDecimals, domain.TokenTypeNonFungibleUnique)
 		if err != nil {
-			return nil, nil, errors.ErrInvalidToken
-		}
-		domainTokan := domain.Token{
-			TokenId: tokenId,
-			Type:    domain.TokenTypeNonFungibleUnique,
+			return nil, nil, err
 		}
 		for _, nftTransfer := range nftTransfers {
-			tokenAmount := types.NewTokenAmount(domainTokan, 1).SetSerialNumbers([]int64{nftTransfer.SerialNumber})
-			operations = c.addOperation(nftTransfer.ReceiverAccountID, tokenAmount, operations, senderMap)
-			tokenAmount = types.NewTokenAmount(domainTokan, -1).SetSerialNumbers([]int64{nftTransfer.SerialNumber})
-			operations = c.addOperation(nftTransfer.SenderAccountID, tokenAmount, operations, senderMap)
+			tokenAmount := types.NewTokenAmount(domainToken, 1).SetSerialNumbers([]int64{nftTransfer.SerialNumber})
+			if operations, rErr = c.addOperation(nftTransfer.ReceiverAccountID, tokenAmount, operations); rErr != nil {
+				return nil, nil, rErr
+			}
+
+			tokenAmount = types.NewTokenAmount(domainToken, -1).SetSerialNumbers([]int64{nftTransfer.SerialNumber})
+			if operations, rErr = c.addOperation(nftTransfer.SenderAccountID, tokenAmount, operations); rErr != nil {
+				return nil, nil, rErr
+			}
+		}
+	}
+
+	senderMap := senderMap{}
+	for _, operation := range operations {
+		if operation.Amount.GetValue() < 0 {
+			senderMap[operation.AccountId.String()] = operation.AccountId
 		}
 	}
 
 	return operations, senderMap.toSenders(), nil
 }
 
-func (c *cryptoTransferTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
-	[]hedera.AccountID,
+func (c *cryptoTransferTransactionConstructor) Preprocess(_ context.Context, operations types.OperationSlice) (
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	_, senders, err := c.preprocess(operations)
@@ -208,61 +201,51 @@ func (c *cryptoTransferTransactionConstructor) Preprocess(_ context.Context, ope
 }
 
 func (c *cryptoTransferTransactionConstructor) addOperation(
-	accountId hedera.AccountID,
+	sdkAccountId hedera.AccountID,
 	amount types.Amount,
-	operations []*rTypes.Operation,
-	senderMap senderMap,
-) []*rTypes.Operation {
-	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{Index: int64(len(operations))},
-		Type:                c.GetOperationType(),
-		Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
-		Amount:              amount.ToRosetta(),
+	operations types.OperationSlice,
+) (types.OperationSlice, *rTypes.Error) {
+	accountId, err := types.NewAccountIdFromSdkAccountId(sdkAccountId)
+	if err != nil {
+		return nil, errors.ErrInvalidAccount
 	}
-
-	if amount.GetValue() < 0 {
-		senderMap[accountId] = 1
+	operation := types.Operation{
+		Index:     int64(len(operations)),
+		Type:      c.GetOperationType(),
+		AccountId: accountId,
+		Amount:    amount,
 	}
-
-	return append(operations, operation)
+	return append(operations, operation), nil
 }
 
-func (c *cryptoTransferTransactionConstructor) preprocess(operations []*rTypes.Operation) (
+func (c *cryptoTransferTransactionConstructor) preprocess(operations types.OperationSlice) (
 	[]transfer,
-	[]hedera.AccountID,
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	if err := validateOperations(operations, 0, c.GetOperationType(), false); err != nil {
 		return nil, nil, err
 	}
 
-	transfers := make([]transfer, 0, len(operations))
-	senderMap := senderMap{}
-	sums := make(map[string]int64)
 	nftValues := make(map[string][]int64)
+	senderMap := senderMap{}
+	totalAmounts := make(map[string]int64)
+	transfers := make([]transfer, 0, len(operations))
 
 	for _, operation := range operations {
-		account, err := hedera.AccountIDFromString(operation.Account.Address)
-		if err != nil {
-			return nil, nil, errors.ErrInvalidAccount
-		}
-
-		amount, rErr := types.NewAmount(operation.Amount)
-		if rErr != nil {
-			return nil, nil, rErr
-		}
-
+		accountId := operation.AccountId
+		amount := operation.Amount
 		if amount.GetValue() == 0 {
 			return nil, nil, errors.ErrInvalidOperationsAmount
 		}
 
-		transfers = append(transfers, transfer{account: account, amount: amount})
+		transfers = append(transfers, transfer{account: accountId.ToSdkAccountId(), amount: amount})
 
 		if amount.GetValue() < 0 {
-			senderMap[account] = 1
+			senderMap[accountId.String()] = accountId
 		}
 
-		sums[operation.Amount.Currency.Symbol] += amount.GetValue()
+		totalAmounts[amount.GetSymbol()] += amount.GetValue()
 
 		if tokenAmount, ok := amount.(*types.TokenAmount); ok && tokenAmount.Type == domain.TokenTypeNonFungibleUnique {
 			if tokenAmount.Value != 1 && tokenAmount.Value != -1 {
@@ -273,8 +256,8 @@ func (c *cryptoTransferTransactionConstructor) preprocess(operations []*rTypes.O
 		}
 	}
 
-	for symbol, sum := range sums {
-		if sum != 0 {
+	for symbol, totalAmount := range totalAmounts {
+		if totalAmount != 0 {
 			log.Errorf("Transfer sum for symbol %s is not 0", symbol)
 			return nil, nil, errors.ErrInvalidOperationsTotalAmount
 		}
@@ -288,6 +271,26 @@ func (c *cryptoTransferTransactionConstructor) preprocess(operations []*rTypes.O
 	}
 
 	return transfers, senderMap.toSenders(), nil
+}
+
+func getDomainToken(token hedera.TokenID, tokenDecimals map[hedera.TokenID]uint32, tokenType string) (
+	domain.Token,
+	*rTypes.Error,
+) {
+	decimals := int64(0)
+	if tokenType == domain.TokenTypeFungibleCommon {
+		d, ok := tokenDecimals[token]
+		if !ok {
+			return domain.Token{}, errors.ErrInvalidToken
+		}
+		decimals = int64(d)
+	}
+
+	tokenId, err := domain.EntityIdOf(int64(token.Shard), int64(token.Realm), int64(token.Token))
+	if err != nil {
+		return domain.Token{}, errors.ErrInvalidToken
+	}
+	return domain.Token{Decimals: decimals, TokenId: tokenId, Type: tokenType}, nil
 }
 
 func newCryptoTransferTransactionConstructor() transactionConstructorWithType {

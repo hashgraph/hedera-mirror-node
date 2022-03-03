@@ -206,7 +206,7 @@ type transaction struct {
 	ConsensusTimestamp int64
 	EntityId           *domain.EntityId
 	Hash               []byte
-	PayerAccountId     int64
+	PayerAccountId     domain.EntityId
 	Result             int16
 	Type               int16
 	CryptoTransfers    string
@@ -514,11 +514,11 @@ func (tr *transactionRepository) appendTransferOperations(
 ) []*types.Operation {
 	for _, transfer := range transfers {
 		operations = append(operations, &types.Operation{
-			Index:   int64(len(operations)),
-			Type:    transactionType,
-			Status:  transactionResult,
-			Account: types.Account{EntityId: transfer.getAccountId()},
-			Amount:  transfer.getAmount(),
+			AccountId: types.NewAccountIdFromEntityId(transfer.getAccountId()),
+			Amount:    transfer.getAmount(),
+			Index:     int64(len(operations)),
+			Status:    transactionResult,
+			Type:      transactionType,
 		})
 	}
 	return operations
@@ -572,14 +572,14 @@ func IsTransactionResultSuccessful(result int32) bool {
 	return result == transactionResultSuccess
 }
 
-func constructAccount(encodedId int64) (types.Account, *rTypes.Error) {
-	account, err := types.NewAccountFromEncodedID(encodedId)
-	if err != nil {
-		log.Errorf(hErrors.CreateAccountDbIdFailed, encodedId)
-		return types.Account{}, hErrors.ErrInternalServerError
-	}
-	return account, nil
-}
+// func constructAccount(encodedId int64) (types.Account, *rTypes.Error) {
+// 	account, err := types.NewAccountFromEncodedID(encodedId)
+// 	if err != nil {
+// 		log.Errorf(hErrors.CreateAccountDbIdFailed, encodedId)
+// 		return types.Account{}, hErrors.ErrInternalServerError
+// 	}
+// 	return account, nil
+// }
 
 func adjustCryptoTransfers(
 	cryptoTransfers []hbarTransfer,
@@ -653,16 +653,11 @@ func getTokenOperation(
 	transactionResult string,
 	transactionType string,
 ) (*types.Operation, *rTypes.Error) {
-	payerId, err := constructAccount(transaction.PayerAccountId)
-	if err != nil {
-		return nil, err
-	}
-
 	operation := &types.Operation{
-		Index:   int64(index),
-		Type:    transactionType,
-		Status:  transactionResult,
-		Account: payerId,
+		AccountId: types.NewAccountIdFromEntityId(transaction.PayerAccountId),
+		Index:     int64(index),
+		Status:    transactionResult,
+		Type:      transactionType,
 	}
 
 	metadata := make(map[string]interface{})

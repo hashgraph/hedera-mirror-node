@@ -37,16 +37,16 @@ type BaseService struct {
 }
 
 // NewOfflineBaseService - Service containing common functions that are shared between other services, for offline mode
-func NewOfflineBaseService() *BaseService {
-	return &BaseService{}
+func NewOfflineBaseService() BaseService {
+	return BaseService{}
 }
 
 // NewOnlineBaseService - Service containing common functions that are shared between other services, for online mode
 func NewOnlineBaseService(
 	blockRepo interfaces.BlockRepository,
 	transactionRepo interfaces.TransactionRepository,
-) *BaseService {
-	return &BaseService{
+) BaseService {
+	return BaseService{
 		blockRepo:       blockRepo,
 		transactionRepo: transactionRepo,
 	}

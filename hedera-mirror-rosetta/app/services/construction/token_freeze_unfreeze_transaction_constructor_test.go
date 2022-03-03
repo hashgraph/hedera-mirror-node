@@ -23,7 +23,6 @@ package construction
 import (
 	"testing"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-sdk-go/v2"
@@ -105,11 +104,9 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 	var tests = []struct {
 		name             string
 		updateOperations updateOperationsFunc
-		validStartNanos  int64
 		expectError      bool
 	}{
 		{name: "Success"},
-		{name: "SuccessValidStartNanos", validStartNanos: 100},
 		{name: "EmptyOperations", updateOperations: getEmptyOperations, expectError: true},
 	}
 
@@ -125,7 +122,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 				}
 
 				// when
-				tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
+				tx, signers, err := h.Construct(defaultContext, operations)
 
 				// then
 				if tt.expectError {
@@ -134,12 +131,8 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 					assert.Nil(t, tx)
 				} else {
 					assert.Nil(t, err)
-					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-					assertTokenFreezeUnfreezeTransaction(t, operations[0], nodeAccountId, tx)
-
-					if tt.validStartNanos != 0 {
-						assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
-					}
+					assert.ElementsMatch(t, []types.AccountId{accountIdB}, signers)
+					assertTokenFreezeUnfreezeTransaction(t, operations[0], tx)
 				}
 			})
 		}
@@ -156,15 +149,13 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestConstruct() {
 
 func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 	tokenFreezeTransaction := hedera.NewTokenFreezeTransaction().
-		SetAccountID(accountId).
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+		SetAccountID(sdkAccountIdA).
 		SetTokenID(tokenIdA).
-		SetTransactionID(hedera.TransactionIDGenerate(payerId))
+		SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdB))
 	tokenUnfreezeTransaction := hedera.NewTokenUnfreezeTransaction().
-		SetAccountID(accountId).
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+		SetAccountID(sdkAccountIdA).
 		SetTokenID(tokenIdA).
-		SetTransactionID(hedera.TransactionIDGenerate(payerId))
+		SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdB))
 
 	defaultGetTransaction := func(operationType string) interfaces.Transaction {
 		if operationType == types.OperationTypeTokenFreeze {
@@ -184,17 +175,14 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == types.OperationTypeTokenFreeze {
 					return hedera.NewTokenFreezeTransaction().
-						SetAccountID(accountId).
-						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+						SetAccountID(sdkAccountIdA).
 						SetTokenID(outOfRangeTokenId).
-						SetTransactionID(hedera.TransactionIDGenerate(payerId))
+						SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdB))
 				}
-
 				return hedera.NewTokenUnfreezeTransaction().
-					SetAccountID(accountId).
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetAccountID(sdkAccountIdA).
 					SetTokenID(outOfRangeTokenId).
-					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdB))
 			},
 			expectError: true,
 		},
@@ -212,6 +200,20 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 					return tokenUnfreezeTransaction
 				}
 				return tokenFreezeTransaction
+			},
+			expectError: true,
+		},
+		{
+			name: "TransactionIDNotSet",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenFreeze {
+					return hedera.NewTokenFreezeTransaction().
+						SetAccountID(sdkAccountIdA).
+						SetTokenID(outOfRangeTokenId)
+				}
+				return hedera.NewTokenUnfreezeTransaction().
+					SetAccountID(sdkAccountIdA).
+					SetTokenID(outOfRangeTokenId)
 			},
 			expectError: true,
 		},
@@ -235,7 +237,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 					assert.Nil(t, signers)
 				} else {
 					assert.Nil(t, err)
-					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
+					assert.ElementsMatch(t, []types.AccountId{accountIdB}, signers)
 					assert.ElementsMatch(t, expectedOperations, operations)
 				}
 			})
@@ -266,21 +268,6 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 		{
 			name:             "InvalidOperationMetadata",
 			updateOperations: updateOperationMetadata("payer", "x.y.z"),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidAccountAddress",
-			updateOperations: updateOperationAccount("x.y.z"),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidTokenId",
-			updateOperations: updateCurrency(currencyHbar),
-			expectError:      true,
-		},
-		{
-			name:             "ZeroAccountId",
-			updateOperations: updateOperationAccount("0.0.0"),
 			expectError:      true,
 		},
 		{
@@ -315,7 +302,7 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 					assert.Nil(t, signers)
 				} else {
 					assert.Nil(t, err)
-					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
+					assert.ElementsMatch(t, []types.AccountId{accountIdB}, signers)
 				}
 			})
 		}
@@ -330,13 +317,8 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 	})
 }
 
-func assertTokenFreezeUnfreezeTransaction(
-	t *testing.T,
-	operation *rTypes.Operation,
-	nodeAccountId hedera.AccountID,
-	actual interfaces.Transaction,
-) {
-	assert.True(t, actual.IsFrozen())
+func assertTokenFreezeUnfreezeTransaction(t *testing.T, operation types.Operation, actual interfaces.Transaction) {
+	assert.False(t, actual.IsFrozen())
 	if operation.Type == types.OperationTypeTokenFreeze {
 		assert.IsType(t, &hedera.TokenFreezeTransaction{}, actual)
 	} else {
@@ -344,34 +326,27 @@ func assertTokenFreezeUnfreezeTransaction(
 	}
 
 	var account string
-	var payer string
 	var token string
-
 	switch tx := actual.(type) {
 	case *hedera.TokenFreezeTransaction:
 		account = tx.GetAccountID().String()
-		payer = tx.GetTransactionID().AccountID.String()
 		token = tx.GetTokenID().String()
 	case *hedera.TokenUnfreezeTransaction:
 		account = tx.GetAccountID().String()
-		payer = tx.GetTransactionID().AccountID.String()
 		token = tx.GetTokenID().String()
 	}
 
-	assert.Equal(t, operation.Metadata["payer"], payer)
-	assert.Equal(t, operation.Account.Address, account)
-	assert.Equal(t, operation.Amount.Currency.Symbol, token)
-	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
+	assert.Equal(t, operation.AccountId.ToSdkAccountId().String(), account)
+	assert.Equal(t, operation.Amount.GetSymbol(), token)
 }
 
-func getFreezeUnfreezeOperations(operationType string) []*rTypes.Operation {
-	return []*rTypes.Operation{
+func getFreezeUnfreezeOperations(operationType string) types.OperationSlice {
+	return types.OperationSlice{
 		{
-			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-			Type:                operationType,
-			Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
-			Amount:              &rTypes.Amount{Value: "0", Currency: tokenAPartialCurrency},
-			Metadata:            map[string]interface{}{"payer": payerId.String()},
+			AccountId: accountIdA,
+			Amount:    types.NewTokenAmount(getPartialDbToken(dbTokenA), 0),
+			Metadata:  map[string]interface{}{"payer": accountIdB.String()},
+			Type:      operationType,
 		},
 	}
 }

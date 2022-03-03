@@ -34,8 +34,8 @@ type Config struct {
 	NodeVersion string `yaml:"nodeVersion"`
 	Online      bool
 	Port        uint16
-	Realm       string
-	Shard       string
+	Realm       int64
+	Shard       int64
 }
 
 type Db struct {

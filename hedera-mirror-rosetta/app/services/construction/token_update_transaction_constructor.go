@@ -55,19 +55,14 @@ type tokenUpdateTransactionConstructor struct {
 
 func (t *tokenUpdateTransactionConstructor) Construct(
 	_ context.Context,
-	nodeAccountId hedera.AccountID,
-	operations []*rTypes.Operation,
-	validStartNanos int64,
-) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	payer, tokenUpdate, err := t.preprocess(operations)
+	operations types.OperationSlice,
+) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
+	signers, tokenUpdate, err := t.preprocess(operations)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	tx := hedera.NewTokenUpdateTransaction().
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-		SetTokenID(tokenUpdate.tokenId).
-		SetTransactionID(getTransactionId(*payer, validStartNanos))
+	tx := hedera.NewTokenUpdateTransaction().SetTokenID(tokenUpdate.tokenId)
 
 	if !tokenUpdate.AdminKey.isEmpty() {
 		tx.SetAdminKey(tokenUpdate.AdminKey.PublicKey)
@@ -117,11 +112,7 @@ func (t *tokenUpdateTransactionConstructor) Construct(
 		tx.SetWipeKey(tokenUpdate.WipeKey.PublicKey)
 	}
 
-	if _, err := tx.Freeze(); err != nil {
-		return nil, nil, errors.ErrTransactionFreezeFailed
-	}
-
-	return tx, []hedera.AccountID{*payer}, nil
+	return tx, signers, nil
 }
 
 func (t *tokenUpdateTransactionConstructor) GetOperationType() string {
@@ -133,8 +124,8 @@ func (t *tokenUpdateTransactionConstructor) GetSdkTransactionType() string {
 }
 
 func (t *tokenUpdateTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
-	[]*rTypes.Operation,
-	[]hedera.AccountID,
+	types.OperationSlice,
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	tokenUpdateTransaction, ok := transaction.(*hedera.TokenUpdateTransaction)
@@ -149,26 +140,26 @@ func (t *tokenUpdateTransactionConstructor) Parse(_ context.Context, transaction
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
+	payerAccountId, err := types.NewAccountIdFromSdkAccountId(*payerId)
+	if err != nil {
+		return nil, nil, errors.ErrInvalidAccount
+	}
+	signers := []types.AccountId{payerAccountId}
+
 	tokenEntityId, err := domain.EntityIdOf(int64(tokenId.Shard), int64(tokenId.Realm), int64(tokenId.Token))
 	if err != nil {
 		return nil, nil, errors.ErrInvalidToken
 	}
 
 	domainToken := domain.Token{TokenId: tokenEntityId, Type: domain.TokenTypeUnknown}
-	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{
-			Index: 0,
-		},
-		Account: &rTypes.AccountIdentifier{Address: payerId.String()},
-		Amount: &rTypes.Amount{
-			Value:    "0",
-			Currency: types.Token{Token: domainToken}.ToRosettaCurrency(),
-		},
-		Type: t.GetOperationType(),
+	metadata := make(map[string]interface{})
+	operation := types.Operation{
+		AccountId: payerAccountId,
+		Amount:    types.NewTokenAmount(domainToken, 0),
+		Metadata:  metadata,
+		Type:      t.GetOperationType(),
 	}
 
-	metadata := make(map[string]interface{})
-	operation.Metadata = metadata
 	metadata["memo"] = tokenUpdateTransaction.GeTokenMemo()
 	metadata["name"] = tokenUpdateTransaction.GetTokenName()
 	metadata["symbol"] = tokenUpdateTransaction.GetTokenSymbol()
@@ -179,6 +170,11 @@ func (t *tokenUpdateTransactionConstructor) Parse(_ context.Context, transaction
 
 	if !isZeroAccountId(tokenUpdateTransaction.GetAutoRenewAccount()) {
 		metadata["auto_renew_account"] = tokenUpdateTransaction.GetAutoRenewAccount().String()
+		autoRenewAccountId, err := types.NewAccountIdFromSdkAccountId(tokenUpdateTransaction.GetAutoRenewAccount())
+		if err != nil {
+			return nil, nil, errors.ErrInvalidAccount
+		}
+		signers = append(signers, autoRenewAccountId)
 	}
 
 	if tokenUpdateTransaction.GetAutoRenewPeriod() != 0 {
@@ -221,23 +217,23 @@ func (t *tokenUpdateTransactionConstructor) Parse(_ context.Context, transaction
 		metadata["wipe_key"] = tokenUpdateTransaction.GetWipeKey().String()
 	}
 
-	return []*rTypes.Operation{operation}, []hedera.AccountID{*payerId}, nil
+	return types.OperationSlice{operation}, signers, nil
 }
 
-func (t *tokenUpdateTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
-	[]hedera.AccountID,
+func (t *tokenUpdateTransactionConstructor) Preprocess(_ context.Context, operations types.OperationSlice) (
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
-	payer, _, err := t.preprocess(operations)
+	signers, _, err := t.preprocess(operations)
 	if err != nil {
 		return nil, err
 	}
 
-	return []hedera.AccountID{*payer}, nil
+	return signers, nil
 }
 
-func (t *tokenUpdateTransactionConstructor) preprocess(operations []*rTypes.Operation) (
-	*hedera.AccountID,
+func (t *tokenUpdateTransactionConstructor) preprocess(operations types.OperationSlice) (
+	[]types.AccountId,
 	*tokenUpdate,
 	*rTypes.Error,
 ) {
@@ -246,23 +242,29 @@ func (t *tokenUpdateTransactionConstructor) preprocess(operations []*rTypes.Oper
 	}
 
 	operation := operations[0]
-
-	tokenId, err := hedera.TokenIDFromString(operation.Amount.Currency.Symbol)
-	if err != nil {
-		return nil, nil, errors.ErrInvalidToken
+	tokenAmount, ok := operation.Amount.(*types.TokenAmount)
+	if !ok {
+		return nil, nil, errors.ErrInvalidCurrency
 	}
 
-	tokenUpdate := &tokenUpdate{tokenId: tokenId}
+	tokenUpdate := &tokenUpdate{tokenId: tokenAmount.GetSdkTokenId()}
 	if err := parseOperationMetadata(nil, tokenUpdate, operation.Metadata); err != nil {
 		return nil, nil, err
 	}
 
-	payer, err := hedera.AccountIDFromString(operation.Account.Address)
-	if err != nil {
-		return nil, nil, errors.ErrInvalidAccount
-	}
+	payer := operation.AccountId
+	signers := []types.AccountId{payer}
 
-	return &payer, tokenUpdate, nil
+	if !isZeroAccountId(tokenUpdate.AutoRenewAccount) {
+		autoRenewAccountId, err := types.NewAccountIdFromSdkAccountId(tokenUpdate.AutoRenewAccount)
+		if err != nil {
+			return nil, nil, errors.ErrInvalidAccount
+		}
+		if payer.String() != autoRenewAccountId.String() {
+			signers = append(signers, autoRenewAccountId)
+		}
+	}
+	return signers, tokenUpdate, nil
 }
 
 func newTokenUpdateTransactionConstructor() transactionConstructorWithType {

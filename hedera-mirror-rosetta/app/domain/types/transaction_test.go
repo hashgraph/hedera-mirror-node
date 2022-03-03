@@ -39,11 +39,11 @@ func exampleTransaction() *Transaction {
 		Hash:     "somehash",
 		Operations: []*Operation{
 			{
-				Index:   1,
-				Type:    "transfer",
-				Status:  status,
-				Account: Account{domain.EntityId{}},
-				Amount:  &HbarAmount{Value: int64(400)},
+				AccountId: AccountId{},
+				Amount:    &HbarAmount{Value: int64(400)},
+				Index:     1,
+				Status:    status,
+				Type:      "transfer",
 			},
 		},
 	}

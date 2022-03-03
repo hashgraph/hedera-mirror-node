@@ -47,28 +47,74 @@ var (
 	}
 )
 
-func exampleOperation(amount Amount) *Operation {
-	return &Operation{
-		Index:   1,
-		Type:    "transfer",
-		Status:  "pending",
-		Account: Account{domain.EntityId{}},
-		Amount:  amount,
+func customizeAmount(amount Amount) func(*Operation) {
+	return func(o *Operation) {
+		o.Amount = amount
 	}
 }
 
-func expectedOperation(amount *types.Amount) *types.Operation {
+func customizeRosettaAmount(amount *types.Amount) func(*types.Operation) {
+	return func(o *types.Operation) {
+		o.Amount = amount
+	}
+}
+
+func customizeIndex(index int64) func(*Operation) {
+	return func(o *Operation) {
+		o.Index = index
+	}
+}
+
+func customizeRosettaIndex(index int64) func(*types.Operation) {
+	return func(o *types.Operation) {
+		o.OperationIdentifier.Index = index
+	}
+}
+
+func customizeStatus(status string) func(*Operation) {
+	return func(o *Operation) {
+		o.Status = status
+	}
+}
+
+func customizeRosettaStatus(status *string) func(*types.Operation) {
+	return func(o *types.Operation) {
+		o.Status = status
+	}
+}
+
+func exampleOperation(customizers ...func(*Operation)) *Operation {
+	operation := &Operation{
+		AccountId: AccountId{accountId: domain.MustDecodeEntityId(1)},
+		Index:     1,
+		Status:    "pending",
+		Type:      "transfer",
+	}
+
+	for _, customize := range customizers {
+		customize(operation)
+	}
+
+	return operation
+}
+
+func expectedOperation(customizers ...func(operation *types.Operation)) *types.Operation {
 	status := "pending"
-	return &types.Operation{
+	operation := &types.Operation{
+		Account:             &types.AccountIdentifier{Address: "0.0.1"},
 		OperationIdentifier: &types.OperationIdentifier{Index: 1},
-		Type:                "transfer",
 		Status:              &status,
-		Account:             &types.AccountIdentifier{Address: "0.0.0"},
-		Amount:              amount,
+		Type:                "transfer",
 	}
+
+	for _, customize := range customizers {
+		customize(operation)
+	}
+
+	return operation
 }
 
-func TestToRosettaOperation(t *testing.T) {
+func TestOperationToRosetta(t *testing.T) {
 	var tests = []struct {
 		name     string
 		input    *Operation
@@ -76,18 +122,23 @@ func TestToRosettaOperation(t *testing.T) {
 	}{
 		{
 			name:     "HbarAmount",
-			input:    exampleOperation(hbarAmount),
-			expected: expectedOperation(hbarRosettaAmount),
+			input:    exampleOperation(customizeAmount(hbarAmount)),
+			expected: expectedOperation(customizeRosettaAmount(hbarRosettaAmount)),
 		},
 		{
 			name:     "TokenAmount",
-			input:    exampleOperation(tokenAmount),
-			expected: expectedOperation(tokenRosettaAmount),
+			input:    exampleOperation(customizeAmount(tokenAmount)),
+			expected: expectedOperation(customizeRosettaAmount(tokenRosettaAmount)),
 		},
 		{
 			name:     "NilAmount",
-			input:    exampleOperation(nil),
-			expected: expectedOperation(nil),
+			input:    exampleOperation(customizeAmount(nil)),
+			expected: expectedOperation(customizeRosettaAmount(nil)),
+		},
+		{
+			name:     "NoStatus",
+			input:    exampleOperation(customizeStatus("")),
+			expected: expectedOperation(customizeRosettaStatus(nil)),
 		},
 	}
 
@@ -100,5 +151,16 @@ func TestToRosettaOperation(t *testing.T) {
 			assert.Equal(t, tt.expected, rosettaOperation)
 		})
 	}
+}
 
+func TestOperationSliceToRosetta(t *testing.T) {
+	operationSlice := OperationSlice{
+		*exampleOperation(customizeAmount(hbarAmount)),
+		*exampleOperation(customizeIndex(2), customizeAmount(tokenAmount)),
+	}
+	expected := []*types.Operation{
+		expectedOperation(customizeRosettaAmount(hbarRosettaAmount)),
+		expectedOperation(customizeRosettaIndex(2), customizeRosettaAmount(tokenRosettaAmount)),
+	}
+	assert.ElementsMatch(t, expected, operationSlice.ToRosetta())
 }

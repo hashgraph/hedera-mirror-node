@@ -23,9 +23,9 @@ package construction
 import (
 	"testing"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -57,25 +57,19 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestGetSdkTransactionType()
 func (suite *tokenDeleteTransactionConstructorSuite) TestConstruct() {
 	var tests = []struct {
 		name             string
-		currency         *rTypes.Currency
+		token            domain.Token
 		updateOperations updateOperationsFunc
-		validStartNanos  int64
 		expectError      bool
 	}{
-		{name: "SuccessFT", currency: tokenACurrency},
-		{name: "SuccessNFT", currency: tokenCCurrency},
-		{
-			name:            "SuccessValidStartNanos",
-			currency:        tokenACurrency,
-			validStartNanos: 100,
-		},
-		{name: "EmptyOperations", currency: tokenACurrency, updateOperations: getEmptyOperations, expectError: true},
+		{name: "SuccessFT", token: dbTokenA},
+		{name: "SuccessNFT", token: dbTokenC},
+		{name: "EmptyOperations", token: dbTokenA, updateOperations: getEmptyOperations, expectError: true},
 	}
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			operations := getTokenDeleteOperations(tt.currency)
+			operations := getTokenDeleteOperations(tt.token)
 			h := newTokenDeleteTransactionConstructor()
 
 			if tt.updateOperations != nil {
@@ -83,7 +77,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestConstruct() {
 			}
 
 			// when
-			tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
+			tx, signers, err := h.Construct(defaultContext, operations)
 
 			// then
 			if tt.expectError {
@@ -92,12 +86,8 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestConstruct() {
 				assert.Nil(t, tx)
 			} else {
 				assert.Nil(t, err)
-				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-				assertTokenDeleteTransaction(t, operations[0], nodeAccountId, tx)
-
-				if tt.validStartNanos != 0 {
-					assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
-				}
+				assert.ElementsMatch(t, []types.AccountId{accountIdA}, signers)
+				assertTokenDeleteTransaction(t, operations[0], tx)
 			}
 		})
 	}
@@ -106,9 +96,8 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestConstruct() {
 func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 	defaultGetTransaction := func() interfaces.Transaction {
 		return hedera.NewTokenDeleteTransaction().
-			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTransactionID(hedera.TransactionIDGenerate(payerId)).
-			SetTokenID(tokenIdA)
+			SetTokenID(tokenIdA).
+			SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 	}
 
 	tests := []struct {
@@ -121,9 +110,8 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 			name: "InvalidTokenId",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenDeleteTransaction().
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTransactionID(hedera.TransactionIDGenerate(payerId)).
-					SetTokenID(outOfRangeTokenId)
+					SetTokenID(outOfRangeTokenId).
+					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 			},
 			expectError: true,
 		},
@@ -135,20 +123,16 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 			expectError: true,
 		},
 		{
-			name: "TransactionIDNotSet",
+			name: "TokenIDNotSet",
 			getTransaction: func() interfaces.Transaction {
-				return hedera.NewTokenDeleteTransaction().
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTokenID(tokenIdA)
+				return hedera.NewTokenDeleteTransaction().SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 			},
 			expectError: true,
 		},
 		{
-			name: "TokenIDNotSet",
+			name: "TransactionIDNotSet",
 			getTransaction: func() interfaces.Transaction {
-				return hedera.NewTokenDeleteTransaction().
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+				return hedera.NewTokenDeleteTransaction().SetTokenID(tokenIdA)
 			},
 			expectError: true,
 		},
@@ -157,7 +141,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			expectedOperations := getTokenDeleteOperations(tokenAPartialCurrency)
+			expectedOperations := getTokenDeleteOperations(getPartialDbToken(dbTokenA))
 
 			h := newTokenDeleteTransactionConstructor()
 			tx := tt.getTransaction()
@@ -172,7 +156,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestParse() {
 				assert.Nil(t, signers)
 			} else {
 				assert.Nil(t, err)
-				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
+				assert.ElementsMatch(t, []types.AccountId{accountIdA}, signers)
 				assert.ElementsMatch(t, expectedOperations, operations)
 			}
 		})
@@ -187,18 +171,13 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestPreprocess() {
 	}{
 		{name: "Success"},
 		{
-			name:             "InvalidAccountAddress",
-			updateOperations: updateOperationAccount("x.y.z"),
+			name:             "InvalidAmount",
+			updateOperations: updateAmount(&types.HbarAmount{}),
 			expectError:      true,
 		},
 		{
 			name:             "InvalidAmountValue",
-			updateOperations: updateAmountValue("10"),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidCurrency",
-			updateOperations: updateCurrency(currencyHbar),
+			updateOperations: updateAmountValue(10),
 			expectError:      true,
 		},
 		{
@@ -216,7 +195,7 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestPreprocess() {
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
 			// given
-			operations := getTokenDeleteOperations(tokenACurrency)
+			operations := getTokenDeleteOperations(getPartialDbToken(dbTokenA))
 			h := newTokenDeleteTransactionConstructor()
 
 			if tt.updateOperations != nil {
@@ -232,37 +211,27 @@ func (suite *tokenDeleteTransactionConstructorSuite) TestPreprocess() {
 				assert.Nil(t, signers)
 			} else {
 				assert.Nil(t, err)
-				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
+				assert.ElementsMatch(t, []types.AccountId{accountIdA}, signers)
 			}
 		})
 	}
 }
 
-func assertTokenDeleteTransaction(
-	t *testing.T,
-	operation *rTypes.Operation,
-	nodeAccountId hedera.AccountID,
-	actual interfaces.Transaction,
-) {
-	assert.True(t, actual.IsFrozen())
+func assertTokenDeleteTransaction(t *testing.T, operation types.Operation, actual interfaces.Transaction) {
+	assert.False(t, actual.IsFrozen())
 	assert.IsType(t, &hedera.TokenDeleteTransaction{}, actual)
 
 	tx, _ := actual.(*hedera.TokenDeleteTransaction)
-	payer := tx.GetTransactionID().AccountID.String()
 	token := tx.GetTokenID().String()
-
-	assert.Equal(t, operation.Account.Address, payer)
-	assert.Equal(t, operation.Amount.Currency.Symbol, token)
-	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
+	assert.Equal(t, operation.Amount.GetSymbol(), token)
 }
 
-func getTokenDeleteOperations(currency *rTypes.Currency) []*rTypes.Operation {
-	return []*rTypes.Operation{
+func getTokenDeleteOperations(token domain.Token) types.OperationSlice {
+	return types.OperationSlice{
 		{
-			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-			Type:                types.OperationTypeTokenDelete,
-			Account:             payerAccountIdentifier,
-			Amount:              &rTypes.Amount{Value: "0", Currency: currency},
+			AccountId: accountIdA,
+			Type:      types.OperationTypeTokenDelete,
+			Amount:    types.NewTokenAmount(token, 0),
 		},
 	}
 }

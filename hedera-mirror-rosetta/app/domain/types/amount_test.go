@@ -37,6 +37,30 @@ var (
 	metadatasBase64   = []interface{}{"Zm9v", "YmFy"}
 )
 
+func TestAmountSliceToRosetta(t *testing.T) {
+	amountSlice := AmountSlice{
+		&HbarAmount{Value: 100},
+		NewTokenAmount(
+			domain.Token{
+				Decimals: 8,
+				TokenId:  tokenId,
+				Type:     domain.TokenTypeFungibleCommon,
+			},
+			200,
+		),
+	}
+	expected := []*types.Amount{
+		{Value: "100", Currency: CurrencyHbar},
+		{Value: "200", Currency: &types.Currency{
+			Symbol:   tokenIdStr,
+			Decimals: 8,
+			Metadata: map[string]interface{}{"type": domain.TokenTypeFungibleCommon},
+		}},
+	}
+	actual := amountSlice.ToRosetta()
+	assert.Equal(t, expected, actual)
+}
+
 func TestHbarAmountGetValue(t *testing.T) {
 	assert.Equal(t, int64(400), hbarAmount.GetValue())
 }

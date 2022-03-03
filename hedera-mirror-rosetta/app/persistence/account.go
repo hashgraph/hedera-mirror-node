@@ -24,7 +24,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -33,7 +32,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	log "github.com/sirupsen/logrus"
-	"gorm.io/gorm"
 )
 
 const (
@@ -108,13 +106,21 @@ const (
                                     from abm
                                     left join account_balance ab
                                       on ab.consensus_timestamp = abm.max and ab.account_id = @account_id`
-	selectCryptoEntity = `select id, deleted, timestamp_range
-                          from entity
-                          where type = 'ACCOUNT' and id = @entity_id
-                          union all
-                          select id, deleted, timestamp_range
-                          from contract
-                          where id = @entity_id`
+	selectCryptoEntityByAlias = `select id, deleted, timestamp_range
+                                 from entity
+                                 where alias = @alias and timestamp_range @> @consensus_end
+                                 union all
+                                 select id, deleted, timestamp_range
+                                 from entity_history
+                                 where alias = @alias and timestamp_range @> @consensus_end
+                                 order by lower(timestamp_range) desc`
+	selectCryptoEntityById = `select id, deleted, timestamp_range
+                              from entity
+                              where type = 'ACCOUNT' and id = @id
+                              union all
+                              select id, deleted, timestamp_range
+                              from contract
+                              where id = @id`
 	selectNftTransfersForAccount = "with" + genesisTimestampCte + `
                                     select nt.*
                                     from nft_transfer nt
@@ -156,42 +162,48 @@ func NewAccountRepository(dbClient interfaces.DbClient) interfaces.AccountReposi
 
 func (ar *accountRepository) RetrieveBalanceAtBlock(
 	ctx context.Context,
-	accountId int64,
+	accountId types.AccountId,
 	consensusEnd int64,
-) ([]types.Amount, *rTypes.Error) {
-	entity, err := ar.getCryptoEntity(ctx, accountId)
+) (types.AmountSlice, string, *rTypes.Error) {
+	var entityIdString string
+	entity, err := ar.getCryptoEntity(ctx, accountId, consensusEnd)
 	if err != nil {
-		return nil, err
+		return nil, entityIdString, err
 	}
 
 	balanceChangeEndTimestamp := consensusEnd
 	balanceSnapshotEndTimestamp := consensusEnd
-	if entity != nil && entity.Deleted != nil && *entity.Deleted && entity.TimestampRange.Lower.Int <= consensusEnd {
+	if entity != nil && entity.Deleted != nil && *entity.Deleted && entity.GetModifiedTimestamp() <= consensusEnd {
 		// if an account / contract is deleted at t1, a balance snapshot at t1 (if exists) won't have info for the
 		// entity, thus look for a balance snapshot at or before the deleted timestamp - 1
 		// however, the balanceChangeEndTimestamp should be the deletion timestamp since the crypto delete transaction
 		// may have a transfer which moves the remaining hbar balance to another account
-		balanceChangeEndTimestamp = entity.TimestampRange.Lower.Int
+		balanceChangeEndTimestamp = entity.GetModifiedTimestamp()
 		balanceSnapshotEndTimestamp = balanceChangeEndTimestamp - 1
 	}
 
+	id := accountId.GetId()
+	if accountId.HasAlias() {
+		// entity can't be nil if accountId has alias
+		id = entity.Id.EncodedId
+	}
 	snapshotTimestamp, hbarAmount, tokenAmountMap, err := ar.getLatestBalanceSnapshot(
 		ctx,
-		accountId,
+		id,
 		balanceSnapshotEndTimestamp,
 	)
 	if err != nil {
-		return nil, err
+		return nil, entityIdString, err
 	}
 
 	hbarValue, tokenValues, tokenAssociationMap, err := ar.getBalanceChange(
 		ctx,
-		accountId,
+		id,
 		snapshotTimestamp,
 		balanceChangeEndTimestamp,
 	)
 	if err != nil {
-		return nil, err
+		return nil, entityIdString, err
 	}
 
 	hbarAmount.Value += hbarValue
@@ -204,46 +216,64 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 	nftAmountMap := tokenAmountMap[domain.TokenTypeNonFungibleUnique]
 	nftAmounts, err := ar.getNftBalance(
 		ctx,
-		accountId,
+		id,
 		snapshotTimestamp,
 		consensusEnd,
 		nftAmountMap,
 		nftAssociationMap,
 	)
 	if err != nil {
-		return nil, err
+		return nil, entityIdString, err
 	}
 
-	amounts := make([]types.Amount, 0, 1+len(ftAmounts)+len(nftAmounts))
+	amounts := make(types.AmountSlice, 0, 1+len(ftAmounts)+len(nftAmounts))
 	amounts = append(amounts, hbarAmount)
 	amounts = append(amounts, ftAmounts...)
 	amounts = append(amounts, nftAmounts...)
 
-	return amounts, nil
+	if entity != nil {
+		// return the entity id string in the format of 'shard.realm.num'
+		entityIdString = entity.Id.String()
+	}
+	return amounts, entityIdString, nil
 }
 
-func (ar *accountRepository) getCryptoEntity(ctx context.Context, entityId int64) (
+func (ar *accountRepository) getCryptoEntity(ctx context.Context, accountId types.AccountId, consensusEnd int64) (
 	*domain.Entity,
 	*rTypes.Error,
 ) {
 	db, cancel := ar.dbClient.GetDbWithContext(ctx)
 	defer cancel()
 
-	cryptoEntity := &domain.Entity{}
-	if err := db.Raw(selectCryptoEntity, sql.Named("entity_id", entityId)).First(cryptoEntity).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
+	var query string
+	var args []interface{}
+	var notFoundError *rTypes.Error
+	if accountId.HasAlias() {
+		query = selectCryptoEntityByAlias
+		args = []interface{}{sql.Named("alias", accountId.GetAlias()), sql.Named("consensus_end", consensusEnd)}
+		notFoundError = hErrors.AddErrorDetails(hErrors.ErrAccountNotFound, "reason",
+			"Account with the alias not found")
+	} else {
+		query = selectCryptoEntityById
+		args = []interface{}{sql.Named("id", accountId.GetId())}
+	}
 
+	entities := make([]domain.Entity, 0)
+	if err := db.Raw(query, args...).Scan(&entities).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
 			hErrors.ErrDatabaseError.Message,
-			fmt.Sprintf("%v looking for entity %d", err, entityId),
+			fmt.Sprintf("%v looking for entity %s", err, accountId),
 		)
 		return nil, hErrors.ErrDatabaseError
 	}
 
-	return cryptoEntity, nil
+	if len(entities) == 0 {
+		return nil, notFoundError
+	}
+
+	// if it's by alias, return the first match which is the current one owns the alias, even though it may be deleted
+	return &entities[0], nil
 }
 
 func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accountId, timestamp int64) (
@@ -349,7 +379,7 @@ func (ar *accountRepository) getNftBalance(
 	consensusEnd int64,
 	tokenAmountMap map[int64]*types.TokenAmount,
 	tokenAssociationMap map[int64]tokenAssociation,
-) ([]types.Amount, *rTypes.Error) {
+) (types.AmountSlice, *rTypes.Error) {
 	db, cancel := ar.dbClient.GetDbWithContext(ctx)
 	defer cancel()
 
@@ -408,7 +438,7 @@ func getUpdatedTokenAmounts(
 	tokenAmountMap map[int64]*types.TokenAmount,
 	tokenValues []*types.TokenAmount,
 	tokenAssociationMap map[int64]tokenAssociation,
-) []types.Amount {
+) types.AmountSlice {
 	for _, tokenValue := range tokenValues {
 		tokenId := tokenValue.TokenId.EncodedId
 		if _, ok := tokenAmountMap[tokenId]; ok {
@@ -430,7 +460,7 @@ func getUpdatedTokenAmounts(
 		}
 	}
 
-	amounts := make([]types.Amount, 0, len(tokenAmountMap))
+	amounts := make(types.AmountSlice, 0, len(tokenAmountMap))
 	for _, tokenAmount := range tokenAmountMap {
 		amounts = append(amounts, tokenAmount)
 	}

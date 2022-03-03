@@ -32,22 +32,22 @@ import (
 )
 
 var (
-	accountId3, _  = types.NewAccountFromEncodedID(3)
-	accountId4, _  = types.NewAccountFromEncodedID(4)
-	accountId80, _ = types.NewAccountFromEncodedID(80)
-	accountId70, _ = types.NewAccountFromEncodedID(70)
-	addressBooks   = []*domain.AddressBook{
+	accountId3   = domain.MustDecodeEntityId(3)
+	accountId4   = domain.MustDecodeEntityId(4)
+	accountId70  = domain.MustDecodeEntityId(70)
+	accountId80  = domain.MustDecodeEntityId(80)
+	addressBooks = []*domain.AddressBook{
 		getAddressBook(9, 0, 102),
 		getAddressBook(10, 19, 101),
 		getAddressBook(20, 0, 101),
 	}
 	addressBookEntries = []*domain.AddressBookEntry{
-		getAddressBookEntry(9, 0, accountId3.EntityId),
-		getAddressBookEntry(9, 1, accountId4.EntityId),
-		getAddressBookEntry(10, 0, accountId3.EntityId),
-		getAddressBookEntry(10, 1, accountId4.EntityId),
-		getAddressBookEntry(20, 0, accountId80.EntityId),
-		getAddressBookEntry(20, 1, accountId70.EntityId),
+		getAddressBookEntry(9, 0, accountId3),
+		getAddressBookEntry(9, 1, accountId4),
+		getAddressBookEntry(10, 0, accountId3),
+		getAddressBookEntry(10, 1, accountId4),
+		getAddressBookEntry(20, 0, accountId80),
+		getAddressBookEntry(20, 1, accountId70),
 	}
 	addressBookServiceEndpoints = []*domain.AddressBookServiceEndpoint{
 		{10, "192.168.0.10", 0, 50211},
@@ -131,10 +131,10 @@ func (suite *addressBookEntryRepositorySuite) TestEntriesNoFile101() {
 		dbClient,
 		getAddressBook(10, 19, 102),
 		getAddressBook(20, 0, 102),
-		getAddressBookEntry(10, 0, accountId4.EntityId),
-		getAddressBookEntry(10, 1, accountId3.EntityId),
-		getAddressBookEntry(20, 0, accountId70.EntityId),
-		getAddressBookEntry(20, 1, accountId80.EntityId),
+		getAddressBookEntry(10, 0, accountId4),
+		getAddressBookEntry(10, 1, accountId3),
+		getAddressBookEntry(20, 0, accountId70),
+		getAddressBookEntry(20, 1, accountId80),
 	)
 
 	expected := &types.AddressBookEntries{
@@ -187,7 +187,11 @@ func getAddressBook(start, end int64, fileId int64) *domain.AddressBook {
 	return &addressBook
 }
 
-func getAddressBookEntry(consensusTimestamp int64, nodeId int64, nodeAccountId domain.EntityId) *domain.AddressBookEntry {
+func getAddressBookEntry(
+	consensusTimestamp int64,
+	nodeId int64,
+	nodeAccountId domain.EntityId,
+) *domain.AddressBookEntry {
 	return &domain.AddressBookEntry{
 		ConsensusTimestamp: consensusTimestamp,
 		NodeId:             nodeId,

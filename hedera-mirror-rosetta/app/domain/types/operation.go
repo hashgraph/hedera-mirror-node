@@ -24,12 +24,12 @@ import "github.com/coinbase/rosetta-sdk-go/types"
 
 // Operation is domain level struct used to represent Operation within Transaction
 type Operation struct {
-	Index    int64
-	Type     string
-	Status   string
-	Account  Account
-	Amount   Amount
-	Metadata map[string]interface{}
+	AccountId AccountId
+	Amount    Amount
+	Index     int64
+	Metadata  map[string]interface{}
+	Status    string
+	Type      string
 }
 
 // ToRosetta returns Rosetta type Operation from the current domain type Operation
@@ -38,13 +38,27 @@ func (o *Operation) ToRosetta() *types.Operation {
 	if o.Amount != nil {
 		amount = o.Amount.ToRosetta()
 	}
-
+	var status *string
+	if o.Status != "" {
+		status = &o.Status
+	}
 	return &types.Operation{
-		OperationIdentifier: &types.OperationIdentifier{Index: o.Index},
-		Type:                o.Type,
-		Status:              &o.Status,
-		Account:             o.Account.ToRosetta(),
+		Account:             o.AccountId.ToRosetta(),
 		Amount:              amount,
 		Metadata:            o.Metadata,
+		OperationIdentifier: &types.OperationIdentifier{Index: o.Index},
+		Status:              status,
+		Type:                o.Type,
 	}
+}
+
+type OperationSlice []Operation
+
+// ToRosetta returns a slice of Rosetta Operation
+func (o OperationSlice) ToRosetta() []*types.Operation {
+	rosettaOperations := make([]*types.Operation, 0, len(o))
+	for _, operation := range o {
+		rosettaOperations = append(rosettaOperations, operation.ToRosetta())
+	}
+	return rosettaOperations
 }

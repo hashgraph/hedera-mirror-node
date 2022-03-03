@@ -99,6 +99,8 @@ func newBlockchainOnlineRouter(
 		baseService,
 		network.Network,
 		config.Nodes,
+		config.Shard,
+		config.Realm,
 		construction.NewTransactionConstructor(),
 	)
 	if err != nil {
@@ -106,7 +108,7 @@ func newBlockchainOnlineRouter(
 	}
 	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter)
 
-	accountAPIService := services.NewAccountAPIService(baseService, accountRepo)
+	accountAPIService := services.NewAccountAPIService(baseService, accountRepo, config.Shard, config.Realm)
 	accountAPIController := server.NewAccountAPIController(accountAPIService, asserter)
 	healthController, err := middleware.NewHealthController(config.Db)
 	metricsController := middleware.NewMetricsController()
@@ -140,6 +142,8 @@ func newBlockchainOfflineRouter(
 		baseService,
 		network.Network,
 		config.Nodes,
+		config.Shard,
+		config.Realm,
 		construction.NewTransactionConstructor(),
 	)
 	if err != nil {
@@ -174,7 +178,7 @@ func main() {
 		Blockchain: types.Blockchain,
 		Network:    strings.ToLower(rosettaConfig.Network),
 		SubNetworkIdentifier: &rTypes.SubNetworkIdentifier{
-			Network: fmt.Sprintf("shard %s realm %s", rosettaConfig.Shard, rosettaConfig.Realm),
+			Network: fmt.Sprintf("shard %d realm %d", rosettaConfig.Shard, rosettaConfig.Realm),
 		},
 	}
 

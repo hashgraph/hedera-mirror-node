@@ -63,6 +63,7 @@ const (
 	TokenNotFound                     string = "Token not found"
 	InvalidTransaction                string = "Invalid transaction"
 	InvalidCurrency                   string = "Invalid currency"
+	InvalidCurveType                  string = "Invalid curve type"
 	InternalServerError               string = "Internal Server Error"
 )
 
@@ -104,6 +105,7 @@ var (
 	ErrInvalidCurrency                   = newError(InvalidCurrency, 134, false)
 	ErrInvalidSignatureType              = newError(InvalidSignatureType, 135, false)
 	ErrEndpointNotSupportedInOfflineMode = newError(EndpointNotSupportedInOfflineMode, 136, false)
+	ErrInvalidCurveType                  = newError(InvalidCurveType, 137, false)
 	ErrInternalServerError               = newError(InternalServerError, 500, true)
 
 	Errors = make([]*types.Error, 0)

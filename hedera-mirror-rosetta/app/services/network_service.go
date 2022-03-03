@@ -34,7 +34,7 @@ import (
 
 // networkAPIService implements the server.NetworkAPIServicer interface.
 type networkAPIService struct {
-	*BaseService
+	BaseService
 	addressBookEntryRepo interfaces.AddressBookEntryRepository
 	network              *rTypes.NetworkIdentifier
 	operationTypes       []string
@@ -43,16 +43,16 @@ type networkAPIService struct {
 
 // NetworkList implements the /network/list endpoint.
 func (n *networkAPIService) NetworkList(
-	ctx context.Context,
-	request *rTypes.MetadataRequest,
+	_ context.Context,
+	_ *rTypes.MetadataRequest,
 ) (*rTypes.NetworkListResponse, *rTypes.Error) {
 	return &rTypes.NetworkListResponse{NetworkIdentifiers: []*rTypes.NetworkIdentifier{n.network}}, nil
 }
 
 // NetworkOptions implements the /network/options endpoint.
 func (n *networkAPIService) NetworkOptions(
-	ctx context.Context,
-	request *rTypes.NetworkRequest,
+	_ context.Context,
+	_ *rTypes.NetworkRequest,
 ) (*rTypes.NetworkOptionsResponse, *rTypes.Error) {
 	operationStatuses := make([]*rTypes.OperationStatus, 0, len(types.TransactionResults))
 	for value, name := range types.TransactionResults {
@@ -76,7 +76,7 @@ func (n *networkAPIService) NetworkOptions(
 // NetworkStatus implements the /network/status endpoint.
 func (n *networkAPIService) NetworkStatus(
 	ctx context.Context,
-	request *rTypes.NetworkRequest,
+	_ *rTypes.NetworkRequest,
 ) (*rTypes.NetworkStatusResponse, *rTypes.Error) {
 	if !n.IsOnline() {
 		return nil, errors.ErrEndpointNotSupportedInOfflineMode
@@ -98,22 +98,16 @@ func (n *networkAPIService) NetworkStatus(
 	}
 
 	return &rTypes.NetworkStatusResponse{
-		CurrentBlockIdentifier: &rTypes.BlockIdentifier{
-			Index: currentBlock.Index,
-			Hash:  tools.SafeAddHexPrefix(currentBlock.Hash),
-		},
-		CurrentBlockTimestamp: currentBlock.GetTimestampMillis(),
-		GenesisBlockIdentifier: &rTypes.BlockIdentifier{
-			Index: genesisBlock.Index,
-			Hash:  tools.SafeAddHexPrefix(genesisBlock.Hash),
-		},
-		Peers: peers.ToRosetta(),
+		CurrentBlockIdentifier: currentBlock.GetRosettaBlockIdentifier(),
+		CurrentBlockTimestamp:  currentBlock.GetTimestampMillis(),
+		GenesisBlockIdentifier: genesisBlock.GetRosettaBlockIdentifier(),
+		Peers:                  peers.ToRosetta(),
 	}, nil
 }
 
 // NewNetworkAPIService creates a networkAPIService instance.
 func NewNetworkAPIService(
-	baseService *BaseService,
+	baseService BaseService,
 	addressBookEntryRepo interfaces.AddressBookEntryRepository,
 	network *rTypes.NetworkIdentifier,
 	version *rTypes.Version,

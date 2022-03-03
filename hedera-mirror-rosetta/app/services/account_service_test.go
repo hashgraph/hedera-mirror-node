@@ -21,6 +21,7 @@
 package services
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
@@ -28,6 +29,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
+	tdomain "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -57,8 +59,8 @@ var (
 	}
 )
 
-func amount() []types.Amount {
-	return []types.Amount{
+func amount() types.AmountSlice {
+	return types.AmountSlice{
 		&types.HbarAmount{Value: int64(1000)},
 		types.NewTokenAmount(token1, 100),
 		types.NewTokenAmount(token2, 200),
@@ -66,24 +68,35 @@ func amount() []types.Amount {
 	}
 }
 
-func request(withBlockIdentifier bool) *rTypes.AccountBalanceRequest {
-	var blockIdentifier *rTypes.PartialBlockIdentifier = nil
-	if withBlockIdentifier {
-		index := int64(1)
-		hash := "0x123"
-		blockIdentifier = &rTypes.PartialBlockIdentifier{
-			Index: &index,
-			Hash:  &hash,
-		}
+func getAccountBalanceRequest(customizers ...func(*rTypes.AccountBalanceRequest)) *rTypes.AccountBalanceRequest {
+	index := int64(1)
+	hash := "0x123"
+	blockIdentifier := &rTypes.PartialBlockIdentifier{
+		Index: &index,
+		Hash:  &hash,
 	}
-	return &rTypes.AccountBalanceRequest{
+	r := &rTypes.AccountBalanceRequest{
 		AccountIdentifier: &rTypes.AccountIdentifier{Address: "0.0.1"},
 		BlockIdentifier:   blockIdentifier,
 	}
+	for _, customize := range customizers {
+		customize(r)
+	}
+	return r
 }
 
-func expectedAccountBalanceResponse() *rTypes.AccountBalanceResponse {
-	return &rTypes.AccountBalanceResponse{
+func accountBalanceRequestRemoveBlockIdentifier(request *rTypes.AccountBalanceRequest) {
+	request.BlockIdentifier = nil
+}
+
+func accountBalanceRequestUseAccount(account string) func(response *rTypes.AccountBalanceRequest) {
+	return func(request *rTypes.AccountBalanceRequest) {
+		request.AccountIdentifier.Address = account
+	}
+}
+
+func expectedAccountBalanceResponse(customizers ...func(*rTypes.AccountBalanceResponse)) *rTypes.AccountBalanceResponse {
+	response := &rTypes.AccountBalanceResponse{
 		BlockIdentifier: &rTypes.BlockIdentifier{
 			Index: 1,
 			Hash:  "0x12345",
@@ -97,6 +110,16 @@ func expectedAccountBalanceResponse() *rTypes.AccountBalanceResponse {
 			types.NewTokenAmount(token2, 200).ToRosetta(),
 			types.NewTokenAmount(token3, 2).SetSerialNumbers([]int64{1, 5}).ToRosetta(),
 		},
+	}
+	for _, customize := range customizers {
+		customize(response)
+	}
+	return response
+}
+
+func accountBalanceResponseMetadata(metadata map[string]interface{}) func(*rTypes.AccountBalanceResponse) {
+	return func(response *rTypes.AccountBalanceResponse) {
+		response.Metadata = metadata
 	}
 }
 
@@ -118,16 +141,19 @@ func (suite *accountServiceSuite) SetupTest() {
 	suite.mockTransactionRepo = &mocks.MockTransactionRepository{}
 
 	baseService := NewOnlineBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
-	suite.accountService = NewAccountAPIService(baseService, suite.mockAccountRepo)
+	suite.accountService = NewAccountAPIService(baseService, suite.mockAccountRepo, 0, 0)
 }
 
 func (suite *accountServiceSuite) TestAccountBalance() {
 	// given:
 	suite.mockBlockRepo.On("RetrieveLatest").Return(block(), mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), mocks.NilError)
+	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), "", mocks.NilError)
 
 	// when:
-	actual, err := suite.accountService.AccountBalance(nil, request(false))
+	actual, err := suite.accountService.AccountBalance(
+		defaultContext,
+		getAccountBalanceRequest(accountBalanceRequestRemoveBlockIdentifier),
+	)
 
 	// then:
 	assert.Equal(suite.T(), expectedAccountBalanceResponse(), actual)
@@ -136,14 +162,35 @@ func (suite *accountServiceSuite) TestAccountBalance() {
 	suite.mockBlockRepo.AssertNotCalled(suite.T(), "FindByHash")
 }
 
+func (suite *accountServiceSuite) TestAliasAccountBalance() {
+	// given:
+	accountId := "0.0.100"
+	_, pk := tdomain.GenEd25519KeyPair()
+	alias := hex.EncodeToString(pk.BytesRaw())
+	metadata := map[string]interface{}{"account_id": accountId}
+	suite.mockBlockRepo.On("RetrieveLatest").Return(block(), mocks.NilError)
+	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), accountId, mocks.NilError)
+
+	// when:
+	actual, err := suite.accountService.AccountBalance(
+		defaultContext,
+		getAccountBalanceRequest(accountBalanceRequestRemoveBlockIdentifier, accountBalanceRequestUseAccount(alias)),
+	)
+
+	// then:
+	assert.Equal(suite.T(), expectedAccountBalanceResponse(accountBalanceResponseMetadata(metadata)), actual)
+	assert.Nil(suite.T(), err)
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "FindByIdentifier")
+	suite.mockBlockRepo.AssertNotCalled(suite.T(), "FindByHash")
+}
+
 func (suite *accountServiceSuite) TestAccountBalanceWithBlockIdentifier() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveEverOwnedTokensByBlock").Return([]domain.Token{}, mocks.NilError)
+	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), "", mocks.NilError)
 
 	// when:
-	actual, err := suite.accountService.AccountBalance(nil, request(true))
+	actual, err := suite.accountService.AccountBalance(defaultContext, getAccountBalanceRequest())
 
 	// then:
 	assert.Equal(suite.T(), expectedAccountBalanceResponse(), actual)
@@ -156,7 +203,8 @@ func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveLatestFail
 	suite.mockBlockRepo.On("RetrieveLatest").Return(mocks.NilBlock, &rTypes.Error{})
 
 	// when:
-	actual, err := suite.accountService.AccountBalance(nil, request(false))
+	actual, err := suite.accountService.AccountBalance(defaultContext,
+		getAccountBalanceRequest(accountBalanceRequestRemoveBlockIdentifier))
 
 	// then:
 	assert.Nil(suite.T(), actual)
@@ -169,7 +217,7 @@ func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveBlockFails
 	suite.mockBlockRepo.On("FindByIdentifier").Return(mocks.NilBlock, &rTypes.Error{})
 
 	// when:
-	actual, err := suite.accountService.AccountBalance(nil, request(true))
+	actual, err := suite.accountService.AccountBalance(defaultContext, getAccountBalanceRequest())
 
 	// then:
 	assert.Nil(suite.T(), actual)
@@ -181,10 +229,10 @@ func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveBlockFails
 func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenRetrieveBalanceAtBlockFails() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
-	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return([]types.Amount{}, &rTypes.Error{})
+	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(types.AmountSlice{}, "", &rTypes.Error{})
 
 	// when:
-	actual, err := suite.accountService.AccountBalance(nil, request(true))
+	actual, err := suite.accountService.AccountBalance(defaultContext, getAccountBalanceRequest())
 
 	// then:
 	assert.Nil(suite.T(), actual)
@@ -196,9 +244,10 @@ func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenAddressInvalid() {
 		suite.T().Run(invalidAddress, func(t *testing.T) {
 			// given
 			// when
-			actual, err := suite.accountService.AccountBalance(nil, &rTypes.AccountBalanceRequest{
-				AccountIdentifier: &rTypes.AccountIdentifier{Address: invalidAddress},
-			})
+			actual, err := suite.accountService.AccountBalance(
+				defaultContext,
+				getAccountBalanceRequest(accountBalanceRequestUseAccount(invalidAddress)),
+			)
 
 			// then
 			assert.Equal(t, errors.ErrInvalidAccount, err)
@@ -210,7 +259,7 @@ func (suite *accountServiceSuite) TestAccountBalanceThrowsWhenAddressInvalid() {
 
 func (suite *accountServiceSuite) TestAccountCoins() {
 	// when:
-	result, err := suite.accountService.AccountCoins(nil, &rTypes.AccountCoinsRequest{})
+	result, err := suite.accountService.AccountCoins(defaultContext, &rTypes.AccountCoinsRequest{})
 
 	// then:
 	assert.Nil(suite.T(), result)

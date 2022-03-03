@@ -38,21 +38,21 @@ var (
 			Count:              10,
 			FileHash:           "genesis_account_balance_file_hash",
 			Name:               "genesis_account_balance_file",
-			NodeAccountId:      nodeAccountId,
+			NodeAccountId:      nodeEntityId,
 		},
 		{
 			ConsensusTimestamp: 10000,
 			Count:              10,
 			FileHash:           "second_account_balance_file_hash",
 			Name:               "second_account_balance_file",
-			NodeAccountId:      nodeAccountId,
+			NodeAccountId:      nodeEntityId,
 		},
 		{
 			ConsensusTimestamp: 20000,
 			Count:              10,
 			FileHash:           "third_account_balance_file_hash",
 			Name:               "third_account_balance_file",
-			NodeAccountId:      nodeAccountId,
+			NodeAccountId:      nodeEntityId,
 		},
 	}
 	expectedGenesisBlock = &types.Block{
@@ -71,15 +71,15 @@ var (
 		ParentHash:          "genesis_record_file_hash",
 		ParentIndex:         0,
 	}
-	nodeAccountId = domain.MustDecodeEntityId(3)
-	recordFiles   = []*domain.RecordFile{
+	nodeEntityId = domain.MustDecodeEntityId(3)
+	recordFiles  = []*domain.RecordFile{
 		{
 			ConsensusStart: 80,
 			ConsensusEnd:   100,
 			Hash:           "genesis_record_file_hash",
 			Index:          3,
 			Name:           "genesis_record_file",
-			NodeAccountID:  nodeAccountId,
+			NodeAccountID:  nodeEntityId,
 			PrevHash:       "previous_record_file_hash",
 		},
 		{
@@ -88,7 +88,7 @@ var (
 			Hash:           "second_record_file_hash",
 			Index:          4,
 			Name:           "second_record_file",
-			NodeAccountID:  nodeAccountId,
+			NodeAccountID:  nodeEntityId,
 			PrevHash:       "genesis_record_file_hash",
 		},
 	}
@@ -99,7 +99,7 @@ var (
 		Hash:           "previous_record_file_hash",
 		Index:          2,
 		Name:           "previous_record_file",
-		NodeAccountID:  nodeAccountId,
+		NodeAccountID:  nodeEntityId,
 		PrevHash:       "some_hash",
 	}
 )
