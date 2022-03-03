@@ -21,7 +21,16 @@ package com.hedera.mirror.importer.config;
  */
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.lettuce.core.metrics.MicrometerCommandLatencyRecorder;
+import io.lettuce.core.metrics.MicrometerOptions;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.springframework.boot.actuate.autoconfigure.metrics.CompositeMeterRegistryAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.metrics.MetricsAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.data.redis.ClientResourcesBuilderCustomizer;
+import org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -32,8 +41,17 @@ import org.springframework.data.redis.serializer.RedisSerializer;
 
 import com.hedera.mirror.common.domain.topic.StreamMessage;
 
+@AutoConfigureBefore(RedisAutoConfiguration.class)
+@AutoConfigureAfter({MetricsAutoConfiguration.class, CompositeMeterRegistryAutoConfiguration.class})
 @Configuration
-public class RedisConfiguration {
+class RedisConfiguration {
+
+    // Override default auto-configuration to disable histogram metrics
+    @Bean
+    ClientResourcesBuilderCustomizer lettuceMetrics(MeterRegistry meterRegistry) {
+        MicrometerOptions options = MicrometerOptions.builder().histogram(false).build();
+        return client -> client.commandLatencyRecorder(new MicrometerCommandLatencyRecorder(meterRegistry, options));
+    }
 
     @Bean
     RedisSerializer<StreamMessage> redisSerializer() {
