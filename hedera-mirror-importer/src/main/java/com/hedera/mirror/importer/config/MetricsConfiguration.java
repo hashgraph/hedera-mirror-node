@@ -22,12 +22,8 @@ package com.hedera.mirror.importer.config;
 
 import io.github.mweirauch.micrometer.jvm.extras.ProcessMemoryMetrics;
 import io.github.mweirauch.micrometer.jvm.extras.ProcessThreadMetrics;
-import io.lettuce.core.metrics.MicrometerCommandLatencyRecorder;
-import io.lettuce.core.metrics.MicrometerOptions;
-import io.lettuce.core.resource.ClientResources;
-import io.lettuce.core.resource.DefaultClientResources;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.binder.BaseUnits;
 import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.binder.db.PostgreSQLDatabaseMetrics;
@@ -55,14 +51,6 @@ class MetricsConfiguration {
     private final DataSource dataSource;
     private final DBProperties dbProperties;
     private final MeterRegistry meterRegistry;
-
-    // Override default ClientResources to disable histogram metrics
-    @Bean(destroyMethod = "shutdown")
-    ClientResources clientResources() {
-        MicrometerOptions options = MicrometerOptions.builder().build();
-        var commandLatencyRecorder = new MicrometerCommandLatencyRecorder(meterRegistry, options);
-        return DefaultClientResources.builder().commandLatencyRecorder(commandLatencyRecorder).build();
-    }
 
     @Bean
     MeterBinder processMemoryMetrics() {
