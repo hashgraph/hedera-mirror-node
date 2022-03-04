@@ -100,14 +100,16 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
     protected void doMigrate() throws IOException {
         if (isMainnet()) {
             balanceFileAdjustment();
-            missingTransactions();
             spuriousTransfers();
+            missingTransactions();
         }
     }
 
     private void balanceFileAdjustment() {
-        String sql = "update account_balance_file set time_offset = -1 where consensus_timestamp in (:timestamps)";
-        jdbcOperations.update(sql, new MapSqlParameterSource("timestamps", getTimestamps()));
+        String sql = "update account_balance_file set time_offset = -1 " +
+                "where consensus_timestamp in (:timestamps) and time_offset <> -1";
+        int count = jdbcOperations.update(sql, new MapSqlParameterSource("timestamps", getTimestamps()));
+        log.info("Updated {} account balance files", count);
     }
 
     private void spuriousTransfers() {
@@ -120,7 +122,8 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
                 ")" +
                 "update crypto_transfer ct set errata = 'DELETE' from spurious_transfer st " +
                 "where ct.consensus_timestamp = st.consensus_timestamp and ct.amount = st.amount * -1";
-        jdbcOperations.getJdbcOperations().update(sql);
+        int count = jdbcOperations.getJdbcOperations().update(sql);
+        log.info("Updated {} spurious transfers", count * 2);
     }
 
     private void missingTransactions() throws IOException {
@@ -151,6 +154,7 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
         }
 
         if (consensusTimestamps.isEmpty()) {
+            log.info("Previously inserted all missing transactions");
             return;
         }
 

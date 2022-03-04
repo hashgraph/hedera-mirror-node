@@ -91,7 +91,7 @@ the saved snapshot before retry.
 Some tables may contain errata information to workaround known issues with the stream files. The state of the consensus
 nodes was never impacted, only the externalization of these changes to the stream files that the mirror node consumes.
 There were three instances of bugs in the node software that misrepresented the side-effects of certain user
-transactions in the balance and record streams.
+transactions in the balance and record streams. These issues should only appear in mainnet.
 
 ### Account Balance File Skew
 

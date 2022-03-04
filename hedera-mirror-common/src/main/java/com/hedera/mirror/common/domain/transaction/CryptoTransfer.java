@@ -59,7 +59,6 @@ public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
     @javax.persistence.Id
     private long consensusTimestamp;
 
-    @Convert(converter = AccountIdConverter.class)
     @javax.persistence.Id
     private long entityId;
 
