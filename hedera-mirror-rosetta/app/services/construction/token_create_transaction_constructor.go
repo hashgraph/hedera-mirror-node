@@ -35,22 +35,22 @@ import (
 )
 
 type tokenCreate struct {
-	AdminKey         publicKey        `json:"admin_key"`
+	AdminKey         types.PublicKey  `json:"admin_key"`
 	AutoRenewAccount hedera.AccountID `json:"auto_renew_account"`
 	AutoRenewPeriod  int64            `json:"auto_renew_period"`
 	Decimals         uint32           `json:"decimals"`
 	Expiry           int64            `json:"expiry"`
 	FreezeDefault    bool             `json:"freeze_default"`
-	FreezeKey        publicKey        `json:"freeze_key"`
+	FreezeKey        types.PublicKey  `json:"freeze_key"`
 	InitialSupply    uint64           `json:"initial_supply"`
-	KycKey           publicKey        `json:"kyc_key"`
+	KycKey           types.PublicKey  `json:"kyc_key"`
 	Memo             string           `json:"memo"`
 	Name             string           `json:"name" validate:"required"`
-	SupplyKey        publicKey        `json:"supply_key"`
+	SupplyKey        types.PublicKey  `json:"supply_key"`
 	SupplyType       string           `json:"supply_type"`
 	Symbol           string           `json:"symbol" validate:"required"`
 	Type             string           `json:"type"`
-	WipeKey          publicKey        `json:"wipe_key"`
+	WipeKey          types.PublicKey  `json:"wipe_key"`
 }
 
 type tokenCreateTransactionConstructor struct {
@@ -76,7 +76,7 @@ func (t *tokenCreateTransactionConstructor) Construct(
 		SetTokenSymbol(tokenCreate.Symbol).
 		SetTreasuryAccountID(treasury.ToSdkAccountId())
 
-	if !tokenCreate.AdminKey.isEmpty() {
+	if !tokenCreate.AdminKey.IsEmpty() {
 		tx.SetAdminKey(tokenCreate.AdminKey.PublicKey)
 	}
 
@@ -95,15 +95,15 @@ func (t *tokenCreateTransactionConstructor) Construct(
 		tx.SetExpirationTime(time.Unix(tokenCreate.Expiry, 0))
 	}
 
-	if !tokenCreate.FreezeKey.isEmpty() {
+	if !tokenCreate.FreezeKey.IsEmpty() {
 		tx.SetFreezeKey(tokenCreate.FreezeKey.PublicKey)
 	}
 
-	if !tokenCreate.KycKey.isEmpty() {
+	if !tokenCreate.KycKey.IsEmpty() {
 		tx.SetKycKey(tokenCreate.KycKey.PublicKey)
 	}
 
-	if !tokenCreate.SupplyKey.isEmpty() {
+	if !tokenCreate.SupplyKey.IsEmpty() {
 		tx.SetSupplyKey(tokenCreate.SupplyKey.PublicKey)
 	}
 
@@ -117,7 +117,7 @@ func (t *tokenCreateTransactionConstructor) Construct(
 		tx.SetTokenType(hedera.TokenTypeNonFungibleUnique)
 	}
 
-	if !tokenCreate.WipeKey.isEmpty() {
+	if !tokenCreate.WipeKey.IsEmpty() {
 		tx.SetWipeKey(tokenCreate.WipeKey.PublicKey)
 	}
 

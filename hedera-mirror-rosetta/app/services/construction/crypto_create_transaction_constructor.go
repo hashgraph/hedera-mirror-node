@@ -37,7 +37,7 @@ import (
 type cryptoCreate struct {
 	AutoRenewPeriod               int64             `json:"auto_renew_period"`
 	InitialBalance                int64             `json:"-"`
-	Key                           *publicKey        `json:"key" validate:"required"`
+	Key                           *types.PublicKey  `json:"key" validate:"required"`
 	MaxAutomaticTokenAssociations uint32            `json:"max_automatic_token_associations"`
 	Memo                          string            `json:"memo"`
 	ProxyAccountId                *hedera.AccountID `json:"proxy_account_id"`

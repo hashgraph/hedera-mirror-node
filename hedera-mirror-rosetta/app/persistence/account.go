@@ -31,6 +31,7 @@ import (
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
+	"github.com/jackc/pgtype"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -113,7 +114,7 @@ const (
                                  select id, deleted, timestamp_range
                                  from entity_history
                                  where alias = @alias and timestamp_range @> @consensus_end
-                                 order by lower(timestamp_range) desc`
+                                 order by timestamp_range desc`
 	selectCryptoEntityById = `select id, deleted, timestamp_range
                               from entity
                               where type = 'ACCOUNT' and id = @id
@@ -250,7 +251,10 @@ func (ar *accountRepository) getCryptoEntity(ctx context.Context, accountId type
 	var notFoundError *rTypes.Error
 	if accountId.HasAlias() {
 		query = selectCryptoEntityByAlias
-		args = []interface{}{sql.Named("alias", accountId.GetAlias()), sql.Named("consensus_end", consensusEnd)}
+		args = []interface{}{
+			sql.Named("alias", accountId.GetNetworkAlias()),
+			sql.Named("consensus_end", getInclusiveInt8Range(consensusEnd, consensusEnd)),
+		}
 		notFoundError = hErrors.AddErrorDetails(hErrors.ErrAccountNotFound, "reason",
 			"Account with the alias not found")
 	} else {
@@ -466,4 +470,14 @@ func getUpdatedTokenAmounts(
 	}
 
 	return amounts
+}
+
+func getInclusiveInt8Range(lower, upper int64) pgtype.Int8range {
+	return pgtype.Int8range{
+		Lower:     pgtype.Int8{Int: lower, Status: pgtype.Present},
+		Upper:     pgtype.Int8{Int: upper, Status: pgtype.Present},
+		LowerType: pgtype.Inclusive,
+		UpperType: pgtype.Inclusive,
+		Status:    pgtype.Present,
+	}
 }

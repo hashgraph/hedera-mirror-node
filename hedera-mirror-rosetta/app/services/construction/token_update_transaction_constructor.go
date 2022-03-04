@@ -35,18 +35,18 @@ import (
 
 type tokenUpdate struct {
 	tokenId          hedera.TokenID
-	AdminKey         publicKey        `json:"admin_key"`
+	AdminKey         types.PublicKey  `json:"admin_key"`
 	AutoRenewAccount hedera.AccountID `json:"auto_renew_account"`
 	AutoRenewPeriod  int64            `json:"auto_renew_period"` // in seconds
 	Expiry           int64            `json:"expiry"`            // nanos since epoch
-	FreezeKey        publicKey        `json:"freeze_key"`
-	KycKey           publicKey        `json:"kyc_key"`
+	FreezeKey        types.PublicKey  `json:"freeze_key"`
+	KycKey           types.PublicKey  `json:"kyc_key"`
 	Memo             string           `json:"memo"`
 	Name             string           `json:"name"`
-	SupplyKey        publicKey        `json:"supply_key"`
+	SupplyKey        types.PublicKey  `json:"supply_key"`
 	Symbol           string           `json:"symbol"`
 	Treasury         hedera.AccountID `json:"treasury"`
-	WipeKey          publicKey        `json:"wipe_key"`
+	WipeKey          types.PublicKey  `json:"wipe_key"`
 }
 
 type tokenUpdateTransactionConstructor struct {
@@ -64,7 +64,7 @@ func (t *tokenUpdateTransactionConstructor) Construct(
 
 	tx := hedera.NewTokenUpdateTransaction().SetTokenID(tokenUpdate.tokenId)
 
-	if !tokenUpdate.AdminKey.isEmpty() {
+	if !tokenUpdate.AdminKey.IsEmpty() {
 		tx.SetAdminKey(tokenUpdate.AdminKey.PublicKey)
 	}
 
@@ -80,11 +80,11 @@ func (t *tokenUpdateTransactionConstructor) Construct(
 		tx.SetExpirationTime(time.Unix(tokenUpdate.Expiry, 0))
 	}
 
-	if !tokenUpdate.FreezeKey.isEmpty() {
+	if !tokenUpdate.FreezeKey.IsEmpty() {
 		tx.SetFreezeKey(tokenUpdate.FreezeKey.PublicKey)
 	}
 
-	if !tokenUpdate.KycKey.isEmpty() {
+	if !tokenUpdate.KycKey.IsEmpty() {
 		tx.SetKycKey(tokenUpdate.KycKey.PublicKey)
 	}
 
@@ -96,7 +96,7 @@ func (t *tokenUpdateTransactionConstructor) Construct(
 		tx.SetTokenName(tokenUpdate.Name)
 	}
 
-	if !tokenUpdate.SupplyKey.isEmpty() {
+	if !tokenUpdate.SupplyKey.IsEmpty() {
 		tx.SetSupplyKey(tokenUpdate.SupplyKey.PublicKey)
 	}
 
@@ -108,7 +108,7 @@ func (t *tokenUpdateTransactionConstructor) Construct(
 		tx.SetTreasuryAccountID(tokenUpdate.Treasury)
 	}
 
-	if !tokenUpdate.WipeKey.isEmpty() {
+	if !tokenUpdate.WipeKey.IsEmpty() {
 		tx.SetWipeKey(tokenUpdate.WipeKey.PublicKey)
 	}
 

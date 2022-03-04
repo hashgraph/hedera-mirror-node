@@ -319,6 +319,7 @@ func TestNewAccountIdFromStringShardRealmAccount(t *testing.T) {
 			if !tt.expectErr {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.expected, accountId.String())
+				assert.Nil(t, accountId.GetNetworkAlias())
 			} else {
 				assert.NotNil(t, err)
 				assert.Equal(t, zeroAccountId, accountId)
@@ -332,16 +333,19 @@ func TestNewAccountIdFromStringAlias(t *testing.T) {
 		input            string
 		expectErr        bool
 		curveType        types.CurveType
+		networkAlias     []byte
 		sdkAccountString string
 	}{
 		{
 			input:            ed25519AliasString,
 			curveType:        types.Edwards25519,
+			networkAlias:     concatBytes(ed25519PublicKeyProtoPrefix, ed25519PublicKey.BytesRaw()),
 			sdkAccountString: "0.1." + ed25519PublicKey.String(),
 		},
 		{
 			input:            secp256k1AliasString,
 			curveType:        types.Secp256k1,
+			networkAlias:     concatBytes(ecdsaSecp256k1PublicKeyProtoPrefix, secp256k1PublicKey.BytesRaw()),
 			sdkAccountString: "0.1." + secp256k1PublicKey.String(),
 		},
 		{
@@ -364,6 +368,7 @@ func TestNewAccountIdFromStringAlias(t *testing.T) {
 			if !tt.expectErr {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.curveType, accountId.GetCurveType())
+				assert.Equal(t, tt.networkAlias, accountId.GetNetworkAlias())
 				assert.Equal(t, tt.sdkAccountString, accountId.ToSdkAccountId().String())
 			} else {
 				assert.NotNil(t, err)
@@ -378,16 +383,19 @@ func TestNewAccountIdFromAlias(t *testing.T) {
 		input            []byte
 		expectErr        bool
 		curveType        types.CurveType
+		networkAlias     []byte
 		sdkAccountString string
 	}{
 		{
 			input:            ed25519PublicKey.BytesRaw(),
 			curveType:        types.Edwards25519,
+			networkAlias:     concatBytes(ed25519PublicKeyProtoPrefix, ed25519PublicKey.BytesRaw()),
 			sdkAccountString: "0.1." + ed25519PublicKey.String(),
 		},
 		{
 			input:            secp256k1PublicKey.BytesRaw(),
 			curveType:        types.Secp256k1,
+			networkAlias:     concatBytes(ecdsaSecp256k1PublicKeyProtoPrefix, secp256k1PublicKey.BytesRaw()),
 			sdkAccountString: "0.1." + secp256k1PublicKey.String(),
 		},
 		{
@@ -406,6 +414,7 @@ func TestNewAccountIdFromAlias(t *testing.T) {
 			if !tt.expectErr {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.curveType, accountId.GetCurveType())
+				assert.Equal(t, tt.networkAlias, accountId.GetNetworkAlias())
 				assert.Equal(t, tt.sdkAccountString, accountId.ToSdkAccountId().String())
 			} else {
 				assert.NotNil(t, err)
@@ -440,27 +449,31 @@ func TestNewAccountIdFromEntityId(t *testing.T) {
 
 func TestNewAccountIdFromSdkAccountId(t *testing.T) {
 	tests := []struct {
-		input     hedera.AccountID
-		curveType types.CurveType
-		expectErr bool
-		hasAlias  bool
+		input        hedera.AccountID
+		curveType    types.CurveType
+		expectErr    bool
+		hasAlias     bool
+		networkAlias []byte
 	}{
 		{input: hedera.AccountID{Account: 150}},
 		{input: hedera.AccountID{Shard: 1, Realm: 2, Account: 150}},
 		{input: hedera.AccountID{Shard: 1, Realm: 2, Account: 150}},
 		{
-			input:     hedera.AccountID{Realm: 2, AliasKey: &ed25519PublicKey},
-			curveType: types.Edwards25519,
-			hasAlias:  true,
+			input:        hedera.AccountID{Realm: 2, AliasKey: &ed25519PublicKey},
+			curveType:    types.Edwards25519,
+			hasAlias:     true,
+			networkAlias: concatBytes(ed25519PublicKeyProtoPrefix, ed25519PublicKey.BytesRaw()),
 		},
 		{
-			input:     hedera.AccountID{Realm: 2, AliasKey: &secp256k1PublicKey},
-			curveType: types.Secp256k1,
-			hasAlias:  true,
+			input:        hedera.AccountID{Realm: 2, AliasKey: &secp256k1PublicKey},
+			curveType:    types.Secp256k1,
+			hasAlias:     true,
+			networkAlias: concatBytes(ecdsaSecp256k1PublicKeyProtoPrefix, secp256k1PublicKey.BytesRaw()),
 		},
 		{input: hedera.AccountID{Shard: 1 << 15}, expectErr: true},
 		{input: hedera.AccountID{Realm: 1 << 16}, expectErr: true},
 		{input: hedera.AccountID{Account: 1 << 32}, expectErr: true},
+		{input: hedera.AccountID{AliasKey: &hedera.PublicKey{}}, expectErr: true},
 	}
 
 	for _, tt := range tests {
@@ -471,10 +484,17 @@ func TestNewAccountIdFromSdkAccountId(t *testing.T) {
 				assert.Equal(t, tt.input.String(), accountId.ToSdkAccountId().String())
 				assert.Equal(t, tt.curveType, accountId.GetCurveType())
 				assert.Equal(t, tt.hasAlias, accountId.HasAlias())
+				assert.Equal(t, tt.networkAlias, accountId.GetNetworkAlias())
 			} else {
 				assert.NotNil(t, err)
 				assert.Equal(t, zeroAccountId, accountId)
 			}
 		})
 	}
+}
+
+func concatBytes(s1, s2 []byte) []byte {
+	r := make([]byte, len(s1))
+	copy(r, s1)
+	return append(r, s2...)
 }

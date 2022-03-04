@@ -22,25 +22,24 @@ package types
 
 import (
 	"encoding/hex"
+	"fmt"
 	"strings"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-sdk-go/v2"
-)
-
-const (
-	ed25519PublicKeySize   = 32
-	secp256k1PublicKeySize = 33
+	"github.com/pkg/errors"
 )
 
 type AccountId struct {
-	accountId domain.EntityId
-	aliasKey  *hedera.PublicKey
-	alias     []byte
-	curveType types.CurveType
+	accountId    domain.EntityId
+	aliasKey     *hedera.PublicKey
+	alias        []byte
+	curveType    types.CurveType
+	networkAlias []byte
 }
 
+// GetAlias returns the public key raw bytes as the account alias if the alias exists
 func (a AccountId) GetAlias() []byte {
 	if !a.HasAlias() {
 		return nil
@@ -57,6 +56,11 @@ func (a AccountId) GetCurveType() types.CurveType {
 
 func (a AccountId) GetId() int64 {
 	return a.accountId.EncodedId
+}
+
+// GetNetworkAlias returns the serialized Key message bytes of the account if there is an alias
+func (a AccountId) GetNetworkAlias() []byte {
+	return a.networkAlias
 }
 
 func (a AccountId) HasAlias() bool {
@@ -103,22 +107,16 @@ func NewAccountIdFromString(address string, shard, realm int64) (AccountId, erro
 }
 
 func NewAccountIdFromAlias(alias []byte, shard, realm int64) (AccountId, error) {
-	aliasKey, err := hedera.PublicKeyFromBytes(alias)
+	aliasKey, curveType, networkAlias, err := convertAlias(alias, hedera.PublicKey{})
 	if err != nil {
 		return AccountId{}, err
 	}
-	var curveType types.CurveType
-	switch len(alias) {
-	case ed25519PublicKeySize:
-		curveType = types.Edwards25519
-	case secp256k1PublicKeySize:
-		curveType = types.Secp256k1
-	}
 	return AccountId{
-		accountId: domain.EntityId{ShardNum: shard, RealmNum: realm},
-		alias:     alias,
-		aliasKey:  &aliasKey,
-		curveType: curveType,
+		accountId:    domain.EntityId{ShardNum: shard, RealmNum: realm},
+		alias:        alias,
+		aliasKey:     &aliasKey,
+		curveType:    curveType,
+		networkAlias: networkAlias,
 	}, nil
 }
 
@@ -129,18 +127,16 @@ func NewAccountIdFromEntityId(accountId domain.EntityId) AccountId {
 func NewAccountIdFromSdkAccountId(accountId hedera.AccountID) (AccountId, error) {
 	var alias []byte
 	var entityId domain.EntityId
+	var err error
 	var curveType types.CurveType
+	var networkAlias []byte
 	if accountId.AliasKey != nil {
 		alias = accountId.AliasKey.BytesRaw()
 		entityId = domain.EntityId{ShardNum: int64(accountId.Shard), RealmNum: int64(accountId.Realm)}
-		switch len(alias) {
-		case ed25519PublicKeySize:
-			curveType = types.Edwards25519
-		case secp256k1PublicKeySize:
-			curveType = types.Secp256k1
+		if _, curveType, networkAlias, err = convertAlias(nil, *accountId.AliasKey); err != nil {
+			return AccountId{}, err
 		}
 	} else {
-		var err error
 		entityId, err = domain.EntityIdOf(int64(accountId.Shard), int64(accountId.Realm), int64(accountId.Account))
 		if err != nil {
 			return AccountId{}, err
@@ -148,9 +144,41 @@ func NewAccountIdFromSdkAccountId(accountId hedera.AccountID) (AccountId, error)
 	}
 
 	return AccountId{
-		accountId: entityId,
-		alias:     alias,
-		aliasKey:  accountId.AliasKey,
-		curveType: curveType,
+		accountId:    entityId,
+		alias:        alias,
+		aliasKey:     accountId.AliasKey,
+		curveType:    curveType,
+		networkAlias: networkAlias,
 	}, nil
+}
+
+// convertAlias takes either an alias byte slice or an aliasKey as input, returns the aliasKey of type hedera.PublicKey,
+// the curve type of the public key, and the network alias which is a serialized protobuf Key message
+func convertAlias(alias []byte, aliasKey hedera.PublicKey) (hedera.PublicKey, types.CurveType, []byte, error) {
+	var err error
+	if len(alias) == 0 {
+		alias = aliasKey.BytesRaw()
+	} else {
+		aliasKey, err = hedera.PublicKeyFromBytes(alias)
+		if err != nil {
+			return hedera.PublicKey{}, "", nil, err
+		}
+	}
+
+	var curveType types.CurveType
+	switch aliasSize := len(alias); aliasSize {
+	case ed25519PublicKeySize:
+		curveType = types.Edwards25519
+	case ecdsaSecp256k1PublicKeySize:
+		curveType = types.Secp256k1
+	default:
+		return hedera.PublicKey{}, "", nil, errors.New(fmt.Sprintf("Invalid alias size - %d", aliasSize))
+	}
+
+	networkAlias, err := PublicKey{PublicKey: aliasKey}.ToAlias()
+	if err != nil {
+		return hedera.PublicKey{}, "", nil, err
+	}
+
+	return aliasKey, curveType, networkAlias, nil
 }

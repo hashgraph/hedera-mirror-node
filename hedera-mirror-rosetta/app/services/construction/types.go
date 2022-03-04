@@ -26,8 +26,6 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
-	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
 // TransactionConstructor defines the methods to construct a transaction
@@ -49,17 +47,18 @@ type TransactionConstructor interface {
 	Preprocess(ctx context.Context, operations types.OperationSlice) ([]types.AccountId, *rTypes.Error)
 }
 
-// embed SDK PublicKey and implement the Unmarshaler interface
-type publicKey struct {
-	hedera.PublicKey
-}
-
-func (pk *publicKey) UnmarshalJSON(data []byte) error {
-	var err error
-	pk.PublicKey, err = hedera.PublicKeyFromString(tools.SafeUnquote(string(data)))
-	return err
-}
-
-func (pk *publicKey) isEmpty() bool {
-	return len(pk.PublicKey.Bytes()) == 0
-}
+//
+// // embed SDK PublicKey and implement the Unmarshaler interface
+// type publicKey struct {
+// 	hedera.PublicKey
+// }
+//
+// func (pk *publicKey) UnmarshalJSON(data []byte) error {
+// 	var err error
+// 	pk.PublicKey, err = hedera.PublicKeyFromString(tools.SafeUnquote(string(data)))
+// 	return err
+// }
+//
+// func (pk *publicKey) isEmpty() bool {
+// 	return len(pk.PublicKey.Bytes()) == 0
+// }
