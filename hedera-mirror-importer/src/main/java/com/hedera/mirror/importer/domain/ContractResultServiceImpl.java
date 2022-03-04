@@ -175,6 +175,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private List<Long> getCreatedContractIds(ContractFunctionResult functionResult, RecordItem recordItem,
                                              ContractResult contractResult) {
         List<Long> createdContractIds = new ArrayList<>();
@@ -182,8 +183,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
             EntityId contractId = entityIdService.lookup(createdContractId);
             createdContractIds.add(contractId.getId());
-            if (persist && !EntityId.isEmpty(contractId) && !contractId.equals(
-                    contractResult.getContractId())) {
+            if (persist && !EntityId.isEmpty(contractId) && !contractId.equals(contractResult.getContractId())) {
                 processCreatedContractEntity(recordItem, contractId);
             }
         }

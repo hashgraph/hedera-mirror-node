@@ -130,7 +130,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     FileDataRepository fileDataRepository,
                                     EntityRepository entityRepository,
                                     RecordParserProperties parserProperties,
-                                    EntityIdService entityIdService,
                                     ContractResultService contractResultService) {
         this.addressBookService = addressBookService;
         this.contractResultService = contractResultService;

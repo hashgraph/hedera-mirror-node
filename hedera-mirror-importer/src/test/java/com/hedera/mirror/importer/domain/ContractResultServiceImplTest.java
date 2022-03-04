@@ -110,7 +110,7 @@ class ContractResultServiceImplTest extends IntegrationTest {
                 TransactionType.CONTRACTCREATEINSTANCE);
     }
 
-    @Disabled
+    @Disabled("Precompiled input value not yet supported")
     @Test
     void getContractResultOnTokenMintFT() {
         entityProperties.getPersist().setContractResults(true);
@@ -124,7 +124,7 @@ class ContractResultServiceImplTest extends IntegrationTest {
                 TransactionType.TOKENMINT);
     }
 
-    @Disabled
+    @Disabled("Precompiled input value not yet supported")
     @Test
     void getContractResultOnTokenMintNFT() {
         entityProperties.getPersist().setContractResults(true);
