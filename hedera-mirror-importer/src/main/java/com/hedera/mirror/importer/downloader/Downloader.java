@@ -78,6 +78,9 @@ import com.hedera.mirror.importer.util.Utility;
 
 public abstract class Downloader<T extends StreamFile> {
     public static final String STREAM_CLOSE_LATENCY_METRIC_NAME = "hedera.mirror.stream.close.latency";
+    private static final String HASH_TYPE_FILE = "File";
+    private static final String HASH_TYPE_METADATA = "Metadata";
+    private static final String HASH_TYPE_RUNNING = "Running";
 
     protected final Logger log = LogManager.getLogger(getClass());
     protected final DownloaderProperties downloaderProperties;
@@ -507,11 +510,12 @@ public abstract class Downloader<T extends StreamFile> {
         String expectedPrevHash = lastStreamFile.get().map(StreamFile::getHash).orElse(null);
 
         if (!verifyHashChain(streamFile, expectedPrevHash)) {
-            throw new HashMismatchException(filename, expectedPrevHash, streamFile.getPreviousHash(), "Running");
+            throw new HashMismatchException(filename, expectedPrevHash, streamFile
+                    .getPreviousHash(), HASH_TYPE_RUNNING);
         }
 
-        verifyHash(filename, streamFile.getFileHash(), signature.getFileHashAsHex(), "File");
-        verifyHash(filename, streamFile.getMetadataHash(), signature.getMetadataHashAsHex(), "Metadata");
+        verifyHash(filename, streamFile.getFileHash(), signature.getFileHashAsHex(), HASH_TYPE_FILE);
+        verifyHash(filename, streamFile.getMetadataHash(), signature.getMetadataHashAsHex(), HASH_TYPE_METADATA);
     }
 
     /**
