@@ -58,16 +58,16 @@ import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
 import software.amazon.awssdk.services.s3.model.RequestPayer;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
+import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.common.domain.addressbook.AddressBook;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
@@ -78,23 +78,24 @@ import com.hedera.mirror.importer.util.Utility;
 
 public abstract class Downloader<T extends StreamFile> {
     public static final String STREAM_CLOSE_LATENCY_METRIC_NAME = "hedera.mirror.stream.close.latency";
+    private static final String HASH_TYPE_FILE = "File";
+    private static final String HASH_TYPE_METADATA = "Metadata";
+    private static final String HASH_TYPE_RUNNING = "Running";
 
     protected final Logger log = LogManager.getLogger(getClass());
-    private final S3AsyncClient s3Client;
-    private final AddressBookService addressBookService;
-    private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
     protected final DownloaderProperties downloaderProperties;
-    private final MirrorProperties mirrorProperties;
-    private final CommonDownloaderProperties commonDownloaderProperties;
     protected final NodeSignatureVerifier nodeSignatureVerifier;
     protected final SignatureFileReader signatureFileReader;
     protected final StreamFileReader<T, ?> streamFileReader;
     protected final StreamFileNotifier streamFileNotifier;
     protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
-    private final StreamType streamType;
-
     protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
-
+    private final S3AsyncClient s3Client;
+    private final AddressBookService addressBookService;
+    private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
+    private final MirrorProperties mirrorProperties;
+    private final CommonDownloaderProperties commonDownloaderProperties;
+    private final StreamType streamType;
     // Metrics
     private final MeterRegistry meterRegistry;
     private final Timer cloudStorageLatencyMetric;
@@ -509,11 +510,12 @@ public abstract class Downloader<T extends StreamFile> {
         String expectedPrevHash = lastStreamFile.get().map(StreamFile::getHash).orElse(null);
 
         if (!verifyHashChain(streamFile, expectedPrevHash)) {
-            throw new HashMismatchException(filename, expectedPrevHash, streamFile.getPreviousHash());
+            throw new HashMismatchException(filename, expectedPrevHash, streamFile
+                    .getPreviousHash(), HASH_TYPE_RUNNING);
         }
 
-        verifyHash(filename, streamFile.getFileHash(), signature.getFileHashAsHex());
-        verifyHash(filename, streamFile.getMetadataHash(), signature.getMetadataHashAsHex());
+        verifyHash(filename, streamFile.getFileHash(), signature.getFileHashAsHex(), HASH_TYPE_FILE);
+        verifyHash(filename, streamFile.getMetadataHash(), signature.getMetadataHashAsHex(), HASH_TYPE_METADATA);
     }
 
     /**
@@ -523,9 +525,9 @@ public abstract class Downloader<T extends StreamFile> {
      * @param actual   the actual hash
      * @param expected the expected hash
      */
-    private void verifyHash(String filename, String actual, String expected) {
+    private void verifyHash(String filename, String actual, String expected, String hashType) {
         if (!Objects.equals(actual, expected)) {
-            throw new HashMismatchException(filename, expected, actual);
+            throw new HashMismatchException(filename, expected, actual, hashType);
         }
     }
 
