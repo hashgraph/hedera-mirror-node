@@ -48,6 +48,7 @@ import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityRecordItemListener;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
+import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @Log4j2
 @Named
@@ -60,6 +61,7 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
     private final NamedParameterJdbcOperations jdbcOperations;
     private final MirrorProperties mirrorProperties;
     private final RecordStreamFileListener recordStreamFileListener;
+    private final TransactionRepository transactionRepository;
     private final Set<Long> timestamps = new HashSet<>();
 
     @Override
@@ -117,8 +119,7 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
                 "  returning ct.*" +
                 ")" +
                 "update crypto_transfer ct set errata = 'DELETE' from spurious_transfer st " +
-                "where ct.consensus_timestamp = st.consensus_timestamp and ct.amount = st.amount * -1 " +
-                "and ct.payer_account_id = ct.entity_id";
+                "where ct.consensus_timestamp = st.consensus_timestamp and ct.amount = st.amount * -1";
         jdbcOperations.getJdbcOperations().update(sql);
     }
 
@@ -137,21 +138,30 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
                 byte[] transactionBytes = in.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction");
                 var transactionRecord = TransactionRecord.parseFrom(recordBytes);
                 var transaction = Transaction.parseFrom(transactionBytes);
-
                 var recordItem = new RecordItem(transaction, transactionRecord);
-                entityRecordItemListener.onItem(recordItem);
-                consensusTimestamps.add(recordItem.getConsensusTimestamp());
+
+                if (transactionRepository.findById(recordItem.getConsensusTimestamp()).isEmpty()) {
+                    entityRecordItemListener.onItem(recordItem);
+                    consensusTimestamps.add(recordItem.getConsensusTimestamp());
+                }
             } catch (IOException e) {
                 recordStreamFileListener.onError();
                 throw new FileOperationException("Error parsing errata file " + name, e);
             }
         }
 
+        if (consensusTimestamps.isEmpty()) {
+            return;
+        }
+
         recordStreamFileListener.onEnd(null);
         var ids = new MapSqlParameterSource("ids", consensusTimestamps);
         jdbcOperations.update("update crypto_transfer set errata = 'INSERT' where consensus_timestamp in (:ids)", ids);
         jdbcOperations.update("update transaction set errata = 'INSERT' where consensus_timestamp in (:ids)", ids);
-        log.info("Inserted {} missing transactions", consensusTimestamps.size());
+
+        Long min = consensusTimestamps.stream().min(Long::compareTo).get();
+        Long max = consensusTimestamps.stream().max(Long::compareTo).get();
+        log.info("Inserted {} missing transactions between {} and {}", consensusTimestamps.size(), min, max);
     }
 
     private Set<Long> getTimestamps() {

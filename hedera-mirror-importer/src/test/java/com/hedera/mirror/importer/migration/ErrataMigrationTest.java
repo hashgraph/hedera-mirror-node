@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import lombok.RequiredArgsConstructor;
+import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -31,8 +32,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -71,7 +74,7 @@ public class ErrataMigrationTest extends IntegrationTest {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         domainBuilder.accountBalanceFile().persist();
         domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP1)).persist();
-        insertCryptoTransfers(1L, 2L);
+        spuriousTransfer(1L, 10, TransactionType.CRYPTOTRANSFER);
 
         errataMigration.doMigrate();
 
@@ -87,16 +90,32 @@ public class ErrataMigrationTest extends IntegrationTest {
         domainBuilder.accountBalanceFile().persist();
         domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP1)).persist();
         domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP2)).persist();
-        insertCryptoTransfers(1L, 1L);
-        insertCryptoTransfers(1577836799000000000L, 2L); // Outside errata period
+        spuriousTransfer(1L, 10, TransactionType.CRYPTOTRANSFER); // Expected
+        spuriousTransfer(2L, 15, TransactionType.CRYPTOTRANSFER); // Expected
+        spuriousTransfer(3L, 22, TransactionType.CRYPTOTRANSFER); // Wrong result
+        spuriousTransfer(4L, 10, TransactionType.CRYPTODELETE);   // Wrong type
+        spuriousTransfer(1577836799000000000L, 10, TransactionType.CRYPTOTRANSFER); // Outside errata period
 
         errataMigration.doMigrate();
 
         assertBalanceOffsets(2);
-        assertErrataTransfers(ErrataType.INSERT, 92);
-        assertErrataTransfers(ErrataType.DELETE, 2);
         assertErrataTransactions(ErrataType.INSERT, 31);
         assertErrataTransactions(ErrataType.DELETE, 0);
+        assertErrataTransfers(ErrataType.INSERT, 92);
+        assertErrataTransfers(ErrataType.DELETE, 4)
+                .extracting(CryptoTransfer::getConsensusTimestamp)
+                .containsOnly(1L, 2L);
+    }
+
+    @Test
+    void migrateIdempotency() throws Exception {
+        migrateMainnet();
+        errataMigration.doMigrate();
+        assertBalanceOffsets(2);
+        assertErrataTransactions(ErrataType.INSERT, 31);
+        assertErrataTransactions(ErrataType.DELETE, 0);
+        assertErrataTransfers(ErrataType.INSERT, 92);
+        assertErrataTransfers(ErrataType.DELETE, 4);
     }
 
     @Test
@@ -134,8 +153,8 @@ public class ErrataMigrationTest extends IntegrationTest {
                 .hasSize(expected);
     }
 
-    private void assertErrataTransfers(ErrataType errata, int expected) {
-        assertThat(cryptoTransferRepository.findAll())
+    private IterableAssert<CryptoTransfer> assertErrataTransfers(ErrataType errata, int expected) {
+        return assertThat(cryptoTransferRepository.findAll())
                 .filteredOn(c -> c.getErrata() == errata)
                 .hasSize(expected);
     }
@@ -146,18 +165,22 @@ public class ErrataMigrationTest extends IntegrationTest {
                 .hasSize(expected);
     }
 
-    private void insertCryptoTransfers(long consensusTimestamp, long entityId) {
+    private void spuriousTransfer(long consensusTimestamp, int result, TransactionType type) {
         var transaction = domainBuilder.transaction()
-                .customize(t -> t.consensusTimestamp(consensusTimestamp).result(10))
+                .customize(t -> t.consensusTimestamp(consensusTimestamp).result(result).type(type.getProtoId()))
                 .persist();
         long amount = 100000L;
-        long payer = transaction.getPayerAccountId().getId();
+        long payer = transaction.getPayerAccountId().getId() + 1000L;
+        long entityId = transaction.getEntityId().getId() + 1000L;
+        long nonFeePayer = consensusTimestamp % 2 == 0 ? entityId : payer;
 
         insertCryptoTransfer(transaction, entityId, amount);
-        insertCryptoTransfer(transaction, payer, -amount);
+        insertCryptoTransfer(transaction, nonFeePayer, -amount);
         insertCryptoTransfer(transaction, 3, 1L);
         insertCryptoTransfer(transaction, 98, 2L);
-        insertCryptoTransfer(transaction, payer, -1L - 2L - amount);
+        insertCryptoTransfer(transaction, 98, 4L);
+        insertCryptoTransfer(transaction, payer, -3L);
+        insertCryptoTransfer(transaction, payer, -4L);
     }
 
     private void insertCryptoTransfer(Transaction transaction, long entityId, long amount) {

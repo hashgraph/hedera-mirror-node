@@ -85,3 +85,39 @@ pg_restore -h $NEW_POSTGRESQL_DB_IP -U mirror_node \
 Note: `-j` works the same way as for `pg_dump`. The single transaction mode can't be used together with the parallel
 mode. As a result, if the command is interrupted, the database will have partial data, and it needs to be restored using
 the saved snapshot before retry.
+
+## Errata
+
+Some tables may contain errata information to workaround known issues with the stream files. The state of the consensus
+nodes was never impacted, only the externalization of these changes to the stream files that the mirror node consumes.
+There were three instances of bugs in the node software that misrepresented the side-effects of certain user
+transactions in the balance and record streams.
+
+### Account Balance File Skew
+
+* Period: September 13, 2019 to September 08, 2020
+* Scope: 6949 account balance files
+* Problem: Early account balances file did not respect the invariant that all transfers less than or equal to the
+  timestamp of the file are reflected within that file.
+* Solution: Fixed in Hedera Services in Sept 2020. Fixed in Mirror Node v0.53.0 by adding
+  a `account_balance_file.time_offset` field with a value of `-1` that is used as an adjustment to the balance file's
+  consensus timestamp for use when querying transfers.
+
+### Failed Transfers in Record
+
+* Period: September 14, 2019 to October 3, 2019
+* Scope: Affected the records of 1177 transactions.
+* Problem: When a crypto transfer failed due to an insufficient account balance, the attempted transfers were
+  nonetheless listed in the record.
+* Solution: Fixed in Hedera Services v0.4.0 late 2019. Fixed in Mirror Node in v0.53.0 by adding an `errata` field to
+  the `crypto_transfer` table and setting the spurious transfers' `errata` field to `DELETE` to indicate they should be
+  omitted.
+
+### Record Missing for insufficient fee funding
+
+* Period: September 14, 2019 to September 18, 2019
+* Scope: Affected the records of 31 transactions
+* Problem: When a transaction over-bid the balance of its payer account as a fee payment, its record was omitted from
+  the stream. When a transaction’s payer account could not afford the network fee, its record was omitted.
+* Solution: Fixed in Hedera Services v0.4.0 late 2019. Fixed in Mirror Node in v0.53.0 by adding an `errata` field
+  to `crypto_transfer` and `transaction` tables and inserting the missing rows with the `errata` field set to `INSERT`.
