@@ -22,6 +22,7 @@ package types
 
 import (
 	"encoding/hex"
+	"fmt"
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
@@ -335,18 +336,21 @@ func TestNewAccountIdFromStringAlias(t *testing.T) {
 		curveType        types.CurveType
 		networkAlias     []byte
 		sdkAccountString string
+		shard            int64
+		realm            int64
 	}{
 		{
 			input:            ed25519AliasString,
 			curveType:        types.Edwards25519,
 			networkAlias:     concatBytes(ed25519PublicKeyProtoPrefix, ed25519PublicKey.BytesRaw()),
 			sdkAccountString: "0.1." + ed25519PublicKey.String(),
+			realm:            1,
 		},
 		{
 			input:            secp256k1AliasString,
 			curveType:        types.Secp256k1,
 			networkAlias:     concatBytes(ecdsaSecp256k1PublicKeyProtoPrefix, secp256k1PublicKey.BytesRaw()),
-			sdkAccountString: "0.1." + secp256k1PublicKey.String(),
+			sdkAccountString: "0.0." + secp256k1PublicKey.String(),
 		},
 		{
 			input:     "",
@@ -360,11 +364,18 @@ func TestNewAccountIdFromStringAlias(t *testing.T) {
 			input:     "xyz",
 			expectErr: true,
 		},
+		{
+			input:     ed25519AliasString,
+			shard:     -1,
+			realm:     -1,
+			expectErr: true,
+		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			accountId, err := NewAccountIdFromString(tt.input, 0, 1)
+		name := fmt.Sprintf("alias:'%s',shard:%d,reaml:%d", tt.input, tt.shard, tt.realm)
+		t.Run(name, func(t *testing.T) {
+			accountId, err := NewAccountIdFromString(tt.input, tt.shard, tt.realm)
 			if !tt.expectErr {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.curveType, accountId.GetCurveType())

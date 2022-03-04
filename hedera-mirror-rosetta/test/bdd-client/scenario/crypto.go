@@ -33,7 +33,7 @@ import (
 type cryptoFeature struct {
 	*baseFeature
 	aliasAddress  string
-	newAccountId  *hedera.AccountID // created by crypto create tx
+	newAccountId  *hedera.AccountID // new account created during test
 	newAccountKey *hedera.PrivateKey
 }
 

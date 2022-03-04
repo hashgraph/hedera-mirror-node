@@ -114,7 +114,6 @@ func makeTransaction(entityId *domain.EntityId, hash string) *types.Transaction 
 			{
 				AccountId: account,
 				Amount:    &hbarAmount,
-				Index:     0,
 				Status:    statusSuccess,
 				Type:      types.TransactionTypes[14],
 			},

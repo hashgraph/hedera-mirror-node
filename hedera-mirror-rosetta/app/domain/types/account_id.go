@@ -91,6 +91,8 @@ func (a AccountId) ToSdkAccountId() hedera.AccountID {
 	}
 }
 
+// NewAccountIdFromString creates AccountId from the address string. If the address is in the shard.realm.num form,
+// shard and realm are ignored. The only valid form of the alias address is the hex string of the raw public key bytes.
 func NewAccountIdFromString(address string, shard, realm int64) (AccountId, error) {
 	if strings.Contains(address, ".") {
 		entityId, err := domain.EntityIdFromString(address)
@@ -107,6 +109,9 @@ func NewAccountIdFromString(address string, shard, realm int64) (AccountId, erro
 }
 
 func NewAccountIdFromAlias(alias []byte, shard, realm int64) (AccountId, error) {
+	if shard < 0 || realm < 0 {
+		return AccountId{}, errors.New("shard and realm must be positive integers")
+	}
 	aliasKey, curveType, networkAlias, err := convertAlias(alias, hedera.PublicKey{})
 	if err != nil {
 		return AccountId{}, err
