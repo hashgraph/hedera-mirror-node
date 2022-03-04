@@ -22,6 +22,7 @@ package scenario
 
 import (
 	"context"
+	"encoding/hex"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/cucumber/godog"
@@ -31,19 +32,15 @@ import (
 
 type cryptoFeature struct {
 	*baseFeature
-	newAccountId    *hedera.AccountID
-	newAccountKey   *hedera.PrivateKey
-	transactionHash string
+	aliasAddress  string
+	newAccountId  *hedera.AccountID // created by crypto create tx
+	newAccountKey *hedera.PrivateKey
 }
 
 func (c *cryptoFeature) createCryptoAccount(ctx context.Context) error {
-	sk, err := hedera.GeneratePrivateKey()
-	if err != nil {
-		log.Errorf("Failed to generate private key for new account: %v", err)
+	if err := c.generateKey(); err != nil {
 		return err
 	}
-	c.newAccountKey = &sk
-	log.Debug("Generated private key for new account")
 
 	operations := []*types.Operation{
 		{
@@ -51,11 +48,11 @@ func (c *cryptoFeature) createCryptoAccount(ctx context.Context) error {
 			Account:             getRosettaAccountIdentifier(testClient.GetOperator(0).Id),
 			Amount: &types.Amount{
 				// fund 10 hbar so the account can pay the transaction to delete itself
-				Value:    "1000000000",
+				Value:    "-1000000000",
 				Currency: currencyHbar,
 			},
 			Type:     operationTypeCryptoCreateAccount,
-			Metadata: map[string]interface{}{"key": sk.PublicKey().String()},
+			Metadata: map[string]interface{}{"key": c.newAccountKey.PublicKey().String()},
 		},
 	}
 
@@ -86,6 +83,67 @@ func (c *cryptoFeature) verifyCryptoCreateTransaction(ctx context.Context) error
 	}
 	c.newAccountId = &accountId
 	log.Infof("Successfully retrieved new account %s from transaction", accountIdStr)
+
+	return nil
+}
+
+func (c *cryptoFeature) createCryptoAccountByAlias(ctx context.Context) error {
+	if err := c.generateKey(); err != nil {
+		return err
+	}
+
+	log.Infof("Transfer some hbar to new alias %s", c.aliasAddress)
+	operations := []*types.Operation{
+		{
+			OperationIdentifier: &types.OperationIdentifier{Index: 0},
+			Account:             getRosettaAccountIdentifier(testClient.GetOperator(0).Id),
+			Amount: &types.Amount{
+				// fund 10 hbar so the account can pay the transaction to delete itself
+				Value:    "-1000000000",
+				Currency: currencyHbar,
+			},
+			Type: operationTypeCryptoTransfer,
+		},
+		{
+			OperationIdentifier: &types.OperationIdentifier{Index: 1},
+			Account:             &types.AccountIdentifier{Address: c.aliasAddress},
+			Amount: &types.Amount{
+				Value:    "1000000000",
+				Currency: currencyHbar,
+			},
+			Type: operationTypeCryptoTransfer,
+		},
+	}
+	return c.submit(ctx, operations, nil)
+}
+
+func (c *cryptoFeature) verifyCryptoTransferAliasTransaction(ctx context.Context) error {
+	transaction, err := c.findTransaction(ctx, operationTypeCryptoTransfer)
+	if err != nil {
+		return err
+	}
+
+	if err = assertTransactionAll(
+		transaction,
+		assertTransactionOpSuccess,
+		assertTransactionOpCount(2, gte),
+		assertTransactionOpType(operationTypeCryptoTransfer),
+	); err != nil {
+		return err
+	}
+
+	resp, err := testClient.GetAccountBalance(ctx, &types.AccountIdentifier{Address: c.aliasAddress})
+	if err != nil {
+		return err
+	}
+	accountIdStr := resp.Metadata["account_id"].(string)
+	accountId, err := hedera.AccountIDFromString(accountIdStr)
+	if err != nil {
+		log.Errorf("Invalid account id: %s", accountIdStr)
+		return err
+	}
+	c.newAccountId = &accountId
+	log.Infof("Successfully retrieved new account %s from account balance endpoint", accountIdStr)
 
 	return nil
 }
@@ -136,16 +194,30 @@ func (c *cryptoFeature) verifyCryptoTransferTransaction(ctx context.Context) err
 }
 
 func (c *cryptoFeature) cleanup(ctx context.Context, s *godog.Scenario, err error) (context.Context, error) {
+	log.Info("Cleaning up crypto feature")
 	c.baseFeature.cleanup()
 
 	if c.newAccountId != nil {
 		testClient.DeleteAccount(*c.newAccountId, c.newAccountKey) // #nosec
 	}
 
+	c.aliasAddress = ""
 	c.newAccountId = nil
 	c.newAccountKey = nil
 
 	return ctx, err
+}
+
+func (c *cryptoFeature) generateKey() error {
+	sk, err := hedera.PrivateKeyGenerateEd25519()
+	if err != nil {
+		log.Errorf("Failed to generate private key for new account: %v", err)
+		return err
+	}
+	c.newAccountKey = &sk
+	c.aliasAddress = hex.EncodeToString(sk.PublicKey().BytesRaw())
+	log.Debug("Generated private key for new account")
+	return nil
 }
 
 func initializeCryptoScenario(ctx *godog.ScenarioContext) {
@@ -155,6 +227,10 @@ func initializeCryptoScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Step("I create a crypto account", crypto.createCryptoAccount)
 	ctx.Step("the DATA API should show the CryptoCreate transaction", crypto.verifyCryptoCreateTransaction)
+
+	ctx.Step("I transfer some hbar to a new alias", crypto.createCryptoAccountByAlias)
+	ctx.Step("the DATA API should show the CryptoTransfer transaction and new account id",
+		crypto.verifyCryptoTransferAliasTransaction)
 
 	ctx.Step("I transfer some hbar to the treasury account", crypto.transferHbarToTreasury)
 	ctx.Step("^the DATA API should show the CryptoTransfer transaction$", crypto.verifyCryptoTransferTransaction)

@@ -105,7 +105,7 @@ func (c *cryptoCreateTransactionConstructor) Parse(_ context.Context, transactio
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
-	amount := types.HbarAmount{Value: cryptoCreateTransaction.GetInitialBalance().AsTinybar()}
+	amount := types.HbarAmount{Value: -cryptoCreateTransaction.GetInitialBalance().AsTinybar()}
 	payer, err := types.NewAccountIdFromSdkAccountId(*cryptoCreateTransaction.GetTransactionID().AccountID)
 	if err != nil {
 		return nil, nil, errors.ErrInvalidAccount
@@ -171,8 +171,8 @@ func (c *cryptoCreateTransactionConstructor) preprocess(operations types.Operati
 	if _, ok := amount.(*types.HbarAmount); !ok {
 		log.Errorf("Operation amount currency is not HBAR: %v", operation.Amount)
 		return nil, nil, errors.ErrInvalidCurrency
-	} else if amount.GetValue() < 0 {
-		log.Errorf("Initial balance %d is < 0", amount.GetValue())
+	} else if amount.GetValue() > 0 {
+		log.Errorf("Initial transfer %d is > 0", amount.GetValue())
 		return nil, nil, errors.ErrInvalidOperationsAmount
 	}
 
@@ -182,7 +182,7 @@ func (c *cryptoCreateTransactionConstructor) preprocess(operations types.Operati
 		return nil, nil, rErr
 	}
 
-	cryptoCreate.InitialBalance = amount.GetValue()
+	cryptoCreate.InitialBalance = -amount.GetValue()
 
 	return cryptoCreate, &operation.AccountId, nil
 }

@@ -290,7 +290,7 @@ func assertCryptoCreateTransaction(
 func getCryptoCreateOperations() types.OperationSlice {
 	operation := types.Operation{
 		AccountId: accountIdA,
-		Amount:    &types.HbarAmount{Value: initialBalance},
+		Amount:    &types.HbarAmount{Value: -initialBalance},
 		Type:      types.OperationTypeCryptoCreateAccount,
 		Metadata: map[string]interface{}{
 			"auto_renew_period":                autoRenewPeriod,
