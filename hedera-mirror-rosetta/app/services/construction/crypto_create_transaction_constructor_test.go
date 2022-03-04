@@ -141,6 +141,20 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 			expectError: true,
 		},
 		{
+			name: "OutOfRangePayerAccountId",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewAccountCreateTransaction().
+					SetAccountMemo(memo).
+					SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
+					SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
+					SetKey(newAccountPublicKey).
+					SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
+					SetProxyAccountID(proxyAccountId).
+					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+			},
+			expectError: true,
+		},
+		{
 			name: "TransactionIDNotSet",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewAccountCreateTransaction().

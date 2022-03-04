@@ -194,6 +194,22 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestParse() {
 			expectError: true,
 		},
 		{
+			name: "OutOfRangeAccountId",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenFreeze {
+					return hedera.NewTokenFreezeTransaction().
+						SetAccountID(outOfRangeAccountId).
+						SetTokenID(tokenIdA).
+						SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+				}
+				return hedera.NewTokenUnfreezeTransaction().
+					SetAccountID(outOfRangeAccountId).
+					SetTokenID(tokenIdA).
+					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+			},
+			expectError: true,
+		},
+		{
 			name: "TransactionMismatch",
 			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == types.OperationTypeTokenFreeze {
@@ -266,13 +282,43 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestPreprocess() {
 			expectError:      true,
 		},
 		{
-			name:             "InvalidOperationMetadata",
+			name:             "ZeroPayerMetadata",
+			updateOperations: updateOperationMetadata("payer", "0.0.0"),
+			expectError:      true,
+		},
+		{
+			name:             "InvalidPayerMetadata",
 			updateOperations: updateOperationMetadata("payer", "x.y.z"),
+			expectError:      true,
+		},
+		{
+			name:             "MissingPayerMetadata",
+			updateOperations: deleteOperationMetadata("payer"),
+			expectError:      true,
+		},
+		{
+			name:             "OutOfRangePayerMetadata",
+			updateOperations: updateOperationMetadata("payer", "0.65536.4294967296"),
 			expectError:      true,
 		},
 		{
 			name:             "MultipleOperations",
 			updateOperations: addOperation,
+			expectError:      true,
+		},
+		{
+			name:             "InvalidAmount",
+			updateOperations: updateAmount(&types.HbarAmount{}),
+			expectError:      true,
+		},
+		{
+			name:             "NegativeAmountValue",
+			updateOperations: updateAmountValue(-100),
+			expectError:      true,
+		},
+		{
+			name:             "MissingAmount",
+			updateOperations: updateAmount(nil),
 			expectError:      true,
 		},
 		{

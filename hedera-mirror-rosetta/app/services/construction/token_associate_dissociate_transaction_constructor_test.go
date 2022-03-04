@@ -255,6 +255,22 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 			expectError:    true,
 		},
 		{
+			name: "OutOfRangeAccountId",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenAssociate {
+					return hedera.NewTokenAssociateTransaction().
+						SetAccountID(outOfRangeAccountId).
+						SetTokenIDs(tokenIdA, tokenIdB, tokenIdC).
+						SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+				}
+				return hedera.NewTokenDissociateTransaction().
+					SetAccountID(outOfRangeAccountId).
+					SetTokenIDs(tokenIdA, tokenIdB, tokenIdC).
+					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+			},
+			expectError: true,
+		},
+		{
 			name: "TransactionMismatch",
 			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == types.OperationTypeTokenAssociate {

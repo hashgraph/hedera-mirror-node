@@ -138,12 +138,12 @@ func (c *cryptoTransferTransactionConstructor) Parse(_ context.Context, transact
 		numOperations += len(nftTransfers) * 2
 	}
 	operations := make(types.OperationSlice, 0, numOperations)
-	var rErr *rTypes.Error
 
 	for accountId, hbarAmount := range hbarTransferMap {
+		var err *rTypes.Error
 		amount := &types.HbarAmount{Value: hbarAmount.AsTinybar()}
-		if operations, rErr = c.addOperation(accountId, amount, operations); rErr != nil {
-			return nil, nil, rErr
+		if operations, err = c.addOperation(accountId, amount, operations); err != nil {
+			return nil, nil, err
 		}
 	}
 
@@ -154,8 +154,8 @@ func (c *cryptoTransferTransactionConstructor) Parse(_ context.Context, transact
 		}
 		for _, tokenTransfer := range tokenTransfers {
 			tokenAmount := types.NewTokenAmount(domainToken, tokenTransfer.Amount)
-			if operations, rErr = c.addOperation(tokenTransfer.AccountID, tokenAmount, operations); err != nil {
-				return nil, nil, rErr
+			if operations, err = c.addOperation(tokenTransfer.AccountID, tokenAmount, operations); err != nil {
+				return nil, nil, err
 			}
 		}
 	}
@@ -167,13 +167,13 @@ func (c *cryptoTransferTransactionConstructor) Parse(_ context.Context, transact
 		}
 		for _, nftTransfer := range nftTransfers {
 			tokenAmount := types.NewTokenAmount(domainToken, 1).SetSerialNumbers([]int64{nftTransfer.SerialNumber})
-			if operations, rErr = c.addOperation(nftTransfer.ReceiverAccountID, tokenAmount, operations); rErr != nil {
-				return nil, nil, rErr
+			if operations, err = c.addOperation(nftTransfer.ReceiverAccountID, tokenAmount, operations); err != nil {
+				return nil, nil, err
 			}
 
 			tokenAmount = types.NewTokenAmount(domainToken, -1).SetSerialNumbers([]int64{nftTransfer.SerialNumber})
-			if operations, rErr = c.addOperation(nftTransfer.SenderAccountID, tokenAmount, operations); rErr != nil {
-				return nil, nil, rErr
+			if operations, err = c.addOperation(nftTransfer.SenderAccountID, tokenAmount, operations); err != nil {
+				return nil, nil, err
 			}
 		}
 	}

@@ -52,6 +52,7 @@ var (
 		{accountId: accountIdA, amount: types.NewTokenAmount(dbTokenC, -1).SetSerialNumbers(defaultSerialNumbers)},
 		{accountId: accountIdB, amount: types.NewTokenAmount(dbTokenC, 1).SetSerialNumbers(defaultSerialNumbers)},
 	}
+	nftId               = hedera.NftID{TokenID: tokenIdC, SerialNumber: 1}
 	outOfRangeAccountId = hedera.AccountID{Shard: 2 << 15, Realm: 2 << 16, Account: 2<<32 + 5}
 	outOfRangeTokenId   = hedera.TokenID{Shard: 2 << 15, Realm: 2 << 16, Token: 2 << 32}
 )
@@ -127,7 +128,7 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 			AddTokenTransferWithDecimals(tokenIdA, sdkAccountIdB, 25, uint32(dbTokenA.Decimals)).
 			AddTokenTransferWithDecimals(tokenIdB, sdkAccountIdB, -35, uint32(dbTokenB.Decimals)).
 			AddTokenTransferWithDecimals(tokenIdB, sdkAccountIdA, 35, uint32(dbTokenB.Decimals)).
-			AddNftTransfer(hedera.NftID{TokenID: tokenIdC, SerialNumber: 1}, sdkAccountIdA, sdkAccountIdB).
+			AddNftTransfer(nftId, sdkAccountIdA, sdkAccountIdB).
 			SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 	}
 
@@ -192,11 +193,30 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestParse() {
 			expectError: true,
 		},
 		{
-			name: "OutOfRangeAccountId",
+			name: "OutOfRangeAccountIdHbarTransfer",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTransferTransaction().
 					AddHbarTransfer(outOfRangeAccountId, hedera.HbarFromTinybar(-15)).
 					AddHbarTransfer(sdkAccountIdB, hedera.HbarFromTinybar(15)).
+					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+			},
+			expectError: true,
+		},
+		{
+			name: "OutOfRangeAccountIdFungibleTokenTransfer",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTransferTransaction().
+					AddTokenTransferWithDecimals(tokenIdA, outOfRangeAccountId, -25, uint32(dbTokenA.Decimals)).
+					AddTokenTransferWithDecimals(tokenIdA, sdkAccountIdB, 25, uint32(dbTokenA.Decimals)).
+					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+			},
+			expectError: true,
+		},
+		{
+			name: "OutOfRangeAccountIdNonFungibleTokenTransfer",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTransferTransaction().
+					AddNftTransfer(nftId, outOfRangeAccountId, sdkAccountIdB).
 					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
 			},
 			expectError: true,

@@ -189,6 +189,22 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 			expectError: true,
 		},
 		{
+			name: "OutOfRangeAccountId",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenGrantKyc {
+					return hedera.NewTokenGrantKycTransaction().
+						SetAccountID(outOfRangeAccountId).
+						SetTokenID(tokenIdA).
+						SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+				}
+				return hedera.NewTokenRevokeKycTransaction().
+					SetAccountID(outOfRangeAccountId).
+					SetTokenID(tokenIdA).
+					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+			},
+			expectError: true,
+		},
+		{
 			name:           "InvalidTransaction",
 			getTransaction: getTransferTransaction,
 			expectError:    true,
@@ -290,8 +306,13 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 			expectError:      true,
 		},
 		{
+			name:             "OutOfRangePayerMetadata",
+			updateOperations: updateOperationMetadata("payer", "0.65536.4294967296"),
+			expectError:      true,
+		},
+		{
 			name:             "InvalidAmount",
-			updateOperations: updateAmount(&types.HbarAmount{Value: 1}),
+			updateOperations: updateAmount(&types.HbarAmount{}),
 			expectError:      true,
 		},
 		{

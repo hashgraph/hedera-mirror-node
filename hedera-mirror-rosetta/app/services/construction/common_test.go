@@ -328,21 +328,20 @@ func TestValidateOperationsWithType(t *testing.T) {
 			operationType:   types.OperationTypeCryptoTransfer,
 			expectNilAmount: true,
 		},
-		// {
-		// 	name: "NonNilAmount",
-		// 	operations: types.OperationSlice{
-		// 		{
-		// 			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-		// 			Account:             &rTypes.AccountIdentifier{Address: accountAddress},
-		// 			Type:                types.OperationTypeCryptoTransfer,
-		// 			Amount:              &rTypes.Amount{},
-		// 		},
-		// 	},
-		// 	size:            0,
-		// 	operationType:   types.OperationTypeCryptoTransfer,
-		// 	expectNilAmount: true,
-		// 	expectError:     true,
-		// },
+		{
+			name: "NonNilAmount",
+			operations: types.OperationSlice{
+				{
+					AccountId: accountIdA,
+					Amount:    &types.HbarAmount{Value: 1},
+					Type:      types.OperationTypeCryptoTransfer,
+				},
+			},
+			size:            0,
+			operationType:   types.OperationTypeCryptoTransfer,
+			expectNilAmount: true,
+			expectError:     true,
+		},
 		{
 			name:          "EmptyOperations",
 			operationType: types.OperationTypeCryptoTransfer,

@@ -138,12 +138,12 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 			expectError: true,
 		},
 		{
-			name: "InvalidTokenId",
+			name: "OutOfRangeAccountId",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenWipeTransaction().
-					SetAccountID(sdkAccountIdA).
+					SetAccountID(outOfRangeAccountId).
 					SetAmount(uint64(defaultAmount)).
-					SetTokenID(outOfRangeTokenId).
+					SetTokenID(tokenIdA).
 					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdB))
 			},
 			expectError: true,
@@ -159,12 +159,34 @@ func (suite *tokenWipeTransactionConstructorSuite) TestParse() {
 			expectError: true,
 		},
 		{
+			name: "OutOfRangeTokenId",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTokenWipeTransaction().
+					SetAccountID(sdkAccountIdA).
+					SetAmount(uint64(defaultAmount)).
+					SetTokenID(outOfRangeTokenId).
+					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdB))
+			},
+			expectError: true,
+		},
+		{
 			name: "TransactionIDNotSet",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenWipeTransaction().
 					SetAccountID(sdkAccountIdA).
 					SetAmount(uint64(defaultAmount)).
 					SetTokenID(tokenIdA)
+			},
+			expectError: true,
+		},
+		{
+			name: "OutOfRangePayerAccountId",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTokenWipeTransaction().
+					SetAccountID(sdkAccountIdA).
+					SetAmount(uint64(defaultAmount)).
+					SetTokenID(tokenIdA).
+					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
 			},
 			expectError: true,
 		},
@@ -224,6 +246,11 @@ func (suite *tokenWipeTransactionConstructorSuite) TestPreprocess() {
 		{
 			name:             "ZeroMetadataPayer",
 			updateOperations: updateOperationMetadata("payer", "0.0.0"),
+			expectError:      true,
+		},
+		{
+			name:             "OutOfRangeMetadataPayer",
+			updateOperations: updateOperationMetadata("payer", "0.65536.4294967296"),
 			expectError:      true,
 		},
 		{

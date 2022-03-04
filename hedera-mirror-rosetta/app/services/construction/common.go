@@ -227,10 +227,6 @@ func preprocessTokenFreezeKyc(
 	}
 	tokenId := tokenAmount.GetSdkTokenId()
 
-	if isZeroAccountId(*payer) {
-		return nil, nil, nil, errors.ErrInvalidAccount
-	}
-
 	return &payerAccountId, &operation.AccountId, &tokenId, nil
 }
 

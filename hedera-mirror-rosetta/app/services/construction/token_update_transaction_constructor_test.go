@@ -143,7 +143,18 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestParse() {
 			getTransaction: defaultGetTransaction,
 		},
 		{
-			name: "InvalidTokenId",
+			name: "OutOfRangeAutoRenewAccountId",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTokenUpdateTransaction().
+					SetAutoRenewAccount(outOfRangeAccountId).
+					SetTokenID(tokenIdA).
+					SetTokenName(name).
+					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
+			},
+			expectError: true,
+		},
+		{
+			name: "OutOfRangeTokenId",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenUpdateTransaction().
 					SetTokenID(outOfRangeTokenId).
@@ -182,7 +193,21 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestParse() {
 		{
 			name: "TransactionIDNotSet",
 			getTransaction: func() interfaces.Transaction {
-				return hedera.NewTokenUpdateTransaction().SetTokenMemo(memo).SetTokenSymbol(symbol)
+				return hedera.NewTokenUpdateTransaction().
+					SetTokenID(tokenIdA).
+					SetTokenMemo(memo).
+					SetTokenSymbol(symbol)
+			},
+			expectError: true,
+		},
+		{
+			name: "OutOfRangePayerAccountId",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewTokenUpdateTransaction().
+					SetTokenID(tokenIdA).
+					SetTokenMemo(memo).
+					SetTokenSymbol(symbol).
+					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
 			},
 			expectError: true,
 		},
@@ -232,6 +257,11 @@ func (suite *tokenUpdateTransactionConstructorSuite) TestPreprocess() {
 		{
 			name:             "InvalidMetadataAutoRenewAccount",
 			updateOperations: updateOperationMetadata("auto_renew_account", "x.y.z"),
+			expectError:      true,
+		},
+		{
+			name:             "OutOfRangeMetadataAutoRenewAccount",
+			updateOperations: updateOperationMetadata("auto_renew_account", "0.65536.4294967296"),
 			expectError:      true,
 		},
 		{
