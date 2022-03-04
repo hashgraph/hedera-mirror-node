@@ -29,7 +29,8 @@ import (
 )
 
 var (
-	tokenAmount = &TokenAmount{
+	statusUnknown = "unknown"
+	tokenAmount   = &TokenAmount{
 		Decimals: 9,
 		TokenId:  tokenId,
 		Type:     domain.TokenTypeFungibleCommon,
@@ -156,11 +157,16 @@ func TestOperationToRosetta(t *testing.T) {
 func TestOperationSliceToRosetta(t *testing.T) {
 	operationSlice := OperationSlice{
 		*exampleOperation(customizeAmount(hbarAmount)),
-		*exampleOperation(customizeIndex(2), customizeAmount(tokenAmount)),
+		*exampleOperation(customizeIndex(1), customizeAmount(tokenAmount)),
+		*exampleOperation(customizeIndex(2), customizeStatus("")),
+		*exampleOperation(customizeIndex(3), customizeStatus("unknown"), customizeAmount(nil)),
 	}
 	expected := []*types.Operation{
 		expectedOperation(customizeRosettaAmount(hbarRosettaAmount)),
-		expectedOperation(customizeRosettaIndex(2), customizeRosettaAmount(tokenRosettaAmount)),
+		expectedOperation(customizeRosettaIndex(1), customizeRosettaAmount(tokenRosettaAmount)),
+		expectedOperation(customizeRosettaIndex(2), customizeRosettaStatus(nil)),
+		expectedOperation(customizeRosettaIndex(3), customizeRosettaStatus(&statusUnknown),
+			customizeRosettaAmount(nil)),
 	}
 	assert.ElementsMatch(t, expected, operationSlice.ToRosetta())
 }

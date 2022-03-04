@@ -33,8 +33,8 @@ import (
 
 type AccountId struct {
 	accountId    domain.EntityId
-	aliasKey     *hedera.PublicKey
 	alias        []byte
+	aliasKey     *hedera.PublicKey
 	curveType    types.CurveType
 	networkAlias []byte
 }

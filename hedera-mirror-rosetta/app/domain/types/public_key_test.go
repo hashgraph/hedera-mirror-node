@@ -49,7 +49,7 @@ func TestPublicKeyIsEmpty(t *testing.T) {
 			expectEmpty: true,
 		},
 		{
-			name:      " NonEmpty",
+			name:      "NonEmpty",
 			publicKey: ed25519Sk.PublicKey(),
 		},
 	}

@@ -47,14 +47,17 @@ func (pk PublicKey) IsEmpty() bool {
 func (pk PublicKey) ToAlias() ([]byte, error) {
 	rawKey := pk.PublicKey.BytesRaw()
 	var key services.Key
-	if len(rawKey) == ed25519PublicKeySize {
+	switch keySize := len(rawKey); keySize {
+	case ed25519PublicKeySize:
 		key = services.Key{Key: &services.Key_Ed25519{Ed25519: rawKey}}
-	} else if len(rawKey) == ecdsaSecp256k1PublicKeySize {
+	case ecdsaSecp256k1PublicKeySize:
 		key = services.Key{Key: &services.Key_ECDSASecp256K1{ECDSASecp256K1: rawKey}}
-	} else {
-		return nil, errors.New(fmt.Sprintf("Unknown public key type with %d raw bytes", len(rawKey)))
+	default:
+		return nil, errors.New(fmt.Sprintf("Unknown public key type with %d raw bytes", keySize))
 	}
 
+	// HIP-32 defines the alias as "a byte array (protobuf bytes) that is formed by serializing a protobuf Key
+	// that represents a primitive public key (not a threshold key or key list, etc.)".
 	alias, err := proto.Marshal(&key)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("Failed to marshal proto Key: %s", err))

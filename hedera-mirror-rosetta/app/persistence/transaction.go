@@ -569,15 +569,6 @@ func IsTransactionResultSuccessful(result int32) bool {
 	return result == transactionResultSuccess
 }
 
-// func constructAccount(encodedId int64) (types.Account, *rTypes.Error) {
-// 	account, err := types.NewAccountFromEncodedID(encodedId)
-// 	if err != nil {
-// 		log.Errorf(hErrors.CreateAccountDbIdFailed, encodedId)
-// 		return types.Account{}, hErrors.ErrInternalServerError
-// 	}
-// 	return account, nil
-// }
-
 func adjustCryptoTransfers(
 	cryptoTransfers []hbarTransfer,
 	nonFeeTransferMap map[int64]int64,

@@ -33,7 +33,7 @@ type Operation struct {
 }
 
 // ToRosetta returns Rosetta type Operation from the current domain type Operation
-func (o *Operation) ToRosetta() *types.Operation {
+func (o Operation) ToRosetta() *types.Operation {
 	var amount *types.Amount
 	if o.Amount != nil {
 		amount = o.Amount.ToRosetta()
