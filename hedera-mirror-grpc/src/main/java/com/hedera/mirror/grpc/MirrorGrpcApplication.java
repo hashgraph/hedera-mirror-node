@@ -21,12 +21,13 @@ package com.hedera.mirror.grpc;
  */
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.actuate.autoconfigure.metrics.redis.LettuceMetricsAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import reactor.core.scheduler.Schedulers;
 
 @ConfigurationPropertiesScan
-@SpringBootApplication
+@SpringBootApplication(exclude = LettuceMetricsAutoConfiguration.class)
 public class MirrorGrpcApplication {
 
     public static void main(String[] args) {

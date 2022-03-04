@@ -48,7 +48,7 @@ management:
         liveness:
           include: ping
         readiness:
-          include: db, diskSpace, ping, redis, streamFileActivity
+          include: db, migration, ping, redis
 server:
   shutdown: graceful
 spring:

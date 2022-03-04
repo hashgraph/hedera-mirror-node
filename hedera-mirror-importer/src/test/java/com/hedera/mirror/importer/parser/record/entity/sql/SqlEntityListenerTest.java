@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -92,7 +92,6 @@ import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
-import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
@@ -123,7 +122,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftTransferRepository nftTransferRepository;
-    private final NonFeeTransferRepository nonFeeTransferRepository;
     private final RecordFileRepository recordFileRepository;
     private final ScheduleRepository scheduleRepository;
     private final SqlEntityListener sqlEntityListener;
@@ -436,11 +434,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         // given
         NonFeeTransfer nonFeeTransfer1 = domainBuilder.nonFeeTransfer().customize(n -> n
                 .amount(1L)
-                .id(new NonFeeTransfer.Id(1L, EntityId.of(0L, 0L, 1L, ACCOUNT)))
+                .consensusTimestamp(1L)
+                .entityId(EntityId.of(1L, ACCOUNT))
                 .payerAccountId(TRANSACTION_PAYER)).get();
         NonFeeTransfer nonFeeTransfer2 = domainBuilder.nonFeeTransfer().customize(n -> n
                 .amount(2L)
-                .id(new NonFeeTransfer.Id(-2L, EntityId.of(0L, 0L, 2L, ACCOUNT)))
+                .consensusTimestamp(2L)
+                .entityId(EntityId.of(2L, ACCOUNT))
                 .payerAccountId(TRANSACTION_PAYER)).get();
 
         // when
@@ -449,7 +449,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        assertThat(nonFeeTransferRepository.findAll()).containsExactlyInAnyOrder(nonFeeTransfer1, nonFeeTransfer2);
+        assertThat(findNonFeeTransfers()).containsExactlyInAnyOrder(nonFeeTransfer1, nonFeeTransfer2);
     }
 
     @Test

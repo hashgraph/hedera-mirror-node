@@ -155,8 +155,9 @@ const getTopicMessages = async (req, res) => {
   topicMessagesResponse.links.next = utils.getPaginationLink(
     req,
     topicMessagesResponse.messages.length !== limit,
-    constants.filterKeys.TIMESTAMP,
-    lastTimeStamp,
+    {
+      [constants.filterKeys.TIMESTAMP]: lastTimeStamp,
+    },
     order
   );
 

@@ -27,15 +27,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-public class MetricsConfiguration {
+class MetricsConfiguration {
 
     @Bean
-    public MeterBinder processMemoryMetrics() {
+    MeterBinder processMemoryMetrics() {
         return new ProcessMemoryMetrics();
     }
 
     @Bean
-    public MeterBinder processThreadMetrics() {
+    MeterBinder processThreadMetrics() {
         return new ProcessThreadMetrics();
     }
 }

@@ -9,9 +9,9 @@ package com.hedera.mirror.importer;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,9 @@ package com.hedera.mirror.importer;
  */
 
 import com.google.common.collect.Range;
+
+import com.hedera.mirror.common.converter.AccountIdConverter;
+
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -39,12 +42,14 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.core.DataClassRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 
@@ -55,10 +60,17 @@ import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 @Import(IntegrationTestConfiguration.class)
 public abstract class IntegrationTest {
 
+    private static final RowMapper<NonFeeTransfer> NON_FEE_TRANSFER_ROW_MAPPER = rowMapper(NonFeeTransfer.class);
+
+    private static final String SELECT_NON_FEE_TRANSFERS_QUERY = "select * from non_fee_transfer";
+
     protected final Logger log = LogManager.getLogger(getClass());
 
     @Resource
     private Collection<CacheManager> cacheManagers;
+
+    @Resource
+    private JdbcTemplate jdbcTemplate;
 
     @Resource
     private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
@@ -71,7 +83,7 @@ public abstract class IntegrationTest {
         defaultConversionService.addConverter(PGobject.class, Range.class,
                 source -> PostgreSQLGuavaRangeType.longRange(source.getValue()));
         defaultConversionService.addConverter(Long.class, EntityId.class,
-                id -> EntityIdEndec.decode(id, EntityType.ACCOUNT));
+                AccountIdConverter.INSTANCE::convertToEntityAttribute);
         defaultConversionService.addConverter(PgArray.class, List.class,
                 array -> {
                     try {
@@ -84,6 +96,10 @@ public abstract class IntegrationTest {
         DataClassRowMapper dataClassRowMapper = new DataClassRowMapper<>(entityClass);
         dataClassRowMapper.setConversionService(defaultConversionService);
         return dataClassRowMapper;
+    }
+
+    protected List<NonFeeTransfer> findNonFeeTransfers() {
+        return jdbcTemplate.query(SELECT_NON_FEE_TRANSFERS_QUERY, NON_FEE_TRANSFER_ROW_MAPPER);
     }
 
     @BeforeEach

@@ -272,7 +272,8 @@ public class DomainBuilder {
     public DomainWrapper<NonFeeTransfer, NonFeeTransfer.NonFeeTransferBuilder> nonFeeTransfer() {
         NonFeeTransfer.NonFeeTransferBuilder builder = NonFeeTransfer.builder()
                 .amount(100L)
-                .id(new NonFeeTransfer.Id(timestamp(), entityId(ACCOUNT)))
+                .consensusTimestamp(timestamp())
+                .entityId(entityId(ACCOUNT))
                 .payerAccountId(entityId(ACCOUNT));
 
         return new DomainWrapperImpl<>(builder, builder::build);

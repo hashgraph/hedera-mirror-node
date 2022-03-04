@@ -19,6 +19,33 @@ function cleanup() {
   echo "Cleanup complete"
 }
 
+function init_db() {
+  echo "Initializing database"
+
+  PG_CLUSTER_CONF=/etc/postgresql/${PG_VERSION}/${PG_CLUSTER_NAME}
+  if [[ -f "${PGDATA}/PG_VERSION" ]]; then
+    # relink the config dir just in case it's a newly created container with existing mapped /data dir
+    ln -sTf ${PGDATA} ${PG_CLUSTER_CONF}
+    echo "Database is already initialzed"
+    return
+  fi
+
+  echo "Creating cluster '${PG_CLUSTER_NAME}' with data dir '${PGDATA}'"
+  mkdir -p "${PGDATA}" && chown -R postgres:postgres "${PGDATA}"
+  su postgres -c "pg_createcluster -d ${PGDATA} --start-conf auto ${PG_VERSION} ${PG_CLUSTER_NAME}"
+  # mv conf to $PGDATA and link it
+  cp -pr ${PG_CLUSTER_CONF}/* ${PGDATA}
+  rm -fr ${PG_CLUSTER_CONF}
+  ln -s ${PGDATA} ${PG_CLUSTER_CONF}
+  su postgres -c 'cp /app/pg_hba.conf ${PGDATA} && cp /app/postgresql.conf ${PGDATA}/conf.d'
+
+  /etc/init.d/postgresql start
+  su postgres -c 'PATH=/usr/lib/postgresql/${PG_VERSION}/bin:${PATH} /app/scripts/init.sh'
+  /etc/init.d/postgresql stop
+
+  echo "Initialized database"
+}
+
 function restore() {
   if [[ -z "${RESTORE}" ]]; then
     echo "Skipping database restore"
@@ -27,7 +54,7 @@ function restore() {
 
   DATA_DIR="data_dump"
   TMPDIR=$(mktemp -d)
-  export PGPASSWORD="${HEDERA_MIRROR_IMPORTER_DB_OWNERPASSWORD:-mirror_node_pass}"
+  export PGPASSWORD="${HEDERA_MIRROR_IMPORTER_DB_PASSWORD:-mirror_node_pass}"
 
   cp /app/postgresql-restore.conf "${PGCONF}/conf.d/postgresql.conf"
   /etc/init.d/postgresql start
@@ -61,11 +88,20 @@ function main() {
     export HEDERA_MIRROR_ROSETTA_NETWORK="${NETWORK}"
   fi
 
+  if [[ -n "${OWNER_PASSWORD}" ]]; then
+    export HEDERA_MIRROR_IMPORTER_DB_PASSWORD="${OWNER_PASSWORD}"
+  fi
+
+  if [[ -n "${ROSETTA_PASSWORD}" ]]; then
+    export HEDERA_MIRROR_ROSETTA_DB_PASSWORD="${ROSETTA_PASSWORD}"
+  fi
+
   case "${MODE}" in
     "offline")
       run_offline_mode
     ;;
     *)
+      init_db
       restore
       run_online_mode
     ;;

@@ -26,6 +26,7 @@ const MAX_INT32 = 2147483647;
 const filterKeys = {
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_ID: 'account.id',
+  ACCOUNT_ID_OR_ALIAS: 'accountAliasOrAccountId',
   ACCOUNT_PUBLICKEY: 'account.publickey',
   BALANCE: 'balance',
   CONTRACTID: 'contractid',
@@ -171,6 +172,16 @@ const queryParamOperators = {
   gte: 'gte',
 };
 
+const queryParamOperatorPatterns = {
+  gt: />/,
+  gte: />=/,
+  gtorgte: />[=]?/,
+  lt: /</,
+  lte: /<=/,
+  ltorlte: /<[=]?/,
+  ne: /!=/,
+};
+
 module.exports = {
   MAX_INT32,
   characterEncoding,
@@ -185,6 +196,7 @@ module.exports = {
   networks,
   orderFilterValues,
   queryParamOperators,
+  queryParamOperatorPatterns,
   recordStreamPrefix,
   requestIdLabel,
   requestStartTime,

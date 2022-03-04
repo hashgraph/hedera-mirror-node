@@ -92,11 +92,13 @@ import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
+import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -113,6 +115,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final FileDataRepository fileDataRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final Predicate<TransactionFilterFields> transactionFilter;
+    private final RecordParserProperties parserProperties;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
     public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
@@ -121,13 +124,15 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     EntityListener entityListener,
                                     TransactionHandlerFactory transactionHandlerFactory,
                                     FileDataRepository fileDataRepository,
-                                    EntityRepository entityRepository) {
+                                    EntityRepository entityRepository,
+                                    RecordParserProperties parserProperties) {
         this.addressBookService = addressBookService;
         this.entityListener = entityListener;
         this.entityProperties = entityProperties;
         this.entityRepository = entityRepository;
         this.fileDataRepository = fileDataRepository;
         this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
+        this.parserProperties = parserProperties;
         this.transactionHandlerFactory = transactionHandlerFactory;
         transactionFilter = commonParserProperties.getFilter();
     }
@@ -287,14 +292,31 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         var body = recordItem.getTransactionBody();
+        var partialDataAction = parserProperties.getPartialDataAction();
         var transactionRecord = recordItem.getRecord();
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
-                EntityId entityId = getAccountId(aa.getAccountID());
+                EntityId entityId = EntityId.EMPTY;
+                try {
+                    entityId = getAccountId(aa.getAccountID());
+                } catch (AliasNotFoundException ex) {
+                    switch (partialDataAction) {
+                        case DEFAULT:
+                            log.warn("Setting non-fee transfer account to default value due to partial data issue: {}",
+                                    ex.getMessage());
+                            break;
+                        case ERROR:
+                            throw ex;
+                        case SKIP:
+                            log.warn("Skipping non-fee transfer due to partial data issue: {}", ex.getMessage());
+                            continue;
+                    }
+                }
 
                 NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
                 nonFeeTransfer.setAmount(aa.getAmount());
-                nonFeeTransfer.setId(new NonFeeTransfer.Id(consensusTimestamp, entityId));
+                nonFeeTransfer.setConsensusTimestamp(consensusTimestamp);
+                nonFeeTransfer.setEntityId(entityId);
                 nonFeeTransfer.setIsApproval(aa.getIsApproval());
                 nonFeeTransfer.setPayerAccountId(recordItem.getPayerAccountId());
                 entityListener.onNonFeeTransfer(nonFeeTransfer);
@@ -302,17 +324,17 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private EntityId getAccountId(AccountID accountID) {
-        switch (accountID.getAccountCase()) {
+    private EntityId getAccountId(AccountID accountId) {
+        switch (accountId.getAccountCase()) {
             case ACCOUNTNUM:
-                return EntityId.of(accountID);
+                return EntityId.of(accountId);
             case ALIAS:
-                var alias = DomainUtils.toBytes(accountID.getAlias());
+                var alias = DomainUtils.toBytes(accountId.getAlias());
                 return entityRepository.findByAlias(alias)
                         .map(id -> EntityId.of(id, EntityType.ACCOUNT))
-                        .orElseThrow(() -> new InvalidDatasetException("AccountID not present for alias: " + Hex.encodeHexString(alias)));
+                        .orElseThrow(() -> new AliasNotFoundException(Hex.encodeHexString(alias)));
             default:
-                throw new InvalidDatasetException("Unsupported AccountID: " + accountID);
+                throw new InvalidDatasetException("Unsupported AccountID: " + accountId);
         }
     }
 

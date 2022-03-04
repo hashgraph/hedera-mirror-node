@@ -149,9 +149,7 @@ func (c *constructionAPIService) ConstructionMetadata(
 		return nil, errors.ErrEndpointNotSupportedInOfflineMode
 	}
 
-	return &rTypes.ConstructionMetadataResponse{
-		Metadata: make(map[string]interface{}),
-	}, nil
+	return &rTypes.ConstructionMetadataResponse{Metadata: make(map[string]interface{})}, nil
 }
 
 // ConstructionParse implements the /construction/parse endpoint.

@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,6 +45,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Resource;
@@ -53,6 +54,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -61,6 +63,9 @@ import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.exception.AliasNotFoundException;
+import com.hedera.mirror.importer.parser.PartialDataAction;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
@@ -79,6 +84,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     @Resource
     private NftAllowanceRepository nftAllowanceRepository;
+
+    @Resource
+    private RecordParserProperties parserProperties;
 
     @Resource
     private TokenAllowanceRepository tokenAllowanceRepository;
@@ -606,11 +614,80 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(8, cryptoTransferRepository.count()),
                 () -> assertEquals(additionalTransfers.length * 2 + 2, nonFeeTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, recordTransfer),
-                () -> assertThat(nonFeeTransferRepository.findAll())
-                        .extracting(NonFeeTransfer::getId)
-                        .extracting(NonFeeTransfer.Id::getEntityId)
+                () -> assertThat(findNonFeeTransfers())
+                        .extracting(NonFeeTransfer::getEntityId)
                         .extracting(EntityId::getEntityNum)
                         .contains(accountId1.getAccountNum(), entity.getNum())
+        );
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "SKIP"})
+    void cryptoTransferWithUnknownAlias(PartialDataAction partialDataAction) {
+        // given
+        // both accounts have alias, and only account2's alias is in db
+        entityProperties.getPersist().setCryptoTransferAmounts(true);
+        entityProperties.getPersist().setNonFeeTransfers(true);
+        parserProperties.setPartialDataAction(partialDataAction);
+
+        Entity account1 = domainBuilder.entity().get();
+        Entity account2 = domainBuilder.entity().persist();
+
+        // crypto transfer from unknown account1 alias to account2 alias
+        Transaction transaction = buildTransaction(builder -> builder.getCryptoTransferBuilder().getTransfersBuilder()
+                .addAccountAmounts(accountAliasAmount(DomainUtils.fromBytes(account1.getAlias()), 100))
+                .addAccountAmounts(accountAliasAmount(DomainUtils.fromBytes(account2.getAlias()), -100)));
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord transactionRecord = buildTransactionRecord(r -> r.getTransferListBuilder()
+                        .addAccountAmounts(accountAmount(account1.getNum(), 100))
+                        .addAccountAmounts(accountAmount(account2.getNum(), -100)),
+                transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
+        List<EntityId> expectedEntityIds = partialDataAction == PartialDataAction.DEFAULT ?
+                Arrays.asList(account2.toEntityId(), null) : List.of(account2.toEntityId());
+
+        // when
+        parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
+
+        // then
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(5, cryptoTransferRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, transactionRecord),
+                () -> assertThat(findNonFeeTransfers())
+                        .extracting(NonFeeTransfer::getEntityId)
+                        .containsExactlyInAnyOrderElementsOf(expectedEntityIds)
+        );
+    }
+
+    @Test
+    void cryptoTransferWithUnknownAliasActionError() {
+        // given
+        // both accounts have alias, and only account2's alias is in db
+        entityProperties.getPersist().setCryptoTransferAmounts(true);
+        entityProperties.getPersist().setNonFeeTransfers(true);
+        parserProperties.setPartialDataAction(PartialDataAction.ERROR);
+
+        Entity account1 = domainBuilder.entity().get();
+        Entity account2 = domainBuilder.entity().persist();
+
+        // crypto transfer from unknown account1 alias to account2 alias
+        Transaction transaction = buildTransaction(builder -> builder.getCryptoTransferBuilder().getTransfersBuilder()
+                .addAccountAmounts(accountAliasAmount(DomainUtils.fromBytes(account1.getAlias()), 100))
+                .addAccountAmounts(accountAliasAmount(DomainUtils.fromBytes(account2.getAlias()), -100)));
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord transactionRecord = buildTransactionRecord(r -> r.getTransferListBuilder()
+                        .addAccountAmounts(accountAmount(account1.getNum(), 100))
+                        .addAccountAmounts(accountAmount(account2.getNum(), -100)),
+                transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
+
+
+        // when, then
+        assertThrows(AliasNotFoundException.class,
+                () -> parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord)));
+        assertAll(
+                () -> assertEquals(0, transactionRepository.count()),
+                () -> assertEquals(0, cryptoTransferRepository.count()),
+                () -> assertThat(findNonFeeTransfers()).isEmpty()
         );
     }
 
