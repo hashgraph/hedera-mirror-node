@@ -159,8 +159,8 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
         jdbcOperations.update("update crypto_transfer set errata = 'INSERT' where consensus_timestamp in (:ids)", ids);
         jdbcOperations.update("update transaction set errata = 'INSERT' where consensus_timestamp in (:ids)", ids);
 
-        Long min = consensusTimestamps.stream().min(Long::compareTo).get();
-        Long max = consensusTimestamps.stream().max(Long::compareTo).get();
+        Long min = consensusTimestamps.stream().min(Long::compareTo).orElse(null);
+        Long max = consensusTimestamps.stream().max(Long::compareTo).orElse(null);
         log.info("Inserted {} missing transactions between {} and {}", consensusTimestamps.size(), min, max);
     }
 
