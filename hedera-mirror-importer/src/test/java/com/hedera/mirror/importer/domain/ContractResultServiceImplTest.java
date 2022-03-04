@@ -20,14 +20,19 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
+import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.StorageChange;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -38,6 +43,8 @@ import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -108,6 +115,67 @@ class ContractResultServiceImplTest extends IntegrationTest {
 
         contractResultsTest(recordItem, contractEntityId, contractFunctionResult,
                 TransactionType.CONTRACTCREATEINSTANCE);
+    }
+
+    @CsvSource({
+            "-1,-1,-1,1000,1000,true",
+            "1,1,1,1000,1000,true",
+            "0,0,9223372036854775807,1000,1000,true",
+            "0,0,-1,0,2,true",
+            "-1,-1,-1,1000,1000,false",
+            "1,1,1,1000,1000,false",
+            "0,0,9223372036854775807,1000,1000,false",
+            "0,0,-1,0,2,false",
+    })
+    @ParameterizedTest
+    void getContractResultOnCallCreate2ContractIdWorkaround(long shard, long realm, long num, long resolvedNum,
+                                                            long expectedNum, boolean create) {
+        var invalidContractId = ContractID.newBuilder()
+                .setShardNum(shard)
+                .setRealmNum(realm)
+                .setContractNum(num)
+                .build();
+        var evmAddress = ContractID.newBuilder().setEvmAddress(fromBytes(toEvmAddress(invalidContractId))).build();
+        var expectedId = EntityId.of(expectedNum, CONTRACT);
+        var resolvedId = EntityId.of(resolvedNum, CONTRACT);
+
+        var slot = ByteString.copyFromUtf8("0x000000000000000000");
+        var valueRead = ByteString.copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0");
+        var valueWritten = BytesValue.of(ByteString
+                .copyFromUtf8("0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5"));
+
+        var recordItemBuilderBuild = create ? recordItemBuilder.contractCreate(evmAddress) :
+                recordItemBuilder.contractCall();
+        RecordItem recordItem = recordItemBuilderBuild
+                .record(r -> {
+                    r.getContractCallResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
+                    r.getContractCallResultBuilder().getStateChangesBuilder(0)
+                            .setContractID(invalidContractId)
+                            .setStorageChanges(0, StorageChange.newBuilder()
+                                    .setSlot(slot)
+                                    .setValueRead(valueRead)
+                                    .setValueWritten(valueWritten));
+                    r.getContractCallResultBuilder().removeLogInfo(1);
+                })
+                .build();
+        EntityId contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        ContractFunctionResult contractFunctionResult = create ? recordItem.getRecord().getContractCreateResult() :
+                recordItem.getRecord().getContractCallResult();
+
+        contractResultsTest(recordItem, contractEntityId, contractFunctionResult,
+                create ? TransactionType.CONTRACTCREATEINSTANCE : TransactionType.CONTRACTCALL);
+
+        assertThat(contractResultRepository.existsById(expectedId.getId())).isTrue();
+
+        assertThat(contractLogRepository.findById(new ContractLog.Id(recordItem.getConsensusTimestamp(), 0)))
+                .isPresent()
+                .get()
+                .extracting(ContractLog::getContractId)
+                .isEqualTo(expectedId);
+        assertThat(contractStateChangeRepository
+                .existsById(new ContractStateChange.Id(recordItem.getConsensusTimestamp(), expectedId.getId(), slot
+                        .toByteArray())))
+                .isTrue();
     }
 
     @Disabled("Precompiled input value not yet supported")
