@@ -44,7 +44,7 @@ const (
                                   consensus_timestamp > @start and
                                   consensus_timestamp <= @end and
                                   entity_id = @account_id and
-                                  errata <> 'DELETE'
+                                  (errata is null or errata <> 'DELETE')
                               ), 0) as value,
                               coalesce((
                                 select json_agg(change)
@@ -85,14 +85,14 @@ const (
                                 ) as associations
                               ) as token_associations`
 	latestBalanceBeforeConsensus = "with" + genesisTimestampCte + `, abm as (
-                                      select consensus_timestamp + time_offset as max
+                                      select consensus_timestamp as max, time_offset
                                       from account_balance_file
                                       where consensus_timestamp <= @timestamp
                                       order by consensus_timestamp desc
                                       limit 1
                                     )
                                     select
-                                      abm.max consensus_timestamp,
+                                      abm.max + abm.time_offset as consensus_timestamp,
                                       coalesce(ab.balance, 0) balance,
                                       coalesce((
                                         select json_agg(json_build_object(

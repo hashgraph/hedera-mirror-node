@@ -143,7 +143,7 @@ const (
                                                 'amount', amount) order by entity_id)
                                               from crypto_transfer
                                               where consensus_timestamp = t.consensus_timestamp and
-                                                errata <> 'DELETE'
+                                                (errata is null or errata <> 'DELETE')
                                             ), '[]') as crypto_transfers,
                                             case
                                               when t.type = 14 then coalesce((
