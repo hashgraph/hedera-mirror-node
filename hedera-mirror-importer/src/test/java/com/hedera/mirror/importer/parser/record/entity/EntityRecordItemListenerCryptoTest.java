@@ -118,46 +118,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         assertAllowances(recordItem);
     }
 
-    private void assertAllowances(RecordItem recordItem) {
-        assertAll(
-                () -> assertEquals(1, cryptoAllowanceRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
-                () -> assertEquals(0, entityRepository.count()),
-                () -> assertEquals(2, nftAllowanceRepository.count()),
-                () -> assertEquals(1, tokenAllowanceRepository.count()),
-                () -> assertEquals(1, transactionRepository.count()),
-                () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord()),
-                () -> assertThat(cryptoAllowanceRepository.findAll())
-                        .allSatisfy(a -> assertThat(a.getAmount()).isPositive())
-                        .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
-                        .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
-                        .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
-                        .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
-                () -> assertThat(nftAllowanceRepository.findAll())
-                        .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
-                        .allSatisfy(a -> assertThat(a.getSerialNumbers()).isNotNull())
-                        .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
-                        .allSatisfy(a -> assertThat(a.getTokenId()).isPositive())
-                        .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
-                        .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
-                () -> assertThat(tokenAllowanceRepository.findAll())
-                        .allSatisfy(a -> assertThat(a.getAmount()).isPositive())
-                        .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
-                        .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
-                        .allSatisfy(a -> assertThat(a.getTokenId()).isPositive())
-                        .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
-                        .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId()))
-        );
-    }
-
-    protected IterableAssert<CryptoTransfer> assertCryptoTransfers(
-            final int expectedNumberOfCryptoTransfers) {
-        return assertThat(
-                cryptoTransferRepository.findAll())
-                .hasSize(expectedNumberOfCryptoTransfers)
-                .allSatisfy(a -> assertThat(a.getId().getAmount()).isNotZero());
-    }
-
     @Test
     void cryptoCreateWithInitialBalance() {
         final Transaction transaction = cryptoCreateTransaction();
@@ -189,28 +149,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance()),
                 () -> assertThat(initialBalanceTransfer).isPresent()
         );
-    }
-
-    private void groupCryptoTransfersByAccountId(final TransactionRecord.Builder recordBuilder,
-            final List<AccountAmount.Builder> amountsToBeAdded) {
-        final var accountAmounts = recordBuilder.getTransferListBuilder().getAccountAmountsBuilderList();
-
-        final var transfers = new HashMap<AccountID, Long>();
-        Stream.concat(accountAmounts.stream(), amountsToBeAdded.stream())
-                .forEach(accountAmount ->
-                        transfers.compute(accountAmount.getAccountID(), (k, v) -> {
-                            final long currentValue = (v == null) ? 0 : v;
-                            return currentValue + accountAmount.getAmount();
-                        })
-                );
-
-        final TransferList.Builder transferListBuilder = TransferList.newBuilder();
-        transfers.entrySet().forEach(entry -> {
-            final AccountAmount accountAmount = AccountAmount.newBuilder().setAccountID(entry.getKey())
-                    .setAmount(entry.getValue()).build();
-            transferListBuilder.addAccountAmounts(accountAmount);
-        });
-        recordBuilder.setTransferList(transferListBuilder);
     }
 
     @Test
@@ -791,11 +729,59 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .containsOnly(unknownResult);
     }
 
-    private void createAccount() {
-        Transaction createTransaction = cryptoCreateTransaction();
-        TransactionBody createTransactionBody = getTransactionBody(createTransaction);
-        TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
-        parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
+    @Test
+    void cryptoTransferPersistRawBytesDefault() {
+        // Use the default properties for record parsing - the raw bytes should NOT be stored in the db
+        Transaction transaction = cryptoTransferTransaction();
+        testRawBytes(transaction, null);
+    }
+
+    @Test
+    void cryptoTransferPersistRawBytesTrue() {
+        // Explicitly persist the transaction bytes
+        entityProperties.getPersist().setTransactionBytes(true);
+        Transaction transaction = cryptoTransferTransaction();
+        testRawBytes(transaction, transaction.toByteArray());
+    }
+
+    @Test
+    void cryptoTransferPersistRawBytesFalse() {
+        // Explicitly DO NOT persist the transaction bytes
+        entityProperties.getPersist().setTransactionBytes(false);
+        Transaction transaction = cryptoTransferTransaction();
+        testRawBytes(transaction, null);
+    }
+
+    private void assertAllowances(RecordItem recordItem) {
+        assertAll(
+                () -> assertEquals(1, cryptoAllowanceRepository.count()),
+                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertEquals(0, entityRepository.count()),
+                () -> assertEquals(2, nftAllowanceRepository.count()),
+                () -> assertEquals(1, tokenAllowanceRepository.count()),
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord()),
+                () -> assertThat(cryptoAllowanceRepository.findAll())
+                        .allSatisfy(a -> assertThat(a.getAmount()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
+                        .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
+                        .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
+                () -> assertThat(nftAllowanceRepository.findAll())
+                        .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getSerialNumbers()).isNotNull())
+                        .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getTokenId()).isPositive())
+                        .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
+                        .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
+                () -> assertThat(tokenAllowanceRepository.findAll())
+                        .allSatisfy(a -> assertThat(a.getAmount()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
+                        .allSatisfy(a -> assertThat(a.getTokenId()).isPositive())
+                        .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
+                        .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId()))
+        );
     }
 
     private void assertCryptoTransaction(TransactionBody transactionBody, TransactionRecord record) {
@@ -826,33 +812,19 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         );
     }
 
-    private TransactionRecord transactionRecordSuccess(TransactionBody transactionBody) {
-        return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS);
+    protected IterableAssert<CryptoTransfer> assertCryptoTransfers(
+            final int expectedNumberOfCryptoTransfers) {
+        return assertThat(
+                cryptoTransferRepository.findAll())
+                .hasSize(expectedNumberOfCryptoTransfers)
+                .allSatisfy(a -> assertThat(a.getId().getAmount()).isNotZero());
     }
 
-    private TransactionRecord transactionRecordSuccess(TransactionBody transactionBody,
-            Consumer<TransactionRecord.Builder> customBuilder) {
-        return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS.getNumber(), customBuilder);
-    }
-
-    private TransactionRecord transactionRecord(TransactionBody transactionBody, ResponseCodeEnum responseCode) {
-        return transactionRecord(transactionBody, responseCode.getNumber(), recordBuilder -> {
-        });
-    }
-
-    private TransactionRecord transactionRecord(TransactionBody transactionBody, int responseCode) {
-        return transactionRecord(transactionBody, responseCode, recordBuilder -> {
-        });
-    }
-
-    private TransactionRecord transactionRecord(TransactionBody transactionBody, int status,
-            Consumer<TransactionRecord.Builder> builderConsumer) {
-        return buildTransactionRecord(recordBuilder -> {
-                    recordBuilder.getReceiptBuilder().setAccountID(accountId1);
-                    builderConsumer.accept(recordBuilder);
-                },
-                transactionBody,
-                status);
+    private void createAccount() {
+        Transaction createTransaction = cryptoCreateTransaction();
+        TransactionBody createTransactionBody = getTransactionBody(createTransaction);
+        TransactionRecord createRecord = transactionRecordSuccess(createTransactionBody);
+        parseRecordItemAndCommit(new RecordItem(createTransaction, createRecord));
     }
 
     private CryptoCreateTransactionBody.Builder cryptoCreateAccountBuilderWithDefaults() {
@@ -876,23 +848,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         return buildTransaction(builder -> builder.setCryptoCreateAccount(cryptoCreateBuilder));
     }
 
-    private Transaction cryptoUpdateTransaction(AccountID accountNum) {
-        return buildTransaction(builder -> builder.getCryptoUpdateAccountBuilder()
-                .setAccountIDToUpdate(accountNum)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
-                .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
-                .setKey(keyFromString(KEY))
-                .setMaxAutomaticTokenAssociations(Int32Value.of(10))
-                .setMemo(StringValue.of("CryptoUpdateAccount memo"))
-                .setProxyAccountID(PROXY_UPDATE)
-                .setReceiverSigRequiredWrapper(BoolValue.of(false)));
-    }
-
-    private Transaction cryptoDeleteTransaction() {
-        return buildTransaction(builder -> builder.getCryptoDeleteBuilder()
-                .setDeleteAccountID(accountId1));
-    }
-
     private Transaction cryptoAddLiveHashTransaction() {
         return buildTransaction(builder -> builder.getCryptoAddLiveHashBuilder()
                 .getLiveHashBuilder()
@@ -908,6 +863,23 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .setLiveHashToDelete(ByteString.copyFromUtf8("live hash")));
     }
 
+    private Transaction cryptoDeleteTransaction() {
+        return buildTransaction(builder -> builder.getCryptoDeleteBuilder()
+                .setDeleteAccountID(accountId1));
+    }
+
+    private Transaction cryptoUpdateTransaction(AccountID accountNum) {
+        return buildTransaction(builder -> builder.getCryptoUpdateAccountBuilder()
+                .setAccountIDToUpdate(accountNum)
+                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
+                .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
+                .setKey(keyFromString(KEY))
+                .setMaxAutomaticTokenAssociations(Int32Value.of(10))
+                .setMemo(StringValue.of("CryptoUpdateAccount memo"))
+                .setProxyAccountID(PROXY_UPDATE)
+                .setReceiverSigRequiredWrapper(BoolValue.of(false)));
+    }
+
     private Transaction cryptoTransferTransaction() {
         return buildTransaction(builder -> {
             for (int i = 0; i < additionalTransfers.length; i++) {
@@ -917,27 +889,26 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         });
     }
 
-    @Test
-    void cryptoTransferPersistRawBytesDefault() {
-        // Use the default properties for record parsing - the raw bytes should NOT be stored in the db
-        Transaction transaction = cryptoTransferTransaction();
-        testRawBytes(transaction, null);
-    }
+    private void groupCryptoTransfersByAccountId(final TransactionRecord.Builder recordBuilder,
+            final List<AccountAmount.Builder> amountsToBeAdded) {
+        final var accountAmounts = recordBuilder.getTransferListBuilder().getAccountAmountsBuilderList();
 
-    @Test
-    void cryptoTransferPersistRawBytesTrue() {
-        // Explicitly persist the transaction bytes
-        entityProperties.getPersist().setTransactionBytes(true);
-        Transaction transaction = cryptoTransferTransaction();
-        testRawBytes(transaction, transaction.toByteArray());
-    }
+        final var transfers = new HashMap<AccountID, Long>();
+        Stream.concat(accountAmounts.stream(), amountsToBeAdded.stream())
+                .forEach(accountAmount ->
+                        transfers.compute(accountAmount.getAccountID(), (k, v) -> {
+                            final long currentValue = (v == null) ? 0 : v;
+                            return currentValue + accountAmount.getAmount();
+                        })
+                );
 
-    @Test
-    void cryptoTransferPersistRawBytesFalse() {
-        // Explicitly DO NOT persist the transaction bytes
-        entityProperties.getPersist().setTransactionBytes(false);
-        Transaction transaction = cryptoTransferTransaction();
-        testRawBytes(transaction, null);
+        final TransferList.Builder transferListBuilder = TransferList.newBuilder();
+        transfers.entrySet().forEach(entry -> {
+            final AccountAmount accountAmount = AccountAmount.newBuilder().setAccountID(entry.getKey())
+                    .setAmount(entry.getValue()).build();
+            transferListBuilder.addAccountAmounts(accountAmount);
+        });
+        recordBuilder.setTransferList(transferListBuilder);
     }
 
     private void testRawBytes(Transaction transaction, byte[] expectedBytes) {
@@ -951,5 +922,34 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         // then
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
         assertArrayEquals(expectedBytes, dbTransaction.getTransactionBytes());
+    }
+
+    private TransactionRecord transactionRecord(TransactionBody transactionBody, ResponseCodeEnum responseCode) {
+        return transactionRecord(transactionBody, responseCode.getNumber(), recordBuilder -> {
+        });
+    }
+
+    private TransactionRecord transactionRecord(TransactionBody transactionBody, int responseCode) {
+        return transactionRecord(transactionBody, responseCode, recordBuilder -> {
+        });
+    }
+
+    private TransactionRecord transactionRecord(TransactionBody transactionBody, int status,
+            Consumer<TransactionRecord.Builder> builderConsumer) {
+        return buildTransactionRecord(recordBuilder -> {
+                    recordBuilder.getReceiptBuilder().setAccountID(accountId1);
+                    builderConsumer.accept(recordBuilder);
+                },
+                transactionBody,
+                status);
+    }
+
+    private TransactionRecord transactionRecordSuccess(TransactionBody transactionBody) {
+        return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS);
+    }
+
+    private TransactionRecord transactionRecordSuccess(TransactionBody transactionBody,
+            Consumer<TransactionRecord.Builder> customBuilder) {
+        return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS.getNumber(), customBuilder);
     }
 }
