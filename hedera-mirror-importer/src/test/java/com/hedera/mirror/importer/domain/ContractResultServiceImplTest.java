@@ -48,7 +48,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 
 @ExtendWith(MockitoExtension.class)
-public class ContractResultServiceImplTest {
+class ContractResultServiceImplTest {
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
     private final EntityProperties entityProperties = new EntityProperties();
 
