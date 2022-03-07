@@ -6,8 +6,8 @@ require (
 	github.com/coinbase/rosetta-sdk-go v0.7.3
 	github.com/cucumber/godog v0.12.4
 	github.com/go-playground/validator/v10 v10.10.0
-	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220129033520-fdf6f206e34e
-	github.com/hashgraph/hedera-sdk-go/v2 v2.9.0
+	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220204040204-50a9ffe2cb34
+	github.com/hashgraph/hedera-sdk-go/v2 v2.10.0
 	github.com/hellofresh/health-go/v4 v4.5.0
 	github.com/jackc/pgtype v1.10.0
 	github.com/lib/pq v1.10.4
@@ -44,7 +44,7 @@ require (
 	github.com/docker/docker v20.10.7+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/ethereum/go-ethereum v1.10.15 // indirect
+	github.com/ethereum/go-ethereum v1.10.16 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
