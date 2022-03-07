@@ -78,7 +78,6 @@ import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-@Tag("entity-record-item-listener")
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId1 = AccountID.newBuilder().setAccountNum(1001).build();
