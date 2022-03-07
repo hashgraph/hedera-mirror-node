@@ -52,6 +52,7 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -169,11 +170,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         transactionHandler.updateTransaction(transaction, recordItem);
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
-            if (body.hasCryptoCreateAccount() && recordItem.isSuccessful()) {
-                 insertCryptoCreateTransferList(consensusTimestamp, recordItem);
-            } else {
-                insertTransferList(consensusTimestamp, txRecord.getTransferList(), recordItem.getPayerAccountId());
-            }
+            insertTransferList(consensusTimestamp, txRecord.getTransferList(), recordItem.getPayerAccountId());
         }
 
         // handle scheduled transaction, even on failure
@@ -414,20 +411,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             CryptoTransfer cryptoTransfer = new CryptoTransfer(consensusTimestamp, aa.getAmount(), account);
             cryptoTransfer.setIsApproval(aa.getIsApproval());
             cryptoTransfer.setPayerAccountId(payerAccountId);
-            entityListener.onCryptoTransfer(cryptoTransfer);
-        }
-    }
-
-    private void insertCryptoCreateTransferList(long consensusTimestamp, RecordItem recordItem) {
-        var record = recordItem.getRecord();
-        TransferList transferList = record.getTransferList();
-
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var account = EntityId.of(aa.getAccountID());
-            CryptoTransfer cryptoTransfer = new CryptoTransfer(consensusTimestamp, aa.getAmount(), account);
-            cryptoTransfer.setIsApproval(aa.getIsApproval());
-            cryptoTransfer.setPayerAccountId(recordItem.getPayerAccountId());
             entityListener.onCryptoTransfer(cryptoTransfer);
         }
     }
