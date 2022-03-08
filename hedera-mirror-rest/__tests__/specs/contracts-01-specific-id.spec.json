@@ -3,18 +3,18 @@
   "setup": {
     "contracts": [
       {
-        "created_timestamp": "987654000123456",
+        "created_timestamp": "987654999123200",
         "file_id": "5001",
         "key": [1, 1, 1],
         "num": "8001",
-        "timestamp_range": "[987654000123456, 997654000123456]"
+        "timestamp_range": "[987654999123200, 987654999123299]"
       },
       {
-        "created_timestamp": "987654000123456",
+        "created_timestamp": "987654999123200",
         "file_id": "5001",
         "key": [1, 1, 1],
         "num": "8001",
-        "timestamp_range": "[997654000123457,)"
+        "timestamp_range": "[987654999123300,)"
       }
     ],
     "filedata": [
@@ -57,14 +57,15 @@
         "transaction_type": 16
       },
       {
-        "_description": "FileUpdate tx after the contract creation, overwrites the data",
-        "file_data": "6080604052348015600f57600080fd5b5060405160c838038060c8833981016040819052602a91604e565b600080546001600160a01b0319166001600160a01b0392909216919091179055607",
+        "_description": "FileUpdate overwrites the data with the initial bytecode contents",
+        "file_data": "6080604052348015600f57600080fd5b5060405160c838038060c8833981016040819052602a91604e565b600080546001600160a01b0319166001600160a01b0392909216919091179055607c565b600060208284031215605f57600080fd5b815160016",
         "consensus_timestamp": "987654000124000",
         "entity_id": "5001",
         "transaction_type": 19
       },
       {
-        "file_data": "c565b600060208284031215605f57600080fd5b81516001600160a01b0381168114607557600080fd5b9392505050565b603f8060896000396000f3fe6080604052600080fdfea2646970667358221220cef90c1de1bfe76c35095b7f0d6a94d1ca71f144f8da70eb9816329ab76eda3564736f6c634300080a0033",
+        "_description": "FileAppend, the contract is created with the full bytecode contents",
+        "file_data": "00160a01b0381168114607557600080fd5b9392505050565b603f8060896000396000f3fe6080604052600080fdfea2646970667358221220cef90c1de1bfe76c35095b7f0d6a94d1ca71f144f8da70eb9816329ab76eda3564736f6c634300080a0033",
         "consensus_timestamp": "987654999123000",
         "entity_id": "5001",
         "transaction_type": 16
@@ -81,7 +82,7 @@
     "auto_renew_period": null,
     "bytecode": "0x6080604052348015600f57600080fd5b5060405160c838038060c8833981016040819052602a91604e565b600080546001600160a01b0319166001600160a01b0392909216919091179055607c565b600060208284031215605f57600080fd5b81516001600160a01b0381168114607557600080fd5b9392505050565b603f8060896000396000f3fe6080604052600080fdfea2646970667358221220cef90c1de1bfe76c35095b7f0d6a94d1ca71f144f8da70eb9816329ab76eda3564736f6c634300080a0033",
     "contract_id": "0.0.8001",
-    "created_timestamp": "987654.000123456",
+    "created_timestamp": "987654.999123200",
     "deleted": false,
     "evm_address": "0x0000000000000000000000000000000000001f41",
     "expiration_timestamp": null,
@@ -90,7 +91,7 @@
     "obtainer_id": null,
     "proxy_account_id": null,
     "timestamp": {
-      "from": "997654.000123457",
+      "from": "987654.999123300",
       "to": null
     }
   }
