@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.AfterEach;
@@ -39,8 +40,10 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
+import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
@@ -48,25 +51,26 @@ public class ErrataMigrationTest extends IntegrationTest {
 
     public static final long BAD_TIMESTAMP1 = 1568415600193620000L;
     private static final long BAD_TIMESTAMP2 = 1568528100472477002L;
+    private static final long RECEIVER_PAYER_TIMESTAMP = 1570118944399195000L;
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
+    private final ContractResultRepository contractResultRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final DomainBuilder domainBuilder;
     private final ErrataMigration errataMigration;
     private final MirrorProperties mirrorProperties;
     private final TransactionRepository transactionRepository;
 
-    private MirrorProperties.HederaNetwork hederaNetwork;
-
     @BeforeEach
     void setup() {
-        hederaNetwork = mirrorProperties.getNetwork();
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
     }
 
     @AfterEach
     void teardown() {
-        mirrorProperties.setNetwork(hederaNetwork);
+        mirrorProperties.setEndDate(Utility.MAX_INSTANT_LONG);
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
+        mirrorProperties.setStartDate(Instant.EPOCH);
     }
 
     @Test
@@ -74,7 +78,7 @@ public class ErrataMigrationTest extends IntegrationTest {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         domainBuilder.accountBalanceFile().persist();
         domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP1)).persist();
-        spuriousTransfer(1L, 10, TransactionType.CRYPTOTRANSFER);
+        spuriousTransfer(1L, 10, TransactionType.CRYPTOTRANSFER, false, false);
 
         errataMigration.doMigrate();
 
@@ -83,6 +87,20 @@ public class ErrataMigrationTest extends IntegrationTest {
         assertErrataTransfers(ErrataType.DELETE, 0);
         assertErrataTransactions(ErrataType.INSERT, 0);
         assertErrataTransactions(ErrataType.DELETE, 0);
+        assertThat(contractResultRepository.count()).isZero();
+    }
+
+    @Test
+    void migrateOutsideDateRange() throws Exception {
+        Instant now = Instant.now();
+        mirrorProperties.setStartDate(now);
+        mirrorProperties.setEndDate(now.plusSeconds(1L));
+
+        errataMigration.doMigrate();
+
+        assertErrataTransfers(ErrataType.INSERT, 0);
+        assertErrataTransactions(ErrataType.INSERT, 0);
+        assertThat(contractResultRepository.count()).isZero();
     }
 
     @Test
@@ -90,21 +108,23 @@ public class ErrataMigrationTest extends IntegrationTest {
         domainBuilder.accountBalanceFile().persist();
         domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP1)).persist();
         domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP2)).persist();
-        spuriousTransfer(1L, 10, TransactionType.CRYPTOTRANSFER); // Expected
-        spuriousTransfer(2L, 15, TransactionType.CRYPTOTRANSFER); // Expected
-        spuriousTransfer(3L, 22, TransactionType.CRYPTOTRANSFER); // Wrong result
-        spuriousTransfer(4L, 10, TransactionType.CRYPTODELETE);   // Wrong type
-        spuriousTransfer(1577836799000000000L, 10, TransactionType.CRYPTOTRANSFER); // Outside errata period
+        spuriousTransfer(RECEIVER_PAYER_TIMESTAMP, 10, TransactionType.CRYPTOTRANSFER, true, false); // Expected
+        spuriousTransfer(1L, 15, TransactionType.CRYPTOTRANSFER, false, false); // Expected
+        spuriousTransfer(2L, 15, TransactionType.CRYPTOTRANSFER, false, true); // Expected
+        spuriousTransfer(3L, 22, TransactionType.CRYPTOTRANSFER, false, false); // Wrong result
+        spuriousTransfer(4L, 10, TransactionType.CRYPTODELETE, true, false); // Wrong type
+        spuriousTransfer(1577836799000000000L, 10, TransactionType.CRYPTOTRANSFER, false, false); // Outside period
 
         errataMigration.doMigrate();
 
         assertBalanceOffsets(2);
+        assertThat(contractResultRepository.count()).isEqualTo(1L);
         assertErrataTransactions(ErrataType.INSERT, 31);
         assertErrataTransactions(ErrataType.DELETE, 0);
         assertErrataTransfers(ErrataType.INSERT, 92);
-        assertErrataTransfers(ErrataType.DELETE, 4)
+        assertErrataTransfers(ErrataType.DELETE, 6)
                 .extracting(CryptoTransfer::getConsensusTimestamp)
-                .containsOnly(1L, 2L);
+                .containsOnly(1L, 2L, RECEIVER_PAYER_TIMESTAMP);
     }
 
     @Test
@@ -115,7 +135,8 @@ public class ErrataMigrationTest extends IntegrationTest {
         assertErrataTransactions(ErrataType.INSERT, 31);
         assertErrataTransactions(ErrataType.DELETE, 0);
         assertErrataTransfers(ErrataType.INSERT, 92);
-        assertErrataTransfers(ErrataType.DELETE, 4);
+        assertErrataTransfers(ErrataType.DELETE, 6);
+        assertThat(contractResultRepository.count()).isEqualTo(1L);
     }
 
     @Test
@@ -165,20 +186,21 @@ public class ErrataMigrationTest extends IntegrationTest {
                 .hasSize(expected);
     }
 
-    private void spuriousTransfer(long consensusTimestamp, int result, TransactionType type) {
+    private void spuriousTransfer(long consensusTimestamp, int result, TransactionType type, boolean receiverIsPayer,
+                                  boolean senderIsPayer) {
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(consensusTimestamp).result(result).type(type.getProtoId()))
                 .persist();
         long amount = 100000L;
         long payer = transaction.getPayerAccountId().getId() + 1000L;
-        long entityId = transaction.getEntityId().getId() + 1000L;
-        long nonFeePayer = consensusTimestamp % 2 == 0 ? entityId : payer;
+        long sender = senderIsPayer ? payer : domainBuilder.id() + 1000L;
+        long receiver = receiverIsPayer ? payer : domainBuilder.id() + 1000L;
 
-        insertCryptoTransfer(transaction, entityId, amount);
-        insertCryptoTransfer(transaction, nonFeePayer, -amount);
-        insertCryptoTransfer(transaction, 3, 1L);
-        insertCryptoTransfer(transaction, 98, 2L);
-        insertCryptoTransfer(transaction, 98, 4L);
+        insertCryptoTransfer(transaction, sender, -amount);
+        insertCryptoTransfer(transaction, receiver, amount);
+        insertCryptoTransfer(transaction, 3L, 1L);
+        insertCryptoTransfer(transaction, 98L, 2L);
+        insertCryptoTransfer(transaction, 98L, 4L);
         insertCryptoTransfer(transaction, payer, -3L);
         insertCryptoTransfer(transaction, payer, -4L);
     }

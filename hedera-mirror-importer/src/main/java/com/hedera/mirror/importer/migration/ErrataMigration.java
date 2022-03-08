@@ -40,9 +40,11 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
@@ -59,6 +61,7 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
     private final Resource balanceOffsets;
     private final EntityRecordItemListener entityRecordItemListener;
     private final NamedParameterJdbcOperations jdbcOperations;
+    private final MirrorDateRangePropertiesProcessor dateRangeProcessor;
     private final MirrorProperties mirrorProperties;
     private final RecordStreamFileListener recordStreamFileListener;
     private final TransactionRepository transactionRepository;
@@ -116,9 +119,10 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
         String sql = "with spurious_transfer as (" +
                 "  update crypto_transfer ct set errata = 'DELETE' from transaction t " +
                 "  where t.consensus_timestamp = ct.consensus_timestamp and t.type = 14 and t.result <> 22 and " +
-                "  t.consensus_timestamp < 1577836799000000000 and ct.entity_id <> ct.payer_account_id " +
-                "  and amount > 0 and ct.entity_id <> 98 and (ct.entity_id < 3 or ct.entity_id > 27) " +
-                "  returning ct.*" +
+                "  t.consensus_timestamp < 1577836799000000000 and amount > 0 and ct.entity_id <> 98 and " +
+                "  (ct.entity_id < 3 or ct.entity_id > 27) and ((ct.entity_id <> ct.payer_account_id) or " +
+                "  (ct.consensus_timestamp in (1570118944399195000, 1570120372315307000) " +
+                "  and ct.entity_id = ct.payer_account_id)) returning ct.*" +
                 ")" +
                 "update crypto_transfer ct set errata = 'DELETE' from spurious_transfer st " +
                 "where ct.consensus_timestamp = st.consensus_timestamp and ct.amount = st.amount * -1";
@@ -131,6 +135,7 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
         var resourceResolver = new PathMatchingResourcePatternResolver();
         Resource[] resources = resourceResolver.getResources("classpath*:errata/mainnet/missingtransactions/*.bin");
         recordStreamFileListener.onStart();
+        var dateRangeFilter = dateRangeProcessor.getDateRangeFilter(StreamType.RECORD);
 
         for (Resource resource : resources) {
             String name = resource.getFilename();
@@ -142,10 +147,11 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
                 var transactionRecord = TransactionRecord.parseFrom(recordBytes);
                 var transaction = Transaction.parseFrom(transactionBytes);
                 var recordItem = new RecordItem(transaction, transactionRecord);
+                long timestamp = recordItem.getConsensusTimestamp();
 
-                if (transactionRepository.findById(recordItem.getConsensusTimestamp()).isEmpty()) {
+                if (transactionRepository.findById(timestamp).isEmpty() && dateRangeFilter.filter(timestamp)) {
                     entityRecordItemListener.onItem(recordItem);
-                    consensusTimestamps.add(recordItem.getConsensusTimestamp());
+                    consensusTimestamps.add(timestamp);
                 }
             } catch (IOException e) {
                 recordStreamFileListener.onError();
