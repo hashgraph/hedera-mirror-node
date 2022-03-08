@@ -292,13 +292,14 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         recordBuilder.getReceiptBuilder().setStatusValue(status);
 
         // Give from payer to treasury and node
-        long[] transferAccounts = {PAYER.getAccountNum(), TREASURY.getAccountNum(), NODE.getAccountNum()};
-        long[] transferAmounts = {-2000, 1000, 1000};
+        long[] transferAccounts = { PAYER.getAccountNum(), TREASURY.getAccountNum(), NODE.getAccountNum() };
+        long[] transferAmounts = { -2000, 1000, 1000 };
         TransferList.Builder transferList = recordBuilder.getTransferListBuilder();
         for (int i = 0; i < transferAccounts.length; i++) {
             // Irrespective of transaction success, node and network fees are present.
             transferList.addAccountAmounts(accountAmount(transferAccounts[i], transferAmounts[i]));
         }
+
         if (transactionBody.hasCryptoTransfer() && status == ResponseCodeEnum.SUCCESS.getNumber()) {
             for (var aa : transactionBody.getCryptoTransfer().getTransfers().getAccountAmountsList()) {
                 // handle alias case.
@@ -339,6 +340,13 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected AccountAmount.Builder accountAliasAmount(ByteString alias, long amount) {
         return AccountAmount.newBuilder().setAccountID(AccountID.newBuilder().setAlias(alias))
                 .setAmount(amount);
+    }
+
+    protected boolean isAccountAmountReceiverAccountAmount(final CryptoTransfer cryptoTransfer,
+            final AccountAmount receiver) {
+        final CryptoTransfer.Id cryptoTransferId = cryptoTransfer.getId();
+        return cryptoTransferId.getEntityId().getEntityNum() == receiver.getAccountID().getAccountNum() &&
+                cryptoTransferId.getAmount() == receiver.getAmount();
     }
 
     protected TransactionBody getTransactionBody(com.hederahashgraph.api.proto.java.Transaction transaction) {
