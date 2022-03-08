@@ -280,11 +280,16 @@ const addEntity = async (defaults, entity) => {
   await insertDomainObject('entity', insertFields, entity);
 };
 
-const addFileData = async (fileData) => {
-  fileData = {
+const addFileData = async (fileDataInput) => {
+  const fileData = {
     transaction_type: 17,
-    ...fileData,
+    ...fileDataInput,
   };
+
+  // contract bytecode is provided as encoded hex string
+  if (typeof fileDataInput.file_data === 'string') {
+    fileData.file_data = Buffer.from(fileDataInput.file_data, 'utf-8');
+  }
 
   await sqlConnection.query(
     `insert into file_data (file_data, consensus_timestamp, entity_id, transaction_type)
