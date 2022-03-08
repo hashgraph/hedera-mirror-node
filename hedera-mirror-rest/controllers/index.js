@@ -21,5 +21,6 @@
 'use strict';
 
 module.exports = {
+  AccountController: require('./accountController'),
   ContractController: require('./contractController'),
 };

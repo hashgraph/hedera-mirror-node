@@ -44,6 +44,65 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
+  /api/v1/accounts/{accountAliasOrAccountId}/nfts:
+    get:
+      summary: Get nfts for an account info
+      description: |
+        Returns information for all non-fungible tokens for an account.
+
+        ## Ordering
+        When considering NFTs, their order is governed by a combination of their numerical **token.Id** and **serialnumber** values, with **token.id** being the parent column.
+        A serialnumbers value governs its order within the given token.id
+
+        In that regard, if a user acquired a set of NFTs in the order (2-2, 2-4 1-5, 1-1, 1-3, 3-3, 3-4), the following layouts illustrate the ordering expectations for ownership listing
+        1. **All NFTs in ASC order**: 1-1, 1-3, 1-5, 2-2, 2-4, 3-3, 3-4
+        2. **All NFTs in DESC order**: 3-4, 3-3, 2-4, 2-2, 1-5, 1-3, 1-1
+        3. **NFTs above 1-1 in ASC order**: 1-3, 1-5, 2-2, 2-4, 3-3, 3-4
+        4. **NFTs below 3-3 in ASC order**: 1-1, 1-3, 1-5, 2-2, 2-4
+        5. **NFTs between 1-3 and 3-3 inclusive in DESC order**: 3-4, 3-3, 2-4, 2-2, 1-5, 1-3
+
+        Note: The default order for this API is currently DESC
+
+        ## Filtering
+        When filtering there are some restrictions enforced to ensure correctness and scalability.
+
+        **The table below defines the restrictions and support for the NFT ownership endpoint**
+
+        | Query Param   | Comparison Operator | Support | Description           | Example |
+        | ------------- | ------------------- | ------- | --------------------- | ------- |
+        | token.id      | eq                  | Y       | Single occurence only. | ?token.id=X |
+        |               | ne                  | N       | | |
+        |               | lt(e)               | Y       | Single occurence only. | ?token.id=lte:X |
+        |               | gt(e)               | Y       | Single occurence only. | ?token.id=gte:X |
+        | serialnumber  | eq                  | Y       | Single occurence only. Requires the presence of a **token.id** query | ?serialnumber=lt:Y |
+        |               | ne                  | N       | | |
+        |               | lt(e)               | Y       | Single occurence only. Requires the presence of an **lte** **token.id** query | ?token.id=lte:X&serialnumber=lt:Y |
+        |               | gt(e)               | Y       | Single occurence only. Requires the presence of an **gte** **token.id** query | ?token.id=gte:X&serialnumber=gt:Y |
+
+        Note: When searching across a range for individual NFTs a **serialnumber** with an additional **token.id** query filter must be provided.
+        Both filters must be a single occurence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
+
+      operationId: listNftByAccountId
+      parameters:
+        - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
+        - $ref: '#/components/parameters/tokenIdQueryParam'
+        - $ref: '#/components/parameters/serialNumberQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Nfts'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - accounts
+        - tokens
   /api/v1/balances:
     get:
       summary: List account balances
@@ -704,7 +763,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.52.0-SNAPSHOT
+  version: 0.53.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -2326,14 +2385,33 @@ components:
     serialNumberQueryParam:
       name: serialnumber
       in: query
-      description: The nft serial number (64 bit type)
-      example: 2
+      explode: true
+      description: The nft serial number (64 bit type). Requires a tokenId value also be populated.
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        serialNumNoOperator:
+          summary: Example of serialNum equals with no operator
+          value: 100
+        serialNumEqOperator:
+          summary: Example of serialNum equals operator
+          value: eq:200
+        serialNumGtOperator:
+          summary: Example of serialNum greater than operator
+          value: gt:400
+        serialNumGteOperator:
+          summary: Example of serialNum greater than or equals operator
+          value: gte:500
+        serialNumLtOperator:
+          summary: Example of serialNum less than operator
+          value: lt:600
+        serialNumLteOperator:
+          summary: Example of serialNum less than or equals operator
+          value: lte:700
       schema:
-        type: integer
-        format: int64
-        default: 1
-        minimum: 1
-        maximum: 9223372036854775807
+        type: string
+        pattern: ^((eq|gt|gte|lt|lte):)?\d{1,19}?$
     timestampQueryParam:
       description: The consensus timestamp in seconds.nanoseconds format with an optional comparison operator
       name: timestamp

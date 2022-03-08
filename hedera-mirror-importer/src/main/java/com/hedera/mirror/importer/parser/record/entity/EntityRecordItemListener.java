@@ -53,6 +53,7 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -171,11 +172,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         transactionHandler.updateTransaction(transaction, recordItem);
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
-            if (body.hasCryptoCreateAccount() && recordItem.isSuccessful()) {
-                insertCryptoCreateTransferList(consensusTimestamp, recordItem);
-            } else {
-                insertTransferList(recordItem);
-            }
+            insertTransferList(recordItem);
         }
 
         // handle scheduled transaction, even on failure
@@ -429,48 +426,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             cryptoTransfer.setPayerAccountId(payerAccountId);
             cryptoTransfer.setErrata(isFailedNonFeeTransfer.test(aa) ? ErrataType.DELETE : null);
             entityListener.onCryptoTransfer(cryptoTransfer);
-        }
-    }
-
-    private void insertCryptoCreateTransferList(long consensusTimestamp, RecordItem recordItem) {
-        var record = recordItem.getRecord();
-        var body = recordItem.getTransactionBody();
-        long initialBalance = body.getCryptoCreateAccount().getInitialBalance();
-        EntityId createdAccount = EntityId.of(record.getReceipt().getAccountID());
-        boolean addInitialBalance = true;
-        TransferList transferList = record.getTransferList();
-
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var account = EntityId.of(aa.getAccountID());
-            CryptoTransfer cryptoTransfer = new CryptoTransfer();
-            cryptoTransfer.setAmount(aa.getAmount());
-            cryptoTransfer.setConsensusTimestamp(consensusTimestamp);
-            cryptoTransfer.setEntityId(account.getId());
-            cryptoTransfer.setIsApproval(aa.getIsApproval());
-            cryptoTransfer.setPayerAccountId(recordItem.getPayerAccountId());
-            entityListener.onCryptoTransfer(cryptoTransfer);
-
-            // Don't manually add an initial balance transfer if the transfer list contains it already
-            if (initialBalance == aa.getAmount() && createdAccount.equals(account)) {
-                addInitialBalance = false;
-            }
-        }
-
-        if (addInitialBalance) {
-            CryptoTransfer transferOut = new CryptoTransfer();
-            transferOut.setAmount(-initialBalance);
-            transferOut.setConsensusTimestamp(consensusTimestamp);
-            transferOut.setEntityId(recordItem.getPayerAccountId().getId());
-            transferOut.setPayerAccountId(recordItem.getPayerAccountId());
-            entityListener.onCryptoTransfer(transferOut);
-
-            CryptoTransfer transferIn = new CryptoTransfer();
-            transferIn.setConsensusTimestamp(consensusTimestamp);
-            transferIn.setAmount(initialBalance);
-            transferIn.setEntityId(createdAccount.getId());
-            transferIn.setPayerAccountId(recordItem.getPayerAccountId());
-            entityListener.onCryptoTransfer(transferIn);
         }
     }
 

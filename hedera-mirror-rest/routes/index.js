@@ -21,5 +21,6 @@
 'use strict';
 
 module.exports = {
+  AccountRoutes: require('./accountRoute'),
   ContractRoutes: require('./contractRoute'),
 };

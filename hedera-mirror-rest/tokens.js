@@ -36,7 +36,7 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {NotFoundError} = require('./errors/notFoundError');
 
 // models
-const {CustomFee, Entity, Nft, NftTransfer, Token, Transaction, TransactionType} = require('./model');
+const {CustomFee, Entity, Nft, NftTransfer, Token, Transaction} = require('./model');
 
 // middleware
 const {httpStatusCodes} = require('./constants');
@@ -339,8 +339,9 @@ const getTokensRequest = async (req, res) => {
   const nextLink = utils.getPaginationLink(
     req,
     tokens.length !== limit,
-    constants.filterKeys.TOKEN_ID,
-    lastTokenId,
+    {
+      [constants.filterKeys.TOKEN_ID]: lastTokenId,
+    },
     order
   );
 
@@ -609,8 +610,9 @@ const getTokenBalances = async (req, res) => {
   response.links.next = utils.getPaginationLink(
     req,
     response.balances.length !== limit,
-    constants.filterKeys.ACCOUNT_ID,
-    anchorAccountId,
+    {
+      [constants.filterKeys.ACCOUNT_ID]: anchorAccountId,
+    },
     order
   );
 
@@ -732,8 +734,9 @@ const getNftTokensRequest = async (req, res) => {
   response.links.next = utils.getPaginationLink(
     req,
     response.nfts.length !== limit,
-    constants.filterKeys.SERIAL_NUMBER,
-    anchorSerialNumber,
+    {
+      [constants.filterKeys.SERIAL_NUMBER]: anchorSerialNumber,
+    },
     order
   );
 
@@ -937,8 +940,9 @@ const getNftTransferHistoryRequest = async (req, res) => {
   response.links.next = utils.getPaginationLink(
     req,
     response.transactions.length !== limit,
-    constants.filterKeys.TIMESTAMP,
-    anchorTimestamp,
+    {
+      [constants.filterKeys.TIMESTAMP]: anchorTimestamp,
+    },
     order
   );
 

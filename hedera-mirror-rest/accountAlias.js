@@ -23,6 +23,10 @@
 const base32 = require('./base32');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
+// limit the alias to the base32 alphabet excluding padding, other checks will be done in base32.decode. We need
+// the check here because base32.decode allows lower case letters, padding, and auto corrects some typos.
+const accountAliasRegex = /^(\d{1,5}\.){0,2}[A-Z2-7]+$/;
+
 class AccountAlias {
   /**
    * Creates an AccountAlias object.
@@ -50,12 +54,21 @@ class AccountAlias {
   }
 
   /**
+   * Checks if the accountAlias string is valid
+   * @param {string} accountAlias
+   * @return {boolean}
+   */
+  static isValid(accountAlias) {
+    return typeof accountAlias === 'string' && accountAliasRegex.test(accountAlias);
+  }
+
+  /**
    * Parses a string to an AccountAlias object.
    * @param {string} str
    * @return {AccountAlias}
    */
   static fromString(str) {
-    if (!isValid(str)) {
+    if (!AccountAlias.isValid(str)) {
       throw new InvalidArgumentError(`Invalid accountAlias string ${str}`);
     }
 
@@ -69,16 +82,5 @@ class AccountAlias {
     }
   }
 }
-
-// limit the alias to the base32 alphabet excluding padding, other checks will be done in base32.decode. We need
-// the check here because base32.decode allows lower case letters, padding, and auto corrects some typos.
-const accountAliasRegex = /^(\d{1,5}\.){0,2}[A-Z2-7]+$/;
-
-/**
- * Checks if the accountAlias string is valid
- * @param {string} accountAlias
- * @return {boolean}
- */
-const isValid = (accountAlias) => typeof accountAlias == 'string' && accountAliasRegex.test(accountAlias);
 
 module.exports = AccountAlias;

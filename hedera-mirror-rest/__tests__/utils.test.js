@@ -1213,3 +1213,183 @@ describe('Utils test - utils.checkTimestampRange', () => {
     );
   });
 });
+
+describe('Utils getNextParamQueries', () => {
+  const testSpecs = [
+    {
+      name: 'limit (eq) only with ASC',
+      args: [
+        constants.orderFilterValues.ASC,
+        {
+          [constants.filterKeys.LIMIT]: 10,
+        },
+        {
+          [constants.filterKeys.ACCOUNT_ID]: 3,
+        },
+        {},
+      ],
+      expected: '?limit=10&account.id=gt:3',
+    },
+    {
+      name: 'limit (eq) with DESC',
+      args: [
+        constants.orderFilterValues.DESC,
+        {
+          [constants.filterKeys.LIMIT]: 10,
+          [constants.filterKeys.ORDER]: 'desc',
+        },
+        {
+          [constants.filterKeys.ACCOUNT_ID]: 3,
+        },
+        {},
+      ],
+      expected: '?limit=10&order=desc&account.id=lt:3',
+    },
+    {
+      name: 'order only with DESC',
+      args: [
+        constants.orderFilterValues.DESC,
+        {
+          [constants.filterKeys.ORDER]: 'desc',
+        },
+        {
+          [constants.filterKeys.TOKEN_ID]: 3,
+        },
+        {},
+      ],
+      expected: '?order=desc&token.id=lt:3',
+    },
+    {
+      name: 'tokenId (gt) only with ASC',
+      args: [
+        constants.orderFilterValues.ASC,
+        {},
+        {
+          [constants.filterKeys.TOKEN_ID]: 3,
+        },
+        {},
+      ],
+      expected: '?token.id=gt:3',
+    },
+    {
+      name: 'tokenId (lte) only with DESC',
+      args: [
+        constants.orderFilterValues.DESC,
+        {
+          [constants.filterKeys.ORDER]: 'desc',
+        },
+        {
+          [constants.filterKeys.TOKEN_ID]: 3,
+        },
+        {},
+      ],
+      expected: '?order=desc&token.id=lt:3',
+    },
+    {
+      name: 'tokenId (eq) and serial (gt) combo with ASC',
+      args: [
+        constants.orderFilterValues.ASC,
+        {
+          [constants.filterKeys.TOKEN_ID]: 2,
+          [constants.filterKeys.SERIAL_NUMBER]: 'gt:1',
+        },
+        {
+          [constants.filterKeys.TOKEN_ID]: 2,
+          [constants.filterKeys.SERIAL_NUMBER]: 4,
+        },
+        {},
+      ],
+      expected: '?token.id=2&serialnumber=gt:4',
+    },
+    {
+      name: 'tokenId (lte) and serial (gte) combo with ASC',
+      args: [
+        constants.orderFilterValues.ASC,
+        {
+          [constants.filterKeys.TOKEN_ID]: 'lte:5',
+          [constants.filterKeys.SERIAL_NUMBER]: 'gte:1',
+        },
+        {
+          [constants.filterKeys.TOKEN_ID]: 2,
+          [constants.filterKeys.SERIAL_NUMBER]: 4,
+        },
+        {},
+      ],
+      expected: '?token.id=lte:5&token.id=gt:2&serialnumber=gt:4',
+    },
+    {
+      name: 'tokenId (lte) and serial (gte) combo with DESC',
+      args: [
+        constants.orderFilterValues.DESC,
+        {
+          [constants.filterKeys.TOKEN_ID]: 'lte:5',
+          [constants.filterKeys.SERIAL_NUMBER]: 'gte:1',
+        },
+        {
+          [constants.filterKeys.TOKEN_ID]: 2,
+          [constants.filterKeys.SERIAL_NUMBER]: 4,
+        },
+        {},
+      ],
+      expected: '?serialnumber=gte:1&serialnumber=lt:4&token.id=lt:2',
+    },
+    {
+      name: 'serialnumber (gt) and serial (lt) with DESC',
+      args: [
+        constants.orderFilterValues.DESC,
+        {
+          [constants.filterKeys.SERIAL_NUMBER]: 'gt:1',
+          [constants.filterKeys.ACCOUNT_ID]: 1001,
+          [constants.filterKeys.ORDER]: 'desc',
+          [constants.filterKeys.LIMIT]: 2,
+        },
+        {
+          [constants.filterKeys.SERIAL_NUMBER]: 3,
+        },
+        {},
+      ],
+      expected: '?serialnumber=gt:1&serialnumber=lt:3&account.id=1001&order=desc&limit=2',
+    },
+    {
+      name: 'serialnumber (gt) and serial (lt) with DESC',
+      args: [
+        constants.orderFilterValues.ASC,
+        {
+          [constants.filterKeys.ACCOUNT_ID]: ['gte:0.0.18', 'lt:0.0.21'],
+          [constants.filterKeys.LIMIT]: 2,
+        },
+        {
+          [constants.filterKeys.ACCOUNT_ID]: '0.0.19',
+        },
+        {},
+      ],
+      expected: '?account.id=lt:0.0.21&account.id=gt:0.0.19&limit=2',
+    },
+    {
+      name: 'serialnumber (gte) and serial (lte) with ASC and inclusive',
+      args: [
+        constants.orderFilterValues.ASC,
+        {
+          [constants.filterKeys.SERIAL_NUMBER]: 'gte:2',
+          [constants.filterKeys.TOKEN_ID]: 'gte:100',
+          [constants.filterKeys.ORDER]: 'asc',
+          [constants.filterKeys.LIMIT]: 2,
+        },
+        {
+          [constants.filterKeys.SERIAL_NUMBER]: 3,
+          [constants.filterKeys.TOKEN_ID]: 100,
+        },
+        {
+          [constants.filterKeys.TOKEN_ID]: true,
+        },
+      ],
+      expected: '?order=asc&limit=2&serialnumber=gt:3&token.id=gte:100',
+    },
+  ];
+
+  testSpecs.forEach((spec) => {
+    test(spec.name, () => {
+      expect(utils.getNextParamQueries(...spec.args)).toEqual(spec.expected);
+    });
+  });
+});

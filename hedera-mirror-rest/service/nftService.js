@@ -23,16 +23,93 @@
 const _ = require('lodash');
 
 const {Nft} = require('../model');
+const BaseService = require('./baseService');
+const {
+  response: {
+    limit: {default: defaultLimit},
+  },
+} = require('../config');
+const {orderFilterValues} = require('../constants');
 
 /**
  * Nft business model
  */
-class NftService {
+class NftService extends BaseService {
   static nftByIdQuery = 'select * from nft where token_id = $1 and serial_number = $2';
+
+  static nftQuery = `select
+    ${Nft.ACCOUNT_ID},
+    ${Nft.CREATED_TIMESTAMP},
+    ${Nft.DELETED},
+    ${Nft.METADATA},
+    ${Nft.MODIFIED_TIMESTAMP},
+    ${Nft.SERIAL_NUMBER},
+    ${Nft.TOKEN_ID}
+    from ${Nft.tableName}`;
 
   async getNft(tokenId, serialNumber) {
     const {rows} = await pool.queryQuietly(NftService.nftByIdQuery, [tokenId, serialNumber]);
     return _.isEmpty(rows) ? null : new Nft(rows[0]);
+  }
+
+  getNftsFiltersQuery(whereConditions, whereParams, nftOrder, limit, paramsLength = whereParams.length) {
+    const params = whereParams;
+    const orderClause = [super.getOrderByQuery(Nft.TOKEN_ID, nftOrder), `${Nft.SERIAL_NUMBER} ${nftOrder}`].join(', ');
+    const query = [
+      NftService.nftQuery,
+      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
+      orderClause,
+      super.getLimitQuery(paramsLength + 1),
+    ].join('\n');
+    params.push(limit);
+
+    return [query, params];
+  }
+
+  async getNftOwnership(lower, inner, upper, order, limit) {
+    let allParams = [];
+    let allQueries = [];
+    if (!_.isEmpty(lower)) {
+      const [lowerQuery, lowerParams] = this.getNftsFiltersQuery(lower.conditions, lower.params, order, limit);
+      allQueries = allQueries.concat(`(${lowerQuery})`);
+      allParams = allParams.concat(lowerParams);
+    }
+
+    if (!_.isEmpty(inner)) {
+      const [innerQuery, innerParams] = this.getNftsFiltersQuery(
+        inner.conditions,
+        inner.params,
+        order,
+        limit,
+        inner.params.length + allParams.length
+      );
+      allQueries = allQueries.concat(`(${innerQuery})`);
+      allParams = allParams.concat(innerParams);
+    }
+
+    if (!_.isEmpty(upper)) {
+      const [upperQuery, upperParams] = this.getNftsFiltersQuery(
+        upper.conditions,
+        upper.params,
+        order,
+        limit,
+        upper.params.length + allParams.length
+      );
+      allQueries = allQueries.concat(`(${upperQuery})`);
+      allParams = allParams.concat(upperParams);
+    }
+
+    let unionQuery = allQueries.filter((x) => !!x).join('\nunion all\n');
+
+    // if more than 1 query was combined add an additional order and limit to format joined results
+    if (allQueries.length > 1) {
+      unionQuery = unionQuery
+        .concat(`\n${[super.getOrderByQuery(Nft.TOKEN_ID, order), `${Nft.SERIAL_NUMBER} ${order}`].join(', ')}`)
+        .concat(`\n${super.getLimitQuery(allParams.length)}`);
+    }
+
+    const rows = await super.getRows(unionQuery, allParams, 'getNftOwnership');
+    return rows.map((nft) => new Nft(nft));
   }
 }
 
