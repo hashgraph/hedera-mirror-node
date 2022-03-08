@@ -8,5 +8,6 @@ with crypto_creates as (
 )
 delete
 from crypto_transfer ct using crypto_creates cc
-where ct.consensus_timestamp = cs.consensus_timestamp
+where ct.consensus_timestamp = cc.consensus_timestamp
   and amount = 0;
+
