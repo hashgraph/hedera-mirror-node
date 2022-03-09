@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -90,8 +89,7 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
-        return contractFunctionResult != ContractFunctionResult.getDefaultInstance() &&
-                contractFunctionResult.getContractCallResult() != ByteString.EMPTY;
+        return !contractFunctionResult.equals(ContractFunctionResult.getDefaultInstance());
     }
 
     private boolean isContractCreateOrCall(TransactionBody transactionBody) {
@@ -146,10 +144,11 @@ public class ContractResultServiceImpl implements ContractResultService {
     private void processContractStateChanges(ContractFunctionResult functionResult, ContractResult contractResult) {
 
         for (var stateChange : functionResult.getStateChangesList()) {
+            var contractId = lookup(contractResult.getContractId(), stateChange.getContractID());
             for (var storageChange : stateChange.getStorageChangesList()) {
                 ContractStateChange contractStateChange = new ContractStateChange();
                 contractStateChange.setConsensusTimestamp(contractResult.getConsensusTimestamp());
-                contractStateChange.setContractId(lookup(contractResult.getContractId(), stateChange.getContractID()));
+                contractStateChange.setContractId(contractId);
                 contractStateChange.setPayerAccountId(contractResult.getPayerAccountId());
                 contractStateChange.setSlot(DomainUtils.toBytes(storageChange.getSlot()));
                 contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
@@ -166,7 +165,6 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
-    @SuppressWarnings("deprecation")
     private List<Long> getCreatedContractIds(ContractFunctionResult functionResult, RecordItem recordItem,
                                              ContractResult contractResult) {
         List<Long> createdContractIds = new ArrayList<>();

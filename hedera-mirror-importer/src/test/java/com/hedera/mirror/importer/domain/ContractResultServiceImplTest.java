@@ -76,7 +76,6 @@ class ContractResultServiceImplTest {
 
         doNothing().when(transactionHandler).updateContractResult(any(ContractResult.class), any(RecordItem.class));
         doReturn(transactionHandler).when(transactionHandlerFactory).get(any(TransactionType.class));
-//        when(transactionHandlerFactory.get(TransactionType.CONTRACTCALL)).thenReturn(resolvedId);
         contractResultService = new ContractResultServiceImpl(entityProperties, entityIdService, entityListener,
                 transactionHandlerFactory);
     }
