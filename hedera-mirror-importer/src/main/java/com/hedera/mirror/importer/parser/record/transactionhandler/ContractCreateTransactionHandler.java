@@ -67,33 +67,35 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
     @Override
     protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
-        if (entityProperties.getPersist().isContracts() && recordItem.isSuccessful()) {
-            var contractCreateResult = recordItem.getRecord().getContractCreateResult();
-            var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
-
-            if (transactionBody.hasAutoRenewPeriod()) {
-                contract.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
-            }
-
-            if (transactionBody.hasAdminKey()) {
-                contract.setKey(transactionBody.getAdminKey().toByteArray());
-            }
-
-            if (transactionBody.hasProxyAccountID()) {
-                contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
-            }
-
-            if (transactionBody.hasFileID()) {
-                contract.setFileId(EntityId.of(transactionBody.getFileID()));
-            }
-
-            if (contractCreateResult.hasEvmAddress()) {
-                contract.setEvmAddress(DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()));
-            }
-
-            contract.setMemo(transactionBody.getMemo());
-            entityListener.onContract(contract);
+        if (!entityProperties.getPersist().isContracts()) {
+            return;
         }
+
+        var contractCreateResult = recordItem.getRecord().getContractCreateResult();
+        var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+
+        if (transactionBody.hasAutoRenewPeriod()) {
+            contract.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
+        }
+
+        if (transactionBody.hasAdminKey()) {
+            contract.setKey(transactionBody.getAdminKey().toByteArray());
+        }
+
+        if (transactionBody.hasProxyAccountID()) {
+            contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
+        }
+
+        if (transactionBody.hasFileID()) {
+            contract.setFileId(EntityId.of(transactionBody.getFileID()));
+        }
+
+        if (contractCreateResult.hasEvmAddress()) {
+            contract.setEvmAddress(DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()));
+        }
+
+        contract.setMemo(transactionBody.getMemo());
+        entityListener.onContract(contract);
     }
 
     @Override

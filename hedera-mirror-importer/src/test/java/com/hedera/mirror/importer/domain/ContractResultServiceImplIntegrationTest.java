@@ -24,7 +24,6 @@ import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -32,12 +31,13 @@ import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -48,42 +48,28 @@ import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
-import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractResultServiceImplIntegrationTest extends IntegrationTest {
-    protected static final ContractID CONTRACT_ID = ContractID.newBuilder().setContractNum(901).build();
-    protected static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
-    protected static final AccountID PROXY = AccountID.newBuilder().setAccountNum(1003).build();
-    @Resource
-    protected RecordItemBuilder recordItemBuilder;
-    @Resource
-    protected RecordStreamFileListener recordStreamFileListener;
-    @Resource
-    private ContractResultService contractResultService;
-    @Resource
-    private ContractResultRepository contractResultRepository;
-    @Resource
-    private ContractLogRepository contractLogRepository;
-    @Resource
-    private ContractStateChangeRepository contractStateChangeRepository;
-    @Resource
-    private DomainBuilder domainBuilder;
-    @Resource
-    private TransactionTemplate transactionTemplate;
-    @Resource
-    private EntityProperties entityProperties;
-    @Resource
-    private TransactionHandlerFactory transactionHandlerFactory;
+    private static final ContractID CONTRACT_ID = ContractID.newBuilder().setContractNum(901).build();
+    private final EntityProperties entityProperties;
+    private final ContractLogRepository contractLogRepository;
+    private final ContractResultRepository contractResultRepository;
+    private final ContractResultService contractResultService;
+    private final ContractStateChangeRepository contractStateChangeRepository;
+    private final DomainBuilder domainBuilder;
+    private final RecordItemBuilder recordItemBuilder;
+    private final RecordStreamFileListener recordStreamFileListener;
+    private final TransactionTemplate transactionTemplate;
 
     @BeforeEach
     void setup() {
@@ -93,21 +79,17 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     @Test
     void getContractResultOnCall() {
         RecordItem recordItem = recordItemBuilder.contractCall().build();
-        EntityId contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCallResult();
 
-        contractResultsTest(recordItem, contractEntityId, contractFunctionResult,
-                TransactionType.CONTRACTCALL);
+        contractResultsTest(recordItem, contractFunctionResult);
     }
 
     @Test
     void getContractResultOnCreate() {
         RecordItem recordItem = recordItemBuilder.contractCreate(CONTRACT_ID).build();
-        EntityId contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
-        contractResultsTest(recordItem, contractEntityId, contractFunctionResult,
-                TransactionType.CONTRACTCREATEINSTANCE);
+        contractResultsTest(recordItem, contractFunctionResult);
     }
 
     @Disabled("Precompiled input value not yet supported")
@@ -117,11 +99,9 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         RecordItem recordItem = recordItemBuilder.tokenMint(TokenType.FUNGIBLE_COMMON)
                 .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
                 .build();
-        EntityId contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
-        contractResultsTest(recordItem, contractEntityId, contractFunctionResult,
-                TransactionType.TOKENMINT);
+        contractResultsTest(recordItem, contractFunctionResult);
     }
 
     @Disabled("Precompiled input value not yet supported")
@@ -131,41 +111,34 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         RecordItem recordItem = recordItemBuilder.tokenMint(TokenType.NON_FUNGIBLE_UNIQUE)
                 .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
                 .build();
-        EntityId contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
-        contractResultsTest(recordItem, contractEntityId, contractFunctionResult,
-                TransactionType.TOKENMINT);
+        contractResultsTest(recordItem, contractFunctionResult);
     }
 
     @Test
     void getContractCallResultDefaultFunctionResult() {
         RecordItem recordItem = recordItemBuilder.contractCall().record(x -> x.clearContractCallResult()).build();
-        EntityId contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
-        contractResultsTest(recordItem, contractEntityId, contractFunctionResult, TransactionType.CONTRACTCALL);
+        contractResultsTest(recordItem, contractFunctionResult);
     }
 
     @Test
     void getContractCreateResultDefaultFunctionResult() {
         RecordItem recordItem = recordItemBuilder.contractCreate().record(x -> x.clearContractCreateResult()).build();
-        EntityId contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
-        contractResultsTest(recordItem, contractEntityId, contractFunctionResult,
-                TransactionType.CONTRACTCREATEINSTANCE);
+        contractResultsTest(recordItem, contractFunctionResult);
     }
 
     @Test
     void contractResultZeroLogs() {
         RecordItem recordItem = recordItemBuilder.contractCall().record(x -> x
                 .setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID).clearLogInfo())).build();
-        EntityId contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCallResult();
 
-        contractResultsTest(recordItem, contractEntityId, contractFunctionResult,
-                TransactionType.CONTRACTCALL);
+        contractResultsTest(recordItem, contractFunctionResult);
     }
 
     @Test
@@ -174,11 +147,9 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .setContractCreateResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID).clearStateChanges()))
                 .receipt(r -> r.setContractID(CONTRACT_ID))
                 .build();
-        EntityId contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
-        contractResultsTest(recordItem, contractEntityId, contractFunctionResult,
-                TransactionType.CONTRACTCREATEINSTANCE);
+        contractResultsTest(recordItem, contractFunctionResult);
     }
 
     @Test
@@ -187,11 +158,9 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .record(x -> x.clearContractCallResult())
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
-        EntityId contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
-        contractResultsTest(recordItem, contractEntityId, contractFunctionResult,
-                TransactionType.CONTRACTCALL);
+        contractResultsTest(recordItem, contractFunctionResult);
     }
 
     @Test
@@ -200,18 +169,20 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .record(x -> x.clearContractCreateResult())
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
-        EntityId contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
-        contractResultsTest(recordItem, contractEntityId, contractFunctionResult,
-                TransactionType.CONTRACTCREATEINSTANCE);
+        contractResultsTest(recordItem, contractFunctionResult);
     }
 
-    private void contractResultsTest(RecordItem recordItem, EntityId contractEntityId,
-                                     ContractFunctionResult contractFunctionResult, TransactionType transactionType) {
+    private void contractResultsTest(RecordItem recordItem, ContractFunctionResult contractFunctionResult) {
+
+        var transaction = domainBuilder.transaction().customize(t -> t
+                .entityId(EntityId.of(recordItem.getRecord().getReceipt().getContractID()))
+                .type(recordItem.getTransactionType())).get();
+
         var createdIds = contractFunctionResult.getCreatedContractIDsList().stream().map(x -> x.getContractNum())
                 .collect(Collectors.toList());
-        parseRecordItemAndCommit(recordItem, contractEntityId, transactionHandlerFactory.get(transactionType));
+        parseRecordItemAndCommit(recordItem, transaction);
 
         ObjectAssert<ContractResult> contractResultAssert = assertThat(contractResultRepository.findAll())
                 .hasSize(1)
@@ -296,8 +267,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         }
     }
 
-    protected void parseRecordItemAndCommit(RecordItem recordItem, EntityId contractEntityId,
-                                            TransactionHandler transactionHandler) {
+    protected void parseRecordItemAndCommit(RecordItem recordItem, Transaction transaction) {
         transactionTemplate.executeWithoutResult(status -> {
             Instant instant = Instant.ofEpochSecond(0, recordItem.getConsensusTimestamp());
             String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
@@ -309,7 +279,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                     .get();
 
             recordStreamFileListener.onStart();
-            contractResultService.process(recordItem, contractEntityId, transactionHandler);
+            contractResultService.process(recordItem, transaction);
             // commit, close connection
             recordStreamFileListener.onEnd(recordFile);
         });

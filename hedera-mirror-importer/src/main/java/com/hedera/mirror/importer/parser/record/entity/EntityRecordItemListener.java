@@ -243,7 +243,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertAutomaticTokenAssociations(recordItem);
         }
 
-        insertContractResult(recordItem, transactionHandler.getEntity(recordItem), transactionHandler);
+        contractResultService.process(recordItem, transaction);
 
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
@@ -1075,13 +1075,6 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         if (royaltyFee.hasFallbackFee()) {
             parseFixedFee(customFee, royaltyFee.getFallbackFee(), tokenId);
-        }
-    }
-
-    private void insertContractResult(RecordItem recordItem, EntityId contractEntityId,
-                                      TransactionHandler transactionHandler) {
-        if (entityProperties.getPersist().isContracts()) {
-            contractResultService.process(recordItem, contractEntityId, transactionHandler);
         }
     }
 }

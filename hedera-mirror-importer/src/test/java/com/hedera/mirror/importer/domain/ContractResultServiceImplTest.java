@@ -24,8 +24,11 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -39,23 +42,30 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
+import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 
 @ExtendWith(MockitoExtension.class)
 class ContractResultServiceImplTest {
     private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
     private final EntityProperties entityProperties = new EntityProperties();
+    private final DomainBuilder domainBuilder = new DomainBuilder();
 
     @Mock(lenient = true)
     private EntityIdService entityIdService;
     @Mock
     private EntityListener entityListener;
+    @Mock
+    private TransactionHandlerFactory transactionHandlerFactory;
     @Mock
     private TransactionHandler transactionHandler;
 
@@ -63,7 +73,12 @@ class ContractResultServiceImplTest {
 
     @BeforeEach
     void beforeEach() {
-        contractResultService = new ContractResultServiceImpl(entityProperties, entityIdService, entityListener);
+
+        doNothing().when(transactionHandler).updateContractResult(any(ContractResult.class), any(RecordItem.class));
+        doReturn(transactionHandler).when(transactionHandlerFactory).get(any(TransactionType.class));
+//        when(transactionHandlerFactory.get(TransactionType.CONTRACTCALL)).thenReturn(resolvedId);
+        contractResultService = new ContractResultServiceImpl(entityProperties, entityIdService, entityListener,
+                transactionHandlerFactory);
     }
 
     @CsvSource({
@@ -83,6 +98,7 @@ class ContractResultServiceImplTest {
         var expectedId = EntityId.of(expectedNum, CONTRACT);
         var resolvedId = EntityId.of(resolvedNum, CONTRACT);
 
+        var transaction = domainBuilder.transaction().customize(t -> t.entityId(expectedId)).get();
         var recordItem = recordItemBuilder.contractCreate()
                 .record(r -> {
                     r.getContractCreateResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
@@ -97,7 +113,7 @@ class ContractResultServiceImplTest {
         }
         when(entityIdService.lookup(evmAddress)).thenReturn(resolvedId);
 
-        contractResultService.process(recordItem, expectedId, transactionHandler);
+        contractResultService.process(recordItem, transaction);
 
         verify(entityListener).onContractLog(assertArg(l -> assertThat(l.getContractId()).isEqualTo(expectedId)));
         verify(entityListener, times(2)).onContractStateChange(assertArg(s ->
@@ -122,6 +138,7 @@ class ContractResultServiceImplTest {
         var expectedId = EntityId.of(expectedNum, CONTRACT);
         var resolvedId = EntityId.of(resolvedNum, CONTRACT);
 
+        var transaction = domainBuilder.transaction().customize(t -> t.entityId(expectedId)).get();
         var recordItem = recordItemBuilder.contractCall()
                 .record(r -> {
                     r.getContractCallResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
@@ -135,7 +152,7 @@ class ContractResultServiceImplTest {
                     .thenThrow(new RuntimeException(new InvalidEntityException("")));
         }
         when(entityIdService.lookup(evmAddress)).thenReturn(resolvedId);
-        contractResultService.process(recordItem, expectedId, transactionHandler);
+        contractResultService.process(recordItem, transaction);
 
         verify(entityListener).onContractLog(assertArg(l -> assertThat(l.getContractId()).isEqualTo(expectedId)));
         verify(entityListener, times(2)).onContractStateChange(assertArg(s ->

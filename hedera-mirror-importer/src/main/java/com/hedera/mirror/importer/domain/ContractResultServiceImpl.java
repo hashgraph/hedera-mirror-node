@@ -40,11 +40,14 @@ import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
+import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -55,36 +58,33 @@ public class ContractResultServiceImpl implements ContractResultService {
     private final EntityProperties entityProperties;
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
+    private final TransactionHandlerFactory transactionHandlerFactory;
 
     @Override
-    public void process(@NonNull RecordItem recordItem, EntityId entityId, TransactionHandler transactionHandler) {
-        var transactionRecord = recordItem.getRecord();
+    public void process(@NonNull RecordItem recordItem, Transaction transaction) {
+        if (!entityProperties.getPersist().isContracts()) {
+            return;
+        }
 
+        var transactionRecord = recordItem.getRecord();
         var functionResult = transactionRecord.hasContractCreateResult() ?
                 transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
 
-        // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
-        if (!recordItem.getTransactionBody().hasContractCreateInstance() &&
-                !recordItem.getTransactionBody().hasContractCall() &&
-                !isValidContractFunctionResult(functionResult)) {
-            return;
-        }
-
-        // feature gate precompile scenarios for now. When complete feature gate all contractResults together
-        if (isPrecompileCall(recordItem.getTransactionBody()) && !entityProperties.getPersist().isContractResults()) {
-            return;
+        // handle non create/call transactions
+        if (!isContractCreateOrCall(recordItem.getTransactionBody())) {
+            if (!isValidContractFunctionResult(functionResult)) {
+                // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
+                return;
+            } else if (!entityProperties.getPersist().isContractResults()) {
+                // feature gate precompile scenarios for now. When complete feature gate all contractResults together
+                return;
+            }
         }
 
         // contractResult
-        ContractResult contractResult = getContractResult(recordItem, entityId, functionResult);
-        transactionHandler.updateContractResult(contractResult, recordItem);
-        entityListener.onContractResult(contractResult);
-
-        // contractLog
-        processContractLogs(functionResult, contractResult, entityId);
-
-        // contractState
-        processContractStateChanges(functionResult, contractResult, entityId);
+        TransactionHandler transactionHandler = transactionHandlerFactory
+                .get(TransactionType.of(transaction.getType()));
+        processContractResult(recordItem, transaction.getEntityId(), functionResult, transactionHandler);
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
@@ -92,55 +92,46 @@ public class ContractResultServiceImpl implements ContractResultService {
                 contractFunctionResult.getContractCallResult() != ByteString.EMPTY;
     }
 
-    private boolean isPrecompileCall(TransactionBody transactionBody) {
-        return !transactionBody.hasContractCall() && !transactionBody.hasContractCreateInstance();
-    }
-
     private boolean isContractCreateOrCall(TransactionBody transactionBody) {
         return transactionBody.hasContractCall() || transactionBody.hasContractCreateInstance();
     }
 
-    private ContractResult getContractResult(RecordItem recordItem, EntityId contractEntityId,
-                                             ContractFunctionResult functionResult) {
+    private void processContractResult(RecordItem recordItem, EntityId contractEntityId,
+                                       ContractFunctionResult functionResult,
+                                       TransactionHandler transactionHandler) {
         ContractResult contractResult = new ContractResult();
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
+        contractResult.setContractId(contractEntityId);
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
+        transactionHandler.updateContractResult(contractResult, recordItem);
 
         if (isValidContractFunctionResult(functionResult)) {
             // amount, gasLimit and functionParameters are missing from record proto and will be populated once added
             contractResult.setBloom(DomainUtils.toBytes(functionResult.getBloom()));
             contractResult.setCallResult(DomainUtils.toBytes(functionResult.getContractCallResult()));
-            contractResult.setContractId(lookup(contractEntityId, functionResult.getContractID()));
             contractResult.setCreatedContractIds(getCreatedContractIds(functionResult, recordItem, contractResult));
             contractResult.setErrorMessage(functionResult.getErrorMessage());
             contractResult.setFunctionResult(functionResult.toByteArray());
             contractResult.setGasUsed(functionResult.getGasUsed());
+
+            processContractLogs(functionResult, contractResult);
+            processContractStateChanges(functionResult, contractResult);
         }
 
-        // in case of failure for create/call pull entityId from transaction to avoid null case
-        if (isContractCreateOrCall(recordItem.getTransactionBody()) && !recordItem.isSuccessful()) {
-            contractResult.setContractId(contractEntityId);
-        }
-
-        return contractResult;
+        entityListener.onContractResult(contractResult);
     }
 
-    private void processContractLogs(ContractFunctionResult functionResult, ContractResult contractResult,
-                                     EntityId rootContractId) {
-        if (functionResult == null || contractResult == null) {
-            return;
-        }
-
+    private void processContractLogs(ContractFunctionResult functionResult, ContractResult contractResult) {
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
             ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
 
             ContractLog contractLog = new ContractLog();
             contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
             contractLog.setConsensusTimestamp(contractResult.getConsensusTimestamp());
-            contractLog.setContractId(lookup(rootContractId, contractLoginfo.getContractID()));
+            contractLog.setContractId(lookup(contractResult.getContractId(), contractLoginfo.getContractID()));
             contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
-            contractLog.setRootContractId(rootContractId);
+            contractLog.setRootContractId(contractResult.getContractId());
             contractLog.setPayerAccountId(contractResult.getPayerAccountId());
             contractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
             contractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
@@ -150,18 +141,13 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
-    private void processContractStateChanges(ContractFunctionResult functionResult, ContractResult contractResult,
-                                             EntityId rootContractId) {
-        if (functionResult == null || contractResult == null) {
-            return;
-        }
+    private void processContractStateChanges(ContractFunctionResult functionResult, ContractResult contractResult) {
 
         for (var stateChange : functionResult.getStateChangesList()) {
-            var contractId = lookup(rootContractId, stateChange.getContractID());
             for (var storageChange : stateChange.getStorageChangesList()) {
                 ContractStateChange contractStateChange = new ContractStateChange();
                 contractStateChange.setConsensusTimestamp(contractResult.getConsensusTimestamp());
-                contractStateChange.setContractId(contractId);
+                contractStateChange.setContractId(lookup(contractResult.getContractId(), stateChange.getContractID()));
                 contractStateChange.setPayerAccountId(contractResult.getPayerAccountId());
                 contractStateChange.setSlot(DomainUtils.toBytes(storageChange.getSlot()));
                 contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
@@ -178,7 +164,6 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
-    @SuppressWarnings("deprecation")
     private List<Long> getCreatedContractIds(ContractFunctionResult functionResult, RecordItem recordItem,
                                              ContractResult contractResult) {
         List<Long> createdContractIds = new ArrayList<>();
