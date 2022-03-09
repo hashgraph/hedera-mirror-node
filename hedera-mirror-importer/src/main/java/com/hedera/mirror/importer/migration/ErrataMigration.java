@@ -52,6 +52,10 @@ import com.hedera.mirror.importer.parser.record.entity.EntityRecordItemListener;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
+/**
+ * Adds errata information to the database to workaround older, incorrect data on mainnet. See docs/database.md#errata
+ * for more detail.
+ */
 @Log4j2
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
@@ -108,6 +112,7 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
         }
     }
 
+    // Adjusts the balance file's consensus timestamp by -1 for use when querying transfers.
     private void balanceFileAdjustment() {
         String sql = "update account_balance_file set time_offset = -1 " +
                 "where consensus_timestamp in (:timestamps) and time_offset <> -1";
@@ -115,6 +120,15 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
         log.info("Updated {} account balance files", count);
     }
 
+    /**
+     * Marks the extra transfers erroneously added by services for deletion. Since this issue was fixed around October
+     * 3, 2019, we only consider transfers before consensus timestamp 1577836799000000000.
+     * <p>
+     * This query works by finding the credit, non-fee transfer inside the CTE then use the negative of that to find its
+     * corresponding debit and mark both as errata=DELETED. We define fee transfers as coming from 0.0.98 or in the
+     * range 0.0.3 to 0.0.27, so we exclude those. Additionally, two timestamps (1570118944399195000,
+     * 1570120372315307000) have a corner case where the credit has the payer to be same as the receiver.
+     */
     private void spuriousTransfers() {
         String sql = "with spurious_transfer as (" +
                 "  update crypto_transfer ct set errata = 'DELETE' from transaction t " +
@@ -130,6 +144,7 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
         log.info("Updated {} spurious transfers", count * 2);
     }
 
+    // Adds the transactions and records that are missing due to the insufficient fee funding issue in services.
     private void missingTransactions() throws IOException {
         Set<Long> consensusTimestamps = new HashSet<>();
         var resourceResolver = new PathMatchingResourcePatternResolver();

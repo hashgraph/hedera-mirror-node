@@ -113,7 +113,7 @@ transactions in the balance and record streams. These issues should only appear 
   the `crypto_transfer` table and setting the spurious transfers' `errata` field to `DELETE` to indicate they should be
   omitted.
 
-### Record Missing for insufficient fee funding
+### Record Missing for Insufficient Fee Funding
 
 * Period: September 14, 2019 to September 18, 2019
 * Scope: Affected the records of 31 transactions
