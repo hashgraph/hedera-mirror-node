@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -83,6 +84,7 @@ import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -170,7 +172,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         transactionHandler.updateTransaction(transaction, recordItem);
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
-            insertTransferList(consensusTimestamp, txRecord.getTransferList(), recordItem.getPayerAccountId());
+            insertTransferList(recordItem);
         }
 
         // handle scheduled transaction, even on failure
@@ -404,13 +406,25 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private void insertTransferList(long consensusTimestamp, TransferList transferList, EntityId payerAccountId) {
+    private void insertTransferList(RecordItem recordItem) {
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var transferList = recordItem.getRecord().getTransferList();
+        EntityId payerAccountId = recordItem.getPayerAccountId();
+        var body = recordItem.getTransactionBody();
+        boolean failedTransfer = !recordItem.isSuccessful() && body.hasCryptoTransfer();
+        Predicate<AccountAmount> isFailedNonFeeTransfer = a -> failedTransfer &&
+                body.getCryptoTransfer().getTransfers().getAccountAmountsList().contains(a);
+
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
-            CryptoTransfer cryptoTransfer = new CryptoTransfer(consensusTimestamp, aa.getAmount(), account);
+            CryptoTransfer cryptoTransfer = new CryptoTransfer();
+            cryptoTransfer.setAmount(aa.getAmount());
+            cryptoTransfer.setConsensusTimestamp(consensusTimestamp);
+            cryptoTransfer.setEntityId(account.getId());
             cryptoTransfer.setIsApproval(aa.getIsApproval());
             cryptoTransfer.setPayerAccountId(payerAccountId);
+            cryptoTransfer.setErrata(isFailedNonFeeTransfer.test(aa) ? ErrataType.DELETE : null);
             entityListener.onCryptoTransfer(cryptoTransfer);
         }
     }

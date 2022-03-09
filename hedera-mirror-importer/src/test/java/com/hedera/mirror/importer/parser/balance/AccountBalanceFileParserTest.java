@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.balance;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.balance;
  */
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+import static com.hedera.mirror.importer.migration.ErrataMigrationTest.BAD_TIMESTAMP1;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.primitives.Longs;
@@ -33,14 +34,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamFilename;
-import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
@@ -62,6 +64,9 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
     @Resource
     private BalanceParserProperties parserProperties;
+
+    @Resource
+    private MirrorProperties mirrorProperties;
 
     @BeforeEach
     void setup() {
@@ -92,6 +97,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
 
         // then
         assertAccountBalanceFile(accountBalanceFile, items);
+        assertThat(accountBalanceFile.getTimeOffset()).isZero();
     }
 
     @Test
@@ -140,6 +146,23 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                 .containsExactly(accountBalanceFile);
         assertThat(accountBalanceRepository.count()).isZero();
         assertAccountBalanceFile(accountBalanceFile, List.of());
+    }
+
+    @Test
+    void errata() {
+        // given
+        var network = mirrorProperties.getNetwork();
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
+        AccountBalanceFile accountBalanceFile = accountBalanceFile(BAD_TIMESTAMP1);
+        List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
+
+        // when
+        accountBalanceFileParser.parse(accountBalanceFile);
+
+        // then
+        assertAccountBalanceFile(accountBalanceFile, items);
+        assertThat(accountBalanceFile.getTimeOffset()).isEqualTo(-1);
+        mirrorProperties.setNetwork(network);
     }
 
     void assertAccountBalanceFile(AccountBalanceFile accountBalanceFile, List<AccountBalance> accountBalances) {

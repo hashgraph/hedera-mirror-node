@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.parser.balance;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,10 +20,8 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.springframework.data.repository.CrudRepository;
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.importer.parser.StreamFileListener;
 
-import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
-
-public interface CryptoTransferRepository extends CrudRepository<CryptoTransfer, CryptoTransfer.Id> {
-
+public interface BalanceStreamFileListener extends StreamFileListener<AccountBalanceFile> {
 }

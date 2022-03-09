@@ -460,13 +460,12 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
     private void persistCryptoTransfers(List<CryptoTransfer> cryptoTransfers) {
         for (CryptoTransfer cryptoTransfer : cryptoTransfers) {
-            var id = cryptoTransfer.getId();
             jdbcOperations.update(
                     "insert into crypto_transfer (amount, consensus_timestamp, entity_id)" +
                             " values (?,?,?)",
-                    id.getAmount(),
-                    id.getConsensusTimestamp(),
-                    id.getEntityId().getId()
+                    cryptoTransfer.getAmount(),
+                    cryptoTransfer.getConsensusTimestamp(),
+                    cryptoTransfer.getEntityId()
             );
         }
     }

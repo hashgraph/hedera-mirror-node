@@ -221,7 +221,8 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
             for (AccountAmount accountAmount : transferList.getAccountAmountsList()) {
                 EntityId account = EntityId.of(accountAmount.getAccountID());
                 assertThat(cryptoTransferRepository
-                        .findById(new CryptoTransfer.Id(accountAmount.getAmount(), consensusTimestamp, account)))
+                        .findById(new CryptoTransfer.Id(accountAmount.getAmount(), consensusTimestamp,
+                                account.getId())))
                         .isPresent();
             }
         } else {
@@ -254,6 +255,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
         assertThat(dbTransaction)
                 .isNotNull()
+                .returns(null, Transaction::getErrata)
                 .returns(transactionBody.getTransactionFee(), Transaction::getMaxFee)
                 .returns(transactionBody.getMemoBytes().toByteArray(), Transaction::getMemo)
                 .returns(EntityId.of(transactionBody.getNodeAccountID()), Transaction::getNodeAccountId)
@@ -292,8 +294,8 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         recordBuilder.getReceiptBuilder().setStatusValue(status);
 
         // Give from payer to treasury and node
-        long[] transferAccounts = { PAYER.getAccountNum(), TREASURY.getAccountNum(), NODE.getAccountNum() };
-        long[] transferAmounts = { -2000, 1000, 1000 };
+        long[] transferAccounts = {PAYER.getAccountNum(), TREASURY.getAccountNum(), NODE.getAccountNum()};
+        long[] transferAmounts = {-2000, 1000, 1000};
         TransferList.Builder transferList = recordBuilder.getTransferListBuilder();
         for (int i = 0; i < transferAccounts.length; i++) {
             // Irrespective of transaction success, node and network fees are present.
@@ -343,9 +345,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     }
 
     protected boolean isAccountAmountReceiverAccountAmount(final CryptoTransfer cryptoTransfer,
-            final AccountAmount receiver) {
+                                                           final AccountAmount receiver) {
         final CryptoTransfer.Id cryptoTransferId = cryptoTransfer.getId();
-        return cryptoTransferId.getEntityId().getEntityNum() == receiver.getAccountID().getAccountNum() &&
+        return cryptoTransferId.getEntityId() == receiver.getAccountID().getAccountNum() &&
                 cryptoTransferId.getAmount() == receiver.getAmount();
     }
 

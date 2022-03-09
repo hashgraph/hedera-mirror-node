@@ -28,17 +28,17 @@ import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.TokenIdConverter;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
+@Builder
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
