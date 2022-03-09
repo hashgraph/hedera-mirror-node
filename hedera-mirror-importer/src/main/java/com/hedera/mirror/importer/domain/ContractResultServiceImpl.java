@@ -75,7 +75,9 @@ public class ContractResultServiceImpl implements ContractResultService {
             if (!isValidContractFunctionResult(functionResult)) {
                 // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
                 return;
-            } else if (!entityProperties.getPersist().isContractResults()) {
+            }
+
+            if (!entityProperties.getPersist().isContractResults()) {
                 // feature gate precompile scenarios for now. When complete feature gate all contractResults together
                 return;
             }
@@ -164,6 +166,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private List<Long> getCreatedContractIds(ContractFunctionResult functionResult, RecordItem recordItem,
                                              ContractResult contractResult) {
         List<Long> createdContractIds = new ArrayList<>();
