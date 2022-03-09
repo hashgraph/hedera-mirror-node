@@ -154,7 +154,7 @@ create table if not exists contract_state_change
     value_read          bytea  not null,
     value_written       bytea  null
 );
-comment on table contract_result is 'Contract execution state changes';
+comment on table contract_state_change is 'Contract execution state changes';
 
 create table if not exists crypto_allowance
 (

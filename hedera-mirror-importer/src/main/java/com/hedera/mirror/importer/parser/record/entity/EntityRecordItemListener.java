@@ -53,7 +53,6 @@ import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -94,6 +93,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -112,6 +112,7 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 @ConditionOnEntityRecordParser
 public class EntityRecordItemListener implements RecordItemListener {
     private final AddressBookService addressBookService;
+    private final ContractResultService contractResultService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
     private final EntityRepository entityRepository;
@@ -128,8 +129,10 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     TransactionHandlerFactory transactionHandlerFactory,
                                     FileDataRepository fileDataRepository,
                                     EntityRepository entityRepository,
-                                    RecordParserProperties parserProperties) {
+                                    RecordParserProperties parserProperties,
+                                    ContractResultService contractResultService) {
         this.addressBookService = addressBookService;
+        this.contractResultService = contractResultService;
         this.entityListener = entityListener;
         this.entityProperties = entityProperties;
         this.entityRepository = entityRepository;
@@ -240,6 +243,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertAutomaticTokenAssociations(recordItem);
         }
 
+        contractResultService.process(recordItem, transaction);
+
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
     }
@@ -274,7 +279,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setValidStartNs(DomainUtils.timeStampInNanos(transactionId.getTransactionValidStart()));
 
         if (txRecord.hasParentConsensusTimestamp()) {
-            transaction.setParentConsensusTimestamp(DomainUtils.timestampInNanosMax(txRecord.getParentConsensusTimestamp()));
+            transaction.setParentConsensusTimestamp(
+                    DomainUtils.timestampInNanosMax(txRecord.getParentConsensusTimestamp()));
         }
 
         return transaction;

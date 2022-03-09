@@ -22,25 +22,19 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
-class ContractCallTransactionHandler extends AbstractContractCallTransactionHandler {
-
-    ContractCallTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                   EntityProperties entityProperties) {
-        super(entityIdService, entityListener, entityProperties);
-    }
+@RequiredArgsConstructor
+class ContractCallTransactionHandler implements TransactionHandler {
+    private final EntityIdService entityIdService;
 
     /**
      * First attempts to extract the contract ID from the receipt, which was populated in HAPI 0.23 for contract calls.
@@ -63,33 +57,12 @@ class ContractCallTransactionHandler extends AbstractContractCallTransactionHand
         return TransactionType.CONTRACTCALL;
     }
 
-    /*
-     * Insert contract results even for failed transactions since they could fail during execution, and we want to
-     * know the gas used and call result regardless.
-     */
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        var transactionRecord = recordItem.getRecord();
-
-        if (entityProperties.getPersist().isContracts()) {
-            var transactionBody = recordItem.getTransactionBody().getContractCall();
-
-            // The functionResult.contractID can sometimes be empty even if successful, so use Transaction.entityId
-            ContractResult contractResult = new ContractResult();
-            contractResult.setAmount(transactionBody.getAmount());
-            contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-            contractResult.setContractId(transaction.getEntityId());
-            contractResult.setPayerAccountId(transaction.getPayerAccountId());
-            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getFunctionParameters()));
-            contractResult.setGasLimit(transactionBody.getGas());
-
-            onContractResult(recordItem, contractResult, transactionRecord.getContractCallResult());
-        }
-    }
-
-    // Will only be called for child created contract IDs.
-    @Override
-    protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
-        entityListener.onContract(contract);
+    public void updateContractResult(ContractResult contractResult, RecordItem recordItem) {
+        var contractCallTransactionBody = recordItem.getTransactionBody().getContractCall();
+        contractResult.setAmount(contractCallTransactionBody.getAmount());
+        contractResult.setFunctionParameters(
+                DomainUtils.toBytes(contractCallTransactionBody.getFunctionParameters()));
+        contractResult.setGasLimit(contractCallTransactionBody.getGas());
     }
 }

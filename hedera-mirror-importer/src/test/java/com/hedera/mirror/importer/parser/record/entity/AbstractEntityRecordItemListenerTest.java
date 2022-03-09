@@ -26,15 +26,20 @@ import static org.assertj.core.api.Assertions.from;
 
 import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.StorageChange;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
@@ -46,6 +51,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
+import lombok.SneakyThrows;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
@@ -77,6 +83,8 @@ import com.hedera.mirror.importer.util.Utility;
 
 public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
+    protected static final ContractID CONTRACT_ID = ContractID.newBuilder().setContractNum(901).build();
+    protected static final ContractID CREATED_CONTRACT_ID = ContractID.newBuilder().setContractNum(902).build();
     protected static final SignatureMap DEFAULT_SIG_MAP = getDefaultSigMap();
     protected static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
     protected static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
@@ -435,5 +443,58 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .nodeAccountId(NODE_ACCOUNT_ID)
                 .previousHash("")
                 .build();
+    }
+
+    @SneakyThrows
+    protected void buildContractFunctionResult(ContractFunctionResult.Builder builder) {
+        builder.setBloom(ByteString.copyFromUtf8("bloom"));
+        builder.setContractCallResult(ByteString.copyFromUtf8("call result"));
+        builder.setContractID(CONTRACT_ID);
+        builder.addCreatedContractIDs(CONTRACT_ID);
+        builder.addCreatedContractIDs(CREATED_CONTRACT_ID);
+        builder.setErrorMessage("call error message");
+        builder.setEvmAddress(BytesValue.of(DomainUtils.fromBytes(domainBuilder.create2EvmAddress())));
+        builder.setGasUsed(30);
+        builder.addLogInfo(ContractLoginfo.newBuilder()
+                .setBloom(ByteString.copyFromUtf8("bloom"))
+                .setContractID(CONTRACT_ID)
+                .setData(ByteString.copyFromUtf8("data"))
+                .addTopic(ByteString.copyFromUtf8("Topic0"))
+                .addTopic(ByteString.copyFromUtf8("Topic1"))
+                .addTopic(ByteString.copyFromUtf8("Topic2"))
+                .addTopic(ByteString.copyFromUtf8("Topic3")).build());
+        builder.addLogInfo(ContractLoginfo.newBuilder()
+                .setBloom(ByteString.copyFromUtf8("bloom"))
+                .setContractID(CREATED_CONTRACT_ID)
+                .setData(ByteString.copyFromUtf8("data"))
+                .addTopic(ByteString.copyFromUtf8("Topic0"))
+                .addTopic(ByteString.copyFromUtf8("Topic1"))
+                .addTopic(ByteString.copyFromUtf8("Topic2"))
+                .addTopic(ByteString.copyFromUtf8("Topic3")).build());
+        // 3 state changes, no value written, valid value written and zero value written
+        builder.addStateChanges(com.hederahashgraph.api.proto.java.ContractStateChange.newBuilder()
+                .setContractID(CONTRACT_ID)
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x000000000000000000"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .build())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x000000000000000001"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .setValueWritten(BytesValue.of(ByteString
+                                .copyFromUtf8("0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5")))
+                        .build())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x00000000000000002"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .setValueWritten(BytesValue.of(ByteString.copyFromUtf8("0")))
+                        .build())
+                .build());
     }
 }
