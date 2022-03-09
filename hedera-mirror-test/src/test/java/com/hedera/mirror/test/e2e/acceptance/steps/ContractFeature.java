@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,7 +35,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.ResourceUtils;
@@ -191,12 +190,7 @@ public class ContractFeature extends AbstractFeature {
         assertThat(address).isNotBlank().isNotEqualTo("0x").isNotEqualTo("0x0000000000000000000000000000000000000000");
         assertThat(mirrorContract.getTimestamp()).isNotNull();
         assertThat(mirrorContract.getTimestamp().getFrom()).isNotNull();
-
-        // contract bytes string goes through a series of transformations
-        // remove '0x' prior to conversion to byte[], then encode and add 0x back for REST API
-        String stringMinusOx = compiledSolidityArtifact.getBytecode().replaceFirst("0x", "");
-        assertThat(mirrorContract.getBytecode())
-                .isEqualTo("0x" + Hex.encodeHexString(stringMinusOx.getBytes(StandardCharsets.UTF_8)));
+        assertThat(mirrorContract.getBytecode()).isEqualTo(compiledSolidityArtifact.getBytecode());
 
         if (isDeleted) {
             assertThat(mirrorContract.getObtainerId())
