@@ -743,8 +743,6 @@ const addCryptoAllowance = async (cryptoAllowanceInput) => {
     ...cryptoAllowanceInput,
   };
 
-  cryptoAllowance.owner = EntityId.parse(cryptoAllowance.owner).getEncodedId();
-
   const table = cryptoAllowance.timestamp_range.endsWith(',)') ? 'crypto_allowance' : 'crypto_allowance_history';
   await insertDomainObject(table, insertFields, cryptoAllowance);
 };
