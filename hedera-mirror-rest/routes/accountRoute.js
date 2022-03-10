@@ -28,6 +28,7 @@ const router = Router();
 
 const resource = 'accounts';
 router.getAsync('/:accountAliasOrAccountId/nfts', AccountController.getNftsByAccountId);
+router.getAsync('/:accountAliasOrAccountId/allowances/crypto', AccountController.getAccountCryptoAllowances);
 
 module.exports = {
   resource,

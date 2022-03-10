@@ -131,6 +131,16 @@ const loadContractStateChanges = async (contractStateChanges) => {
   }
 };
 
+const loadCryptoAllowance = async (cryptoAllowances) => {
+  if (cryptoAllowances == null) {
+    return;
+  }
+
+  for (const cryptoAllowance of cryptoAllowances) {
+    await addCryptoAllowance(cryptoAllowance);
+  }
+};
+
 const loadCryptoTransfers = async (cryptoTransfers) => {
   if (cryptoTransfers == null) {
     return;
@@ -720,6 +730,21 @@ const addContractStateChange = async (contractStateChangeInput) => {
   await insertDomainObject('contract_state_change', insertFields, contractStateChange);
 };
 
+const addCryptoAllowance = async (cryptoAllowanceInput) => {
+  const insertFields = ['amount', 'owner', 'payer_account_id', 'spender', 'timestamp_range'];
+
+  const cryptoAllowance = {
+    amount: 0,
+    owner: 1000,
+    payer_account_id: 101,
+    spender: 2000,
+    timestamp_range: '[0,)',
+    ...cryptoAllowanceInput,
+  };
+
+  await insertDomainObject('crypto_allowance', insertFields, cryptoAllowance);
+};
+
 const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
@@ -1026,6 +1051,8 @@ const insertDomainObject = async (table, fields, obj) => {
     `INSERT INTO ${table} (${fields}) VALUES (${positions});`,
     fields.map((f) => obj[f])
   );
+
+  logger.info(`Inserted row to ${table}`);
 };
 
 module.exports = {
@@ -1034,6 +1061,7 @@ module.exports = {
   addNft,
   addToken,
   loadContractResults,
+  loadCryptoAllowance,
   loadEntities,
   loadRecordFiles,
   loadTransactions,

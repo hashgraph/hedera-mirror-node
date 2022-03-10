@@ -32,9 +32,9 @@ const constants = require('../constants');
 const EntityId = require('../entityId');
 const utils = require('../utils');
 
-const {Nft} = require('../model');
-const {EntityService, NftService} = require('../service');
-const {NftViewModel} = require('../viewmodel');
+const {CryptoAllowance, Nft} = require('../model');
+const {CryptoAllowanceService, EntityService, NftService} = require('../service');
+const {CryptoAllowanceViewModel, NftViewModel} = require('../viewmodel');
 
 // errors
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
@@ -351,7 +351,91 @@ const getNftsByAccountId = async (req, res) => {
   res.locals[constants.responseDataLabel] = response;
 };
 
+/**
+ * Extracts SQL where conditions, params, order, and limit
+ *
+ * @param {[]} filters parsed and validated filters
+ * @param {Number} accountId parsed accountId from path
+ * @param {Number} startPosition param index start position
+ */
+const extractCryptoAllowancesQuery = (filters, accountId, startPosition = 1) => {
+  let limit = defaultLimit;
+  let order = constants.orderFilterValues.DESC;
+  const conditions = [`${CryptoAllowance.OWNER} = $${startPosition}`];
+  const params = [accountId];
+
+  for (const filter of filters) {
+    if (_.isNil(filter)) {
+      continue;
+    }
+
+    switch (filter.key) {
+      case constants.filterKeys.SPENDER_ID:
+        updateConditionsAndParamsWithValues(
+          filter,
+          params,
+          conditions,
+          CryptoAllowance.SPENDER,
+          startPosition + conditions.length
+        );
+        break;
+      case constants.filterKeys.LIMIT:
+        limit = filter.value;
+        break;
+      case constants.filterKeys.ORDER:
+        order = filter.value;
+        break;
+      default:
+        break;
+    }
+  }
+
+  return {
+    conditions,
+    params,
+    order,
+    limit,
+  };
+};
+
+/**
+ * Handler function for /accounts/:accountAliasOrAccountId/allowances/crypto API
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns {Promise<void>}
+ */
+const getAccountCryptoAllowances = async (req, res) => {
+  // extract filters from query param
+  const accountId = await getAndValidateAccountIdRequestPathParam(req.params.accountAliasOrAccountId);
+
+  // extract filters from query param
+  const filters = utils.buildAndValidateFilters(req.query);
+
+  const {conditions, params, order, limit} = extractCryptoAllowancesQuery(filters, accountId);
+  const allowances = await CryptoAllowanceService.getAccountCrytoAllowances(conditions, params, order, limit);
+
+  const response = {
+    allowances: allowances.map((allowance) => new CryptoAllowanceViewModel(allowance)),
+    links: {
+      next: null,
+    },
+  };
+
+  if (!_.isEmpty(response.nfts)) {
+    const lastRow = _.last(response.allowances);
+    const last = {
+      [constants.filterKeys.SPENDER_ID]: lastRow.spender,
+    };
+    response.links.next = utils.getPaginationLink(req, response.nfts.length !== limit, last, order, {
+      [constants.filterKeys.SPENDER_ID]: true,
+    });
+  }
+
+  res.locals[constants.responseDataLabel] = response;
+};
+
 module.exports = {
+  getAccountCryptoAllowances,
   getNftsByAccountId,
 };
 
