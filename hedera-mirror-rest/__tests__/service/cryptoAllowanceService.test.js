@@ -115,7 +115,7 @@ describe('CryptoAllowanceService.getAccountCrytoAllownces tests', () => {
   });
 
   test('CryptoAllowanceService.getAccountCrytoAllownces - Matching entity', async () => {
-    await integrationDomainOps.loadCryptoAllowance(defaultInputCryptoAllowance);
+    await integrationDomainOps.loadCryptoAllowances(defaultInputCryptoAllowance);
 
     await expect(
       CryptoAllowanceService.getAccountCrytoAllowances([defaultOwnerFilter], [2000], 'asc', 5)
@@ -169,7 +169,7 @@ describe('CryptoAllowanceService.getAccountCrytoAllownces tests', () => {
   ];
 
   test('CryptoAllowanceService.getAccountCrytoAllownces - Matching spender gt entity', async () => {
-    await integrationDomainOps.loadCryptoAllowance(inputCryptoAllowance);
+    await integrationDomainOps.loadCryptoAllowances(inputCryptoAllowance);
 
     await expect(
       CryptoAllowanceService.getAccountCrytoAllowances([defaultOwnerFilter, 'spender > $2'], [2000, 4001], 'asc', 5)
@@ -177,7 +177,7 @@ describe('CryptoAllowanceService.getAccountCrytoAllownces tests', () => {
   });
 
   test('CryptoAllowanceService.getAccountCrytoAllownces - Matching spender entity', async () => {
-    await integrationDomainOps.loadCryptoAllowance(inputCryptoAllowance);
+    await integrationDomainOps.loadCryptoAllowances(inputCryptoAllowance);
 
     await expect(
       CryptoAllowanceService.getAccountCrytoAllowances(

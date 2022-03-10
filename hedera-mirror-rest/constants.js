@@ -177,6 +177,7 @@ const queryParamOperatorPatterns = {
   gt: />/,
   gte: />=/,
   gtorgte: />[=]?/,
+  eq: /=/,
   lt: /</,
   lte: /<=/,
   ltorlte: /<[=]?/,

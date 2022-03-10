@@ -33,10 +33,10 @@ class CryptoAllowanceViewModel {
    * @param {CryptoAllowance} cryptoAllowance
    */
   constructor(cryptoAllowance) {
-    this.amount = Number(cryptoAllowance.amount);
-    this.owner = EntityId.parse(cryptoAllowance.owner);
-    this.payer_account_id = EntityId.parse(cryptoAllowance.payerAccountId);
-    this.spender = EntityId.parse(cryptoAllowance.spender);
+    this.amount = cryptoAllowance.amount;
+    this.owner = EntityId.parse(cryptoAllowance.owner).toString();
+    this.payer_account_id = EntityId.parse(cryptoAllowance.payerAccountId).toString();
+    this.spender = EntityId.parse(cryptoAllowance.spender).toString();
     this.timestamp = {
       from: utils.nsToSecNs(cryptoAllowance.timestampRange.begin),
       to: utils.nsToSecNs(cryptoAllowance.timestampRange.end),

@@ -118,7 +118,7 @@ const cacheAndUpdateFilter = (cachedFilter, filter, newOperator = null) => {
   }
 };
 
-const validateSopportedOperator = (operator) => {
+const validateSupportedOperator = (operator) => {
   if (constants.queryParamOperatorPatterns.ne.test(operator)) {
     throw new InvalidArgumentError(`Not equals (ne) comparison operator is not supported`);
   }
@@ -159,7 +159,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
   const oneOperatorValues = {};
 
   for (const filter of filters) {
-    validateSopportedOperator(filter.operator);
+    validateSupportedOperator(filter.operator);
 
     // limit all query filters eq|lt(e)|gt(e) filters to one occurence
     validateSingleFilterKeyOccurence(oneOperatorValues, filter);
@@ -421,14 +421,18 @@ const getAccountCryptoAllowances = async (req, res) => {
     },
   };
 
-  if (!_.isEmpty(response.nfts)) {
-    const lastRow = _.last(response.allowances);
-    const last = {
-      [constants.filterKeys.SPENDER_ID]: lastRow.spender,
-    };
-    response.links.next = utils.getPaginationLink(req, response.nfts.length !== limit, last, order, {
-      [constants.filterKeys.SPENDER_ID]: true,
-    });
+  if (!_.isEmpty(response.allowances) && response.allowances.length === limit) {
+    // skip limit on single account and spender combo with eq operator
+    const spenderFilter = filters.filter((x) => x.key === constants.filterKeys.SPENDER_ID);
+    const skipNext =
+      spenderFilter.length === 1 && constants.queryParamOperatorPatterns.eq.test(spenderFilter[0].operator);
+    if (!skipNext) {
+      const lastRow = _.last(response.allowances);
+      const last = {
+        [constants.filterKeys.SPENDER_ID]: lastRow.spender,
+      };
+      response.links.next = utils.getPaginationLink(req, response.allowances.length !== limit, last, order);
+    }
   }
 
   res.locals[constants.responseDataLabel] = response;
@@ -444,6 +448,7 @@ if (utils.isTestEnv()) {
     extractNftsQuery,
     extractNftMultiUnionQuery,
     getAndValidateAccountIdRequestPathParam,
+    extractCryptoAllowancesQuery,
     getFilterKeyOpString,
     validateSingleFilterKeyOccurence,
   });

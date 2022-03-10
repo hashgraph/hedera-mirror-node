@@ -48,6 +48,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadContractLogs(testDataJson.contractlogs);
   await loadContractResults(testDataJson.contractresults);
   await loadContractStateChanges(testDataJson.contractStateChanges);
+  await loadCryptoAllowances(testDataJson.cryptoAllowances);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
   await loadFileData(testDataJson.filedata);
@@ -131,7 +132,7 @@ const loadContractStateChanges = async (contractStateChanges) => {
   }
 };
 
-const loadCryptoAllowance = async (cryptoAllowances) => {
+const loadCryptoAllowances = async (cryptoAllowances) => {
   if (cryptoAllowances == null) {
     return;
   }
@@ -742,7 +743,10 @@ const addCryptoAllowance = async (cryptoAllowanceInput) => {
     ...cryptoAllowanceInput,
   };
 
-  await insertDomainObject('crypto_allowance', insertFields, cryptoAllowance);
+  cryptoAllowance.owner = EntityId.parse(cryptoAllowance.owner).getEncodedId();
+
+  const table = cryptoAllowance.timestamp_range.endsWith(',)') ? 'crypto_allowance' : 'crypto_allowance_history';
+  await insertDomainObject(table, insertFields, cryptoAllowance);
 };
 
 const addCryptoTransaction = async (cryptoTransfer) => {
@@ -1052,7 +1056,7 @@ const insertDomainObject = async (table, fields, obj) => {
     fields.map((f) => obj[f])
   );
 
-  logger.info(`Inserted row to ${table}`);
+  logger.trace(`Inserted row to ${table}`);
 };
 
 module.exports = {
@@ -1061,7 +1065,7 @@ module.exports = {
   addNft,
   addToken,
   loadContractResults,
-  loadCryptoAllowance,
+  loadCryptoAllowances,
   loadEntities,
   loadRecordFiles,
   loadTransactions,

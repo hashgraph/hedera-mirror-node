@@ -223,6 +223,9 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.SERIAL_NUMBER:
       ret = isPositiveLong(val);
       break;
+    case constants.filterKeys.SPENDER_ID:
+      ret = EntityId.isValidEntityId(val);
+      break;
     case constants.filterKeys.TOKEN_ID:
       ret = EntityId.isValidEntityId(val);
       break;
@@ -939,6 +942,10 @@ const formatComparator = (comparator) => {
         comparator.value = parseBooleanValue(comparator.value);
         break;
       case constants.filterKeys.SCHEDULE_ID:
+        // Accepted forms: shard.realm.num or num
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
+        break;
+      case constants.filterKeys.SPENDER_ID:
         // Accepted forms: shard.realm.num or num
         comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
