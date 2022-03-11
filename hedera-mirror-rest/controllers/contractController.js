@@ -414,7 +414,7 @@ const getAndValidateContractIdRequestPathParam = async (req) => {
  */
 const validateContractIdAndConsensusTimestampParam = (consensusTimestamp, contractId) => {
   const params = [];
-  if (!EntityId.isValidEntityId(contractId)) {
+  if (!EntityId.isValidEntityId(contractId) && !ContractService.isValidCreate2Id(contractId)) {
     params.push(constants.filterKeys.CONTRACTID);
   }
   if (!utils.isValidTimestampParam(consensusTimestamp)) {

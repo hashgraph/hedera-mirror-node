@@ -1,6 +1,24 @@
 {
   "description": "Contract results api call for a specific contract using contract id with a from filter as an address",
   "setup": {
+    "contracts": [
+      {
+        "created_timestamp": "987654999123200",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "8001",
+        "timestamp_range": "[987654999123200, 987654999123299]",
+        "evm_address": "1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c"
+      },
+      {
+        "created_timestamp": "987654999123200",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "5001",
+        "timestamp_range": "[987654999123300,)",
+        "evm_address": "70f2b2914a2a4b783faefb75f459a580616fcb5e"
+      }
+    ],
     "contractresults": [
       {
         "amount": 20,
@@ -23,7 +41,10 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/0.0.5001/results?from=0x0000000000000000000000000000000000002329"],
+  "urls": [
+    "/api/v1/contracts/0.0.5001/results?from=0x0000000000000000000000000000000000002329",
+    "/api/v1/contracts/0x70f2b2914a2a4b783faefb75f459a580616fcb5e/results?from=0x0000000000000000000000000000000000002329"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "results": [

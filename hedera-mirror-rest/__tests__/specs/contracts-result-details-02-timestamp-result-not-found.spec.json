@@ -30,7 +30,8 @@
   "urls": [
     "/api/v1/contracts/0.0.5001/results/167654.000123456",
     "/api/v1/contracts/0.5001/results/167654.000123456",
-    "/api/v1/contracts/5001/results/167654.000123456"
+    "/api/v1/contracts/5001/results/167654.000123456",
+    "/api/v1/contracts/0x70f2b2914a2a4b783faefb75f459a580616fcb5e/results/167654.000123456"
   ],
   "responseStatus": 404,
   "responseJson": {
