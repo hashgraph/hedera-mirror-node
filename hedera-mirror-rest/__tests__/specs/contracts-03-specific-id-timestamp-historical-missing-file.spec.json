@@ -12,7 +12,8 @@
         "file_id": "5001",
         "key": [1, 1, 1],
         "num": "8001",
-        "timestamp_range": "[987654000123456, 997654000123456]"
+        "timestamp_range": "[987654000123456, 997654000123456]",
+        "evm_address": "4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38"
       },
       {
         "created_timestamp": "987654000123456",
@@ -59,7 +60,13 @@
     "/api/v1/contracts/8001?timestamp=lt:997654.000123457",
     "/api/v1/contracts/8001?timestamp=lt:997654.000123457&timestamp=gt:10",
     "/api/v1/contracts/8001?timestamp=ne:997654.000123460",
-    "/api/v1/contracts/8001?timestamp=ne:997654.000123460&timestamp=lte:997654.000123480"
+    "/api/v1/contracts/8001?timestamp=ne:997654.000123460&timestamp=lte:997654.000123480",
+    "/api/v1/contracts/0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38?timestamp=997654.000123456",
+    "/api/v1/contracts/0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38?timestamp=lte:997654.000123456",
+    "/api/v1/contracts/0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38?timestamp=lt:997654.000123457",
+    "/api/v1/contracts/0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38?timestamp=lt:997654.000123457&timestamp=gt:10",
+    "/api/v1/contracts/0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38?timestamp=ne:997654.000123460",
+    "/api/v1/contracts/0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38?timestamp=ne:997654.000123460&timestamp=lte:997654.000123480"
   ],
   "responseStatus": 200,
   "responseJson": {
@@ -72,7 +79,7 @@
     "contract_id": "0.0.8001",
     "created_timestamp": "987654.000123456",
     "deleted": false,
-    "evm_address": "0x0000000000000000000000000000000000001f41",
+    "evm_address": "0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38",
     "expiration_timestamp": null,
     "file_id": "0.0.5001",
     "memo": "contract memo",

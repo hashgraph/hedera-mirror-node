@@ -1314,7 +1314,7 @@ components:
                     type: string
     EvmAddress:
       type: string
-      description: A network entity encoded as an EVM address in hex
+      description: A network entity encoded as an EVM address in hex. Can also be a Create2 id.
       format: binary
       minLength: 42
       maxLength: 42
@@ -1322,7 +1322,7 @@ components:
       example: "0x0000000000000000000000000000000000001f41"
     EvmAddressNullable:
       type: string
-      description: A network entity encoded as an EVM address in hex
+      description: A network entity encoded as an EVM address in hex. Can also be a Create2 id.
       format: binary
       minLength: 42
       maxLength: 42

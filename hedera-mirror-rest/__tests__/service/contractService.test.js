@@ -722,7 +722,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
   });
 
   test('Multiple rows match', async () => {
-    const evmAddress = '00000000000000002cfe';
+    const evmAddress = Buffer.from('3d4ffd867fac5d9c228d1dbeb7f218a29c94b', 'hex');
     await integrationDomainOps.loadContracts([
       {
         auto_renew_period: 7890000,
@@ -789,7 +789,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
   });
 
   test('One row match', async () => {
-    const evmAddress = '00000000000000002cfe';
+    const evmAddress = Buffer.from('1aaafd867fac5d9c228d1dbeb7f218a29c94b', 'hex');
     await integrationDomainOps.loadContracts([
       {
         auto_renew_period: 7890000,

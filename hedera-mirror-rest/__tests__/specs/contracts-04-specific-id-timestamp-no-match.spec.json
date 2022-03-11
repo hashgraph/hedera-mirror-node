@@ -53,7 +53,10 @@
   "urls": [
     "/api/v1/contracts/8001?timestamp=lte:997654.000123456&timestamp=gt:997654.000123456",
     "/api/v1/contracts/8001?timestamp=lt:987654.000123456",
-    "/api/v1/contracts/8001?timestamp=lte:987654.000123455"
+    "/api/v1/contracts/8001?timestamp=lte:987654.000123455",
+    "/api/v1/contracts/0xb928f69bb1d91cd65274e3c79d8986362984fda3?timestamp=lte:997654.000123456&timestamp=gt:997654.000123456",
+    "/api/v1/contracts/0xb928f69bb1d91cd65274e3c79d8986362984fda3?timestamp=lt:987654.000123456",
+    "/api/v1/contracts/0xb928f69bb1d91cd65274e3c79d8986362984fda3?timestamp=lte:987654.000123455"
   ],
   "responseStatus": 404,
   "responseJson": {

@@ -1,7 +1,7 @@
 {
   "description": "Contract api calls for a specific contract using contract id, not found",
   "setup": {},
-  "url": "/api/v1/contracts/0.0.6001",
+  "url": ["/api/v1/contracts/0.0.6001", "/api/v1/contracts/0x60f3f640a8508fc6a86d45df051962668e1e8ac7"],
   "responseStatus": 404,
   "responseJson": {
     "_status": {

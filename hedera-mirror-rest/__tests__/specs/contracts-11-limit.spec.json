@@ -33,7 +33,8 @@
         "num": "8003",
         "obtainer_id": "7001",
         "proxy_account_id": "7005",
-        "timestamp_range": "[987654222123456,)"
+        "timestamp_range": "[987654222123456,)",
+        "evm_address": "60f3f640a8508fc6a86d45df051962668e1e8ac7"
       }
     ]
   },
@@ -50,7 +51,7 @@
         "contract_id": "0.0.8003",
         "created_timestamp": "987654.222123456",
         "deleted": false,
-        "evm_address": "0x0000000000000000000000000000000000001f43",
+        "evm_address": "0x60f3f640a8508fc6a86d45df051962668e1e8ac7",
         "expiration_timestamp": "1236987654.000000123",
         "file_id": "0.0.5001",
         "memo": "contract memo",

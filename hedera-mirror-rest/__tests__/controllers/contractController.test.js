@@ -271,7 +271,7 @@ describe('getContractByIdQuery', () => {
 
   const timestampConditions = ['c.timestamp_range && $2', 'c.timestamp_range && $3'];
 
-  const specsFindContractById = [
+  const specs = [
     {
       name: 'latest',
       input: {timestampConditions: []},
@@ -300,7 +300,7 @@ describe('getContractByIdQuery', () => {
     },
   ];
 
-  specsFindContractById.forEach((spec) => {
+  specs.forEach((spec) => {
     test(`${spec.name}`, () => {
       [Contract.ID].forEach((columnName) => {
         spec.input.columnName = columnName;
