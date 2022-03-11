@@ -33,6 +33,7 @@ type AccountBalanceFileBuilder struct {
 	accountBalances    []domain.AccountBalance
 	consensusTimestamp int64
 	dbClient           interfaces.DbClient
+	timeOffset         int32
 	tokenBalances      []domain.TokenBalance
 }
 
@@ -55,6 +56,11 @@ func (b *AccountBalanceFileBuilder) AddTokenBalance(accountId, tokenId, balance 
 	return b
 }
 
+func (b *AccountBalanceFileBuilder) TimeOffset(timeOffset int32) *AccountBalanceFileBuilder {
+	b.timeOffset = timeOffset
+	return b
+}
+
 func (b *AccountBalanceFileBuilder) Persist() {
 	db := b.dbClient.GetDb()
 
@@ -63,6 +69,7 @@ func (b *AccountBalanceFileBuilder) Persist() {
 		FileHash:           fmt.Sprintf("%d", b.consensusTimestamp),
 		Name:               fmt.Sprintf("account_balance_file_%d", b.consensusTimestamp),
 		NodeAccountId:      defaultNodeAccountId,
+		TimeOffset:         b.timeOffset,
 	}
 	db.Create(&accountBalanceFile)
 	if len(b.accountBalances) != 0 {

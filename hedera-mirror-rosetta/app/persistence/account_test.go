@@ -326,12 +326,15 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAfterSecondSnapsh
 		AddTokenBalance(account1, encodedTokenId2, sum(token2TransferAmounts[:2])).
 		AddTokenBalance(account1, encodedTokenId3, 2).
 		AddTokenBalance(account1, encodedTokenId4, 0).
+		TimeOffset(-1).
 		Persist()
 	// extra transfers
+	// account balance file time offset is -1, which means the transfer at secondSnapshotTimestamp is not included in
+	// the snapshot. The balance response should include the amount in this transfer too.
 	tdomain.NewTokenTransferBuilder(dbClient).
 		AccountId(account1).
 		Amount(10).
-		Timestamp(secondSnapshotTimestamp + 2).
+		Timestamp(secondSnapshotTimestamp).
 		TokenId(encodedTokenId1).
 		Persist()
 	tdomain.NewTokenTransferBuilder(dbClient).
