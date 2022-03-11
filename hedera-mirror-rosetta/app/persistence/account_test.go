@@ -149,7 +149,14 @@ func (suite *accountRepositorySuite) SetupTest() {
 	tdomain.NewCryptoTransferBuilder(dbClient).
 		Amount(cryptoTransferAmounts[0]).
 		EntityId(account1).
+		Errata(domain.ErrataTypeInsert).
 		Timestamp(firstSnapshotTimestamp + 1).
+		Persist()
+	tdomain.NewCryptoTransferBuilder(dbClient).
+		Amount(12345).
+		EntityId(account1).
+		Errata(domain.ErrataTypeDelete).
+		Timestamp(firstSnapshotTimestamp + 2).
 		Persist()
 	tdomain.NewCryptoTransferBuilder(dbClient).
 		Amount(cryptoTransferAmounts[1]).

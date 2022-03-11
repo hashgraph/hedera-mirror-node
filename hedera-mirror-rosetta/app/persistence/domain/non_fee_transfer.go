@@ -22,7 +22,12 @@ package domain
 
 const tableNameNonFeeTransfer = "non_fee_transfer"
 
-type NonFeeTransfer CryptoTransfer
+type NonFeeTransfer struct {
+	Amount             int64
+	ConsensusTimestamp int64
+	EntityId           EntityId
+	PayerAccountId     EntityId
+}
 
 func (NonFeeTransfer) TableName() string {
 	return tableNameNonFeeTransfer
