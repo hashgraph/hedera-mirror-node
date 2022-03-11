@@ -1,6 +1,24 @@
 {
   "description": "Contract logs api calls with timestamp params",
   "setup": {
+    "contracts": [
+      {
+        "created_timestamp": "987654999123200",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "8001",
+        "timestamp_range": "[987654999123200, 987654999123299]",
+        "evm_address": "62cf9068fed962cf9068fed962cf9068fed9dddd"
+      },
+      {
+        "created_timestamp": "987654999123200",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "1000",
+        "timestamp_range": "[987654999123300,)",
+        "evm_address": "abbcccddddeeeeeefffffff000000068fed9dddd"
+      }
+    ],
     "contractlogs": [
       {
         "consensus_timestamp": 1639010141000000000,
@@ -28,7 +46,9 @@
   },
   "urls": [
     "/api/v1/contracts/0.0.1000/results/logs?timestamp=1639010151.000000000&timestamp=1639010141.000000000",
-    "/api/v1/contracts/0.0.1000/results/logs?timestamp=gte:1639010131.000000000&timestamp=lt:1669010141.000000000"
+    "/api/v1/contracts/0.0.1000/results/logs?timestamp=gte:1639010131.000000000&timestamp=lt:1669010141.000000000",
+    "/api/v1/contracts/0xabbcccddddeeeeeefffffff000000068fed9dddd/results/logs?timestamp=1639010151.000000000&timestamp=1639010141.000000000",
+    "/api/v1/contracts/0xabbcccddddeeeeeefffffff000000068fed9dddd/results/logs?timestamp=gte:1639010131.000000000&timestamp=lt:1669010141.000000000"
   ],
   "responseStatus": 200,
   "responseJson": {
