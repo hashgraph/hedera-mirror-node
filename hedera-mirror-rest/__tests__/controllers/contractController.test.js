@@ -262,43 +262,50 @@ describe('formatContractRow', () => {
 describe('getContractByIdQuery', () => {
   const mainQuery = `select ${[...contractFields, 'cf.bytecode']}
     from contract c, contract_file cf`;
-  const queryForTable = (table, extraConditions) => {
+
+  const queryForTable = ({table, extraConditions, columnName}) => {
     return `select ${contractFields}
       from ${table} c
-      where c.id = $1 ${(extraConditions && ' and ' + extraConditions.join(' and ')) || ''}`;
+      where c.${columnName} = $1 ${(extraConditions && ' and ' + extraConditions.join(' and ')) || ''}`;
   };
+
   const timestampConditions = ['c.timestamp_range && $2', 'c.timestamp_range && $3'];
 
-  const specs = [
+  const specsFindContractById = [
     {
       name: 'latest',
-      input: [],
-      expected: `with contract as (
-        ${queryForTable('contract')}
-      ), contract_file as (
-          ${contracts.fileDataQuery}
-      )
-      ${mainQuery}`,
+      input: {timestampConditions: []},
+      expected: (columnName) => `
+        with contract as (
+          ${queryForTable({table: 'contract', columnName})}
+        ), contract_file as (
+            ${contracts.fileDataQuery}
+        )
+        ${mainQuery}`,
     },
     {
       name: 'historical',
-      input: timestampConditions,
-      expected: `with contract as (
-        ${queryForTable('contract', timestampConditions)}
-        union
-        ${queryForTable('contract_history', timestampConditions)}
-        order by timestamp_range desc
-        limit 1
-    ), contract_file as (
-        ${contracts.fileDataQuery}
-    )
-      ${mainQuery}`,
+      input: {timestampConditions},
+      expected: (columnName) => `
+        with contract as (
+            ${queryForTable({table: 'contract', extraConditions: timestampConditions, columnName})}
+            union
+            ${queryForTable({table: 'contract_history', extraConditions: timestampConditions, columnName})}
+            order by timestamp_range desc
+            limit 1
+        ), contract_file as (
+            ${contracts.fileDataQuery}
+        )
+        ${mainQuery}`,
     },
   ];
 
-  specs.forEach((spec) => {
+  specsFindContractById.forEach((spec) => {
     test(`${spec.name}`, () => {
-      assertSqlQueryEqual(contracts.getContractByIdQuery(spec.input), spec.expected);
+      [Contract.ID].forEach((columnName) => {
+        spec.input.columnName = columnName;
+        assertSqlQueryEqual(contracts.getContractByIdQuery(spec.input), spec.expected(columnName));
+      });
     });
   });
 });

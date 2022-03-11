@@ -27,6 +27,7 @@ const {assertSqlQueryEqual} = require('../testutils');
 
 const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
+const {NotFoundError} = require('../../errors/notFoundError');
 
 jest.setTimeout(40000);
 
@@ -710,5 +711,145 @@ describe('ContractService.getContractStateChangesByTimestamps tests', () => {
 
     const response = await ContractService.getContractStateChangesByTimestamps('2');
     expect(response).toMatchObject(expectedContractStateChange);
+  });
+});
+
+describe('ContractService.getContractIdByEvmAddress tests', () => {
+  test('No match', async () => {
+    await expect(() => ContractService.getContractIdByEvmAddress('123')).rejects.toThrow(
+      new NotFoundError('No contract with the given evm address: 123 has been found.')
+    );
+  });
+
+  test('Multiple rows match', async () => {
+    const evmAddress = '00000000000000002cfe';
+    await integrationDomainOps.loadContracts([
+      {
+        auto_renew_period: 7890000,
+        created_timestamp: 1570802912691212000,
+        deleted: false,
+        expiration_timestamp: null,
+        id: 111169,
+        key: "E'\\\\x326C0A221220F7ECD392568A9ECE84097C4B3C04C74AE52653D54398E132747B498B287245610A221220FA34ADAC826D3F878CCA5E4B074C7060DAE76259611543D6A876FF4E4B8B5C3A0A2212201ADBD17C33C48D59D0961356D5C0B19B391760A6504C3FC78D3094266FA290D2'",
+        memo: '',
+        num: 111169,
+        public_key: null,
+        proxy_account_id: null,
+        realm: 0,
+        shard: 0,
+        timestamp_range: '[1570802912691212000,)',
+        file_id: 111168,
+        obtainer_id: null,
+        type: 'CONTRACT',
+        evm_address: evmAddress,
+      },
+      {
+        auto_renew_period: 7890000,
+        created_timestamp: 1570803115160698000,
+        deleted: false,
+        expiration_timestamp: null,
+        id: 111278,
+        key: "E'\\\\x326C0A2212203053E42F8D8978BC5999080C4A625BBB1BF96CBCA6BAD6A4796808A6812564490A221220CC16FF9223B2E8F8151E8EFB054203CEF5EE9AF6171D2649D46734ECDD7F5A280A22122097C6975280B82DC1969ABA4E7DDE4F478E872E04CD6E0FE3849EAFB5D86315F1'",
+        memo: '',
+        num: 111278,
+        public_key: null,
+        proxy_account_id: null,
+        realm: 0,
+        shard: 0,
+        timestamp_range: '[1570803115160698000,)',
+        file_id: 111276,
+        obtainer_id: null,
+        type: 'CONTRACT',
+        evm_address: null,
+      },
+      {
+        auto_renew_period: 7885000,
+        created_timestamp: 1570803584382787001,
+        deleted: false,
+        expiration_timestamp: 1581285572000000000,
+        id: 111482,
+        key: "E'\\\\x326C0A221220A13DDC50A38C7ED4A7F64CFD05E364746B8DABC3DAE8B2AFBE9A94FF2105AB1F0A2212202CECF7F1A3EADBBD678EC9D62EED162893A2069D456A4E5061E86F96C95F4FFF0A221220C6C448A8B628C11C55F773A3366D8B75E8188EEF46A50A2CCDDDA6B3B4EF55E3'",
+        memo: '',
+        num: 111482,
+        public_key: null,
+        proxy_account_id: null,
+        realm: 0,
+        shard: 0,
+        timestamp_range: '[1570803587949346001,)',
+        file_id: 111481,
+        obtainer_id: null,
+        type: 'CONTRACT',
+        evm_address: evmAddress,
+      },
+    ]);
+
+    await expect(() => ContractService.getContractIdByEvmAddress(evmAddress)).rejects.toThrow(
+      new NotFoundError(`More than one contract with the evm address ${evmAddress} have been found.`)
+    );
+  });
+
+  test('One row match', async () => {
+    const evmAddress = '00000000000000002cfe';
+    await integrationDomainOps.loadContracts([
+      {
+        auto_renew_period: 7890000,
+        created_timestamp: 1570802912691212000,
+        deleted: false,
+        expiration_timestamp: null,
+        id: 111169,
+        key: "E'\\\\x326C0A221220F7ECD392568A9ECE84097C4B3C04C74AE52653D54398E132747B498B287245610A221220FA34ADAC826D3F878CCA5E4B074C7060DAE76259611543D6A876FF4E4B8B5C3A0A2212201ADBD17C33C48D59D0961356D5C0B19B391760A6504C3FC78D3094266FA290D2'",
+        memo: '',
+        num: 111169,
+        public_key: null,
+        proxy_account_id: null,
+        realm: 0,
+        shard: 0,
+        timestamp_range: '[1570802912691212000,)',
+        file_id: 111168,
+        obtainer_id: null,
+        type: 'CONTRACT',
+        evm_address: evmAddress,
+      },
+      {
+        auto_renew_period: 7890000,
+        created_timestamp: 1570803115160698000,
+        deleted: false,
+        expiration_timestamp: null,
+        id: 111278,
+        key: "E'\\\\x326C0A2212203053E42F8D8978BC5999080C4A625BBB1BF96CBCA6BAD6A4796808A6812564490A221220CC16FF9223B2E8F8151E8EFB054203CEF5EE9AF6171D2649D46734ECDD7F5A280A22122097C6975280B82DC1969ABA4E7DDE4F478E872E04CD6E0FE3849EAFB5D86315F1'",
+        memo: '',
+        num: 111278,
+        public_key: null,
+        proxy_account_id: null,
+        realm: 0,
+        shard: 0,
+        timestamp_range: '[1570803115160698000,)',
+        file_id: 111276,
+        obtainer_id: null,
+        type: 'CONTRACT',
+        evm_address: null,
+      },
+      {
+        auto_renew_period: 7885000,
+        created_timestamp: 1570803584382787001,
+        deleted: false,
+        expiration_timestamp: 1581285572000000000,
+        id: 111482,
+        key: "E'\\\\x326C0A221220A13DDC50A38C7ED4A7F64CFD05E364746B8DABC3DAE8B2AFBE9A94FF2105AB1F0A2212202CECF7F1A3EADBBD678EC9D62EED162893A2069D456A4E5061E86F96C95F4FFF0A221220C6C448A8B628C11C55F773A3366D8B75E8188EEF46A50A2CCDDDA6B3B4EF55E3'",
+        memo: '',
+        num: 111482,
+        public_key: null,
+        proxy_account_id: null,
+        realm: 0,
+        shard: 0,
+        timestamp_range: '[1570803587949346001,)',
+        file_id: 111481,
+        obtainer_id: null,
+        type: 'CONTRACT',
+        evm_address: null,
+      },
+    ]);
+
+    expect(await ContractService.getContractIdByEvmAddress(evmAddress)).toEqual('111169');
   });
 });

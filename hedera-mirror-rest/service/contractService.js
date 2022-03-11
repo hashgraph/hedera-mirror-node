@@ -23,6 +23,9 @@
 const _ = require('lodash');
 
 const BaseService = require('./baseService');
+const Contract = require('../model/contract');
+const {of: createEntityId} = require('../entityId');
+const {NotFoundError} = require('../errors/notFoundError');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
   response: {
@@ -30,6 +33,8 @@ const {
   },
 } = require('../config');
 const {orderFilterValues} = require('../constants');
+
+const CREATE_2_ID = /^(0x)?[A-Fa-f0-9]{40}$/;
 
 /**
  * Contract retrieval business logic
@@ -77,6 +82,13 @@ class ContractService extends BaseService {
     ${ContractLog.TOPIC2},
     ${ContractLog.TOPIC3}
     from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
+
+  static contractIdByEvmAddressQuery = `select
+    ${Contract.SHARD},
+    ${Contract.REALM},
+    ${Contract.ID}
+    from ${Contract.tableName} ${Contract.tableAlias}
+    where ${Contract.getFullName(Contract.EVM_ADDRESS)} = $1 and deleted <> true`;
 
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
@@ -208,6 +220,24 @@ class ContractService extends BaseService {
     const query = [ContractService.contractStateChangesQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractStateChangesByTimestamps');
     return rows.map((row) => new ContractStateChange(row));
+  }
+
+  async getContractIdByEvmAddress(evmAddress) {
+    const params = [evmAddress];
+    const rows = await super.getRows(ContractService.contractIdByEvmAddressQuery, params, 'getContractIdByEvmAddress');
+    if (rows.length === 0) {
+      throw new NotFoundError(`No contract with the given evm address: ${evmAddress} has been found.`);
+    }
+    //since evm_address is not an unique index, it is important to make this check.
+    if (rows.length > 1) {
+      throw new Error(`More than one contract with the evm address ${evmAddress} have been found.`);
+    }
+    const contractId = rows[0];
+    return createEntityId(BigInt(contractId.shard), BigInt(contractId.realm), BigInt(contractId.id)).getEncodedId();
+  }
+
+  isValidCreate2Id(id) {
+    return CREATE_2_ID.test(id);
   }
 }
 
