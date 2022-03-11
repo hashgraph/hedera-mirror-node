@@ -302,7 +302,7 @@ describe('getContractByIdQuery', () => {
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      [Contract.ID].forEach((columnName) => {
+      [Contract.ID, Contract.EVM_ADDRESS].forEach((columnName) => {
         spec.input.columnName = columnName;
         assertSqlQueryEqual(contracts.getContractByIdQuery(spec.input), spec.expected(columnName));
       });
