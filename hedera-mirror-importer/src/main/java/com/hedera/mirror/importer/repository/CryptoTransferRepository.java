@@ -25,4 +25,5 @@ import org.springframework.data.repository.CrudRepository;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 
 public interface CryptoTransferRepository extends CrudRepository<CryptoTransfer, CryptoTransfer.Id> {
+
 }

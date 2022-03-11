@@ -5,6 +5,7 @@
 
 -- Create enums for tables
 create type entity_type as enum ('ACCOUNT', 'CONTRACT', 'FILE', 'TOPIC', 'TOKEN', 'SCHEDULE');
+create type errata_type as enum ('INSERT', 'DELETE');
 create type token_pause_status as enum ('NOT_APPLICABLE', 'PAUSED', 'UNPAUSED');
 create type token_supply_type as enum ('INFINITE', 'FINITE');
 create type token_type as enum ('FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE');
@@ -20,14 +21,15 @@ comment on table account_balance is 'Account balances (historical) in tinybars a
 
 create table if not exists account_balance_file
 (
-    bytes               bytea        null,
-    consensus_timestamp bigint       not null,
-    count               bigint       not null,
-    file_hash           varchar(96)  null,
-    load_end            bigint       not null,
-    load_start          bigint       not null,
-    name                varchar(250) not null,
-    node_account_id     bigint       not null
+    bytes               bytea         null,
+    consensus_timestamp bigint        not null,
+    count               bigint        not null,
+    file_hash           varchar(96)   null,
+    load_end            bigint        not null,
+    load_start          bigint        not null,
+    name                varchar(250)  not null,
+    node_account_id     bigint        not null,
+    time_offset         int default 0 not null
 );
 comment on table account_balance_file is 'Account balances stream files';
 
@@ -152,7 +154,7 @@ create table if not exists contract_state_change
     value_read          bytea  not null,
     value_written       bytea  null
 );
-comment on table contract_result is 'Contract execution state changes';
+comment on table contract_state_change is 'Contract execution state changes';
 
 create table if not exists crypto_allowance
 (
@@ -173,11 +175,12 @@ comment on table crypto_allowance_history is 'History of hbar allowances delegat
 -- crypto_transfer
 create table if not exists crypto_transfer
 (
-    amount              bigint  not null,
-    consensus_timestamp bigint  not null,
-    is_approval         boolean null,
-    entity_id           bigint  not null,
-    payer_account_id    bigint  not null
+    amount              bigint      not null,
+    consensus_timestamp bigint      not null,
+    entity_id           bigint      not null,
+    errata              errata_type null,
+    is_approval         boolean     null,
+    payer_account_id    bigint      not null
 );
 comment on table crypto_transfer is 'Crypto account Hbar transfers';
 
@@ -454,21 +457,22 @@ comment on table topic_message is 'Topic entity sequenced messages';
 create table if not exists transaction
 (
     charged_tx_fee             bigint,
-    consensus_timestamp        bigint   not null,
+    consensus_timestamp        bigint      not null,
     entity_id                  bigint,
-    initial_balance            bigint            default 0,
+    errata                     errata_type null,
+    initial_balance            bigint               default 0,
     max_fee                    bigint,
     memo                       bytea,
     node_account_id            bigint,
-    nonce                      integer           default 0 not null,
-    parent_consensus_timestamp bigint   null,
-    payer_account_id           bigint   not null,
-    result                     smallint not null,
-    scheduled                  boolean  not null default false,
+    nonce                      integer              default 0 not null,
+    parent_consensus_timestamp bigint      null,
+    payer_account_id           bigint      not null,
+    result                     smallint    not null,
+    scheduled                  boolean     not null default false,
     transaction_bytes          bytea,
     transaction_hash           bytea,
-    type                       smallint not null,
-    valid_start_ns             bigint   not null,
+    type                       smallint    not null,
+    valid_start_ns             bigint      not null,
     valid_duration_seconds     bigint
 );
 comment on table transaction is 'Submitted network transactions';

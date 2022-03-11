@@ -42,7 +42,9 @@ public class PubSubRecordStreamFileListener implements RecordStreamFileListener 
 
     @Override
     public void onEnd(RecordFile recordFile) throws ImporterException {
-        recordFileRepository.save(recordFile);
+        if (recordFile != null) {
+            recordFileRepository.save(recordFile);
+        }
     }
 
     @Override

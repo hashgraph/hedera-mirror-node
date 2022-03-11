@@ -21,42 +21,74 @@ package com.hedera.mirror.common.domain.transaction;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import java.io.Serializable;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.IdClass;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.TypeDef;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 @Data
 @Entity
+@IdClass(CryptoTransfer.Id.class)
 @NoArgsConstructor
+@TypeDef(
+        name = "pgsql_enum",
+        typeClass = PostgreSQLEnumType.class
+)
 public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
 
-    /*
-     * It used to be that crypto transfers could have multiple amounts for the same account, so all fields were used for
-     * uniqueness. Later a change was made to aggregate amounts by account making the unique key
-     * (consensusTimestamp, entityId). Since we didn't migrate the old data to aggregate we have to treat all fields as
-     * the key still.
-     */
-    @EmbeddedId
-    @JsonUnwrapped
-    private Id id;
+    @javax.persistence.Id
+    private long amount;
+
+    @javax.persistence.Id
+    private long consensusTimestamp;
+
+    @javax.persistence.Id
+    private long entityId;
+
+    @Enumerated(EnumType.STRING)
+    @Type(type = "pgsql_enum")
+    private ErrataType errata;
 
     private Boolean isApproval;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
+    /**
+     * @deprecated in favor of using the no-arg constructor and setters
+     */
+    @Deprecated(forRemoval = true)
     public CryptoTransfer(long consensusTimestamp, long amount, EntityId entityId) {
-        id = new CryptoTransfer.Id(amount, consensusTimestamp, entityId);
+        setConsensusTimestamp(consensusTimestamp);
+        setAmount(amount);
+        setEntityId(entityId.getId());
+    }
+
+    @JsonIgnore
+    @Override
+    public Id getId() {
+        Id id = new Id();
+        id.setConsensusTimestamp(consensusTimestamp);
+        id.setAmount(amount);
+        id.setEntityId(entityId);
+        return id;
     }
 
     @JsonIgnore
@@ -65,6 +97,12 @@ public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
 
+    /*
+     * It used to be that crypto transfers could have multiple amounts for the same account, so all fields were used for
+     * uniqueness. Later a change was made to aggregate amounts by account making the unique key
+     * (consensusTimestamp, entityId). Since we didn't migrate the old data to aggregate we have to treat all fields as
+     * the key still.
+     */
     @Data
     @Embeddable
     @AllArgsConstructor
@@ -74,10 +112,7 @@ public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
         private static final long serialVersionUID = 6187276796581956587L;
 
         private long amount;
-
         private long consensusTimestamp;
-
-        @Convert(converter = AccountIdConverter.class)
-        private EntityId entityId;
+        private long entityId;
     }
 }
