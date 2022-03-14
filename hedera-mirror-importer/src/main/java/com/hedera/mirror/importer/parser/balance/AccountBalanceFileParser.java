@@ -31,11 +31,11 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
 import com.hedera.mirror.importer.parser.batch.BatchPersister;
@@ -49,15 +49,18 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
 
     private final BatchPersister batchPersister;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+    private final BalanceStreamFileListener streamFileListener;
 
     public AccountBalanceFileParser(BatchPersister batchPersister,
                                     MeterRegistry meterRegistry,
                                     BalanceParserProperties parserProperties,
                                     StreamFileRepository<AccountBalanceFile, Long> accountBalanceFileRepository,
-                                    MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
+                                    MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+                                    BalanceStreamFileListener streamFileListener) {
         super(meterRegistry, parserProperties, accountBalanceFileRepository);
         this.batchPersister = batchPersister;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
+        this.streamFileListener = streamFileListener;
     }
 
     /**
@@ -108,6 +111,7 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         Instant loadEnd = Instant.now();
         accountBalanceFile.setCount(count);
         accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
+        streamFileListener.onEnd(accountBalanceFile);
         streamFileRepository.save(accountBalanceFile);
     }
 }

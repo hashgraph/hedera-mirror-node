@@ -71,7 +71,6 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -342,12 +341,10 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onCryptoTransferList() {
+    void onCryptoTransfer() {
         // given
-        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
-        cryptoTransfer1.setPayerAccountId(TRANSACTION_PAYER);
-        CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, EntityId.of(0L, 0L, 2L, ACCOUNT));
-        cryptoTransfer2.setPayerAccountId(TRANSACTION_PAYER);
+        var cryptoTransfer1 = domainBuilder.cryptoTransfer().get();
+        var cryptoTransfer2 = domainBuilder.cryptoTransfer().get();
 
         // when
         sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
@@ -356,6 +353,12 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrder(cryptoTransfer1, cryptoTransfer2);
+    }
+
+    @Test
+    void onEndNull() {
+        sqlEntityListener.onEnd(null);
+        assertThat(recordFileRepository.count()).isZero();
     }
 
     @Test

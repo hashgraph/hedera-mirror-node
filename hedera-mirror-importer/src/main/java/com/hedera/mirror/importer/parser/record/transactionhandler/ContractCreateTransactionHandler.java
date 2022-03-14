@@ -34,11 +34,15 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
-class ContractCreateTransactionHandler extends AbstractContractCallTransactionHandler {
+class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
+    private final EntityProperties entityProperties;
+    private final EntityIdService entityIdService;
 
     ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                      EntityProperties entityProperties) {
-        super(entityIdService, entityListener, entityProperties);
+        super(entityListener, TransactionType.CONTRACTCREATEINSTANCE);
+        this.entityProperties = entityProperties;
+        this.entityIdService = entityIdService;
     }
 
     @Override
@@ -56,32 +60,17 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
      * know how much gas was used and the call result regardless.
      */
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    public void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
-        var transactionRecord = recordItem.getRecord();
-        long consensusTimestamp = recordItem.getConsensusTimestamp();
-        EntityId entityId = transaction.getEntityId();
         transaction.setInitialBalance(transactionBody.getInitialBalance());
-
-        if (entityProperties.getPersist().isContracts() && recordItem.isSuccessful() && !EntityId.isEmpty(entityId)) {
-            doUpdateEntity(getContract(entityId, consensusTimestamp), recordItem);
-        }
-
-        if (entityProperties.getPersist().isContracts()) {
-            ContractResult contractResult = new ContractResult();
-            contractResult.setAmount(transactionBody.getInitialBalance());
-            contractResult.setConsensusTimestamp(consensusTimestamp);
-            contractResult.setContractId(entityId);
-            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
-            contractResult.setGasLimit(transactionBody.getGas());
-            contractResult.setPayerAccountId(transaction.getPayerAccountId());
-
-            onContractResult(recordItem, contractResult, transactionRecord.getContractCreateResult());
-        }
     }
 
     @Override
     protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
+        if (!entityProperties.getPersist().isContracts()) {
+            return;
+        }
+
         var contractCreateResult = recordItem.getRecord().getContractCreateResult();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
@@ -107,5 +96,14 @@ class ContractCreateTransactionHandler extends AbstractContractCallTransactionHa
 
         contract.setMemo(transactionBody.getMemo());
         entityListener.onContract(contract);
+    }
+
+    @Override
+    public void updateContractResult(ContractResult contractResult, RecordItem recordItem) {
+        var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+        contractResult.setAmount(transactionBody.getInitialBalance());
+        contractResult.setFunctionParameters(
+                DomainUtils.toBytes(transactionBody.getConstructorParameters()));
+        contractResult.setGasLimit(transactionBody.getGas());
     }
 }

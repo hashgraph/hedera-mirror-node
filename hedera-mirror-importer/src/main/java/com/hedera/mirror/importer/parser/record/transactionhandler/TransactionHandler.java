@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,10 +20,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 /**
  * TransactionHandler interface abstracts the logic for processing different kinds for transactions. For each
@@ -43,6 +44,12 @@ public interface TransactionHandler {
      * @return the transaction type associated with this handler
      */
     TransactionType getType();
+
+    /**
+     * Override to update fields of the ContractResult's (domain) fields.
+     */
+    default void updateContractResult(ContractResult contractResult, RecordItem recordItem) {
+    }
 
     /**
      * Override to update fields of the Transaction's (domain) fields.

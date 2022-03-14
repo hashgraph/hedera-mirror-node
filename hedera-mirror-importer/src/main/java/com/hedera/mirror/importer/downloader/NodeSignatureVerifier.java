@@ -36,12 +36,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.util.CollectionUtils;
 
-import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
@@ -196,8 +196,11 @@ public class NodeSignatureVerifier {
                 seenNodes));
         statusMap.put(SignatureStatus.NOT_FOUND.toString(), missingNodes);
 
-        String streamType = CollectionUtils.isEmpty(signatures) ? "unknown" :
-                signatures.stream().map(FileStreamSignature::getStreamType).findFirst().toString();
+        String streamType = signatures.stream()
+                .map(FileStreamSignature::getStreamType)
+                .map(StreamType::toString)
+                .findFirst()
+                .orElse("UNKNOWN");
         for (Map.Entry<String, Collection<String>> entry : statusMap.entrySet()) {
             entry.getValue().forEach(nodeAccountId -> {
                 Counter counter = nodeSignatureStatusMetricMap.computeIfAbsent(

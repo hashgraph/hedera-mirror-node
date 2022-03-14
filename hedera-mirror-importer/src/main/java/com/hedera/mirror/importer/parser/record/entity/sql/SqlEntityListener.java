@@ -184,7 +184,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();
-        recordFileRepository.save(recordFile);
+        if (recordFile != null) {
+            recordFileRepository.save(recordFile);
+        }
     }
 
     @Override

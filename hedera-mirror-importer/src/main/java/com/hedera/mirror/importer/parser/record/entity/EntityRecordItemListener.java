@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
+import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -82,6 +83,7 @@ import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -91,6 +93,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -109,6 +112,7 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 @ConditionOnEntityRecordParser
 public class EntityRecordItemListener implements RecordItemListener {
     private final AddressBookService addressBookService;
+    private final ContractResultService contractResultService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
     private final EntityRepository entityRepository;
@@ -125,8 +129,10 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     TransactionHandlerFactory transactionHandlerFactory,
                                     FileDataRepository fileDataRepository,
                                     EntityRepository entityRepository,
-                                    RecordParserProperties parserProperties) {
+                                    RecordParserProperties parserProperties,
+                                    ContractResultService contractResultService) {
         this.addressBookService = addressBookService;
+        this.contractResultService = contractResultService;
         this.entityListener = entityListener;
         this.entityProperties = entityProperties;
         this.entityRepository = entityRepository;
@@ -169,11 +175,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         transactionHandler.updateTransaction(transaction, recordItem);
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
-            if (body.hasCryptoCreateAccount() && recordItem.isSuccessful()) {
-                insertCryptoCreateTransferList(consensusTimestamp, recordItem);
-            } else {
-                insertTransferList(consensusTimestamp, txRecord.getTransferList(), recordItem.getPayerAccountId());
-            }
+            insertTransferList(recordItem);
         }
 
         // handle scheduled transaction, even on failure
@@ -241,6 +243,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertAutomaticTokenAssociations(recordItem);
         }
 
+        contractResultService.process(recordItem, transaction);
+
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
     }
@@ -275,7 +279,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setValidStartNs(DomainUtils.timeStampInNanos(transactionId.getTransactionValidStart()));
 
         if (txRecord.hasParentConsensusTimestamp()) {
-            transaction.setParentConsensusTimestamp(DomainUtils.timestampInNanosMax(txRecord.getParentConsensusTimestamp()));
+            transaction.setParentConsensusTimestamp(
+                    DomainUtils.timestampInNanosMax(txRecord.getParentConsensusTimestamp()));
         }
 
         return transaction;
@@ -407,48 +412,26 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private void insertTransferList(long consensusTimestamp, TransferList transferList, EntityId payerAccountId) {
+    private void insertTransferList(RecordItem recordItem) {
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var transferList = recordItem.getRecord().getTransferList();
+        EntityId payerAccountId = recordItem.getPayerAccountId();
+        var body = recordItem.getTransactionBody();
+        boolean failedTransfer = !recordItem.isSuccessful() && body.hasCryptoTransfer();
+        Predicate<AccountAmount> isFailedNonFeeTransfer = a -> failedTransfer &&
+                body.getCryptoTransfer().getTransfers().getAccountAmountsList().contains(a);
+
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
-            CryptoTransfer cryptoTransfer = new CryptoTransfer(consensusTimestamp, aa.getAmount(), account);
+            CryptoTransfer cryptoTransfer = new CryptoTransfer();
+            cryptoTransfer.setAmount(aa.getAmount());
+            cryptoTransfer.setConsensusTimestamp(consensusTimestamp);
+            cryptoTransfer.setEntityId(account.getId());
             cryptoTransfer.setIsApproval(aa.getIsApproval());
             cryptoTransfer.setPayerAccountId(payerAccountId);
+            cryptoTransfer.setErrata(isFailedNonFeeTransfer.test(aa) ? ErrataType.DELETE : null);
             entityListener.onCryptoTransfer(cryptoTransfer);
-        }
-    }
-
-    private void insertCryptoCreateTransferList(long consensusTimestamp, RecordItem recordItem) {
-        var record = recordItem.getRecord();
-        var body = recordItem.getTransactionBody();
-        long initialBalance = body.getCryptoCreateAccount().getInitialBalance();
-        EntityId createdAccount = EntityId.of(record.getReceipt().getAccountID());
-        boolean addInitialBalance = true;
-        TransferList transferList = record.getTransferList();
-
-        for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-            var aa = transferList.getAccountAmounts(i);
-            var account = EntityId.of(aa.getAccountID());
-            CryptoTransfer cryptoTransfer = new CryptoTransfer(consensusTimestamp, aa.getAmount(), account);
-            cryptoTransfer.setIsApproval(aa.getIsApproval());
-            cryptoTransfer.setPayerAccountId(recordItem.getPayerAccountId());
-            entityListener.onCryptoTransfer(cryptoTransfer);
-
-            // Don't manually add an initial balance transfer if the transfer list contains it already
-            if (initialBalance == aa.getAmount() && createdAccount.equals(account)) {
-                addInitialBalance = false;
-            }
-        }
-
-        if (addInitialBalance) {
-            CryptoTransfer transferOut = new CryptoTransfer(consensusTimestamp, -initialBalance, recordItem
-                    .getPayerAccountId());
-            transferOut.setPayerAccountId(recordItem.getPayerAccountId());
-            entityListener.onCryptoTransfer(transferOut);
-
-            CryptoTransfer transferIn = new CryptoTransfer(consensusTimestamp, initialBalance, createdAccount);
-            transferIn.setPayerAccountId(recordItem.getPayerAccountId());
-            entityListener.onCryptoTransfer(transferIn);
         }
     }
 
