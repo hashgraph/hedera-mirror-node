@@ -23,6 +23,7 @@ package persistence
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 
@@ -162,9 +163,9 @@ func NewAccountRepository(dbClient interfaces.DbClient) interfaces.AccountReposi
 }
 
 func (ar *accountRepository) RetrieveBalanceAtBlock(
-	ctx context.Context,
-	accountId types.AccountId,
-	consensusEnd int64,
+		ctx context.Context,
+		accountId types.AccountId,
+		consensusEnd int64,
 ) (types.AmountSlice, string, *rTypes.Error) {
 	var entityIdString string
 	entity, err := ar.getCryptoEntity(ctx, accountId, consensusEnd)
@@ -240,8 +241,8 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 }
 
 func (ar *accountRepository) getCryptoEntity(ctx context.Context, accountId types.AccountId, consensusEnd int64) (
-	*domain.Entity,
-	*rTypes.Error,
+		*domain.Entity,
+		*rTypes.Error,
 ) {
 	db, cancel := ar.dbClient.GetDbWithContext(ctx)
 	defer cancel()
@@ -256,7 +257,7 @@ func (ar *accountRepository) getCryptoEntity(ctx context.Context, accountId type
 			sql.Named("consensus_end", getInclusiveInt8Range(consensusEnd, consensusEnd)),
 		}
 		notFoundError = hErrors.AddErrorDetails(hErrors.ErrAccountNotFound, "reason",
-			"Account with the alias not found")
+			fmt.Sprintf("Account with the alias '%s' not found", hex.EncodeToString(accountId.GetNetworkAlias())))
 	} else {
 		query = selectCryptoEntityById
 		args = []interface{}{sql.Named("id", accountId.GetId())}
@@ -281,10 +282,10 @@ func (ar *accountRepository) getCryptoEntity(ctx context.Context, accountId type
 }
 
 func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accountId, timestamp int64) (
-	int64,
-	*types.HbarAmount,
-	map[string]map[int64]*types.TokenAmount,
-	*rTypes.Error,
+		int64,
+		*types.HbarAmount,
+		map[string]map[int64]*types.TokenAmount,
+		*rTypes.Error,
 ) {
 	db, cancel := ar.dbClient.GetDbWithContext(ctx)
 	defer cancel()
@@ -327,10 +328,10 @@ func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accou
 }
 
 func (ar *accountRepository) getBalanceChange(ctx context.Context, accountId, consensusStart, consensusEnd int64) (
-	int64,
-	[]*types.TokenAmount,
-	map[string]map[int64]tokenAssociation,
-	*rTypes.Error,
+		int64,
+		[]*types.TokenAmount,
+		map[string]map[int64]tokenAssociation,
+		*rTypes.Error,
 ) {
 	db, cancel := ar.dbClient.GetDbWithContext(ctx)
 	defer cancel()
@@ -377,12 +378,12 @@ func (ar *accountRepository) getBalanceChange(ctx context.Context, accountId, co
 }
 
 func (ar *accountRepository) getNftBalance(
-	ctx context.Context,
-	accountId int64,
-	consensusStart int64,
-	consensusEnd int64,
-	tokenAmountMap map[int64]*types.TokenAmount,
-	tokenAssociationMap map[int64]tokenAssociation,
+		ctx context.Context,
+		accountId int64,
+		consensusStart int64,
+		consensusEnd int64,
+		tokenAmountMap map[int64]*types.TokenAmount,
+		tokenAssociationMap map[int64]tokenAssociation,
 ) (types.AmountSlice, *rTypes.Error) {
 	db, cancel := ar.dbClient.GetDbWithContext(ctx)
 	defer cancel()
@@ -419,7 +420,7 @@ func (ar *accountRepository) getNftBalance(
 		}
 		// there may be historical self NftTransfer in record, i.e., sender and receiver are the same account
 		change := getNftChangeForAccount(nftTransfer.ReceiverAccountId, accountId) -
-			getNftChangeForAccount(nftTransfer.SenderAccountId, accountId)
+				getNftChangeForAccount(nftTransfer.SenderAccountId, accountId)
 		balanceChangeMap[tokenId].Value += change
 	}
 
@@ -439,9 +440,9 @@ func getNftChangeForAccount(subject *domain.EntityId, accountId int64) int64 {
 }
 
 func getUpdatedTokenAmounts(
-	tokenAmountMap map[int64]*types.TokenAmount,
-	tokenValues []*types.TokenAmount,
-	tokenAssociationMap map[int64]tokenAssociation,
+		tokenAmountMap map[int64]*types.TokenAmount,
+		tokenValues []*types.TokenAmount,
+		tokenAssociationMap map[int64]tokenAssociation,
 ) types.AmountSlice {
 	for _, tokenValue := range tokenValues {
 		tokenId := tokenValue.TokenId.EncodedId
