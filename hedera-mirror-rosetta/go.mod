@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/coinbase/rosetta-sdk-go v0.7.3
 	github.com/cucumber/godog v0.12.4
-	github.com/go-playground/validator/v10 v10.10.0
+	github.com/go-playground/validator/v10 v10.10.1
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220204040204-50a9ffe2cb34
 	github.com/hashgraph/hedera-sdk-go/v2 v2.10.0
 	github.com/hellofresh/health-go/v4 v4.5.0
@@ -102,8 +102,8 @@ require (
 	go.opentelemetry.io/otel v1.0.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
+	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
+	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
