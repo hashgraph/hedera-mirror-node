@@ -35,5 +35,9 @@ type AccountRepository interface {
 	// balance = balanceAtLatestBalanceSnapshot + balanceChangeBetweenSnapshotAndBlock
 	// if the account is deleted at T1 and T1 <= consensusEnd, the balance is calculated as
 	// balance = balanceAtLatestBalanceSnapshotBeforeT1 + balanceChangeBetweenSnapshotAndT1
-	RetrieveBalanceAtBlock(ctx context.Context, accountId, consensusEnd int64) ([]types.Amount, *rTypes.Error)
+	RetrieveBalanceAtBlock(ctx context.Context, accountId types.AccountId, consensusEnd int64) (
+		types.AmountSlice,
+		string,
+		*rTypes.Error,
+	)
 }

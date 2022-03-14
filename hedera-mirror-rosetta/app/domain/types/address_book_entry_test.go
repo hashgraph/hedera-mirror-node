@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -63,10 +64,9 @@ func newDummyPeer(nodeId string, metadata map[string]interface{}) *types.Peer {
 }
 
 func newDummyAddressBookEntry(nodeId int64, accountId int64, endpoints []string) AddressBookEntry {
-	account, _ := NewAccountFromEncodedID(accountId)
 	return AddressBookEntry{
 		NodeId:    nodeId,
-		AccountId: account,
+		AccountId: domain.MustDecodeEntityId(accountId),
 		Endpoints: endpoints,
 	}
 }

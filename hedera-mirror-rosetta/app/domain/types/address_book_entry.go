@@ -24,12 +24,13 @@ import (
 	"fmt"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 )
 
 // AddressBookEntry is domain level struct used to represent Rosetta Peer
 type AddressBookEntry struct {
 	NodeId    int64
-	AccountId Account
+	AccountId domain.EntityId
 	Endpoints []string
 }
 

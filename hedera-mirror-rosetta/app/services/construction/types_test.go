@@ -20,44 +20,35 @@
 
 package construction
 
-import (
-	"encoding/json"
-	"fmt"
-	"testing"
-
-	"github.com/hashgraph/hedera-sdk-go/v2"
-	"github.com/stretchr/testify/assert"
-)
-
-type k struct {
-	Key publicKey `json:"key"`
-}
-
-func TestPublicKeyUnmarshalJSONSuccess(t *testing.T) {
-	// given
-	sk, err := hedera.GeneratePrivateKey()
-	assert.NoError(t, err)
-
-	expected := sk.PublicKey()
-	input := fmt.Sprintf("{\"key\": \"%s\"}", expected.String())
-
-	// when
-	actual := &k{}
-	err = json.Unmarshal([]byte(input), actual)
-
-	// then
-	assert.NoError(t, err)
-	assert.Equal(t, expected, actual.Key.PublicKey)
-}
-
-func TestPublicKeyUnmarshalJSONInvalidInput(t *testing.T) {
-	// given
-	input := "foobar"
-
-	// when
-	actual := &k{}
-	err := json.Unmarshal([]byte(input), actual)
-
-	// then
-	assert.Error(t, err)
-}
+// type k struct {
+// 	Key publicKey `json:"key"`
+// }
+//
+// func TestPublicKeyUnmarshalJSONSuccess(t *testing.T) {
+// 	// given
+// 	sk, err := hedera.GeneratePrivateKey()
+// 	assert.NoError(t, err)
+//
+// 	expected := sk.PublicKey()
+// 	input := fmt.Sprintf("{\"key\": \"%s\"}", expected.String())
+//
+// 	// when
+// 	actual := &k{}
+// 	err = json.Unmarshal([]byte(input), actual)
+//
+// 	// then
+// 	assert.NoError(t, err)
+// 	assert.Equal(t, expected, actual.Key.PublicKey)
+// }
+//
+// func TestPublicKeyUnmarshalJSONInvalidInput(t *testing.T) {
+// 	// given
+// 	input := "foobar"
+//
+// 	// when
+// 	actual := &k{}
+// 	err := json.Unmarshal([]byte(input), actual)
+//
+// 	// then
+// 	assert.Error(t, err)
+// }

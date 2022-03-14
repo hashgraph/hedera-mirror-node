@@ -65,12 +65,23 @@ func TestLoadDefaultConfig(t *testing.T) {
 	assert.Equal(t, getDefaultConfig(), config)
 }
 
+func TestLoadDefaultConfigInvalidYamlString(t *testing.T) {
+	original := defaultConfig
+	defaultConfig = "foobar"
+
+	config, err := LoadConfig()
+
+	defaultConfig = original
+	assert.Error(t, err)
+	assert.Nil(t, config)
+}
+
 func TestLoadCustomConfig(t *testing.T) {
 	tests := []struct {
-		name         string
-		fromCwdOrEnv bool
+		name    string
+		fromCwd bool
 	}{
-		{name: "from current directory", fromCwdOrEnv: true},
+		{name: "from current directory", fromCwd: true},
 		{name: "from env var"},
 	}
 
@@ -79,7 +90,7 @@ func TestLoadCustomConfig(t *testing.T) {
 			tempDir, filePath := createYamlConfigFile(yml1, t)
 			defer os.RemoveAll(tempDir)
 
-			if tt.fromCwdOrEnv {
+			if tt.fromCwd {
 				os.Chdir(tempDir)
 			} else {
 				em := envManager{}
@@ -144,15 +155,21 @@ func TestLoadCustomConfigInvalidYaml(t *testing.T) {
 	tests := []struct {
 		name    string
 		content string
+		fromCwd bool
 	}{
-		{"invalid yaml", invalidYaml},
-		{"incorrect account id", invalidYamlIncorrectAccountId},
+		{name: "invalid yaml", content: invalidYaml},
+		{name: "invalid yaml from cwd", content: invalidYaml, fromCwd: true},
+		{name: "incorrect account id", content: invalidYamlIncorrectAccountId},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tempDir, filePath := createYamlConfigFile(tt.content, t)
 			defer os.RemoveAll(tempDir)
+
+			if tt.fromCwd {
+				os.Chdir(tempDir)
+			}
 
 			em := envManager{}
 			em.SetEnv(apiConfigEnvKey, filePath)

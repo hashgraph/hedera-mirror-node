@@ -29,6 +29,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
+	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
 const (
@@ -38,12 +39,32 @@ const (
 )
 
 type Amount interface {
+	GetDecimals() int64
+	GetSymbol() string
 	GetValue() int64
 	ToRosetta() *types.Amount
 }
 
+type AmountSlice []Amount
+
+func (a AmountSlice) ToRosetta() []*types.Amount {
+	rosettaAmounts := make([]*types.Amount, 0, len(a))
+	for _, amount := range a {
+		rosettaAmounts = append(rosettaAmounts, amount.ToRosetta())
+	}
+	return rosettaAmounts
+}
+
 type HbarAmount struct {
 	Value int64
+}
+
+func (h *HbarAmount) GetDecimals() int64 {
+	return int64(CurrencyHbar.Decimals)
+}
+
+func (h *HbarAmount) GetSymbol() string {
+	return CurrencyHbar.Symbol
 }
 
 func (h *HbarAmount) GetValue() int64 {
@@ -66,6 +87,22 @@ type TokenAmount struct {
 	TokenId       domain.EntityId `json:"token_id"`
 	Type          string          `json:"type"`
 	Value         int64           `json:"value"`
+}
+
+func (t *TokenAmount) GetSdkTokenId() hedera.TokenID {
+	return hedera.TokenID{
+		Shard: uint64(t.TokenId.ShardNum),
+		Realm: uint64(t.TokenId.RealmNum),
+		Token: uint64(t.TokenId.EntityNum),
+	}
+}
+
+func (t *TokenAmount) GetDecimals() int64 {
+	return t.Decimals
+}
+
+func (t *TokenAmount) GetSymbol() string {
+	return t.TokenId.String()
 }
 
 func (t *TokenAmount) GetValue() int64 {
@@ -145,7 +182,7 @@ func NewAmount(amount *types.Amount) (Amount, *types.Error) {
 	}
 
 	tokenId, err := domain.EntityIdFromString(currency.Symbol)
-	if err != nil {
+	if err != nil || tokenId.IsZero() {
 		return nil, errors.ErrInvalidToken
 	}
 

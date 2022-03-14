@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	account, _    = types.NewAccountFromEncodedID(500)
+	account       = types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(500))
 	entityId      = domain.MustDecodeEntityId(600)
 	hbarAmount    = types.HbarAmount{Value: 300}
 	statusSuccess = types.TransactionResults[22]
@@ -110,13 +110,12 @@ func makeTransaction(entityId *domain.EntityId, hash string) *types.Transaction 
 	return &types.Transaction{
 		EntityId: entityId,
 		Hash:     hash,
-		Operations: []*types.Operation{
+		Operations: types.OperationSlice{
 			{
-				Index:   0,
-				Type:    types.TransactionTypes[14],
-				Status:  statusSuccess,
-				Account: account,
-				Amount:  &hbarAmount,
+				AccountId: account,
+				Amount:    &hbarAmount,
+				Status:    statusSuccess,
+				Type:      types.TransactionTypes[14],
 			},
 		},
 	}

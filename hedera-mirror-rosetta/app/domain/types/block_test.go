@@ -38,7 +38,7 @@ func exampleBlock() *Block {
 		Transactions: []*Transaction{
 			{
 				Hash:       "somehash",
-				Operations: []*Operation{},
+				Operations: OperationSlice{},
 			},
 		},
 	}

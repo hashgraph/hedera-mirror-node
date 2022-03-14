@@ -24,9 +24,9 @@ import (
 	"testing"
 	"time"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/domain"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -35,12 +35,11 @@ import (
 const (
 	initialBalance                       = 10
 	maxAutomaticTokenAssociations uint32 = 10
-	newAccountKeyStr                     = "302a300506032b65700321006663a95da28adcb0fc129d1b4eda4be7dd90b54a337cd2dd953e1d2dc03ca6d1"
 )
 
 var (
-	newAccountKey, _ = hedera.PublicKeyFromString(newAccountKeyStr)
-	proxyAccountId   = hedera.AccountID{Account: 6000}
+	_, newAccountPublicKey = domain.GenEd25519KeyPair()
+	proxyAccountId         = hedera.AccountID{Account: 6000}
 )
 
 func TestCryptoCreateTransactionConstructorSuite(t *testing.T) {
@@ -70,11 +69,9 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestConstruct() {
 	var tests = []struct {
 		name             string
 		updateOperations updateOperationsFunc
-		validStartNanos  int64
 		expectError      bool
 	}{
 		{name: "Success"},
-		{name: "SuccessValidStartNanos", validStartNanos: 100},
 		{name: "EmptyOperations", updateOperations: getEmptyOperations, expectError: true},
 	}
 
@@ -89,7 +86,7 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestConstruct() {
 			}
 
 			// when
-			tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
+			tx, signers, err := h.Construct(defaultContext, operations)
 
 			// then
 			if tt.expectError {
@@ -98,12 +95,8 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestConstruct() {
 				assert.Nil(t, tx)
 			} else {
 				assert.Nil(t, err)
-				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-				assertCryptoCreateTransaction(t, operations[0], nodeAccountId, tx)
-
-				if tt.validStartNanos != 0 {
-					assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
-				}
+				assert.ElementsMatch(t, []types.AccountId{accountIdA}, signers)
+				assertCryptoCreateTransaction(t, operations[0], tx)
 			}
 		})
 	}
@@ -115,10 +108,10 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 			SetAccountMemo(memo).
 			SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
 			SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
-			SetKey(newAccountKey).
+			SetKey(newAccountPublicKey).
 			SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
 			SetProxyAccountID(proxyAccountId).
-			SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 	}
 
 	var tests = []struct {
@@ -148,13 +141,27 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 			expectError: true,
 		},
 		{
+			name: "OutOfRangePayerAccountId",
+			getTransaction: func() interfaces.Transaction {
+				return hedera.NewAccountCreateTransaction().
+					SetAccountMemo(memo).
+					SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
+					SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
+					SetKey(newAccountPublicKey).
+					SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
+					SetProxyAccountID(proxyAccountId).
+					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+			},
+			expectError: true,
+		},
+		{
 			name: "TransactionIDNotSet",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewAccountCreateTransaction().
 					SetAccountMemo(memo).
 					SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
 					SetInitialBalance(hedera.HbarFromTinybar(initialBalance)).
-					SetKey(newAccountKey).
+					SetKey(newAccountPublicKey).
 					SetMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations).
 					SetProxyAccountID(proxyAccountId)
 			},
@@ -180,7 +187,7 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestParse() {
 				assert.Nil(t, signers)
 			} else {
 				assert.Nil(t, err)
-				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
+				assert.ElementsMatch(t, []types.AccountId{accountIdA}, signers)
 				assert.ElementsMatch(t, expectedOperations, operations)
 			}
 		})
@@ -195,22 +202,9 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestPreprocess() {
 	}{
 		{name: "Success"},
 		{
-			name:             "InvalidAccountAddress",
-			updateOperations: updateOperationAccount("x.y.z"),
+			name:             "InvalidAmount",
+			updateOperations: updateAmount(types.NewTokenAmount(dbTokenA, 1)),
 			expectError:      true,
-		},
-		{
-			name:             "InvalidCurrencySymbol",
-			updateOperations: updateCurrency(&rTypes.Currency{Symbol: "dummy"}),
-			expectError:      true,
-		},
-		{
-			name: "InvalidCurrencyType",
-			updateOperations: updateCurrency(&rTypes.Currency{
-				Symbol:   "0.0.8231",
-				Metadata: map[string]interface{}{"type": "FUNGIBLE_COMMON"},
-			}),
-			expectError: true,
 		},
 		{
 			name:             "InvalidMetadataKey",
@@ -283,7 +277,7 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestPreprocess() {
 				assert.Nil(t, signers)
 			} else {
 				assert.Nil(t, err)
-				assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
+				assert.ElementsMatch(t, []types.AccountId{accountIdA}, signers)
 			}
 		})
 	}
@@ -291,44 +285,35 @@ func (suite *cryptoCreateTransactionConstructorSuite) TestPreprocess() {
 
 func assertCryptoCreateTransaction(
 	t *testing.T,
-	operation *rTypes.Operation,
-	nodeAccountId hedera.AccountID,
+	operation types.Operation,
 	actual interfaces.Transaction,
 ) {
 	assert.IsType(t, &hedera.AccountCreateTransaction{}, actual)
-	assert.True(t, actual.IsFrozen())
+	assert.False(t, actual.IsFrozen())
 
 	tx, _ := actual.(*hedera.AccountCreateTransaction)
-	payer := tx.GetTransactionID().AccountID.String()
-
-	assert.Equal(t, operation.Account.Address, payer)
-	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
-
 	key, err := tx.GetKey()
 	assert.NoError(t, err)
 	assert.Equal(t, operation.Metadata["key"], key.String())
-
 	assert.Equal(t, operation.Metadata["auto_renew_period"], int64(tx.GetAutoRenewPeriod().Seconds()))
 	assert.Equal(t, operation.Metadata["max_automatic_token_associations"], tx.GetMaxAutomaticTokenAssociations())
 	assert.Equal(t, operation.Metadata["memo"], tx.GetAccountMemo())
 	assert.Equal(t, operation.Metadata["proxy_account_id"], tx.GetProxyAccountID().String())
 }
 
-func getCryptoCreateOperations() []*rTypes.Operation {
-	amount := &types.HbarAmount{Value: initialBalance}
-	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-		Type:                types.OperationTypeCryptoCreateAccount,
-		Account:             payerAccountIdentifier,
-		Amount:              amount.ToRosetta(),
+func getCryptoCreateOperations() types.OperationSlice {
+	operation := types.Operation{
+		AccountId: accountIdA,
+		Amount:    &types.HbarAmount{Value: -initialBalance},
+		Type:      types.OperationTypeCryptoCreateAccount,
 		Metadata: map[string]interface{}{
 			"auto_renew_period":                autoRenewPeriod,
-			"key":                              newAccountKeyStr,
+			"key":                              newAccountPublicKey.String(),
 			"max_automatic_token_associations": maxAutomaticTokenAssociations,
 			"memo":                             memo,
 			"proxy_account_id":                 proxyAccountId.String(),
 		},
 	}
 
-	return []*rTypes.Operation{operation}
+	return types.OperationSlice{operation}
 }

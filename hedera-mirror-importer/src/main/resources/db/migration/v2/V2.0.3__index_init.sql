@@ -103,6 +103,7 @@ alter table if exists entity_history
 alter table if exists entity_history
     add constraint entity_history__type_check
         check (type <> 'CONTRACT');
+create index if not exists entity_history__alias on entity_history (alias) where alias is not null;
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
 
 -- event_file
