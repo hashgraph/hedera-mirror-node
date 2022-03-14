@@ -46,19 +46,3 @@ type TransactionConstructor interface {
 	// Preprocess preprocesses the operations to get required signers
 	Preprocess(ctx context.Context, operations types.OperationSlice) ([]types.AccountId, *rTypes.Error)
 }
-
-//
-// // embed SDK PublicKey and implement the Unmarshaler interface
-// type publicKey struct {
-// 	hedera.PublicKey
-// }
-//
-// func (pk *publicKey) UnmarshalJSON(data []byte) error {
-// 	var err error
-// 	pk.PublicKey, err = hedera.PublicKeyFromString(tools.SafeUnquote(string(data)))
-// 	return err
-// }
-//
-// func (pk *publicKey) isEmpty() bool {
-// 	return len(pk.PublicKey.Bytes()) == 0
-// }
