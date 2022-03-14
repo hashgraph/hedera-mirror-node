@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.reconciliation;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ class ReconciliationProperties {
 
     public void setStartDate(Instant startDate) {
         if (startDate == null || startDate.isAfter(endDate)) {
-            String message = String.format("Start date %s must not be after end date %s", startDate, endDate);
+            String message = String.format("Start date %s must be valid and not after end date %s", startDate, endDate);
             throw new IllegalArgumentException(message);
         }
 

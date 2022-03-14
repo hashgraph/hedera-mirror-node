@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.reconciliation;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2021 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,13 +26,13 @@ import static com.hedera.mirror.importer.reconciliation.BalanceReconciliationSer
 import static com.hedera.mirror.importer.reconciliation.BalanceReconciliationService.ReconciliationStatus.SUCCESS;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -50,7 +50,7 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 
 @Log4j2
 @Named
-public class BalanceReconciliationService {
+class BalanceReconciliationService {
 
     static final long FIFTY_BILLION_HBARS = 50_000_000_000L * 100_000_000L;
     static final String METRIC = "hedera.mirror.reconciliation";
@@ -74,13 +74,13 @@ public class BalanceReconciliationService {
     private final ReconciliationProperties reconciliationProperties;
     private final AtomicReference<ReconciliationStatus> status;
 
-    public BalanceReconciliationService(AccountBalanceFileRepository accountBalanceFileRepository,
-                                        JdbcOperations jdbcOperations, MeterRegistry meterRegistry,
-                                        ReconciliationProperties reconciliationProperties) {
+    BalanceReconciliationService(AccountBalanceFileRepository accountBalanceFileRepository,
+                                 JdbcOperations jdbcOperations, MeterRegistry meterRegistry,
+                                 ReconciliationProperties reconciliationProperties) {
         this.accountBalanceFileRepository = accountBalanceFileRepository;
         this.jdbcOperations = jdbcOperations;
         this.reconciliationProperties = reconciliationProperties;
-        status = new AtomicReference(SUCCESS);
+        status = new AtomicReference<>(SUCCESS);
         meterRegistry.gauge(METRIC, status, s -> s.get().ordinal());
     }
 
@@ -94,7 +94,6 @@ public class BalanceReconciliationService {
 
         Stopwatch stopwatch = Stopwatch.createStarted();
         Optional<BalanceSnapshot> previous = Optional.empty();
-        Throwable t = null;
 
         try {
             log.info("Reconciling balance files between {} and {}",
@@ -147,8 +146,8 @@ public class BalanceReconciliationService {
             transfersBalance.merge(accountId, balance, Math::addExact);
         }, fromTimestamp, toTimestamp);
 
-        var difference = difference(transfersBalance, current.getBalances());
-        if (!difference.areEqual()) {
+        if (!equals(transfersBalance, current.getBalances())) {
+            var difference = Maps.difference(transfersBalance, current.getBalances());
             throw new ReconciliationException(FAILURE_CRYPTO_TRANSFERS, fromTimestamp, toTimestamp, difference);
         }
     }
@@ -170,16 +169,16 @@ public class BalanceReconciliationService {
             tokenBalances.merge(tokenAccountId, balance, Math::addExact);
         }, fromTimestamp, toTimestamp);
 
-        var difference = difference(tokenBalances, current.getTokenBalances());
-        if (!difference.areEqual()) {
+        if (!equals(tokenBalances, current.getTokenBalances())) {
+            var difference = Maps.difference(tokenBalances, current.getTokenBalances());
             throw new ReconciliationException(FAILURE_TOKEN_TRANSFERS, fromTimestamp, toTimestamp, difference);
         }
     }
 
-    private <T> MapDifference<Object, Long> difference(Map<T, Long> previous, Map<T, Long> current) {
+    private <T> boolean equals(Map<T, Long> previous, Map<T, Long> current) {
         Sets.difference(previous.keySet(), current.keySet()).forEach(k -> current.put(k, 0L));
         Sets.difference(current.keySet(), previous.keySet()).forEach(k -> previous.put(k, 0L));
-        return Maps.difference(previous, current);
+        return Objects.equals(previous, current);
     }
 
     private Optional<BalanceSnapshot> getNextBalanceSnapshot(Optional<BalanceSnapshot> previous) {

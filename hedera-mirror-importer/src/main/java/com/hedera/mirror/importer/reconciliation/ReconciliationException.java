@@ -28,6 +28,8 @@ import com.hedera.mirror.importer.reconciliation.BalanceReconciliationService.Re
 @Getter
 class ReconciliationException extends ImporterException {
 
+    private static final long serialVersionUID = -1037307345641558766L;
+
     private final ReconciliationStatus status;
 
     ReconciliationException(ReconciliationStatus status, Object... arguments) {
