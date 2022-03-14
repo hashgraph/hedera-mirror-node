@@ -21,7 +21,8 @@
         "file_id": "5001",
         "key": [2, 2, 2],
         "num": "8002",
-        "timestamp_range": "[987654111123456,)"
+        "timestamp_range": "[987654111123456,)",
+        "evm_address": "70f2b2914a2a4b783faefb75f459a580616fcb5e"
       },
       {
         "auto_renew_period": 1500,
@@ -39,7 +40,8 @@
   "urls": [
     "/api/v1/contracts?contract.id=8002",
     "/api/v1/contracts?contract.id=0.8002",
-    "/api/v1/contracts?contract.id=0.0.8002"
+    "/api/v1/contracts?contract.id=0.0.8002",
+    "/api/v1/contracts?contract.id=0x70f2b2914a2a4b783faefb75f459a580616fcb5e"
   ],
   "responseStatus": 200,
   "responseJson": {
@@ -53,7 +55,7 @@
         "contract_id": "0.0.8002",
         "created_timestamp": "987654.111123456",
         "deleted": false,
-        "evm_address": "0x0000000000000000000000000000000000001f42",
+        "evm_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
         "expiration_timestamp": null,
         "file_id": "0.0.5001",
         "memo": "contract memo",

@@ -285,29 +285,6 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
     .join('\n');
 };
 
-const computeContractId = async ({req, avoidEvmAddress = true}) => {
-  const contractIdValue = req.params.contractId;
-  if (ContractService.isValidCreate2Id(contractIdValue)) {
-    const evmAddress = Buffer.from(contractIdValue.replace('0x', ''), 'hex');
-    if (avoidEvmAddress) {
-      // query the database to get the contract id
-      return {
-        columnName: Contract.ID,
-        value: await ContractService.getContractIdByEvmAddress(evmAddress),
-      };
-    }
-    return {
-      columnName: Contract.EVM_ADDRESS,
-      value: evmAddress,
-    };
-  }
-
-  return {
-    columnName: Contract.ID,
-    value: EntityId.parse(contractIdValue, constants.filterKeys.CONTRACTID).getEncodedId(),
-  };
-};
-
 /**
  * Handler function for /contracts/:contractId API
  * @param {Request} req HTTP request object
@@ -315,7 +292,10 @@ const computeContractId = async ({req, avoidEvmAddress = true}) => {
  * @returns {Promise<void>}
  */
 const getContractById = async (req, res) => {
-  const {value: contractIdValue, columnName} = await computeContractId({req, avoidEvmAddress: false});
+  const {value: contractIdValue, columnName} = await computeContractIdFromContractIdPathParam({
+    req,
+    avoidEvmAddress: false,
+  });
   const params = [contractIdValue];
 
   // extract filters from query param
@@ -344,6 +324,9 @@ const getContractById = async (req, res) => {
  * @returns {Promise<void>}
  */
 const getContracts = async (req, res) => {
+  // if the query param for contract id has a create2 value, then it will be
+  // replaced by a normal contract id.
+  await changeCreate2IdQueryParamToContractId({req});
   utils.validateReq(req);
 
   // extract filters from query param
@@ -404,7 +387,7 @@ const validateContractIdParam = (contractId) => {
 const getAndValidateContractIdRequestPathParam = async (req) => {
   const contractIdString = req.params.contractId;
   validateContractIdParam(contractIdString);
-  return await computeContractId({req});
+  return await computeContractIdFromContractIdPathParam({req});
 };
 
 /**
@@ -690,6 +673,46 @@ const getContractResultsByTransactionId = async (req, res) => {
     res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
     logger.debug(`getContractResultsByTransactionId returning partial content`);
   }
+};
+
+const computeContractIdFromContractIdValue = async ({contractIdValue, avoidEvmAddress}) => {
+  if (ContractService.isValidCreate2Id(contractIdValue)) {
+    const evmAddress = Buffer.from(contractIdValue.replace('0x', ''), 'hex');
+    if (avoidEvmAddress) {
+      // query the database to get the contract id
+      return {
+        columnName: Contract.ID,
+        value: await ContractService.getContractIdByEvmAddress(evmAddress),
+      };
+    }
+    return {
+      columnName: Contract.EVM_ADDRESS,
+      value: evmAddress,
+    };
+  }
+
+  return {
+    columnName: Contract.ID,
+    value: EntityId.parse(contractIdValue, constants.filterKeys.CONTRACTID).getEncodedId(),
+  };
+};
+
+const computeContractIdFromContractIdPathParam = async ({req, avoidEvmAddress = true}) => {
+  const contractIdValue = req.params.contractId;
+  return await computeContractIdFromContractIdValue({contractIdValue, avoidEvmAddress});
+};
+
+const changeCreate2IdQueryParamToContractId = async ({req, avoidEvmAddress = true}) => {
+  if (!req.query.hasOwnProperty(constants.filterKeys.CONTRACT_ID)) {
+    return;
+  }
+  const contractIdValue = req.query[constants.filterKeys.CONTRACT_ID];
+  if (!ContractService.isValidCreate2Id(contractIdValue)) {
+    return;
+  }
+
+  const contractId = await computeContractIdFromContractIdValue({contractIdValue, avoidEvmAddress});
+  req.query[constants.filterKeys.CONTRACT_ID] = contractId.value;
 };
 
 /**
