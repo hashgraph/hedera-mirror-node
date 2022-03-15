@@ -2155,9 +2155,8 @@ components:
         idNoOperator:
           summary: Example of id equals with no operator
           value: 0.0.100
-        create2IdNoOperator:
-          summary: A create2 id that matches the regular expression ^(0x)[A-Fa-f0-9]{40}$. Example of create2 id equals with no operator
-          value: '0x70f2b2914a2a4b783faefb75f459a580616fcb5e'
+        evmAddressNoOperator:
+          summary: A hex encoded EVM address with no operator.
         entityNumEqOperator:
           summary: Example of entityNum equals operator
           value: eq:200
