@@ -2201,7 +2201,7 @@ components:
       name: contractIdOrAddress
       in: path
       required: true
-      description: Contract id. Can also be a create2 id that matches the regex ^(0x)[A-Fa-f0-9]{40}$
+      description: The ID or hex encoded EVM address associated with this contract.
       schema:
         $ref: '#/components/schemas/EntityId'
     entityIdPathParam:
