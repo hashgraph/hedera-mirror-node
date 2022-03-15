@@ -84,8 +84,6 @@ class ContractService extends BaseService {
     from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
   static contractIdByEvmAddressQuery = `select
-    ${Contract.SHARD},
-    ${Contract.REALM},
     ${Contract.ID}
     from ${Contract.tableName} ${Contract.tableAlias}
     where ${Contract.getFullName(Contract.EVM_ADDRESS)} = $1 and deleted <> true`;
@@ -233,7 +231,7 @@ class ContractService extends BaseService {
       throw new Error(`More than one contract with the evm address ${evmAddress} have been found.`);
     }
     const contractId = rows[0];
-    return createEntityId(BigInt(contractId.shard), BigInt(contractId.realm), BigInt(contractId.id)).getEncodedId();
+    return BigInt(contractId.id);
   }
 
   isValidCreate2Id(id) {
