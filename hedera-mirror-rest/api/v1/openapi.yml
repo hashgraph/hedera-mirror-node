@@ -1314,7 +1314,7 @@ components:
                     type: string
     EvmAddress:
       type: string
-      description: A network entity encoded as an EVM address in hex. Can also be a Create2 id which will also match the mentioned regex.
+      description: A network entity encoded as an EVM address in hex.
       format: binary
       minLength: 42
       maxLength: 42
