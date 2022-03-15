@@ -27,12 +27,10 @@ import static com.hedera.mirror.importer.reconciliation.BalanceReconciliationSer
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -176,9 +174,19 @@ class BalanceReconciliationService {
     }
 
     private <T> boolean equals(Map<T, Long> previous, Map<T, Long> current) {
-        Sets.difference(previous.keySet(), current.keySet()).forEach(k -> current.put(k, 0L));
-        Sets.difference(current.keySet(), previous.keySet()).forEach(k -> previous.put(k, 0L));
-        return Objects.equals(previous, current);
+        for (var previousEntry : previous.entrySet()) {
+            long currentValue = current.getOrDefault(previousEntry.getKey(), 0L);
+            if (previousEntry.getValue() != currentValue) {
+                return false;
+            }
+        }
+        for (var currentEntry : current.entrySet()) {
+            long previousValue = previous.getOrDefault(currentEntry.getKey(), 0L);
+            if (currentEntry.getValue() != previousValue) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private Optional<BalanceSnapshot> getNextBalanceSnapshot(Optional<BalanceSnapshot> previous) {
@@ -235,6 +243,7 @@ class BalanceReconciliationService {
     @Getter
     @RequiredArgsConstructor
     enum ReconciliationStatus {
+
         SUCCESS(""),
         FAILURE_CRYPTO_TRANSFERS("Crypto transfers in range (%d, %d]: %s"),
         FAILURE_FIFTY_BILLION("Balance file %s does not add up to 50B: %d"),
