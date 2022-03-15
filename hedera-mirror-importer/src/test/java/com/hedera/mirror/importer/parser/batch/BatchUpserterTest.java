@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.batch;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,7 +36,6 @@ import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.transaction.support.TransactionOperations;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -94,9 +93,6 @@ class BatchUpserterTest extends IntegrationTest {
 
     @Resource
     private EntityRepository entityRepository;
-
-    @Resource
-    private JdbcOperations jdbcOperations;
 
     @Resource
     private NftRepository nftRepository;
@@ -754,12 +750,6 @@ class BatchUpserterTest extends IntegrationTest {
                 batchPersister.persist(batch);
             }
         });
-    }
-
-    private <T> Collection<T> findHistory(Class<T> historyClass) {
-        String table = historyClass.getSimpleName().toLowerCase();
-        String sql = String.format("select * from %s_history order by id asc, timestamp_range asc", table);
-        return jdbcOperations.query(sql, rowMapper(historyClass));
     }
 
     private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo) {

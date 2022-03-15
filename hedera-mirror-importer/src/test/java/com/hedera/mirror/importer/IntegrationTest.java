@@ -20,10 +20,8 @@ package com.hedera.mirror.importer;
  * ‍
  */
 
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.Range;
-
-import com.hedera.mirror.common.converter.AccountIdConverter;
-
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.sql.SQLException;
 import java.time.Instant;
@@ -31,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,13 +41,12 @@ import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.core.DataClassRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.jdbc.Sql;
 
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
@@ -70,13 +68,49 @@ public abstract class IntegrationTest {
     private Collection<CacheManager> cacheManagers;
 
     @Resource
-    private JdbcTemplate jdbcTemplate;
+    protected JdbcOperations jdbcOperations;
 
     @Resource
     private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
     @Resource
     private MirrorProperties mirrorProperties;
+
+    @BeforeEach
+    void logTest(TestInfo testInfo) {
+        reset();
+        log.info("Executing: {}", testInfo.getDisplayName());
+    }
+
+    protected<T> Collection<T> findEntity(Class<T> entityClass, String ids, String table) {
+        String sql = String.format("select * from %s order by %s, timestamp_range asc", table, ids);
+        return jdbcOperations.query(sql, rowMapper(entityClass));
+    }
+
+    protected <T> Collection<T> findHistory(Class<T> historyClass) {
+        return findHistory(historyClass, "id");
+    }
+
+    protected  <T> Collection<T> findHistory(Class<T> historyClass, String ids) {
+        return findHistory(historyClass, ids, null);
+    }
+
+    protected  <T> Collection<T> findHistory(Class<T> historyClass, String ids, String table) {
+        if (StringUtils.isEmpty(table)) {
+            table = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, historyClass.getSimpleName());
+        }
+        return findEntity(historyClass, ids, String.format("%s_history", table));
+    }
+
+    protected List<NonFeeTransfer> findNonFeeTransfers() {
+        return jdbcOperations.query(SELECT_NON_FEE_TRANSFERS_QUERY, NON_FEE_TRANSFER_ROW_MAPPER);
+    }
+
+    protected void reset() {
+        cacheManagers.forEach(c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
+        mirrorDateRangePropertiesProcessor.clear();
+        mirrorProperties.setStartDate(Instant.EPOCH);
+    }
 
     protected static <T> RowMapper<T> rowMapper(Class<T> entityClass) {
         DefaultConversionService defaultConversionService = new DefaultConversionService();
@@ -96,21 +130,5 @@ public abstract class IntegrationTest {
         DataClassRowMapper dataClassRowMapper = new DataClassRowMapper<>(entityClass);
         dataClassRowMapper.setConversionService(defaultConversionService);
         return dataClassRowMapper;
-    }
-
-    protected List<NonFeeTransfer> findNonFeeTransfers() {
-        return jdbcTemplate.query(SELECT_NON_FEE_TRANSFERS_QUERY, NON_FEE_TRANSFER_ROW_MAPPER);
-    }
-
-    @BeforeEach
-    void logTest(TestInfo testInfo) {
-        reset();
-        log.info("Executing: {}", testInfo.getDisplayName());
-    }
-
-    protected void reset() {
-        cacheManagers.forEach(c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
-        mirrorDateRangePropertiesProcessor.clear();
-        mirrorProperties.setStartDate(Instant.EPOCH);
     }
 }
