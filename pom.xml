@@ -65,7 +65,7 @@
         <flyway.version>7.15.0</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
-        <grpc.version>1.44.1</grpc.version>
+        <grpc.version>1.45.0</grpc.version>
         <guava.version>31.1-jre</guava.version>
         <hedera-protobuf.version>0.23.1</hedera-protobuf.version>
         <hibernate-types.version>2.14.0</hibernate-types.version>
@@ -76,7 +76,7 @@
         <log4j2.version>2.17.1</log4j2.version> <!-- Temporarily added to address a vulnerability -->
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <micrometer.version>1.8.3</micrometer.version> <!-- Temporarily added for postgresql metrics bug fix -->
-        <msgpack.version>0.9.0</msgpack.version>
+        <msgpack.version>0.9.1</msgpack.version>
         <protobuf.version>3.19.4</protobuf.version>
         <release.version>0.53.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
         <release.chartVersion>0.40.0-SNAPSHOT</release.chartVersion>

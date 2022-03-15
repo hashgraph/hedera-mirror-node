@@ -27,9 +27,7 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
@@ -41,93 +39,37 @@ type tokenFreezeUnfreezeTransactionConstructor struct {
 
 func (t *tokenFreezeUnfreezeTransactionConstructor) Construct(
 	_ context.Context,
-	nodeAccountId hedera.AccountID,
-	operations []*rTypes.Operation,
-	validStartNanos int64,
-) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
+	operations types.OperationSlice,
+) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
 	payer, account, token, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
 
 	var tx interfaces.Transaction
-	var err error
-	transactionId := getTransactionId(*payer, validStartNanos)
 	if t.operationType == types.OperationTypeTokenFreeze {
-		tx, err = hedera.NewTokenFreezeTransaction().
-			SetAccountID(*account).
-			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTokenID(*token).
-			SetTransactionID(transactionId).
-			Freeze()
+		tx = hedera.NewTokenFreezeTransaction().
+			SetAccountID(account.ToSdkAccountId()).
+			SetTokenID(*token)
 	} else {
-		tx, err = hedera.NewTokenUnfreezeTransaction().
-			SetAccountID(*account).
-			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTokenID(*token).
-			SetTransactionID(transactionId).
-			Freeze()
+		tx = hedera.NewTokenUnfreezeTransaction().
+			SetAccountID(account.ToSdkAccountId()).
+			SetTokenID(*token)
 	}
 
-	if err != nil {
-		return nil, nil, errors.ErrInternalServerError
-	}
-
-	return tx, []hedera.AccountID{*payer}, nil
+	return tx, []types.AccountId{*payer}, nil
 }
 
 func (t *tokenFreezeUnfreezeTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
-	[]*rTypes.Operation,
-	[]hedera.AccountID,
+	types.OperationSlice,
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
-	var account hedera.AccountID
-	var payer hedera.AccountID
-	var token hedera.TokenID
-
-	switch tx := transaction.(type) {
-	case *hedera.TokenFreezeTransaction:
-		if t.operationType != types.OperationTypeTokenFreeze {
-			return nil, nil, errors.ErrTransactionInvalidType
-		}
-
-		account = tx.GetAccountID()
-		payer = *tx.GetTransactionID().AccountID
-		token = tx.GetTokenID()
-	case *hedera.TokenUnfreezeTransaction:
-		if t.operationType != types.OperationTypeTokenUnfreeze {
-			return nil, nil, errors.ErrTransactionInvalidType
-		}
-
-		account = tx.GetAccountID()
-		payer = *tx.GetTransactionID().AccountID
-		token = tx.GetTokenID()
-	default:
-		return nil, nil, errors.ErrTransactionInvalidType
-	}
-
-	tokenEntityId, err := domain.EntityIdOf(int64(token.Shard), int64(token.Realm), int64(token.Token))
-	if err != nil {
-		return nil, nil, errors.ErrInvalidToken
-	}
-
-	domainToken := domain.Token{TokenId: tokenEntityId, Type: domain.TokenTypeUnknown}
-	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-		Type:                t.operationType,
-		Account:             &rTypes.AccountIdentifier{Address: account.String()},
-		Amount: &rTypes.Amount{
-			Value:    "0",
-			Currency: types.Token{Token: domainToken}.ToRosettaCurrency(),
-		},
-		Metadata: map[string]interface{}{"payer": payer.String()},
-	}
-
-	return []*rTypes.Operation{operation}, []hedera.AccountID{payer}, nil
+	return parseTokenFreezeKyc(t.operationType, transaction)
 }
 
-func (t *tokenFreezeUnfreezeTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
-	[]hedera.AccountID,
+func (t *tokenFreezeUnfreezeTransactionConstructor) Preprocess(_ context.Context, operations types.OperationSlice) (
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	payer, _, _, err := t.preprocess(operations)
@@ -135,12 +77,12 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) Preprocess(_ context.Context
 		return nil, err
 	}
 
-	return []hedera.AccountID{*payer}, nil
+	return []types.AccountId{*payer}, nil
 }
 
-func (t *tokenFreezeUnfreezeTransactionConstructor) preprocess(operations []*rTypes.Operation) (
-	*hedera.AccountID,
-	*hedera.AccountID,
+func (t *tokenFreezeUnfreezeTransactionConstructor) preprocess(operations types.OperationSlice) (
+	*types.AccountId,
+	*types.AccountId,
 	*hedera.TokenID,
 	*rTypes.Error,
 ) {

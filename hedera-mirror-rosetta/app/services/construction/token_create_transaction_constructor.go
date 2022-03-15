@@ -35,22 +35,22 @@ import (
 )
 
 type tokenCreate struct {
-	AdminKey         publicKey        `json:"admin_key"`
+	AdminKey         types.PublicKey  `json:"admin_key"`
 	AutoRenewAccount hedera.AccountID `json:"auto_renew_account"`
 	AutoRenewPeriod  int64            `json:"auto_renew_period"`
 	Decimals         uint32           `json:"decimals"`
 	Expiry           int64            `json:"expiry"`
 	FreezeDefault    bool             `json:"freeze_default"`
-	FreezeKey        publicKey        `json:"freeze_key"`
+	FreezeKey        types.PublicKey  `json:"freeze_key"`
 	InitialSupply    uint64           `json:"initial_supply"`
-	KycKey           publicKey        `json:"kyc_key"`
+	KycKey           types.PublicKey  `json:"kyc_key"`
 	Memo             string           `json:"memo"`
 	Name             string           `json:"name" validate:"required"`
-	SupplyKey        publicKey        `json:"supply_key"`
+	SupplyKey        types.PublicKey  `json:"supply_key"`
 	SupplyType       string           `json:"supply_type"`
 	Symbol           string           `json:"symbol" validate:"required"`
 	Type             string           `json:"type"`
-	WipeKey          publicKey        `json:"wipe_key"`
+	WipeKey          types.PublicKey  `json:"wipe_key"`
 }
 
 type tokenCreateTransactionConstructor struct {
@@ -60,27 +60,23 @@ type tokenCreateTransactionConstructor struct {
 
 func (t *tokenCreateTransactionConstructor) Construct(
 	_ context.Context,
-	nodeAccountId hedera.AccountID,
-	operations []*rTypes.Operation,
-	validStartNanos int64,
-) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
+	operations types.OperationSlice,
+) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
 	treasury, signers, tokenCreate, err := t.preprocess(operations)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	tx := hedera.NewTokenCreateTransaction().
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 		SetDecimals(uint(tokenCreate.Decimals)).
 		SetFreezeDefault(tokenCreate.FreezeDefault).
 		SetInitialSupply(tokenCreate.InitialSupply).
 		SetTokenMemo(tokenCreate.Memo).
 		SetTokenName(tokenCreate.Name).
 		SetTokenSymbol(tokenCreate.Symbol).
-		SetTransactionID(getTransactionId(treasury, validStartNanos)).
-		SetTreasuryAccountID(treasury)
+		SetTreasuryAccountID(treasury.ToSdkAccountId())
 
-	if !tokenCreate.AdminKey.isEmpty() {
+	if !tokenCreate.AdminKey.IsEmpty() {
 		tx.SetAdminKey(tokenCreate.AdminKey.PublicKey)
 	}
 
@@ -88,7 +84,7 @@ func (t *tokenCreateTransactionConstructor) Construct(
 		tx.SetAutoRenewAccount(tokenCreate.AutoRenewAccount)
 	} else if tokenCreate.Expiry == 0 {
 		// set a valid auto renew account when expiry is not set
-		tx.SetAutoRenewAccount(treasury)
+		tx.SetAutoRenewAccount(treasury.ToSdkAccountId())
 	}
 
 	if tokenCreate.AutoRenewPeriod != 0 {
@@ -99,15 +95,15 @@ func (t *tokenCreateTransactionConstructor) Construct(
 		tx.SetExpirationTime(time.Unix(tokenCreate.Expiry, 0))
 	}
 
-	if !tokenCreate.FreezeKey.isEmpty() {
+	if !tokenCreate.FreezeKey.IsEmpty() {
 		tx.SetFreezeKey(tokenCreate.FreezeKey.PublicKey)
 	}
 
-	if !tokenCreate.KycKey.isEmpty() {
+	if !tokenCreate.KycKey.IsEmpty() {
 		tx.SetKycKey(tokenCreate.KycKey.PublicKey)
 	}
 
-	if !tokenCreate.SupplyKey.isEmpty() {
+	if !tokenCreate.SupplyKey.IsEmpty() {
 		tx.SetSupplyKey(tokenCreate.SupplyKey.PublicKey)
 	}
 
@@ -121,12 +117,8 @@ func (t *tokenCreateTransactionConstructor) Construct(
 		tx.SetTokenType(hedera.TokenTypeNonFungibleUnique)
 	}
 
-	if !tokenCreate.WipeKey.isEmpty() {
+	if !tokenCreate.WipeKey.IsEmpty() {
 		tx.SetWipeKey(tokenCreate.WipeKey.PublicKey)
-	}
-
-	if _, err := tx.Freeze(); err != nil {
-		return nil, nil, errors.ErrTransactionFreezeFailed
 	}
 
 	return tx, signers, nil
@@ -141,8 +133,8 @@ func (t *tokenCreateTransactionConstructor) GetSdkTransactionType() string {
 }
 
 func (t *tokenCreateTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
-	[]*rTypes.Operation,
-	[]hedera.AccountID,
+	types.OperationSlice,
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	tokenCreateTransaction, ok := transaction.(*hedera.TokenCreateTransaction)
@@ -150,7 +142,8 @@ func (t *tokenCreateTransactionConstructor) Parse(_ context.Context, transaction
 		return nil, nil, errors.ErrTransactionInvalidType
 	}
 
-	if tokenCreateTransaction.GetTransactionID().AccountID == nil {
+	treasury := tokenCreateTransaction.GetTransactionID().AccountID
+	if treasury == nil {
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
@@ -159,17 +152,17 @@ func (t *tokenCreateTransactionConstructor) Parse(_ context.Context, transaction
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
-	treasury := *tokenCreateTransaction.GetTransactionID().AccountID
-	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{
-			Index: 0,
-		},
-		Account: &rTypes.AccountIdentifier{Address: treasury.String()},
-		Type:    t.GetOperationType(),
+	treasuryAccountId, err := types.NewAccountIdFromSdkAccountId(*treasury)
+	if err != nil {
+		return nil, nil, errors.ErrInvalidAccount
+	}
+	metadata := make(map[string]interface{})
+	operation := types.Operation{
+		AccountId: treasuryAccountId,
+		Metadata:  metadata,
+		Type:      t.GetOperationType(),
 	}
 
-	metadata := make(map[string]interface{})
-	operation.Metadata = metadata
 	metadata["decimals"] = tokenCreateTransaction.GetDecimals()
 	metadata["expiry"] = tokenCreateTransaction.GetExpirationTime().Unix()
 	metadata["freeze_default"] = tokenCreateTransaction.GetFreezeDefault()
@@ -178,15 +171,19 @@ func (t *tokenCreateTransactionConstructor) Parse(_ context.Context, transaction
 	metadata["name"] = tokenCreateTransaction.GetTokenName()
 	metadata["symbol"] = tokenCreateTransaction.GetTokenSymbol()
 
-	signers := []hedera.AccountID{treasury}
+	signers := []types.AccountId{treasuryAccountId}
 
 	if isNonEmptyPublicKey(tokenCreateTransaction.GetAdminKey()) {
 		metadata["admin_key"] = tokenCreateTransaction.GetAdminKey().String()
 	}
 
 	if !isZeroAccountId(tokenCreateTransaction.GetAutoRenewAccount()) {
-		metadata["auto_renew_account"] = tokenCreateTransaction.GetAutoRenewAccount().String()
-		signers = append(signers, tokenCreateTransaction.GetAutoRenewAccount())
+		autoRenewAccount, err := types.NewAccountIdFromSdkAccountId(tokenCreateTransaction.GetAutoRenewAccount())
+		if err != nil {
+			return nil, nil, errors.ErrInvalidAccount
+		}
+		metadata["auto_renew_account"] = autoRenewAccount.String()
+		signers = append(signers, autoRenewAccount)
 	}
 
 	if tokenCreateTransaction.GetAutoRenewPeriod() != 0 {
@@ -221,11 +218,11 @@ func (t *tokenCreateTransactionConstructor) Parse(_ context.Context, transaction
 		metadata["wipe_key"] = tokenCreateTransaction.GetWipeKey().String()
 	}
 
-	return []*rTypes.Operation{operation}, signers, nil
+	return types.OperationSlice{operation}, signers, nil
 }
 
-func (t *tokenCreateTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
-	[]hedera.AccountID,
+func (t *tokenCreateTransactionConstructor) Preprocess(_ context.Context, operations types.OperationSlice) (
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	_, signers, _, err := t.preprocess(operations)
@@ -236,49 +233,44 @@ func (t *tokenCreateTransactionConstructor) Preprocess(_ context.Context, operat
 	return signers, nil
 }
 
-func (t *tokenCreateTransactionConstructor) preprocess(operations []*rTypes.Operation) (
-	hedera.AccountID,
-	[]hedera.AccountID,
+func (t *tokenCreateTransactionConstructor) preprocess(operations types.OperationSlice) (
+	*types.AccountId,
+	[]types.AccountId,
 	*tokenCreate,
 	*rTypes.Error,
 ) {
-	treasury := hedera.AccountID{}
-
 	if rErr := validateOperations(operations, 1, t.GetOperationType(), true); rErr != nil {
-		return treasury, nil, nil, rErr
+		return nil, nil, nil, rErr
 	}
 
 	operation := operations[0]
 	tokenCreate := &tokenCreate{}
 	if rErr := parseOperationMetadata(t.validate, tokenCreate, operation.Metadata); rErr != nil {
-		return treasury, nil, nil, rErr
+		return nil, nil, nil, rErr
 	}
 
 	if tokenCreate.SupplyType != domain.TokenSupplyTypeUnknown &&
 		tokenCreate.SupplyType != domain.TokenSupplyTypeFinite &&
 		tokenCreate.SupplyType != domain.TokenSupplyTypeInfinite {
-		return treasury, nil, nil, errors.ErrInvalidOperations
+		return nil, nil, nil, errors.ErrInvalidOperations
 	}
 
 	if tokenCreate.Type != domain.TokenTypeUnknown &&
 		tokenCreate.Type != domain.TokenTypeFungibleCommon &&
 		tokenCreate.Type != domain.TokenTypeNonFungibleUnique {
-		return treasury, nil, nil, errors.ErrInvalidOperations
+		return nil, nil, nil, errors.ErrInvalidOperations
 	}
 
-	var signers []hedera.AccountID
-
-	treasury, err := hedera.AccountIDFromString(operation.Account.Address)
+	signers := []types.AccountId{operation.AccountId}
+	autoRenewAccount, err := types.NewAccountIdFromSdkAccountId(tokenCreate.AutoRenewAccount)
 	if err != nil {
-		return hedera.AccountID{}, nil, nil, errors.ErrInvalidAccount
+		return nil, nil, nil, errors.ErrInvalidAccount
 	}
-	signers = append(signers, treasury)
-
-	if !isZeroAccountId(tokenCreate.AutoRenewAccount) {
-		signers = append(signers, tokenCreate.AutoRenewAccount)
+	if !autoRenewAccount.IsZero() {
+		signers = append(signers, autoRenewAccount)
 	}
 
-	return treasury, signers, tokenCreate, nil
+	return &operation.AccountId, signers, tokenCreate, nil
 }
 
 func newTokenCreateTransactionConstructor() transactionConstructorWithType {

@@ -24,7 +24,6 @@ import (
 	"testing"
 	"time"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
@@ -63,23 +62,21 @@ func (suite *tokenCreateTransactionConstructorSuite) TestConstruct() {
 		name             string
 		tokenType        string
 		updateOperations updateOperationsFunc
-		validStartNanos  int64
 		expectError      bool
-		expectedSigners  []hedera.AccountID
+		expectedSigners  []types.AccountId
 	}{
 		{name: "SuccessFT"},
 		{name: "SuccessFTExplicit", tokenType: domain.TokenTypeFungibleCommon},
 		{name: "SuccessNFT", tokenType: domain.TokenTypeNonFungibleUnique},
-		{name: "SuccessValidStartNanos", validStartNanos: 100},
 		{
 			name: "SuccessWithoutAutoRenewAccountAndExpiry",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
+			updateOperations: func(operations types.OperationSlice) types.OperationSlice {
 				metadata := operations[0].Metadata
 				delete(metadata, "auto_renew_account")
 				delete(metadata, "expiry")
 				return operations
 			},
-			expectedSigners: []hedera.AccountID{treasury},
+			expectedSigners: []types.AccountId{accountIdA},
 		},
 		{
 			name:             "EmptyOperations",
@@ -99,7 +96,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestConstruct() {
 			}
 
 			// when
-			tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
+			tx, signers, err := h.Construct(defaultContext, operations)
 
 			// then
 			if tt.expectError {
@@ -108,18 +105,14 @@ func (suite *tokenCreateTransactionConstructorSuite) TestConstruct() {
 				assert.Nil(t, tx)
 			} else {
 				// the default
-				expectedSigners := []hedera.AccountID{treasury, autoRenewAccount}
+				expectedSigners := []types.AccountId{accountIdA, autoRenewAccountId}
 				if tt.expectedSigners != nil {
 					expectedSigners = tt.expectedSigners
 				}
 
 				assert.Nil(t, err)
 				assert.ElementsMatch(t, expectedSigners, signers)
-				assertTokenCreateTransaction(t, operations[0], nodeAccountId, tx)
-
-				if tt.validStartNanos != 0 {
-					assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
-				}
+				assertTokenCreateTransaction(t, operations[0], tx)
 			}
 		})
 	}
@@ -129,7 +122,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 	defaultGetTransaction := func() interfaces.Transaction {
 		return hedera.NewTokenCreateTransaction().
 			SetAdminKey(adminKey).
-			SetAutoRenewAccount(autoRenewAccount).
+			SetAutoRenewAccount(autoRenewAccountId.ToSdkAccountId()).
 			SetAutoRenewPeriod(time.Second * time.Duration(autoRenewPeriod)).
 			SetDecimals(decimals).
 			SetExpirationTime(expiry).
@@ -137,14 +130,14 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 			SetFreezeKey(freezeKey).
 			SetInitialSupply(initialSupply).
 			SetKycKey(kycKey).
-			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 			SetSupplyKey(supplyKey).
 			SetSupplyType(hedera.TokenSupplyTypeFinite).
 			SetTokenMemo(memo).
 			SetTokenName(name).
 			SetTokenSymbol(symbol).
 			SetTokenType(hedera.TokenTypeNonFungibleUnique).
-			SetTransactionID(hedera.TransactionIDGenerate(treasury)).
+			SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA)).
+			SetTreasuryAccountID(sdkAccountIdA).
 			SetWipeKey(wipeKey)
 	}
 
@@ -168,9 +161,8 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 			name: "TokenNameNotSet",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenCreateTransaction().
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenSymbol(symbol).
-					SetTransactionID(hedera.TransactionIDGenerate(treasury))
+					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 			},
 			expectError: true,
 		},
@@ -178,19 +170,15 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 			name: "TokenSymbolNotSet",
 			getTransaction: func() interfaces.Transaction {
 				return hedera.NewTokenCreateTransaction().
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenName(name).
-					SetTransactionID(hedera.TransactionIDGenerate(treasury))
+					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 			},
 			expectError: true,
 		},
 		{
 			name: "TransactionIDNotSet",
 			getTransaction: func() interfaces.Transaction {
-				return hedera.NewTokenCreateTransaction().
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTokenName(name).
-					SetTokenSymbol(symbol)
+				return hedera.NewTokenCreateTransaction().SetTokenName(name).SetTokenSymbol(symbol)
 			},
 			expectError: true,
 		},
@@ -214,7 +202,7 @@ func (suite *tokenCreateTransactionConstructorSuite) TestParse() {
 				assert.Nil(t, signers)
 			} else {
 				assert.Nil(t, err)
-				assert.ElementsMatch(t, []hedera.AccountID{treasury, autoRenewAccount}, signers)
+				assert.ElementsMatch(t, []types.AccountId{accountIdA, autoRenewAccountId}, signers)
 				assert.ElementsMatch(t, expectedOperations, operations)
 			}
 		})
@@ -245,6 +233,11 @@ func (suite *tokenCreateTransactionConstructorSuite) TestPreprocess() {
 			updateOperations: updateOperationMetadata("supply_type", domain.TokenSupplyTypeFinite),
 		},
 		{
+			name:             "NonNilAmount",
+			updateOperations: updateAmount(types.NewTokenAmount(dbTokenA, 1)),
+			expectError:      true,
+		},
+		{
 			name:             "MissingMetadataName",
 			updateOperations: deleteOperationMetadata("name"),
 			expectError:      true,
@@ -252,11 +245,6 @@ func (suite *tokenCreateTransactionConstructorSuite) TestPreprocess() {
 		{
 			name:             "MissingMetadataSymbol",
 			updateOperations: deleteOperationMetadata("symbol"),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidAccountAddress",
-			updateOperations: updateOperationAccount("x.y.z"),
 			expectError:      true,
 		},
 		{
@@ -365,32 +353,22 @@ func (suite *tokenCreateTransactionConstructorSuite) TestPreprocess() {
 				assert.Nil(t, signers)
 			} else {
 				assert.Nil(t, err)
-				assert.ElementsMatch(t, []hedera.AccountID{treasury, autoRenewAccount}, signers)
+				assert.ElementsMatch(t, []types.AccountId{accountIdA, autoRenewAccountId}, signers)
 			}
 		})
 	}
 }
 
-func assertTokenCreateTransaction(
-	t *testing.T,
-	operation *rTypes.Operation,
-	nodeAccountId hedera.AccountID,
-	actual interfaces.Transaction,
-) {
-	assert.True(t, actual.IsFrozen())
+func assertTokenCreateTransaction(t *testing.T, operation types.Operation, actual interfaces.Transaction) {
+	assert.False(t, actual.IsFrozen())
 	assert.IsType(t, &hedera.TokenCreateTransaction{}, actual)
 
 	tx, _ := actual.(*hedera.TokenCreateTransaction)
-	payer := tx.GetTransactionID().AccountID.String()
-
-	assert.Equal(t, operation.Account.Address, payer)
-	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
-
 	metadata := operation.Metadata
 	expectedAutoRenewAccount := metadata["auto_renew_account"]
 	expectedAutoRenewPeriod := 0.0
 	if expectedAutoRenewAccount == nil && metadata["expiry"] == nil {
-		expectedAutoRenewAccount = payer
+		expectedAutoRenewAccount = operation.AccountId.ToSdkAccountId().String()
 		expectedAutoRenewPeriod = hedera.NewTokenCreateTransaction().GetAutoRenewPeriod().Seconds()
 	}
 
@@ -431,14 +409,13 @@ func assertTokenCreateTransaction(
 	assert.Equal(t, sdkTokenType, tx.GetTokenType())
 }
 
-func getTokenCreateOperations(tokenType string) []*rTypes.Operation {
-	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-		Type:                types.OperationTypeTokenCreate,
-		Account:             &rTypes.AccountIdentifier{Address: treasury.String()},
+func getTokenCreateOperations(tokenType string) types.OperationSlice {
+	operation := types.Operation{
+		AccountId: accountIdA,
+		Type:      types.OperationTypeTokenCreate,
 		Metadata: map[string]interface{}{
 			"admin_key":          adminKeyStr,
-			"auto_renew_account": autoRenewAccount.String(),
+			"auto_renew_account": autoRenewAccountId.String(),
 			"decimals":           uint(decimals),
 			"expiry":             expiry.Unix(),
 			"freeze_default":     false,
@@ -457,5 +434,5 @@ func getTokenCreateOperations(tokenType string) []*rTypes.Operation {
 		operation.Metadata[types.MetadataKeyType] = tokenType
 	}
 
-	return []*rTypes.Operation{operation}
+	return types.OperationSlice{operation}
 }

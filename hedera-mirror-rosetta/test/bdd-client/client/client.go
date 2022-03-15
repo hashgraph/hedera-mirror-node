@@ -54,7 +54,7 @@ func (c Client) CreateAccount(initialBalance hedera.Hbar) (*hedera.AccountID, *h
 		initialBalance = defaultInitialBalance
 	}
 
-	sk, err := hedera.GeneratePrivateKey()
+	sk, err := hedera.PrivateKeyGenerateEd25519()
 	if err != nil {
 		log.Errorf("Failed to generate private key for new account: %s", err)
 		return nil, nil, err
@@ -108,6 +108,15 @@ func (c Client) DeleteToken(tokenId hedera.TokenID) error {
 	return nil
 }
 
+func (c Client) GetAccountBalance(ctx context.Context, account *types.AccountIdentifier) (
+	*types.AccountBalanceResponse,
+	error,
+) {
+	request := &types.AccountBalanceRequest{NetworkIdentifier: c.network, AccountIdentifier: account}
+	response, rErr, err := c.onlineClient.AccountAPI.AccountBalance(ctx, request)
+	return response, c.handleError(fmt.Sprintf("Failed to get balance for %s", account.Address), rErr, err)
+}
+
 func (c Client) TokenDissociate(operator Operator, tokenId hedera.TokenID) error {
 	_, err := hedera.NewTokenDissociateTransaction().
 		SetAccountID(operator.Id).
@@ -124,10 +133,7 @@ func (c Client) TokenDissociate(operator Operator, tokenId hedera.TokenID) error
 	return nil
 }
 
-func (c Client) FindTransaction(ctx context.Context, hash string) (
-	*types.Transaction,
-	error,
-) {
+func (c Client) FindTransaction(ctx context.Context, hash string) (*types.Transaction, error) {
 	blockApi := c.onlineClient.BlockAPI
 
 	status, rosettaErr, err := c.onlineClient.NetworkAPI.NetworkStatus(

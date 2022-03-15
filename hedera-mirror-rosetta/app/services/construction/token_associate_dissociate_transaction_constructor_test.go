@@ -67,16 +67,13 @@ var (
 		Symbol:   symbolC,
 		Type:     domain.TokenTypeNonFungibleUnique,
 	}
-	nodeAccountId          = hedera.AccountID{Account: 7}
-	payerAccountIdentifier = &rTypes.AccountIdentifier{Address: payerId.String()}
-	payerId                = hedera.AccountID{Account: 100}
-	tokenEntityIdA         = domain.MustDecodeEntityId(212)
-	tokenEntityIdB         = domain.MustDecodeEntityId(252)
-	tokenEntityIdC         = domain.MustDecodeEntityId(282)
-	tokenACurrency         = types.Token{Token: dbTokenA}.ToRosettaCurrency()
-	tokenBCurrency         = types.Token{Token: dbTokenB}.ToRosettaCurrency()
-	tokenCCurrency         = types.Token{Token: dbTokenC}.ToRosettaCurrency()
-	tokenAPartialCurrency  = newRosettaCurrencyBuilder().
+	tokenEntityIdA        = domain.MustDecodeEntityId(212)
+	tokenEntityIdB        = domain.MustDecodeEntityId(252)
+	tokenEntityIdC        = domain.MustDecodeEntityId(282)
+	tokenACurrency        = types.Token{Token: dbTokenA}.ToRosettaCurrency()
+	tokenBCurrency        = types.Token{Token: dbTokenB}.ToRosettaCurrency()
+	tokenCCurrency        = types.Token{Token: dbTokenC}.ToRosettaCurrency()
+	tokenAPartialCurrency = newRosettaCurrencyBuilder().
 				setSymbol(tokenEntityIdA.String()).
 				setType(domain.TokenTypeUnknown).
 				build()
@@ -94,7 +91,7 @@ var (
 )
 
 type newConstructorFunc func() transactionConstructorWithType
-type updateOperationsFunc func([]*rTypes.Operation) []*rTypes.Operation
+type updateOperationsFunc func(types.OperationSlice) types.OperationSlice
 
 func TestTokenAssociateDissociateTransactionConstructorSuite(t *testing.T) {
 	suite.Run(t, new(tokenAssociateDissociateTransactionConstructorSuite))
@@ -170,11 +167,9 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestConstruct(
 	tests := []struct {
 		name             string
 		updateOperations updateOperationsFunc
-		validStartNanos  int64
 		expectError      bool
 	}{
 		{name: "Success"},
-		{name: "SuccessValidStartNanos", validStartNanos: 100},
 		{name: "EmptyOperations", updateOperations: getEmptyOperations, expectError: true},
 	}
 
@@ -190,7 +185,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestConstruct(
 				}
 
 				// when
-				tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
+				tx, signers, err := h.Construct(defaultContext, operations)
 
 				// then
 				if tt.expectError {
@@ -199,12 +194,8 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestConstruct(
 					assert.Nil(t, tx)
 				} else {
 					assert.Nil(t, err)
-					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-					assertTokenAssociateDissociateTransaction(t, operations, nodeAccountId, tx)
-
-					if tt.validStartNanos != 0 {
-						assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
-					}
+					assert.ElementsMatch(t, []types.AccountId{accountIdA}, signers)
+					assertTokenAssociateDissociateTransaction(t, operations, tx)
 				}
 			})
 		}
@@ -223,17 +214,14 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 	defaultGetTransaction := func(operationType string) interfaces.Transaction {
 		if operationType == types.OperationTypeTokenAssociate {
 			return hedera.NewTokenAssociateTransaction().
-				SetAccountID(payerId).
-				SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+				SetAccountID(sdkAccountIdA).
 				SetTokenIDs(tokenIdA, tokenIdB, tokenIdC).
-				SetTransactionID(hedera.TransactionIDGenerate(payerId))
+				SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 		}
-
 		return hedera.NewTokenDissociateTransaction().
-			SetAccountID(payerId).
-			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+			SetAccountID(sdkAccountIdA).
 			SetTokenIDs(tokenIdA, tokenIdB, tokenIdC).
-			SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 	}
 
 	tests := []struct {
@@ -250,17 +238,14 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == types.OperationTypeTokenAssociate {
 					return hedera.NewTokenAssociateTransaction().
-						SetAccountID(payerId).
-						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+						SetAccountID(sdkAccountIdA).
 						SetTokenIDs(outOfRangeTokenId).
-						SetTransactionID(hedera.TransactionIDGenerate(payerId))
+						SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 				}
-
 				return hedera.NewTokenDissociateTransaction().
-					SetAccountID(payerId).
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetAccountID(sdkAccountIdA).
 					SetTokenIDs(outOfRangeTokenId).
-					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 			},
 			expectError: true,
 		},
@@ -268,6 +253,22 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 			name:           "InvalidTransaction",
 			getTransaction: getTransferTransaction,
 			expectError:    true,
+		},
+		{
+			name: "OutOfRangeAccountId",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenAssociate {
+					return hedera.NewTokenAssociateTransaction().
+						SetAccountID(outOfRangeAccountId).
+						SetTokenIDs(tokenIdA, tokenIdB, tokenIdC).
+						SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+				}
+				return hedera.NewTokenDissociateTransaction().
+					SetAccountID(outOfRangeAccountId).
+					SetTokenIDs(tokenIdA, tokenIdB, tokenIdC).
+					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+			},
+			expectError: true,
 		},
 		{
 			name: "TransactionMismatch",
@@ -286,15 +287,12 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == types.OperationTypeTokenAssociate {
 					return hedera.NewTokenAssociateTransaction().
-						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 						SetTokenIDs(tokenIdA, tokenIdB).
-						SetTransactionID(hedera.TransactionIDGenerate(payerId))
+						SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 				}
-
 				return hedera.NewTokenDissociateTransaction().
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
 					SetTokenIDs(tokenIdA, tokenIdB).
-					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 			},
 			expectError: true,
 		},
@@ -303,51 +301,28 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == types.OperationTypeTokenAssociate {
 					return hedera.NewTokenAssociateTransaction().
-						SetAccountID(payerId).
-						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-						SetTransactionID(hedera.TransactionIDGenerate(payerId))
+						SetAccountID(sdkAccountIdA).
+						SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 				}
 
 				return hedera.NewTokenDissociateTransaction().
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetAccountID(payerId).
-					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+					SetAccountID(sdkAccountIdA).
+					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 			},
 			expectError: true,
 		},
 		{
-			name: "TransactionTransactionIDNotSet",
+			name: "TransactionIDNotSet",
 			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == types.OperationTypeTokenAssociate {
 					return hedera.NewTokenAssociateTransaction().
-						SetAccountID(payerId).
-						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+						SetAccountID(sdkAccountIdA).
 						SetTokenIDs(tokenIdA, tokenIdB)
 				}
 
 				return hedera.NewTokenDissociateTransaction().
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetAccountID(payerId).
+					SetAccountID(sdkAccountIdA).
 					SetTokenIDs(tokenIdA, tokenIdB)
-			},
-			expectError: true,
-		},
-		{
-			name: "TransactionAccountPayerMismatch",
-			getTransaction: func(operationType string) interfaces.Transaction {
-				if operationType == types.OperationTypeTokenAssociate {
-					return hedera.NewTokenAssociateTransaction().
-						SetAccountID(accountId).
-						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-						SetTokenIDs(tokenIdA, tokenIdB).
-						SetTransactionID(hedera.TransactionIDGenerate(payerId))
-				}
-
-				return hedera.NewTokenDissociateTransaction().
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetAccountID(accountId).
-					SetTokenIDs(tokenIdA, tokenIdB).
-					SetTransactionID(hedera.TransactionIDGenerate(payerId))
 			},
 			expectError: true,
 		},
@@ -371,7 +346,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestParse() {
 					assert.Nil(t, signers)
 				} else {
 					assert.Nil(t, err)
-					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
+					assert.ElementsMatch(t, []types.AccountId{accountIdA}, signers)
 					assert.ElementsMatch(t, expectedOperations, operations)
 				}
 			})
@@ -395,19 +370,15 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestPreprocess
 	}{
 		{name: "Success"},
 		{
-			name:             "InvalidAccountAddress",
-			updateOperations: updateOperationAccount("x.y.z"),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidCurrencySymbol",
-			updateOperations: updateCurrency(types.CurrencyHbar),
+			name:             "InvalidAmount",
+			updateOperations: updateAmount(&types.HbarAmount{Value: 1}),
 			expectError:      true,
 		},
 		{
 			name: "DifferentAccountAddress",
-			updateOperations: func(operations []*rTypes.Operation) []*rTypes.Operation {
-				operations[0].Account = &rTypes.AccountIdentifier{Address: "0.1.7"}
+			updateOperations: func(operations types.OperationSlice) types.OperationSlice {
+				operation := &operations[0]
+				operation.AccountId, _ = types.NewAccountIdFromSdkAccountId(hedera.AccountID{Realm: 1, Account: 7})
 				return operations
 			},
 			expectError: true,
@@ -440,7 +411,7 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestPreprocess
 					assert.Nil(t, signers)
 				} else {
 					assert.Nil(t, err)
-					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
+					assert.ElementsMatch(t, []types.AccountId{accountIdA}, signers)
 				}
 			})
 		}
@@ -455,36 +426,35 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestPreprocess
 	})
 }
 
-func (suite *tokenAssociateDissociateTransactionConstructorSuite) getOperations(operationType string) []*rTypes.Operation {
-	return []*rTypes.Operation{
+func (suite *tokenAssociateDissociateTransactionConstructorSuite) getOperations(operationType string) types.OperationSlice {
+	return types.OperationSlice{
 		{
-			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-			Type:                operationType,
-			Account:             payerAccountIdentifier,
-			Amount:              &rTypes.Amount{Value: "0", Currency: tokenAPartialCurrency},
+			AccountId: accountIdA,
+			Index:     0,
+			Type:      operationType,
+			Amount:    types.NewTokenAmount(getPartialDbToken(dbTokenA), 0),
 		},
 		{
-			OperationIdentifier: &rTypes.OperationIdentifier{Index: 1},
-			Type:                operationType,
-			Account:             payerAccountIdentifier,
-			Amount:              &rTypes.Amount{Value: "0", Currency: tokenBPartialCurrency},
+			AccountId: accountIdA,
+			Index:     1,
+			Type:      operationType,
+			Amount:    types.NewTokenAmount(getPartialDbToken(dbTokenB), 0),
 		},
 		{
-			OperationIdentifier: &rTypes.OperationIdentifier{Index: 2},
-			Type:                operationType,
-			Account:             payerAccountIdentifier,
-			Amount:              &rTypes.Amount{Value: "0", Currency: tokenCPartialCurrency},
+			AccountId: accountIdA,
+			Index:     2,
+			Type:      operationType,
+			Amount:    types.NewTokenAmount(getPartialDbToken(dbTokenC), 0),
 		},
 	}
 }
 
 func assertTokenAssociateDissociateTransaction(
 	t *testing.T,
-	operations []*rTypes.Operation,
-	nodeAccountId hedera.AccountID,
+	operations types.OperationSlice,
 	actual interfaces.Transaction,
 ) {
-	assert.True(t, actual.IsFrozen())
+	assert.False(t, actual.IsFrozen())
 	if operations[0].Type == types.OperationTypeTokenAssociate {
 		assert.IsType(t, &hedera.TokenAssociateTransaction{}, actual)
 	} else {
@@ -493,44 +463,47 @@ func assertTokenAssociateDissociateTransaction(
 
 	var expectedTokens []hedera.TokenID
 	for _, operation := range operations {
-		token, _ := hedera.TokenIDFromString(operation.Amount.Currency.Symbol)
+		token, _ := hedera.TokenIDFromString(operation.Amount.GetSymbol())
 		expectedTokens = append(expectedTokens, token)
 	}
 
 	var account string
-	var payer string
 	var tokens []hedera.TokenID
 
 	switch tx := actual.(type) {
 	case *hedera.TokenAssociateTransaction:
 		account = tx.GetAccountID().String()
-		payer = tx.GetTransactionID().AccountID.String()
 		tokens = tx.GetTokenIDs()
 	case *hedera.TokenDissociateTransaction:
 		account = tx.GetAccountID().String()
-		payer = tx.GetTransactionID().AccountID.String()
 		tokens = tx.GetTokenIDs()
 	}
 
-	assert.Equal(t, operations[0].Account.Address, account)
-	assert.Equal(t, operations[0].Account.Address, payer)
+	assert.Equal(t, operations[0].AccountId.ToSdkAccountId().String(), account)
 	assert.ElementsMatch(t, expectedTokens, tokens)
-	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
 }
 
-func addOperation(operations []*rTypes.Operation) []*rTypes.Operation {
-	return append(operations, &rTypes.Operation{})
+func addOperation(operations types.OperationSlice) types.OperationSlice {
+	return append(operations, types.Operation{})
 }
 
-func getEmptyOperations([]*rTypes.Operation) []*rTypes.Operation {
-	return make([]*rTypes.Operation, 0)
+func getEmptyOperations(types.OperationSlice) types.OperationSlice {
+	return make(types.OperationSlice, 0)
 }
 
-func getEmptyOperationMetadata(operations []*rTypes.Operation) []*rTypes.Operation {
-	for _, operation := range operations {
+func getEmptyOperationMetadata(operations types.OperationSlice) types.OperationSlice {
+	for index := range operations {
+		operation := &operations[index]
 		operation.Metadata = nil
 	}
 	return operations
+}
+
+func getPartialDbToken(dbToken domain.Token) domain.Token {
+	token := dbToken
+	token.Decimals = 0
+	token.Type = domain.TokenTypeUnknown
+	return token
 }
 
 func getTransferTransaction(string) interfaces.Transaction {
@@ -538,70 +511,59 @@ func getTransferTransaction(string) interfaces.Transaction {
 }
 
 func deleteOperationMetadata(key string) updateOperationsFunc {
-	return func(operations []*rTypes.Operation) []*rTypes.Operation {
-		for _, operation := range operations {
+	return func(operations types.OperationSlice) types.OperationSlice {
+		for index := range operations {
+			operation := &operations[index]
 			delete(operation.Metadata, key)
 		}
 		return operations
 	}
 }
 
-func negateAmountValue(operations []*rTypes.Operation) []*rTypes.Operation {
-	for _, operation := range operations {
-		amount := *operation.Amount
-		if amount.Value[0] == uint8('-') {
-			amount.Value = amount.Value[1:]
-		} else {
-			amount.Value = "-" + amount.Value
+func negateAmountValue(operations types.OperationSlice) types.OperationSlice {
+	for index := range operations {
+		operation := &operations[index]
+		amount := operation.Amount
+		switch a := amount.(type) {
+		case *types.HbarAmount:
+			a.Value = -a.Value
+		case *types.TokenAmount:
+			a.Value = -a.Value
 		}
-		operation.Amount = &amount
 	}
 	return operations
 }
 
-func updateAmount(amount *rTypes.Amount) updateOperationsFunc {
-	return func(operations []*rTypes.Operation) []*rTypes.Operation {
-		for _, operation := range operations {
+func updateAmount(amount types.Amount) updateOperationsFunc {
+	return func(operations types.OperationSlice) types.OperationSlice {
+		for index := range operations {
+			operation := &operations[index]
 			operation.Amount = amount
 		}
 		return operations
 	}
 }
 
-func updateAmountValue(value string) updateOperationsFunc {
-	return func(operations []*rTypes.Operation) []*rTypes.Operation {
-		for _, operation := range operations {
-			amount := *operation.Amount
-			amount.Value = value
-			operation.Amount = &amount
-		}
-		return operations
-	}
-}
-
-func updateCurrency(currency *rTypes.Currency) updateOperationsFunc {
-	return func(operations []*rTypes.Operation) []*rTypes.Operation {
-		for _, operation := range operations {
-			amount := *operation.Amount
-			amount.Currency = currency
-			operation.Amount = &amount
-		}
-		return operations
-	}
-}
-
-func updateOperationAccount(account string) updateOperationsFunc {
-	return func(operations []*rTypes.Operation) []*rTypes.Operation {
-		for _, operation := range operations {
-			operation.Account = &rTypes.AccountIdentifier{Address: account}
+func updateAmountValue(value int64) updateOperationsFunc {
+	return func(operations types.OperationSlice) types.OperationSlice {
+		for index := range operations {
+			operation := &operations[index]
+			amount := operation.Amount
+			switch a := amount.(type) {
+			case *types.HbarAmount:
+				a.Value = value
+			case *types.TokenAmount:
+				a.Value = value
+			}
 		}
 		return operations
 	}
 }
 
 func updateOperationMetadata(key string, value interface{}) updateOperationsFunc {
-	return func(operations []*rTypes.Operation) []*rTypes.Operation {
-		for _, operation := range operations {
+	return func(operations types.OperationSlice) types.OperationSlice {
+		for index := range operations {
+			operation := &operations[index]
 			operation.Metadata[key] = value
 		}
 		return operations
@@ -609,23 +571,10 @@ func updateOperationMetadata(key string, value interface{}) updateOperationsFunc
 }
 
 func updateOperationType(operationType string) updateOperationsFunc {
-	return func(operations []*rTypes.Operation) []*rTypes.Operation {
-		result := make([]*rTypes.Operation, 0, len(operations))
-		for idx := range operations {
-			operation := *operations[idx]
+	return func(operations types.OperationSlice) types.OperationSlice {
+		for index := range operations {
+			operation := &operations[index]
 			operation.Type = operationType
-			result = append(result, &operation)
-		}
-		return result
-	}
-}
-
-func updateTokenSymbol(symbol string) updateOperationsFunc {
-	return func(operations []*rTypes.Operation) []*rTypes.Operation {
-		for _, operation := range operations {
-			currency := *operation.Amount.Currency
-			currency.Symbol = symbol
-			operation.Amount.Currency = &currency
 		}
 		return operations
 	}

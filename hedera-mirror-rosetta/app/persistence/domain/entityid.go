@@ -140,22 +140,22 @@ func EntityIdFromString(entityId string) (EntityId, error) {
 		return EntityId{}, errorEntity
 	}
 
-	shardNum, err := tools.ToInt64(inputs[0])
+	shard, err := tools.ToInt64(inputs[0])
 	if err != nil {
 		return EntityId{}, errorShardId
 	}
 
-	realmNum, err := tools.ToInt64(inputs[1])
+	realm, err := tools.ToInt64(inputs[1])
 	if err != nil {
 		return EntityId{}, errorRealmId
 	}
 
-	entityNum, err := tools.ToInt64(inputs[2])
+	num, err := tools.ToInt64(inputs[2])
 	if err != nil {
 		return EntityId{}, errorEntityId
 	}
 
-	return EntityIdOf(shardNum, realmNum, entityNum)
+	return EntityIdOf(shard, realm, num)
 }
 
 func EntityIdOf(shard, realm, num int64) (EntityId, error) {

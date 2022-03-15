@@ -208,7 +208,7 @@ type transaction struct {
 	ConsensusTimestamp int64
 	EntityId           *domain.EntityId
 	Hash               []byte
-	PayerAccountId     int64
+	PayerAccountId     domain.EntityId
 	Result             int16
 	Type               int16
 	CryptoTransfers    string
@@ -401,7 +401,7 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 	*rTypes.Error,
 ) {
 	tResult := &types.Transaction{Hash: sameHashTransactions[0].getHashString()}
-	operations := make([]*types.Operation, 0)
+	operations := make(types.OperationSlice, 0)
 	success := types.TransactionResults[transactionResultSuccess]
 
 	for _, transaction := range sameHashTransactions {
@@ -444,10 +444,7 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 
 		if !token.TokenId.IsZero() {
 			// only for TokenCreate, TokenDeletion, and TokenUpdate, TokenId is non-zero
-			operation, err := getTokenOperation(len(operations), token, transaction, transactionResult, transactionType)
-			if err != nil {
-				return nil, err
-			}
+			operation := getTokenOperation(len(operations), token, transaction, transactionResult, transactionType)
 			operations = append(operations, operation)
 		}
 
@@ -464,8 +461,8 @@ func (tr *transactionRepository) appendHbarTransferOperations(
 	transactionResult string,
 	transactionType string,
 	hbarTransfers []hbarTransfer,
-	operations []*types.Operation,
-) []*types.Operation {
+	operations types.OperationSlice,
+) types.OperationSlice {
 	transfers := make([]transfer, 0, len(hbarTransfers))
 	for _, hbarTransfer := range hbarTransfers {
 		transfers = append(transfers, hbarTransfer)
@@ -478,8 +475,8 @@ func (tr *transactionRepository) appendNftTransferOperations(
 	transactionResult string,
 	transactionType string,
 	nftTransfers []domain.NftTransfer,
-	operations []*types.Operation,
-) []*types.Operation {
+	operations types.OperationSlice,
+) types.OperationSlice {
 	transfers := make([]transfer, 0, 2*len(nftTransfers))
 	for _, nftTransfer := range nftTransfers {
 		transfers = append(transfers, getSingleNftTransfers(nftTransfer)...)
@@ -492,8 +489,8 @@ func (tr *transactionRepository) appendTokenTransferOperations(
 	transactionResult string,
 	transactionType string,
 	tokenTransfers []tokenTransfer,
-	operations []*types.Operation,
-) []*types.Operation {
+	operations types.OperationSlice,
+) types.OperationSlice {
 	transfers := make([]transfer, 0, len(tokenTransfers))
 	for _, tokenTransfer := range tokenTransfers {
 		// The wiped amount of a deleted NFT class by a TokenDissociate is presented as tokenTransferList and
@@ -512,15 +509,15 @@ func (tr *transactionRepository) appendTransferOperations(
 	transactionResult string,
 	transactionType string,
 	transfers []transfer,
-	operations []*types.Operation,
-) []*types.Operation {
+	operations types.OperationSlice,
+) types.OperationSlice {
 	for _, transfer := range transfers {
-		operations = append(operations, &types.Operation{
-			Index:   int64(len(operations)),
-			Type:    transactionType,
-			Status:  transactionResult,
-			Account: types.Account{EntityId: transfer.getAccountId()},
-			Amount:  transfer.getAmount(),
+		operations = append(operations, types.Operation{
+			AccountId: types.NewAccountIdFromEntityId(transfer.getAccountId()),
+			Amount:    transfer.getAmount(),
+			Index:     int64(len(operations)),
+			Status:    transactionResult,
+			Type:      transactionType,
 		})
 	}
 	return operations
@@ -572,15 +569,6 @@ func (tr *transactionRepository) processSuccessTokenDissociates(
 
 func IsTransactionResultSuccessful(result int32) bool {
 	return result == transactionResultSuccess
-}
-
-func constructAccount(encodedId int64) (types.Account, *rTypes.Error) {
-	account, err := types.NewAccountFromEncodedID(encodedId)
-	if err != nil {
-		log.Errorf(hErrors.CreateAccountDbIdFailed, encodedId)
-		return types.Account{}, hErrors.ErrInternalServerError
-	}
-	return account, nil
 }
 
 func adjustCryptoTransfers(
@@ -654,17 +642,12 @@ func getTokenOperation(
 	transaction *transaction,
 	transactionResult string,
 	transactionType string,
-) (*types.Operation, *rTypes.Error) {
-	payerId, err := constructAccount(transaction.PayerAccountId)
-	if err != nil {
-		return nil, err
-	}
-
-	operation := &types.Operation{
-		Index:   int64(index),
-		Type:    transactionType,
-		Status:  transactionResult,
-		Account: payerId,
+) types.Operation {
+	operation := types.Operation{
+		AccountId: types.NewAccountIdFromEntityId(transaction.PayerAccountId),
+		Index:     int64(index),
+		Status:    transactionResult,
+		Type:      transactionType,
 	}
 
 	metadata := make(map[string]interface{})
@@ -673,5 +656,5 @@ func getTokenOperation(
 	metadata["initial_supply"] = token.InitialSupply
 	operation.Metadata = metadata
 
-	return operation, nil
+	return operation
 }

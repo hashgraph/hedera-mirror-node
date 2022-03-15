@@ -28,12 +28,23 @@ import (
 )
 
 type EntityBuilder struct {
-	dbClient interfaces.DbClient
-	entity   domain.Entity
+	dbClient   interfaces.DbClient
+	entity     domain.Entity
+	historical bool
+}
+
+func (b *EntityBuilder) Alias(alias []byte) *EntityBuilder {
+	b.entity.Alias = alias
+	return b
 }
 
 func (b *EntityBuilder) Deleted(deleted bool) *EntityBuilder {
 	b.entity.Deleted = &deleted
+	return b
+}
+
+func (b *EntityBuilder) Historical(historical bool) *EntityBuilder {
+	b.historical = historical
 	return b
 }
 
@@ -47,11 +58,31 @@ func (b *EntityBuilder) ModifiedTimestamp(timestamp int64) *EntityBuilder {
 	return b
 }
 
+func (b *EntityBuilder) TimestampRange(lowerInclusive, upperExclusive int64) *EntityBuilder {
+	b.entity.TimestampRange = pgtype.Int8range{
+		Lower:     pgtype.Int8{Int: lowerInclusive, Status: pgtype.Present},
+		Upper:     pgtype.Int8{Int: upperExclusive, Status: pgtype.Present},
+		LowerType: pgtype.Inclusive,
+		UpperType: pgtype.Exclusive,
+		Status:    pgtype.Present,
+	}
+	return b
+}
+
 func (b *EntityBuilder) Persist() domain.Entity {
-	b.dbClient.GetDb().Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"deleted", "timestamp_range"}),
-	}).Create(&b.entity)
+	tableName := b.entity.TableName()
+	if b.historical {
+		tableName = b.entity.HistoryTableName()
+	}
+	tx := b.dbClient.GetDb().Table(tableName)
+	if !b.historical {
+		// only entity table has unique id column
+		tx = tx.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "id"}},
+			DoUpdates: clause.AssignmentColumns([]string{"deleted", "timestamp_range"}),
+		})
+	}
+	tx.Create(&b.entity)
 	return b.entity
 }
 

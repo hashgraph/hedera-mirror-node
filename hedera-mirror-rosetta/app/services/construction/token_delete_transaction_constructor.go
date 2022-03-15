@@ -38,30 +38,20 @@ type tokenDeleteTransactionConstructor struct {
 
 func (t *tokenDeleteTransactionConstructor) Construct(
 	_ context.Context,
-	nodeAccountId hedera.AccountID,
-	operations []*rTypes.Operation,
-	validStartNanos int64,
-) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
+	operations types.OperationSlice,
+) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
 	payerId, tokenId, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
 
-	tx, err := hedera.NewTokenDeleteTransaction().
-		SetTokenID(*tokenId).
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-		SetTransactionID(getTransactionId(*payerId, validStartNanos)).
-		Freeze()
-	if err != nil {
-		return nil, nil, errors.ErrTransactionFreezeFailed
-	}
-
-	return tx, []hedera.AccountID{*payerId}, nil
+	tx := hedera.NewTokenDeleteTransaction().SetTokenID(*tokenId)
+	return tx, []types.AccountId{*payerId}, nil
 }
 
 func (t *tokenDeleteTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
-	[]*rTypes.Operation,
-	[]hedera.AccountID,
+	types.OperationSlice,
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	tokenDeleteTransaction, ok := transaction.(*hedera.TokenDeleteTransaction)
@@ -76,27 +66,28 @@ func (t *tokenDeleteTransactionConstructor) Parse(_ context.Context, transaction
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
+	payerAccountId, err := types.NewAccountIdFromSdkAccountId(*payerId)
+	if err != nil {
+		return nil, nil, errors.ErrInvalidAccount
+	}
+
 	tokenEntityId, err := domain.EntityIdOf(int64(tokenId.Shard), int64(tokenId.Realm), int64(tokenId.Token))
 	if err != nil {
 		return nil, nil, errors.ErrInvalidToken
 	}
 
 	domainToken := domain.Token{TokenId: tokenEntityId, Type: domain.TokenTypeUnknown}
-	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-		Account:             &rTypes.AccountIdentifier{Address: payerId.String()},
-		Amount: &rTypes.Amount{
-			Value:    "0",
-			Currency: types.Token{Token: domainToken}.ToRosettaCurrency(),
-		},
-		Type: t.GetOperationType(),
+	operation := types.Operation{
+		AccountId: payerAccountId,
+		Amount:    types.NewTokenAmount(domainToken, 0),
+		Type:      t.GetOperationType(),
 	}
 
-	return []*rTypes.Operation{operation}, []hedera.AccountID{*payerId}, nil
+	return types.OperationSlice{operation}, []types.AccountId{payerAccountId}, nil
 }
 
-func (t *tokenDeleteTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
-	[]hedera.AccountID,
+func (t *tokenDeleteTransactionConstructor) Preprocess(_ context.Context, operations types.OperationSlice) (
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	payer, _, err := t.preprocess(operations)
@@ -104,11 +95,11 @@ func (t *tokenDeleteTransactionConstructor) Preprocess(_ context.Context, operat
 		return nil, err
 	}
 
-	return []hedera.AccountID{*payer}, nil
+	return []types.AccountId{*payer}, nil
 }
 
-func (t *tokenDeleteTransactionConstructor) preprocess(operations []*rTypes.Operation) (
-	*hedera.AccountID,
+func (t *tokenDeleteTransactionConstructor) preprocess(operations types.OperationSlice) (
+	*types.AccountId,
 	*hedera.TokenID,
 	*rTypes.Error,
 ) {
@@ -117,21 +108,23 @@ func (t *tokenDeleteTransactionConstructor) preprocess(operations []*rTypes.Oper
 	}
 
 	operation := operations[0]
-	payerId, err := hedera.AccountIDFromString(operation.Account.Address)
-	if err != nil || isZeroAccountId(payerId) {
-		return nil, nil, errors.ErrInvalidAccount
-	}
+	amount := operation.Amount
 
-	if operation.Amount.Value != "0" {
+	if amount.GetValue() != 0 {
 		return nil, nil, errors.ErrInvalidOperationsAmount
 	}
 
-	tokenId, err := hedera.TokenIDFromString(operation.Amount.Currency.Symbol)
-	if err != nil {
-		return nil, nil, errors.ErrInvalidToken
+	tokenAmount, ok := amount.(*types.TokenAmount)
+	if !ok {
+		return nil, nil, errors.ErrInvalidCurrency
+	}
+	tokenId := hedera.TokenID{
+		Shard: uint64(tokenAmount.TokenId.ShardNum),
+		Realm: uint64(tokenAmount.TokenId.RealmNum),
+		Token: uint64(tokenAmount.TokenId.EntityNum),
 	}
 
-	return &payerId, &tokenId, nil
+	return &operation.AccountId, &tokenId, nil
 }
 
 func (t *tokenDeleteTransactionConstructor) GetOperationType() string {
