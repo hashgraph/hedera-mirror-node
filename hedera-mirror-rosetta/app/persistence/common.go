@@ -21,7 +21,7 @@
 package persistence
 
 const (
-	genesisTimestampQuery = `select consensus_timestamp as timestamp
+	genesisTimestampQuery = `select consensus_timestamp + time_offset as timestamp
                              from account_balance_file
                              order by consensus_timestamp
                              limit 1`

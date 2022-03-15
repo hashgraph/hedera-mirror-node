@@ -69,7 +69,7 @@ const (
           d.*,
           (
             with snapshot as (
-              select abf.consensus_timestamp as timestamp
+              select abf.consensus_timestamp + abf.time_offset as timestamp
               from account_balance_file as abf
               where abf.consensus_timestamp < d.consensus_timestamp
               order by abf.consensus_timestamp desc
@@ -141,7 +141,9 @@ const (
                                               select json_agg(json_build_object(
                                                 'account_id', entity_id,
                                                 'amount', amount) order by entity_id)
-                                              from crypto_transfer where consensus_timestamp = t.consensus_timestamp
+                                              from crypto_transfer
+                                              where consensus_timestamp = t.consensus_timestamp and
+                                                (errata is null or errata <> 'DELETE')
                                             ), '[]') as crypto_transfers,
                                             case
                                               when t.type = 14 then coalesce((

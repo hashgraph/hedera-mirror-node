@@ -23,14 +23,15 @@ package domain
 const tableNameAccountBalanceFile = "account_balance_file"
 
 type AccountBalanceFile struct {
+	Bytes              []byte
 	ConsensusTimestamp int64 `gorm:"primaryKey"`
 	Count              int64
-	LoadStart          int64
-	LoadEnd            int64
 	FileHash           string
+	LoadEnd            int64
+	LoadStart          int64
 	Name               string
 	NodeAccountId      EntityId
-	Bytes              []byte
+	TimeOffset         int32
 }
 
 func (a AccountBalanceFile) TableName() string {

@@ -32,6 +32,7 @@ import (
 	tdomain "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/domain"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/thanhpk/randstr"
 )
 
 const (
@@ -572,11 +573,12 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	// successful crypto transfer transaction
 	consensusTimestamp = consensusStart + 1
 	validStartNs = consensusStart - 10
+	errataTypeInsert := domain.ErrataTypeInsert
 	cryptoTransfers := []domain.CryptoTransfer{
 		{Amount: -150, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
-			PayerAccountId: firstEntityId},
+			Errata: &errataTypeInsert, PayerAccountId: firstEntityId},
 		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityId: secondEntityId,
-			PayerAccountId: firstEntityId},
+			Errata: &errataTypeInsert, PayerAccountId: firstEntityId},
 		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId,
 			PayerAccountId: firstEntityId},
 		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: treasuryEntityId,
@@ -839,9 +841,38 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		},
 	}
 
+	// a failed crypto transfer due to insufficient account balance, the spurious transfers are marked as 'DELETE'
+	tick(1)
+	errataTypeDelete := domain.ErrataTypeDelete
+	cryptoTransfers = []domain.CryptoTransfer{
+		{Amount: -120, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
+			PayerAccountId: firstEntityId},
+		{Amount: 100, ConsensusTimestamp: consensusTimestamp, EntityId: treasuryEntityId,
+			PayerAccountId: firstEntityId},
+		{Amount: 20, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId,
+			PayerAccountId: firstEntityId},
+		{Amount: -1000000, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
+			Errata: &errataTypeDelete, PayerAccountId: firstEntityId},
+		{Amount: 1000000, ConsensusTimestamp: consensusTimestamp, EntityId: secondEntityId,
+			Errata: &errataTypeDelete, PayerAccountId: firstEntityId},
+	}
+	transactionHash := randstr.Bytes(6)
+	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 28,
+		transactionHash, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil, nil, nil)
+	operationType = types.OperationTypeCryptoTransfer
+	expectedTransaction7 := &types.Transaction{
+		Hash: tools.SafeAddHexPrefix(hex.EncodeToString(transactionHash)),
+		Operations: types.OperationSlice{
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -120}, Type: operationType, Status: resultSuccess},
+			{AccountId: treasuryAccountId, Amount: &types.HbarAmount{Value: 100}, Type: operationType,
+				Status: resultSuccess},
+			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 20}, Type: operationType, Status: resultSuccess},
+		},
+	}
+
 	return []*types.Transaction{
-		expectedTransaction1, expectedTransaction2, expectedTransaction3,
-		expectedTransaction4, expectedTransaction5, expectedTransaction6,
+		expectedTransaction1, expectedTransaction2, expectedTransaction3, expectedTransaction4,
+		expectedTransaction5, expectedTransaction6, expectedTransaction7,
 	}
 }
 
