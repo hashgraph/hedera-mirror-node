@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,15 +82,24 @@ public abstract class IntegrationTest {
         log.info("Executing: {}", testInfo.getDisplayName());
     }
 
+    protected<T> Collection<T> findEntity(Class<T> entityClass, String ids, String table) {
+        String sql = String.format("select * from %s order by %s, timestamp_range asc", table, ids);
+        return jdbcOperations.query(sql, rowMapper(entityClass));
+    }
+
     protected <T> Collection<T> findHistory(Class<T> historyClass) {
         return findHistory(historyClass, "id");
     }
 
     protected  <T> Collection<T> findHistory(Class<T> historyClass, String ids) {
-        String table = historyClass.getSimpleName();
-        table = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, table);
-        String sql = String.format("select * from %s_history order by %s, timestamp_range asc", table, ids);
-        return jdbcOperations.query(sql, rowMapper(historyClass));
+        return findHistory(historyClass, ids, null);
+    }
+
+    protected  <T> Collection<T> findHistory(Class<T> historyClass, String ids, String table) {
+        if (StringUtils.isEmpty(table)) {
+            table = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, historyClass.getSimpleName());
+        }
+        return findEntity(historyClass, ids, String.format("%s_history", table));
     }
 
     protected List<NonFeeTransfer> findNonFeeTransfers() {
