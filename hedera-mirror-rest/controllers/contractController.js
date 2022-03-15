@@ -378,7 +378,7 @@ const contractResultsByIdParamSupportMap = {
  * Verify contractId meets entity id format
  */
 const validateContractIdParam = (contractId) => {
-  if (ContractService.isValidCreate2Id(contractId)) {
+  if (EntityId.isValidEvmAddress(contractId)) {
     return;
   }
   if (!EntityId.isValidEntityId(contractId)) {
