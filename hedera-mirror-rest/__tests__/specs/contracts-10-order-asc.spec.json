@@ -11,11 +11,11 @@
       },
       {
         "created_timestamp": "987654000123456",
+        "evm_address": "60f3f640a8508fc6a86d45df051962668e1e8ac7",
         "file_id": "5001",
         "key": [1, 1, 1],
         "num": "8001",
-        "timestamp_range": "[997654000123457,)",
-        "evm_address": "60f3f640a8508fc6a86d45df051962668e1e8ac7"
+        "timestamp_range": "[997654000123457,)"
       },
       {
         "created_timestamp": "987654111123456",

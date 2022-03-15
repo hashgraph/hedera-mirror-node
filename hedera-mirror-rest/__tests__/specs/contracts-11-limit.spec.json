@@ -28,13 +28,13 @@
         "auto_renew_period": 1500,
         "created_timestamp": "987654222123456",
         "expiration_timestamp": "1236987654000000123",
+        "evm_address": "60f3f640a8508fc6a86d45df051962668e1e8ac7",
         "file_id": "5001",
         "key": [3, 3, 3],
         "num": "8003",
         "obtainer_id": "7001",
         "proxy_account_id": "7005",
-        "timestamp_range": "[987654222123456,)",
-        "evm_address": "60f3f640a8508fc6a86d45df051962668e1e8ac7"
+        "timestamp_range": "[987654222123456,)"
       }
     ]
   },
