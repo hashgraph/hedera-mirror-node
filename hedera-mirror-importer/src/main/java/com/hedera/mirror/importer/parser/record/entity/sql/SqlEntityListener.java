@@ -456,6 +456,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Contract mergeContract(Contract previous, Contract current) {
         mergeAbstractEntity(previous, current);
 
+        current.setEvmAddress(previous.getEvmAddress());
         current.setFileId(previous.getFileId());
 
         if (current.getObtainerId() == null) {

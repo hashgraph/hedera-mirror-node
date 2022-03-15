@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.io.File;
 import java.io.IOException;
 import java.sql.PreparedStatement;
@@ -615,8 +616,7 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                     entity.getRealm(),
                     entity.getShard(),
                     entity.getType().getId(),
-                    String.format("(%d, %d)", entity.getCreatedTimestamp(), entity.getTimestampRange()
-                            .lowerEndpoint())
+                    PostgreSQLGuavaRangeType.INSTANCE.asString(entity.getTimestampRange())
             );
         }
     }
