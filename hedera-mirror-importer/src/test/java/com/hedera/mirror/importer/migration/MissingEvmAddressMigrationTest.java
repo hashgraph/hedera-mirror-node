@@ -105,22 +105,6 @@ class MissingEvmAddressMigrationTest extends IntegrationTest {
                 .containsExactlyInAnyOrderElementsOf(expectedHistoricalContracts);
     }
 
-    private Contract getHistoricalContract(Contract contract, boolean clearEvmAddress, long validDuration) {
-        var clone = TestUtils.clone(contract);
-        if (clearEvmAddress) {
-            clone.setEvmAddress(null);
-        }
-
-        if (clone.getTimestampUpper() == null) {
-            clone.setTimestampUpper(clone.getTimestampLower() + validDuration);
-        } else {
-            clone.setTimestampLower(clone.getTimestampUpper());
-            clone.setTimestampUpper(clone.getTimestampLower() + validDuration);
-        }
-
-        return clone;
-    }
-
     @SneakyThrows
     private void migrate() {
         jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
@@ -138,7 +122,18 @@ class MissingEvmAddressMigrationTest extends IntegrationTest {
     }
 
     private Contract persistHistoricalContract(Contract contract, boolean clearEvmAddress, long validDuration) {
-        var clone = getHistoricalContract(contract, clearEvmAddress, validDuration);
+        var clone = TestUtils.clone(contract);
+        if (clearEvmAddress) {
+            clone.setEvmAddress(null);
+        }
+
+        if (clone.getTimestampUpper() == null) {
+            clone.setTimestampUpper(clone.getTimestampLower() + validDuration);
+        } else {
+            clone.setTimestampLower(clone.getTimestampUpper());
+            clone.setTimestampUpper(clone.getTimestampLower() + validDuration);
+        }
+
         jdbcOperations.update(
                 "insert into contract_history (id, created_timestamp, evm_address, num, realm, shard, type, " +
                         "timestamp_range) values (?,?,?,?,?,?,?::entity_type,?::int8range)",
