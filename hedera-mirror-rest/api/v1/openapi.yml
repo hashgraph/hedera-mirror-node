@@ -2198,7 +2198,7 @@ components:
         $ref: '#/components/schemas/EntityIdQuery'
     # Path parameters for different IDs.
     contractIdPathParam:
-      name: contractId
+      name: contractIdOrAddress
       in: path
       required: true
       description: Contract id. Can also be a create2 id that matches the regex ^(0x)[A-Fa-f0-9]{40}$
