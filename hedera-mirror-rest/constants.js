@@ -174,14 +174,14 @@ const queryParamOperators = {
 };
 
 const queryParamOperatorPatterns = {
-  gt: />/,
-  gte: />=/,
-  gtorgte: />[=]?/,
-  eq: /=/,
-  lt: /</,
-  lte: /<=/,
-  ltorlte: /<[=]?/,
-  ne: /!=/,
+  gt: /^>$/,
+  gte: /^>=$/,
+  gtorgte: /^>[=]?$/,
+  eq: /^=$/,
+  lt: /^<$/,
+  lte: /^<=$/,
+  ltorlte: /^<[=]?$/,
+  ne: /^!=$/,
 };
 
 module.exports = {

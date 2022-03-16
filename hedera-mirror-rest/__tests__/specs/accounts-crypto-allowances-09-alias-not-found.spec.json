@@ -1,0 +1,22 @@
+{
+  "description": "Account api call for all crypto allowances when account is missing",
+  "setup": {
+    "accounts": [
+      {
+        "num": 1001
+      }
+    ],
+    "cryptoAllowances": []
+  },
+  "url": "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/crypto",
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "No account with a matching alias found"
+        }
+      ]
+    }
+  }
+}

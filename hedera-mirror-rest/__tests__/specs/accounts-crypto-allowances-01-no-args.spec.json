@@ -69,7 +69,7 @@
   "responseJson": {
     "allowances": [
       {
-        "amount": "77",
+        "amount": 77,
         "owner": "0.0.1001",
         "payer_account_id": "0.0.2001",
         "spender": "0.0.5001",
@@ -79,7 +79,7 @@
         }
       },
       {
-        "amount": "66",
+        "amount": 66,
         "owner": "0.0.1001",
         "payer_account_id": "0.0.2001",
         "spender": "0.0.4001",
@@ -89,7 +89,7 @@
         }
       },
       {
-        "amount": "44",
+        "amount": 44,
         "owner": "0.0.1001",
         "payer_account_id": "0.0.2001",
         "spender": "0.0.3001",
@@ -99,7 +99,7 @@
         }
       },
       {
-        "amount": "33",
+        "amount": 33,
         "owner": "0.0.1001",
         "payer_account_id": "0.0.1001",
         "spender": "0.0.2001",

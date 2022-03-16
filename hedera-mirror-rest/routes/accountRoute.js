@@ -22,13 +22,13 @@
 
 // external libraries
 const {Router} = require('@awaitjs/express');
-const {AccountController} = require('../controllers');
+const {AccountController, AllowanceController} = require('../controllers');
 
 const router = Router();
 
 const resource = 'accounts';
 router.getAsync('/:accountAliasOrAccountId/nfts', AccountController.getNftsByAccountId);
-router.getAsync('/:accountAliasOrAccountId/allowances/crypto', AccountController.getAccountCryptoAllowances);
+router.getAsync('/:accountAliasOrAccountId/allowances/crypto', AllowanceController.getAccountCryptoAllowances);
 
 module.exports = {
   resource,

@@ -62,7 +62,7 @@
   "responseJson": {
     "allowances": [
       {
-        "amount": "33",
+        "amount": 33,
         "owner": "0.0.1001",
         "payer_account_id": "0.0.1001",
         "spender": "0.0.2001",
@@ -72,7 +72,7 @@
         }
       },
       {
-        "amount": "44",
+        "amount": 44,
         "owner": "0.0.1001",
         "payer_account_id": "0.0.2001",
         "spender": "0.0.3001",

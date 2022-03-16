@@ -22,19 +22,17 @@
 
 const _ = require('lodash');
 
-const AccountAlias = require('../accountAlias');
 const {
   response: {
     limit: {default: defaultLimit},
   },
 } = require('../config');
 const constants = require('../constants');
-const EntityId = require('../entityId');
 const utils = require('../utils');
 
-const {CryptoAllowance, Nft} = require('../model');
-const {CryptoAllowanceService, EntityService, NftService} = require('../service');
-const {CryptoAllowanceViewModel, NftViewModel} = require('../viewmodel');
+const {Nft} = require('../model');
+const {EntityService, NftService} = require('../service');
+const {NftViewModel} = require('../viewmodel');
 
 // errors
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
@@ -119,7 +117,7 @@ const cacheAndUpdateFilter = (cachedFilter, filter, newOperator = null) => {
 };
 
 const validateSupportedOperator = (operator) => {
-  if (constants.queryParamOperatorPatterns.ne.test(operator)) {
+  if (utils.isRegexMatch(constants.queryParamOperatorPatterns.ne, operator)) {
     throw new InvalidArgumentError(`Not equals (ne) comparison operator is not supported`);
   }
 };
@@ -167,18 +165,18 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
 
     switch (filter.key) {
       case constants.filterKeys.SERIAL_NUMBER:
-        if (constants.queryParamOperatorPatterns.ltorlte.test(filter.operator)) {
+        if (utils.isRegexMatch(constants.queryParamOperatorPatterns.ltorlte, filter.operator)) {
           cacheAndUpdateFilter(upperSerialNumberBound, filter);
           noFilterQuery = false;
-        } else if (constants.queryParamOperatorPatterns.gtorgte.test(filter.operator)) {
+        } else if (utils.isRegexMatch(constants.queryParamOperatorPatterns.gtorgte, filter.operator)) {
           cacheAndUpdateFilter(lowerSerialNumberBound, filter);
           noFilterQuery = false;
         }
         hasSerialNumber = true;
         break;
       case constants.filterKeys.TOKEN_ID:
-        if (constants.queryParamOperatorPatterns.ltorlte.test(filter.operator)) {
-          if (constants.queryParamOperatorPatterns.lte.test(filter.operator)) {
+        if (utils.isRegexMatch(constants.queryParamOperatorPatterns.ltorlte, filter.operator)) {
+          if (utils.isRegexMatch(constants.queryParamOperatorPatterns.lte, filter.operator)) {
             // cache filter as an upper token bound for equality case
             cacheAndUpdateFilter(upperTokenIdBound, filter, utils.opsMap.eq);
           }
@@ -186,8 +184,8 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
           // cache filter as an upper token bound for less than case
           cacheAndUpdateFilter(inclusiveUpperTokenIdBound, filter, utils.opsMap.lt);
           noFilterQuery = false;
-        } else if (constants.queryParamOperatorPatterns.gtorgte.test(filter.operator)) {
-          if (constants.queryParamOperatorPatterns.gte.test(filter.operator)) {
+        } else if (utils.isRegexMatch(constants.queryParamOperatorPatterns.gtorgte, filter.operator)) {
+          if (utils.isRegexMatch(constants.queryParamOperatorPatterns.gte, filter.operator)) {
             // cache filter as an lower token bound for equality case
             cacheAndUpdateFilter(lowerTokenIdBound, filter, utils.opsMap.eq);
           }
@@ -287,33 +285,6 @@ const validateSingleFilterKeyOccurence = (filterMap, filter) => {
 };
 
 /**
- * Retrive and validate the accountIdOrAlias query param string
- * @param {String} accountIdString accountIdOrAlias query string
- * @returns {EntityId} entityId
- */
-const getAndValidateAccountIdRequestPathParam = async (accountIdString) => {
-  let accountIdOrAlias = null;
-  if (EntityId.isValidEntityId(accountIdString)) {
-    accountIdOrAlias = accountIdString;
-  } else if (AccountAlias.isValid(accountIdString)) {
-    try {
-      accountIdOrAlias = await EntityService.getAccountIdFromAlias(AccountAlias.fromString(accountIdString));
-    } catch (err) {
-      if (err instanceof InvalidArgumentError) {
-        throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID_OR_ALIAS);
-      }
-
-      // rethrow any other error
-      throw err;
-    }
-  } else {
-    throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID_OR_ALIAS);
-  }
-
-  return EntityId.parse(accountIdOrAlias, constants.filterKeys.ACCOUNT_ID).getEncodedId();
-};
-
-/**
  * Handler function for /accounts/:accountAliasOrAccountId/nfts API
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
@@ -321,7 +292,17 @@ const getAndValidateAccountIdRequestPathParam = async (accountIdString) => {
  */
 const getNftsByAccountId = async (req, res) => {
   // extract filters from query param
-  const accountId = await getAndValidateAccountIdRequestPathParam(req.params.accountAliasOrAccountId);
+  let accountId = null;
+  try {
+    accountId = await EntityService.getEncodedIdOfValidatedEntityId(req.params.accountAliasOrAccountId);
+  } catch (err) {
+    if (err instanceof InvalidArgumentError) {
+      throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID_OR_ALIAS);
+    }
+
+    // rethrow any other error
+    throw err;
+  }
 
   // extract filters from query param
   const filters = utils.buildAndValidateFilters(req.query);
@@ -351,95 +332,7 @@ const getNftsByAccountId = async (req, res) => {
   res.locals[constants.responseDataLabel] = response;
 };
 
-/**
- * Extracts SQL where conditions, params, order, and limit
- *
- * @param {[]} filters parsed and validated filters
- * @param {Number} accountId parsed accountId from path
- * @param {Number} startPosition param index start position
- */
-const extractCryptoAllowancesQuery = (filters, accountId, startPosition = 1) => {
-  let limit = defaultLimit;
-  let order = constants.orderFilterValues.DESC;
-  const conditions = [`${CryptoAllowance.OWNER} = $${startPosition}`];
-  const params = [accountId];
-
-  for (const filter of filters) {
-    if (_.isNil(filter)) {
-      continue;
-    }
-
-    switch (filter.key) {
-      case constants.filterKeys.SPENDER_ID:
-        updateConditionsAndParamsWithValues(
-          filter,
-          params,
-          conditions,
-          CryptoAllowance.SPENDER,
-          startPosition + conditions.length
-        );
-        break;
-      case constants.filterKeys.LIMIT:
-        limit = filter.value;
-        break;
-      case constants.filterKeys.ORDER:
-        order = filter.value;
-        break;
-      default:
-        break;
-    }
-  }
-
-  return {
-    conditions,
-    params,
-    order,
-    limit,
-  };
-};
-
-/**
- * Handler function for /accounts/:accountAliasOrAccountId/allowances/crypto API
- * @param {Request} req HTTP request object
- * @param {Response} res HTTP response object
- * @returns {Promise<void>}
- */
-const getAccountCryptoAllowances = async (req, res) => {
-  // extract filters from query param
-  const accountId = await getAndValidateAccountIdRequestPathParam(req.params.accountAliasOrAccountId);
-
-  // extract filters from query param
-  const filters = utils.buildAndValidateFilters(req.query);
-
-  const {conditions, params, order, limit} = extractCryptoAllowancesQuery(filters, accountId);
-  const allowances = await CryptoAllowanceService.getAccountCrytoAllowances(conditions, params, order, limit);
-
-  const response = {
-    allowances: allowances.map((allowance) => new CryptoAllowanceViewModel(allowance)),
-    links: {
-      next: null,
-    },
-  };
-
-  if (!_.isEmpty(response.allowances) && response.allowances.length === limit) {
-    // skip limit on single account and spender combo with eq operator
-    const spenderFilter = filters.filter((x) => x.key === constants.filterKeys.SPENDER_ID);
-    const skipNext =
-      spenderFilter.length === 1 && constants.queryParamOperatorPatterns.eq.test(spenderFilter[0].operator);
-    if (!skipNext) {
-      const lastRow = _.last(response.allowances);
-      const last = {
-        [constants.filterKeys.SPENDER_ID]: lastRow.spender,
-      };
-      response.links.next = utils.getPaginationLink(req, response.allowances.length !== limit, last, order);
-    }
-  }
-
-  res.locals[constants.responseDataLabel] = response;
-};
-
 module.exports = {
-  getAccountCryptoAllowances,
   getNftsByAccountId,
 };
 
@@ -447,8 +340,6 @@ if (utils.isTestEnv()) {
   Object.assign(module.exports, {
     extractNftsQuery,
     extractNftMultiUnionQuery,
-    getAndValidateAccountIdRequestPathParam,
-    extractCryptoAllowancesQuery,
     getFilterKeyOpString,
     validateSingleFilterKeyOccurence,
   });

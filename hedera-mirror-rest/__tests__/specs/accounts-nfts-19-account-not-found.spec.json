@@ -1,16 +1,7 @@
 {
-  "description": "Account NFT api call for all tokens with no match",
+  "description": "Account NFT api call for all tokens",
   "setup": {
     "entities": [
-      {
-        "num": 1001
-      },
-      {
-        "num": 2001
-      },
-      {
-        "num": 3001
-      },
       {
         "num": 1500,
         "type": "TOKEN"
@@ -68,16 +59,15 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/0.0.3001/nfts",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=1",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=5"
-  ],
-  "responseStatus": 200,
+  "urls": ["/api/v1/accounts/1001/nfts", "/api/v1/accounts/0.1001/nfts", "/api/v1/accounts/0.0.1001/nfts"],
+  "responseStatus": 404,
   "responseJson": {
-    "nfts": [],
-    "links": {
-      "next": null
+    "_status": {
+      "messages": [
+        {
+          "message": "No entity with a matching id found"
+        }
+      ]
     }
   }
 }

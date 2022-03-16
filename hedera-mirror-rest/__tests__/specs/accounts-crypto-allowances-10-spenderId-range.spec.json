@@ -1,5 +1,5 @@
 {
-  "description": "Account api call for all crypto allowances using all possible params",
+  "description": "Account api call for all crypto allowances for a spender range",
   "setup": {
     "accounts": [
       {
@@ -57,23 +57,21 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/1001/allowances/crypto?spender.id=5001&limit=1&order=asc",
-  "responseStatus": 200,
+  "urls": [
+    "/api/v1/accounts/1001/allowances/crypto?spender.id=ne:5001",
+    "/api/v1/accounts/0.1001/allowances/crypto?spender.id=gt:0.5001",
+    "/api/v1/accounts/0.0.1001/allowances/crypto?spender.id=gte:0.0.5001",
+    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/crypto?spender.id=lt:5001",
+    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/crypto?spender.id=lte:5001"
+  ],
+  "responseStatus": 400,
   "responseJson": {
-    "allowances": [
-      {
-        "amount": 77,
-        "owner": "0.0.1001",
-        "payer_account_id": "0.0.2001",
-        "spender": "0.0.5001",
-        "timestamp": {
-          "from": "1234567890.000000005",
-          "to": null
+    "_status": {
+      "messages": [
+        {
+          "message": "Only equals (eq) comparison operator is supported for spender.id"
         }
-      }
-    ],
-    "links": {
-      "next": null
+      ]
     }
   }
 }

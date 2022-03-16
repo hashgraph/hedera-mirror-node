@@ -33,7 +33,7 @@ class CryptoAllowanceViewModel {
    * @param {CryptoAllowance} cryptoAllowance
    */
   constructor(cryptoAllowance) {
-    this.amount = cryptoAllowance.amount;
+    this.amount = Number(cryptoAllowance.amount);
     this.owner = EntityId.parse(cryptoAllowance.owner).toString();
     this.payer_account_id = EntityId.parse(cryptoAllowance.payerAccountId).toString();
     this.spender = EntityId.parse(cryptoAllowance.spender).toString();

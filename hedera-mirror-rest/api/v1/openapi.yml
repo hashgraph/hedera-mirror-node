@@ -1326,9 +1326,8 @@ components:
       properties:
         amount:
           description: The amount of the spender's allowance in tinybars.
-          type: string
-          pattern: ^\d{1,19}$
-          example: "100"
+          type: integer
+          example: 100
         owner:
           $ref: '#/components/schemas/EntityId'
         payer_account_id:
@@ -2611,36 +2610,6 @@ components:
         idEqOperator:
           summary: Example of id equals operator
           value: eq:0.0.200
-        entityNumNeOperator:
-          summary: Example of entityNum not equals operator
-          value: ne:300
-        idNeOperator:
-          summary: Example of id not equals operator
-          value: ne:0.0.300
-        entityNumGtOperator:
-          summary: Example of entityNum greater than operator
-          value: gt:400
-        idGtOperator:
-          summary: Example of id greater than operator
-          value: gt:0.0.400
-        entityNumGteOperator:
-          summary: Example of entityNum greater than or equals operator
-          value: gte:500
-        idGteOperator:
-          summary: Example of id greater than or equals operator
-          value: gte:0.0.500
-        entityNumLtOperator:
-          summary: Example of entityNum less than operator
-          value: lt:600
-        idLtOperator:
-          summary: Example of id less than operator
-          value: lt:0.0.600
-        entityNumLteOperator:
-          summary: Example of entityNum less than or equals operator
-          value: lte:700
-        idLteOperator:
-          summary: Example of id less than or equals operator
-          value: lte:0.0.700
       schema:
         $ref: '#/components/schemas/EntityIdQuery'
     transactionTypeQueryParam:

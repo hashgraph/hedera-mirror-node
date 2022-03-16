@@ -1,7 +1,11 @@
 {
   "description": "Account NFT api call for tokens with invalid param values",
   "setup": {
-    "entities": [],
+    "entities": [
+      {
+        "num": 1001
+      }
+    ],
     "tokens": [],
     "balances": [],
     "transactions": [],

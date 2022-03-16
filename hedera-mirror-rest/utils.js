@@ -1128,6 +1128,10 @@ const checkTimestampRange = (timestampFilters) => {
   }
 };
 
+const isRegexMatch = (regex, value) => {
+  return regex.test(value.trim());
+};
+
 module.exports = {
   addHexPrefix,
   buildAndValidateFilters,
@@ -1149,6 +1153,7 @@ module.exports = {
   isRepeatedQueryParameterValidLength,
   isTestEnv,
   isPositiveLong,
+  isRegexMatch,
   isValidPublicKeyQuery,
   isValidOperatorQuery,
   isValidValueIgnoreCase,
