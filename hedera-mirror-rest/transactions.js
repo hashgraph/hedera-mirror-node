@@ -661,7 +661,7 @@ const extractSqlFromTransactionsByIdRequest = (transactionIdStr, filters) => {
  * @return {} None.
  */
 const getTransactionsById = async (req, res) => {
-  const filters = utils.buildAndValidateFilters(req.query);
+  const filters = await utils.buildAndValidateFilters(req.query);
   const {query, params} = extractSqlFromTransactionsByIdRequest(req.params.transactionId, filters);
   if (logger.isTraceEnabled()) {
     logger.trace(`getTransactionsById query: ${query} ${JSON.stringify(params)}`);

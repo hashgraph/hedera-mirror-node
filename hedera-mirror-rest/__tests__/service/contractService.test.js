@@ -850,6 +850,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
       },
     ]);
 
-    expect(await ContractService.getContractIdByEvmAddress(evmAddress)).toEqual('111169');
+    const contractId = await ContractService.getContractIdByEvmAddress(evmAddress);
+    expect(contractId.toString()).toEqual('111169');
   });
 });

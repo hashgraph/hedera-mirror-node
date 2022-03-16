@@ -324,7 +324,7 @@ const getNftsByAccountId = async (req, res) => {
   const accountId = await getAndValidateAccountIdRequestPathParam(req.params.accountAliasOrAccountId);
 
   // extract filters from query param
-  const filters = utils.buildAndValidateFilters(req.query);
+  const filters = await utils.buildAndValidateFilters(req.query);
 
   // build multi union query and request applicable rows
   const {lower, inner, upper, order, limit} = extractNftMultiUnionQuery(filters, accountId);

@@ -32,6 +32,7 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const config = require('./config');
 const ed25519 = require('./ed25519');
+const {ContractService} = require('./service');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
@@ -184,7 +185,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidBooleanOpAndValue(op, val);
       break;
     case constants.filterKeys.CONTRACT_ID:
-      ret = EntityId.isValidEntityId(val);
+      ret = isValidContractIdQueryParam(op, val);
       break;
     case constants.filterKeys.CREDIT_TYPE:
       // Acceptable words: credit or debit
@@ -254,6 +255,13 @@ const filterValidityChecks = (param, op, val) => {
   }
 
   return ret;
+};
+
+const isValidContractIdQueryParam = (op, val) => {
+  if (EntityId.isValidEvmAddress(val)) {
+    return op === constants.queryParamOperators.eq;
+  }
+  return EntityId.isValidEntityId(val);
 };
 
 /**
@@ -819,9 +827,9 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
  * @param {function(string, string, string)} filterValidator
  * @return {[]}
  */
-const buildAndValidateFilters = (query, filterValidator = filterValidityChecks) => {
+const buildAndValidateFilters = async (query, filterValidator = filterValidityChecks) => {
   const filters = buildFilters(query);
-  validateAndParseFilters(filters, filterValidator);
+  await validateAndParseFilters(filters, filterValidator);
   return filters;
 };
 
@@ -887,9 +895,9 @@ const validateFilters = (filters, filterValidator) => {
  * @param filters
  * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
  */
-const formatFilters = (filters) => {
+const formatFilters = async (filters) => {
   for (const filter of filters) {
-    formatComparator(filter);
+    await formatComparator(filter);
   }
 };
 
@@ -901,12 +909,12 @@ const formatFilters = (filters) => {
  * @param filterValidator
  * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
  */
-const validateAndParseFilters = (filters, filterValidator) => {
+const validateAndParseFilters = async (filters, filterValidator) => {
   validateFilters(filters, filterValidator);
-  formatFilters(filters);
+  await formatFilters(filters);
 };
 
-const formatComparator = (comparator) => {
+const formatComparator = async (comparator) => {
   if (comparator.operator in opsMap) {
     // update operator
     comparator.operator = opsMap[comparator.operator];
@@ -921,7 +929,12 @@ const formatComparator = (comparator) => {
         comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.CONTRACT_ID:
-        comparator.value = EntityId.parse(comparator.value).getEncodedId();
+        comparator.value = (
+          await ContractService.computeContractIdFromEvmAddress({
+            contractIdValue: comparator.value,
+            avoidEvmAddress: true,
+          })
+        ).value;
         break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);

@@ -24,6 +24,8 @@ const _ = require('lodash');
 
 const BaseService = require('./baseService');
 const Contract = require('../model/contract');
+const EntityId = require('../entityId');
+const constants = require('../constants');
 const {of: createEntityId} = require('../entityId');
 const {NotFoundError} = require('../errors/notFoundError');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
@@ -234,8 +236,26 @@ class ContractService extends BaseService {
     return BigInt(contractId.id);
   }
 
-  isValidCreate2Id(id) {
-    return CREATE_2_ID.test(id);
+  async computeContractIdFromEvmAddress({contractIdValue, avoidEvmAddress = true}) {
+    if (EntityId.isValidEvmAddress(contractIdValue)) {
+      const evmAddress = Buffer.from(_.last(contractIdValue.split('.')), 'hex');
+      if (avoidEvmAddress) {
+        // query the database to get the contract id
+        return {
+          columnName: Contract.ID,
+          value: await this.getContractIdByEvmAddress(evmAddress),
+        };
+      }
+      return {
+        columnName: Contract.EVM_ADDRESS,
+        value: evmAddress,
+      };
+    }
+
+    return {
+      columnName: Contract.ID,
+      value: EntityId.parse(contractIdValue, constants.filterKeys.CONTRACTID).getEncodedId(),
+    };
   }
 }
 
