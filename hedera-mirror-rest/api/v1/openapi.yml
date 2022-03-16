@@ -107,7 +107,7 @@ paths:
     get:
       summary: Get crypto allowances for an account info
       description: Returns information for all crypto allowances for an account.
-      operationId: listNftCryptoAllowancesByAccountId
+      operationId: listCryptoAllowancesByAccountId
       parameters:
         - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
         - $ref: '#/components/parameters/spenderIdQueryParam'

@@ -117,23 +117,22 @@ class EntityService extends BaseService {
    * @returns {Promise} entityId
    */
   async getEncodedIdOfValidatedEntityId(accountIdString) {
-    let entity = null;
+    let entityId = null;
     if (EntityId.isValidEntityId(accountIdString)) {
-      entity = EntityId.parse(accountIdString, constants.filterKeys.ACCOUNT_ID).getEncodedId();
+      entityId = EntityId.parse(accountIdString, constants.filterKeys.ACCOUNT_ID).getEncodedId();
 
       // check if account exists
-      const isValidEntity = await this.isValidAccount(entity);
+      const isValidEntity = await this.isValidAccount(entityId);
       if (!isValidEntity) {
         throw new NotFoundError(EntityService.missingEntityIdMessage);
       }
     } else if (AccountAlias.isValid(accountIdString)) {
-      const alias = await this.getAccountIdFromAlias(AccountAlias.fromString(accountIdString));
-      entity = EntityId.parse(alias, constants.filterKeys.ACCOUNT_ID).getEncodedId();
+      entityId = await this.getAccountIdFromAlias(AccountAlias.fromString(accountIdString));
     } else {
       throw new InvalidArgumentError(EntityService.invalidEntityIdMessage);
     }
 
-    return entity;
+    return entityId;
   }
 }
 

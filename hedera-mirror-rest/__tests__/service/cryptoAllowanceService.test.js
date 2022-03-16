@@ -110,7 +110,7 @@ const defaultExpectedCryptoAllowance = [
 describe('CryptoAllowanceService.getAccountCrytoAllownces tests', () => {
   test('CryptoAllowanceService.getAccountCrytoAllownces - No match', async () => {
     await expect(
-      CryptoAllowanceService.getAccountCrytoAllowances([defaultOwnerFilter], [2], 'asc', 5)
+      CryptoAllowanceService.getAccountCryptoAllowances([defaultOwnerFilter], [2], 'asc', 5)
     ).resolves.toStrictEqual([]);
   });
 
@@ -118,7 +118,7 @@ describe('CryptoAllowanceService.getAccountCrytoAllownces tests', () => {
     await integrationDomainOps.loadCryptoAllowances(defaultInputCryptoAllowance);
 
     await expect(
-      CryptoAllowanceService.getAccountCrytoAllowances([defaultOwnerFilter], [2000], 'asc', 5)
+      CryptoAllowanceService.getAccountCryptoAllowances([defaultOwnerFilter], [2000], 'asc', 5)
     ).resolves.toMatchObject(defaultExpectedCryptoAllowance);
   });
 
@@ -172,7 +172,7 @@ describe('CryptoAllowanceService.getAccountCrytoAllownces tests', () => {
     await integrationDomainOps.loadCryptoAllowances(inputCryptoAllowance);
 
     await expect(
-      CryptoAllowanceService.getAccountCrytoAllowances([defaultOwnerFilter, 'spender > $2'], [2000, 4001], 'asc', 5)
+      CryptoAllowanceService.getAccountCryptoAllowances([defaultOwnerFilter, 'spender > $2'], [2000, 4001], 'asc', 5)
     ).resolves.toMatchObject(expectedCryptoAllowance);
   });
 
@@ -180,7 +180,7 @@ describe('CryptoAllowanceService.getAccountCrytoAllownces tests', () => {
     await integrationDomainOps.loadCryptoAllowances(inputCryptoAllowance);
 
     await expect(
-      CryptoAllowanceService.getAccountCrytoAllowances(
+      CryptoAllowanceService.getAccountCryptoAllowances(
         [defaultOwnerFilter, 'spender in ($2, $3)'],
         [2000, 4002, 4003],
         'asc',

@@ -117,7 +117,7 @@ const cacheAndUpdateFilter = (cachedFilter, filter, newOperator = null) => {
 };
 
 const validateSupportedOperator = (operator) => {
-  if (utils.isRegexMatch(constants.queryParamOperatorPatterns.ne, operator)) {
+  if (utils.opsMap.ne === operator) {
     throw new InvalidArgumentError(`Not equals (ne) comparison operator is not supported`);
   }
 };
@@ -176,7 +176,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
         break;
       case constants.filterKeys.TOKEN_ID:
         if (utils.isRegexMatch(constants.queryParamOperatorPatterns.ltorlte, filter.operator)) {
-          if (utils.isRegexMatch(constants.queryParamOperatorPatterns.lte, filter.operator)) {
+          if (utils.opsMap.lte === filter.operator) {
             // cache filter as an upper token bound for equality case
             cacheAndUpdateFilter(upperTokenIdBound, filter, utils.opsMap.eq);
           }
@@ -185,7 +185,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
           cacheAndUpdateFilter(inclusiveUpperTokenIdBound, filter, utils.opsMap.lt);
           noFilterQuery = false;
         } else if (utils.isRegexMatch(constants.queryParamOperatorPatterns.gtorgte, filter.operator)) {
-          if (utils.isRegexMatch(constants.queryParamOperatorPatterns.gte, filter.operator)) {
+          if (utils.opsMap.gte === filter.operator) {
             // cache filter as an lower token bound for equality case
             cacheAndUpdateFilter(lowerTokenIdBound, filter, utils.opsMap.eq);
           }

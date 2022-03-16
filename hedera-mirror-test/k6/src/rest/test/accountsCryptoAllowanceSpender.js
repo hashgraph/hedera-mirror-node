@@ -21,8 +21,8 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {resultListName, urlPrefix} from '../../lib/constants.js';
-import {isValidListResponse} from "./common.js";
+import {urlPrefix} from '../../lib/constants.js';
+import {isSuccess} from "./common.js";
 import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
 const urlTag = '/accounts/{id}/allowances/crypto';
@@ -34,7 +34,7 @@ const {options, run} = new TestScenarioBuilder()
     const url = `${testParameters['BASE_URL']}${urlPrefix}/accounts/${testParameters['DEFAULT_ACCOUNT_ID']}/allowances/crypto?spender.id=98`;
     return http.get(url);
   })
-  .check('Account crypto allowances for spender results OK', (r) => isValidListResponse(r, resultListName))
+  .check('Account crypto allowances for spender results OK', (r) => isSuccess(r))
   .build();
 
 export {options, run};

@@ -37,7 +37,7 @@ class CryptoAllowanceService extends BaseService {
     ${CryptoAllowance.TIMESTAMP_RANGE}
     from ${CryptoAllowance.tableName}`;
 
-  async getAccountCrytoAllowances(conditions, initParams, order, limit) {
+  async getAccountCryptoAllowances(conditions, initParams, order, limit) {
     const [query, params] = this.getAccountCryptoAllowancesWithFiltersQuery(conditions, initParams, order, limit);
 
     const rows = await super.getRows(query, params, 'getAccountCryptoAllowancesWithFilters');

@@ -61,7 +61,7 @@ class AllowanceController extends BaseController {
 
       switch (filter.key) {
         case constants.filterKeys.SPENDER_ID:
-          if (!utils.isRegexMatch(constants.queryParamOperatorPatterns.eq, filter.operator)) {
+          if (utils.opsMap.eq !== filter.operator) {
             throw new InvalidArgumentError(
               `Only equals (eq) comparison operator is supported for ${constants.filterKeys.SPENDER_ID}`
             );
@@ -120,7 +120,7 @@ class AllowanceController extends BaseController {
     const filters = utils.buildAndValidateFilters(req.query);
 
     const {conditions, params, order, limit} = this.extractCryptoAllowancesQuery(filters, accountId);
-    const allowances = await CryptoAllowanceService.getAccountCrytoAllowances(conditions, params, order, limit);
+    const allowances = await CryptoAllowanceService.getAccountCryptoAllowances(conditions, params, order, limit);
 
     const response = {
       allowances: allowances.map((allowance) => new CryptoAllowanceViewModel(allowance)),
@@ -129,12 +129,10 @@ class AllowanceController extends BaseController {
       },
     };
 
-    if (!_.isEmpty(response.allowances) && response.allowances.length === limit) {
+    if (response.allowances.length === limit) {
       // skip limit on single account and spender combo with eq operator
       const spenderFilter = filters.filter((x) => x.key === constants.filterKeys.SPENDER_ID);
-      const skipNext =
-        spenderFilter.length === 1 &&
-        utils.isRegexMatch(constants.queryParamOperatorPatterns.eq, spenderFilter[0].operator);
+      const skipNext = spenderFilter.length === 1 && utils.opsMap.eq === spenderFilter[0].operator;
       if (!skipNext) {
         const lastRow = _.last(response.allowances);
         const last = {
