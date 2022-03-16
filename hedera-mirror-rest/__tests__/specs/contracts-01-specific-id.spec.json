@@ -77,7 +77,9 @@
     "/api/v1/contracts/0.0.8001",
     "/api/v1/contracts/0.8001",
     "/api/v1/contracts/8001",
-    "/api/v1/contracts/62cf9068fed962cf9aaabbb962cf9068fed9dddd"
+    "/api/v1/contracts/62cf9068fed962cf9aaabbb962cf9068fed9dddd",
+    "/api/v1/contracts/0.62cf9068fed962cf9aaabbb962cf9068fed9dddd",
+    "/api/v1/contracts/0.0.62cf9068fed962cf9aaabbb962cf9068fed9dddd"
   ],
   "responseStatus": 200,
   "responseJson": {
