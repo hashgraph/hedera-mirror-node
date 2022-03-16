@@ -102,6 +102,14 @@ describe('Load environment configuration:', () => {
     expect(config.port).toBe(5552);
   });
 
+  test('Secret', () => {
+    const secret = 'secret';
+    process.env = {HEDERA_MIRROR_REST_DB_PASSWORD: secret, HEDERA_MIRROR_REST_DB_TLS_KEY: secret};
+    const config = require('../config');
+    expect(config.db.password).toBe(secret);
+    expect(config.db.tls.key).toBe(secret);
+  });
+
   test('String', () => {
     process.env = {HEDERA_MIRROR_REST_LOG_LEVEL: 'warn'};
     const config = require('../config');
