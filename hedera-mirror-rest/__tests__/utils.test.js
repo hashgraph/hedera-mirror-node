@@ -31,7 +31,7 @@ const {TransactionType} = require('../model');
 const {getLimitParamValue} = require('../utils');
 const {keyTypes} = require('../constants');
 
-const ecdsaKey = '0373fdbe80961726377aeeb927f1ad280e62af38839b10f547a57be2fb45af3129';
+const ecdsaKey = '02b5ffadf88d625cd9074fa01e5280b773a60ed2de55b0d6f94460c0b5a001a258';
 const ed25519Key = '7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
 const ed25519Der = `302a300506032b6570032100${ed25519Key}`;
 const responseLimit = config.response.limit;
@@ -138,12 +138,6 @@ describe('Utils encodeKey', () => {
     {
       name: 'ECDSA(secp256k1) primitive',
       input: `3a20${ecdsaKey}`,
-      output: ecdsaKey,
-      signatureType: keyTypes.ECDSA_SECP256K1,
-    },
-    {
-      name: 'ECDSA(secp256k1) primitive 2',
-      input: `3a21${ecdsaKey}`,
       output: ecdsaKey,
       signatureType: keyTypes.ECDSA_SECP256K1,
     },
