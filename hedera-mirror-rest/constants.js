@@ -45,6 +45,7 @@ const filterKeys = {
   SCHEDULE_ID: 'schedule.id',
   SEQUENCE_NUMBER: 'sequencenumber',
   SERIAL_NUMBER: 'serialnumber',
+  SPENDER_ID: 'spender.id',
   TIMESTAMP: 'timestamp',
   TOKENID: 'tokenid',
   TOKEN_ID: 'token.id',
@@ -173,13 +174,14 @@ const queryParamOperators = {
 };
 
 const queryParamOperatorPatterns = {
-  gt: />/,
-  gte: />=/,
-  gtorgte: />[=]?/,
-  lt: /</,
-  lte: /<=/,
-  ltorlte: /<[=]?/,
-  ne: /!=/,
+  gt: /^>$/,
+  gte: /^>=$/,
+  gtorgte: /^>[=]?$/,
+  eq: /^=$/,
+  lt: /^<$/,
+  lte: /^<=$/,
+  ltorlte: /^<[=]?$/,
+  ne: /^!=$/,
 };
 
 module.exports = {

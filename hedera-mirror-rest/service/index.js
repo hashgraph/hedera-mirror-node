@@ -22,6 +22,7 @@
 
 module.exports = {
   ContractService: require('./contractService'),
+  CryptoAllowanceService: require('./cryptoAllowanceService'),
   EntityService: require('./entityService'),
   NftService: require('./nftService'),
   RecordFileService: require('./recordFileService'),

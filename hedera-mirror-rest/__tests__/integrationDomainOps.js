@@ -48,6 +48,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadContractLogs(testDataJson.contractlogs);
   await loadContractResults(testDataJson.contractresults);
   await loadContractStateChanges(testDataJson.contractStateChanges);
+  await loadCryptoAllowances(testDataJson.cryptoAllowances);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
   await loadFileData(testDataJson.filedata);
@@ -128,6 +129,16 @@ const loadContractStateChanges = async (contractStateChanges) => {
 
   for (const contractStateChange of contractStateChanges) {
     await addContractStateChange(contractStateChange);
+  }
+};
+
+const loadCryptoAllowances = async (cryptoAllowances) => {
+  if (cryptoAllowances == null) {
+    return;
+  }
+
+  for (const cryptoAllowance of cryptoAllowances) {
+    await addCryptoAllowance(cryptoAllowance);
   }
 };
 
@@ -726,6 +737,22 @@ const addContractStateChange = async (contractStateChangeInput) => {
   await insertDomainObject('contract_state_change', insertFields, contractStateChange);
 };
 
+const addCryptoAllowance = async (cryptoAllowanceInput) => {
+  const insertFields = ['amount', 'owner', 'payer_account_id', 'spender', 'timestamp_range'];
+
+  const cryptoAllowance = {
+    amount: 0,
+    owner: 1000,
+    payer_account_id: 101,
+    spender: 2000,
+    timestamp_range: '[0,)',
+    ...cryptoAllowanceInput,
+  };
+
+  const table = cryptoAllowance.timestamp_range.endsWith(',)') ? 'crypto_allowance' : 'crypto_allowance_history';
+  await insertDomainObject(table, insertFields, cryptoAllowance);
+};
+
 const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
@@ -1032,6 +1059,8 @@ const insertDomainObject = async (table, fields, obj) => {
     `INSERT INTO ${table} (${fields}) VALUES (${positions});`,
     fields.map((f) => obj[f])
   );
+
+  logger.trace(`Inserted row to ${table}`);
 };
 
 module.exports = {
@@ -1040,6 +1069,7 @@ module.exports = {
   addNft,
   addToken,
   loadContractResults,
+  loadCryptoAllowances,
   loadEntities,
   loadRecordFiles,
   loadTransactions,

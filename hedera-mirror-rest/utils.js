@@ -223,6 +223,9 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.SERIAL_NUMBER:
       ret = isPositiveLong(val);
       break;
+    case constants.filterKeys.SPENDER_ID:
+      ret = EntityId.isValidEntityId(val);
+      break;
     case constants.filterKeys.TOKEN_ID:
       ret = EntityId.isValidEntityId(val);
       break;
@@ -942,6 +945,10 @@ const formatComparator = (comparator) => {
         // Accepted forms: shard.realm.num or num
         comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
+      case constants.filterKeys.SPENDER_ID:
+        // Accepted forms: shard.realm.num or num
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
+        break;
       case constants.filterKeys.TIMESTAMP:
         comparator.value = parseTimestampParam(comparator.value);
         break;
@@ -1121,6 +1128,10 @@ const checkTimestampRange = (timestampFilters) => {
   }
 };
 
+const isRegexMatch = (regex, value) => {
+  return regex.test(value.trim());
+};
+
 module.exports = {
   addHexPrefix,
   buildAndValidateFilters,
@@ -1142,6 +1153,7 @@ module.exports = {
   isRepeatedQueryParameterValidLength,
   isTestEnv,
   isPositiveLong,
+  isRegexMatch,
   isValidPublicKeyQuery,
   isValidOperatorQuery,
   isValidValueIgnoreCase,

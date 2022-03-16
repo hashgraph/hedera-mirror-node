@@ -1,0 +1,89 @@
+{
+  "description": "Account api call for all crypto allowances with limit and order",
+  "setup": {
+    "accounts": [
+      {
+        "num": 1001,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
+      },
+      {
+        "num": 2001
+      },
+      {
+        "num": 3001
+      },
+      {
+        "num": 4001
+      },
+      {
+        "num": 5001
+      }
+    ],
+    "cryptoAllowances": [
+      {
+        "amount": 33,
+        "owner": 1001,
+        "payer_account_id": 1001,
+        "spender": 2001,
+        "timestamp_range": "[1234567890000000001,)"
+      },
+      {
+        "amount": 44,
+        "owner": 1001,
+        "payer_account_id": 2001,
+        "spender": 3001,
+        "timestamp_range": "[1234567890000000002,)"
+      },
+      {
+        "amount": 55,
+        "owner": 2001,
+        "payer_account_id": 2001,
+        "spender": 3001,
+        "timestamp_range": "[1234567890000000003,)"
+      },
+      {
+        "amount": 66,
+        "owner": 1001,
+        "payer_account_id": 2001,
+        "spender": 4001,
+        "timestamp_range": "[1234567890000000004,)"
+      },
+      {
+        "amount": 77,
+        "owner": 1001,
+        "payer_account_id": 2001,
+        "spender": 5001,
+        "timestamp_range": "[1234567890000000005,)"
+      }
+    ]
+  },
+  "url": "/api/v1/accounts/1001/allowances/crypto?limit=2&order=asc",
+  "responseStatus": 200,
+  "responseJson": {
+    "allowances": [
+      {
+        "amount": 33,
+        "owner": "0.0.1001",
+        "payer_account_id": "0.0.1001",
+        "spender": "0.0.2001",
+        "timestamp": {
+          "from": "1234567890.000000001",
+          "to": null
+        }
+      },
+      {
+        "amount": 44,
+        "owner": "0.0.1001",
+        "payer_account_id": "0.0.2001",
+        "spender": "0.0.3001",
+        "timestamp": {
+          "from": "1234567890.000000002",
+          "to": null
+        }
+      }
+    ],
+    "links": {
+      "next": "/api/v1/accounts/1001/allowances/crypto?limit=2&order=asc&spender.id=gt:0.0.3001"
+    }
+  }
+}
