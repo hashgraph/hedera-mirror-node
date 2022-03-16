@@ -130,10 +130,9 @@ class AllowanceController extends BaseController {
     };
 
     if (response.allowances.length === limit) {
-      // skip limit on single account and spender combo with eq operator
+      // skip limit on single account and spender combo. Doesn't check for operator since only eq is supported
       const spenderFilter = filters.filter((x) => x.key === constants.filterKeys.SPENDER_ID);
-      const skipNext = spenderFilter.length === 1 && utils.opsMap.eq === spenderFilter[0].operator;
-      if (!skipNext) {
+      if (spenderFilter.length !== 1) {
         const lastRow = _.last(response.allowances);
         const last = {
           [constants.filterKeys.SPENDER_ID]: lastRow.spender,
