@@ -399,7 +399,7 @@ const getAndValidateContractIdRequestPathParam = async (req) => {
  */
 const validateContractIdAndConsensusTimestampParam = (consensusTimestamp, contractId) => {
   const params = [];
-  if (!EntityId.isValidEntityId(contractId) && !ContractService.isValidCreate2Id(contractId)) {
+  if (!EntityId.isValidEntityId(contractId) && !EntityId.isValidEvmAddress(contractId)) {
     params.push(constants.filterKeys.CONTRACTID);
   }
   if (!utils.isValidTimestampParam(consensusTimestamp)) {
@@ -677,9 +677,9 @@ const getContractResultsByTransactionId = async (req, res) => {
   }
 };
 
-const computeContractIdFromContractIdValue = async ({contractIdValue, avoidEvmAddress}) => {
-  if (ContractService.isValidCreate2Id(contractIdValue)) {
-    const evmAddress = Buffer.from(contractIdValue.replace('0x', ''), 'hex');
+const computeContractIdFromEvmAddress = async ({contractIdValue, avoidEvmAddress}) => {
+  if (EntityId.isValidEvmAddress(contractIdValue)) {
+    const evmAddress = Buffer.from(_.last(contractIdValue.split('.')), 'hex');
     if (avoidEvmAddress) {
       // query the database to get the contract id
       return {
@@ -701,7 +701,7 @@ const computeContractIdFromContractIdValue = async ({contractIdValue, avoidEvmAd
 
 const computeContractIdFromContractIdPathParam = async ({req, avoidEvmAddress = true}) => {
   const contractIdValue = req.params.contractId;
-  return await computeContractIdFromContractIdValue({contractIdValue, avoidEvmAddress});
+  return await computeContractIdFromEvmAddress({contractIdValue, avoidEvmAddress});
 };
 
 const changeCreate2IdQueryParamToContractId = async ({req, avoidEvmAddress = true}) => {
@@ -709,11 +709,11 @@ const changeCreate2IdQueryParamToContractId = async ({req, avoidEvmAddress = tru
     return;
   }
   const contractIdValue = req.query[constants.filterKeys.CONTRACT_ID];
-  if (!ContractService.isValidCreate2Id(contractIdValue)) {
+  if (!EntityId.isValidEvmAddress(contractIdValue)) {
     return;
   }
 
-  const contractId = await computeContractIdFromContractIdValue({contractIdValue, avoidEvmAddress});
+  const contractId = await computeContractIdFromEvmAddress({contractIdValue, avoidEvmAddress});
   req.query[constants.filterKeys.CONTRACT_ID] = constants.queryParamOperators.eq + ':' + contractId.value;
 };
 

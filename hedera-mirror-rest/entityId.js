@@ -47,7 +47,7 @@ const maxEncodedId = 2n ** 63n - 1n;
 
 const entityIdRegex = /^(\d{1,5}\.){1,2}\d{1,10}$/;
 const encodedEntityIdRegex = /^\d{1,19}$/;
-const evmAddressRegex = /^(0x)?[A-Fa-f0-9]{40}$/;
+const evmAddressRegex = /^(\d{0,9}\.){0,2}[A-Fa-f0-9]{40}$/;
 
 class EntityId {
   constructor(shard, realm, num) {
@@ -92,7 +92,6 @@ const toHex = (num) => {
 };
 
 const isValidEvmAddress = (address) => {
-  // Accepted forms: 0x...
   return typeof address === 'string' && evmAddressRegex.test(address);
 };
 

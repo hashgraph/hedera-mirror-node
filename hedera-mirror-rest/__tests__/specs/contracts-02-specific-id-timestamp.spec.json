@@ -84,7 +84,7 @@
     "/api/v1/contracts/8001?timestamp=lt:987654.999123301",
     "/api/v1/contracts/8001?timestamp=gt:987654.999123299",
     "/api/v1/contracts/8001?timestamp=gte:987654.999123300",
-    "/api/v1/contracts/0xabbcccddddeeeeeefffffff000000068fed9dddd?timestamp=gte:987654.999123300"
+    "/api/v1/contracts/abbcccddddeeeeeefffffff000000068fed9dddd?timestamp=gte:987654.999123300"
   ],
   "responseStatus": 200,
   "responseJson": {

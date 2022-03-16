@@ -1,10 +1,7 @@
 {
   "description": "Contract api calls for specific contract id using invalid timestamp filter",
   "setup": {},
-  "urls": [
-    "/api/v1/contracts/6001?timestamp=a&timestamp=el:10&timestamp=-1",
-    "/api/v1/contracts/0x60f3f640a8508fc6a86d45df051962668e1e8ac7?timestamp=a&timestamp=el:10&timestamp=-1"
-  ],
+  "urls": ["/api/v1/contracts/6001?timestamp=a&timestamp=el:10&timestamp=-1"],
   "responseStatus": 400,
   "responseJson": {
     "_status": {

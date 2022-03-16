@@ -45,11 +45,11 @@
     "/api/v1/contracts/0.0.5001/results?timestamp=gt:200000.000123456&timestamp=lt:999999.000123456",
     "/api/v1/contracts/0.0.5001/results?timestamp=gte:987654.000123456&timestamp=lte:987654.000123456",
     "/api/v1/contracts/0.0.5001/results?timestamp=ne:187654.000123456",
-    "/api/v1/contracts/0x70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=987654.000123456",
-    "/api/v1/contracts/0x70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=eq:987654.000123456",
-    "/api/v1/contracts/0x70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=gt:200000.000123456&timestamp=lt:999999.000123456",
-    "/api/v1/contracts/0x70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=gte:987654.000123456&timestamp=lte:987654.000123456",
-    "/api/v1/contracts/0x70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=ne:187654.000123456"
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=987654.000123456",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=eq:987654.000123456",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=gt:200000.000123456&timestamp=lt:999999.000123456",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=gte:987654.000123456&timestamp=lte:987654.000123456",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=ne:187654.000123456"
   ],
   "responseStatus": 200,
   "responseJson": {

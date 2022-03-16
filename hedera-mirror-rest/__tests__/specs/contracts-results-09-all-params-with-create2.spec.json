@@ -61,7 +61,7 @@
     ]
   },
   "urls": [
-    "/api/v1/contracts/0x70f2b2914a2a4b783faefb75f459a580616fcb5e/results?from=8001&timestamp=gt:587654.000123456&limit=2&order=asc"
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?from=8001&timestamp=gt:587654.000123456&limit=2&order=asc"
   ],
   "responseStatus": 200,
   "responseJson": {
@@ -96,7 +96,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/contracts/0x70f2b2914a2a4b783faefb75f459a580616fcb5e/results?from=8001&limit=2&order=asc&timestamp=gt:887654.000123456"
+      "next": "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?from=8001&limit=2&order=asc&timestamp=gt:887654.000123456"
     }
   }
 }

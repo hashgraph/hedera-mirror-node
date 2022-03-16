@@ -51,7 +51,7 @@
     "/api/v1/contracts/0.0.1000/results/logs",
     "/api/v1/contracts/0.1000/results/logs",
     "/api/v1/contracts/1000/results/logs",
-    "/api/v1/contracts/0xabbcccddddeeeeeefffffff000000068fed9dddd/results/logs"
+    "/api/v1/contracts/abbcccddddeeeeeefffffff000000068fed9dddd/results/logs"
   ],
   "responseStatus": 200,
   "responseJson": {

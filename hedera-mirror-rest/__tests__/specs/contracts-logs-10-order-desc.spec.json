@@ -48,7 +48,7 @@
   },
   "urls": [
     "/api/v1/contracts/0.0.1000/results/logs?order=desc",
-    "/api/v1/contracts/0x60f3f640a8508fc6a86d45df051962668e1e8ac7/results/logs?order=desc"
+    "/api/v1/contracts/60f3f640a8508fc6a86d45df051962668e1e8ac7/results/logs?order=desc"
   ],
   "responseStatus": 200,
   "responseJson": {
