@@ -326,9 +326,8 @@ const getContractById = async (req, res) => {
 const getContracts = async (req, res) => {
   // if the query param for contract id has a create2 value, then it will be
   // replaced by a normal contract id.
-  logger.info('1: ' + JSON.stringify(req.query));
   await changeCreate2IdQueryParamToContractId({req});
-  logger.info('2: ' + req.query[constants.filterKeys.CONTRACT_ID]);
+
   utils.validateReq(req);
 
   // extract filters from query param
