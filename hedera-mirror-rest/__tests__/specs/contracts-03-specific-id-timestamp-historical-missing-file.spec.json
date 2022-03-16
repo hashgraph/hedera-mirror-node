@@ -60,13 +60,7 @@
     "/api/v1/contracts/8001?timestamp=lt:997654.000123457",
     "/api/v1/contracts/8001?timestamp=lt:997654.000123457&timestamp=gt:10",
     "/api/v1/contracts/8001?timestamp=ne:997654.000123460",
-    "/api/v1/contracts/8001?timestamp=ne:997654.000123460&timestamp=lte:997654.000123480",
-    "/api/v1/contracts/4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38?timestamp=997654.000123456",
-    "/api/v1/contracts/4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38?timestamp=lte:997654.000123456",
-    "/api/v1/contracts/4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38?timestamp=lt:997654.000123457",
-    "/api/v1/contracts/4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38?timestamp=lt:997654.000123457&timestamp=gt:10",
-    "/api/v1/contracts/4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38?timestamp=ne:997654.000123460",
-    "/api/v1/contracts/4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38?timestamp=ne:997654.000123460&timestamp=lte:997654.000123480"
+    "/api/v1/contracts/8001?timestamp=ne:997654.000123460&timestamp=lte:997654.000123480"
   ],
   "responseStatus": 200,
   "responseJson": {
