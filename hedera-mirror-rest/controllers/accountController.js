@@ -294,7 +294,7 @@ const getNftsByAccountId = async (req, res) => {
   // extract filters from query param
   let accountId = null;
   try {
-    accountId = await EntityService.getEncodedIdOfValidatedEntityId(req.params.accountAliasOrAccountId);
+    accountId = await EntityService.getEncodedIdAccountIdOrAlias(req.params.accountAliasOrAccountId);
   } catch (err) {
     if (err instanceof InvalidArgumentError) {
       throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID_OR_ALIAS);

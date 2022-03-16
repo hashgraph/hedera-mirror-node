@@ -127,17 +127,17 @@ describe('EntityService.isValidAccount tests', () => {
   });
 });
 
-describe('EntityService.getEncodedIdOfValidatedEntityId tests', () => {
-  test('EntityService.getEncodedIdOfValidatedEntityId - No match', async () => {
-    await expect(() =>
-      EntityService.getEncodedIdOfValidatedEntityId(defaultInputEntity[0].id)
-    ).rejects.toThrowErrorMatchingSnapshot();
+describe('EntityService.getEncodedIdAccountIdOrAlias tests', () => {
+  test('EntityService.getEncodedIdAccountIdOrAlias - No match', async () => {
+    await expect(EntityService.getEncodedIdAccountIdOrAlias(defaultInputEntity[0].id)).resolves.toBe(
+      defaultExpectedEntity.id
+    );
   });
 
-  test('EntityService.getEncodedIdOfValidatedEntityId - Matching', async () => {
+  test('EntityService.getEncodedIdAccountIdOrAlias - Matching', async () => {
     await integrationDomainOps.loadEntities(defaultInputEntity);
 
-    await expect(EntityService.getEncodedIdOfValidatedEntityId(defaultInputEntity[0].id)).resolves.toBe(
+    await expect(EntityService.getEncodedIdAccountIdOrAlias(defaultInputEntity[0].id)).resolves.toBe(
       defaultExpectedEntity.id
     );
   });

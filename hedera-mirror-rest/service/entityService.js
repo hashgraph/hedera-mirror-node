@@ -112,20 +112,14 @@ class EntityService extends BaseService {
   /**
    * Retrieve the encodedId of a validated EntityId from an accountId or alias string.
    * Throws {@link InvalidArgumentError} if the account alias string is invalid
-   * Throws {@link NotFoundError} if the account is not present
+   * Throws {@link NotFoundError} if the account is not present when retrieving by alias
    * @param {String} accountIdString accountIdOrAlias query string
    * @returns {Promise} entityId
    */
-  async getEncodedIdOfValidatedEntityId(accountIdString) {
+  async getEncodedIdAccountIdOrAlias(accountIdString) {
     let entityId = null;
     if (EntityId.isValidEntityId(accountIdString)) {
       entityId = EntityId.parse(accountIdString, constants.filterKeys.ACCOUNT_ID).getEncodedId();
-
-      // check if account exists
-      const isValidEntity = await this.isValidAccount(entityId);
-      if (!isValidEntity) {
-        throw new NotFoundError(EntityService.missingEntityIdMessage);
-      }
     } else if (AccountAlias.isValid(accountIdString)) {
       entityId = await this.getAccountIdFromAlias(AccountAlias.fromString(accountIdString));
     } else {
