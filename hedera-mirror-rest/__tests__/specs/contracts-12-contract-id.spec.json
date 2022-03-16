@@ -41,7 +41,9 @@
     "/api/v1/contracts?contract.id=8002",
     "/api/v1/contracts?contract.id=0.8002",
     "/api/v1/contracts?contract.id=0.0.8002",
-    "/api/v1/contracts?contract.id=70f2b2914a2a4b783faefb75f459a580616fcb5e"
+    "/api/v1/contracts?contract.id=70f2b2914a2a4b783faefb75f459a580616fcb5e",
+    "/api/v1/contracts?contract.id=0.70f2b2914a2a4b783faefb75f459a580616fcb5e",
+    "/api/v1/contracts?contract.id=0.0.70f2b2914a2a4b783faefb75f459a580616fcb5e"
   ],
   "responseStatus": 200,
   "responseJson": {
