@@ -26,11 +26,11 @@ const {
   },
 } = require('../../config');
 const constants = require('../../constants');
-const allowanceCtrl = require('../../controllers/allowanceController');
+const {AllowanceController} = require('../../controllers');
 const utils = require('../../utils');
 
 const ownerIdFilter = 'owner = $1';
-const spenderIdFIlter = 'spender = $2';
+const spenderIdFIlter = 'spender in ($2)';
 describe('extractCryptoAllowancesQuery', () => {
   const defaultExpected = {
     conditions: [ownerIdFilter],
@@ -76,7 +76,7 @@ describe('extractCryptoAllowancesQuery', () => {
       },
     },
     {
-      name: 'spender.id',
+      name: 'spender.id single',
       input: {
         filters: [
           {
@@ -93,11 +93,39 @@ describe('extractCryptoAllowancesQuery', () => {
         params: [3, '1000'],
       },
     },
+    {
+      name: 'spender.id multiple',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.SPENDER_ID,
+            operator: utils.opsMap.eq,
+            value: '1000',
+          },
+          {
+            key: constants.filterKeys.SPENDER_ID,
+            operator: utils.opsMap.eq,
+            value: '1001',
+          },
+          {
+            key: constants.filterKeys.SPENDER_ID,
+            operator: utils.opsMap.eq,
+            value: '1002',
+          },
+        ],
+        accountId: 3,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [ownerIdFilter, 'spender in ($2,$3,$4)'],
+        params: [3, '1000', '1001', '1002'],
+      },
+    },
   ];
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      expect(allowanceCtrl.extractCryptoAllowancesQuery(spec.input.filters, spec.input.accountId)).toEqual(
+      expect(AllowanceController.extractCryptoAllowancesQuery(spec.input.filters, spec.input.accountId)).toEqual(
         spec.expected
       );
     });
@@ -176,7 +204,7 @@ describe('validateExtractCryptoAllowancesQuery throw', () => {
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
       expect(() =>
-        allowanceCtrl.extractCryptoAllowancesQuery(spec.input.filters, spec.input.accountId)
+        AllowanceController.extractCryptoAllowancesQuery(spec.input.filters, spec.input.accountId)
       ).toThrowErrorMatchingSnapshot();
     });
   });

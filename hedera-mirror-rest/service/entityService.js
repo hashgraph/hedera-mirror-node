@@ -112,6 +112,7 @@ class EntityService extends BaseService {
   /**
    * Retrieve the encodedId of a validated EntityId from an accountId or alias string.
    * Throws {@link InvalidArgumentError} if the account alias string is invalid
+   * Throws {@link NotFoundError} if the account is not present
    * @param {String} accountIdString accountIdOrAlias query string
    * @returns {Promise} entityId
    */
