@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,28 +28,33 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.util.CollectionUtils;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorCryptoAllowance;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransfer;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorCryptoAllowanceResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
 @Cucumber
 @Data
-public class AccountFeature {
+public class AccountFeature extends AbstractFeature {
     private long balance;
-    private AccountId accountId;
+    private AccountId ownerAccountId;
+    private AccountId receiverAccountId;
+    private ExpandedAccountId senderAccountId;
     private long startingBalance;
-    private NetworkTransactionResponse networkTransactionResponse;
 
     @Autowired
     private AccountClient accountClient;
@@ -69,52 +74,80 @@ public class AccountFeature {
 
     @When("I create a new account with balance {long} tℏ")
     public void createNewAccount(long initialBalance) {
-        accountId = accountClient.createNewAccount(initialBalance).getAccountId();
-        assertNotNull(accountId);
+        senderAccountId = accountClient.createNewAccount(initialBalance);
+        assertNotNull(senderAccountId);
+        assertNotNull(senderAccountId.getAccountId());
     }
 
     @Given("I send {long} tℏ to {string}")
     public void treasuryDisbursement(long amount, String accountName) {
-        accountId = accountClient
-                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName)).getAccountId();
+        senderAccountId = accountClient
+                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
 
-        startingBalance = accountClient.getBalance(accountId);
+        startingBalance = accountClient.getBalance(senderAccountId);
 
         networkTransactionResponse = accountClient
-                .sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
+                .sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @When("I send {long} tℏ to newly created account")
     public void sendTinyHbars(long amount) {
-        startingBalance = accountClient.getBalance(accountId);
-        networkTransactionResponse = accountClient.sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
+        startingBalance = accountClient.getBalance(senderAccountId);
+        networkTransactionResponse = accountClient
+                .sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @When("I send {long} tℏ to account {int}")
     public void sendTinyHbars(long amount, int accountNum) {
-        accountId = new AccountId(accountNum);
-        startingBalance = accountClient.getBalance(accountId);
-        networkTransactionResponse = accountClient.sendCryptoTransfer(accountId, Hbar.fromTinybars(amount));
+        senderAccountId = new ExpandedAccountId(new AccountId(accountNum));
+        startingBalance = accountClient.getBalance(senderAccountId);
+        networkTransactionResponse = accountClient
+                .sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @When("I send {int} ℏ to account {int}")
     public void sendHbars(int amount, int accountNum) {
-        accountId = new AccountId(accountNum);
-        startingBalance = accountClient.getBalance(accountId);
-        networkTransactionResponse = accountClient.sendCryptoTransfer(accountId, Hbar.from(amount));
+        senderAccountId = new ExpandedAccountId(new AccountId(accountNum));
+        startingBalance = accountClient.getBalance(senderAccountId);
+        networkTransactionResponse = accountClient
+                .sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.from(amount));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    @Given("I approve {string} to transfer up to {long} tℏ")
+    public void approveCryptoAllowance(String accountName, long amount) {
+        setCryptoAllowance(accountName, amount);
+    }
+
+    @Given("I adjust {string} transfer allowance to {long} tℏ")
+    public void adjustCryptoAllowance(String accountName, long amount) {
+        senderAccountId = accountClient
+                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        setCryptoAllowance(senderAccountId.getAccountId(), amount, false);
+    }
+
+    @When("{string} transfers {long} tℏ to {string}")
+    public void transferFromAllowance(String senderAccountName, long amount, String receiverAccountName) {
+        receiverAccountId = accountClient
+                .getAccount(AccountClient.AccountNameEnum.valueOf(receiverAccountName)).getAccountId();
+        networkTransactionResponse = accountClient.sendApprovedCryptoTransfer(
+                senderAccountId,
+                receiverAccountId,
+                Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Then("the new balance should reflect cryptotransfer of {long}")
     public void accountReceivedFunds(long amount) {
-        assertThat(accountClient.getBalance(accountId)).isGreaterThanOrEqualTo(startingBalance + amount);
+        assertThat(accountClient.getBalance(senderAccountId)).isGreaterThanOrEqualTo(startingBalance + amount);
     }
 
     @Then("the mirror node REST API should return status {int} for the crypto transfer transaction")
@@ -147,5 +180,83 @@ public class AccountFeature {
         }
 
         assertThat(transferSum).isZero();
+    }
+
+    @Then("the mirror node REST API should confirm the approved {long} tℏ crypto transfer allowance")
+    public void verifyMirrorAPIApprovedCryptoTransferResponse(long approvedAmount) {
+        verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
+
+        String ownerString = ownerAccountId.toString();
+        String spenderString = senderAccountId.getAccountId().toString();
+        MirrorCryptoAllowanceResponse mirrorCryptoAllowanceResponse =
+                mirrorClient.getAccountCryptoAllowanceBySpender(ownerString, spenderString);
+
+        // verify valid set of allowance
+        List<MirrorCryptoAllowance> allowances = mirrorCryptoAllowanceResponse.getAllowances();
+        assertNotNull(allowances);
+        assertThat(allowances).isNotEmpty();
+
+        // verify transaction details
+        MirrorCryptoAllowance cryptoAllowance = allowances.get(0);
+
+        // verify valid allowance
+        assertNotNull(cryptoAllowance);
+        assertThat(cryptoAllowance.getAmount()).isEqualTo(approvedAmount);
+        assertThat(cryptoAllowance.getOwner()).isEqualTo(ownerString);
+        assertThat(cryptoAllowance.getPayerAccountId()).isEqualTo(ownerString);
+        assertThat(cryptoAllowance.getSpender()).isEqualTo(spenderString);
+        var timestampRange = cryptoAllowance.getTimestamp();
+        assertNotNull(timestampRange);
+        assertThat(timestampRange.getFrom()).isNotBlank();
+        assertThat(timestampRange.getTo()).isBlank();
+    }
+
+    @When("I delete the crypto allowance for {string}")
+    public void deleteCryptoAllowance(String spenderAccountName) {
+        setCryptoAllowance(spenderAccountName, 0);
+    }
+
+    @Then("the mirror node REST API should confirm the crypto allowance deletion")
+    public void verifyCryptoAllowanceDelete() {
+        log.info("Verify crypto allowance deletion transaction");
+        verifyMirrorAPIApprovedCryptoTransferResponse(0);
+    }
+
+    private void setCryptoAllowance(String accountName, long amount) {
+        senderAccountId = accountClient
+                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        setCryptoAllowance(senderAccountId.getAccountId(), amount, true);
+    }
+
+    private void setCryptoAllowance(AccountId accountId, long amount, boolean approve) {
+        ownerAccountId = accountClient.getClient().getOperatorAccountId();
+        networkTransactionResponse = approve ?
+                accountClient.approveCryptoAllowance(accountId, Hbar.fromTinybars(amount)) :
+                accountClient.adjustCryptoAllowance(accountId, Hbar.fromTinybars(amount).negated());
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    private void cleanUpAllowances() {
+        String ownerString = ownerAccountId.toString();
+        MirrorCryptoAllowanceResponse mirrorCryptoAllowanceResponse =
+                mirrorClient.getAccountCryptoAllowance(ownerString);
+
+        if (mirrorCryptoAllowanceResponse != null && CollectionUtils
+                .isEmpty(mirrorCryptoAllowanceResponse.getAllowances())) {
+            AtomicInteger successCount = new AtomicInteger();
+            AtomicInteger failedCount = new AtomicInteger();
+            mirrorCryptoAllowanceResponse.getAllowances().forEach(x -> {
+                // set allowance to 0 for each non zero
+                if (x.getAmount() > 0) {
+                    try {
+                        setCryptoAllowance(AccountId.fromString(x.getSpender()), 0, false);
+                        successCount.getAndIncrement();
+                    } catch (Exception ex) {
+                        failedCount.getAndIncrement();
+                    }
+                }
+            });
+        }
     }
 }

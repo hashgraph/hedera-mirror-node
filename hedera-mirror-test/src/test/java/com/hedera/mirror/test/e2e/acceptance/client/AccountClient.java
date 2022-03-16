@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,22 +20,29 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.CollectionUtils;
 
+import com.hedera.hashgraph.sdk.AccountAllowanceAdjustTransaction;
+import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
+import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
@@ -46,7 +53,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 public class AccountClient extends AbstractNetworkClient {
 
     private static final long DEFAULT_INITIAL_BALANCE = 50_000_000L; // 0.5 ℏ
-    private static final long SMALL_INITIAL_BALANCE = 1_000L; // 1000 tℏ
+    private static final long SMALL_INITIAL_BALANCE = 500_000L; // 0.005 ℏ
     private final Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
     private ExpandedAccountId tokenTreasuryAccount = null;
 
@@ -80,19 +87,20 @@ public class AccountClient extends AbstractNetworkClient {
             throw new NetworkException("Null accountId retrieved from receipt");
         }
 
-        log.debug("Retrieve Account: {}, {}", accountId, accountNameEnum);
+        long balance = getBalance(accountId);
+        log.debug("Retrieved Account: {}, {} w balance {}", accountId, accountNameEnum, balance);
         return accountId;
     }
 
     @Override
     public long getBalance() {
-        return getBalance(sdkClient.getExpandedOperatorAccountId().getAccountId());
+        return getBalance(sdkClient.getExpandedOperatorAccountId());
     }
 
     @SneakyThrows
-    public long getBalance(AccountId accountId) {
+    public long getBalance(ExpandedAccountId accountId) {
         Hbar balance = new AccountBalanceQuery()
-                .setAccountId(accountId)
+                .setAccountId(accountId.getAccountId())
                 .execute(client)
                 .hbars;
 
@@ -101,25 +109,116 @@ public class AccountClient extends AbstractNetworkClient {
         return balance.toTinybars();
     }
 
-    public TransferTransaction getCryptoTransferTransaction(AccountId sender, AccountId recipient, Hbar hbarAmount) {
-        return new TransferTransaction()
+    public TransferTransaction getCryptoTransferTransaction(AccountId sender, AccountId recipient, Hbar hbarAmount,
+                                                            boolean isApproval) {
+        TransferTransaction transferTransaction = new TransferTransaction()
                 .addHbarTransfer(sender, hbarAmount.negated())
                 .addHbarTransfer(recipient, hbarAmount)
                 .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo(getMemo("Crypto transfer"));
+
+        if (isApproval) {
+            transferTransaction.setHbarTransferApproval(
+                    sdkClient.getExpandedOperatorAccountId().getAccountId(),
+                    isApproval);
+        }
+
+        return transferTransaction;
+    }
+
+    public AccountAllowanceApproveTransaction getAccountAllowanceApproveTransaction(Map<AccountId, Hbar> cryptoAllowances,
+                                                                                    List<Triple<TokenId, AccountId,
+                                                                                            Long>> tokenAllowances,
+                                                                                    List<Triple<TokenId, AccountId,
+                                                                                            Long>> nftAllowances) {
+        AccountAllowanceApproveTransaction allowanceApproveTransaction = new AccountAllowanceApproveTransaction();
+
+        if (!CollectionUtils.isEmpty(cryptoAllowances)) {
+            cryptoAllowances.entrySet().forEach(x -> {
+                allowanceApproveTransaction.addHbarAllowance(x.getKey(), x.getValue());
+            });
+        }
+
+        if (!CollectionUtils.isEmpty(tokenAllowances)) {
+            tokenAllowances.forEach(x -> allowanceApproveTransaction.addTokenAllowance(
+                    x.getLeft(), x.getMiddle(), x.getRight()));
+        }
+
+        if (!CollectionUtils.isEmpty(nftAllowances)) {
+            nftAllowances.forEach(x -> {
+                if (x.getRight() == null) {
+                    // approve for all serials
+                    allowanceApproveTransaction.addAllTokenNftAllowance(x.getLeft(), x.getMiddle());
+                } else {
+                    allowanceApproveTransaction.addTokenNftAllowance(
+                            new NftId(x.getLeft(), x.getRight()),
+                            x.getMiddle());
+                }
+            });
+        }
+
+        return allowanceApproveTransaction;
+    }
+
+    public AccountAllowanceAdjustTransaction getAccountAllowanceAdjustTransaction(Map<AccountId, Hbar> cryptoAllowances,
+                                                                                  List<Triple<TokenId, AccountId,
+                                                                                          Long>> tokenAllowances,
+                                                                                  List<Triple<TokenId, AccountId,
+                                                                                          Long>> nftAllowances) {
+        AccountAllowanceAdjustTransaction allowanceAdjustTransaction = new AccountAllowanceAdjustTransaction();
+
+        if (!CollectionUtils.isEmpty(cryptoAllowances)) {
+            cryptoAllowances.entrySet().forEach(x -> {
+                allowanceAdjustTransaction.addHbarAllowance(x.getKey(), x.getValue());
+            });
+        }
+
+        if (!CollectionUtils.isEmpty(tokenAllowances)) {
+            tokenAllowances.forEach(x -> allowanceAdjustTransaction.addTokenAllowance(
+                    x.getLeft(), x.getMiddle(), x.getRight()));
+        }
+
+        if (!CollectionUtils.isEmpty(nftAllowances)) {
+            nftAllowances.forEach(x -> {
+                if (x.getRight() == null) {
+                    // approve for all serials
+                    allowanceAdjustTransaction.addAllTokenNftAllowance(x.getLeft(), x.getMiddle());
+                } else {
+                    allowanceAdjustTransaction.addTokenNftAllowance(
+                            new NftId(x.getLeft(), x.getRight()),
+                            x.getMiddle());
+                }
+            });
+        }
+
+        return allowanceAdjustTransaction;
+    }
+
+    public NetworkTransactionResponse sendApprovedCryptoTransfer(ExpandedAccountId sender, AccountId recipient,
+                                                                 Hbar hbarAmount) {
+        return sendCryptoTransfer(sender, recipient, hbarAmount, true);
     }
 
     public NetworkTransactionResponse sendCryptoTransfer(AccountId recipient, Hbar hbarAmount) {
+        return sendCryptoTransfer(sdkClient.getExpandedOperatorAccountId(), recipient, hbarAmount, false);
+    }
+
+    private NetworkTransactionResponse sendCryptoTransfer(ExpandedAccountId sender, AccountId recipient,
+                                                          Hbar hbarAmount,
+                                                          boolean isApproval) {
         log.debug(
-                "Send CryptoTransfer of {} tℏ from {} to {}", hbarAmount.toTinybars(),
-                sdkClient.getExpandedOperatorAccountId().getAccountId(),
-                recipient);
+                "Send CryptoTransfer of {} tℏ from {} to {}. isApproval: {}", hbarAmount.toTinybars(),
+                sender.getAccountId(),
+                recipient,
+                isApproval);
 
-        TransferTransaction cryptoTransferTransaction = getCryptoTransferTransaction(sdkClient
-                .getExpandedOperatorAccountId().getAccountId(), recipient, hbarAmount);
+        TransferTransaction cryptoTransferTransaction = getCryptoTransferTransaction(sender
+                        .getAccountId(), recipient, hbarAmount,
+                isApproval);
 
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(cryptoTransferTransaction);
+        NetworkTransactionResponse networkTransactionResponse = executeTransactionAndRetrieveReceipt(
+                cryptoTransferTransaction,
+                isApproval ? KeyList.of(sender.getPrivateKey()) : null);
 
         log.debug("Sent CryptoTransfer");
 
@@ -187,6 +286,50 @@ public class AccountClient extends AbstractNetworkClient {
 
         log.debug("Created new account {}, receiverSigRequired: {}", newAccountId, receiverSigRequired);
         return new ExpandedAccountId(newAccountId, privateKey, privateKey.getPublicKey());
+    }
+
+    public NetworkTransactionResponse approveCryptoAllowance(AccountId spender, Hbar hbarAmount) {
+
+        var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
+        log.debug(
+                "Approve spender {} an allowance of {} tℏ on {}'s account",
+                spender,
+                hbarAmount.toTinybars(),
+                ownerAccountId);
+
+        AccountAllowanceApproveTransaction cryptoAllowanceApproveTransaction = getAccountAllowanceApproveTransaction(
+                Map.of(spender, hbarAmount),
+                null,
+                null);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(cryptoAllowanceApproveTransaction);
+
+        log.debug("Sent Account Allowance Approval");
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse adjustCryptoAllowance(AccountId spender, Hbar hbarAmount) {
+
+        var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
+        log.debug(
+                "Adjust spender {} allowance to {} tℏ on {}'s account",
+                spender,
+                hbarAmount.toTinybars(),
+                ownerAccountId);
+
+        AccountAllowanceAdjustTransaction allowanceAdjustTransaction = getAccountAllowanceAdjustTransaction(
+                Map.of(spender, hbarAmount),
+                null,
+                null);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(allowanceAdjustTransaction);
+
+        log.debug("Sent Account Allowance Approval");
+
+        return networkTransactionResponse;
     }
 
     @RequiredArgsConstructor
