@@ -130,7 +130,7 @@ public class AccountFeature extends AbstractFeature {
     public void adjustCryptoAllowance(String accountName, long amount) {
         senderAccountId = accountClient
                 .getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        setCryptoAllowance(senderAccountId.getAccountId(), amount, false);
+        setCryptoAllowance(senderAccountId.getAccountId(), -amount, false);
     }
 
     @When("{string} transfers {long} tℏ to {string}")
@@ -222,6 +222,39 @@ public class AccountFeature extends AbstractFeature {
         verifyMirrorAPIApprovedCryptoTransferResponse(0);
     }
 
+    @When("I remove all my allowances from my account")
+    public void cleanUpAllowances() {
+        MirrorCryptoAllowanceResponse mirrorCryptoAllowanceResponse =
+                mirrorClient.getAccountCryptoAllowance(accountClient.getClient().getOperatorAccountId().toString());
+
+        if (mirrorCryptoAllowanceResponse != null && !CollectionUtils
+                .isEmpty(mirrorCryptoAllowanceResponse.getAllowances())) {
+            mirrorCryptoAllowanceResponse.getAllowances().forEach(x -> {
+                // set allowance to 0 for each non zero
+                if (x.getAmount() > 0) {
+                    setCryptoAllowance(AccountId.fromString(x.getSpender()), 0, true);
+                }
+            });
+        }
+    }
+
+    @Then("the mirror node REST API should confirm no granted allowances remain")
+    public void verifyNoAllowances() {
+        log.info("Verify crypto allowance deletion transaction");
+        MirrorCryptoAllowanceResponse mirrorCryptoAllowanceResponse =
+                mirrorClient.getAccountCryptoAllowance(accountClient.getClient().getOperatorAccountId().toString());
+        List<MirrorCryptoAllowance> allowances = mirrorCryptoAllowanceResponse.getAllowances();
+        assertNotNull(allowances);
+        AtomicInteger nonZeroCount = new AtomicInteger();
+        mirrorCryptoAllowanceResponse.getAllowances().forEach(x -> {
+            // set allowance to 0 for each non zero
+            if (x.getAmount() > 0) {
+                nonZeroCount.getAndIncrement();
+            }
+        });
+        assertThat(nonZeroCount.get()).isZero();
+    }
+
     private void setCryptoAllowance(String accountName, long amount) {
         senderAccountId = accountClient
                 .getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
@@ -232,31 +265,8 @@ public class AccountFeature extends AbstractFeature {
         ownerAccountId = accountClient.getClient().getOperatorAccountId();
         networkTransactionResponse = approve ?
                 accountClient.approveCryptoAllowance(accountId, Hbar.fromTinybars(amount)) :
-                accountClient.adjustCryptoAllowance(accountId, Hbar.fromTinybars(amount).negated());
+                accountClient.adjustCryptoAllowance(accountId, Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    private void cleanUpAllowances() {
-        String ownerString = ownerAccountId.toString();
-        MirrorCryptoAllowanceResponse mirrorCryptoAllowanceResponse =
-                mirrorClient.getAccountCryptoAllowance(ownerString);
-
-        if (mirrorCryptoAllowanceResponse != null && CollectionUtils
-                .isEmpty(mirrorCryptoAllowanceResponse.getAllowances())) {
-            AtomicInteger successCount = new AtomicInteger();
-            AtomicInteger failedCount = new AtomicInteger();
-            mirrorCryptoAllowanceResponse.getAllowances().forEach(x -> {
-                // set allowance to 0 for each non zero
-                if (x.getAmount() > 0) {
-                    try {
-                        setCryptoAllowance(AccountId.fromString(x.getSpender()), 0, false);
-                        successCount.getAndIncrement();
-                    } catch (Exception ex) {
-                        failedCount.getAndIncrement();
-                    }
-                }
-            });
-        }
     }
 }

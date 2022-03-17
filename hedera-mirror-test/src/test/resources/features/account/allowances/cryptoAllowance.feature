@@ -1,7 +1,7 @@
-@accounts @allowance @fullsuite
+@cryptoallowance @allowance @fullsuite
 Feature: Account Crypto Allowance Coverage Feature
 
-    @critical @release @acceptance @cryptoallowance
+    @critical @release @acceptance
     Scenario Outline: Validate approval CryptoTransfer
         Given I approve <senderName> to transfer up to <approvedAmount> tℏ
         Then the mirror node REST API should confirm the approved <approvedAmount> tℏ crypto transfer allowance
@@ -14,3 +14,8 @@ Feature: Account Crypto Allowance Coverage Feature
         Examples:
             | senderName | approvedAmount | recipientName | transferAmount | httpStatusCode | updateApprovedAmount |
             | "ALICE"    | 10000          | "BOB"         | 2500           | 200            | 5000                 |
+
+    @critical @release @acceptance
+    Scenario: Validate allowance cleanup
+        Given I remove all my allowances from my account
+        Then the mirror node REST API should confirm no granted allowances remain
