@@ -19,8 +19,7 @@
  */
 
 'use strict';
-
-const {AccountID, Timestamp, TransactionID} = require('@hashgraph/proto');
+const proto = require('@hashgraph/proto');
 
 const utils = require('../utils.js');
 const config = require('../config.js');
@@ -32,7 +31,9 @@ const {getLimitParamValue} = require('../utils');
 const {keyTypes} = require('../constants');
 
 const ecdsaKey = '02b5ffadf88d625cd9074fa01e5280b773a60ed2de55b0d6f94460c0b5a001a258';
+const ecdsaProtoKey = {ECDSASecp256k1: Buffer.from(ecdsaKey, 'hex')};
 const ed25519Key = '7a3c5477bdf4a63742647d7cfc4544acc1899d07141caf4cd9fea2f75b28a5cc';
+const ed25519ProtoKey = {ed25519: Buffer.from(ed25519Key, 'hex')};
 const ed25519Der = `302a300506032b6570032100${ed25519Key}`;
 const responseLimit = config.response.limit;
 
@@ -121,60 +122,87 @@ describe('Utils createTransactionId tests', () => {
 });
 
 describe('Utils encodeKey', () => {
+  const getPrimitiveKeyBytes = (protoKey) => {
+    return proto.Key.encode(protoKey).finish();
+  };
+
+  const getKeyListBytes = (protoKey) => {
+    return proto.KeyList.encode({keys: [protoKey]}).finish();
+  };
+
+  const getThresholdKeyBytes = (protoKey) => {
+    return proto.ThresholdKey.encode({keys: {keys: [protoKey]}, threshold: 1}).finish();
+  };
+
   test('Null', () => expect(utils.encodeKey(null)).toBe(null));
+
   [
     {
       name: 'Empty',
-      input: '',
-      output: '',
-      signatureType: keyTypes.PROTOBUF,
+      input: [],
+      expected: {
+        _type: keyTypes.PROTOBUF,
+        key: '',
+      },
     },
     {
       name: 'Protobuf',
-      input: 'abcdef',
-      output: 'abcdef',
-      signatureType: keyTypes.PROTOBUF,
+      input: Buffer.from('abcdef', 'hex'),
+      expected: {
+        _type: keyTypes.PROTOBUF,
+        key: 'abcdef',
+      },
     },
     {
       name: 'ECDSA(secp256k1) primitive',
-      input: `3a20${ecdsaKey}`,
-      output: ecdsaKey,
-      signatureType: keyTypes.ECDSA_SECP256K1,
+      input: getPrimitiveKeyBytes(ecdsaProtoKey),
+      expected: {
+        _type: keyTypes.ECDSA_SECP256K1,
+        key: ecdsaKey,
+      },
     },
     {
       name: 'ECDSA(secp256k1) keylist',
-      input: `32240a223a20${ecdsaKey}`,
-      output: ecdsaKey,
-      signatureType: keyTypes.ECDSA_SECP256K1,
+      input: getKeyListBytes(ecdsaProtoKey),
+      expected: {
+        _type: keyTypes.ECDSA_SECP256K1,
+        key: ecdsaKey,
+      },
     },
     {
       name: 'ECDSA(secp256k1) threshold',
-      input: `2a28080112240a223a20${ecdsaKey}`,
-      output: ecdsaKey,
-      signatureType: keyTypes.ECDSA_SECP256K1,
+      input: getThresholdKeyBytes(ecdsaProtoKey),
+      expected: {
+        _type: keyTypes.ECDSA_SECP256K1,
+        key: ecdsaKey,
+      },
     },
     {
       name: 'ED25519 primitive',
-      input: `1220${ed25519Key}`,
-      output: ed25519Key,
-      signatureType: keyTypes.ED25519,
+      input: getPrimitiveKeyBytes(ed25519ProtoKey),
+      expected: {
+        _type: keyTypes.ED25519,
+        key: ed25519Key,
+      },
     },
     {
       name: 'ED25519 keylist',
-      input: `32240a221220${ed25519Key}`,
-      output: ed25519Key,
-      signatureType: keyTypes.ED25519,
+      input: getKeyListBytes(ed25519ProtoKey),
+      expected: {
+        _type: keyTypes.ED25519,
+        key: ed25519Key,
+      },
     },
     {
       name: 'ED25519 threshold',
-      input: `2a28080112240a221220${ed25519Key}`,
-      output: ed25519Key,
-      signatureType: keyTypes.ED25519,
+      input: getThresholdKeyBytes(ed25519ProtoKey),
+      expected: {
+        _type: keyTypes.ED25519,
+        key: ed25519Key,
+      },
     },
   ].forEach((spec) => {
-    const buffer = Buffer.from(spec.input, 'hex');
-    const bytes = [...buffer];
-    test(spec.name, () => expect(utils.encodeKey(bytes)).toStrictEqual({_type: spec.signatureType, key: spec.output}));
+    test(spec.name, () => expect(utils.encodeKey(spec.input)).toStrictEqual(spec.expected));
   });
 });
 
