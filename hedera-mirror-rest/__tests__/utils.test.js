@@ -127,11 +127,13 @@ describe('Utils encodeKey', () => {
   };
 
   const getKeyListBytes = (protoKey) => {
-    return proto.KeyList.encode({keys: [protoKey]}).finish();
+    const key = {keyList: proto.KeyList.create({keys: [protoKey]})};
+    return getPrimitiveKeyBytes(key);
   };
 
   const getThresholdKeyBytes = (protoKey) => {
-    return proto.ThresholdKey.encode({keys: {keys: [protoKey]}, threshold: 1}).finish();
+    const key = {thresholdKey: proto.ThresholdKey.create({keys: {keys: [protoKey]}, threshold: 1})};
+    return getPrimitiveKeyBytes(key);
   };
 
   test('Null', () => expect(utils.encodeKey(null)).toBe(null));
