@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.publish;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -113,7 +113,7 @@ public class TransactionPublisher implements AutoCloseable {
                             }
                         })
                         .timeout(properties.getTimeout())
-                        .onErrorMap(t -> new PublishException(request, t))
+                        .onErrorMap(t -> !(t instanceof PublishException), t -> new PublishException(request, t))
                         .doOnNext(scenario::onNext)
                         .doOnError(scenario::onError));
     }
@@ -126,7 +126,7 @@ public class TransactionPublisher implements AutoCloseable {
         if (transaction.getNodeAccountIds() == null) {
             var currentNodes = this.nodes; // Save a reference in case a COW occurs
             if (currentNodes.isEmpty()) {
-                throw new PublishException(request, new IllegalArgumentException("No valid nodes available"));
+                return Mono.error(new IllegalArgumentException("No valid nodes available"));
             }
 
             int nodeIndex = secureRandom.nextInt(currentNodes.size());
@@ -171,6 +171,7 @@ public class TransactionPublisher implements AutoCloseable {
         client.setMaxAttempts(validationProperties.getMaxAttempts());
         client.setMaxBackoff(validationProperties.getMaxBackoff());
         client.setMinBackoff(validationProperties.getMinBackoff());
+        client.setRequestTimeout(validationProperties.getRequestTimeout());
         this.validationClient.set(client);
 
         if (validationProperties.isEnabled() && nodeValidator.get() == null) {
@@ -201,7 +202,6 @@ public class TransactionPublisher implements AutoCloseable {
         try {
             log.info("Validating node {}", node);
             Hbar hbar = Hbar.fromTinybars(1L);
-            NodeValidationProperties properties = monitorProperties.getNodeValidation();
             AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
             Client client = validationClient.get();
 
@@ -209,8 +209,8 @@ public class TransactionPublisher implements AutoCloseable {
                     .addHbarTransfer(nodeAccountId, hbar)
                     .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
                     .setNodeAccountIds(node.getAccountIds())
-                    .execute(client, properties.getRequestTimeout())
-                    .getReceipt(client, properties.getRequestTimeout())
+                    .execute(client)
+                    .getReceipt(client)
                     .status;
 
             if (receiptStatus == SUCCESS) {
