@@ -287,6 +287,9 @@ const addEntity = async (defaults, entity) => {
   };
   entity.id = EntityId.of(BigInt(entity.shard), BigInt(entity.realm), BigInt(entity.num)).getEncodedId();
   entity.alias = base32.decode(entity.alias);
+  if (typeof entity.key === 'string') {
+    entity.key = Buffer.from(entity.key, 'hex');
+  }
 
   await insertDomainObject('entity', insertFields, entity);
 };

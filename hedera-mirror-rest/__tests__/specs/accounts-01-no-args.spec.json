@@ -3,22 +3,28 @@
   "setup": {
     "accounts": [
       {
-        "num": 1
+        "num": 1,
+        "key": "1220bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee"
       },
       {
-        "num": 2
+        "num": 2,
+        "key": "32240a221220bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee"
       },
       {
-        "num": 3
+        "num": 3,
+        "key": "2a28080112240a221220bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee"
       },
       {
-        "num": 4
+        "num": 4,
+        "key": "3a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
       },
       {
-        "num": 5
+        "num": 5,
+        "key": "32250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
       },
       {
-        "num": 6
+        "num": 6,
+        "key": "2a29080112250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
       },
       {
         "num": 9,
@@ -156,7 +162,10 @@
         "deleted": false,
         "expiry_timestamp": null,
         "auto_renew_period": null,
-        "key": null,
+        "key": {
+          "_type": "ED25519",
+          "key": "bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee"
+        },
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
         "receiver_sig_required": false
@@ -180,7 +189,10 @@
         "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
-        "key": null,
+        "key": {
+          "_type": "ED25519",
+          "key": "bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee"
+        },
         "deleted": false,
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
@@ -196,7 +208,10 @@
         "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
-        "key": null,
+        "key": {
+          "_type": "ED25519",
+          "key": "bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee"
+        },
         "deleted": false,
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
@@ -212,7 +227,10 @@
         "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
-        "key": null,
+        "key": {
+          "_type": "ECDSA_SECP256K1",
+          "key": "023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+        },
         "deleted": false,
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
@@ -237,7 +255,10 @@
         "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
-        "key": null,
+        "key": {
+          "_type": "ECDSA_SECP256K1",
+          "key": "023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+        },
         "deleted": false,
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
@@ -253,7 +274,10 @@
         "alias": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
-        "key": null,
+        "key": {
+          "_type": "ECDSA_SECP256K1",
+          "key": "023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+        },
         "deleted": false,
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
