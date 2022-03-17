@@ -2208,7 +2208,9 @@ components:
       required: true
       description: The ID or hex encoded EVM address associated with this contract.
       schema:
-        $ref: '#/components/schemas/EntityId'
+        oneof:
+          - $ref: '#/components/schemas/EntityId'
+          - $ref: '#/components/schemas/EvmAddress'
     entityIdPathParam:
       name: entityId
       in: path
