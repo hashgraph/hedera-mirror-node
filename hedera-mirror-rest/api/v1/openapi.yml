@@ -1318,7 +1318,7 @@ components:
       format: binary
       minLength: 42
       maxLength: 42
-      pattern: '^(0x)?[A-Fa-f0-9]{40}$'
+      pattern: '^(\d{0,9}\.){0,2}[A-Fa-f0-9]{40}$'
       example: "0x0000000000000000000000000000000000001f41"
     EvmAddressNullable:
       type: string
@@ -2157,6 +2157,10 @@ components:
           value: 0.0.100
         evmAddressNoOperator:
           summary: A hex encoded EVM address with no operator.
+          value: 0.0.1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c
+        evmAddressEqOperator:
+          summary: A hex encoded EVM address with no operator.
+          value: eq:0.1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c
         entityNumEqOperator:
           summary: Example of entityNum equals operator
           value: eq:200
@@ -2194,7 +2198,9 @@ components:
           summary: Example of id less than or equals operator
           value: lte:0.0.700
       schema:
-        $ref: '#/components/schemas/EntityIdQuery'
+        oneof:
+          - $ref: '#/components/schemas/EntityIdQuery'
+          - $ref: '#/components/schemas/EvmAddress'
     # Path parameters for different IDs.
     contractIdPathParam:
       name: contractIdOrAddress
