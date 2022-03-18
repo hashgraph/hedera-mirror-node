@@ -735,7 +735,7 @@ const toHexString = (byteArray, addPrefix = false, padLength = undefined) => {
 
 // These match protobuf encoded hex strings. The prefixes listed check if it's a primitive key, a key list with one
 // primitive key, or a 1/1 threshold key, respectively.
-const PATTERN_ECDSA = /^(3a20|32240a223a20|2a28080112240a223a20)([A-Fa-f0-9]{66})$/;
+const PATTERN_ECDSA = /^(3a21|32250a233a21|2a29080112250a233a21)([A-Fa-f0-9]{66})$/;
 const PATTERN_ED25519 = /^(1220|32240a221220|2a28080112240a221220)([A-Fa-f0-9]{64})$/;
 
 /**
