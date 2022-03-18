@@ -35,8 +35,6 @@ const {
 } = require('../config');
 const {orderFilterValues} = require('../constants');
 
-const CREATE_2_ID = /^(0x)[A-Fa-f0-9]{40}$/;
-
 /**
  * Contract retrieval business logic
  */
