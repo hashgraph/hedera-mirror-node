@@ -146,7 +146,7 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
-  /api/v1/contracts/{contractId}:
+  /api/v1/contracts/{contractIdOrAddress}:
     get:
       summary: Get contract by id
       description: Return the contract information given an id
@@ -167,7 +167,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractId}/results:
+  /api/v1/contracts/{contractIdOrAddress}/results:
     get:
       summary: List contract results from a contract on the network
       description: Returns a list of all ContractResults for a contract's function executions.
@@ -189,7 +189,7 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
-  /api/v1/contracts/{contractId}/results/{timestamp}:
+  /api/v1/contracts/{contractIdOrAddress}/results/{timestamp}:
     get:
       summary: Get the contract result from a contract on the network executed at a given timestamp
       description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
@@ -243,7 +243,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractId}/results/logs:
+  /api/v1/contracts/{contractIdOrAddress}/results/logs:
     get:
       summary: List contract logs from a contract on the network
       description: >
@@ -1327,7 +1327,7 @@ components:
       minLength: 42
       maxLength: 42
       nullable: true
-      pattern: '^0x[A-Fa-f0-9]{40}$'
+      pattern: '^(\d{0,9}\.){0,2}[A-Fa-f0-9]{40}$'
       example: "0x0000000000000000000000000000000000001f41"
     FixedFee:
       type: object
@@ -2159,7 +2159,7 @@ components:
           summary: A hex encoded EVM address with no operator.
           value: 0.0.1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c
         evmAddressEqOperator:
-          summary: A hex encoded EVM address with no operator.
+          summary: A hex encoded EVM address with eq operator.
           value: eq:0.1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c
         entityNumEqOperator:
           summary: Example of entityNum equals operator
@@ -2198,17 +2198,16 @@ components:
           summary: Example of id less than or equals operator
           value: lte:0.0.700
       schema:
-        oneof:
+        oneOf:
           - $ref: '#/components/schemas/EntityIdQuery'
           - $ref: '#/components/schemas/EvmAddress'
-    # Path parameters for different IDs.
     contractIdPathParam:
       name: contractIdOrAddress
       in: path
       required: true
       description: The ID or hex encoded EVM address associated with this contract.
       schema:
-        oneof:
+        oneOf:
           - $ref: '#/components/schemas/EntityId'
           - $ref: '#/components/schemas/EvmAddress'
     entityIdPathParam:
