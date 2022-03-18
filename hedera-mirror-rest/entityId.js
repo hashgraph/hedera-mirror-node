@@ -159,8 +159,9 @@ const parseFromEncodedId = (id, error) => {
  * @return {bigint[3]}
  */
 const parseFromEvmAddress = (address) => {
+  const evmAddress = _.last(address.split('.'));
   // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
-  const hexDigits = address.replace('0x', '');
+  const hexDigits = evmAddress.replace('0x', '');
   const parts = [
     Number.parseInt(hexDigits.slice(0, 8), 16), // shard
     Number.parseInt(hexDigits.slice(8, 24), 16), // realm
