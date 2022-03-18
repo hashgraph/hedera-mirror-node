@@ -252,11 +252,11 @@ Name                                                            | Default | Desc
 `hedera.mirror.monitor.nodes[].port`                            | 50211   | The main node's port
 `hedera.mirror.monitor.nodeValidation.enabled`                  | true    | Whether to validate and remove invalid or down nodes permanently before publishing
 `hedera.mirror.monitor.nodeValidation.frequency`                | 30m     | The amount of time between validations of the network.
-`hedera.mirror.monitor.nodeValidation.maxAttempts`              | 4       | The number of times the monitor should attempt to receive a healthy response from a node before marking it as unhealthy.
+`hedera.mirror.monitor.nodeValidation.maxAttempts`              | 8       | The number of times the monitor should attempt to receive a healthy response from a node before marking it as unhealthy.
 `hedera.mirror.monitor.nodeValidation.maxBackoff`               | 2s      | The maximum amount of time to wait in between attempts when trying to validate a node
 `hedera.mirror.monitor.nodeValidation.maxThreads`               | 25      | The maximum number of threads to use for node validation
 `hedera.mirror.monitor.nodeValidation.minBackoff`               | 500ms   | The minimum amount of time to wait in between attempts when trying to validate a node
-`hedera.mirror.monitor.nodeValidation.requestTimeout`           | 10s     | The amount of time to wait for a validation request before timing out
+`hedera.mirror.monitor.nodeValidation.requestTimeout`           | 15s     | The amount of time to wait for a validation request before timing out
 `hedera.mirror.monitor.operator.accountId`                      | ""      | Operator account ID used to pay for transactions
 `hedera.mirror.monitor.operator.privateKey`                     | ""      | Operator ED25519 private key used to sign transactions in hex encoded DER format
 `hedera.mirror.monitor.publish.batchDivisor`                    | 100     | The divisor used to calculate batch size when generating transactions
