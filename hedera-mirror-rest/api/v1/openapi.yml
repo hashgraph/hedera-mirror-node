@@ -1088,7 +1088,7 @@ components:
           type: boolean
           example: false
         evm_address:
-          $ref: '#/components/schemas/EvmAddress'
+          $ref: '#/components/schemas/EvmAddressOutput'
         expiration_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         file_id:
@@ -1319,6 +1319,14 @@ components:
       minLength: 42
       maxLength: 42
       pattern: '^(\d{0,9}\.){0,2}[A-Fa-f0-9]{40}$'
+      example: "0x0000000000000000000000000000000000001f41"
+    EvmAddressOutput:
+      type: string
+      description: A network entity encoded as an EVM address in hex.
+      format: binary
+      minLength: 42
+      maxLength: 42
+      pattern: '^(0x)?[A-Fa-f0-9]{40}$'
       example: "0x0000000000000000000000000000000000001f41"
     EvmAddressNullable:
       type: string

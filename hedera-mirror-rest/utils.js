@@ -827,9 +827,9 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
  * @param {function(string, string, string)} filterValidator
  * @return {[]}
  */
-const buildAndValidateFilters = async (query, filterValidator = filterValidityChecks) => {
+const buildAndValidateFilters = (query, filterValidator = filterValidityChecks) => {
   const filters = buildFilters(query);
-  await validateAndParseFilters(filters, filterValidator);
+  validateAndParseFilters(filters, filterValidator);
   return filters;
 };
 
@@ -895,9 +895,9 @@ const validateFilters = (filters, filterValidator) => {
  * @param filters
  * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
  */
-const formatFilters = async (filters) => {
+const formatFilters = (filters) => {
   for (const filter of filters) {
-    await formatComparator(filter);
+    formatComparator(filter);
   }
 };
 
@@ -909,12 +909,12 @@ const formatFilters = async (filters) => {
  * @param filterValidator
  * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
  */
-const validateAndParseFilters = async (filters, filterValidator) => {
+const validateAndParseFilters = (filters, filterValidator) => {
   validateFilters(filters, filterValidator);
-  await formatFilters(filters);
+  formatFilters(filters);
 };
 
-const formatComparator = async (comparator) => {
+const formatComparator = (comparator) => {
   if (comparator.operator in opsMap) {
     // update operator
     comparator.operator = opsMap[comparator.operator];
@@ -927,14 +927,6 @@ const formatComparator = async (comparator) => {
         break;
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);
-        break;
-      case constants.filterKeys.CONTRACT_ID:
-        comparator.value = (
-          await ContractService.computeContractIdFromEvmAddress({
-            contractIdValue: comparator.value,
-            avoidEvmAddress: true,
-          })
-        ).value;
         break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);
