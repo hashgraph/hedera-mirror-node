@@ -26,7 +26,6 @@ const BaseService = require('./baseService');
 const Contract = require('../model/contract');
 const EntityId = require('../entityId');
 const constants = require('../constants');
-const {of: createEntityId} = require('../entityId');
 const {NotFoundError} = require('../errors/notFoundError');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
