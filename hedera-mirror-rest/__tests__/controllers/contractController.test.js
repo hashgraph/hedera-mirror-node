@@ -124,8 +124,8 @@ describe('extractSqlFromContractFilters', () => {
   ];
 
   specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(contracts.extractSqlFromContractFilters(spec.input)).toEqual(spec.expected);
+    test(`${spec.name}`, async () => {
+      expect(await contracts.extractSqlFromContractFilters(spec.input)).toEqual(spec.expected);
     });
   });
 });
