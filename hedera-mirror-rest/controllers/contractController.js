@@ -670,28 +670,6 @@ const getContractResultsByTransactionId = async (req, res) => {
   }
 };
 
-const computeContractIdFromEvmAddress = async ({contractIdValue, avoidEvmAddress}) => {
-  if (EntityId.isValidEvmAddress(contractIdValue)) {
-    const evmAddress = Buffer.from(_.last(contractIdValue.split('.')), 'hex');
-    if (avoidEvmAddress) {
-      // query the database to get the contract id
-      return {
-        columnName: Contract.ID,
-        value: await ContractService.getContractIdByEvmAddress(evmAddress),
-      };
-    }
-    return {
-      columnName: Contract.EVM_ADDRESS,
-      value: evmAddress,
-    };
-  }
-
-  return {
-    columnName: Contract.ID,
-    value: EntityId.parse(contractIdValue, constants.filterKeys.CONTRACTID).getEncodedId(),
-  };
-};
-
 /**
  * Extracts SQL where conditions, params, order, and limit
  *
