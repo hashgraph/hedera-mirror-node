@@ -19,7 +19,7 @@ jobs:
           java-version: 11
 
       - name: Login to Google Container Registry
-        uses: google-github-actions/setup-gcloud@master
+        uses: google-github-actions/setup-gcloud@v0
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
           service_account_key: ${{ secrets.GCR_KEY }}
