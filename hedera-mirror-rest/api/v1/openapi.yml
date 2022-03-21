@@ -1987,14 +1987,19 @@ components:
                   - serial_number
                   - token_id
       example:
-        consensus_timestamp: "1234567890.000000007"
-        transaction_hash: "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW"
-        valid_start_timestamp: "1234567890.000000006"
-        charged_tx_fee: 7
-        memo_base64: null
+        assessed_custom_fees:
+          - amount: 100
+            collector_account_id: 0.0.10
+            effective_payer_account_ids:
+              - 0.0.8
+              - 0.0.72
+            token_id: 0.0.90001
         bytes: null
-        result: SUCCESS
+        charged_tx_fee: 7
+        consensus_timestamp: "1234567890.000000007"
         entity_id: "0.0.2281979"
+        max_fee: 33
+        memo_base64: null
         name: CRYPTOTRANSFER
         nft_transfers:
           - receiver_account_id: 0.0.121
@@ -2005,18 +2010,13 @@ components:
             sender_account_id: 0.0.422
             serial_number: 2
             token_id: 0.0.123
-        max_fee: 33
-        valid_duration_seconds: 11
         node: 0.0.3
-        transaction_id: 0.0.8-1234567890-000000006
+        nonce: 0
+        parent_consensus_timestamp: "1234567890.000000007"
+        result: SUCCESS
         scheduled: false
-        transfers:
-          - account: 0.0.3
-            amount: 2
-          - account: 0.0.8
-            amount: -3
-          - account: 0.0.98
-            amount: 1
+        transaction_hash: "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW"
+        transaction_id: 0.0.8-1234567890-000000006
         token_transfers:
           - token_id: 0.0.90000
             account: 0.0.9
@@ -2024,13 +2024,15 @@ components:
           - token_id: 0.0.90000
             account: 0.0.8
             amount: -1200
-        assessed_custom_fees:
-          - amount: 100
-            collector_account_id: 0.0.10
-            effective_payer_account_ids:
-              - 0.0.8
-              - 0.0.72
-            token_id: 0.0.90001
+        transfers:
+          - account: 0.0.3
+            amount: 2
+          - account: 0.0.8
+            amount: -3
+          - account: 0.0.98
+            amount: 1
+        valid_duration_seconds: 11
+        valid_start_timestamp: "1234567890.000000006"
     TransactionDetails:
       type: array
       items:
