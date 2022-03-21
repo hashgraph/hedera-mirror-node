@@ -28,7 +28,6 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -135,6 +134,8 @@ public class AccountFeature extends AbstractFeature {
 
     @When("{string} transfers {long} tℏ to {string}")
     public void transferFromAllowance(String senderAccountName, long amount, String receiverAccountName) {
+        senderAccountId = accountClient
+                .getAccount(AccountClient.AccountNameEnum.valueOf(senderAccountName));
         receiverAccountId = accountClient
                 .getAccount(AccountClient.AccountNameEnum.valueOf(receiverAccountName)).getAccountId();
         networkTransactionResponse = accountClient.sendApprovedCryptoTransfer(
@@ -192,23 +193,19 @@ public class AccountFeature extends AbstractFeature {
                 mirrorClient.getAccountCryptoAllowanceBySpender(ownerString, spenderString);
 
         // verify valid set of allowance
-        List<MirrorCryptoAllowance> allowances = mirrorCryptoAllowanceResponse.getAllowances();
-        assertNotNull(allowances);
-        assertThat(allowances).isNotEmpty();
-
-        // verify transaction details
-        MirrorCryptoAllowance cryptoAllowance = allowances.get(0);
-
-        // verify valid allowance
-        assertNotNull(cryptoAllowance);
-        assertThat(cryptoAllowance.getAmount()).isEqualTo(approvedAmount);
-        assertThat(cryptoAllowance.getOwner()).isEqualTo(ownerString);
-        assertThat(cryptoAllowance.getPayerAccountId()).isEqualTo(ownerString);
-        assertThat(cryptoAllowance.getSpender()).isEqualTo(spenderString);
-        var timestampRange = cryptoAllowance.getTimestamp();
-        assertNotNull(timestampRange);
-        assertThat(timestampRange.getFrom()).isNotBlank();
-        assertThat(timestampRange.getTo()).isBlank();
+        mirrorCryptoAllowanceResponse.getAllowances();
+        assertThat(mirrorCryptoAllowanceResponse.getAllowances())
+                .isNotEmpty()
+                .first()
+                .isNotNull()
+                .returns(approvedAmount, MirrorCryptoAllowance::getAmount)
+                .returns(ownerString, MirrorCryptoAllowance::getOwner)
+                .returns(ownerString, MirrorCryptoAllowance::getPayerAccountId)
+                .returns(spenderString, MirrorCryptoAllowance::getSpender)
+                .extracting(MirrorCryptoAllowance::getTimestamp)
+                .isNotNull()
+                .satisfies(t -> assertThat(t.getFrom()).isNotBlank())
+                .satisfies(t -> assertThat(t.getTo()).isBlank());
     }
 
     @When("I delete the crypto allowance for {string}")
@@ -243,21 +240,13 @@ public class AccountFeature extends AbstractFeature {
         log.info("Verify crypto allowance deletion transaction");
         MirrorCryptoAllowanceResponse mirrorCryptoAllowanceResponse =
                 mirrorClient.getAccountCryptoAllowance(accountClient.getClient().getOperatorAccountId().toString());
-        List<MirrorCryptoAllowance> allowances = mirrorCryptoAllowanceResponse.getAllowances();
-        assertNotNull(allowances);
-        AtomicInteger nonZeroCount = new AtomicInteger();
-        mirrorCryptoAllowanceResponse.getAllowances().forEach(x -> {
-            // set allowance to 0 for each non zero
-            if (x.getAmount() > 0) {
-                nonZeroCount.getAndIncrement();
-            }
-        });
-        assertThat(nonZeroCount.get()).isZero();
+        var allowances = mirrorCryptoAllowanceResponse.getAllowances();
+        assertThat(allowances).isNotEmpty();
+        assertThat(allowances.stream().map(MirrorCryptoAllowance::getAmount).reduce(0L, Long::sum)).isZero();
     }
 
     private void setCryptoAllowance(String accountName, long amount) {
-        senderAccountId = accountClient
-                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
         setCryptoAllowance(senderAccountId.getAccountId(), amount, true);
     }
 
