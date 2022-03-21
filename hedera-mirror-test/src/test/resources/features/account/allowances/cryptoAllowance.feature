@@ -5,7 +5,7 @@ Feature: Account Crypto Allowance Coverage Feature
     Scenario Outline: Validate approval CryptoTransfer
         Given I approve <senderName> to transfer up to <approvedAmount> tℏ
         Then the mirror node REST API should confirm the approved <approvedAmount> tℏ crypto transfer allowance
-        When <senderName> transfers <transferAmount> tℏ to <recipientName>
+        When <senderName> transfers <transferAmount> tℏ from their approved balance to <recipientName>
         Then the mirror node REST API should return status <httpStatusCode> for the crypto transfer transaction
         Given I adjust <senderName> transfer allowance to <updateApprovedAmount> tℏ
         Then the mirror node REST API should confirm the approved <updateApprovedAmount> tℏ crypto transfer allowance

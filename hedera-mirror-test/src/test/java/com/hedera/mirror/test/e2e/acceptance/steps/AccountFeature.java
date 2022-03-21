@@ -132,7 +132,7 @@ public class AccountFeature extends AbstractFeature {
         setCryptoAllowance(senderAccountId.getAccountId(), -amount, false);
     }
 
-    @When("{string} transfers {long} tℏ to {string}")
+    @When("{string} transfers {long} tℏ from their approved balance to {string}")
     public void transferFromAllowance(String senderAccountName, long amount, String receiverAccountName) {
         senderAccountId = accountClient
                 .getAccount(AccountClient.AccountNameEnum.valueOf(senderAccountName));
