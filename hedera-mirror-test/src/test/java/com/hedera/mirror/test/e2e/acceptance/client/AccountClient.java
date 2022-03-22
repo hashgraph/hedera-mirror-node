@@ -217,10 +217,7 @@ public class AccountClient extends AbstractNetworkClient {
     public NetworkTransactionResponse approveCryptoAllowance(AccountId spender, Hbar hbarAmount) {
 
         var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
-        log.debug(
-                "Approve spender {} an allowance of {} tℏ on {}'s account",
-                spender,
-                hbarAmount.toTinybars(),
+        log.debug("Approve spender {} an allowance of {} tℏ on {}'s account", spender, hbarAmount.toTinybars(),
                 ownerAccountId);
 
         var transaction = new AccountAllowanceApproveTransaction()

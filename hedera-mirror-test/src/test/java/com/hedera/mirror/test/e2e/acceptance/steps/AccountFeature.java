@@ -193,7 +193,6 @@ public class AccountFeature extends AbstractFeature {
                 mirrorClient.getAccountCryptoAllowanceBySpender(ownerString, spenderString);
 
         // verify valid set of allowance
-        mirrorCryptoAllowanceResponse.getAllowances();
         assertThat(mirrorCryptoAllowanceResponse.getAllowances())
                 .isNotEmpty()
                 .first()
