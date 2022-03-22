@@ -1290,6 +1290,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RoyaltyFee'
+    DeprecatedEvmAddress:
+      type: string
+      description: A network entity encoded as an EVM address in hex.
+      format: binary
+      minLength: 40
+      maxLength: 42
+      pattern: '^(0x)?[A-Fa-f0-9]{40}$'
+      example: "0x0000000000000000000000000000000000001f41"
     EntityId:
       type: string
       description: "Network entity ID in the format of `shard.realm.num`"
@@ -1316,10 +1324,8 @@ components:
       type: string
       description: A network entity encoded as an EVM address in hex.
       format: binary
-      minLength: 42
-      maxLength: 42
       pattern: '^(\d{0,9}\.){0,2}[A-Fa-f0-9]{40}$'
-      example: "0x0000000000000000000000000000000000001f41"
+      example: "0000000000000000000000000000000000001f41"
     EvmAddressOutput:
       type: string
       description: A network entity encoded as an EVM address in hex.
@@ -2253,7 +2259,7 @@ components:
       schema:
         oneOf:
           - $ref: '#/components/schemas/EntityId'
-          - $ref: '#/components/schemas/EvmAddress'
+          - $ref: '#/components/schemas/DeprecatedEvmAddress'
     logIndexQueryParam:
       name: index
       in: query

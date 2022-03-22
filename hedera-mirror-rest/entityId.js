@@ -48,6 +48,7 @@ const maxEncodedId = 2n ** 63n - 1n;
 const entityIdRegex = /^(\d{1,5}\.){1,2}\d{1,10}$/;
 const encodedEntityIdRegex = /^\d{1,19}$/;
 const evmAddressRegex = /^(\d{0,9}\.){0,2}[A-Fa-f0-9]{40}$/;
+const deprecatedEvmAddressInputRegex = /^(0x)?[A-Fa-f0-9]{40}$/;
 
 class EntityId {
   constructor(shard, realm, num) {
@@ -98,6 +99,10 @@ const isValidEvmAddress = (address) => {
 const isValidEntityId = (entityId) => {
   // Accepted forms: shard.realm.num, realm.num, or encodedId
   return (typeof entityId === 'string' && entityIdRegex.test(entityId)) || encodedEntityIdRegex.test(entityId);
+};
+
+const isValidDeprecatedEvmAddressInputRegex = (entityId) => {
+  return typeof entityId === 'string' && deprecatedEvmAddressInputRegex.test(entityId);
 };
 
 /**
@@ -204,7 +209,7 @@ const parseMemoized = mem(
     let shard, realm, num;
     if (isValidEntityId(id)) {
       [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
-    } else if (isValidEvmAddress(id)) {
+    } else if (isValidEvmAddress(id) || isValidDeprecatedEvmAddressInputRegex(id)) {
       [shard, realm, num] = parseFromEvmAddress(id);
     } else {
       throw error();
@@ -252,6 +257,7 @@ const parse = (id, ...rest) => {
 module.exports = {
   isValidEntityId,
   isValidEvmAddress,
+  isValidDeprecatedEvmAddressInputRegex,
   of,
   parse,
 };
