@@ -16,7 +16,7 @@
   },
   "author": "Hedera Mirror Node Team",
   "comments": {
-    "dependencies": "follow-redirects, node-fetch & json-schema are transitive dependencies but we explicitly mark them as a dependency to bring in a non-vulnerable version"
+    "dependencies": "minimist & json-schema are transitive dependencies but we explicitly mark them as a dependency to bring in a non-vulnerable version"
   },
   "license": "Apache-2.0",
   "dependencies": {
@@ -32,7 +32,6 @@
     "express-http-context": "^1.2.4",
     "express-openapi-validator": "^4.13.6",
     "extend": "^3.0.2",
-    "follow-redirects": "^1.14.9",
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
     "json-schema": "^0.4.0",
@@ -41,6 +40,7 @@
     "long": "^5.2.0",
     "mathjs": "^10.4.0",
     "mem": "^8.1.1",
+    "minimist": "^1.2.6",
     "parse-duration": "^1.0.2",
     "pg": "~8.7.3",
     "pg-range": "^1.1.1",
@@ -64,7 +64,6 @@
     "express-http-context",
     "express-openapi-validator",
     "extend",
-    "follow-redirects",
     "ip-anonymize",
     "js-yaml",
     "json-schema",
@@ -73,6 +72,7 @@
     "long",
     "mathjs",
     "mem",
+    "minimist",
     "parse-duration",
     "pg",
     "pg-range",
@@ -100,7 +100,6 @@
     "jest-circus": "^27.4.6",
     "jest-extended": "^2.0.0",
     "jest-junit": "^13.0.0",
-    "node-fetch": "^2.6.7",
     "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.7",
     "nodemon": "^2.0.15",
