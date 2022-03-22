@@ -1,0 +1,50 @@
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+'use strict';
+
+const AddressBookServiceEndpointViewModel = require('./addressBookServiceEndpointViewModel');
+const EntityId = require('../entityId');
+const utils = require('../utils');
+
+/**
+ * Network node view model
+ */
+class NetworkNodeViewModel {
+  /**
+   * Constructs network node view model
+   *
+   * @param {AddressBook} addressBook
+   */
+  constructor(networkNode) {
+    this.description = networkNode.description;
+    this.file_id = EntityId.parse(networkNode.fileId).toString();
+    this.memo = networkNode.memo;
+    this.node_id = Number(networkNode.nodeId);
+    this.node_account_id = EntityId.parse(networkNode.nodeAccountId).toString();
+    this.node_cert_hash = utils.encodeBase64(networkNode.nodeCertHash);
+    this.public_key = utils.nsToSecNs(networkNode.publicKey);
+    this.service_endpoints = networkNode.serviceEndpoints.map(
+      (serviceEndpoint) => new AddressBookServiceEndpointViewModel(serviceEndpoint)
+    );
+  }
+}
+
+module.exports = NetworkNodeViewModel;

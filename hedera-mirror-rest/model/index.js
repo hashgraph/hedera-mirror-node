@@ -21,6 +21,9 @@
 'use strict';
 
 module.exports = {
+  AddressBook: require('./addressBook'),
+  AddressBookEntry: require('./addressBookEntry'),
+  AddressBookServiceEndpoint: require('./addressBookServiceEndpoint'),
   AssessedCustomFee: require('./assessedCustomFee'),
   Contract: require('./contract'),
   CryptoAllowance: require('./cryptoAllowance'),

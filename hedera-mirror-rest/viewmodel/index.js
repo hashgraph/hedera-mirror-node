@@ -21,6 +21,7 @@
 'use strict';
 
 module.exports = {
+  AddressBookServiceEndpoint: require('./addressBookServiceEndpointViewModel'),
   AssessedCustomFeeViewModel: require('./assessedCustomFeeViewModel'),
   CustomFeeViewModel: require('./customFeeViewModel'),
   ContractViewModel: require('./contractViewModel'),
@@ -29,6 +30,7 @@ module.exports = {
   ContractResultStateChangeViewModel: require('./contractResultStateChangeViewModel'),
   ContractResultViewModel: require('./contractResultViewModel'),
   CryptoAllowanceViewModel: require('./cryptoAllowanceViewModel'),
+  NetworkNodeViewModel: require('./networkNodeViewModel'),
   NftTransactionHistoryViewModel: require('./nftTransactionHistoryViewModel'),
   NftTransferViewModel: require('./nftTransferViewModel'),
   NftViewModel: require('./nftViewModel'),
