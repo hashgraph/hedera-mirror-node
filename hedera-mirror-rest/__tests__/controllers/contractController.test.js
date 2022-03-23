@@ -259,7 +259,7 @@ describe('formatContractRow', () => {
   });
 });
 
-describe('getContractByIdQuery', () => {
+describe('getContractByIdOrAddressQuery', () => {
   const mainQuery = `select ${[...contractFields, 'cf.bytecode']}
     from contract c, contract_file cf`;
 
@@ -304,7 +304,7 @@ describe('getContractByIdQuery', () => {
     test(`${spec.name}`, () => {
       [Contract.ID, Contract.EVM_ADDRESS].forEach((columnName) => {
         spec.input.columnName = columnName;
-        assertSqlQueryEqual(contracts.getContractByIdQuery(spec.input), spec.expected(columnName));
+        assertSqlQueryEqual(contracts.getContractByIdOrAddressQuery(spec.input), spec.expected(columnName));
       });
     });
   });

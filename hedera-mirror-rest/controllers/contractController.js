@@ -844,7 +844,7 @@ if (utils.isTestEnv()) {
     extractTimestampConditionsFromContractFilters,
     fileDataQuery,
     formatContractRow,
-    getContractByIdQuery: getContractByIdOrAddressQuery,
+    getContractByIdOrAddressQuery,
     getContractsQuery,
     getLastNonceParamValue,
     validateContractIdAndConsensusTimestampParam,
