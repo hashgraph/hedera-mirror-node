@@ -254,11 +254,15 @@ class ContractService extends BaseService {
     const query = `${ContractService.contractIdByEvmAddressQuery} and ${conditions.join(' and ')}`;
     const rows = await super.getRows(query, params, 'getContractIdByEvmAddress');
     if (rows.length === 0) {
-      throw new NotFoundError(`No contract with the given evm address: ${evmAddress} has been found.`);
+      throw new NotFoundError(
+        `No contract with the given evm address: ${JSON.stringify(evmAddressFilter)} has been found.`
+      );
     }
     //since evm_address is not an unique index, it is important to make this check.
     if (rows.length > 1) {
-      throw new Error(`More than one contract with the evm address ${evmAddress} have been found.`);
+      throw new Error(
+        `More than one contract with the evm address ${JSON.stringify(evmAddressFilter)} have been found.`
+      );
     }
     const contractId = rows[0];
     return BigInt(contractId.id);

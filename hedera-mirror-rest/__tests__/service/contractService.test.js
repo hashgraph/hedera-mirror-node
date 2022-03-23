@@ -716,8 +716,9 @@ describe('ContractService.getContractStateChangesByTimestamps tests', () => {
 
 describe('ContractService.getContractIdByEvmAddress tests', () => {
   test('No match', async () => {
-    await expect(() => ContractService.getContractIdByEvmAddress('123')).rejects.toThrow(
-      new NotFoundError('No contract with the given evm address: 123 has been found.')
+    const evmAddressFilter = {shard: 0, realm: 0, num: Buffer.from('123', 'hex')};
+    await expect(() => ContractService.getContractIdByEvmAddress(evmAddressFilter)).rejects.toThrow(
+      new NotFoundError(`No contract with the given evm address: ${JSON.stringify(evmAddressFilter)} has been found.`)
     );
   });
 
@@ -783,8 +784,11 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
       },
     ]);
 
-    await expect(() => ContractService.getContractIdByEvmAddress(evmAddress)).rejects.toThrow(
-      new NotFoundError(`More than one contract with the evm address ${evmAddress} have been found.`)
+    const evmAddressFilter = {shard: 0, realm: 0, num: evmAddress};
+    await expect(() => ContractService.getContractIdByEvmAddress(evmAddressFilter)).rejects.toThrow(
+      new NotFoundError(
+        `More than one contract with the evm address ${JSON.stringify(evmAddressFilter)} have been found.`
+      )
     );
   });
 
@@ -850,7 +854,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
       },
     ]);
 
-    const contractId = await ContractService.getContractIdByEvmAddress(evmAddress);
+    const contractId = await ContractService.getContractIdByEvmAddress({realm: 0, shard: 0, num: evmAddress});
     expect(contractId.toString()).toEqual('111169');
   });
 });
