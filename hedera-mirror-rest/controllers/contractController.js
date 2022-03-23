@@ -541,7 +541,7 @@ const extractContractResultsByIdQuery = (filters, contractId, paramSupportMap = 
  * @returns {Promise<void>}
  */
 const getContractResultsById = async (req, res) => {
-  const {contractId: contractIdParam, filters} = await extractContractIdAndFiltersFromValidatedRequest(req);
+  const {contractId: contractIdParam, filters} = extractContractIdAndFiltersFromValidatedRequest(req);
 
   const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
