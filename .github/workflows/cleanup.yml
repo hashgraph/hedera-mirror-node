@@ -13,11 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Login to Google Container Registry
-        uses: google-github-actions/setup-gcloud@master
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v0
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCR_KEY }}
+          credentials_json: '${{ secrets.GCR_KEY }}'
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v0
 
       - name: Configure Docker
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
