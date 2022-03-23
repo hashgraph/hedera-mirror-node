@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   db:
-    image: postgres:13.5-alpine
+    image: postgres:14.2-alpine
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256

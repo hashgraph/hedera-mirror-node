@@ -168,6 +168,11 @@ podMonitor:
 
 podSecurityContext:
   fsGroup: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  seccompProfile:
+    type: RuntimeDefault
 
 priorityClassName: ""
 
@@ -453,12 +458,10 @@ resources:
 revisionHistoryLimit: 3
 
 securityContext:
+  allowPrivilegeEscalation: false
   capabilities:
     drop: [ALL]
   readOnlyRootFilesystem: true
-  runAsGroup: 1000
-  runAsNonRoot: true
-  runAsUser: 1000
 
 serviceAccount:
   create: true

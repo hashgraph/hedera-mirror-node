@@ -1,6 +1,6 @@
 module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 
-go 1.17
+go 1.18
 
 require (
 	github.com/coinbase/rosetta-sdk-go v0.7.4
