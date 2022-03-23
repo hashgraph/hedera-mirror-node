@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,6 +38,7 @@ import com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultsResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorCryptoAllowanceResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
@@ -116,6 +117,23 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         }
 
         return subscriptionResponse;
+    }
+
+    public MirrorCryptoAllowanceResponse getAccountCryptoAllowance(String accountId) {
+        log.debug("Verify account '{}''s crypto allowance is returned by Mirror Node", accountId);
+        return callRestEndpoint(
+                "/accounts/{accountId}/allowances/crypto",
+                MirrorCryptoAllowanceResponse.class,
+                accountId);
+    }
+
+    public MirrorCryptoAllowanceResponse getAccountCryptoAllowanceBySpender(String accountId, String spenderId) {
+        log.debug("Verify account '{}''s crypto allowance for {} is returned by Mirror Node", accountId, spenderId);
+        return callRestEndpoint(
+                "/accounts/{accountId}/allowances/crypto?spender.id={spenderId}",
+                MirrorCryptoAllowanceResponse.class,
+                accountId,
+                spenderId);
     }
 
     public MirrorContractResponse getContractInfo(String contractId) {
