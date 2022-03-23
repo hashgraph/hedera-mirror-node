@@ -445,7 +445,7 @@ const extractContractIdAndFiltersFromValidatedRequest = (req) => {
  */
 const getContractLogs = async (req, res) => {
   // get sql filter query, params, limit and limit query from query filters
-  const {filters, contractId: contractIdParam} = await extractContractIdAndFiltersFromValidatedRequest(req);
+  const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req);
   checkTimestampsForTopics(filters);
 
   const contractId = await ContractService.computeContractIdFromString(contractIdParam);
