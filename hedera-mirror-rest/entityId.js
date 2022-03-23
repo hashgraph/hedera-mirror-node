@@ -101,6 +101,16 @@ const isValidEntityId = (entityId) => {
   return (typeof entityId === 'string' && entityIdRegex.test(entityId)) || encodedEntityIdRegex.test(entityId);
 };
 
+const isCreate2EvmAddress = (evmAddress) => {
+  if (!isValidEvmAddress(evmAddress)) {
+    return false;
+  }
+  const idPartsFromEvmAddress = parseFromEvmAddress(evmAddress);
+  return (
+    idPartsFromEvmAddress[0] > maxShard || idPartsFromEvmAddress[1] > maxRealm || idPartsFromEvmAddress[2] > maxNum
+  );
+};
+
 const isValidDeprecatedEvmAddressInputRegex = (entityId) => {
   return typeof entityId === 'string' && deprecatedEvmAddressInputRegex.test(entityId);
 };
@@ -258,6 +268,7 @@ module.exports = {
   isValidEntityId,
   isValidEvmAddress,
   isValidDeprecatedEvmAddressInputRegex,
+  isCreate2EvmAddress,
   of,
   parse,
 };

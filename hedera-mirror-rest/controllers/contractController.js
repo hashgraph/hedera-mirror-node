@@ -115,21 +115,19 @@ const extractSqlFromContractFilters = async (filters) => {
   const conditions = [];
   const contractIdInValues = [];
   const params = [];
-  let contractIdFullName = null;
+  const contractIdFullName = Contract.getFullName(Contract.ID);
 
   for (const filter of filters) {
     switch (filter.key) {
       case constants.filterKeys.CONTRACT_ID:
-        const {columnName, value: contractIdValue} = await ContractService.computeContractIdFromEvmAddress({
-          contractIdValue: filter.value,
-        });
-        contractIdFullName = columnName;
+        const contractIdValue = await ContractService.computeContractIdFromString(filter.value);
+
         if (filter.operator === utils.opsMap.eq) {
           // aggregate '=' conditions and use the sql 'in' operator
           contractIdInValues.push(contractIdValue);
         } else {
           params.push(contractIdValue);
-          conditions.push(`${columnName}${filter.operator}$${params.length}`);
+          conditions.push(`${contractIdFullName}${filter.operator}$${params.length}`);
         }
         break;
       case constants.filterKeys.LIMIT:
@@ -175,7 +173,7 @@ const extractTimestampConditionsFromContractFilters = (filters) => {
     .filter((filter) => filter.key === constants.filterKeys.TIMESTAMP)
     .forEach((filter) => {
       // the first param is the contract id, the param for the current filter will be pushed later, so add 2
-      const position = `$${params.length + 2}`;
+      const position = `$${params.length + 1}`;
       let condition;
       let range;
 
@@ -229,9 +227,7 @@ const formatContractRow = (row) => {
  * @param timestampConditions
  * @return {string}
  */
-const getContractByIdQueryForTable = (table, timestampConditions, columnName) => {
-  const conditions = [`${Contract.getFullName(columnName)} = $1`, ...timestampConditions];
-
+const getContractByIdOrAddressQueryForTable = (table, conditions) => {
   return [
     `select ${contractSelectFields}`,
     `from ${table} ${Contract.tableAlias}`,
@@ -244,13 +240,30 @@ const getContractByIdQueryForTable = (table, timestampConditions, columnName) =>
  * @param timestampConditions
  * @return {string}
  */
-const getContractByIdQuery = ({timestampConditions, columnName}) => {
-  const tableUnionQueries = [getContractByIdQueryForTable(Contract.tableName, timestampConditions, columnName)];
+const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, contractIdParam}) => {
+  const conditions = [...timestampConditions];
+  const params = [...timestampParams];
+  if (EntityId.isCreate2EvmAddress(contractIdParam)) {
+    const contractIdParamParts = ContractService.computeContractIdPartsFromContractIdValue(contractIdParam);
+    const {params: evmAddressParams, conditions: evmAddressConditions} =
+      ContractService.computeConditionsAndParamsFromEvmAddressFilter({
+        evmAddressFilter: contractIdParamParts,
+        paramOffset: params.length,
+      });
+    params.push(...evmAddressParams);
+    conditions.push(...evmAddressConditions);
+  } else {
+    const encodedId = EntityId.parse(contractIdParam).getEncodedId();
+    params.push(encodedId);
+    conditions.push(`${Contract.ID} = $${params.length}`);
+  }
+
+  const tableUnionQueries = [getContractByIdOrAddressQueryForTable(Contract.tableName, conditions)];
   if (timestampConditions.length !== 0) {
     // if there is timestamp condition, union the result from both tables
     tableUnionQueries.push(
       'union',
-      getContractByIdQueryForTable(Contract.historyTableName, timestampConditions, columnName),
+      getContractByIdOrAddressQueryForTable(Contract.historyTableName, conditions),
       `order by ${Contract.TIMESTAMP_RANGE} desc`,
       `limit 1`
     );
@@ -263,11 +276,14 @@ const getContractByIdQuery = ({timestampConditions, columnName}) => {
     ${fileDataQuery}
   )`;
 
-  return [
-    cte,
-    `select ${[...contractSelectFields, 'cf.bytecode']}`,
-    `from contract ${Contract.tableAlias}, contract_file cf`,
-  ].join('\n');
+  return {
+    query: [
+      cte,
+      `select ${[...contractSelectFields, 'cf.bytecode']}`,
+      `from contract ${Contract.tableAlias}, contract_file cf`,
+    ].join('\n'),
+    params,
+  };
 };
 
 /**
@@ -296,19 +312,12 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
  * @returns {Promise<void>}
  */
 const getContractById = async (req, res) => {
-  const {filters, contractId} = extractContractIdAndFiltersFromValidatedRequest(req);
+  const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req);
 
   const {conditions: timestampConditions, params: timestampParams} =
     extractTimestampConditionsFromContractFilters(filters);
 
-  const {columnName, value: contractIdValue} = await ContractService.computeContractIdFromEvmAddress({
-    contractIdValue: contractId,
-    avoidEvmAddress: false,
-  });
-
-  const query = getContractByIdQuery({timestampConditions, columnName});
-
-  const params = [contractIdValue, ...timestampParams];
+  const {query, params} = getContractByIdOrAddressQuery({timestampConditions, timestampParams, contractIdParam});
 
   if (logger.isTraceEnabled()) {
     logger.trace(`getContractById query: ${query}, params: ${params}`);
@@ -436,15 +445,12 @@ const extractContractIdAndFiltersFromValidatedRequest = (req) => {
  */
 const getContractLogs = async (req, res) => {
   // get sql filter query, params, limit and limit query from query filters
-  const {filters, contractId} = await extractContractIdAndFiltersFromValidatedRequest(req);
+  const {filters, contractId: contractIdParam} = await extractContractIdAndFiltersFromValidatedRequest(req);
   checkTimestampsForTopics(filters);
-  const {value: contractIdValue} = await ContractService.computeContractIdFromEvmAddress({
-    contractIdValue: contractId,
-  });
-  const {conditions, params, timestampOrder, indexOrder, limit} = extractContractLogsByIdQuery(
-    filters,
-    contractIdValue
-  );
+
+  const contractId = await ContractService.computeContractIdFromString(contractIdParam);
+
+  const {conditions, params, timestampOrder, indexOrder, limit} = extractContractLogsByIdQuery(filters, contractId);
 
   const rows = await ContractService.getContractLogsByIdAndFilters(
     conditions,
@@ -535,15 +541,13 @@ const extractContractResultsByIdQuery = (filters, contractId, paramSupportMap = 
  * @returns {Promise<void>}
  */
 const getContractResultsById = async (req, res) => {
-  const {contractId, filters} = await extractContractIdAndFiltersFromValidatedRequest(req);
+  const {contractId: contractIdParam, filters} = await extractContractIdAndFiltersFromValidatedRequest(req);
 
-  const {value: contractIdValue} = await ContractService.computeContractIdFromEvmAddress({
-    contractIdValue: contractId,
-  });
+  const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
   const {conditions, params, order, limit} = extractContractResultsByIdQuery(
     filters,
-    contractIdValue,
+    contractId,
     contractResultsByIdParamSupportMap
   );
 
@@ -840,7 +844,7 @@ if (utils.isTestEnv()) {
     extractTimestampConditionsFromContractFilters,
     fileDataQuery,
     formatContractRow,
-    getContractByIdQuery,
+    getContractByIdQuery: getContractByIdOrAddressQuery,
     getContractsQuery,
     getLastNonceParamValue,
     validateContractIdAndConsensusTimestampParam,
