@@ -244,7 +244,7 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
   const conditions = [...timestampConditions];
   const params = [...timestampParams];
   if (EntityId.isCreate2EvmAddress(contractIdParam)) {
-    const contractIdParamParts = ContractService.computeContractIdPartsFromContractIdValue(contractIdParam);
+    const contractIdParamParts = EntityId.computeContractIdPartsFromContractIdValue(contractIdParam);
     const {params: evmAddressParams, conditions: evmAddressConditions} =
       ContractService.computeConditionsAndParamsFromEvmAddressFilter({
         evmAddressFilter: contractIdParamParts,
