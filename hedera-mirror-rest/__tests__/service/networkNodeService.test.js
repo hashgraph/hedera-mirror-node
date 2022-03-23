@@ -55,7 +55,6 @@ beforeEach(async () => {
 });
 
 const defaultFileFilter = 'file_id = $1';
-const additionalConditions = [defaultFileFilter, 'spender > $2'];
 describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
   test('Verify simple query', async () => {
     const [query, params] = NetworkNodeService.getNetworkNodesWithFiltersQuery([], [102], 'asc', 5);
@@ -82,21 +81,6 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([102, 5]);
   });
-
-  // test('Verify additional conditions', async () => {
-  //   const [query, params] = NetworkNodeService.getNetworkNodesWithFiltersQuery(
-  //     additionalConditions,
-  //     [2, 10],
-  //     'asc',
-  //     5
-  //   );
-  //   const expected = `select amount,owner,payer_account_id,spender,timestamp_range
-  //   from crypto_allowance
-  //   where owner = $1 and spender > $2
-  //   order by spender asc limit $3`;
-  //   assertSqlQueryEqual(query, expected);
-  //   expect(params).toEqual([2, 10, 5]);
-  // });
 });
 
 const defaultInputAddressBooks = [
@@ -176,67 +160,83 @@ const defaultInputServiceEndpointBooks = [
 
 const defaultExpectedNetworkNode101 = [
   {
-    description: 'desc 2',
-    end_consensus_timestamp: null,
-    file_id: '101',
-    memo: 'memo 2',
-    node_account_id: '4',
-    node_id: '1',
-    service_endpoints: [
+    addressBook: {
+      startConsensusTimestamp: '1',
+      fileId: '101',
+      endConsensusTimestamp: null,
+    },
+    addressBookEntry: {
+      description: 'desc 2',
+      memo: 'memo 2',
+      nodeAccountId: '4',
+      nodeId: '1',
+    },
+    addressBookServiceEndpoints: [
       {
-        ip_address_v4: '127.0.0.2',
+        ipAddressV4: '127.0.0.2',
         port: 50212,
       },
     ],
-    start_consensus_timestamp: '1',
   },
   {
-    description: 'desc 1',
-    end_consensus_timestamp: null,
-    file_id: '101',
-    memo: 'memo 1',
-    node_account_id: '3',
-    node_id: '0',
-    service_endpoints: [
+    addressBook: {
+      startConsensusTimestamp: '1',
+      fileId: '101',
+      endConsensusTimestamp: null,
+    },
+    addressBookEntry: {
+      description: 'desc 1',
+      memo: 'memo 1',
+      nodeAccountId: '3',
+      nodeId: '0',
+    },
+    addressBookServiceEndpoints: [
       {
-        ip_address_v4: '127.0.0.1',
+        ipAddressV4: '127.0.0.1',
         port: 50211,
       },
     ],
-    start_consensus_timestamp: '1',
   },
 ];
 
 const defaultExpectedNetworkNode102 = [
   {
-    description: 'desc 3',
-    end_consensus_timestamp: null,
-    file_id: '102',
-    memo: '0.0.3',
-    node_account_id: '3',
-    node_id: '0',
-    service_endpoints: [
+    addressBook: {
+      endConsensusTimestamp: null,
+      fileId: '102',
+      startConsensusTimestamp: '2',
+    },
+    addressBookEntry: {
+      description: 'desc 3',
+      memo: '0.0.3',
+      nodeAccountId: '3',
+      nodeId: '0',
+    },
+    addressBookServiceEndpoints: [
       {
-        ip_address_v4: '128.0.0.1',
+        ipAddressV4: '128.0.0.1',
         port: 50212,
       },
     ],
-    start_consensus_timestamp: '2',
   },
   {
-    description: 'desc 4',
-    end_consensus_timestamp: null,
-    file_id: '102',
-    memo: '0.0.4',
-    node_account_id: '4',
-    node_id: '1',
-    service_endpoints: [
+    addressBook: {
+      endConsensusTimestamp: null,
+      fileId: '102',
+      startConsensusTimestamp: '2',
+    },
+    addressBookEntry: {
+      description: 'desc 4',
+      memo: '0.0.4',
+      nodeAccountId: '4',
+      nodeId: '1',
+    },
+    addressBookServiceEndpoints: [
       {
-        ip_address_v4: '128.0.0.2',
+        ipAddressV4: '128.0.0.2',
         port: 50212,
       },
     ],
-    start_consensus_timestamp: '2',
   },
 ];
 
@@ -264,74 +264,4 @@ describe('NetworkNodeService.getNetworkNodes tests', () => {
       defaultExpectedNetworkNode102
     );
   });
-
-  // const inputCryptoAllowance = [
-  //   {
-  //     amount: 1000,
-  //     owner: 2000,
-  //     payer_account_id: 3000,
-  //     spender: 4000,
-  //     timestamp_range: '[0,)',
-  //   },
-  //   {
-  //     amount: 1000,
-  //     owner: 2000,
-  //     payer_account_id: 3000,
-  //     spender: 4001,
-  //     timestamp_range: '[0,)',
-  //   },
-  //   {
-  //     amount: 1000,
-  //     owner: 2000,
-  //     payer_account_id: 3000,
-  //     spender: 4002,
-  //     timestamp_range: '[0,)',
-  //   },
-  //   {
-  //     amount: 1000,
-  //     owner: 2000,
-  //     payer_account_id: 3000,
-  //     spender: 4003,
-  //     timestamp_range: '[0,)',
-  //   },
-  // ];
-
-  // const expectedCryptoAllowance = [
-  //   {
-  //     amount: '1000',
-  //     owner: '2000',
-  //     payerAccountId: '3000',
-  //     spender: '4002',
-  //   },
-  //   {
-  //     amount: '1000',
-  //     owner: '2000',
-  //     payerAccountId: '3000',
-  //     spender: '4003',
-  //   },
-  // ];
-
-  // test('NetworkNodeService.getAccountCrytoAllownces - Matching spender gt entity', async () => {
-  //   await integrationDomainOps.loadCryptoAllowances(inputCryptoAllowance);
-
-  //   await expect(
-  //     NetworkNodeService.getNetworkNodes([defaultFileFilter, 'node_id = $2'], [102, 4001], 'asc', 5)
-  //   ).resolves.toMatchObject(expectedCryptoAllowance);
-  // });
-
-  // test('NetworkNodeService.getAccountCrytoAllownces - Matching spender gt entity', async () => {
-  //   await integrationDomainOps.loadCryptoAllowances(inputCryptoAllowance);
-
-  //   await expect(
-  //     NetworkNodeService.getNetworkNodes([defaultFileFilter, 'node_id = $2'], [101, 4001], 'desc', 5)
-  //   ).resolves.toMatchObject(expectedCryptoAllowance);
-  // });
-
-  // test('NetworkNodeService.getNetworkNodes - Matching spender entity', async () => {
-  //   await integrationDomainOps.loadCryptoAllowances(inputCryptoAllowance);
-
-  //   await expect(
-  //     NetworkNodeService.getNetworkNodes([defaultFileFilter, 'spender in ($2, $3)'], [2000, 4002, 4003], 'asc', 5)
-  //   ).resolves.toMatchObject(expectedCryptoAllowance);
-  // });
 });

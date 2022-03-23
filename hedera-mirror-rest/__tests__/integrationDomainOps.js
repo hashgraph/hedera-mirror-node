@@ -41,6 +41,9 @@ let sqlConnection;
 const setUp = async (testDataJson, sqlconn) => {
   sqlConnection = sqlconn;
   await loadAccounts(testDataJson.accounts);
+  await loadAddressBooks(testDataJson.addressbooks);
+  await loadAddressBookEntries(testDataJson.addressbookentries);
+  await loadAddressBookServiceEndpoints(testDataJson.addressbookserviceendpoints);
   await loadAssessedCustomFees(testDataJson.assessedcustomfees);
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
@@ -69,6 +72,36 @@ const loadAccounts = async (accounts) => {
 
   for (const account of accounts) {
     await addAccount(account);
+  }
+};
+
+const loadAddressBooks = async (addressBook) => {
+  if (addressBook == null) {
+    return;
+  }
+
+  for (const account of addressBook) {
+    await addAddressBook(account);
+  }
+};
+
+const loadAddressBookEntries = async (entry) => {
+  if (entry == null) {
+    return;
+  }
+
+  for (const account of entry) {
+    await addAddressBookEntry(account);
+  }
+};
+
+const loadAddressBookServiceEndpoints = async (endpoints) => {
+  if (endpoints == null) {
+    return;
+  }
+
+  for (const account of endpoints) {
+    await addAddressBookServiceEndpoint(account);
   }
 };
 
@@ -259,6 +292,72 @@ const loadTopicMessages = async (messages) => {
   for (const message of messages) {
     await addTopicMessage(message);
   }
+};
+
+const addAddressBook = async (addressBookInput) => {
+  const insertFields = ['start_consensus_timestamp', 'end_consensus_timestamp', 'file_id', 'node_count', 'file_data'];
+
+  const addressBook = {
+    start_consensus_timestamp: 0,
+    end_consensus_timestamp: null,
+    file_id: 101,
+    node_count: 20,
+    file_data: '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+    ...addressBookInput,
+  };
+
+  addressBook.file_data =
+    typeof addressBookInput.file_data === 'string'
+      ? Buffer.from(addressBookInput.file_data, 'utf-8')
+      : Buffer.from(addressBook.file_data);
+
+  await insertDomainObject('address_book', insertFields, addressBook);
+};
+
+const addAddressBookEntry = async (addressBookEntryInput) => {
+  const insertFields = [
+    'consensus_timestamp',
+    'memo',
+    'public_key',
+    'node_id',
+    'node_account_id',
+    'node_cert_hash',
+    'description',
+    'stake',
+  ];
+
+  const addressBookEntry = {
+    consensus_timestamp: 0,
+    memo: 1000,
+    public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    node_id: 2000,
+    node_account_id: 3,
+    node_cert_hash: 'ed55d98d53fd55c9caf5f61affe88cd2978d37128ec54af5dace29b6fd271cbd079ebe487bda5f227087e2638b1100cf',
+    description: 'description',
+    stake: 0,
+    ...addressBookEntryInput,
+  };
+
+  addressBookEntry.node_cert_hash =
+    typeof addressBookEntryInput.node_cert_hash === 'string'
+      ? Buffer.from(addressBookEntryInput.node_cert_hash, 'utf-8')
+      : Buffer.from(addressBookEntry.node_cert_hash);
+
+  await insertDomainObject('address_book_entry', insertFields, addressBookEntry);
+};
+
+const addAddressBookServiceEndpoint = async (addressBookServiceEndpointInput) => {
+  const insertFields = ['consensus_timestamp', 'ip_address_v4', 'node_id', 'port'];
+
+  const addressBookServiceEndpoint = {
+    consensus_timestamp: 0,
+    ip_address_v4: '127.0.0.1',
+    node_id: 0,
+    port: 50211,
+    ...addressBookServiceEndpointInput,
+  };
+
+  await insertDomainObject('address_book_service_endpoint', insertFields, addressBookServiceEndpoint);
 };
 
 const addEntity = async (defaults, entity) => {
@@ -1071,6 +1170,9 @@ module.exports = {
   addCryptoTransaction,
   addNft,
   addToken,
+  loadAddressBooks,
+  loadAddressBookEntries,
+  loadAddressBookServiceEndpoints,
   loadContracts,
   loadContractResults,
   loadCryptoAllowances,

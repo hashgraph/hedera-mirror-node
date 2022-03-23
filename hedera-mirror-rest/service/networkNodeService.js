@@ -22,7 +22,7 @@
 
 const _ = require('lodash');
 
-const {AddressBook, AddressBookEntry, AddressBookServiceEndpoint} = require('../model');
+const {AddressBook, AddressBookEntry, AddressBookServiceEndpoint, NetworkNode} = require('../model');
 const BaseService = require('./baseService');
 
 /**
@@ -87,7 +87,8 @@ class NetworkNodeService extends BaseService {
   getNetworkNodes = async (conditions, initParams, order, limit) => {
     const [query, params] = this.getNetworkNodesWithFiltersQuery(conditions, initParams, order, limit);
 
-    return await super.getRows(query, params, 'getNetworkNodes');
+    const rows = await super.getRows(query, params, 'getNetworkNodes');
+    return rows.map((x) => new NetworkNode(x));
   };
 
   getNetworkNodesWithFiltersQuery = (whereConditions, whereParams, nodeOrder, limit) => {

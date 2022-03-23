@@ -26,11 +26,12 @@ class AddressBookServiceEndpoint {
   /**
    * Parses crypto_allowance table columns into object
    */
-  constructor(cryptoAllowance) {
-    Object.assign(
-      this,
-      _.mapKeys(cryptoAllowance, (v, k) => _.camelCase(k))
-    );
+  constructor(serviceEndpoint) {
+    // explicitly assign properties to restict properties and allow for composition in other models
+    this.consensusTimestamp = serviceEndpoint.consensus_timestamp;
+    this.ipAddressV4 = serviceEndpoint.ip_address_v4;
+    this.nodeId = serviceEndpoint.node_id;
+    this.port = serviceEndpoint.port;
   }
 
   static tableAlias = 'abse';

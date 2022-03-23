@@ -24,13 +24,15 @@ const _ = require('lodash');
 
 class AddressBook {
   /**
-   * Parses crypto_allowance table columns into object
+   * Parses address_book table columns into object
    */
-  constructor(cryptoAllowance) {
-    Object.assign(
-      this,
-      _.mapKeys(cryptoAllowance, (v, k) => _.camelCase(k))
-    );
+  constructor(addressBook) {
+    // explicitly assign properties to restict properties and allow for composition in other models
+    this.endConsensusTimestamp = addressBook.end_consensus_timestamp;
+    this.fileData = addressBook.file_data;
+    this.fileId = addressBook.file_id;
+    this.nodeCount = addressBook.node_count;
+    this.startConsensusTimestamp = addressBook.start_consensus_timestamp;
   }
 
   static tableAlias = 'adb';
