@@ -269,7 +269,7 @@ class ContractService extends BaseService {
   }
 
   async computeContractIdFromString(contractIdValue) {
-    const contractIdParts = this.computeContractIdPartsFromContractIdValue(contractIdValue);
+    const contractIdParts = EntityId.computeContractIdPartsFromContractIdValue(contractIdValue);
 
     if (EntityId.isCreate2EvmAddress(contractIdParts.num)) {
       contractIdParts.num = Buffer.from(contractIdParts.num, 'hex');
@@ -277,16 +277,6 @@ class ContractService extends BaseService {
     }
 
     return EntityId.parse(contractIdValue, constants.filterKeys.CONTRACTID).getEncodedId();
-  }
-
-  computeContractIdPartsFromContractIdValue(contractId) {
-    const idPieces = contractId.split('.');
-    idPieces.unshift(...[null, null].slice(0, 3 - idPieces.length));
-    return {
-      shard: idPieces[0] !== null ? BigInt(idPieces[0]) : null,
-      realm: idPieces[1] !== null ? BigInt(idPieces[1]) : null,
-      num: idPieces[2],
-    };
   }
 }
 

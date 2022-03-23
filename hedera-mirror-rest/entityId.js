@@ -174,18 +174,26 @@ const parseFromEncodedId = (id, error) => {
  * @return {bigint[3]}
  */
 const parseFromEvmAddress = (address) => {
-  const evmAddress = _.last(address.split('.'));
+  const addressParts = computeContractIdPartsFromContractIdValue(address.split('.'));
+
   // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
-  const hexDigits = evmAddress.replace('0x', '');
+  const hexDigits = addressParts.num.replace('0x', '');
   const parts = [
     Number.parseInt(hexDigits.slice(0, 8), 16), // shard
     Number.parseInt(hexDigits.slice(8, 24), 16), // realm
     Number.parseInt(hexDigits.slice(24, 40), 16), // num
   ];
 
-  return parts.map((part) => BigInt(part));
+  const evmAddressParts = parts.map((part) => BigInt(part));
+  const propsToBeValidated = ['shard', 'realm'];
+  for (let i = 0; i < propsToBeValidated.length; i++) {
+    const prop = propsToBeValidated[i];
+    if (addressParts[prop] !== null && addressParts[prop] !== parts[i]) {
+      throw new Error(`The given ${prop} does not match the ${prop} from the evm address.`);
+    }
+  }
+  return evmAddressParts;
 };
-
 /**
  * Parses shard, realm, num from entity ID string, can be shard.realm.num or realm.num.
  * @param {string} id
@@ -198,6 +206,16 @@ const parseFromString = (id) => {
   }
 
   return parts.map((part) => BigInt(part));
+};
+
+const computeContractIdPartsFromContractIdValue = (contractId) => {
+  const idPieces = contractId.split('.');
+  idPieces.unshift(...[null, null].slice(0, 3 - idPieces.length));
+  return {
+    shard: idPieces[0] !== null ? BigInt(idPieces[0]) : null,
+    realm: idPieces[1] !== null ? BigInt(idPieces[1]) : null,
+    num: idPieces[2],
+  };
 };
 
 const entityIdCacheOptions = {
@@ -269,6 +287,7 @@ module.exports = {
   isValidEvmAddress,
   isValidDeprecatedEvmAddressInputRegex,
   isCreate2EvmAddress,
+  computeContractIdPartsFromContractIdValue,
   of,
   parse,
 };
