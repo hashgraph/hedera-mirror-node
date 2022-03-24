@@ -243,8 +243,9 @@ const getContractByIdOrAddressQueryForTable = (table, conditions) => {
 const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, contractIdParam}) => {
   const conditions = [...timestampConditions];
   const params = [...timestampParams];
-  if (EntityId.isCreate2EvmAddress(contractIdParam)) {
-    const contractIdParamParts = EntityId.computeContractIdPartsFromContractIdValue(contractIdParam);
+  const contractIdParamParts = EntityId.computeContractIdPartsFromContractIdValue(contractIdParam);
+
+  if (contractIdParamParts.hasOwnProperty('create2_evm_address')) {
     const {params: evmAddressParams, conditions: evmAddressConditions} =
       ContractService.computeConditionsAndParamsFromEvmAddressFilter({
         evmAddressFilter: contractIdParamParts,
@@ -253,7 +254,8 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
     params.push(...evmAddressParams);
     conditions.push(...evmAddressConditions);
   } else {
-    const encodedId = EntityId.parse(contractIdParam).getEncodedId();
+    logger.info(contractIdParam + ' <<<<<<<<<<');
+    const encodedId = EntityId.parse(_.last(contractIdParam.split('.'))).getEncodedId();
     params.push(encodedId);
     conditions.push(`${Contract.ID} = $${params.length}`);
   }
@@ -345,6 +347,7 @@ const getContracts = async (req, res) => {
 
   // get sql filter query, params, limit and limit query from query filters
   const {filterQuery, params, order, limit, limitQuery} = await extractSqlFromContractFilters(filters);
+
   const query = getContractsQuery(filterQuery, limitQuery, order);
 
   if (logger.isTraceEnabled()) {
@@ -390,6 +393,7 @@ const validateContractIdParam = (contractId) => {
   if (EntityId.isValidEvmAddress(contractId)) {
     return;
   }
+
   if (!EntityId.isValidEntityId(contractId)) {
     throw InvalidArgumentError.forParams(constants.filterKeys.CONTRACTID);
   }

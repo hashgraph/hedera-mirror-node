@@ -47,7 +47,7 @@ const maxEncodedId = 2n ** 63n - 1n;
 
 const entityIdRegex = /^(\d{1,5}\.){1,2}\d{1,10}$/;
 const encodedEntityIdRegex = /^\d{1,19}$/;
-const evmAddressRegex = /^(\d{0,9}\.){0,2}[A-Fa-f0-9]{40}$/;
+const evmAddressRegex = /^(\d{1,10}\.){0,2}[A-Fa-f0-9]{40}$/;
 const deprecatedEvmAddressInputRegex = /^(0x)?[A-Fa-f0-9]{40}$/;
 
 class EntityId {
@@ -203,11 +203,16 @@ const parseFromString = (id) => {
 const computeContractIdPartsFromContractIdValue = (contractId) => {
   const idPieces = contractId.split('.');
   idPieces.unshift(...[null, null].slice(0, 3 - idPieces.length));
-  return {
+  const contractIdParts = {
     shard: idPieces[0] !== null ? BigInt(idPieces[0]) : null,
     realm: idPieces[1] !== null ? BigInt(idPieces[1]) : null,
-    num: idPieces[2],
   };
+  if (isCreate2EvmAddress(idPieces[2])) {
+    contractIdParts.create2_evm_address = idPieces[2];
+  } else {
+    contractIdParts.num = idPieces[2];
+  }
+  return contractIdParts;
 };
 
 const entityIdCacheOptions = {

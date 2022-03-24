@@ -716,14 +716,14 @@ describe('ContractService.getContractStateChangesByTimestamps tests', () => {
 
 describe('ContractService.getContractIdByEvmAddress tests', () => {
   test('No match', async () => {
-    const evmAddressFilter = {shard: 0, realm: 0, num: Buffer.from('123', 'hex')};
+    const evmAddressFilter = {shard: 0, realm: 0, create2_evm_address: Buffer.from('123', 'hex')};
     await expect(() => ContractService.getContractIdByEvmAddress(evmAddressFilter)).rejects.toThrow(
       new NotFoundError(`No contract with the given evm address: ${JSON.stringify(evmAddressFilter)} has been found.`)
     );
   });
 
   test('Multiple rows match', async () => {
-    const evmAddress = Buffer.from('3d4ffd867fac5d9c228d1dbeb7f218a29c94b', 'hex');
+    const evm_address = Buffer.from('3d4ffd867fac5d9c228d1dbeb7f218a29c94b', 'hex');
     await integrationDomainOps.loadContracts([
       {
         auto_renew_period: 7890000,
@@ -742,7 +742,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         file_id: 111168,
         obtainer_id: null,
         type: 'CONTRACT',
-        evm_address: evmAddress,
+        evm_address,
       },
       {
         auto_renew_period: 7890000,
@@ -780,11 +780,11 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         file_id: 111481,
         obtainer_id: null,
         type: 'CONTRACT',
-        evm_address: evmAddress,
+        evm_address,
       },
     ]);
 
-    const evmAddressFilter = {shard: 0, realm: 0, num: evmAddress};
+    const evmAddressFilter = {shard: 0, realm: 0, create2_evm_address: evm_address};
     await expect(() => ContractService.getContractIdByEvmAddress(evmAddressFilter)).rejects.toThrow(
       new NotFoundError(
         `More than one contract with the evm address ${JSON.stringify(evmAddressFilter)} have been found.`
@@ -793,7 +793,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
   });
 
   test('One row match', async () => {
-    const evmAddress = Buffer.from('1aaafd867fac5d9c228d1dbeb7f218a29c94b', 'hex');
+    const evm_address = Buffer.from('1aaafd867fac5d9c228d1dbeb7f218a29c94b', 'hex');
     await integrationDomainOps.loadContracts([
       {
         auto_renew_period: 7890000,
@@ -812,7 +812,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         file_id: 111168,
         obtainer_id: null,
         type: 'CONTRACT',
-        evm_address: evmAddress,
+        evm_address,
       },
       {
         auto_renew_period: 7890000,
@@ -854,7 +854,11 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
       },
     ]);
 
-    const contractId = await ContractService.getContractIdByEvmAddress({realm: 0, shard: 0, num: evmAddress});
+    const contractId = await ContractService.getContractIdByEvmAddress({
+      realm: 0,
+      shard: 0,
+      create2_evm_address: evm_address,
+    });
     expect(contractId.toString()).toEqual('111169');
   });
 });

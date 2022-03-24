@@ -96,7 +96,7 @@ class ContractService extends BaseService {
       columnName: Contract.getFullName(Contract.REALM),
     },
     {
-      partName: 'num',
+      partName: 'create2_evm_address',
       columnName: Contract.getFullName(Contract.EVM_ADDRESS),
     },
   ];
@@ -240,7 +240,7 @@ class ContractService extends BaseService {
       if (evmAddressFilter[partName] === null) {
         return;
       }
-      if (partName === 'num') {
+      if (partName === 'create2_evm_address') {
         evmAddressFilter[partName] = Buffer.from(evmAddressFilter[partName], 'hex');
       }
       const length = params.push(evmAddressFilter[partName]);
@@ -271,8 +271,8 @@ class ContractService extends BaseService {
   async computeContractIdFromString(contractIdValue) {
     const contractIdParts = EntityId.computeContractIdPartsFromContractIdValue(contractIdValue);
 
-    if (EntityId.isCreate2EvmAddress(contractIdParts.num)) {
-      contractIdParts.num = Buffer.from(contractIdParts.num, 'hex');
+    if (contractIdParts.hasOwnProperty('create2_evm_address')) {
+      contractIdParts.create2_evm_address = Buffer.from(contractIdParts.create2_evm_address, 'hex');
       return await this.getContractIdByEvmAddress(contractIdParts);
     }
 
