@@ -23,6 +23,16 @@ spec:
     - kind: Secret
       name: mirror
   values:
+    prometheus-adapter:
+      rules:
+        custom:
+          - seriesQuery: 'container_cpu_cfs_throttled_seconds_total{container!=""}'
+            resources:
+              template: "<<.Resource>>"
+            name:
+              matches: ".*"
+              as: "pod_cpu_utilization"
+            metricsQuery: "sum(rate(<<.Series>>{<<.LabelMatchers>>}[2m])) by (<<.GroupBy>>)"
     prometheus:
       prometheus:
         prometheusSpec:
