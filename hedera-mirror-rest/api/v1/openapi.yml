@@ -1088,7 +1088,7 @@ components:
           type: boolean
           example: false
         evm_address:
-          $ref: '#/components/schemas/EvmAddressOutput'
+          $ref: '#/components/schemas/EvmAddress'
         expiration_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         file_id:
@@ -1324,24 +1324,26 @@ components:
       type: string
       description: A network entity encoded as an EVM address in hex.
       format: binary
-      pattern: '^(\d{0,9}\.){0,2}[A-Fa-f0-9]{40}$'
+      minLength: 40
+      maxLength: 42
+      pattern: '^(0x)?[A-Fa-f0-9]{40}$'
       example: "0000000000000000000000000000000000001f41"
-    EvmAddressOutput:
+    EvmAddressWithShardRealm:
       type: string
       description: A network entity encoded as an EVM address in hex.
       format: binary
-      minLength: 42
-      maxLength: 42
-      pattern: '^(0x)?[A-Fa-f0-9]{40}$'
+      minLength: 40
+      maxLength: 60
+      pattern: '^(\d{1,10}\.){0,2}[A-Fa-f0-9]{40}$'
       example: "0x0000000000000000000000000000000000001f41"
     EvmAddressNullable:
       type: string
       description: A network entity encoded as an EVM address in hex.
       format: binary
-      minLength: 42
+      minLength: 40
       maxLength: 42
       nullable: true
-      pattern: '^(\d{0,9}\.){0,2}[A-Fa-f0-9]{40}$'
+      pattern: '^(0x)?[A-Fa-f0-9]{40}$'
       example: "0x0000000000000000000000000000000000001f41"
     FixedFee:
       type: object
@@ -2172,9 +2174,6 @@ components:
         evmAddressNoOperator:
           summary: A hex encoded EVM address with no operator.
           value: 0.0.1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c
-        evmAddressEqOperator:
-          summary: A hex encoded EVM address with eq operator.
-          value: eq:0.1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c
         entityNumEqOperator:
           summary: Example of entityNum equals operator
           value: eq:200
@@ -2214,7 +2213,7 @@ components:
       schema:
         oneOf:
           - $ref: '#/components/schemas/EntityIdQuery'
-          - $ref: '#/components/schemas/EvmAddress'
+          - $ref: '#/components/schemas/EvmAddressWithShardRealm'
     contractIdPathParam:
       name: contractIdOrAddress
       in: path
@@ -2223,7 +2222,7 @@ components:
       schema:
         oneOf:
           - $ref: '#/components/schemas/EntityId'
-          - $ref: '#/components/schemas/EvmAddress'
+          - $ref: '#/components/schemas/EvmAddressWithShardRealm'
     entityIdPathParam:
       name: entityId
       in: path
@@ -2259,7 +2258,7 @@ components:
       schema:
         oneOf:
           - $ref: '#/components/schemas/EntityId'
-          - $ref: '#/components/schemas/DeprecatedEvmAddress'
+          - $ref: '#/components/schemas/EvmAddress'
     logIndexQueryParam:
       name: index
       in: query

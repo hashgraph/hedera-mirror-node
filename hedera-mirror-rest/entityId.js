@@ -105,7 +105,7 @@ const isCreate2EvmAddress = (evmAddress) => {
   if (!isValidEvmAddress(evmAddress)) {
     return false;
   }
-  const idPartsFromEvmAddress = parseFromEvmAddress(evmAddress);
+  const idPartsFromEvmAddress = parseFromEvmAddress(_.last(evmAddress.split('.')));
   return (
     idPartsFromEvmAddress[0] > maxShard || idPartsFromEvmAddress[1] > maxRealm || idPartsFromEvmAddress[2] > maxNum
   );
@@ -170,14 +170,12 @@ const parseFromEncodedId = (id, error) => {
 
 /**
  * Parses shard, realm, num from EVM address string.
- * @param {string} address
+ * @param {string} evmAddress
  * @return {bigint[3]}
  */
-const parseFromEvmAddress = (address) => {
-  const addressParts = computeContractIdPartsFromContractIdValue(address.split('.'));
-
+const parseFromEvmAddress = (evmAddress) => {
   // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
-  const hexDigits = addressParts.num.replace('0x', '');
+  const hexDigits = evmAddress.replace('0x', '');
   const parts = [
     Number.parseInt(hexDigits.slice(0, 8), 16), // shard
     Number.parseInt(hexDigits.slice(8, 24), 16), // realm
@@ -185,13 +183,7 @@ const parseFromEvmAddress = (address) => {
   ];
 
   const evmAddressParts = parts.map((part) => BigInt(part));
-  const propsToBeValidated = ['shard', 'realm'];
-  for (let i = 0; i < propsToBeValidated.length; i++) {
-    const prop = propsToBeValidated[i];
-    if (addressParts[prop] !== null && addressParts[prop] !== parts[i]) {
-      throw new Error(`The given ${prop} does not match the ${prop} from the evm address.`);
-    }
-  }
+
   return evmAddressParts;
 };
 /**
