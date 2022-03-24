@@ -75,6 +75,11 @@ func (suite *cryptoTransferTransactionConstructorSuite) TestNewTransactionConstr
 	assert.NotNil(suite.T(), h)
 }
 
+func (suite *cryptoTransferTransactionConstructorSuite) TestGetDefaultMaxTransactionFee() {
+	h := newCryptoTransferTransactionConstructor()
+	assert.Equal(suite.T(), types.HbarAmount{Value: 1_00000000}, h.GetDefaultMaxTransactionFee())
+}
+
 func (suite *cryptoTransferTransactionConstructorSuite) TestGetOperationType() {
 	h := newCryptoTransferTransactionConstructor()
 	assert.Equal(suite.T(), types.OperationTypeCryptoTransfer, h.GetOperationType())

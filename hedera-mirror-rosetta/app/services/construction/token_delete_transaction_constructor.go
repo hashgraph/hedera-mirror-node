@@ -22,7 +22,6 @@ package construction
 
 import (
 	"context"
-	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
@@ -33,7 +32,7 @@ import (
 )
 
 type tokenDeleteTransactionConstructor struct {
-	transactionType string
+	commonTransactionConstructor
 }
 
 func (t *tokenDeleteTransactionConstructor) Construct(
@@ -127,16 +126,11 @@ func (t *tokenDeleteTransactionConstructor) preprocess(operations types.Operatio
 	return &operation.AccountId, &tokenId, nil
 }
 
-func (t *tokenDeleteTransactionConstructor) GetOperationType() string {
-	return types.OperationTypeTokenDelete
-}
-
-func (t *tokenDeleteTransactionConstructor) GetSdkTransactionType() string {
-	return t.transactionType
-}
-
 func newTokenDeleteTransactionConstructor() transactionConstructorWithType {
 	return &tokenDeleteTransactionConstructor{
-		transactionType: reflect.TypeOf(hedera.TokenDeleteTransaction{}).Name(),
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenDeleteTransaction(),
+			types.OperationTypeTokenDelete,
+		),
 	}
 }

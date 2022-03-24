@@ -22,17 +22,50 @@ package construction
 
 import (
 	"encoding/json"
+	"github.com/go-playground/validator/v10"
+	"github.com/hashgraph/hedera-sdk-go/v2"
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
+
+type commonTransactionConstructor struct {
+	defaultMaxFee   types.HbarAmount
+	operationType   string
+	transactionType string
+	validate        *validator.Validate
+}
+
+func (c *commonTransactionConstructor) GetDefaultMaxTransactionFee() types.HbarAmount {
+	return c.defaultMaxFee
+}
+
+func (c *commonTransactionConstructor) GetOperationType() string {
+	return c.operationType
+}
+
+func (c *commonTransactionConstructor) GetSdkTransactionType() string {
+	return c.transactionType
+}
+
+func newCommonTransactionConstructor(
+	transaction interfaces.Transaction,
+	operationType string,
+) commonTransactionConstructor {
+	defaultMaxFee := types.HbarAmount{Value: transaction.GetMaxTransactionFee().AsTinybar()}
+	transactionType := reflect.TypeOf(transaction).Elem().Name()
+	return commonTransactionConstructor{
+		defaultMaxFee:   defaultMaxFee,
+		operationType:   operationType,
+		transactionType: transactionType,
+		validate:        validator.New(),
+	}
+}
 
 type payerMetadata struct {
 	Payer *hedera.AccountID `json:"payer" validate:"required"`

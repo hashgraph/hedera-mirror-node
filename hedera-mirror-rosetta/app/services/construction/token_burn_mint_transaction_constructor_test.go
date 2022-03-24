@@ -57,6 +57,31 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestNewTokenMintTran
 	assert.NotNil(suite.T(), h)
 }
 
+func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetDefaultMaxTransactionFee() {
+	tests := []struct {
+		name                   string
+		transactionConstructor transactionConstructorWithType
+		expected               types.HbarAmount
+	}{
+		{
+			name:                   "tokenBurn",
+			transactionConstructor: newTokenBurnTransactionConstructor(),
+			expected:               types.HbarAmount{Value: 2_00000000},
+		},
+		{
+			name:                   "tokenMint",
+			transactionConstructor: newTokenMintTransactionConstructor(),
+			expected:               types.HbarAmount{Value: 30_00000000},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.T().Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.transactionConstructor.GetDefaultMaxTransactionFee())
+		})
+	}
+}
+
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetOperationType() {
 	tests := []struct {
 		name       string

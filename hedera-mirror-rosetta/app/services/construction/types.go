@@ -22,14 +22,13 @@ package construction
 
 import (
 	"context"
-
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 )
 
-// TransactionConstructor defines the methods to construct a transaction
-type TransactionConstructor interface {
+// BaseTransactionConstructor defines the methods to construct a transaction
+type BaseTransactionConstructor interface {
 	// Construct constructs a transaction from its operations
 	Construct(
 		ctx context.Context,
@@ -45,4 +44,11 @@ type TransactionConstructor interface {
 
 	// Preprocess preprocesses the operations to get required signers
 	Preprocess(ctx context.Context, operations types.OperationSlice) ([]types.AccountId, *rTypes.Error)
+}
+
+type TransactionConstructor interface {
+	BaseTransactionConstructor
+
+	// GetDefaultMaxTransactionFee gets the default max transaction fee in hbar
+	GetDefaultMaxTransactionFee(operationType string) (types.HbarAmount, *rTypes.Error)
 }

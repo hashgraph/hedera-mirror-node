@@ -26,21 +26,14 @@ import (
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/mock"
 )
 
-var (
-	NilHederaTransaction *hedera.TransferTransaction
-	NilOperations        types.OperationSlice
-	NilSigners           []types.AccountId
-)
-
-type MockTransactionConstructor struct {
+type MockTransactionConstructorWithType struct {
 	mock.Mock
 }
 
-func (m *MockTransactionConstructor) Construct(
+func (m *MockTransactionConstructorWithType) Construct(
 	ctx context.Context,
 	operations types.OperationSlice,
 ) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
@@ -49,7 +42,7 @@ func (m *MockTransactionConstructor) Construct(
 		args.Get(2).(*rTypes.Error)
 }
 
-func (m *MockTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
+func (m *MockTransactionConstructorWithType) Parse(ctx context.Context, transaction interfaces.Transaction) (
 	types.OperationSlice,
 	[]types.AccountId,
 	*rTypes.Error,
@@ -58,7 +51,7 @@ func (m *MockTransactionConstructor) Parse(ctx context.Context, transaction inte
 	return args.Get(0).(types.OperationSlice), args.Get(1).([]types.AccountId), args.Get(2).(*rTypes.Error)
 }
 
-func (m *MockTransactionConstructor) Preprocess(ctx context.Context, operations types.OperationSlice) (
+func (m *MockTransactionConstructorWithType) Preprocess(ctx context.Context, operations types.OperationSlice) (
 	[]types.AccountId,
 	*rTypes.Error,
 ) {
@@ -66,10 +59,15 @@ func (m *MockTransactionConstructor) Preprocess(ctx context.Context, operations 
 	return args.Get(0).([]types.AccountId), args.Get(1).(*rTypes.Error)
 }
 
-func (m *MockTransactionConstructor) GetDefaultMaxTransactionFee(operationType string) (
-	types.HbarAmount,
-	*rTypes.Error,
-) {
-	args := m.Called(operationType)
-	return args.Get(0).(types.HbarAmount), args.Get(1).(*rTypes.Error)
+func (m *MockTransactionConstructorWithType) GetDefaultMaxTransactionFee() types.HbarAmount {
+	args := m.Called()
+	return args.Get(0).(types.HbarAmount)
+}
+
+func (m *MockTransactionConstructorWithType) GetOperationType() string {
+	return types.OperationTypeCryptoTransfer
+}
+
+func (m *MockTransactionConstructorWithType) GetSdkTransactionType() string {
+	return "TransferTransaction"
 }

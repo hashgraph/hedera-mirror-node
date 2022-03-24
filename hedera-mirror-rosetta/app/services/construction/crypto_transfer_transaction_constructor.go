@@ -22,7 +22,6 @@ package construction
 
 import (
 	"context"
-	"reflect"
 	"strconv"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -35,7 +34,7 @@ import (
 )
 
 type cryptoTransferTransactionConstructor struct {
-	transactionType string
+	commonTransactionConstructor
 }
 
 type transfer struct {
@@ -101,14 +100,6 @@ func (c *cryptoTransferTransactionConstructor) Construct(
 	}
 
 	return transaction, senders, nil
-}
-
-func (c *cryptoTransferTransactionConstructor) GetOperationType() string {
-	return types.OperationTypeCryptoTransfer
-}
-
-func (c *cryptoTransferTransactionConstructor) GetSdkTransactionType() string {
-	return c.transactionType
 }
 
 func (c *cryptoTransferTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
@@ -294,8 +285,10 @@ func getDomainToken(token hedera.TokenID, tokenDecimals map[hedera.TokenID]uint3
 }
 
 func newCryptoTransferTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TransferTransaction{}).Name()
 	return &cryptoTransferTransactionConstructor{
-		transactionType: transactionType,
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTransferTransaction(),
+			types.OperationTypeCryptoTransfer,
+		),
 	}
 }

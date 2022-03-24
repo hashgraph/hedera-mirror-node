@@ -22,11 +22,9 @@ package construction
 
 import (
 	"context"
-	"reflect"
 	"time"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
@@ -54,8 +52,7 @@ type tokenCreate struct {
 }
 
 type tokenCreateTransactionConstructor struct {
-	transactionType string
-	validate        *validator.Validate
+	commonTransactionConstructor
 }
 
 func (t *tokenCreateTransactionConstructor) Construct(
@@ -122,14 +119,6 @@ func (t *tokenCreateTransactionConstructor) Construct(
 	}
 
 	return tx, signers, nil
-}
-
-func (t *tokenCreateTransactionConstructor) GetOperationType() string {
-	return types.OperationTypeTokenCreate
-}
-
-func (t *tokenCreateTransactionConstructor) GetSdkTransactionType() string {
-	return t.transactionType
 }
 
 func (t *tokenCreateTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
@@ -274,9 +263,10 @@ func (t *tokenCreateTransactionConstructor) preprocess(operations types.Operatio
 }
 
 func newTokenCreateTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenCreateTransaction{}).Name()
 	return &tokenCreateTransactionConstructor{
-		transactionType: transactionType,
-		validate:        validator.New(),
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenCreateTransaction(),
+			types.OperationTypeTokenCreate,
+		),
 	}
 }
