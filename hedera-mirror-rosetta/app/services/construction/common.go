@@ -22,9 +22,10 @@ package construction
 
 import (
 	"encoding/json"
+	"reflect"
+
 	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-sdk-go/v2"
-	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
