@@ -22,7 +22,6 @@ package construction
 
 import (
 	"context"
-	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
@@ -33,8 +32,7 @@ import (
 )
 
 type tokenAssociateDissociateTransactionConstructor struct {
-	operationType   string
-	transactionType string
+	commonTransactionConstructor
 }
 
 func (t *tokenAssociateDissociateTransactionConstructor) Construct(
@@ -169,26 +167,20 @@ func (t *tokenAssociateDissociateTransactionConstructor) preprocess(operations t
 	return &accountId, tokenIds, nil
 }
 
-func (t *tokenAssociateDissociateTransactionConstructor) GetOperationType() string {
-	return t.operationType
-}
-
-func (t *tokenAssociateDissociateTransactionConstructor) GetSdkTransactionType() string {
-	return t.transactionType
-}
-
 func newTokenAssociateTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenAssociateTransaction{}).Name()
 	return &tokenAssociateDissociateTransactionConstructor{
-		operationType:   types.OperationTypeTokenAssociate,
-		transactionType: transactionType,
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenAssociateTransaction(),
+			types.OperationTypeTokenAssociate,
+		),
 	}
 }
 
 func newTokenDissociateTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenDissociateTransaction{}).Name()
 	return &tokenAssociateDissociateTransactionConstructor{
-		operationType:   types.OperationTypeTokenDissociate,
-		transactionType: transactionType,
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenDissociateTransaction(),
+			types.OperationTypeTokenDissociate,
+		),
 	}
 }

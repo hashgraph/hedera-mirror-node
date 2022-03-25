@@ -22,19 +22,15 @@ package construction
 
 import (
 	"context"
-	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
 type tokenGrantRevokeKycTransactionConstructor struct {
-	operationType   string
-	transactionType string
-	validate        *validator.Validate
+	commonTransactionConstructor
 }
 
 func (t *tokenGrantRevokeKycTransactionConstructor) Construct(
@@ -89,28 +85,20 @@ func (t *tokenGrantRevokeKycTransactionConstructor) preprocess(operations types.
 	return preprocessTokenFreezeKyc(operations, t.GetOperationType(), t.validate)
 }
 
-func (t *tokenGrantRevokeKycTransactionConstructor) GetOperationType() string {
-	return t.operationType
-}
-
-func (t *tokenGrantRevokeKycTransactionConstructor) GetSdkTransactionType() string {
-	return t.transactionType
-}
-
 func newTokenGrantKycTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenGrantKycTransaction{}).Name()
 	return &tokenGrantRevokeKycTransactionConstructor{
-		operationType:   types.OperationTypeTokenGrantKyc,
-		transactionType: transactionType,
-		validate:        validator.New(),
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenGrantKycTransaction(),
+			types.OperationTypeTokenGrantKyc,
+		),
 	}
 }
 
 func newTokenRevokeKycTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenRevokeKycTransaction{}).Name()
 	return &tokenGrantRevokeKycTransactionConstructor{
-		operationType:   types.OperationTypeTokenRevokeKyc,
-		transactionType: transactionType,
-		validate:        validator.New(),
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenRevokeKycTransaction(),
+			types.OperationTypeTokenRevokeKyc,
+		),
 	}
 }

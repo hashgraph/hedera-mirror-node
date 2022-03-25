@@ -43,17 +43,21 @@ import (
 	"google.golang.org/protobuf/encoding/prototext"
 )
 
-const metadataKeyValidStartNanos = "valid_start_nanos"
+const (
+	metadataKeyValidStartNanos = "valid_start_nanos"
+	optionKeyOperationType     = "operation_type"
+)
 
 // constructionAPIService implements the server.ConstructionAPIServicer interface.
 type constructionAPIService struct {
 	BaseService
-	hederaClient       *hedera.Client
-	nodeAccountIds     []hedera.AccountID
-	nodeAccountIdsLen  *big.Int
-	systemShard        int64
-	systemRealm        int64
-	transactionHandler construction.TransactionConstructor
+	defaultMaxTransactionFee map[string]hedera.Hbar
+	hederaClient             *hedera.Client
+	nodeAccountIds           []hedera.AccountID
+	nodeAccountIdsLen        *big.Int
+	systemShard              int64
+	systemRealm              int64
+	transactionHandler       construction.TransactionConstructor
 }
 
 // ConstructionCombine implements the /construction/combine endpoint.
@@ -143,13 +147,26 @@ func (c *constructionAPIService) ConstructionHash(
 // ConstructionMetadata implements the /construction/metadata endpoint.
 func (c *constructionAPIService) ConstructionMetadata(
 	_ context.Context,
-	_ *rTypes.ConstructionMetadataRequest,
+	request *rTypes.ConstructionMetadataRequest,
 ) (*rTypes.ConstructionMetadataResponse, *rTypes.Error) {
-	if !c.IsOnline() {
-		return nil, errors.ErrEndpointNotSupportedInOfflineMode
+	options := request.Options
+	if options == nil || options[optionKeyOperationType] == nil {
+		return nil, errors.ErrInvalidOptions
+	}
+	operationType, ok := options[optionKeyOperationType].(string)
+	if !ok {
+		return nil, errors.ErrInvalidOptions
 	}
 
-	return &rTypes.ConstructionMetadataResponse{Metadata: make(map[string]interface{})}, nil
+	maxFee, err := c.transactionHandler.GetDefaultMaxTransactionFee(operationType)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rTypes.ConstructionMetadataResponse{
+		Metadata:     make(map[string]interface{}),
+		SuggestedFee: []*rTypes.Amount{maxFee.ToRosetta()},
+	}, nil
 }
 
 // ConstructionParse implements the /construction/parse endpoint.
@@ -255,7 +272,10 @@ func (c *constructionAPIService) ConstructionPreprocess(
 		requiredPublicKeys = append(requiredPublicKeys, &rTypes.AccountIdentifier{Address: signer.String()})
 	}
 
-	return &rTypes.ConstructionPreprocessResponse{RequiredPublicKeys: requiredPublicKeys}, nil
+	return &rTypes.ConstructionPreprocessResponse{
+		Options:            map[string]interface{}{optionKeyOperationType: operations[0].Type},
+		RequiredPublicKeys: requiredPublicKeys,
+	}, nil
 }
 
 // ConstructionSubmit implements the /construction/submit endpoint.

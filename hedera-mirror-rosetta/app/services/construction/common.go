@@ -34,6 +34,39 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type commonTransactionConstructor struct {
+	defaultMaxFee   types.HbarAmount
+	operationType   string
+	transactionType string
+	validate        *validator.Validate
+}
+
+func (c *commonTransactionConstructor) GetDefaultMaxTransactionFee() types.HbarAmount {
+	return c.defaultMaxFee
+}
+
+func (c *commonTransactionConstructor) GetOperationType() string {
+	return c.operationType
+}
+
+func (c *commonTransactionConstructor) GetSdkTransactionType() string {
+	return c.transactionType
+}
+
+func newCommonTransactionConstructor(
+	transaction interfaces.Transaction,
+	operationType string,
+) commonTransactionConstructor {
+	defaultMaxFee := types.HbarAmount{Value: transaction.GetMaxTransactionFee().AsTinybar()}
+	transactionType := reflect.TypeOf(transaction).Elem().Name()
+	return commonTransactionConstructor{
+		defaultMaxFee:   defaultMaxFee,
+		operationType:   operationType,
+		transactionType: transactionType,
+		validate:        validator.New(),
+	}
+}
+
 type payerMetadata struct {
 	Payer *hedera.AccountID `json:"payer" validate:"required"`
 }

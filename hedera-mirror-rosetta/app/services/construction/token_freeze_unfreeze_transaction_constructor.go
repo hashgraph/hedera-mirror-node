@@ -22,19 +22,15 @@ package construction
 
 import (
 	"context"
-	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
 type tokenFreezeUnfreezeTransactionConstructor struct {
-	operationType   string
-	transactionType string
-	validate        *validator.Validate
+	commonTransactionConstructor
 }
 
 func (t *tokenFreezeUnfreezeTransactionConstructor) Construct(
@@ -89,28 +85,20 @@ func (t *tokenFreezeUnfreezeTransactionConstructor) preprocess(operations types.
 	return preprocessTokenFreezeKyc(operations, t.GetOperationType(), t.validate)
 }
 
-func (t *tokenFreezeUnfreezeTransactionConstructor) GetOperationType() string {
-	return t.operationType
-}
-
-func (t *tokenFreezeUnfreezeTransactionConstructor) GetSdkTransactionType() string {
-	return t.transactionType
-}
-
 func newTokenFreezeTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenFreezeTransaction{}).Name()
 	return &tokenFreezeUnfreezeTransactionConstructor{
-		operationType:   types.OperationTypeTokenFreeze,
-		transactionType: transactionType,
-		validate:        validator.New(),
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenFreezeTransaction(),
+			types.OperationTypeTokenFreeze,
+		),
 	}
 }
 
 func newTokenUnfreezeTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenUnfreezeTransaction{}).Name()
 	return &tokenFreezeUnfreezeTransactionConstructor{
-		operationType:   types.OperationTypeTokenUnfreeze,
-		transactionType: transactionType,
-		validate:        validator.New(),
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenUnfreezeTransaction(),
+			types.OperationTypeTokenUnfreeze,
+		),
 	}
 }

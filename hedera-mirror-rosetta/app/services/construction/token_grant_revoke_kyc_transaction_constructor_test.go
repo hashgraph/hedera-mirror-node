@@ -48,6 +48,31 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestNewTokenRevokeK
 	assert.NotNil(suite.T(), h)
 }
 
+func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestGetDefaultMaxTransactionFee() {
+	tests := []struct {
+		name                   string
+		transactionConstructor transactionConstructorWithType
+		expected               types.HbarAmount
+	}{
+		{
+			name:                   "tokenGrantKyc",
+			transactionConstructor: newTokenGrantKycTransactionConstructor(),
+			expected:               types.HbarAmount{Value: 30_00000000},
+		},
+		{
+			name:                   "tokenRevokeKyc",
+			transactionConstructor: newTokenRevokeKycTransactionConstructor(),
+			expected:               types.HbarAmount{Value: 30_00000000},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.T().Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.transactionConstructor.GetDefaultMaxTransactionFee())
+		})
+	}
+}
+
 func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestGetOperationType() {
 	tests := []struct {
 		name       string
