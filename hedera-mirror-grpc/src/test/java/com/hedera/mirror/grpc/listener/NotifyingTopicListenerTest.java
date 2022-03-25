@@ -56,7 +56,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
         if (!WARMED_UP) {
             topicListener.listen(TopicMessageFilter.builder().startTime(Instant.EPOCH).build())
                     .as(StepVerifier::create)
-                    .thenAwait(Duration.ofMillis(250))
+                    .thenAwait(Duration.ofMillis(1000))
                     .thenCancel();
             WARMED_UP = true;
         }
