@@ -199,7 +199,7 @@ resources:
     memory: 350Mi
   requests:
     cpu: 150m
-    memory: 100Mi
+    memory: 64Mi
 
 revisionHistoryLimit: 3
 

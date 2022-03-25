@@ -37,6 +37,8 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
 class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
+    private static boolean WARMED_UP = false;
+
     @Resource
     private NotifyingTopicListener topicListener;
 
@@ -49,12 +51,15 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
     }
 
     @BeforeEach
-    void setup() {
+    void warmup() {
         // Warm up the database connection
-        topicListener.listen(TopicMessageFilter.builder().startTime(Instant.EPOCH).build())
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(250))
-                .thenCancel();
+        if (!WARMED_UP) {
+            topicListener.listen(TopicMessageFilter.builder().startTime(Instant.EPOCH).build())
+                    .as(StepVerifier::create)
+                    .thenAwait(Duration.ofMillis(250))
+                    .thenCancel();
+            WARMED_UP = true;
+        }
     }
 
     // Test deserialization from JSON to verify contract with PostgreSQL listen/notify
