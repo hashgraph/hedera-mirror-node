@@ -20,19 +20,20 @@
 
 'use strict';
 
-/**
- * Network address book service endpoint view model
- */
-class AddressBookServiceEndpoint {
+// const {AddressBook, AddressBookEntry, AddressBookServiceEndpoint} = require('./');
+const AddressBook = require('./addressBook');
+const AddressBookEntry = require('./addressBookEntry');
+const AddressBookServiceEndpoint = require('./addressBookServiceEndpoint');
+
+class NetworkNode {
   /**
-   * Constructs address book service endpoint view model
-   *
-   * @param {AddressBook} addressBook
+   * Parses address book related table columns into object
    */
-  constructor(serviceEndpoint) {
-    this.ip_address_v4 = serviceEndpoint.ipAddressV4;
-    this.port = Number(serviceEndpoint.port);
+  constructor(networkNodeDb) {
+    this.addressBook = new AddressBook(networkNodeDb);
+    this.addressBookEntry = new AddressBookEntry(networkNodeDb);
+    this.addressBookServiceEndpoints = networkNodeDb.service_endpoints.map((x) => new AddressBookServiceEndpoint(x));
   }
 }
 
-module.exports = AddressBookServiceEndpoint;
+module.exports = NetworkNode;

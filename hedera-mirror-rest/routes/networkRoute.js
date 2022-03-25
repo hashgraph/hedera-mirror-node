@@ -20,19 +20,17 @@
 
 'use strict';
 
-/**
- * Network address book service endpoint view model
- */
-class AddressBookServiceEndpoint {
-  /**
-   * Constructs address book service endpoint view model
-   *
-   * @param {AddressBook} addressBook
-   */
-  constructor(serviceEndpoint) {
-    this.ip_address_v4 = serviceEndpoint.ipAddressV4;
-    this.port = Number(serviceEndpoint.port);
-  }
-}
+// external libraries
+const {Router} = require('@awaitjs/express');
+const {NetworkController} = require('../controllers');
 
-module.exports = AddressBookServiceEndpoint;
+const router = Router();
+
+const resource = 'network';
+router.getAsync('/nodes', NetworkController.getNetworkNodes);
+router.getAsync('/supply', NetworkController.getSupply);
+
+module.exports = {
+  resource,
+  router,
+};

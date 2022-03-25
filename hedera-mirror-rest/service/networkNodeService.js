@@ -29,6 +29,9 @@ const BaseService = require('./baseService');
  * Network node business model
  */
 class NetworkNodeService extends BaseService {
+  static customName = 'Tripler';
+  static serviceNodeAddressBookFileID = 101;
+  static mirrorNodeAddressBookFileID = 102;
   static networkNodesBaseQuery = `with ${AddressBook.tableAlias} as (
     select ${AddressBook.START_CONSENSUS_TIMESTAMP}, ${AddressBook.END_CONSENSUS_TIMESTAMP}, ${AddressBook.FILE_ID}
     from ${AddressBook.tableName} where ${AddressBook.FILE_ID} = $1
@@ -84,8 +87,8 @@ class NetworkNodeService extends BaseService {
     AddressBookEntry.NODE_ID
   )}`;
 
-  getNetworkNodes = async (conditions, initParams, order, limit) => {
-    const [query, params] = this.getNetworkNodesWithFiltersQuery(conditions, initParams, order, limit);
+  getNetworkNodes = async (whereConditions, whereParams, order, limit) => {
+    const [query, params] = this.getNetworkNodesWithFiltersQuery(whereConditions, whereParams, order, limit);
 
     const rows = await super.getRows(query, params, 'getNetworkNodes');
     return rows.map((x) => new NetworkNode(x));
@@ -93,6 +96,7 @@ class NetworkNodeService extends BaseService {
 
   getNetworkNodesWithFiltersQuery = (whereConditions, whereParams, nodeOrder, limit) => {
     const params = whereParams;
+    params.push(limit);
     const query = [
       NetworkNodeService.networkNodesBaseQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
@@ -100,9 +104,8 @@ class NetworkNodeService extends BaseService {
         AddressBookEntry.getFullName(AddressBookEntry.NODE_ID),
         nodeOrder
       )}, ${AddressBookEntry.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP)} ${nodeOrder}`,
-      super.getLimitQuery(params.length + 1),
+      super.getLimitQuery(params.length),
     ].join('\n');
-    params.push(limit);
 
     return [query, params];
   };

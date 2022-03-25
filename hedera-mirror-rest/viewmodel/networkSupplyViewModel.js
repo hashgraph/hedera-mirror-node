@@ -20,19 +20,27 @@
 
 'use strict';
 
+const utils = require('../utils');
+
 /**
- * Network address book service endpoint view model
+ * Network supply view model
  */
-class AddressBookServiceEndpoint {
+class NetworkSupplyViewModel {
   /**
-   * Constructs address book service endpoint view model
+   * Constructs network supply view model
    *
-   * @param {AddressBook} addressBook
+   * @param {Object} networkSupply
+   * @param {Number} totalSupply
    */
-  constructor(serviceEndpoint) {
-    this.ip_address_v4 = serviceEndpoint.ipAddressV4;
-    this.port = Number(serviceEndpoint.port);
+  constructor(networkSupply, totalSupply) {
+    const unreleasedSupply = BigInt(networkSupply.unreleased_supply);
+    const releasedSupply = totalSupply - unreleasedSupply;
+
+    // Convert numbers to string since Express doesn't support BigInt
+    this.released_supply = `${releasedSupply}`;
+    this.timestamp = utils.nsToSecNs(networkSupply.consensus_timestamp);
+    this.total_supply = `${totalSupply}`;
   }
 }
 
-module.exports = AddressBookServiceEndpoint;
+module.exports = NetworkSupplyViewModel;

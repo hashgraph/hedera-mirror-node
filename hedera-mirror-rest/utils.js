@@ -129,6 +129,11 @@ const isValidEncoding = (query) => {
 
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
 
+const addressBookFileIdPattern = /101|102/;
+const isValidAddressBookFileIdPattern = (query) => {
+  return addressBookFileIdPattern.test(query);
+};
+
 /**
  * Validate input parameters for the rest apis
  * @param {String} param Parameter to be validated
@@ -176,6 +181,9 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.ACCOUNT_BALANCE:
       ret = isPositiveLong(val, true);
       break;
+    case constants.filterKeys.ADDRESS_BOOK_FILE_ID:
+      ret = EntityId.isValidEntityId(val) && isValidAddressBookFileIdPattern(val);
+      break;
     case constants.filterKeys.ACCOUNT_ID:
       ret = EntityId.isValidEntityId(val);
       break;
@@ -207,6 +215,9 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.LIMIT:
       ret = isPositiveLong(val);
+      break;
+    case constants.filterKeys.NODE_ID:
+      ret = isNumeric(val) && val >= 0;
       break;
     case constants.filterKeys.NONCE:
       ret = op === constants.queryParamOperators.eq && isNonNegativeInt32(val);
@@ -931,6 +942,13 @@ const formatComparator = (comparator) => {
         break;
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);
+        break;
+      case constants.filterKeys.ADDRESS_BOOK_FILE_ID:
+        // Accepted forms: shard.realm.num or encoded ID string
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
+        break;
+      case constants.filterKeys.CONTRACT_ID:
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);

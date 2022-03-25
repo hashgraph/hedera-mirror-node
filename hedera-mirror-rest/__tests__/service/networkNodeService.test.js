@@ -22,7 +22,7 @@
 
 const _ = require('lodash');
 
-const {CryptoAllowanceService, NetworkNodeService} = require('../../service');
+const {NetworkNodeService} = require('../../service');
 const {assertSqlQueryEqual} = require('../testutils');
 
 const integrationDbOps = require('../integrationDbOps');
@@ -54,7 +54,6 @@ beforeEach(async () => {
   await integrationDbOps.cleanUp(dbConfig.sqlConnection);
 });
 
-const defaultFileFilter = 'file_id = $1';
 describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
   test('Verify simple query', async () => {
     const [query, params] = NetworkNodeService.getNetworkNodesWithFiltersQuery([], [102], 'asc', 5);
@@ -242,7 +241,7 @@ const defaultExpectedNetworkNode102 = [
 
 describe('NetworkNodeService.getNetworkNodes tests', () => {
   test('NetworkNodeService.getNetworkNodes - No match', async () => {
-    await expect(NetworkNodeService.getNetworkNodes([defaultFileFilter], [2], 'asc', 5)).resolves.toStrictEqual([]);
+    await expect(NetworkNodeService.getNetworkNodes([], [2], 'asc', 5)).resolves.toStrictEqual([]);
   });
 
   test('NetworkNodeService.getNetworkNodes - Matching 101 entity', async () => {
@@ -250,7 +249,7 @@ describe('NetworkNodeService.getNetworkNodes tests', () => {
     await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
     await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
 
-    await expect(NetworkNodeService.getNetworkNodes([defaultFileFilter], [101], 'desc', 5)).resolves.toMatchObject(
+    await expect(NetworkNodeService.getNetworkNodes([], [101], 'desc', 5)).resolves.toMatchObject(
       defaultExpectedNetworkNode101
     );
   });
@@ -260,8 +259,108 @@ describe('NetworkNodeService.getNetworkNodes tests', () => {
     await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
     await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
 
-    await expect(NetworkNodeService.getNetworkNodes([defaultFileFilter], [102], 'asc', 5)).resolves.toMatchObject(
+    await expect(NetworkNodeService.getNetworkNodes([], [102], 'asc', 5)).resolves.toMatchObject(
       defaultExpectedNetworkNode102
     );
+  });
+});
+
+const defaultNodeFilter = 'abe.node_id = $2';
+describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
+  test('NetworkNodeService.getNetworkNodes - No match', async () => {
+    await expect(NetworkNodeService.getNetworkNodes([defaultNodeFilter], [2, 0], 'asc', 5)).resolves.toStrictEqual([]);
+  });
+
+  const expectedNetworkNode101 = [
+    {
+      addressBook: {
+        startConsensusTimestamp: '1',
+        fileId: '101',
+        endConsensusTimestamp: null,
+      },
+      addressBookEntry: {
+        description: 'desc 1',
+        memo: 'memo 1',
+        nodeAccountId: '3',
+        nodeId: '0',
+      },
+      addressBookServiceEndpoints: [
+        {
+          ipAddressV4: '127.0.0.1',
+          port: 50211,
+        },
+      ],
+    },
+  ];
+
+  const expectedNetworkNode102 = [
+    {
+      addressBook: {
+        endConsensusTimestamp: null,
+        fileId: '102',
+        startConsensusTimestamp: '2',
+      },
+      addressBookEntry: {
+        description: 'desc 3',
+        memo: '0.0.3',
+        nodeAccountId: '3',
+        nodeId: '0',
+      },
+      addressBookServiceEndpoints: [
+        {
+          ipAddressV4: '128.0.0.1',
+          port: 50212,
+        },
+      ],
+    },
+  ];
+
+  test('NetworkNodeService.getNetworkNodes - Matching 101 entity', async () => {
+    await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
+    await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
+    await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
+
+    await expect(NetworkNodeService.getNetworkNodes([defaultNodeFilter], [101, 0], 'desc', 5)).resolves.toMatchObject(
+      expectedNetworkNode101
+    );
+  });
+
+  test('NetworkNodeService.getNetworkNodes - Matching 102 entity', async () => {
+    await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
+    await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
+    await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
+
+    await expect(NetworkNodeService.getNetworkNodes([defaultNodeFilter], [102, 0], 'asc', 5)).resolves.toMatchObject(
+      expectedNetworkNode102
+    );
+  });
+});
+
+const defaultTimestampFilter = 'abe.start_consensus_timestamp >= $2';
+describe('NetworkNodeService.getNetworkNodes tests timestamp filter', () => {
+  test('NetworkNodeService.getNetworkNodes - No match', async () => {
+    await expect(NetworkNodeService.getNetworkNodes([defaultTimestampFilter], [2, 0], 'asc', 5)).resolves.toStrictEqual(
+      []
+    );
+  });
+
+  test('NetworkNodeService.getNetworkNodes - Matching 101 entity', async () => {
+    await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
+    await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
+    await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
+
+    await expect(
+      NetworkNodeService.getNetworkNodes([defaultTimestampFilter], [101, 1], 'desc', 5)
+    ).resolves.toMatchObject(defaultExpectedNetworkNode101);
+  });
+
+  test('NetworkNodeService.getNetworkNodes - Matching 102 entity', async () => {
+    await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
+    await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
+    await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
+
+    await expect(
+      NetworkNodeService.getNetworkNodes([defaultTimestampFilter], [102, 2], 'asc', 5)
+    ).resolves.toMatchObject(defaultExpectedNetworkNode102);
   });
 });

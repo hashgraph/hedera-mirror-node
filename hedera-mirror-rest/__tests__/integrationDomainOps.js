@@ -300,7 +300,7 @@ const addAddressBook = async (addressBookInput) => {
   const addressBook = {
     start_consensus_timestamp: 0,
     end_consensus_timestamp: null,
-    file_id: 101,
+    file_id: 102,
     node_count: 20,
     file_data: '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
     ...addressBookInput,

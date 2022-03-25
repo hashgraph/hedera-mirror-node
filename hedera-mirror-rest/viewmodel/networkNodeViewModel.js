@@ -34,16 +34,20 @@ class NetworkNodeViewModel {
    * @param {AddressBook} addressBook
    */
   constructor(networkNode) {
-    this.description = networkNode.description;
-    this.file_id = EntityId.parse(networkNode.fileId).toString();
-    this.memo = networkNode.memo;
-    this.node_id = Number(networkNode.nodeId);
-    this.node_account_id = EntityId.parse(networkNode.nodeAccountId).toString();
-    this.node_cert_hash = utils.encodeBase64(networkNode.nodeCertHash);
-    this.public_key = utils.nsToSecNs(networkNode.publicKey);
-    this.service_endpoints = networkNode.serviceEndpoints.map(
-      (serviceEndpoint) => new AddressBookServiceEndpointViewModel(serviceEndpoint)
+    this.description = networkNode.addressBookEntry.description;
+    this.file_id = EntityId.parse(networkNode.addressBook.fileId).toString();
+    this.memo = networkNode.addressBookEntry.memo;
+    this.node_id = Number(networkNode.addressBookEntry.nodeId);
+    this.node_account_id = EntityId.parse(networkNode.addressBookEntry.nodeAccountId).toString();
+    this.node_cert_hash = utils.encodeBase64(networkNode.addressBookEntry.nodeCertHash);
+    this.public_key = utils.nsToSecNs(networkNode.addressBookEntry.publicKey);
+    this.service_endpoints = networkNode.addressBookServiceEndpoints.map(
+      (x) => new AddressBookServiceEndpointViewModel(x)
     );
+    this.timestamp = {
+      from: utils.nsToSecNs(networkNode.addressBook.startConsensusTimestamp),
+      to: utils.nsToSecNs(networkNode.addressBook.endConsensusTimestamp),
+    };
   }
 }
 

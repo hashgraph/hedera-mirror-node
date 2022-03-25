@@ -1,0 +1,27 @@
+{
+  "description": "Network nodes API with all invalid params",
+  "setup": {},
+  "url": "/api/v1/network/nodes?addressbook.file.id=a&node.id=b&limit=c&timestamp=d&order=e",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: addressbook.file.id"
+        },
+        {
+          "message": "Invalid parameter: node.id"
+        },
+        {
+          "message": "Invalid parameter: limit"
+        },
+        {
+          "message": "Invalid parameter: timestamp"
+        },
+        {
+          "message": "Invalid parameter: order"
+        }
+      ]
+    }
+  }
+}
