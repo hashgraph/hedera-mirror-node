@@ -74,6 +74,7 @@ import com.hedera.mirror.common.domain.entity.EntityOperation;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
@@ -107,6 +108,9 @@ abstract class AbstractTransactionHandlerTest {
     protected final ContractID contractId = ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build();
 
     protected TransactionHandler transactionHandler;
+
+    @Mock(lenient = true)
+    protected ContractResultService contractResultService;
 
     @Mock(lenient = true)
     protected EntityIdService entityIdService;

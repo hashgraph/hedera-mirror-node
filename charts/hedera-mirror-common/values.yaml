@@ -1,7 +1,5 @@
 global:
   namespaceOverride: ""
-  rbac:
-    pspEnabled: false
 
 labels: {}
 
@@ -214,8 +212,6 @@ prometheus:
     defaultDashboardsEnabled: true
     plugins:
       - camptocamp-prometheus-alertmanager-datasource
-    rbac:
-      pspEnabled: false
     resources:
       limits:
         cpu: 300m
@@ -224,8 +220,6 @@ prometheus:
         cpu: 150m
         memory: 75Mi
   kube-state-metrics:
-    podSecurityPolicy:
-      enabled: false
     resources:
       limits:
         cpu: 10m
@@ -259,8 +253,6 @@ prometheus:
     enabled: false
   prometheus-node-exporter:
     hostNetwork: false
-    rbac:
-      pspEnabled: false
     resources:
       limits:
         cpu: 100m
@@ -315,8 +307,6 @@ promtail:
       pipelineStages:
         - docker: {}
   enabled: true
-  rbac:
-    pspEnabled: false
   resources:
     limits:
       cpu: 125m

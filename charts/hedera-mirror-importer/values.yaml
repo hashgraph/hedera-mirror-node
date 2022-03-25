@@ -168,6 +168,11 @@ podMonitor:
 
 podSecurityContext:
   fsGroup: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  seccompProfile:
+    type: RuntimeDefault
 
 priorityClassName: ""
 
@@ -380,6 +385,17 @@ prometheusRules:
       severity: warning
       application: hedera-mirror-importer
 
+  ImporterReconciliationFailed:
+    annotations:
+      description: "Unable to reconcile balance information for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Mirror reconciliation job failed"
+    enabled: true
+    expr: sum(hedera_mirror_reconciliation{application="hedera-mirror-importer"}) by (namespace, pod) > 0
+    for: 1m
+    labels:
+      severity: critical
+      application: hedera-mirror-importer
+
   ImporterRecordParseLatency:
     annotations:
       description: Averaging {{ $value | humanizeDuration }} trying to parse record stream files for {{ $labels.namespace }}/{{ $labels.pod }}
@@ -442,12 +458,10 @@ resources:
 revisionHistoryLimit: 3
 
 securityContext:
+  allowPrivilegeEscalation: false
   capabilities:
     drop: [ALL]
   readOnlyRootFilesystem: true
-  runAsGroup: 1000
-  runAsNonRoot: true
-  runAsUser: 1000
 
 serviceAccount:
   create: true

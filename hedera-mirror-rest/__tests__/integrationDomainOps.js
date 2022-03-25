@@ -48,6 +48,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadContractLogs(testDataJson.contractlogs);
   await loadContractResults(testDataJson.contractresults);
   await loadContractStateChanges(testDataJson.contractStateChanges);
+  await loadCryptoAllowances(testDataJson.cryptoAllowances);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
   await loadFileData(testDataJson.filedata);
@@ -128,6 +129,16 @@ const loadContractStateChanges = async (contractStateChanges) => {
 
   for (const contractStateChange of contractStateChanges) {
     await addContractStateChange(contractStateChange);
+  }
+};
+
+const loadCryptoAllowances = async (cryptoAllowances) => {
+  if (cryptoAllowances == null) {
+    return;
+  }
+
+  for (const cryptoAllowance of cryptoAllowances) {
+    await addCryptoAllowance(cryptoAllowance);
   }
 };
 
@@ -276,20 +287,29 @@ const addEntity = async (defaults, entity) => {
   };
   entity.id = EntityId.of(BigInt(entity.shard), BigInt(entity.realm), BigInt(entity.num)).getEncodedId();
   entity.alias = base32.decode(entity.alias);
+  if (typeof entity.key === 'string') {
+    entity.key = Buffer.from(entity.key, 'hex');
+  }
 
   await insertDomainObject('entity', insertFields, entity);
 };
 
-const addFileData = async (fileData) => {
-  fileData = {
+const addFileData = async (fileDataInput) => {
+  const fileData = {
     transaction_type: 17,
-    ...fileData,
+    ...fileDataInput,
   };
+
+  // contract bytecode is provided as encoded hex string
+  fileData.file_data =
+    typeof fileDataInput.file_data === 'string'
+      ? Buffer.from(fileDataInput.file_data, 'utf-8')
+      : Buffer.from(fileData.file_data);
 
   await sqlConnection.query(
     `insert into file_data (file_data, consensus_timestamp, entity_id, transaction_type)
      values ($1, $2, $3, $4)`,
-    [Buffer.from(fileData.file_data), fileData.consensus_timestamp, fileData.entity_id, fileData.transaction_type]
+    [fileData.file_data, fileData.consensus_timestamp, fileData.entity_id, fileData.transaction_type]
   );
 };
 
@@ -720,6 +740,22 @@ const addContractStateChange = async (contractStateChangeInput) => {
   await insertDomainObject('contract_state_change', insertFields, contractStateChange);
 };
 
+const addCryptoAllowance = async (cryptoAllowanceInput) => {
+  const insertFields = ['amount', 'owner', 'payer_account_id', 'spender', 'timestamp_range'];
+
+  const cryptoAllowance = {
+    amount: 0,
+    owner: 1000,
+    payer_account_id: 101,
+    spender: 2000,
+    timestamp_range: '[0,)',
+    ...cryptoAllowanceInput,
+  };
+
+  const table = cryptoAllowance.timestamp_range.endsWith(',)') ? 'crypto_allowance' : 'crypto_allowance_history';
+  await insertDomainObject(table, insertFields, cryptoAllowance);
+};
+
 const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
@@ -1026,6 +1062,8 @@ const insertDomainObject = async (table, fields, obj) => {
     `INSERT INTO ${table} (${fields}) VALUES (${positions});`,
     fields.map((f) => obj[f])
   );
+
+  logger.trace(`Inserted row to ${table}`);
 };
 
 module.exports = {
@@ -1035,6 +1073,7 @@ module.exports = {
   addToken,
   loadContracts,
   loadContractResults,
+  loadCryptoAllowances,
   loadEntities,
   loadRecordFiles,
   loadTransactions,

@@ -22,7 +22,6 @@ package construction
 
 import (
 	"context"
-	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
@@ -33,50 +32,36 @@ import (
 )
 
 type tokenAssociateDissociateTransactionConstructor struct {
-	operationType   string
-	transactionType string
+	commonTransactionConstructor
 }
 
 func (t *tokenAssociateDissociateTransactionConstructor) Construct(
 	_ context.Context,
-	nodeAccountId hedera.AccountID,
-	operations []*rTypes.Operation,
-	validStartNanos int64,
-) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
+	operations types.OperationSlice,
+) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
 	payer, tokenIds, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
 
 	var tx interfaces.Transaction
-	var err error
-	transactionId := getTransactionId(*payer, validStartNanos)
+	sdkAccountId := payer.ToSdkAccountId()
 	if t.operationType == types.OperationTypeTokenAssociate {
-		tx, err = hedera.NewTokenAssociateTransaction().
-			SetAccountID(*payer).
-			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTokenIDs(tokenIds...).
-			SetTransactionID(transactionId).
-			Freeze()
+		tx = hedera.NewTokenAssociateTransaction().
+			SetAccountID(sdkAccountId).
+			SetTokenIDs(tokenIds...)
 	} else {
-		tx, err = hedera.NewTokenDissociateTransaction().
-			SetAccountID(*payer).
-			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTokenIDs(tokenIds...).
-			SetTransactionID(transactionId).
-			Freeze()
+		tx = hedera.NewTokenDissociateTransaction().
+			SetAccountID(sdkAccountId).
+			SetTokenIDs(tokenIds...)
 	}
 
-	if err != nil {
-		return nil, nil, hErrors.ErrTransactionFreezeFailed
-	}
-
-	return tx, []hedera.AccountID{*payer}, nil
+	return tx, []types.AccountId{*payer}, nil
 }
 
 func (t *tokenAssociateDissociateTransactionConstructor) Parse(
 	_ context.Context, transaction interfaces.Transaction,
-) ([]*rTypes.Operation, []hedera.AccountID, *rTypes.Error) {
+) (types.OperationSlice, []types.AccountId, *rTypes.Error) {
 	var accountId hedera.AccountID
 	var payerId *hedera.AccountID
 	var tokenIds []hedera.TokenID
@@ -114,9 +99,11 @@ func (t *tokenAssociateDissociateTransactionConstructor) Parse(
 		return nil, nil, hErrors.ErrInvalidTransaction
 	}
 
-	account := &rTypes.AccountIdentifier{Address: accountId.String()}
-	operations := make([]*rTypes.Operation, 0, len(tokenIds))
-
+	account, err := types.NewAccountIdFromSdkAccountId(accountId)
+	if err != nil {
+		return nil, nil, hErrors.ErrInvalidAccount
+	}
+	operations := make(types.OperationSlice, 0, len(tokenIds))
 	for index, tokenId := range tokenIds {
 		tokenEntityId, err := domain.EntityIdOf(int64(tokenId.Shard), int64(tokenId.Realm), int64(tokenId.Token))
 		if err != nil {
@@ -126,34 +113,31 @@ func (t *tokenAssociateDissociateTransactionConstructor) Parse(
 			TokenId: tokenEntityId,
 			Type:    domain.TokenTypeUnknown,
 		}
-		operations = append(operations, &rTypes.Operation{
-			OperationIdentifier: &rTypes.OperationIdentifier{Index: int64(index)},
-			Type:                t.operationType,
-			Account:             account,
-			Amount: &rTypes.Amount{
-				Value:    "0",
-				Currency: types.Token{Token: domainToken}.ToRosettaCurrency(),
-			},
+		operations = append(operations, types.Operation{
+			Index:     int64(index),
+			Type:      t.operationType,
+			AccountId: account,
+			Amount:    types.NewTokenAmount(domainToken, 0),
 		})
 	}
 
-	return operations, []hedera.AccountID{accountId}, nil
+	return operations, []types.AccountId{account}, nil
 }
 
 func (t *tokenAssociateDissociateTransactionConstructor) Preprocess(
 	_ context.Context,
-	operations []*rTypes.Operation,
-) ([]hedera.AccountID, *rTypes.Error) {
+	operations types.OperationSlice,
+) ([]types.AccountId, *rTypes.Error) {
 	payer, _, err := t.preprocess(operations)
 	if err != nil {
 		return nil, err
 	}
 
-	return []hedera.AccountID{*payer}, nil
+	return []types.AccountId{*payer}, nil
 }
 
-func (t *tokenAssociateDissociateTransactionConstructor) preprocess(operations []*rTypes.Operation) (
-	*hedera.AccountID,
+func (t *tokenAssociateDissociateTransactionConstructor) preprocess(operations types.OperationSlice) (
+	*types.AccountId,
 	[]hedera.TokenID,
 	*rTypes.Error,
 ) {
@@ -161,49 +145,42 @@ func (t *tokenAssociateDissociateTransactionConstructor) preprocess(operations [
 		return nil, nil, rErr
 	}
 
+	accountId := operations[0].AccountId
 	tokenIds := make([]hedera.TokenID, 0, len(operations))
-	address := operations[0].Account.Address
 	for _, operation := range operations {
-		if operation.Account.Address != address {
+		if operation.AccountId.String() != accountId.String() {
 			return nil, nil, hErrors.ErrInvalidAccount
 		}
 
-		tokenId, err := hedera.TokenIDFromString(operation.Amount.Currency.Symbol)
-		if err != nil {
-			return nil, nil, hErrors.ErrInvalidToken
+		tokenAmount, ok := operation.Amount.(*types.TokenAmount)
+		if !ok {
+			return nil, nil, hErrors.ErrInvalidCurrency
 		}
 
-		tokenIds = append(tokenIds, tokenId)
+		tokenIds = append(tokenIds, hedera.TokenID{
+			Shard: uint64(tokenAmount.TokenId.ShardNum),
+			Realm: uint64(tokenAmount.TokenId.RealmNum),
+			Token: uint64(tokenAmount.TokenId.EntityNum),
+		})
 	}
 
-	payer, err := hedera.AccountIDFromString(address)
-	if err != nil {
-		return nil, nil, hErrors.ErrInvalidAccount
-	}
-
-	return &payer, tokenIds, nil
-}
-
-func (t *tokenAssociateDissociateTransactionConstructor) GetOperationType() string {
-	return t.operationType
-}
-
-func (t *tokenAssociateDissociateTransactionConstructor) GetSdkTransactionType() string {
-	return t.transactionType
+	return &accountId, tokenIds, nil
 }
 
 func newTokenAssociateTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenAssociateTransaction{}).Name()
 	return &tokenAssociateDissociateTransactionConstructor{
-		operationType:   types.OperationTypeTokenAssociate,
-		transactionType: transactionType,
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenAssociateTransaction(),
+			types.OperationTypeTokenAssociate,
+		),
 	}
 }
 
 func newTokenDissociateTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenDissociateTransaction{}).Name()
 	return &tokenAssociateDissociateTransactionConstructor{
-		operationType:   types.OperationTypeTokenDissociate,
-		transactionType: transactionType,
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenDissociateTransaction(),
+			types.OperationTypeTokenDissociate,
+		),
 	}
 }

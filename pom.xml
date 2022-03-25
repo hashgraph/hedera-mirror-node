@@ -58,6 +58,7 @@
         <dependency-check.version>7.0.0</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.39.1</docker-maven-plugin.version>
+        <docker.base.image>eclipse-temurin:11.0.14.1_1-jre-focal</docker.base.image>
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
@@ -65,9 +66,9 @@
         <flyway.version>7.15.0</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
-        <grpc.version>1.44.1</grpc.version>
-        <guava.version>31.0.1-jre</guava.version>
-        <hedera-protobuf.version>0.23.1</hedera-protobuf.version>
+        <grpc.version>1.45.0</grpc.version>
+        <guava.version>31.1-jre</guava.version>
+        <hedera-protobuf.version>0.24.0</hedera-protobuf.version>
         <hibernate-types.version>2.14.0</hibernate-types.version>
         <jacoco.version>0.8.7</jacoco.version>
         <java.version>11</java.version>
@@ -76,10 +77,10 @@
         <log4j2.version>2.17.1</log4j2.version> <!-- Temporarily added to address a vulnerability -->
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <micrometer.version>1.8.3</micrometer.version> <!-- Temporarily added for postgresql metrics bug fix -->
-        <msgpack.version>0.9.0</msgpack.version>
+        <msgpack.version>0.9.1</msgpack.version>
         <protobuf.version>3.19.4</protobuf.version>
-        <release.version>0.53.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.40.0-SNAPSHOT</release.chartVersion>
+        <release.version>0.54.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
+        <release.chartVersion>0.41.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
         <!--suppress UnresolvedMavenProperty -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -257,7 +258,11 @@
                             <jvmFlags>
                                 <jvmFlag>-XX:MaxRAMPercentage=80</jvmFlag>
                             </jvmFlags>
+                            <user>1000:1000</user>
                         </container>
+                        <from>
+                            <image>${docker.base.image}</image>
+                        </from>
                         <to>
                             <image>${docker.push.repository}/${project.artifactId}:${docker.tag.version}</image>
                         </to>

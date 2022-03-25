@@ -38,58 +38,75 @@ var (
 			Count:              10,
 			FileHash:           "genesis_account_balance_file_hash",
 			Name:               "genesis_account_balance_file",
-			NodeAccountId:      nodeAccountId,
+			NodeAccountId:      nodeEntityId,
 		},
 		{
 			ConsensusTimestamp: 10000,
 			Count:              10,
 			FileHash:           "second_account_balance_file_hash",
 			Name:               "second_account_balance_file",
-			NodeAccountId:      nodeAccountId,
+			NodeAccountId:      nodeEntityId,
 		},
 		{
 			ConsensusTimestamp: 20000,
 			Count:              10,
 			FileHash:           "third_account_balance_file_hash",
 			Name:               "third_account_balance_file",
-			NodeAccountId:      nodeAccountId,
+			NodeAccountId:      nodeEntityId,
 		},
 	}
 	expectedGenesisBlock = &types.Block{
 		ConsensusStartNanos: 91,
-		ConsensusEndNanos:   100,
+		ConsensusEndNanos:   109,
 		Hash:                "genesis_record_file_hash",
 		Index:               0,
 		ParentHash:          "genesis_record_file_hash",
 		ParentIndex:         0,
 	}
 	expectedSecondBlock = &types.Block{
-		ConsensusStartNanos: 101,
-		ConsensusEndNanos:   120,
+		ConsensusStartNanos: 110,
+		ConsensusEndNanos:   129,
 		Hash:                "second_record_file_hash",
 		Index:               1,
 		ParentHash:          "genesis_record_file_hash",
 		ParentIndex:         0,
 	}
-	nodeAccountId = domain.MustDecodeEntityId(3)
-	recordFiles   = []*domain.RecordFile{
+	expectedThirdBlock = &types.Block{
+		ConsensusStartNanos: 130,
+		ConsensusEndNanos:   145,
+		Hash:                "third_record_file_hash",
+		Index:               2,
+		ParentHash:          "second_record_file_hash",
+		ParentIndex:         1,
+	}
+	nodeEntityId = domain.MustDecodeEntityId(3)
+	recordFiles  = []*domain.RecordFile{
 		{
 			ConsensusStart: 80,
 			ConsensusEnd:   100,
 			Hash:           "genesis_record_file_hash",
 			Index:          3,
 			Name:           "genesis_record_file",
-			NodeAccountID:  nodeAccountId,
+			NodeAccountID:  nodeEntityId,
 			PrevHash:       "previous_record_file_hash",
 		},
 		{
-			ConsensusStart: 101,
+			ConsensusStart: 110,
 			ConsensusEnd:   120,
 			Hash:           "second_record_file_hash",
 			Index:          4,
 			Name:           "second_record_file",
-			NodeAccountID:  nodeAccountId,
+			NodeAccountID:  nodeEntityId,
 			PrevHash:       "genesis_record_file_hash",
+		},
+		{
+			ConsensusStart: 130,
+			ConsensusEnd:   145,
+			Hash:           "third_record_file_hash",
+			Index:          5,
+			Name:           "third_record_file",
+			NodeAccountID:  nodeEntityId,
+			PrevHash:       "second_record_file_hash",
 		},
 	}
 	genesisRecordFile       = recordFiles[0]
@@ -99,7 +116,7 @@ var (
 		Hash:           "previous_record_file_hash",
 		Index:          2,
 		Name:           "previous_record_file",
-		NodeAccountID:  nodeAccountId,
+		NodeAccountID:  nodeEntityId,
 		PrevHash:       "some_hash",
 	}
 )
@@ -449,7 +466,7 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisDbConnectionError() {
 
 func (suite *blockRepositorySuite) TestRetrieveLatestNonGenesisBlock() {
 	// given
-	expected := *expectedSecondBlock
+	expected := expectedThirdBlock
 	repo := NewBlockRepository(dbClient)
 
 	// when
@@ -457,7 +474,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestNonGenesisBlock() {
 
 	// then
 	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), &expected, actual)
+	assert.Equal(suite.T(), expected, actual)
 }
 
 func (suite *blockRepositorySuite) TestRetrieveLatestWithOnlyGenesisBlock() {
@@ -465,13 +482,15 @@ func (suite *blockRepositorySuite) TestRetrieveLatestWithOnlyGenesisBlock() {
 	db.ExecSql(dbClient, truncateRecordFileSql)
 	db.CreateDbRecords(dbClient, genesisRecordFile)
 	repo := NewBlockRepository(dbClient)
+	expected := *expectedGenesisBlock
+	expected.ConsensusEndNanos = recordFiles[0].ConsensusEnd
 
 	// when
 	actual, err := repo.RetrieveLatest(defaultContext)
 
 	// then
 	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), actual, expectedGenesisBlock)
+	assert.Equal(suite.T(), &expected, actual)
 }
 
 func (suite *blockRepositorySuite) TestRetrieveLatestWithBlockBeforeGenesis() {
@@ -523,7 +542,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestRecordFileTableInconsistent
 
 	// then
 	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), expectedSecondBlock, actual)
+	assert.Equal(suite.T(), expectedThirdBlock, actual)
 
 	// when
 	db.ExecSql(dbClient, truncateRecordFileSql)

@@ -1,0 +1,11 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`validateExtractCryptoAllowancesQuery throw spender.id gt 1`] = `"Only equals (eq) comparison operator is supported for spender.id"`;
+
+exports[`validateExtractCryptoAllowancesQuery throw spender.id gte 1`] = `"Only equals (eq) comparison operator is supported for spender.id"`;
+
+exports[`validateExtractCryptoAllowancesQuery throw spender.id lte 1`] = `"Only equals (eq) comparison operator is supported for spender.id"`;
+
+exports[`validateExtractCryptoAllowancesQuery throw spender.id lte 2`] = `"Only equals (eq) comparison operator is supported for spender.id"`;
+
+exports[`validateExtractCryptoAllowancesQuery throw spender.id ne 1`] = `"Only equals (eq) comparison operator is supported for spender.id"`;

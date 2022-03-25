@@ -41,13 +41,13 @@
         "transaction_type": 16
       },
       {
-        "file_data": [1],
+        "file_data": "189a554c",
         "consensus_timestamp": "987654000124000",
         "entity_id": "5051",
         "transaction_type": 19
       },
       {
-        "file_data": [2],
+        "file_data": "82bba493",
         "consensus_timestamp": "987654999123000",
         "entity_id": "5051",
         "transaction_type": 16

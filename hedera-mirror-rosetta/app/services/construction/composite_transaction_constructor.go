@@ -25,14 +25,15 @@ import (
 	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
 
 type transactionConstructorWithType interface {
-	TransactionConstructor
+	BaseTransactionConstructor
+	GetDefaultMaxTransactionFee() types.HbarAmount
 	GetOperationType() string
 	GetSdkTransactionType() string
 }
@@ -44,21 +45,30 @@ type compositeTransactionConstructor struct {
 
 func (c *compositeTransactionConstructor) Construct(
 	ctx context.Context,
-	nodeAccountId hedera.AccountID,
-	operations []*rTypes.Operation,
-	validStartNanos int64,
-) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
+	operations types.OperationSlice,
+) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
 	h, err := c.validate(operations)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return h.Construct(ctx, nodeAccountId, operations, validStartNanos)
+	return h.Construct(ctx, operations)
+}
+
+func (c *compositeTransactionConstructor) GetDefaultMaxTransactionFee(operationType string) (
+	types.HbarAmount,
+	*rTypes.Error,
+) {
+	h, ok := c.constructorsByOperationType[operationType]
+	if !ok {
+		return types.HbarAmount{}, errors.ErrInvalidOperationType
+	}
+	return h.GetDefaultMaxTransactionFee(), nil
 }
 
 func (c *compositeTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
-	[]*rTypes.Operation,
-	[]hedera.AccountID,
+	types.OperationSlice,
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	name := reflect.TypeOf(transaction).Elem().Name()
@@ -73,8 +83,8 @@ func (c *compositeTransactionConstructor) Parse(ctx context.Context, transaction
 
 func (c *compositeTransactionConstructor) Preprocess(
 	ctx context.Context,
-	operations []*rTypes.Operation,
-) ([]hedera.AccountID, *rTypes.Error) {
+	operations types.OperationSlice,
+) ([]types.AccountId, *rTypes.Error) {
 	h, err := c.validate(operations)
 	if err != nil {
 		return nil, err
@@ -88,7 +98,7 @@ func (c *compositeTransactionConstructor) addConstructor(constructor transaction
 	c.constructorsByTransactionType[constructor.GetSdkTransactionType()] = constructor
 }
 
-func (c *compositeTransactionConstructor) validate(operations []*rTypes.Operation) (
+func (c *compositeTransactionConstructor) validate(operations types.OperationSlice) (
 	transactionConstructorWithType,
 	*rTypes.Error,
 ) {
@@ -120,9 +130,9 @@ func NewTransactionConstructor() TransactionConstructor {
 
 	c.addConstructor(newCryptoCreateTransactionConstructor())
 	c.addConstructor(newCryptoTransferTransactionConstructor())
-	c.addConstructor(newTokenCreateTransactionConstructor())
 	c.addConstructor(newTokenAssociateTransactionConstructor())
 	c.addConstructor(newTokenBurnTransactionConstructor())
+	c.addConstructor(newTokenCreateTransactionConstructor())
 	c.addConstructor(newTokenDeleteTransactionConstructor())
 	c.addConstructor(newTokenDissociateTransactionConstructor())
 	c.addConstructor(newTokenFreezeTransactionConstructor())

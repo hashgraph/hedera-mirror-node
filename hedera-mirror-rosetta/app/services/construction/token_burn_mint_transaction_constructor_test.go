@@ -21,10 +21,8 @@
 package construction
 
 import (
-	"fmt"
 	"testing"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
@@ -34,15 +32,12 @@ import (
 )
 
 const (
-	defaultAmount = 2
-	burnAmount    = -defaultAmount
-	mintAmount    = defaultAmount
+	defaultAmount int64 = 2
+	burnAmount          = -defaultAmount
+	mintAmount          = defaultAmount
 )
 
-var (
-	metadatasBytes  = [][]byte{[]byte("foo"), []byte("bar")}
-	metadatasBase64 = []interface{}{"Zm9v", "YmFy"}
-)
+var metadatasBytes = [][]byte{[]byte("foo"), []byte("bar")}
 
 func TestTokenBurnMintTransactionConstructorSuite(t *testing.T) {
 	suite.Run(t, new(tokenTokenBurnMintTransactionConstructorSuite))
@@ -60,6 +55,31 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestNewTokenBurnTran
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestNewTokenMintTransactionConstructor() {
 	h := newTokenMintTransactionConstructor()
 	assert.NotNil(suite.T(), h)
+}
+
+func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetDefaultMaxTransactionFee() {
+	tests := []struct {
+		name                   string
+		transactionConstructor transactionConstructorWithType
+		expected               types.HbarAmount
+	}{
+		{
+			name:                   "tokenBurn",
+			transactionConstructor: newTokenBurnTransactionConstructor(),
+			expected:               types.HbarAmount{Value: 2_00000000},
+		},
+		{
+			name:                   "tokenMint",
+			transactionConstructor: newTokenMintTransactionConstructor(),
+			expected:               types.HbarAmount{Value: 30_00000000},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.T().Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.transactionConstructor.GetDefaultMaxTransactionFee())
+		})
+	}
 }
 
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestGetOperationType() {
@@ -119,12 +139,10 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
 		name             string
 		updateOperations updateOperationsFunc
 		token            domain.Token
-		validStartNanos  int64
 		expectError      bool
 	}{
 		{name: "SuccessFT", token: dbTokenA},
 		{name: "SuccessNFT", token: dbTokenC},
-		{name: "SuccessValidStartNanos", token: dbTokenA, validStartNanos: 100},
 		{name: "EmptyOperations", updateOperations: getEmptyOperations, expectError: true},
 	}
 
@@ -140,7 +158,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
 				}
 
 				// when
-				tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
+				tx, signers, err := h.Construct(defaultContext, operations)
 
 				// then
 				if tt.expectError {
@@ -149,12 +167,8 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestConstruct() {
 					assert.Nil(t, tx)
 				} else {
 					assert.Nil(t, err)
-					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-					assertTokenBurnMintTransaction(t, operations, nodeAccountId, tx, tt.token)
-
-					if tt.validStartNanos != 0 {
-						assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
-					}
+					assert.ElementsMatch(t, []types.AccountId{accountIdA}, signers)
+					assertTokenBurnMintTransaction(t, operations, tx, tt.token)
 				}
 			})
 		}
@@ -174,10 +188,9 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		tokenId, _ := hedera.TokenIDFromString(token.TokenId.String())
 		if operationType == types.OperationTypeTokenBurn {
 			tx := hedera.NewTokenBurnTransaction().
-				SetAmount(-burnAmount).
-				SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+				SetAmount(uint64(-burnAmount)).
 				SetTokenID(tokenId).
-				SetTransactionID(hedera.TransactionIDGenerate(payerId))
+				SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 			if token.Type == domain.TokenTypeNonFungibleUnique {
 				tx.SetSerialNumbers([]int64{1, 2})
 			}
@@ -185,10 +198,9 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		}
 
 		tx := hedera.NewTokenMintTransaction().
-			SetAmount(mintAmount).
-			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+			SetAmount(uint64(mintAmount)).
 			SetTokenID(tokenId).
-			SetTransactionID(hedera.TransactionIDGenerate(payerId))
+			SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 		if token.Type == domain.TokenTypeNonFungibleUnique {
 			tx.SetMetadatas(metadatasBytes)
 		}
@@ -199,10 +211,12 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		transaction := defaultGetTransaction(operationType, token)
 		switch tx := transaction.(type) {
 		case *hedera.TokenBurnTransaction:
-			tx.SetTokenID(outOfRangeTokenId)
+			tx.SetAmount(uint64(-burnAmount)).
+				SetTokenID(outOfRangeTokenId)
 			break
 		case *hedera.TokenMintTransaction:
-			tx.SetTokenID(outOfRangeTokenId)
+			tx.SetAmount(uint64(mintAmount)).
+				SetTokenID(outOfRangeTokenId)
 			break
 		default:
 			break
@@ -216,8 +230,8 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 		token          domain.Token
 		expectError    bool
 	}{
-		{name: "SuccessFT", getTransaction: defaultGetTransaction, token: dbTokenA},
-		{name: "SuccessNFT", getTransaction: defaultGetTransaction, token: dbTokenC},
+		{name: "SuccessFT", getTransaction: defaultGetTransaction, token: getTokenWithoutDecimals(dbTokenA)},
+		{name: "SuccessNFT", getTransaction: defaultGetTransaction, token: getTokenWithoutDecimals(dbTokenC)},
 		{
 			name: "InvalidTransaction",
 			getTransaction: func(string, domain.Token) interfaces.Transaction {
@@ -253,32 +267,22 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 			getTransaction: func(operationType string, token domain.Token) interfaces.Transaction {
 				if operationType == types.OperationTypeTokenBurn {
 					return hedera.NewTokenBurnTransaction().
-						SetAmount(-burnAmount).
-						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-						SetTransactionID(hedera.TransactionIDGenerate(payerId))
+						SetAmount(uint64(-burnAmount)).
+						SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 				}
-
 				return hedera.NewTokenMintTransaction().
-					SetAmount(mintAmount).
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+					SetAmount(uint64(mintAmount)).
+					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdA))
 			},
 			expectError: true,
 		},
 		{
-			name: "TransactionTransactionIDNotSet",
+			name: "TransactionIDNotSet",
 			getTransaction: func(operationType string, token domain.Token) interfaces.Transaction {
 				if operationType == types.OperationTypeTokenBurn {
-					return hedera.NewTokenBurnTransaction().
-						SetAmount(-burnAmount).
-						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-						SetTokenID(tokenIdA)
+					return hedera.NewTokenBurnTransaction().SetAmount(uint64(-burnAmount)).SetTokenID(tokenIdA)
 				}
-
-				return hedera.NewTokenMintTransaction().
-					SetAmount(mintAmount).
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTokenID(tokenIdA)
+				return hedera.NewTokenMintTransaction().SetAmount(uint64(mintAmount)).SetTokenID(tokenIdA)
 			},
 			expectError: true,
 		},
@@ -303,7 +307,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestParse() {
 					assert.Nil(t, signers)
 				} else {
 					assert.Nil(t, err)
-					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
+					assert.ElementsMatch(t, []types.AccountId{accountIdA}, signers)
 					assert.ElementsMatch(t, expectedOperations, operations)
 				}
 			})
@@ -329,33 +333,15 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
 		{name: "SuccessFT", token: dbTokenA},
 		{name: "SuccessNFT", token: dbTokenC},
 		{
-			name:             "InvalidAccountAddress",
+			name:             "InvalidAmount",
 			token:            dbTokenA,
-			updateOperations: updateOperationAccount("x.y.z"),
-			expectError:      true,
-		},
-		{
-			name:             "ZeroAccountAddress",
-			token:            dbTokenA,
-			updateOperations: updateOperationAccount("0.0.0"),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidCurrency",
-			token:            dbTokenA,
-			updateOperations: updateCurrency(types.CurrencyHbar),
-			expectError:      true,
-		},
-		{
-			name:             "InvalidCurrencySymbol",
-			token:            dbTokenA,
-			updateOperations: updateTokenSymbol("1"),
+			updateOperations: updateAmount(&types.HbarAmount{Value: 1}),
 			expectError:      true,
 		},
 		{
 			name:             "ZeroAmountValue",
 			token:            dbTokenA,
-			updateOperations: updateAmountValue("0"),
+			updateOperations: updateAmountValue(0),
 			expectError:      true,
 		},
 		{
@@ -398,7 +384,7 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
 					assert.Nil(t, signers)
 				} else {
 					assert.Nil(t, err)
-					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
+					assert.ElementsMatch(t, []types.AccountId{accountIdA}, signers)
 				}
 			})
 		}
@@ -416,74 +402,62 @@ func (suite *tokenTokenBurnMintTransactionConstructorSuite) TestPreprocess() {
 func (suite *tokenTokenBurnMintTransactionConstructorSuite) getOperations(
 	operationType string,
 	token domain.Token,
-) []*rTypes.Operation {
+) types.OperationSlice {
 	amount := burnAmount
 	if operationType == types.OperationTypeTokenMint {
 		amount = mintAmount
 	}
 
-	currency := newRosettaCurrencyBuilder().
-		setSymbol(token.TokenId.String()).
-		setType(token.Type).
-		build()
-	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-		Type:                operationType,
-		Account:             payerAccountIdentifier,
-		Amount: &rTypes.Amount{
-			Value:    fmt.Sprintf("%d", amount),
-			Currency: currency,
-		},
-	}
+	tokenAmount := types.NewTokenAmount(token, amount)
+	operation := types.Operation{AccountId: accountIdA, Amount: tokenAmount, Type: operationType}
 
 	if token.Type == domain.TokenTypeNonFungibleUnique {
 		if operationType == types.OperationTypeTokenBurn {
-			operation.Amount.Metadata = map[string]interface{}{types.MetadataKeySerialNumbers: []interface{}{"1", "2"}}
+			tokenAmount.SetSerialNumbers([]int64{1, 2})
 		} else {
-			operation.Amount.Metadata = map[string]interface{}{types.MetadataKeyMetadatas: metadatasBase64}
+			tokenAmount.SetMetadatas(metadatasBytes)
 		}
 	}
 
-	return []*rTypes.Operation{operation}
+	return types.OperationSlice{operation}
 }
 
 func assertTokenBurnMintTransaction(
 	t *testing.T,
-	operations []*rTypes.Operation,
-	nodeAccountId hedera.AccountID,
+	operations types.OperationSlice,
 	actual interfaces.Transaction,
 	dbToken domain.Token,
 ) {
-	assert.True(t, actual.IsFrozen())
+	assert.False(t, actual.IsFrozen())
 	if operations[0].Type == types.OperationTypeTokenBurn {
 		assert.IsType(t, &hedera.TokenBurnTransaction{}, actual)
 	} else {
 		assert.IsType(t, &hedera.TokenMintTransaction{}, actual)
 	}
 
-	var payer string
 	var token string
-	var value string
-
+	var value int64
 	switch tx := actual.(type) {
 	case *hedera.TokenBurnTransaction:
-		payer = tx.GetTransactionID().AccountID.String()
 		token = tx.GetTokenID().String()
-		value = fmt.Sprintf("%d", -int64(tx.GetAmount()))
+		value = -int64(tx.GetAmount())
 		if dbToken.Type == domain.TokenTypeNonFungibleUnique {
-			value = fmt.Sprintf("%d", -len(tx.GetSerialNumbers()))
+			value = -int64(len(tx.GetSerialNumbers()))
 		}
 	case *hedera.TokenMintTransaction:
-		payer = tx.GetTransactionID().AccountID.String()
 		token = tx.GetTokenID().String()
-		value = fmt.Sprintf("%d", tx.GetAmount())
+		value = int64(tx.GetAmount())
 		if dbToken.Type == domain.TokenTypeNonFungibleUnique {
-			value = fmt.Sprintf("%d", len(tx.GetMetadatas()))
+			value = int64(len(tx.GetMetadatas()))
 		}
 	}
 
-	assert.Equal(t, operations[0].Account.Address, payer)
-	assert.Equal(t, operations[0].Amount.Currency.Symbol, token)
-	assert.Equal(t, operations[0].Amount.Value, value)
-	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
+	assert.Equal(t, operations[0].Amount.GetSymbol(), token)
+	assert.Equal(t, operations[0].Amount.GetValue(), value)
+}
+
+func getTokenWithoutDecimals(token domain.Token) domain.Token {
+	clone := token
+	clone.Decimals = 0
+	return clone
 }

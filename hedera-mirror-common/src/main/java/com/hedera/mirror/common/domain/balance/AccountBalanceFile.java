@@ -24,6 +24,7 @@ import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Transient;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -40,7 +41,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 @Builder
 @Data
 @Entity
-@AllArgsConstructor
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
 @NoArgsConstructor
 public class AccountBalanceFile implements StreamFile<AccountBalance> {
 
@@ -68,6 +69,8 @@ public class AccountBalanceFile implements StreamFile<AccountBalance> {
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId nodeAccountId;
+
+    private int timeOffset;
 
     @Override
     public Long getConsensusEnd() {

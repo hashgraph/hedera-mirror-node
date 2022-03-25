@@ -25,6 +25,11 @@ const _ = require('lodash');
 const BaseService = require('./baseService');
 const {Entity} = require('../model');
 
+const constants = require('../constants');
+const AccountAlias = require('../accountAlias');
+const EntityId = require('../entityId');
+
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
 /**
@@ -37,9 +42,17 @@ class EntityService extends BaseService {
 
   static entityFromAliasQuery = `select ${Entity.ID} 
     from ${Entity.tableName}`;
+  // use a small column in existence check to reduce return payload size
+  static entityExistenceQuery = `select ${Entity.TYPE} 
+    from ${Entity.tableName} where ${Entity.ID} = $1`;
 
   static aliasColumns = [Entity.SHARD, Entity.REALM, Entity.ALIAS];
   static aliasConditions = [`coalesce(${Entity.DELETED}, false) <> true`];
+
+  static missingEntityIdMessage = 'No entity with a matching id found';
+  static missingAccountAlias = 'No account with a matching alias found';
+  static multipleAliasMatch = `Multiple alive entities matching alias`;
+  static invalidEntityIdMessage = 'Invalid entity';
 
   /**
    * Retrieves the entity containing matching the given alias
@@ -66,25 +79,54 @@ class EntityService extends BaseService {
       return null;
     } else if (rows.length > 1) {
       logger.error(`Incorrect db state: ${rows.length} alive entities matching alias ${accountAlias}`);
-      throw new Error(`Multiple alive entities matching alias`);
+      throw new Error(EntityService.multipleAliasMatch);
     }
 
     return new Entity(rows[0]);
   }
 
   /**
-   * Gets the encoded account id from the account alias string. Throws {@link InvalidArgumentError} if the account alias
-   * string is invalid,
+   * Checks if provided accountId maps to a valid entity
+   * @param {String} accountId
+   * @returns {Promise} valid flag
+   */
+  async isValidAccount(accountId) {
+    const entity = await super.getSingleRow(EntityService.entityExistenceQuery, [accountId], 'isValidAccount');
+    return !_.isNil(entity);
+  }
+
+  /**
+   * Gets the encoded account id from the account alias string.
    * @param {AccountAlias} accountAlias the account alias object
    * @return {Promise}
    */
   async getAccountIdFromAlias(accountAlias) {
     const entity = await this.getAccountFromAlias(accountAlias);
     if (_.isNil(entity)) {
-      throw new NotFoundError('No account with a matching alias found');
+      throw new NotFoundError(EntityService.missingAccountAlias);
     }
 
     return entity.id;
+  }
+
+  /**
+   * Retrieve the encodedId of a validated EntityId from an accountId or alias string.
+   * Throws {@link InvalidArgumentError} if the account alias string is invalid
+   * Throws {@link NotFoundError} if the account is not present when retrieving by alias
+   * @param {String} accountIdString accountIdOrAlias query string
+   * @returns {Promise} entityId
+   */
+  async getEncodedIdAccountIdOrAlias(accountIdString) {
+    let entityId = null;
+    if (EntityId.isValidEntityId(accountIdString)) {
+      entityId = EntityId.parse(accountIdString, constants.filterKeys.ACCOUNT_ID).getEncodedId();
+    } else if (AccountAlias.isValid(accountIdString)) {
+      entityId = await this.getAccountIdFromAlias(AccountAlias.fromString(accountIdString));
+    } else {
+      throw new InvalidArgumentError(EntityService.invalidEntityIdMessage);
+    }
+
+    return entityId;
   }
 }
 

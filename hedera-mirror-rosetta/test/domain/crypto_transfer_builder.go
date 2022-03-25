@@ -42,6 +42,11 @@ func (b *CryptoTransferBuilder) EntityId(entityId int64) *CryptoTransferBuilder 
 	return b
 }
 
+func (b *CryptoTransferBuilder) Errata(errata string) *CryptoTransferBuilder {
+	b.cryptoTransfer.Errata = &errata
+	return b
+}
+
 func (b *CryptoTransferBuilder) Timestamp(timestamp int64) *CryptoTransferBuilder {
 	b.cryptoTransfer.ConsensusTimestamp = timestamp
 	return b

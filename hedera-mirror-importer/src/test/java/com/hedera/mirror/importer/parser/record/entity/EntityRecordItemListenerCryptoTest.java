@@ -65,6 +65,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -80,8 +81,8 @@ import com.hedera.mirror.importer.util.Utility;
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId1 = AccountID.newBuilder().setAccountNum(1001).build();
-    private static final long[] additionalTransfers = { 5000 };
-    private static final long[] additionalTransferAmounts = { 1001, 1002 };
+    private static final long[] additionalTransfers = {5000};
+    private static final long[] additionalTransferAmounts = {1001, 1002};
     private static final ByteString ALIAS_KEY = ByteString.copyFromUtf8(
             "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff");
 
@@ -120,14 +121,14 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     @Test
     void cryptoCreateWithInitialBalance() {
-        final Transaction transaction = cryptoCreateTransaction();
-        final TransactionBody transactionBody = getTransactionBody(transaction);
-        final CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
-        final long initialBalance = cryptoCreateTransactionBody.getInitialBalance();
+        Transaction transaction = cryptoCreateTransaction();
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
+        long initialBalance = cryptoCreateTransactionBody.getInitialBalance();
 
-        final var transfer1 = accountAmount(accountId1.getAccountNum(), initialBalance);
-        final var transfer2 = accountAmount(PAYER.getAccountNum(), -initialBalance);
-        final TransactionRecord record = transactionRecordSuccess(transactionBody, recordBuilder ->
+        var transfer1 = accountAmount(accountId1.getAccountNum(), initialBalance);
+        var transfer2 = accountAmount(PAYER.getAccountNum(), -initialBalance);
+        TransactionRecord record = transactionRecordSuccess(transactionBody, recordBuilder ->
                 groupCryptoTransfersByAccountId(recordBuilder, List.of(transfer1, transfer2)));
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
@@ -136,7 +137,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         final var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
         final var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
         final Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
-                initialBalance, consensusTimestamp, accountEntityId));
+                initialBalance, consensusTimestamp, accountEntityId.getId()));
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -154,12 +155,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     @Test
     void cryptoCreateWithZeroInitialBalance() {
         final long initialBalance = 0;
-        final CryptoCreateTransactionBody.Builder cryptoCreateBuilder = cryptoCreateAccountBuilderWithDefaults()
+        CryptoCreateTransactionBody.Builder cryptoCreateBuilder = cryptoCreateAccountBuilderWithDefaults()
                 .setInitialBalance(initialBalance);
-        final Transaction transaction = cryptoCreateTransaction(cryptoCreateBuilder);
-        final TransactionBody transactionBody = getTransactionBody(transaction);
-        final CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
-        final TransactionRecord record = transactionRecordSuccess(transactionBody);
+        Transaction transaction = cryptoCreateTransaction(cryptoCreateBuilder);
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
+        TransactionRecord record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
@@ -167,7 +168,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         final var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
         final var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
         final Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
-                initialBalance, consensusTimestamp, accountEntityId));
+                initialBalance, consensusTimestamp, accountEntityId.getId()));
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -207,21 +208,21 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     @Test
     void cryptoCreateInitialBalanceInTransferList() {
-        final Transaction transaction = cryptoCreateTransaction();
-        final TransactionBody transactionBody = getTransactionBody(transaction);
-        final CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
+        Transaction transaction = cryptoCreateTransaction();
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
 
         // add initial balance to transfer list
-        final long initialBalance = cryptoCreateTransactionBody.getInitialBalance();
-        final var transfer1 = accountAmount(accountId1.getAccountNum(), initialBalance);
-        final var transfer2 = accountAmount(PAYER.getAccountNum(), -initialBalance);
-        final TransactionRecord record = transactionRecordSuccess(transactionBody, recordBuilder ->
+        long initialBalance = cryptoCreateTransactionBody.getInitialBalance();
+        var transfer1 = accountAmount(accountId1.getAccountNum(), initialBalance);
+        var transfer2 = accountAmount(PAYER.getAccountNum(), -initialBalance);
+        TransactionRecord record = transactionRecordSuccess(transactionBody, recordBuilder ->
                 groupCryptoTransfersByAccountId(recordBuilder, List.of(transfer1, transfer2))
         );
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        final var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
+        var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -251,7 +252,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
         Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
-                0, consensusTimestamp, accountEntityId));
+                0, consensusTimestamp, accountEntityId.getId()));
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -343,8 +344,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         bodyBuilder.getCryptoUpdateAccountBuilder().setProxyAccountID(AccountID.getDefaultInstance());
         transactionBody = bodyBuilder.build();
         transaction = Transaction.newBuilder().setSignedTransactionBytes(SignedTransaction.newBuilder()
-                .setBodyBytes(transactionBody.toByteString())
-                .build().toByteString())
+                        .setBodyBytes(transactionBody.toByteString())
+                        .build().toByteString())
                 .build();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
@@ -595,6 +596,41 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     @Test
+    void cryptoTransferFailedTransactionErrata() {
+        entityProperties.getPersist().setCryptoTransferAmounts(true);
+        Transaction transaction = cryptoTransferTransaction();
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord record = buildTransactionRecord(r -> {
+            for (int i = 0; i < additionalTransfers.length; i++) {
+                // Add non-fee transfers to record
+                var accountAmount = accountAmount(additionalTransfers[i], additionalTransferAmounts[i]);
+                r.getTransferListBuilder().addAccountAmounts(accountAmount);
+            }
+        }, transactionBody, ResponseCodeEnum.INVALID_ACCOUNT_ID.getNumber());
+
+        var recordItem = new RecordItem(transaction, record);
+        parseRecordItemAndCommit(recordItem);
+
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEntities(),
+                () -> assertEquals(4, cryptoTransferRepository.count(), "Node, network fee & errata"),
+                () -> assertEquals(0, nonFeeTransferRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> {
+                    for (int i = 0; i < additionalTransfers.length; i++) {
+                        var id = new CryptoTransfer.Id(additionalTransferAmounts[i],
+                                recordItem.getConsensusTimestamp(), additionalTransfers[i]);
+                        assertThat(cryptoTransferRepository.findById(id))
+                                .get()
+                                .extracting(CryptoTransfer::getErrata)
+                                .isEqualTo(ErrataType.DELETE);
+                    }
+                }
+        );
+    }
+
+    @Test
     void cryptoTransferWithAlias() {
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         entityProperties.getPersist().setNonFeeTransfers(true);
@@ -610,8 +646,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 accountCreateTransactionBody,
                 ResponseCodeEnum.SUCCESS.getNumber());
 
-        final var transfer1 = accountAliasAmount(ALIAS_KEY, 1003).build();
-        final var transfer2 = accountAliasAmount(ByteString.copyFrom(entity.getAlias()), 1004).build();
+        var transfer1 = accountAliasAmount(ALIAS_KEY, 1003).build();
+        var transfer2 = accountAliasAmount(ByteString.copyFrom(entity.getAlias()), 1004).build();
         // Crypto transfer to both existing alias and newly created alias accounts
         Transaction transaction = buildTransaction(builder -> builder.getCryptoTransferBuilder().getTransfersBuilder()
                 .addAccountAmounts(transfer1)
@@ -638,7 +674,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         );
     }
 
-    private Condition<CryptoTransfer> isAccountAmountReceiverAccountAmount(final AccountAmount receiver) {
+    private Condition<CryptoTransfer> isAccountAmountReceiverAccountAmount(AccountAmount receiver) {
         return new Condition<>(
                 cryptoTransfer ->
                         isAccountAmountReceiverAccountAmount(cryptoTransfer, receiver),
@@ -646,7 +682,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     @ParameterizedTest
-    @EnumSource(value = PartialDataAction.class, names = { "DEFAULT", "SKIP" })
+    @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "SKIP"})
     void cryptoTransferWithUnknownAlias(PartialDataAction partialDataAction) {
         // given
         // both accounts have alias, and only account2's alias is in db
@@ -813,7 +849,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     protected IterableAssert<CryptoTransfer> assertCryptoTransfers(
-            final int expectedNumberOfCryptoTransfers) {
+            int expectedNumberOfCryptoTransfers) {
         return assertThat(
                 cryptoTransferRepository.findAll())
                 .hasSize(expectedNumberOfCryptoTransfers)
@@ -890,21 +926,21 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     private void groupCryptoTransfersByAccountId(final TransactionRecord.Builder recordBuilder,
-            final List<AccountAmount.Builder> amountsToBeAdded) {
+                                                 final List<AccountAmount.Builder> amountsToBeAdded) {
         final var accountAmounts = recordBuilder.getTransferListBuilder().getAccountAmountsBuilderList();
 
-        final var transfers = new HashMap<AccountID, Long>();
+        var transfers = new HashMap<AccountID, Long>();
         Stream.concat(accountAmounts.stream(), amountsToBeAdded.stream())
                 .forEach(accountAmount ->
                         transfers.compute(accountAmount.getAccountID(), (k, v) -> {
-                            final long currentValue = (v == null) ? 0 : v;
+                            long currentValue = (v == null) ? 0 : v;
                             return currentValue + accountAmount.getAmount();
                         })
                 );
 
-        final TransferList.Builder transferListBuilder = TransferList.newBuilder();
+        TransferList.Builder transferListBuilder = TransferList.newBuilder();
         transfers.entrySet().forEach(entry -> {
-            final AccountAmount accountAmount = AccountAmount.newBuilder().setAccountID(entry.getKey())
+            AccountAmount accountAmount = AccountAmount.newBuilder().setAccountID(entry.getKey())
                     .setAmount(entry.getValue()).build();
             transferListBuilder.addAccountAmounts(accountAmount);
         });
@@ -935,7 +971,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     private TransactionRecord transactionRecord(TransactionBody transactionBody, int status,
-            Consumer<TransactionRecord.Builder> builderConsumer) {
+                                                Consumer<TransactionRecord.Builder> builderConsumer) {
         return buildTransactionRecord(recordBuilder -> {
                     recordBuilder.getReceiptBuilder().setAccountID(accountId1);
                     builderConsumer.accept(recordBuilder);
@@ -949,7 +985,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     private TransactionRecord transactionRecordSuccess(TransactionBody transactionBody,
-            Consumer<TransactionRecord.Builder> customBuilder) {
+                                                       Consumer<TransactionRecord.Builder> customBuilder) {
         return transactionRecord(transactionBody, ResponseCodeEnum.SUCCESS.getNumber(), customBuilder);
     }
 }

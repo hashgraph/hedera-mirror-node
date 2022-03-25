@@ -29,10 +29,12 @@ const (
 	EntityTypeToken    = "TOKEN"
 	EntityTypeTopic    = "TOPIC"
 
-	entityTableName = "entity"
+	entityTableName        = "entity"
+	entityHistoryTableName = "entity_history"
 )
 
 type Entity struct {
+	Alias                         []byte
 	AutoRenewAccountId            *EntityId
 	AutoRenewPeriod               *int64
 	CreatedTimestamp              *int64
@@ -59,4 +61,8 @@ func (e Entity) GetModifiedTimestamp() int64 {
 
 func (Entity) TableName() string {
 	return entityTableName
+}
+
+func (Entity) HistoryTableName() string {
+	return entityHistoryTableName
 }

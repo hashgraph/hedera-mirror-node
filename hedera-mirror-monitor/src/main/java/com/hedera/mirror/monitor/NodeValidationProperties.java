@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,7 +39,7 @@ public class NodeValidationProperties {
     private Duration frequency = Duration.ofMinutes(30L);
 
     @Min(1)
-    private int maxAttempts = 4;
+    private int maxAttempts = 8;
 
     @DurationMin(millis = 250)
     @DurationMax(seconds = 10)
@@ -54,7 +54,9 @@ public class NodeValidationProperties {
     @NotNull
     private Duration minBackoff = Duration.ofMillis(500);
 
+    // requestTimeout should be longer than the total retry time controlled by maxAttempts and backoffs
+    // the default would result in a max of 11.5s without considering any network delay
     @DurationMin(millis = 500)
     @NotNull
-    private Duration requestTimeout = Duration.ofSeconds(10L);
+    private Duration requestTimeout = Duration.ofSeconds(15L);
 }

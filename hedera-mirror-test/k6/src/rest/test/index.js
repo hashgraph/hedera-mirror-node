@@ -27,6 +27,8 @@ import * as accountsBalanceFalsePubkey from './accountsBalanceFalsePubkey.js';
 import * as accountsBalanceGt0 from './accountsBalanceGt0.js';
 import * as accountsBalanceGt0Pubkey from './accountsBalanceGt0Pubkey.js';
 import * as accountsBalanceNe from './accountsBalanceNe.js';
+import * as accountsCryptoAllowance from './accountsCryptoAllowance.js';
+import * as accountsCryptoAllowanceSpender from './accountsCryptoAllowanceSpender.js';
 import * as accountsId from './accountsId.js';
 import * as accountsIdNe from './accountsIdNe.js';
 import * as balances from './balances.js';
@@ -65,6 +67,8 @@ const tests = {
   accountsBalanceGt0,
   accountsBalanceGt0Pubkey,
   accountsBalanceNe,
+  accountsCryptoAllowance,
+  accountsCryptoAllowanceSpender,
   accountsId,
   accountsIdNe,
   balances,

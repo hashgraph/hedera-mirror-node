@@ -71,7 +71,6 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -117,7 +116,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final DomainBuilder domainBuilder;
     private final EntityRepository entityRepository;
     private final FileDataRepository fileDataRepository;
-    private final JdbcOperations jdbcOperations;
     private final LiveHashRepository liveHashRepository;
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
@@ -197,7 +195,6 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         Contract contractUpdate = contractCreate.toEntityId().toEntity();
         contractUpdate.setAutoRenewPeriod(30L);
-        contractUpdate.setEvmAddress(contractCreate.getEvmAddress());
         contractUpdate.setExpirationTimestamp(500L);
         contractUpdate.setKey(domainBuilder.key());
         contractUpdate.setMemo("updated");
@@ -206,7 +203,6 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         Contract contractDelete = contractCreate.toEntityId().toEntity();
         contractDelete.setDeleted(true);
-        contractDelete.setEvmAddress(contractCreate.getEvmAddress());
         contractDelete.setTimestampLower(contractCreate.getTimestampLower() + 2);
         contractDelete.setObtainerId(EntityId.of(999L, EntityType.CONTRACT));
 
@@ -342,12 +338,10 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onCryptoTransferList() {
+    void onCryptoTransfer() {
         // given
-        CryptoTransfer cryptoTransfer1 = new CryptoTransfer(1L, 1L, EntityId.of(0L, 0L, 1L, ACCOUNT));
-        cryptoTransfer1.setPayerAccountId(TRANSACTION_PAYER);
-        CryptoTransfer cryptoTransfer2 = new CryptoTransfer(2L, -2L, EntityId.of(0L, 0L, 2L, ACCOUNT));
-        cryptoTransfer2.setPayerAccountId(TRANSACTION_PAYER);
+        var cryptoTransfer1 = domainBuilder.cryptoTransfer().get();
+        var cryptoTransfer2 = domainBuilder.cryptoTransfer().get();
 
         // when
         sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
@@ -356,6 +350,12 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrder(cryptoTransfer1, cryptoTransfer2);
+    }
+
+    @Test
+    void onEndNull() {
+        sqlEntityListener.onEnd(null);
+        assertThat(recordFileRepository.count()).isZero();
     }
 
     @Test
@@ -1215,9 +1215,6 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onSchedule() {
-        EntityId entityId1 = EntityId.of("0.0.100", EntityType.SCHEDULE);
-        EntityId entityId2 = EntityId.of("0.0.200", EntityType.SCHEDULE);
-
         Schedule schedule1 = domainBuilder.schedule().get();
         Schedule schedule2 = domainBuilder.schedule().get();
 
@@ -1269,17 +1266,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         RecordFile recordFile = domainBuilder.recordFile().persist();
         transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(recordFile));
         assertThat(recordFileRepository.findAll()).contains(recordFile);
-    }
-
-    private <T> Collection<T> findHistory(Class<T> historyClass) {
-        return findHistory(historyClass, "id");
-    }
-
-    private <T> Collection<T> findHistory(Class<T> historyClass, String ids) {
-        String table = historyClass.getSimpleName();
-        table = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, table);
-        String sql = String.format("select * from %s_history order by %s, timestamp_range asc", table, ids);
-        return jdbcOperations.query(sql, rowMapper(historyClass));
     }
 
     private Entity getEntity(long id, long modifiedTimestamp) {

@@ -35,6 +35,7 @@ type Transaction struct {
 	ConsensusTimestamp       int64 `gorm:"primaryKey"`
 	ChargedTxFee             int64
 	EntityId                 *EntityId
+	Errata                   *string
 	InitialBalance           int64
 	MaxFee                   int64
 	Memo                     []byte

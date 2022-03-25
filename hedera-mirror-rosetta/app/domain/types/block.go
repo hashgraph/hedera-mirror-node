@@ -46,16 +46,20 @@ func (b *Block) ToRosetta() *types.Block {
 	}
 
 	return &types.Block{
-		BlockIdentifier: &types.BlockIdentifier{
-			Index: b.Index,
-			Hash:  tools.SafeAddHexPrefix(b.Hash),
-		},
+		BlockIdentifier: b.GetRosettaBlockIdentifier(),
 		ParentBlockIdentifier: &types.BlockIdentifier{
 			Index: b.ParentIndex,
 			Hash:  tools.SafeAddHexPrefix(b.ParentHash),
 		},
 		Timestamp:    b.GetTimestampMillis(),
 		Transactions: transactions,
+	}
+}
+
+func (b *Block) GetRosettaBlockIdentifier() *types.BlockIdentifier {
+	return &types.BlockIdentifier{
+		Index: b.Index,
+		Hash:  tools.SafeAddHexPrefix(b.Hash),
 	}
 }
 

@@ -184,7 +184,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onEnd(RecordFile recordFile) {
         executeBatches();
-        recordFileRepository.save(recordFile);
+        if (recordFile != null) {
+            recordFileRepository.save(recordFile);
+        }
     }
 
     @Override
@@ -454,6 +456,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Contract mergeContract(Contract previous, Contract current) {
         mergeAbstractEntity(previous, current);
 
+        current.setEvmAddress(previous.getEvmAddress());
         current.setFileId(previous.getFileId());
 
         if (current.getObtainerId() == null) {

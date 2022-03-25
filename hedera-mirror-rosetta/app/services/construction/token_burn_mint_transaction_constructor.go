@@ -22,7 +22,6 @@ package construction
 
 import (
 	"context"
-	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
@@ -33,61 +32,44 @@ import (
 )
 
 type tokenBurnMintTransactionConstructor struct {
-	operationType   string
-	transactionType string
+	commonTransactionConstructor
 }
 
 func (t *tokenBurnMintTransactionConstructor) Construct(
 	_ context.Context,
-	nodeAccountId hedera.AccountID,
-	operations []*rTypes.Operation,
-	validStartNanos int64,
-) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
+	operations types.OperationSlice,
+) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
 	payer, tokenAmount, rErr := t.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
 
 	var tx interfaces.Transaction
-	var err error
 	tokenId, _ := hedera.TokenIDFromString(tokenAmount.TokenId.String())
-	transactionId := getTransactionId(*payer, validStartNanos)
 	if t.operationType == types.OperationTypeTokenBurn {
-		tokenBurnTx := hedera.NewTokenBurnTransaction().
-			SetTokenID(tokenId).
-			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTransactionID(transactionId)
+		tokenBurnTx := hedera.NewTokenBurnTransaction().SetTokenID(tokenId)
 		if tokenAmount.Type == domain.TokenTypeFungibleCommon {
 			tokenBurnTx.SetAmount(uint64(tokenAmount.Value))
 		} else {
 			tokenBurnTx.SetSerialNumbers(tokenAmount.SerialNumbers)
 		}
-
-		tx, err = tokenBurnTx.Freeze()
+		tx = tokenBurnTx
 	} else {
-		tokenMintTx := hedera.NewTokenMintTransaction().
-			SetTokenID(tokenId).
-			SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-			SetTransactionID(transactionId)
+		tokenMintTx := hedera.NewTokenMintTransaction().SetTokenID(tokenId)
 		if tokenAmount.Type == domain.TokenTypeFungibleCommon {
 			tokenMintTx.SetAmount(uint64(tokenAmount.Value))
 		} else {
 			tokenMintTx.SetMetadatas(tokenAmount.Metadatas)
 		}
-
-		tx, err = tokenMintTx.Freeze()
+		tx = tokenMintTx
 	}
 
-	if err != nil {
-		return nil, nil, errors.ErrTransactionFreezeFailed
-	}
-
-	return tx, []hedera.AccountID{*payer}, nil
+	return tx, []types.AccountId{*payer}, nil
 }
 
 func (t *tokenBurnMintTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
-	[]*rTypes.Operation,
-	[]hedera.AccountID,
+	types.OperationSlice,
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	var amount int64
@@ -123,6 +105,11 @@ func (t *tokenBurnMintTransactionConstructor) Parse(_ context.Context, transacti
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
+	payerAccountId, err := types.NewAccountIdFromSdkAccountId(*payer)
+	if err != nil {
+		return nil, nil, errors.ErrInvalidAccount
+	}
+
 	tokenEntityId, err := domain.EntityIdOf(int64(tokenId.Shard), int64(tokenId.Realm), int64(tokenId.Token))
 	if err != nil {
 		return nil, nil, errors.ErrInvalidToken
@@ -139,18 +126,17 @@ func (t *tokenBurnMintTransactionConstructor) Parse(_ context.Context, transacti
 	tokenAmount := types.NewTokenAmount(domainToken, amount).
 		SetMetadatas(metadatas).
 		SetSerialNumbers(serialNumbers)
-	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-		Account:             &rTypes.AccountIdentifier{Address: payer.String()},
-		Amount:              tokenAmount.ToRosetta(),
-		Type:                t.operationType,
+	operation := types.Operation{
+		AccountId: payerAccountId,
+		Amount:    tokenAmount,
+		Type:      t.operationType,
 	}
 
-	return []*rTypes.Operation{operation}, []hedera.AccountID{*payer}, nil
+	return types.OperationSlice{operation}, []types.AccountId{payerAccountId}, nil
 }
 
-func (t *tokenBurnMintTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
-	[]hedera.AccountID,
+func (t *tokenBurnMintTransactionConstructor) Preprocess(_ context.Context, operations types.OperationSlice) (
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	payer, _, err := t.preprocess(operations)
@@ -158,19 +144,11 @@ func (t *tokenBurnMintTransactionConstructor) Preprocess(_ context.Context, oper
 		return nil, err
 	}
 
-	return []hedera.AccountID{*payer}, nil
+	return []types.AccountId{*payer}, nil
 }
 
-func (t *tokenBurnMintTransactionConstructor) GetOperationType() string {
-	return t.operationType
-}
-
-func (t *tokenBurnMintTransactionConstructor) GetSdkTransactionType() string {
-	return t.transactionType
-}
-
-func (t *tokenBurnMintTransactionConstructor) preprocess(operations []*rTypes.Operation) (
-	*hedera.AccountID,
+func (t *tokenBurnMintTransactionConstructor) preprocess(operations types.OperationSlice) (
+	*types.AccountId,
 	*types.TokenAmount,
 	*rTypes.Error,
 ) {
@@ -184,28 +162,20 @@ func (t *tokenBurnMintTransactionConstructor) preprocess(operations []*rTypes.Op
 		return nil, nil, rErr
 	}
 
-	payer, err := hedera.AccountIDFromString(operation.Account.Address)
-	if err != nil || isZeroAccountId(payer) {
-		return nil, nil, errors.ErrInvalidAccount
-	}
-
-	return &payer, tokenAmount, nil
+	return &operation.AccountId, tokenAmount, nil
 }
 
-func (t *tokenBurnMintTransactionConstructor) preprocessOperationAmount(operationAmount *rTypes.Amount) (
+func (t *tokenBurnMintTransactionConstructor) preprocessOperationAmount(amount types.Amount) (
 	*types.TokenAmount,
 	*rTypes.Error,
 ) {
-	amount, err := types.NewAmount(operationAmount)
-	if err != nil {
-		return nil, err
-	}
-
-	tokenAmount, ok := amount.(*types.TokenAmount)
+	tmpAmount, ok := amount.(*types.TokenAmount)
 	if !ok {
 		return nil, errors.ErrInvalidCurrency
 	}
 
+	// make a copy to avoid changing the value passed in
+	tokenAmount := *tmpAmount
 	isNft := tokenAmount.Type == domain.TokenTypeNonFungibleUnique
 	if t.operationType == types.OperationTypeTokenBurn {
 		if tokenAmount.Value >= 0 || (isNft && len(tokenAmount.SerialNumbers) == 0) {
@@ -220,21 +190,23 @@ func (t *tokenBurnMintTransactionConstructor) preprocessOperationAmount(operatio
 		}
 	}
 
-	return tokenAmount, nil
+	return &tokenAmount, nil
 }
 
 func newTokenBurnTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenBurnTransaction{}).Name()
 	return &tokenBurnMintTransactionConstructor{
-		operationType:   types.OperationTypeTokenBurn,
-		transactionType: transactionType,
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenBurnTransaction(),
+			types.OperationTypeTokenBurn,
+		),
 	}
 }
 
 func newTokenMintTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenMintTransaction{}).Name()
 	return &tokenBurnMintTransactionConstructor{
-		operationType:   types.OperationTypeTokenMint,
-		transactionType: transactionType,
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenMintTransaction(),
+			types.OperationTypeTokenMint,
+		),
 	}
 }

@@ -56,7 +56,7 @@ func dummySecondLatestBlock() *types.Block {
 	}
 }
 
-func getNetworkAPIService(abr interfaces.AddressBookEntryRepository, base *BaseService) server.NetworkAPIServicer {
+func getNetworkAPIService(abr interfaces.AddressBookEntryRepository, base BaseService) server.NetworkAPIServicer {
 	network := &rTypes.NetworkIdentifier{
 		Blockchain: "SomeBlockchain",
 		Network:    "SomeNetwork",
@@ -84,7 +84,7 @@ type offlineNetworkServiceSuite struct {
 	networkService server.NetworkAPIServicer
 }
 
-func (suite *offlineNetworkServiceSuite) BeforeTest(suiteName, testName string) {
+func (suite *offlineNetworkServiceSuite) BeforeTest(_, _ string) {
 	suite.networkService = getNetworkAPIService(nil, NewOfflineBaseService())
 }
 
@@ -149,9 +149,11 @@ func (suite *offlineNetworkServiceSuite) TestNetworkOptions() {
 		errors.ErrTokenNotFound,
 		errors.ErrInvalidTransaction,
 		errors.ErrInvalidCurrency,
-		errors.ErrInternalServerError,
 		errors.ErrInvalidSignatureType,
 		errors.ErrEndpointNotSupportedInOfflineMode,
+		errors.ErrInvalidCurveType,
+		errors.ErrInvalidOptions,
+		errors.ErrInternalServerError,
 	}
 
 	expectedResult := &rTypes.NetworkOptionsResponse{
@@ -211,7 +213,7 @@ type onlineNetworkServiceSuite struct {
 	mockTransactionRepo      *mocks.MockTransactionRepository
 }
 
-func (suite *onlineNetworkServiceSuite) BeforeTest(suiteName, testName string) {
+func (suite *onlineNetworkServiceSuite) BeforeTest(_, _ string) {
 	suite.mockAddressBookEntryRepo = &mocks.MockAddressBookEntryRepository{}
 	suite.mockBlockRepo = &mocks.MockBlockRepository{}
 	suite.mockTransactionRepo = &mocks.MockTransactionRepository{}

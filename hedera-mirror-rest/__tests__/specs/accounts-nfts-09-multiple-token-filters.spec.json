@@ -1,7 +1,11 @@
 {
   "description": "Account NFT api call with multiple token filters",
   "setup": {
-    "entities": [],
+    "entities": [
+      {
+        "num": 1001
+      }
+    ],
     "tokens": [],
     "balances": [],
     "transactions": [],

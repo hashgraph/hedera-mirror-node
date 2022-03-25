@@ -63,15 +63,15 @@
         "transaction_type": 16
       },
       {
-        "_description": "FileUpdate overwrites the data",
-        "file_data": [1],
+        "_description": "FileUpdate overwrites the data with content 189a554c",
+        "file_data": "189a554c",
         "consensus_timestamp": "987654000124000",
         "entity_id": "5001",
         "transaction_type": 19
       },
       {
-        "_description": "FileAppend, the contract is created with the content [1, 2]",
-        "file_data": [2],
+        "_description": "FileAppend, the contract is created with the content 189a554c82bba493",
+        "file_data": "82bba493",
         "consensus_timestamp": "987654999123000",
         "entity_id": "5001",
         "transaction_type": 16
@@ -93,7 +93,7 @@
       "key": "010101"
     },
     "auto_renew_period": null,
-    "bytecode": "0x0102",
+    "bytecode": "0x189a554c82bba493",
     "contract_id": "0.0.8001",
     "created_timestamp": "987654.999123200",
     "deleted": false,

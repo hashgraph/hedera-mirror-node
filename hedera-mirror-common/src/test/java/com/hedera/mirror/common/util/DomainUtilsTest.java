@@ -46,7 +46,21 @@ import com.hedera.mirror.common.exception.InvalidEntityException;
 
 class DomainUtilsTest {
 
-    private static final String KEY = "c83755a935e442f18f12fbb9ecb5bc416417059ddb3c15aac32c1702e7da6734";
+    private static final String ED25519_KEY = "60beee88a761e079f71b03b5fe041979369e96450a7455b203a2578c8a7d4852";
+    private static final String ECDSA_384_KEY = "0000001365636473612d736861322d6e69737470333834000000086e697374703338" +
+            "340000006104414e37848e6bbf0824d32e434c315eac3c23300db659f6058ed160ff8f6e80e2353d280b95c876b9f97b785f0a0f" +
+            "c8f76842241c2484966791344fd54bc103ce57380052abade51b5b4cf21fad404fe6a1ee7228bff3cd2fbfd617802d8f625b";
+    private static final String ECDSA_SECP256K1_KEY = "0347ba1b98360d856fb796ecbcbde934055b9e0967e5e40d0abeb3fd68bf83" +
+            "82c2";
+    private static final String RSA_3072_KEY = "308201a2300d06092a864886f70d01010105000382018f003082018a0282018100c34" +
+            "471f9db1efd5345cb664ed7bb980a8a859f41a51c4a009a91a1db51401af9dea56ce00ca09050c0d02f49ee58b68b24760f077c4" +
+            "079f4345ea2e78f4e8f52518a437dc3db47b611ce0574b56d064899892b7378d65491e65676cdf3f2f2b07f34f8bec515f3d4037" +
+            "6b3a0a13615c8fc8348091091bb8dcd3a617de7b1bd5958c66ca108632e208955a6d2b6bc3421175cc2a2a67a5cafd8562dc7360" +
+            "0006bb44b4796dceb7430c0c62cb0ae1618e391c1284e8e750a40991aa4c4dee6e450c26d2347b9e20865f9cad3de21033ad9aa3" +
+            "eee092b9fc3df3fc35533b16530204bc171ef7573138fd212bd559fe2071295542cb40090415bf397bbf474adb6bacba32fe13c0" +
+            "817a8f202e659588c5608a12fc2707795b3b621434305b7d4f6d6271ebe62a7afd98c2f662f4ed5f8c4bd0ee603b896e53e2ca2d" +
+            "ed7495515c1e88a40f58fd6f94f8d9f14613470ba873d395293ea5542ddea56550f44d5760f57394693a889a43ab6f73b3a55448" +
+            "8ecadacc328cb02594a2a5e9e46602010e2430203010001";
 
     @Test
     void getPublicKeyWhenNull() {
@@ -60,26 +74,26 @@ class DomainUtilsTest {
 
     @Test
     void getPublicKeyWhenEd25519() throws Exception {
-        var bytes = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build().toByteArray();
-        assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(KEY);
+        var bytes = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519_KEY))).build().toByteArray();
+        assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(ED25519_KEY);
     }
 
     @Test
     void getPublicKeyWhenECDSASecp256K1() throws Exception {
-        var bytes = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(Hex.decodeHex(KEY))).build().toByteArray();
-        assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(KEY);
+        var bytes = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(Hex.decodeHex(ECDSA_SECP256K1_KEY))).build().toByteArray();
+        assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(ECDSA_SECP256K1_KEY);
     }
 
     @Test
     void getPublicKeyWhenECDSA384() throws Exception {
-        var bytes = Key.newBuilder().setECDSA384(ByteString.copyFrom(Hex.decodeHex(KEY))).build().toByteArray();
-        assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(KEY);
+        var bytes = Key.newBuilder().setECDSA384(ByteString.copyFrom(Hex.decodeHex(ECDSA_384_KEY))).build().toByteArray();
+        assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(ECDSA_384_KEY);
     }
 
     @Test
     void getPublicKeyWhenRSA3072() throws Exception {
-        var bytes = Key.newBuilder().setRSA3072(ByteString.copyFrom(Hex.decodeHex(KEY))).build().toByteArray();
-        assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(KEY);
+        var bytes = Key.newBuilder().setRSA3072(ByteString.copyFrom(Hex.decodeHex(RSA_3072_KEY))).build().toByteArray();
+        assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(RSA_3072_KEY);
     }
 
     @Test
@@ -96,15 +110,15 @@ class DomainUtilsTest {
 
     @Test
     void getPublicKeyWhenSimpleKeyList() throws Exception {
-        var key = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(Hex.decodeHex(KEY))).build();
+        var key = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(Hex.decodeHex(ECDSA_SECP256K1_KEY))).build();
         var keyList = KeyList.newBuilder().addKeys(key).build();
         var bytes = Key.newBuilder().setKeyList(keyList).build().toByteArray();
-        assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(KEY);
+        assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(ECDSA_SECP256K1_KEY);
     }
 
     @Test
     void getPublicKeyWhenMaxDepth() throws Exception {
-        var primitiveKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build();
+        var primitiveKey = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519_KEY))).build();
         var keyList2 = KeyList.newBuilder().addKeys(primitiveKey).build();
         var key2 = Key.newBuilder().setKeyList(keyList2).build();
         var keyList1 = KeyList.newBuilder().addKeys(key2).build();
@@ -114,7 +128,7 @@ class DomainUtilsTest {
 
     @Test
     void getPublicKeyWhenKeyList() throws Exception {
-        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build();
+        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519_KEY))).build();
         var keyList = KeyList.newBuilder().addKeys(key).addKeys(key).build();
         var bytes = Key.newBuilder().setKeyList(keyList).build().toByteArray();
         assertThat(DomainUtils.getPublicKey(bytes)).isNull();
@@ -122,16 +136,16 @@ class DomainUtilsTest {
 
     @Test
     void getPublicKeyWhenSimpleThreshHoldKey() throws Exception {
-        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build();
+        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519_KEY))).build();
         var keyList = KeyList.newBuilder().addKeys(key).build();
         var tk = ThresholdKey.newBuilder().setThreshold(1).setKeys(keyList).build();
         var bytes = Key.newBuilder().setThresholdKey(tk).build().toByteArray();
-        assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(KEY);
+        assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(ED25519_KEY);
     }
 
     @Test
     void getPublicKeyWhenThreshHoldKey() throws Exception {
-        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(KEY))).build();
+        var key = Key.newBuilder().setEd25519(ByteString.copyFrom(Hex.decodeHex(ED25519_KEY))).build();
         var keyList = KeyList.newBuilder().addKeys(key).addKeys(key).build();
         var tk = ThresholdKey.newBuilder().setThreshold(1).setKeys(keyList).build();
         var bytes = Key.newBuilder().setThresholdKey(tk).build().toByteArray();

@@ -23,44 +23,33 @@ package construction
 import (
 	"context"
 
-	"github.com/coinbase/rosetta-sdk-go/types"
+	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
-	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
-// TransactionConstructor defines the methods to construct a transaction
-type TransactionConstructor interface {
+// BaseTransactionConstructor defines the methods to construct a transaction
+type BaseTransactionConstructor interface {
 	// Construct constructs a transaction from its operations
 	Construct(
 		ctx context.Context,
-		nodeAccountId hedera.AccountID,
-		operations []*types.Operation,
-		validStartNanos int64,
-	) (interfaces.Transaction, []hedera.AccountID, *types.Error)
+		operations types.OperationSlice,
+	) (interfaces.Transaction, []types.AccountId, *rTypes.Error)
 
 	// Parse parses a signed or unsigned transaction to get its operations and required signers
 	Parse(ctx context.Context, transaction interfaces.Transaction) (
-		[]*types.Operation,
-		[]hedera.AccountID,
-		*types.Error,
+		types.OperationSlice,
+		[]types.AccountId,
+		*rTypes.Error,
 	)
 
 	// Preprocess preprocesses the operations to get required signers
-	Preprocess(ctx context.Context, operations []*types.Operation) ([]hedera.AccountID, *types.Error)
+	Preprocess(ctx context.Context, operations types.OperationSlice) ([]types.AccountId, *rTypes.Error)
 }
 
-// embed SDK PublicKey and implement the Unmarshaler interface
-type publicKey struct {
-	hedera.PublicKey
-}
+type TransactionConstructor interface {
+	BaseTransactionConstructor
 
-func (pk *publicKey) UnmarshalJSON(data []byte) error {
-	var err error
-	pk.PublicKey, err = hedera.PublicKeyFromString(tools.SafeUnquote(string(data)))
-	return err
-}
-
-func (pk *publicKey) isEmpty() bool {
-	return len(pk.PublicKey.Bytes()) == 0
+	// GetDefaultMaxTransactionFee gets the default max transaction fee in hbar
+	GetDefaultMaxTransactionFee(operationType string) (types.HbarAmount, *rTypes.Error)
 }

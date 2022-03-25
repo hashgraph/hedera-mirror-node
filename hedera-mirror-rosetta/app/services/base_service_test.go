@@ -72,7 +72,7 @@ func TestBaseServiceSuite(t *testing.T) {
 
 type onlineBaseServiceSuite struct {
 	suite.Suite
-	baseService         *BaseService
+	baseService         BaseService
 	mockBlockRepo       *mocks.MockBlockRepository
 	mockTransactionRepo *mocks.MockTransactionRepository
 }
@@ -318,7 +318,7 @@ func (suite *onlineBaseServiceSuite) TestFindBetweenThrows() {
 
 type offlineBaseServiceSuite struct {
 	suite.Suite
-	baseService *BaseService
+	baseService BaseService
 }
 
 func (suite *offlineBaseServiceSuite) SetupTest() {

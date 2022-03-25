@@ -34,10 +34,11 @@ type MockAccountRepository struct {
 	mock.Mock
 }
 
-func (m *MockAccountRepository) RetrieveBalanceAtBlock(ctx context.Context, accountId int64, consensusEnd int64) (
-	[]types.Amount,
-	*rTypes.Error,
-) {
+func (m *MockAccountRepository) RetrieveBalanceAtBlock(
+	ctx context.Context,
+	accountId types.AccountId,
+	consensusEnd int64,
+) (types.AmountSlice, string, *rTypes.Error) {
 	args := m.Called()
-	return args.Get(0).([]types.Amount), args.Get(1).(*rTypes.Error)
+	return args.Get(0).(types.AmountSlice), args.Get(1).(string), args.Get(2).(*rTypes.Error)
 }

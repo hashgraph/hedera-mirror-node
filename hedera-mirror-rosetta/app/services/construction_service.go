@@ -27,10 +27,12 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/services/construction"
@@ -41,20 +43,26 @@ import (
 	"google.golang.org/protobuf/encoding/prototext"
 )
 
-const MetadataKeyValidStartNanos = "valid_start_nanos"
+const (
+	metadataKeyValidStartNanos = "valid_start_nanos"
+	optionKeyOperationType     = "operation_type"
+)
 
 // constructionAPIService implements the server.ConstructionAPIServicer interface.
 type constructionAPIService struct {
-	*BaseService
-	hederaClient       *hedera.Client
-	nodeAccountIds     []hedera.AccountID
-	nodeAccountIdsLen  *big.Int
-	transactionHandler construction.TransactionConstructor
+	BaseService
+	defaultMaxTransactionFee map[string]hedera.Hbar
+	hederaClient             *hedera.Client
+	nodeAccountIds           []hedera.AccountID
+	nodeAccountIdsLen        *big.Int
+	systemShard              int64
+	systemRealm              int64
+	transactionHandler       construction.TransactionConstructor
 }
 
 // ConstructionCombine implements the /construction/combine endpoint.
 func (c *constructionAPIService) ConstructionCombine(
-	ctx context.Context,
+	_ context.Context,
 	request *rTypes.ConstructionCombineRequest,
 ) (*rTypes.ConstructionCombineResponse, *rTypes.Error) {
 	if len(request.Signatures) == 0 {
@@ -103,14 +111,22 @@ func (c *constructionAPIService) ConstructionCombine(
 // ConstructionDerive implements the /construction/derive endpoint.
 func (c *constructionAPIService) ConstructionDerive(
 	_ context.Context,
-	_ *rTypes.ConstructionDeriveRequest,
+	request *rTypes.ConstructionDeriveRequest,
 ) (*rTypes.ConstructionDeriveResponse, *rTypes.Error) {
-	return &rTypes.ConstructionDeriveResponse{}, nil
+	publicKey := request.PublicKey
+	if publicKey.CurveType != rTypes.Edwards25519 {
+		return nil, errors.ErrInvalidPublicKey
+	}
+	accountId, err := types.NewAccountIdFromAlias(request.PublicKey.Bytes, c.systemShard, c.systemRealm)
+	if err != nil || accountId.GetCurveType() != rTypes.Edwards25519 {
+		return nil, errors.ErrInvalidPublicKey
+	}
+	return &rTypes.ConstructionDeriveResponse{AccountIdentifier: accountId.ToRosetta()}, nil
 }
 
 // ConstructionHash implements the /construction/hash endpoint.
 func (c *constructionAPIService) ConstructionHash(
-	ctx context.Context,
+	_ context.Context,
 	request *rTypes.ConstructionHashRequest,
 ) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
 	signedTransaction, rErr := unmarshallTransactionFromHexString(request.SignedTransaction)
@@ -130,14 +146,27 @@ func (c *constructionAPIService) ConstructionHash(
 
 // ConstructionMetadata implements the /construction/metadata endpoint.
 func (c *constructionAPIService) ConstructionMetadata(
-	ctx context.Context,
+	_ context.Context,
 	request *rTypes.ConstructionMetadataRequest,
 ) (*rTypes.ConstructionMetadataResponse, *rTypes.Error) {
-	if !c.IsOnline() {
-		return nil, errors.ErrEndpointNotSupportedInOfflineMode
+	options := request.Options
+	if options == nil || options[optionKeyOperationType] == nil {
+		return nil, errors.ErrInvalidOptions
+	}
+	operationType, ok := options[optionKeyOperationType].(string)
+	if !ok {
+		return nil, errors.ErrInvalidOptions
 	}
 
-	return &rTypes.ConstructionMetadataResponse{Metadata: make(map[string]interface{})}, nil
+	maxFee, err := c.transactionHandler.GetDefaultMaxTransactionFee(operationType)
+	if err != nil {
+		return nil, err
+	}
+
+	return &rTypes.ConstructionMetadataResponse{
+		Metadata:     make(map[string]interface{}),
+		SuggestedFee: []*rTypes.Amount{maxFee.ToRosetta()},
+	}, nil
 }
 
 // ConstructionParse implements the /construction/parse endpoint.
@@ -158,12 +187,12 @@ func (c *constructionAPIService) ConstructionParse(
 	signers := make([]*rTypes.AccountIdentifier, 0, len(accounts))
 	if request.Signed {
 		for _, account := range accounts {
-			signers = append(signers, &rTypes.AccountIdentifier{Address: account.String()})
+			signers = append(signers, account.ToRosetta())
 		}
 	}
 
 	return &rTypes.ConstructionParseResponse{
-		Operations:               operations,
+		Operations:               operations.ToRosetta(),
 		AccountIdentifierSigners: signers,
 	}, nil
 }
@@ -178,13 +207,23 @@ func (c *constructionAPIService) ConstructionPayloads(
 		return nil, rErr
 	}
 
-	transaction, signers, rErr := c.transactionHandler.Construct(
-		ctx,
-		c.getRandomNodeAccountId(),
-		request.Operations,
-		validStartNanos,
-	)
+	operations, rErr := c.getOperationSlice(request.Operations)
 	if rErr != nil {
+		return nil, rErr
+	}
+
+	transaction, signers, rErr := c.transactionHandler.Construct(ctx, operations)
+	if rErr != nil {
+		return nil, rErr
+	}
+
+	payer := signers[0].ToSdkAccountId()
+	if rErr = updateTransaction(
+		transaction,
+		transactionSetNodeAccountId(c.getRandomNodeAccountId()),
+		transactionSetTransactionId(payer, validStartNanos),
+		transactionFreeze,
+	); rErr != nil {
 		return nil, rErr
 	}
 
@@ -201,7 +240,7 @@ func (c *constructionAPIService) ConstructionPayloads(
 	signingPayloads := make([]*rTypes.SigningPayload, 0, len(signers))
 	for _, signer := range signers {
 		signingPayloads = append(signingPayloads, &rTypes.SigningPayload{
-			AccountIdentifier: &rTypes.AccountIdentifier{Address: signer.String()},
+			AccountIdentifier: signer.ToRosetta(),
 			Bytes:             frozenBodyBytes,
 			SignatureType:     rTypes.Ed25519,
 		})
@@ -218,7 +257,12 @@ func (c *constructionAPIService) ConstructionPreprocess(
 	ctx context.Context,
 	request *rTypes.ConstructionPreprocessRequest,
 ) (*rTypes.ConstructionPreprocessResponse, *rTypes.Error) {
-	signers, err := c.transactionHandler.Preprocess(ctx, request.Operations)
+	operations, rErr := c.getOperationSlice(request.Operations)
+	if rErr != nil {
+		return nil, rErr
+	}
+
+	signers, err := c.transactionHandler.Preprocess(ctx, operations)
 	if err != nil {
 		return nil, err
 	}
@@ -228,12 +272,15 @@ func (c *constructionAPIService) ConstructionPreprocess(
 		requiredPublicKeys = append(requiredPublicKeys, &rTypes.AccountIdentifier{Address: signer.String()})
 	}
 
-	return &rTypes.ConstructionPreprocessResponse{RequiredPublicKeys: requiredPublicKeys}, nil
+	return &rTypes.ConstructionPreprocessResponse{
+		Options:            map[string]interface{}{optionKeyOperationType: operations[0].Type},
+		RequiredPublicKeys: requiredPublicKeys,
+	}, nil
 }
 
 // ConstructionSubmit implements the /construction/submit endpoint.
 func (c *constructionAPIService) ConstructionSubmit(
-	ctx context.Context,
+	_ context.Context,
 	request *rTypes.ConstructionSubmitRequest,
 ) (*rTypes.TransactionIdentifierResponse, *rTypes.Error) {
 	if !c.IsOnline() {
@@ -269,6 +316,41 @@ func (c *constructionAPIService) ConstructionSubmit(
 	}, nil
 }
 
+func (c *constructionAPIService) getOperationSlice(operations []*rTypes.Operation) (
+	types.OperationSlice,
+	*rTypes.Error,
+) {
+	operationSlice := make(types.OperationSlice, 0, len(operations))
+	for _, operation := range operations {
+		var accountId types.AccountId
+		if operation.Account != nil {
+			var err error
+			accountId, err = types.NewAccountIdFromString(operation.Account.Address, c.systemShard, c.systemRealm)
+			if err != nil || accountId.IsZero() {
+				return nil, errors.ErrInvalidAccount
+			}
+		}
+
+		var amount types.Amount
+		if operation.Amount != nil {
+			var rErr *rTypes.Error
+			if amount, rErr = types.NewAmount(operation.Amount); rErr != nil {
+				return nil, rErr
+			}
+		}
+
+		operationSlice = append(operationSlice, types.Operation{
+			AccountId: accountId,
+			Amount:    amount,
+			Index:     operation.OperationIdentifier.Index,
+			Metadata:  operation.Metadata,
+			Type:      operation.Type,
+		})
+	}
+
+	return operationSlice, nil
+}
+
 func (c *constructionAPIService) getRandomNodeAccountId() hedera.AccountID {
 	index, err := rand.Int(rand.Reader, c.nodeAccountIdsLen)
 	if err != nil {
@@ -281,14 +363,14 @@ func (c *constructionAPIService) getRandomNodeAccountId() hedera.AccountID {
 
 func (c *constructionAPIService) getValidStartNanos(metadata map[string]interface{}) (int64, *rTypes.Error) {
 	var validStartNanos int64
-	if metadata != nil && metadata[MetadataKeyValidStartNanos] != nil {
-		nanos, ok := metadata[MetadataKeyValidStartNanos].(string)
+	if metadata != nil && metadata[metadataKeyValidStartNanos] != nil {
+		nanos, ok := metadata[metadataKeyValidStartNanos].(string)
 		if !ok {
 			return validStartNanos, errors.ErrInvalidArgument
 		}
 
 		var err error
-		if validStartNanos, err = tools.ToInt64(nanos); err != nil {
+		if validStartNanos, err = tools.ToInt64(nanos); err != nil || validStartNanos < 0 {
 			return validStartNanos, errors.ErrInvalidArgument
 		}
 	}
@@ -298,9 +380,11 @@ func (c *constructionAPIService) getValidStartNanos(metadata map[string]interfac
 
 // NewConstructionAPIService creates a new instance of a constructionAPIService.
 func NewConstructionAPIService(
-	baseService *BaseService,
+	baseService BaseService,
 	network string,
 	nodes config.NodeMap,
+	systemShard int64,
+	systemRealm int64,
 	transactionConstructor construction.TransactionConstructor,
 ) (server.ConstructionAPIServicer, error) {
 	var err error
@@ -332,6 +416,8 @@ func NewConstructionAPIService(
 		hederaClient:       hederaClient,
 		nodeAccountIds:     nodeAccountIds,
 		nodeAccountIdsLen:  big.NewInt(int64(len(nodeAccountIds))),
+		systemShard:        systemShard,
+		systemRealm:        systemRealm,
 		transactionHandler: transactionConstructor,
 	}, nil
 }
@@ -427,4 +513,85 @@ func unmarshallTransactionFromHexString(transactionString string) (interfaces.Tr
 	default:
 		return nil, errors.ErrTransactionInvalidType
 	}
+}
+
+type updater func(transaction interfaces.Transaction) *rTypes.Error
+
+func updateTransaction(transaction interfaces.Transaction, updaters ...updater) *rTypes.Error {
+	for _, updater := range updaters {
+		if err := updater(transaction); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func transactionSetNodeAccountId(nodeAccountId hedera.AccountID) updater {
+	return func(transaction interfaces.Transaction) *rTypes.Error {
+		if _, err := hedera.TransactionSetNodeAccountIDs(transaction, []hedera.AccountID{nodeAccountId}); err != nil {
+			log.Errorf("Failed to set node account id for transaction: %s", err)
+			return errors.ErrInternalServerError
+		}
+		return nil
+	}
+}
+
+func transactionSetTransactionId(payer hedera.AccountID, validStartNanos int64) updater {
+	return func(transaction interfaces.Transaction) *rTypes.Error {
+		var transactionId hedera.TransactionID
+		if validStartNanos == 0 {
+			transactionId = hedera.TransactionIDGenerate(payer)
+		} else {
+			transactionId = hedera.NewTransactionIDWithValidStart(payer, time.Unix(0, validStartNanos))
+		}
+		if _, err := hedera.TransactionSetTransactionID(transaction, transactionId); err != nil {
+			log.Errorf("Failed to set transaction id: %s", err)
+			return errors.ErrInternalServerError
+		}
+		return nil
+	}
+}
+
+func transactionFreeze(transaction interfaces.Transaction) *rTypes.Error {
+	var err error
+	switch tx := transaction.(type) {
+	// these transaction types are what the construction service supports
+	case *hedera.AccountCreateTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TokenAssociateTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TokenBurnTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TokenCreateTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TokenDeleteTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TokenDissociateTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TokenFreezeTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TokenGrantKycTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TokenMintTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TokenRevokeKycTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TokenUnfreezeTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TokenUpdateTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TokenWipeTransaction:
+		_, err = tx.Freeze()
+	case *hedera.TransferTransaction:
+		_, err = tx.Freeze()
+	default:
+		log.Error("Invalid transaction type")
+		return errors.ErrTransactionInvalidType
+	}
+
+	if err != nil {
+		log.Errorf("Failed to freeze transaction: %s", err)
+		return errors.ErrTransactionFreezeFailed
+	}
+	return nil
 }

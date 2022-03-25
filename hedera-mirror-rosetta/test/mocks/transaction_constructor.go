@@ -32,8 +32,8 @@ import (
 
 var (
 	NilHederaTransaction *hedera.TransferTransaction
-	NilOperations        []*rTypes.Operation
-	NilSigners           []hedera.AccountID
+	NilOperations        types.OperationSlice
+	NilSigners           []types.AccountId
 )
 
 type MockTransactionConstructor struct {
@@ -42,36 +42,34 @@ type MockTransactionConstructor struct {
 
 func (m *MockTransactionConstructor) Construct(
 	ctx context.Context,
-	nodeAccountId hedera.AccountID,
-	operations []*rTypes.Operation,
-	validStartNanos int64,
-) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	args := m.Called(ctx, nodeAccountId, operations, validStartNanos)
-	return args.Get(0).(interfaces.Transaction), args.Get(1).([]hedera.AccountID),
+	operations types.OperationSlice,
+) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
+	args := m.Called(ctx, operations)
+	return args.Get(0).(interfaces.Transaction), args.Get(1).([]types.AccountId),
 		args.Get(2).(*rTypes.Error)
 }
 
 func (m *MockTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (
-	[]*rTypes.Operation,
-	[]hedera.AccountID,
+	types.OperationSlice,
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	args := m.Called(ctx, transaction)
-	return args.Get(0).([]*rTypes.Operation), args.Get(1).([]hedera.AccountID), args.Get(2).(*rTypes.Error)
+	return args.Get(0).(types.OperationSlice), args.Get(1).([]types.AccountId), args.Get(2).(*rTypes.Error)
 }
 
-func (m *MockTransactionConstructor) Preprocess(ctx context.Context, operations []*rTypes.Operation) (
-	[]hedera.AccountID,
+func (m *MockTransactionConstructor) Preprocess(ctx context.Context, operations types.OperationSlice) (
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	args := m.Called(ctx, operations)
-	return args.Get(0).([]hedera.AccountID), args.Get(1).(*rTypes.Error)
+	return args.Get(0).([]types.AccountId), args.Get(1).(*rTypes.Error)
 }
 
-func (m *MockTransactionConstructor) GetOperationType() string {
-	return types.OperationTypeCryptoTransfer
-}
-
-func (m *MockTransactionConstructor) GetSdkTransactionType() string {
-	return "TransferTransaction"
+func (m *MockTransactionConstructor) GetDefaultMaxTransactionFee(operationType string) (
+	types.HbarAmount,
+	*rTypes.Error,
+) {
+	args := m.Called(operationType)
+	return args.Get(0).(types.HbarAmount), args.Get(1).(*rTypes.Error)
 }

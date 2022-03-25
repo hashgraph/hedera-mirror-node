@@ -31,8 +31,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-const accountAddress = "0.0.123"
-
 var defaultContext = context.Background()
 
 func TestCompareCurrency(t *testing.T) {
@@ -302,7 +300,7 @@ func TestParseOperationMetadataWithoutValidate(t *testing.T) {
 func TestValidateOperationsWithType(t *testing.T) {
 	var tests = []struct {
 		name            string
-		operations      []*rTypes.Operation
+		operations      types.OperationSlice
 		size            int
 		operationType   string
 		expectNilAmount bool
@@ -310,13 +308,13 @@ func TestValidateOperationsWithType(t *testing.T) {
 	}{
 		{
 			name:          "SuccessSingleOperation",
-			operations:    []*rTypes.Operation{getOperation(0, types.OperationTypeCryptoTransfer)},
+			operations:    types.OperationSlice{getOperation(0, types.OperationTypeCryptoTransfer)},
 			size:          1,
 			operationType: types.OperationTypeCryptoTransfer,
 		},
 		{
 			name: "SuccessMultipleOperations",
-			operations: []*rTypes.Operation{
+			operations: types.OperationSlice{
 				getOperation(0, types.OperationTypeCryptoTransfer),
 				getOperation(1, types.OperationTypeCryptoTransfer),
 			},
@@ -324,26 +322,19 @@ func TestValidateOperationsWithType(t *testing.T) {
 			operationType: types.OperationTypeCryptoTransfer,
 		},
 		{
-			name: "SuccessExpectNilAmount",
-			operations: []*rTypes.Operation{
-				{
-					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
-					Type:                types.OperationTypeCryptoTransfer,
-				},
-			},
+			name:            "SuccessExpectNilAmount",
+			operations:      types.OperationSlice{{AccountId: accountIdA, Type: types.OperationTypeCryptoTransfer}},
 			size:            0,
 			operationType:   types.OperationTypeCryptoTransfer,
 			expectNilAmount: true,
 		},
 		{
 			name: "NonNilAmount",
-			operations: []*rTypes.Operation{
+			operations: types.OperationSlice{
 				{
-					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
-					Type:                types.OperationTypeCryptoTransfer,
-					Amount:              &rTypes.Amount{},
+					AccountId: accountIdA,
+					Amount:    &types.HbarAmount{Value: 1},
+					Type:      types.OperationTypeCryptoTransfer,
 				},
 			},
 			size:            0,
@@ -358,7 +349,7 @@ func TestValidateOperationsWithType(t *testing.T) {
 		},
 		{
 			name: "OperationsSizeMismatch",
-			operations: []*rTypes.Operation{
+			operations: types.OperationSlice{
 				getOperation(0, types.OperationTypeCryptoTransfer),
 				getOperation(1, types.OperationTypeCryptoTransfer),
 			},
@@ -368,14 +359,14 @@ func TestValidateOperationsWithType(t *testing.T) {
 		},
 		{
 			name:          "OperationTypeMismatch",
-			operations:    []*rTypes.Operation{getOperation(0, types.OperationTypeCryptoTransfer)},
+			operations:    types.OperationSlice{getOperation(0, types.OperationTypeCryptoTransfer)},
 			size:          1,
 			operationType: types.OperationTypeTokenCreate,
 			expectError:   true,
 		},
 		{
 			name: "MultipleOperationTypes",
-			operations: []*rTypes.Operation{
+			operations: types.OperationSlice{
 				getOperation(0, types.OperationTypeCryptoTransfer),
 				getOperation(0, types.OperationTypeTokenCreate),
 			},
@@ -384,66 +375,8 @@ func TestValidateOperationsWithType(t *testing.T) {
 			expectError:   true,
 		},
 		{
-			name: "OperationMissingOperationIdentifier",
-			operations: []*rTypes.Operation{
-				{
-					Account: &rTypes.AccountIdentifier{Address: accountAddress},
-					Amount: &rTypes.Amount{
-						Value: "0",
-						Currency: &rTypes.Currency{
-							Symbol:   "foobar",
-							Decimals: 10,
-						},
-					},
-					Type: types.OperationTypeCryptoTransfer,
-				},
-			},
-			size:          1,
-			operationType: types.OperationTypeCryptoTransfer,
-			expectError:   true,
-		},
-		{
-			name: "OperationMissingAccount",
-			operations: []*rTypes.Operation{
-				{
-					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-					Amount: &rTypes.Amount{
-						Value: "0",
-						Currency: &rTypes.Currency{
-							Symbol:   "foobar",
-							Decimals: 10,
-						},
-					},
-					Type: types.OperationTypeCryptoTransfer,
-				},
-			},
-			size:          1,
-			operationType: types.OperationTypeCryptoTransfer,
-			expectError:   true,
-		},
-		{
-			name: "OperationMissingAmount",
-			operations: []*rTypes.Operation{
-				{
-					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
-					Type:                types.OperationTypeCryptoTransfer,
-				},
-			},
-			size:          1,
-			operationType: types.OperationTypeCryptoTransfer,
-			expectError:   true,
-		},
-		{
-			name: "OperationMissingAmountCurrency",
-			operations: []*rTypes.Operation{
-				{
-					OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-					Account:             &rTypes.AccountIdentifier{Address: accountAddress},
-					Amount:              &rTypes.Amount{Value: "0"},
-					Type:                types.OperationTypeCryptoTransfer,
-				},
-			},
+			name:          "OperationMissingAmount",
+			operations:    types.OperationSlice{{AccountId: accountIdA, Type: types.OperationTypeCryptoTransfer}},
 			size:          1,
 			operationType: types.OperationTypeCryptoTransfer,
 			expectError:   true,
@@ -463,14 +396,11 @@ func TestValidateOperationsWithType(t *testing.T) {
 	}
 }
 
-func getOperation(index int64, operationType string) *rTypes.Operation {
-	return &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{Index: index},
-		Account:             &rTypes.AccountIdentifier{Address: "0.0.100"},
-		Amount: &rTypes.Amount{
-			Value:    "20",
-			Currency: &rTypes.Currency{Symbol: "foobar", Decimals: 9},
-		},
-		Type: operationType,
+func getOperation(index int64, operationType string) types.Operation {
+	return types.Operation{
+		AccountId: accountIdA,
+		Amount:    &types.HbarAmount{Value: 20},
+		Index:     index,
+		Type:      operationType,
 	}
 }

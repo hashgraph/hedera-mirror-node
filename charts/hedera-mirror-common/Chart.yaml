@@ -3,25 +3,25 @@ appVersion: "main"
 dependencies:
   - name: loki
     condition: loki.enabled
-    version: 2.8.4
+    version: 2.10.1
     repository: https://grafana.github.io/helm-charts
   - condition: prometheus-adapter.enabled
     name: prometheus-adapter
     repository: https://prometheus-community.github.io/helm-charts
-    version: 3.0.0
+    version: 3.0.3
   - alias: prometheus
     condition: prometheus.enabled
     name: kube-prometheus-stack
     repository: https://prometheus-community.github.io/helm-charts
-    version: 25.0.0
+    version: 34.1.1
   - name: promtail
     condition: promtail.enabled
-    version: 3.9.1
+    version: 3.11.0
     repository: https://grafana.github.io/helm-charts
   - condition: traefik.enabled
     name: traefik
     repository: https://helm.traefik.io/traefik
-    version: 10.9.0
+    version: 10.15.0
 description: Hedera Mirror Node common components installed globally for use across namespaces
 home: https://github.com/hashgraph/hedera-mirror-node
 icon: https://camo.githubusercontent.com/cca6b767847bb8ca5c7059481ba13a5fc81c5938/68747470733a2f2f7777772e6865646572612e636f6d2f6c6f676f2d6361706974616c2d686261722d776f72646d61726b2e6a7067
@@ -33,4 +33,4 @@ maintainers:
 name: hedera-mirror-common
 sources:
   - https://github.com/hashgraph/hedera-mirror-node
-version: 0.40.0-SNAPSHOT
+version: 0.41.0-SNAPSHOT

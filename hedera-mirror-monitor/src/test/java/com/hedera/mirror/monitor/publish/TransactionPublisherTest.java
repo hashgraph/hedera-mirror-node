@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.publish;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,6 +34,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
@@ -208,12 +209,16 @@ class TransactionPublisherTest {
     @Timeout(3)
     void validationRecovers() {
         // Initialize publisher internals with first transaction
+        var request = request().build();
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        transactionPublisher.publish(request().build())
+        transactionPublisher.publish(request)
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
+        var scenario = request.getScenario();
+        assertThat(scenario.getCount()).isEqualTo(1);
+        assertThat(scenario.getErrors()).isEmpty();
 
         // Validate node as down manually
         NodeProperties nodeProperties = monitorProperties.getNodes().iterator().next();
@@ -221,25 +226,33 @@ class TransactionPublisherTest {
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
         assertThat(transactionPublisher.validateNode(nodeProperties)).isFalse();
 
-        transactionPublisher.publish(request().build())
+        request = request().build();
+        transactionPublisher.publish(request)
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertThat(t)
                         .isInstanceOf(PublishException.class)
                         .hasMessageContaining("No valid nodes available")
                         .hasCauseInstanceOf(IllegalArgumentException.class))
                 .verify(Duration.ofSeconds(1L));
+        scenario = request.getScenario();
+        assertThat(scenario.getCount()).isZero();
+        assertThat(scenario.getErrors()).containsOnly(Map.entry(IllegalArgumentException.class.getSimpleName(), 1));
 
         // Node recovers
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
         assertThat(transactionPublisher.validateNode(nodeProperties)).isTrue();
 
+        request = request().build();
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        transactionPublisher.publish(request().build())
+        transactionPublisher.publish(request)
                 .as(StepVerifier::create)
                 .expectNextCount(1L)
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
+        scenario = request.getScenario();
+        assertThat(scenario.getCount()).isEqualTo(1);
+        assertThat(scenario.getErrors()).isEmpty();
     }
 
     @Test

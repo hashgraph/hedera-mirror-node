@@ -137,6 +137,11 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.retry.multiplier`                     | 2                       | Used to generate the next delay for backoff                                                    |
 | `hedera.mirror.importer.parser.record.transactionTimeout`                   | 30s                     | The timeout in seconds for a database transaction                                              |
 | `hedera.mirror.importer.parser.tempTableBufferSize`                         | 256                     | The size of the buffer in MB to use for temporary tables                                       |
+| `hedera.mirror.importer.reconciliation.cron`                                | 0 0 0 * * *             | When to run the balance reconciliation job. Defaults to once a day at midnight. See Spring [docs](https://docs.spring.io/spring-framework/docs/current/reference/html/integration.html#scheduling-cron-expression). |
+| `hedera.mirror.importer.reconciliation.enabled`                             | true                    | Whether the balance reconciliation job should periodically run to reconcile data.              |
+| `hedera.mirror.importer.reconciliation.endDate`                             | 2262-04-11T23:47:16.854775807Z | The consensus timestamp of the last balance file to reconcile.                          |
+| `hedera.mirror.importer.reconciliation.startDate`                           | 1970-01-01T00:00:00Z    | The consensus timestamp of the first balance file to reconcile.                                |
+| `hedera.mirror.importer.reconciliation.token`                               | false                   | Whether to reconcile token information.                                                        |
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                    |
 | `hedera.mirror.importer.startDate`                                   |                         | The start date (inclusive) of the data to import. It takes effect 1) if it's set and the date is after the last downloaded file or the database is empty; 2) if it's not set and the database is empty, it defaults to now. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
@@ -247,11 +252,11 @@ Name                                                            | Default | Desc
 `hedera.mirror.monitor.nodes[].port`                            | 50211   | The main node's port
 `hedera.mirror.monitor.nodeValidation.enabled`                  | true    | Whether to validate and remove invalid or down nodes permanently before publishing
 `hedera.mirror.monitor.nodeValidation.frequency`                | 30m     | The amount of time between validations of the network.
-`hedera.mirror.monitor.nodeValidation.maxAttempts`              | 4       | The number of times the monitor should attempt to receive a healthy response from a node before marking it as unhealthy.
+`hedera.mirror.monitor.nodeValidation.maxAttempts`              | 8       | The number of times the monitor should attempt to receive a healthy response from a node before marking it as unhealthy.
 `hedera.mirror.monitor.nodeValidation.maxBackoff`               | 2s      | The maximum amount of time to wait in between attempts when trying to validate a node
 `hedera.mirror.monitor.nodeValidation.maxThreads`               | 25      | The maximum number of threads to use for node validation
 `hedera.mirror.monitor.nodeValidation.minBackoff`               | 500ms   | The minimum amount of time to wait in between attempts when trying to validate a node
-`hedera.mirror.monitor.nodeValidation.requestTimeout`           | 10s     | The amount of time to wait for a validation request before timing out
+`hedera.mirror.monitor.nodeValidation.requestTimeout`           | 15s     | The amount of time to wait for a validation request before timing out
 `hedera.mirror.monitor.operator.accountId`                      | ""      | Operator account ID used to pay for transactions
 `hedera.mirror.monitor.operator.privateKey`                     | ""      | Operator ED25519 private key used to sign transactions in hex encoded DER format
 `hedera.mirror.monitor.publish.batchDivisor`                    | 100     | The divisor used to calculate batch size when generating transactions

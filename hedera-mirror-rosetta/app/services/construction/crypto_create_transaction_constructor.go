@@ -22,11 +22,9 @@ package construction
 
 import (
 	"context"
-	"reflect"
 	"time"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
@@ -37,7 +35,7 @@ import (
 type cryptoCreate struct {
 	AutoRenewPeriod               int64             `json:"auto_renew_period"`
 	InitialBalance                int64             `json:"-"`
-	Key                           *publicKey        `json:"key" validate:"required"`
+	Key                           *types.PublicKey  `json:"key" validate:"required"`
 	MaxAutomaticTokenAssociations uint32            `json:"max_automatic_token_associations"`
 	Memo                          string            `json:"memo"`
 	ProxyAccountId                *hedera.AccountID `json:"proxy_account_id"`
@@ -46,26 +44,21 @@ type cryptoCreate struct {
 }
 
 type cryptoCreateTransactionConstructor struct {
-	transactionType string
-	validate        *validator.Validate
+	commonTransactionConstructor
 }
 
 func (c *cryptoCreateTransactionConstructor) Construct(
 	_ context.Context,
-	nodeAccountId hedera.AccountID,
-	operations []*rTypes.Operation,
-	validStartNanos int64,
-) (interfaces.Transaction, []hedera.AccountID, *rTypes.Error) {
-	cryptoCreate, signer, rErr := c.preprocess(operations)
+	operations types.OperationSlice,
+) (interfaces.Transaction, []types.AccountId, *rTypes.Error) {
+	cryptoCreate, payer, rErr := c.preprocess(operations)
 	if rErr != nil {
 		return nil, nil, rErr
 	}
 
 	transaction := hedera.NewAccountCreateTransaction().
 		SetInitialBalance(hedera.HbarFromTinybar(cryptoCreate.InitialBalance)).
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-		SetKey(cryptoCreate.Key.PublicKey).
-		SetTransactionID(getTransactionId(*signer, validStartNanos))
+		SetKey(cryptoCreate.Key.PublicKey)
 
 	if cryptoCreate.AutoRenewPeriod > 0 {
 		transaction.SetAutoRenewPeriod(time.Second * time.Duration(cryptoCreate.AutoRenewPeriod))
@@ -83,25 +76,12 @@ func (c *cryptoCreateTransactionConstructor) Construct(
 		transaction.SetProxyAccountID(*cryptoCreate.ProxyAccountId)
 	}
 
-	if _, err := transaction.Freeze(); err != nil {
-		log.Errorf("Failed to freeze transaction: %s", err)
-		return nil, nil, errors.ErrTransactionFreezeFailed
-	}
-
-	return transaction, []hedera.AccountID{*signer}, nil
-}
-
-func (c *cryptoCreateTransactionConstructor) GetOperationType() string {
-	return types.OperationTypeCryptoCreateAccount
-}
-
-func (c *cryptoCreateTransactionConstructor) GetSdkTransactionType() string {
-	return c.transactionType
+	return transaction, []types.AccountId{*payer}, nil
 }
 
 func (c *cryptoCreateTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
-	[]*rTypes.Operation,
-	[]hedera.AccountID,
+	types.OperationSlice,
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	cryptoCreateTransaction, ok := transaction.(*hedera.AccountCreateTransaction)
@@ -114,17 +94,19 @@ func (c *cryptoCreateTransactionConstructor) Parse(_ context.Context, transactio
 		return nil, nil, errors.ErrInvalidTransaction
 	}
 
-	amount := types.HbarAmount{Value: cryptoCreateTransaction.GetInitialBalance().AsTinybar()}
-	payer := *cryptoCreateTransaction.GetTransactionID().AccountID
-	operation := &rTypes.Operation{
-		OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-		Account:             &rTypes.AccountIdentifier{Address: payer.String()},
-		Amount:              amount.ToRosetta(),
-		Type:                c.GetOperationType(),
+	amount := types.HbarAmount{Value: -cryptoCreateTransaction.GetInitialBalance().AsTinybar()}
+	payer, err := types.NewAccountIdFromSdkAccountId(*cryptoCreateTransaction.GetTransactionID().AccountID)
+	if err != nil {
+		return nil, nil, errors.ErrInvalidAccount
+	}
+	metadata := make(map[string]interface{})
+	operation := types.Operation{
+		AccountId: payer,
+		Amount:    &amount,
+		Metadata:  metadata,
+		Type:      c.GetOperationType(),
 	}
 
-	metadata := make(map[string]interface{})
-	operation.Metadata = metadata
 	metadata["memo"] = cryptoCreateTransaction.GetAccountMemo()
 
 	if cryptoCreateTransaction.GetAutoRenewPeriod() != 0 {
@@ -149,11 +131,11 @@ func (c *cryptoCreateTransactionConstructor) Parse(_ context.Context, transactio
 		metadata["proxy_account_id"] = cryptoCreateTransaction.GetProxyAccountID().String()
 	}
 
-	return []*rTypes.Operation{operation}, []hedera.AccountID{payer}, nil
+	return types.OperationSlice{operation}, []types.AccountId{payer}, nil
 }
 
-func (c *cryptoCreateTransactionConstructor) Preprocess(_ context.Context, operations []*rTypes.Operation) (
-	[]hedera.AccountID,
+func (c *cryptoCreateTransactionConstructor) Preprocess(_ context.Context, operations types.OperationSlice) (
+	[]types.AccountId,
 	*rTypes.Error,
 ) {
 	_, signer, err := c.preprocess(operations)
@@ -161,12 +143,12 @@ func (c *cryptoCreateTransactionConstructor) Preprocess(_ context.Context, opera
 		return nil, err
 	}
 
-	return []hedera.AccountID{*signer}, nil
+	return []types.AccountId{*signer}, nil
 }
 
-func (c *cryptoCreateTransactionConstructor) preprocess(operations []*rTypes.Operation) (
+func (c *cryptoCreateTransactionConstructor) preprocess(operations types.OperationSlice) (
 	*cryptoCreate,
-	*hedera.AccountID,
+	*types.AccountId,
 	*rTypes.Error,
 ) {
 	if rErr := validateOperations(operations, 1, c.GetOperationType(), false); rErr != nil {
@@ -174,21 +156,12 @@ func (c *cryptoCreateTransactionConstructor) preprocess(operations []*rTypes.Ope
 	}
 
 	operation := operations[0]
-	account, err := hedera.AccountIDFromString(operation.Account.Address)
-	if err != nil {
-		log.Errorf("Invalid account %s: %s", operation.Account.Address, err)
-		return nil, nil, errors.ErrInvalidAccount
-	}
-
-	amount, rErr := types.NewAmount(operation.Amount)
-	if rErr != nil {
-		log.Errorf("Invalid amount %v: %v", operation.Amount, rErr)
-		return nil, nil, rErr
-	} else if _, ok := amount.(*types.HbarAmount); !ok {
+	amount := operation.Amount
+	if _, ok := amount.(*types.HbarAmount); !ok {
 		log.Errorf("Operation amount currency is not HBAR: %v", operation.Amount)
 		return nil, nil, errors.ErrInvalidCurrency
-	} else if amount.GetValue() < 0 {
-		log.Errorf("Initial balance %d is < 0", amount.GetValue())
+	} else if amount.GetValue() > 0 {
+		log.Errorf("Initial transfer %d is > 0", amount.GetValue())
 		return nil, nil, errors.ErrInvalidOperationsAmount
 	}
 
@@ -198,15 +171,16 @@ func (c *cryptoCreateTransactionConstructor) preprocess(operations []*rTypes.Ope
 		return nil, nil, rErr
 	}
 
-	cryptoCreate.InitialBalance = amount.GetValue()
+	cryptoCreate.InitialBalance = -amount.GetValue()
 
-	return cryptoCreate, &account, nil
+	return cryptoCreate, &operation.AccountId, nil
 }
 
 func newCryptoCreateTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.AccountCreateTransaction{}).Name()
 	return &cryptoCreateTransactionConstructor{
-		transactionType: transactionType,
-		validate:        validator.New(),
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewAccountCreateTransaction(),
+			types.OperationTypeCryptoCreateAccount,
+		),
 	}
 }

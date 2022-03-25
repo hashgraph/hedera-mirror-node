@@ -23,7 +23,6 @@ package construction
 import (
 	"testing"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-sdk-go/v2"
@@ -47,6 +46,31 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestNewTokenGrantKy
 func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestNewTokenRevokeKycTransactionConstructor() {
 	h := newTokenRevokeKycTransactionConstructor()
 	assert.NotNil(suite.T(), h)
+}
+
+func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestGetDefaultMaxTransactionFee() {
+	tests := []struct {
+		name                   string
+		transactionConstructor transactionConstructorWithType
+		expected               types.HbarAmount
+	}{
+		{
+			name:                   "tokenGrantKyc",
+			transactionConstructor: newTokenGrantKycTransactionConstructor(),
+			expected:               types.HbarAmount{Value: 30_00000000},
+		},
+		{
+			name:                   "tokenRevokeKyc",
+			transactionConstructor: newTokenRevokeKycTransactionConstructor(),
+			expected:               types.HbarAmount{Value: 30_00000000},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.T().Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.transactionConstructor.GetDefaultMaxTransactionFee())
+		})
+	}
 }
 
 func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestGetOperationType() {
@@ -105,11 +129,9 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestConstruct() {
 	tests := []struct {
 		name             string
 		updateOperations updateOperationsFunc
-		validStartNanos  int64
 		expectError      bool
 	}{
 		{name: "Success"},
-		{name: "SuccessValidStartNanos", validStartNanos: 100},
 		{name: "EmptyOperations", updateOperations: getEmptyOperations, expectError: true},
 	}
 
@@ -125,7 +147,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestConstruct() {
 				}
 
 				// when
-				tx, signers, err := h.Construct(defaultContext, nodeAccountId, operations, tt.validStartNanos)
+				tx, signers, err := h.Construct(defaultContext, operations)
 
 				// then
 				if tt.expectError {
@@ -134,12 +156,8 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestConstruct() {
 					assert.Nil(t, tx)
 				} else {
 					assert.Nil(t, err)
-					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
-					assertTokenGrantRevokeKycTransaction(t, operations, nodeAccountId, tx)
-
-					if tt.validStartNanos != 0 {
-						assert.Equal(t, tt.validStartNanos, tx.GetTransactionID().ValidStart.UnixNano())
-					}
+					assert.ElementsMatch(t, []types.AccountId{accountIdB}, signers)
+					assertTokenGrantRevokeKycTransaction(t, operations, tx)
 				}
 			})
 		}
@@ -156,20 +174,17 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestConstruct() {
 
 func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 	tokenGrantKycTransaction := hedera.NewTokenGrantKycTransaction().
-		SetAccountID(accountId).
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+		SetAccountID(sdkAccountIdA).
 		SetTokenID(tokenIdA).
-		SetTransactionID(hedera.TransactionIDGenerate(payerId))
+		SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdB))
 	tokenRevokeKycTransaction := hedera.NewTokenRevokeKycTransaction().
-		SetAccountID(accountId).
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+		SetAccountID(sdkAccountIdA).
 		SetTokenID(tokenIdA).
-		SetTransactionID(hedera.TransactionIDGenerate(payerId))
+		SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdB))
 	defaultGetTransaction := func(operationType string) interfaces.Transaction {
 		if operationType == types.OperationTypeTokenGrantKyc {
 			return tokenGrantKycTransaction
 		}
-
 		return tokenRevokeKycTransaction
 	}
 
@@ -187,17 +202,30 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == types.OperationTypeTokenGrantKyc {
 					return hedera.NewTokenGrantKycTransaction().
-						SetAccountID(accountId).
-						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+						SetAccountID(sdkAccountIdA).
 						SetTokenID(outOfRangeTokenId).
-						SetTransactionID(hedera.TransactionIDGenerate(payerId))
+						SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdB))
 				}
-
 				return hedera.NewTokenRevokeKycTransaction().
-					SetAccountID(accountId).
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+					SetAccountID(sdkAccountIdA).
 					SetTokenID(outOfRangeTokenId).
-					SetTransactionID(hedera.TransactionIDGenerate(payerId))
+					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdB))
+			},
+			expectError: true,
+		},
+		{
+			name: "OutOfRangeAccountId",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenGrantKyc {
+					return hedera.NewTokenGrantKycTransaction().
+						SetAccountID(outOfRangeAccountId).
+						SetTokenID(tokenIdA).
+						SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
+				}
+				return hedera.NewTokenRevokeKycTransaction().
+					SetAccountID(outOfRangeAccountId).
+					SetTokenID(tokenIdA).
+					SetTransactionID(hedera.TransactionIDGenerate(outOfRangeAccountId))
 			},
 			expectError: true,
 		},
@@ -207,53 +235,16 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 			expectError:    true,
 		},
 		{
-			name: "TransactionAccountIDNotSet",
-			getTransaction: func(operationType string) interfaces.Transaction {
-				if operationType == types.OperationTypeTokenGrantKyc {
-					return hedera.NewTokenGrantKycTransaction().
-						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-						SetTokenID(tokenIdA).
-						SetTransactionID(hedera.TransactionIDGenerate(payerId))
-				}
-
-				return hedera.NewTokenRevokeKycTransaction().
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTokenID(tokenIdA).
-					SetTransactionID(hedera.TransactionIDGenerate(payerId))
-			},
-			expectError: true,
-		},
-		{
 			name: "TransactionTokenIDNotSet",
 			getTransaction: func(operationType string) interfaces.Transaction {
 				if operationType == types.OperationTypeTokenGrantKyc {
 					return hedera.NewTokenGrantKycTransaction().
-						SetAccountID(accountId).
-						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-						SetTransactionID(hedera.TransactionIDGenerate(payerId))
+						SetAccountID(sdkAccountIdA).
+						SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdB))
 				}
-
 				return hedera.NewTokenRevokeKycTransaction().
-					SetAccountID(accountId).
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTransactionID(hedera.TransactionIDGenerate(payerId))
-			},
-			expectError: true,
-		},
-		{
-			name: "TransactionTransactionIDNotSet",
-			getTransaction: func(operationType string) interfaces.Transaction {
-				if operationType == types.OperationTypeTokenGrantKyc {
-					return hedera.NewTokenGrantKycTransaction().
-						SetAccountID(accountId).
-						SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-						SetTokenID(tokenIdA)
-				}
-
-				return hedera.NewTokenRevokeKycTransaction().
-					SetAccountID(accountId).
-					SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-					SetTokenID(tokenIdA)
+					SetAccountID(sdkAccountIdA).
+					SetTransactionID(hedera.TransactionIDGenerate(sdkAccountIdB))
 			},
 			expectError: true,
 		},
@@ -264,6 +255,20 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 					return tokenRevokeKycTransaction
 				}
 				return tokenGrantKycTransaction
+			},
+			expectError: true,
+		},
+		{
+			name: "TransactionIDNotSet",
+			getTransaction: func(operationType string) interfaces.Transaction {
+				if operationType == types.OperationTypeTokenGrantKyc {
+					return hedera.NewTokenGrantKycTransaction().
+						SetAccountID(sdkAccountIdA).
+						SetTokenID(outOfRangeTokenId)
+				}
+				return hedera.NewTokenRevokeKycTransaction().
+					SetAccountID(sdkAccountIdA).
+					SetTokenID(outOfRangeTokenId)
 			},
 			expectError: true,
 		},
@@ -287,7 +292,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestParse() {
 					assert.Nil(t, signers)
 				} else {
 					assert.Nil(t, err)
-					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
+					assert.ElementsMatch(t, []types.AccountId{accountIdB}, signers)
 					assert.ElementsMatch(t, expectedOperations, operations)
 				}
 			})
@@ -326,18 +331,18 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 			expectError:      true,
 		},
 		{
-			name:             "InvalidAccountAddress",
-			updateOperations: updateOperationAccount("x.y.z"),
+			name:             "OutOfRangePayerMetadata",
+			updateOperations: updateOperationMetadata("payer", "0.65536.4294967296"),
 			expectError:      true,
 		},
 		{
-			name:             "InvalidToken",
-			updateOperations: updateCurrency(currencyHbar),
+			name:             "InvalidAmount",
+			updateOperations: updateAmount(&types.HbarAmount{}),
 			expectError:      true,
 		},
 		{
 			name:             "NegativeAmountValue",
-			updateOperations: updateAmountValue("-100"),
+			updateOperations: updateAmountValue(-100),
 			expectError:      true,
 		},
 		{
@@ -372,7 +377,7 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 					assert.Nil(t, signers)
 				} else {
 					assert.Nil(t, err)
-					assert.ElementsMatch(t, []hedera.AccountID{payerId}, signers)
+					assert.ElementsMatch(t, []types.AccountId{accountIdB}, signers)
 				}
 			})
 		}
@@ -387,25 +392,23 @@ func (suite *tokenGrantRevokeKycTransactionConstructorSuite) TestPreprocess() {
 	})
 }
 
-func (suite *tokenGrantRevokeKycTransactionConstructorSuite) getOperations(operationType string) []*rTypes.Operation {
-	return []*rTypes.Operation{
+func (suite *tokenGrantRevokeKycTransactionConstructorSuite) getOperations(operationType string) types.OperationSlice {
+	return types.OperationSlice{
 		{
-			OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
-			Type:                operationType,
-			Account:             &rTypes.AccountIdentifier{Address: accountId.String()},
-			Amount:              &rTypes.Amount{Value: "0", Currency: tokenAPartialCurrency},
-			Metadata:            map[string]interface{}{"payer": payerId.String()},
+			AccountId: accountIdA,
+			Amount:    types.NewTokenAmount(getPartialDbToken(dbTokenA), 0),
+			Metadata:  map[string]interface{}{"payer": accountIdB.String()},
+			Type:      operationType,
 		},
 	}
 }
 
 func assertTokenGrantRevokeKycTransaction(
 	t *testing.T,
-	operations []*rTypes.Operation,
-	nodeAccountId hedera.AccountID,
+	operations types.OperationSlice,
 	actual interfaces.Transaction,
 ) {
-	assert.True(t, actual.IsFrozen())
+	assert.False(t, actual.IsFrozen())
 	if operations[0].Type == types.OperationTypeTokenGrantKyc {
 		assert.IsType(t, &hedera.TokenGrantKycTransaction{}, actual)
 	} else {
@@ -413,22 +416,16 @@ func assertTokenGrantRevokeKycTransaction(
 	}
 
 	var account string
-	var payer string
 	var token string
-
 	switch tx := actual.(type) {
 	case *hedera.TokenGrantKycTransaction:
 		account = tx.GetAccountID().String()
-		payer = tx.GetTransactionID().AccountID.String()
 		token = tx.GetTokenID().String()
 	case *hedera.TokenRevokeKycTransaction:
 		account = tx.GetAccountID().String()
-		payer = tx.GetTransactionID().AccountID.String()
 		token = tx.GetTokenID().String()
 	}
 
-	assert.Equal(t, operations[0].Metadata["payer"], payer)
-	assert.Equal(t, operations[0].Account.Address, account)
-	assert.Equal(t, operations[0].Amount.Currency.Symbol, token)
-	assert.ElementsMatch(t, []hedera.AccountID{nodeAccountId}, actual.GetNodeAccountIDs())
+	assert.Equal(t, operations[0].AccountId.ToSdkAccountId().String(), account)
+	assert.Equal(t, operations[0].Amount.GetSymbol(), token)
 }

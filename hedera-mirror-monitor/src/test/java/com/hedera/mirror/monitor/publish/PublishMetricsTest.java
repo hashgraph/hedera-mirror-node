@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.publish;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.platform.commons.util.ReflectionUtils.getDeclaredConstructor;
 
 import io.grpc.Status;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.TimeGauge;
@@ -34,6 +35,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import lombok.SneakyThrows;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.Logger;
 import org.apache.logging.log4j.core.appender.WriterAppender;
@@ -95,12 +97,12 @@ class PublishMetricsTest {
     }
 
     @Test
-    void onSuccess() throws Exception {
+    void onSuccess() {
         publishMetrics.onSuccess(response());
         publishMetrics.onSuccess(response());
 
         assertMetric(meterRegistry.find(PublishMetrics.METRIC_DURATION).timeGauges())
-                .extracting(t -> t.value())
+                .extracting(Gauge::value)
                 .asInstanceOf(InstanceOfAssertFactories.DOUBLE)
                 .isPositive();
 
@@ -115,6 +117,21 @@ class PublishMetricsTest {
                 .extracting(t -> t.mean(TimeUnit.SECONDS))
                 .asInstanceOf(InstanceOfAssertFactories.DOUBLE)
                 .isGreaterThanOrEqualTo(3.0);
+    }
+
+    @Test
+    void onSuccessWithNullResponseTimestamp() {
+        // verifies that when unexpected exception happens, onSuccess catches it and no metric is recorded
+        PublishResponse response = response().toBuilder().timestamp(null).build();
+
+        publishMetrics.onSuccess(response);
+        assertThat(meterRegistry.find(PublishMetrics.METRIC_DURATION).timeGauges()).isEmpty();
+        assertThat(meterRegistry.find(PublishMetrics.METRIC_HANDLE).timeGauges()).isEmpty();
+        assertThat(meterRegistry.find(PublishMetrics.METRIC_SUBMIT).timeGauges()).isEmpty();
+
+        clearLog();
+        publishMetrics.status();
+        assertThat(logOutput).asString().isEmpty();
     }
 
     @Test
@@ -148,6 +165,21 @@ class PublishMetricsTest {
         onError(receiptStatusException, ResponseCodeEnum.SUCCESS.toString());
     }
 
+    @Test
+    void onErrorWithNullRequestTimestamp() {
+        // verifies that when unexpected exception happens, onError catches it and no metric is recorded
+        PublishRequest request = request().toBuilder().timestamp(null).build();
+
+        publishMetrics.onError(new PublishException(request, new IllegalArgumentException()));
+        assertThat(meterRegistry.find(PublishMetrics.METRIC_DURATION).timeGauges()).isEmpty();
+        assertThat(meterRegistry.find(PublishMetrics.METRIC_HANDLE).timeGauges()).isEmpty();
+        assertThat(meterRegistry.find(PublishMetrics.METRIC_SUBMIT).timeGauges()).isEmpty();
+
+        clearLog();
+        publishMetrics.status();
+        assertThat(logOutput).asString().isEmpty();
+    }
+
     void onError(Throwable throwable, String status) {
         PublishException publishException = new PublishException(request(), throwable);
         publishScenario.onError(publishException);
@@ -174,7 +206,7 @@ class PublishMetricsTest {
     }
 
     @Test
-    void statusSuccess() throws Exception {
+    void statusSuccess() {
         PublishResponse response = response();
         publishScenario.onNext(response);
         publishMetrics.onSuccess(response);
@@ -188,7 +220,7 @@ class PublishMetricsTest {
     }
 
     @Test
-    void statusDisabled() throws Exception {
+    void statusDisabled() {
         publishProperties.setEnabled(false);
 
         publishMetrics.onSuccess(response());
@@ -207,6 +239,10 @@ class PublishMetricsTest {
                         .getTag(PublishMetrics.Tags.TAG_TYPE));
     }
 
+    private void clearLog() {
+        logOutput.getBuffer().setLength(0);
+    }
+
     private PublishRequest request() {
         List<AccountId> nodeAccountIds = List.of(AccountId.fromString(NODE_ACCOUNT_ID));
         return PublishRequest.builder()
@@ -216,7 +252,8 @@ class PublishMetricsTest {
                 .build();
     }
 
-    private PublishResponse response() throws Exception {
+    @SneakyThrows
+    private PublishResponse response() {
         return PublishResponse.builder()
                 .receipt(receipt(ResponseCodeEnum.OK))
                 .request(request())
@@ -224,7 +261,8 @@ class PublishMetricsTest {
                 .build();
     }
 
-    private com.hedera.hashgraph.sdk.TransactionReceipt receipt(ResponseCodeEnum status) throws Exception {
+    @SneakyThrows
+    private com.hedera.hashgraph.sdk.TransactionReceipt receipt(ResponseCodeEnum status) {
         byte[] receiptBytes = com.hedera.hashgraph.sdk.proto.TransactionReceipt.newBuilder()
                 .setStatus(status)
                 .build()

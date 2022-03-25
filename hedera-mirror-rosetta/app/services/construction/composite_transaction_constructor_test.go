@@ -23,9 +23,9 @@ package construction
 import (
 	"testing"
 
-	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
@@ -35,13 +35,13 @@ import (
 var (
 	cryptoTransferTransaction = hedera.NewTransferTransaction()
 	tokenCreateTransaction    = hedera.NewTokenCreateTransaction()
-	cryptoTransferOperations  = []*rTypes.Operation{{Type: types.OperationTypeCryptoTransfer}}
-	mixedOperations           = []*rTypes.Operation{
+	cryptoTransferOperations  = types.OperationSlice{{Type: types.OperationTypeCryptoTransfer}}
+	mixedOperations           = types.OperationSlice{
 		{Type: types.OperationTypeCryptoTransfer},
 		{Type: types.OperationTypeTokenCreate},
 	}
-	unsupportedOperations = []*rTypes.Operation{{Type: types.OperationTypeTokenCreate}}
-	signers               = []hedera.AccountID{payerId}
+	unsupportedOperations = types.OperationSlice{{Type: types.OperationTypeTokenCreate}}
+	signers               = []types.AccountId{types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(150))}
 )
 
 func TestCompositeTransactionConstructorSuite(t *testing.T) {
@@ -51,11 +51,11 @@ func TestCompositeTransactionConstructorSuite(t *testing.T) {
 type compositeTransactionConstructorSuite struct {
 	suite.Suite
 	constructor     TransactionConstructor
-	mockConstructor *mocks.MockTransactionConstructor
+	mockConstructor *mocks.MockTransactionConstructorWithType
 }
 
 func (suite *compositeTransactionConstructorSuite) SetupTest() {
-	mockConstructor := &mocks.MockTransactionConstructor{}
+	mockConstructor := &mocks.MockTransactionConstructorWithType{}
 	constructor := &compositeTransactionConstructor{
 		constructorsByOperationType:   map[string]transactionConstructorWithType{},
 		constructorsByTransactionType: map[string]transactionConstructorWithType{},
@@ -74,16 +74,11 @@ func (suite *compositeTransactionConstructorSuite) TestNewTransactionConstructor
 func (suite *compositeTransactionConstructorSuite) TestConstruct() {
 	// given
 	suite.mockConstructor.
-		On("Construct", defaultContext, nodeAccountId, cryptoTransferOperations, int64(0)).
+		On("Construct", defaultContext, cryptoTransferOperations).
 		Return(cryptoTransferTransaction, signers, mocks.NilError)
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(
-		defaultContext,
-		nodeAccountId,
-		cryptoTransferOperations,
-		0,
-	)
+	actualTx, actualSigners, err := suite.constructor.Construct(defaultContext, cryptoTransferOperations)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -95,16 +90,11 @@ func (suite *compositeTransactionConstructorSuite) TestConstruct() {
 func (suite *compositeTransactionConstructorSuite) TestConstructFail() {
 	// given
 	suite.mockConstructor.
-		On("Construct", defaultContext, nodeAccountId, cryptoTransferOperations, int64(0)).
+		On("Construct", defaultContext, cryptoTransferOperations).
 		Return(mocks.NilHederaTransaction, mocks.NilSigners, errors.ErrInternalServerError)
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(
-		defaultContext,
-		nodeAccountId,
-		cryptoTransferOperations,
-		0,
-	)
+	actualTx, actualSigners, err := suite.constructor.Construct(defaultContext, cryptoTransferOperations)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -117,12 +107,7 @@ func (suite *compositeTransactionConstructorSuite) TestConstructEmptyOperations(
 	// given
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(
-		defaultContext,
-		nodeAccountId,
-		[]*rTypes.Operation{},
-		0,
-	)
+	actualTx, actualSigners, err := suite.constructor.Construct(defaultContext, types.OperationSlice{})
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -135,12 +120,7 @@ func (suite *compositeTransactionConstructorSuite) TestConstructUnsupportedOpera
 	// given
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(
-		defaultContext,
-		nodeAccountId,
-		unsupportedOperations,
-		0,
-	)
+	actualTx, actualSigners, err := suite.constructor.Construct(defaultContext, unsupportedOperations)
 
 	// then
 	assert.NotNil(suite.T(), err)
@@ -153,18 +133,38 @@ func (suite *compositeTransactionConstructorSuite) TestConstructMixedOperations(
 	// given
 
 	// when
-	actualTx, actualSigners, err := suite.constructor.Construct(
-		defaultContext,
-		nodeAccountId,
-		mixedOperations,
-		0,
-	)
+	actualTx, actualSigners, err := suite.constructor.Construct(defaultContext, mixedOperations)
 
 	// then
 	assert.NotNil(suite.T(), err)
 	assert.Nil(suite.T(), actualTx)
 	assert.Nil(suite.T(), actualSigners)
 	suite.mockConstructor.AssertExpectations(suite.T())
+}
+
+func (suite *compositeTransactionConstructorSuite) TestGetDefaultMaxTransactionFee() {
+	// given
+	expected := types.HbarAmount{Value: 1000}
+	suite.mockConstructor.On("GetDefaultMaxTransactionFee").Return(expected)
+
+	// when
+	actual, err := suite.constructor.GetDefaultMaxTransactionFee(types.OperationTypeCryptoTransfer)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expected, actual)
+	suite.mockConstructor.AssertExpectations(suite.T())
+}
+
+func (suite *compositeTransactionConstructorSuite) TestGetDefaultMaxTransactionFeeInvalidOperationType() {
+	// given
+	// when
+	actual, err := suite.constructor.GetDefaultMaxTransactionFee("invalidOperationType")
+
+	// then
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), types.HbarAmount{}, actual)
+	suite.mockConstructor.AssertNotCalled(suite.T(), "GetDefaultMaxTransactionFee")
 }
 
 func (suite *compositeTransactionConstructorSuite) TestParse() {

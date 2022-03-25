@@ -181,7 +181,7 @@ postgresql:
     debug: true
   postgresqlImage:
     debug: true
-    tag: 13.5.0-debian-10-r35
+    tag: 13.6.0-debian-10-r37
   postgresql:
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
@@ -239,6 +239,8 @@ redis:
   sentinel:
     enabled: true
     masterSet: mirror
+    persistence:
+      enabled: true
     resources:
       limits:
         cpu: 100m

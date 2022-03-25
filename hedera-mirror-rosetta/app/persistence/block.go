@@ -48,13 +48,18 @@ const (
                                     limit 1`
 
 	// selectByHashWithIndex - Selects the row by given hash
-	selectByHashWithIndex string = `select consensus_start,
-                                           consensus_end,
-                                           hash,
-                                           index,
-                                           prev_hash
-                                    from record_file
-                                    where hash = @hash`
+	selectByHashWithIndex string = `select
+                                      consensus_start,
+                                      coalesce((
+                                        select c.consensus_start - 1
+                                        from record_file c
+                                        where c.index = p.index + 1
+                                      ), consensus_end) as consensus_end,
+                                      hash,
+                                      index,
+                                      prev_hash
+                                    from record_file p
+                                    where hash  = @hash`
 
 	// selectGenesis - Selects the first block whose consensus_end is after the genesis account balance
 	// timestamp. Return the record file with adjusted consensus start
@@ -73,7 +78,11 @@ const (
 
 	// selectRecordBlockByIndex - Selects the record block by its index
 	selectRecordBlockByIndex string = `select consensus_start,
-                                             consensus_end,
+                                             coalesce((
+                                               select consensus_start-1
+                                               from record_file
+                                               where index = @index + 1
+                                             ), consensus_end) as consensus_end,
                                              hash,
                                              index,
                                              prev_hash

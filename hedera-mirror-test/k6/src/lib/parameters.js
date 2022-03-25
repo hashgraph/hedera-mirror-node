@@ -39,6 +39,9 @@ const getValidResponse = (requestUrl, requestBody, httpVerbMethod) => {
 
 const getFirstEntity = (entityPath, key) => {
   const body = getValidResponse(entityPath, null, http.get);
+  if (!body.hasOwnProperty(key)) {
+    throw new Error(`Missing ${key} property in ${entityPath} response`);
+  }
   const entity = body[key];
   if (entity.length === 0) {
     throw new Error(`No ${key} were found in the response for request at ${entityPath}`);

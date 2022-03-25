@@ -22,14 +22,12 @@
 
 const _ = require('lodash');
 
-const AccountAlias = require('../accountAlias');
 const {
   response: {
     limit: {default: defaultLimit},
   },
 } = require('../config');
 const constants = require('../constants');
-const EntityId = require('../entityId');
 const utils = require('../utils');
 
 const {Nft} = require('../model');
@@ -118,8 +116,8 @@ const cacheAndUpdateFilter = (cachedFilter, filter, newOperator = null) => {
   }
 };
 
-const validateSopportedOperator = (operator) => {
-  if (constants.queryParamOperatorPatterns.ne.test(operator)) {
+const validateSupportedOperator = (operator) => {
+  if (utils.opsMap.ne === operator) {
     throw new InvalidArgumentError(`Not equals (ne) comparison operator is not supported`);
   }
 };
@@ -159,7 +157,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
   const oneOperatorValues = {};
 
   for (const filter of filters) {
-    validateSopportedOperator(filter.operator);
+    validateSupportedOperator(filter.operator);
 
     // limit all query filters eq|lt(e)|gt(e) filters to one occurence
     validateSingleFilterKeyOccurence(oneOperatorValues, filter);
@@ -167,18 +165,18 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
 
     switch (filter.key) {
       case constants.filterKeys.SERIAL_NUMBER:
-        if (constants.queryParamOperatorPatterns.ltorlte.test(filter.operator)) {
+        if (utils.isRegexMatch(constants.queryParamOperatorPatterns.ltorlte, filter.operator)) {
           cacheAndUpdateFilter(upperSerialNumberBound, filter);
           noFilterQuery = false;
-        } else if (constants.queryParamOperatorPatterns.gtorgte.test(filter.operator)) {
+        } else if (utils.isRegexMatch(constants.queryParamOperatorPatterns.gtorgte, filter.operator)) {
           cacheAndUpdateFilter(lowerSerialNumberBound, filter);
           noFilterQuery = false;
         }
         hasSerialNumber = true;
         break;
       case constants.filterKeys.TOKEN_ID:
-        if (constants.queryParamOperatorPatterns.ltorlte.test(filter.operator)) {
-          if (constants.queryParamOperatorPatterns.lte.test(filter.operator)) {
+        if (utils.isRegexMatch(constants.queryParamOperatorPatterns.ltorlte, filter.operator)) {
+          if (utils.opsMap.lte === filter.operator) {
             // cache filter as an upper token bound for equality case
             cacheAndUpdateFilter(upperTokenIdBound, filter, utils.opsMap.eq);
           }
@@ -186,8 +184,8 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
           // cache filter as an upper token bound for less than case
           cacheAndUpdateFilter(inclusiveUpperTokenIdBound, filter, utils.opsMap.lt);
           noFilterQuery = false;
-        } else if (constants.queryParamOperatorPatterns.gtorgte.test(filter.operator)) {
-          if (constants.queryParamOperatorPatterns.gte.test(filter.operator)) {
+        } else if (utils.isRegexMatch(constants.queryParamOperatorPatterns.gtorgte, filter.operator)) {
+          if (utils.opsMap.gte === filter.operator) {
             // cache filter as an lower token bound for equality case
             cacheAndUpdateFilter(lowerTokenIdBound, filter, utils.opsMap.eq);
           }
@@ -287,33 +285,6 @@ const validateSingleFilterKeyOccurence = (filterMap, filter) => {
 };
 
 /**
- * Retrive and validate the accountIdOrAlias query param string
- * @param {String} accountIdString accountIdOrAlias query string
- * @returns {EntityId} entityId
- */
-const getAndValidateAccountIdRequestPathParam = async (accountIdString) => {
-  let accountIdOrAlias = null;
-  if (EntityId.isValidEntityId(accountIdString)) {
-    accountIdOrAlias = accountIdString;
-  } else if (AccountAlias.isValid(accountIdString)) {
-    try {
-      accountIdOrAlias = await EntityService.getAccountIdFromAlias(AccountAlias.fromString(accountIdString));
-    } catch (err) {
-      if (err instanceof InvalidArgumentError) {
-        throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID_OR_ALIAS);
-      }
-
-      // rethrow any other error
-      throw err;
-    }
-  } else {
-    throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID_OR_ALIAS);
-  }
-
-  return EntityId.parse(accountIdOrAlias, constants.filterKeys.ACCOUNT_ID).getEncodedId();
-};
-
-/**
  * Handler function for /accounts/:accountAliasOrAccountId/nfts API
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
@@ -321,7 +292,17 @@ const getAndValidateAccountIdRequestPathParam = async (accountIdString) => {
  */
 const getNftsByAccountId = async (req, res) => {
   // extract filters from query param
-  const accountId = await getAndValidateAccountIdRequestPathParam(req.params.accountAliasOrAccountId);
+  let accountId = null;
+  try {
+    accountId = await EntityService.getEncodedIdAccountIdOrAlias(req.params.accountAliasOrAccountId);
+  } catch (err) {
+    if (err instanceof InvalidArgumentError) {
+      throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID_OR_ALIAS);
+    }
+
+    // rethrow any other error
+    throw err;
+  }
 
   // extract filters from query param
   const filters = await utils.buildAndValidateFilters(req.query);
@@ -359,7 +340,6 @@ if (utils.isTestEnv()) {
   Object.assign(module.exports, {
     extractNftsQuery,
     extractNftMultiUnionQuery,
-    getAndValidateAccountIdRequestPathParam,
     getFilterKeyOpString,
     validateSingleFilterKeyOccurence,
   });

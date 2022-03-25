@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.publish;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -64,24 +64,28 @@ public class PublishMetrics {
     }
 
     private void recordMetric(PublishRequest request, PublishResponse response, String status) {
-        String node = Optional.of(request.getTransaction().getNodeAccountIds())
-                .filter(l -> !l.isEmpty())
-                .map(l -> l.get(0))
-                .map(AccountId::toString)
-                .orElse(UNKNOWN);
-        long startTime = request.getTimestamp().toEpochMilli();
-        long endTime = response != null ? response.getTimestamp().toEpochMilli() : System.currentTimeMillis();
-        Tags tags = new Tags(node, request.getScenario(), status);
+        try {
+            String node = Optional.ofNullable(request.getTransaction().getNodeAccountIds())
+                    .filter(l -> !l.isEmpty())
+                    .map(l -> l.get(0))
+                    .map(AccountId::toString)
+                    .orElse(UNKNOWN);
+            long startTime = request.getTimestamp().toEpochMilli();
+            long endTime = response != null ? response.getTimestamp().toEpochMilli() : System.currentTimeMillis();
+            Tags tags = new Tags(node, request.getScenario(), status);
 
-        Timer submitTimer = submitTimers.computeIfAbsent(tags, this::newSubmitMetric);
-        submitTimer.record(endTime - startTime, TimeUnit.MILLISECONDS);
+            Timer submitTimer = submitTimers.computeIfAbsent(tags, this::newSubmitMetric);
+            submitTimer.record(endTime - startTime, TimeUnit.MILLISECONDS);
 
-        durationGauges.computeIfAbsent(tags, this::newDurationMetric);
+            durationGauges.computeIfAbsent(tags, this::newDurationMetric);
 
-        if (response != null && response.getReceipt() != null) {
-            long elapsed = System.currentTimeMillis() - startTime;
-            Timer handleTimer = handleTimers.computeIfAbsent(tags, this::newHandleMetric);
-            handleTimer.record(elapsed, TimeUnit.MILLISECONDS);
+            if (response != null && response.getReceipt() != null) {
+                long elapsed = System.currentTimeMillis() - startTime;
+                Timer handleTimer = handleTimers.computeIfAbsent(tags, this::newHandleMetric);
+                handleTimer.record(elapsed, TimeUnit.MILLISECONDS);
+            }
+        } catch (Exception ex) {
+            log.error("Unexpected error when recording metric", ex);
         }
     }
 

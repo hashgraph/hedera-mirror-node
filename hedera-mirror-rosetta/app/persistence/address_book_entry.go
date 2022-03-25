@@ -29,6 +29,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -51,8 +52,20 @@ const (
 
 type nodeServiceEndpoint struct {
 	NodeId        int64
-	NodeAccountId int64
+	NodeAccountId domain.EntityId
 	Endpoints     string
+}
+
+func (n nodeServiceEndpoint) toAddressBookEntry() types.AddressBookEntry {
+	endpoints := []string{}
+	if n.Endpoints != "" {
+		endpoints = strings.Split(n.Endpoints, ",")
+	}
+	return types.AddressBookEntry{
+		NodeId:    n.NodeId,
+		AccountId: n.NodeAccountId,
+		Endpoints: endpoints,
+	}
 }
 
 // addressBookEntryRepository struct that has connection to the Database
@@ -82,20 +95,7 @@ func (aber *addressBookEntryRepository) Entries(ctx context.Context) (*types.Add
 
 	entries := make([]types.AddressBookEntry, 0, len(nodes))
 	for _, node := range nodes {
-		nodeAccountId, err := types.NewAccountFromEncodedID(node.NodeAccountId)
-		if err != nil {
-			return nil, errors.ErrInternalServerError
-		}
-
-		endpoints := []string{}
-		if node.Endpoints != "" {
-			endpoints = strings.Split(node.Endpoints, ",")
-		}
-		entries = append(entries, types.AddressBookEntry{
-			NodeId:    node.NodeId,
-			AccountId: nodeAccountId,
-			Endpoints: endpoints,
-		})
+		entries = append(entries, node.toAddressBookEntry())
 	}
 
 	return &types.AddressBookEntries{Entries: entries}, nil

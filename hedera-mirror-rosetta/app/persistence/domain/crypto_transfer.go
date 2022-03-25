@@ -20,12 +20,18 @@
 
 package domain
 
-const cryptoTransferTableName = "crypto_transfer"
+const (
+	ErrataTypeDelete = "DELETE"
+	ErrataTypeInsert = "INSERT"
+
+	cryptoTransferTableName = "crypto_transfer"
+)
 
 type CryptoTransfer struct {
 	Amount             int64
 	ConsensusTimestamp int64
 	EntityId           EntityId
+	Errata             *string
 	PayerAccountId     EntityId
 }
 

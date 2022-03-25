@@ -59,7 +59,7 @@ const defaultEntityAlias = new AccountAlias('1', '2', 'KGNABD5L3ZGSRVUCSPDR7TONZ
 const defaultInputEntity = [
   {
     alias: defaultEntityAlias.base32Alias,
-    id: 3,
+    id: 281483566645248,
     shard: 1,
     realm: 2,
   },
@@ -112,5 +112,33 @@ describe('EntityService.getAccountIdFromAlias tests', () => {
     await integrationDomainOps.loadEntities(defaultInputEntity);
 
     await expect(EntityService.getAccountIdFromAlias(defaultEntityAlias)).resolves.toBe(defaultExpectedEntity.id);
+  });
+});
+
+describe('EntityService.isValidAccount tests', () => {
+  test('EntityService.isValidAccount - No match', async () => {
+    await expect(EntityService.isValidAccount(defaultInputEntity[0].id)).resolves.toBe(false);
+  });
+
+  test('EntityService.getAccountFromAlias - Matching', async () => {
+    await integrationDomainOps.loadEntities(defaultInputEntity);
+
+    await expect(EntityService.isValidAccount(defaultInputEntity[0].id)).resolves.toBe(true);
+  });
+});
+
+describe('EntityService.getEncodedIdAccountIdOrAlias tests', () => {
+  test('EntityService.getEncodedIdAccountIdOrAlias - No match', async () => {
+    await expect(EntityService.getEncodedIdAccountIdOrAlias(defaultInputEntity[0].id)).resolves.toBe(
+      defaultExpectedEntity.id
+    );
+  });
+
+  test('EntityService.getEncodedIdAccountIdOrAlias - Matching', async () => {
+    await integrationDomainOps.loadEntities(defaultInputEntity);
+
+    await expect(EntityService.getEncodedIdAccountIdOrAlias(defaultInputEntity[0].id)).resolves.toBe(
+      defaultExpectedEntity.id
+    );
   });
 });

@@ -224,6 +224,9 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.SERIAL_NUMBER:
       ret = isPositiveLong(val);
       break;
+    case constants.filterKeys.SPENDER_ID:
+      ret = EntityId.isValidEntityId(val);
+      break;
     case constants.filterKeys.TOKEN_ID:
       ret = EntityId.isValidEntityId(val);
       break;
@@ -740,7 +743,7 @@ const toHexString = (byteArray, addPrefix = false, padLength = undefined) => {
 
 // These match protobuf encoded hex strings. The prefixes listed check if it's a primitive key, a key list with one
 // primitive key, or a 1/1 threshold key, respectively.
-const PATTERN_ECDSA = /^(3a20|32240a223a20|2a28080112240a223a20)([A-Fa-f0-9]{66})$/;
+const PATTERN_ECDSA = /^(3a21|32250a233a21|2a29080112250a233a21)([A-Fa-f0-9]{66})$/;
 const PATTERN_ED25519 = /^(1220|32240a221220|2a28080112240a221220)([A-Fa-f0-9]{64})$/;
 
 /**
@@ -947,6 +950,10 @@ const formatComparator = (comparator) => {
         // Accepted forms: shard.realm.num or num
         comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
+      case constants.filterKeys.SPENDER_ID:
+        // Accepted forms: shard.realm.num or num
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
+        break;
       case constants.filterKeys.TIMESTAMP:
         comparator.value = parseTimestampParam(comparator.value);
         break;
@@ -1126,6 +1133,10 @@ const checkTimestampRange = (timestampFilters) => {
   }
 };
 
+const isRegexMatch = (regex, value) => {
+  return regex.test(value.trim());
+};
+
 module.exports = {
   addHexPrefix,
   buildAndValidateFilters,
@@ -1147,6 +1158,7 @@ module.exports = {
   isRepeatedQueryParameterValidLength,
   isTestEnv,
   isPositiveLong,
+  isRegexMatch,
   isValidPublicKeyQuery,
   isValidOperatorQuery,
   isValidValueIgnoreCase,

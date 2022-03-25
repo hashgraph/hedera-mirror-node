@@ -1,13 +1,13 @@
 module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 
-go 1.17
+go 1.18
 
 require (
-	github.com/coinbase/rosetta-sdk-go v0.7.3
+	github.com/coinbase/rosetta-sdk-go v0.7.4
 	github.com/cucumber/godog v0.12.4
-	github.com/go-playground/validator/v10 v10.10.0
-	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220129033520-fdf6f206e34e
-	github.com/hashgraph/hedera-sdk-go/v2 v2.9.0
+	github.com/go-playground/validator/v10 v10.10.1
+	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220204040204-50a9ffe2cb34
+	github.com/hashgraph/hedera-sdk-go/v2 v2.10.0
 	github.com/hellofresh/health-go/v4 v4.5.0
 	github.com/jackc/pgtype v1.10.0
 	github.com/lib/pq v1.10.4
@@ -19,13 +19,13 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.8.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/thanhpk/randstr v1.0.4
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
 	google.golang.org/protobuf v1.26.1-0.20210525005349-febffdd88e85
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.3.1
-	gorm.io/gorm v1.23.1
+	gorm.io/gorm v1.23.3
 )
 
 require (
@@ -44,7 +44,7 @@ require (
 	github.com/docker/docker v20.10.7+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/ethereum/go-ethereum v1.10.15 // indirect
+	github.com/ethereum/go-ethereum v1.10.16 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
@@ -102,8 +102,8 @@ require (
 	go.opentelemetry.io/otel v1.0.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f // indirect
+	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
+	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
