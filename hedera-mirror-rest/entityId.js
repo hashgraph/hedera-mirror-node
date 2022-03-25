@@ -182,9 +182,7 @@ const parseFromEvmAddress = (evmAddress) => {
     Number.parseInt(hexDigits.slice(24, 40), 16), // num
   ];
 
-  const evmAddressParts = parts.map((part) => BigInt(part));
-
-  return evmAddressParts;
+  return parts.map((part) => BigInt(part));
 };
 /**
  * Parses shard, realm, num from entity ID string, can be shard.realm.num or realm.num.

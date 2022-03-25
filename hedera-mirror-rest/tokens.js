@@ -305,7 +305,7 @@ const validateTokenQueryFilter = (param, op, val) => {
 const getTokensRequest = async (req, res) => {
   // validate filters, use custom check for tokens until validateAndParseFilters is optimized to handle
   // per resource unique param names
-  const filters = await utils.buildAndValidateFilters(req.query, validateTokenQueryFilter);
+  const filters = utils.buildAndValidateFilters(req.query, validateTokenQueryFilter);
 
   const conditions = [];
   const getTokensSqlQuery = [tokensSelectQuery];
@@ -471,7 +471,7 @@ const getTokenInfoRequest = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
 
   // extract and validate filters from query param
-  const filters = await utils.buildAndValidateFilters(req.query, validateTokenInfoFilter);
+  const filters = utils.buildAndValidateFilters(req.query, validateTokenInfoFilter);
   const {query, params} = extractSqlFromTokenInfoRequest(tokenId, filters);
 
   const row = await getTokenInfo(query, params);
@@ -589,7 +589,7 @@ const formatTokenBalanceRow = (row) => {
  */
 const getTokenBalances = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
-  const filters = await utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query);
 
   const {query, params, limit, order} = extractSqlFromTokenBalancesRequest(tokenId, tokenBalancesSelectQuery, filters);
   if (logger.isTraceEnabled()) {
@@ -703,7 +703,7 @@ const getAndValidateSerialNumberRequestPathParam = (req) => {
  */
 const getNftTokensRequest = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
-  const filters = await utils.buildAndValidateFilters(req.query, validateTokenQueryFilter);
+  const filters = utils.buildAndValidateFilters(req.query, validateTokenQueryFilter);
 
   // verify token exists
   const token = await TokenService.getToken(tokenId);
@@ -917,7 +917,7 @@ const getNftTransferHistoryRequest = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
   const serialNumber = getAndValidateSerialNumberRequestPathParam(req);
 
-  const filters = await utils.buildAndValidateFilters(req.query, validateTokenQueryFilter);
+  const filters = utils.buildAndValidateFilters(req.query, validateTokenQueryFilter);
 
   const {query, params, limit, order} = extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
   if (logger.isTraceEnabled()) {

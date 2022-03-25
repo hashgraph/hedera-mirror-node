@@ -273,7 +273,7 @@ class ContractService extends BaseService {
 
     if (contractIdParts.hasOwnProperty('create2_evm_address')) {
       contractIdParts.create2_evm_address = Buffer.from(contractIdParts.create2_evm_address, 'hex');
-      return await this.getContractIdByEvmAddress(contractIdParts);
+      return this.getContractIdByEvmAddress(contractIdParts);
     }
 
     return EntityId.parse(contractIdValue, constants.filterKeys.CONTRACTID).getEncodedId();

@@ -343,7 +343,7 @@ const getContracts = async (req, res) => {
   utils.validateReq(req);
 
   // extract filters from query param
-  const filters = await utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query);
 
   // get sql filter query, params, limit and limit query from query filters
   const {filterQuery, params, order, limit, limitQuery} = await extractSqlFromContractFilters(filters);

@@ -125,7 +125,7 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
 const getTopicMessages = async (req, res) => {
   const topicIdStr = req.params.topicId;
   validateGetTopicMessagesParams(topicIdStr);
-  const filters = await utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query);
 
   const topicId = EntityId.parse(topicIdStr);
 
