@@ -25,11 +25,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
-import com.hedera.mirror.common.domain.entity.EntityType;
-
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +34,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 import com.hedera.mirror.grpc.domain.DomainBuilder;
 import com.hedera.mirror.grpc.domain.TopicMessage;
@@ -57,12 +54,10 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
     @Resource
     protected CompositeTopicListener topicListener;
+    private Duration defaultInterval;
+    private ListenerProperties.ListenerType defaultType;
 
     protected abstract ListenerProperties.ListenerType getType();
-
-    private Duration defaultInterval;
-
-    private ListenerProperties.ListenerType defaultType;
 
     @BeforeEach
     void setup() {

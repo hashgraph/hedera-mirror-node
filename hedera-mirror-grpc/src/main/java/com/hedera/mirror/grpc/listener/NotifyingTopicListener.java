@@ -23,6 +23,7 @@ package com.hedera.mirror.grpc.listener;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxOptions;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.pubsub.PgChannel;
 import io.vertx.pgclient.pubsub.PgSubscriber;
@@ -30,6 +31,7 @@ import java.time.Duration;
 import java.util.Objects;
 import javax.inject.Named;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.retry.Retry;
 
@@ -41,39 +43,16 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 public class NotifyingTopicListener extends SharedTopicListener {
 
     final ObjectMapper objectMapper;
-    private final PgChannel channel;
+    private final DbProperties dbProperties;
+    private final Mono<PgChannel> channel;
     private final Flux<TopicMessage> topicMessages;
 
     public NotifyingTopicListener(DbProperties dbProperties, ListenerProperties listenerProperties) {
         super(listenerProperties);
-
+        this.dbProperties = dbProperties;
         objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
-        PgConnectOptions connectOptions = new PgConnectOptions()
-                .setDatabase(dbProperties.getName())
-                .setHost(dbProperties.getHost())
-                .setPassword(dbProperties.getPassword())
-                .setPort(dbProperties.getPort())
-                .setSslMode(dbProperties.getSslMode())
-                .setUser(dbProperties.getUsername());
-
+        channel = Mono.defer(this::createChannel).cache();
         Duration interval = listenerProperties.getInterval();
-        Vertx vertx = Vertx.vertx();
-        PgSubscriber subscriber = PgSubscriber.subscriber(vertx, connectOptions)
-                .reconnectPolicy(retries -> {
-                    log.warn("Attempting reconnect");
-                    return interval.toMillis() * Math.min(retries, 4);
-                });
-
-        // Connect asynchronously to avoid crashing the application on startup if the database is down
-        vertx.setTimer(100L, v -> subscriber.connect(connectResult -> {
-            if (connectResult.failed()) {
-                throw new RuntimeException(connectResult.cause());
-            }
-            log.info("Connected to database");
-        }));
-
-        channel = subscriber.channel("topic_message");
-
         topicMessages = Flux.defer(() -> listen())
                 .map(this::toTopicMessage)
                 .filter(Objects::nonNull)
@@ -91,14 +70,47 @@ public class NotifyingTopicListener extends SharedTopicListener {
 
     private Flux<String> listen() {
         Sinks.Many<String> sink = Sinks.many().unicast().onBackpressureBuffer();
-        channel.handler(sink::tryEmitNext);
+        channel.subscribe(c -> c.handler(sink::tryEmitNext));
+
         log.info("Listening for messages");
         return sink.asFlux().doFinally(x -> unListen());
     }
 
     private void unListen() {
-        channel.handler(null);
+        channel.subscribe(c -> c.handler(null));
         log.info("Stopped listening for messages");
+    }
+
+    private Mono<PgChannel> createChannel() {
+        PgConnectOptions connectOptions = new PgConnectOptions()
+                .setDatabase(dbProperties.getName())
+                .setHost(dbProperties.getHost())
+                .setPassword(dbProperties.getPassword())
+                .setPort(dbProperties.getPort())
+                .setSslMode(dbProperties.getSslMode())
+                .setUser(dbProperties.getUsername());
+
+        Duration interval = listenerProperties.getInterval();
+        VertxOptions vertxOptions = new VertxOptions();
+        vertxOptions.getFileSystemOptions().setFileCachingEnabled(false);
+        vertxOptions.getFileSystemOptions().setClassPathResolvingEnabled(false);
+        Vertx vertx = Vertx.vertx(vertxOptions);
+
+        PgSubscriber subscriber = PgSubscriber.subscriber(vertx, connectOptions)
+                .reconnectPolicy(retries -> {
+                    log.warn("Attempting reconnect");
+                    return interval.toMillis() * Math.min(retries, 4);
+                });
+
+        // Connect asynchronously to avoid crashing the application on startup if the database is down
+        vertx.setTimer(100L, v -> subscriber.connect(connectResult -> {
+            if (connectResult.failed()) {
+                throw new RuntimeException(connectResult.cause());
+            }
+            log.info("Connected to database");
+        }));
+
+        return Mono.just(subscriber.channel("topic_message"));
     }
 
     private TopicMessage toTopicMessage(String payload) {
