@@ -349,7 +349,6 @@ const getContracts = async (req, res) => {
   const {filterQuery, params, order, limit, limitQuery} = await extractSqlFromContractFilters(filters);
 
   const query = getContractsQuery(filterQuery, limitQuery, order);
-
   if (logger.isTraceEnabled()) {
     logger.trace(`getContracts query: ${query}, params: ${params}`);
   }
