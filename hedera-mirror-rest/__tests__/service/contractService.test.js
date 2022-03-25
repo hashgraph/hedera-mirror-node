@@ -723,7 +723,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
   });
 
   test('Multiple rows match', async () => {
-    const evm_address = Buffer.from('3d4ffd867fac5d9c228d1dbeb7f218a29c94b', 'hex');
+    const evmAddress = Buffer.from('3d4ffd867fac5d9c228d1dbeb7f218a29c94b', 'hex');
     await integrationDomainOps.loadContracts([
       {
         auto_renew_period: 7890000,
@@ -742,7 +742,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         file_id: 111168,
         obtainer_id: null,
         type: 'CONTRACT',
-        evm_address,
+        evm_address: evmAddress,
       },
       {
         auto_renew_period: 7890000,
@@ -780,11 +780,11 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         file_id: 111481,
         obtainer_id: null,
         type: 'CONTRACT',
-        evm_address,
+        evm_address: evmAddress,
       },
     ]);
 
-    const evmAddressFilter = {shard: 0, realm: 0, create2_evm_address: evm_address};
+    const evmAddressFilter = {shard: 0, realm: 0, create2_evm_address: evmAddress};
     await expect(() => ContractService.getContractIdByEvmAddress(evmAddressFilter)).rejects.toThrow(
       new NotFoundError(
         `More than one contract with the evm address ${JSON.stringify(evmAddressFilter)} have been found.`
@@ -793,7 +793,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
   });
 
   test('One row match', async () => {
-    const evm_address = Buffer.from('1aaafd867fac5d9c228d1dbeb7f218a29c94b', 'hex');
+    const evmAddress = Buffer.from('1aaafd867fac5d9c228d1dbeb7f218a29c94b', 'hex');
     await integrationDomainOps.loadContracts([
       {
         auto_renew_period: 7890000,
@@ -812,7 +812,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         file_id: 111168,
         obtainer_id: null,
         type: 'CONTRACT',
-        evm_address,
+        evm_address: evmAddress,
       },
       {
         auto_renew_period: 7890000,
@@ -857,7 +857,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
     const contractId = await ContractService.getContractIdByEvmAddress({
       realm: 0,
       shard: 0,
-      create2_evm_address: evm_address,
+      create2_evm_address: evmAddress,
     });
     expect(contractId.toString()).toEqual('111169');
   });
