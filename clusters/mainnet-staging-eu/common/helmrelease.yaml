@@ -1,0 +1,41 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mirror
+  namespace: common
+spec:
+  chart:
+    spec:
+      chart: hedera-mirror-common
+      sourceRef:
+        kind: HelmRepository
+        name: hedera-mirror-node
+      version: '0.39.0'
+  install:
+    crds: CreateReplace
+  interval: 1m
+  timeout: 10m
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+    remediation:
+      retries: 10
+  valuesFrom:
+    - kind: Secret
+      name: mirror
+  values:
+    prometheus:
+      prometheus:
+        prometheusSpec:
+          externalLabels:
+            cluster: mainnet-staging-eu
+          replicaExternalLabelName: __replica__
+    promtail:
+      config:
+        snippets:
+          extraClientConfigs: |
+            external_labels:
+              cluster: mainnet-staging-eu
+    traefik:
+      enabled: false
+

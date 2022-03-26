@@ -1,0 +1,77 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mirror
+  namespace: mainnet
+spec:
+  chart:
+    spec:
+      chart: hedera-mirror
+      sourceRef:
+        kind: HelmRepository
+        name: hedera-mirror-node
+      valuesFiles:
+        - values.yaml
+        - values-prod.yaml
+      version: '0.39.0'
+  dependsOn:
+    - name: mirror
+      namespace: common
+  install:
+    crds: CreateReplace
+  interval: 90s
+  test:
+    enable: false
+    timeout: 5m
+  timeout: 48h
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+    remediation:
+      retries: 20
+  valuesFrom:
+    - kind: Secret
+      name: mirror
+  values:
+    grpc:
+      ingress:
+        enabled: false
+        middleware:
+          enabled: false
+    importer:
+      env:
+        HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
+        HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
+    monitor:
+      env:
+        HEDERA_MIRROR_MONITOR_NETWORK: "MAINNET"
+        HEDERA_MIRROR_MONITOR_NODEVALIDATION_MAXATTEMPTS: "8"
+      ingress:
+        enabled: false
+      prometheusRules:
+        MonitorPublishLatency:
+          enabled: false
+        MonitorSubscribeLatency:
+          enabled: false
+    postgresql:
+      enabled: false
+    redis:
+      enabled: false
+    rest:
+      ingress:
+        enabled: false
+        middleware:
+          enabled: false
+    rosetta:
+      env:
+        HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
+      ingress:
+        enabled: false
+        middleware:
+          enabled: false
+    web3:
+      ingress:
+        enabled: false
+        middleware:
+          enabled: false
+
