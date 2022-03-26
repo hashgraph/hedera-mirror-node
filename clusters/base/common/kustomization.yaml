@@ -13,5 +13,5 @@ generatorOptions:
 resources:
   - helmrepository.yaml
   - namespace.yaml
-  - podmonitor.yaml
+#  - podmonitor.yaml
 
