@@ -42,9 +42,9 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 @Named
 public class NotifyingTopicListener extends SharedTopicListener {
 
+    final Mono<PgChannel> channel;
     final ObjectMapper objectMapper;
     private final DbProperties dbProperties;
-    private final Mono<PgChannel> channel;
     private final Flux<TopicMessage> topicMessages;
 
     public NotifyingTopicListener(DbProperties dbProperties, ListenerProperties listenerProperties) {
@@ -70,10 +70,10 @@ public class NotifyingTopicListener extends SharedTopicListener {
 
     private Flux<String> listen() {
         Sinks.Many<String> sink = Sinks.many().unicast().onBackpressureBuffer();
-        channel.subscribe(c -> c.handler(sink::tryEmitNext));
-
-        log.info("Listening for messages");
-        return sink.asFlux().doFinally(x -> unListen());
+        return channel.doOnNext(c -> c.handler(sink::tryEmitNext))
+                .doOnNext(c -> log.info("Listening for messages"))
+                .flatMapMany(c -> sink.asFlux())
+                .doFinally(s -> unListen());
     }
 
     private void unListen() {
@@ -102,15 +102,9 @@ public class NotifyingTopicListener extends SharedTopicListener {
                     return interval.toMillis() * Math.min(retries, 4);
                 });
 
-        // Connect asynchronously to avoid crashing the application on startup if the database is down
-        vertx.setTimer(100L, v -> subscriber.connect(connectResult -> {
-            if (connectResult.failed()) {
-                throw new RuntimeException(connectResult.cause());
-            }
-            log.info("Connected to database");
-        }));
-
-        return Mono.just(subscriber.channel("topic_message"));
+        return Mono.fromCompletionStage(subscriber.connect().toCompletionStage())
+                .doOnSuccess(v -> log.info("Connected to database"))
+                .thenReturn(subscriber.channel("topic_message"));
     }
 
     private TopicMessage toTopicMessage(String payload) {
