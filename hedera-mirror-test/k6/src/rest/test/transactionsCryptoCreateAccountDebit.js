@@ -19,12 +19,12 @@
  */
 
 /**
- * This is a very particular test case related to https://github.com/hashgraph/hedera-mirror-node/issues/3433.
+ * This is a very particular test case related to https://github.com/hashgraph/hedera-mirror-node/issues/2385.
  * While testing performance issues, it was found that calls using both the transaction type (e.g. CRYPTOCREATEACCOUNT)
  * and balance modification type (e.g. debit) query string parameters, performance was especially slow. API calls would timeout after 20 seconds.
  * This test uses hard-coded transaction type and balance modification type because slow performance seems to be
  * associated with fewer records of a given transaction type/balance modification type combination.
- * An attempt to make this test more generic made environment variable names confusing.
+ * An attempt to make this test more generic seems to have low-value while also making variable names confusing.
  */
 
 import http from "k6/http";
