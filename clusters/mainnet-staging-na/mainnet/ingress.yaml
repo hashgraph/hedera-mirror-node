@@ -29,7 +29,7 @@ spec:
               service:
                 name: mirror-grpc
                 port:
-                  number: 80
+                  number: 5600
           - path: /com.hedera.mirror.api.proto.NetworkService
             pathType: Exact
             backend:
