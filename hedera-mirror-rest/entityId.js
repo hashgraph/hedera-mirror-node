@@ -180,13 +180,11 @@ const parseFromEncodedId = (id, error) => {
 const parseFromEvmAddress = (evmAddress) => {
   // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
   const hexDigits = evmAddress.replace('0x', '');
-  const parts = [
-    Number.parseInt(hexDigits.slice(0, 8), 16), // shard
-    Number.parseInt(hexDigits.slice(8, 24), 16), // realm
-    Number.parseInt(hexDigits.slice(24, 40), 16), // num
+  return [
+    BigInt('0x' + hexDigits.slice(0, 8)), // shard
+    BigInt('0x' + hexDigits.slice(8, 24)), // realm
+    BigInt('0x' + hexDigits.slice(24, 40)), // num
   ];
-
-  return parts.map((part) => BigInt(part));
 };
 /**
  * Parses shard, realm, num from entity ID string, can be shard.realm.num or realm.num.
