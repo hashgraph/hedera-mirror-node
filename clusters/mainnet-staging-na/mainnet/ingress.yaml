@@ -6,7 +6,6 @@ metadata:
   name: mirror
   namespace: mainnet
 spec:
-  ingressClassName: gce
   rules:
     - http:
         paths:
