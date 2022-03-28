@@ -20,7 +20,6 @@
 
 'use strict';
 
-const _ = require('lodash');
 const {
   response: {
     limit: {default: defaultLimit},
