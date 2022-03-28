@@ -254,7 +254,6 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
     params.push(...evmAddressParams);
     conditions.push(...evmAddressConditions);
   } else {
-    logger.info(contractIdParam + ' <<<<<<<<<<');
     const encodedId = EntityId.parse(_.last(contractIdParam.split('.'))).getEncodedId();
     params.push(encodedId);
     conditions.push(`${Contract.ID} = $${params.length}`);
