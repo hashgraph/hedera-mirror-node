@@ -20,9 +20,23 @@
 
 'use strict';
 
-module.exports = {
-  AccountController: require('./accountController'),
-  ContractController: require('./contractController'),
-  CryptoAllowanceController: require('./cryptoAllowanceController'),
-  TokenAllowanceController: require('./tokenAllowanceController').controller,
-};
+const BaseService = require('../../service/baseService');
+
+describe('getOrderByQuery', () => {
+  const baseService = new BaseService();
+
+  test('single', () => {
+    expect(baseService.getOrderByQuery({column: 'a', order: 'asc'})).toEqual('order by a asc');
+  });
+
+  test('multiple', () => {
+    expect(baseService.getOrderByQuery({column: 'a', order: 'asc'}, {column: 'b', order: 'desc'})).toEqual(
+      'order by a asc,b desc'
+    );
+  });
+});
+
+test('getLimitQuery', () => {
+  const baseService = new BaseService();
+  expect(baseService.getLimitQuery(1)).toEqual('limit $1');
+});

@@ -20,41 +20,32 @@
 
 'use strict';
 
-const _ = require('lodash');
-
-const {CryptoAllowance} = require('../model');
 const BaseService = require('./baseService');
+const {CryptoAllowance} = require('../model');
 
 /**
  * CryptoAllowance business model
  */
 class CryptoAllowanceService extends BaseService {
-  static accountAllowanceQuery = `select
-    ${CryptoAllowance.AMOUNT},
-    ${CryptoAllowance.OWNER},
-    ${CryptoAllowance.PAYER_ACCOUNT_ID},
-    ${CryptoAllowance.SPENDER},
-    ${CryptoAllowance.TIMESTAMP_RANGE}
-    from ${CryptoAllowance.tableName}`;
+  static accountAllowanceQuery = `select * from ${CryptoAllowance.tableName}`;
 
   async getAccountCryptoAllowances(conditions, initParams, order, limit) {
-    const [query, params] = this.getAccountCryptoAllowancesWithFiltersQuery(conditions, initParams, order, limit);
-
-    const rows = await super.getRows(query, params, 'getAccountCryptoAllowancesWithFilters');
+    const {query, params} = this.getAccountAllowancesQuery(conditions, initParams, order, limit);
+    const rows = await super.getRows(query, params, 'getAccountCryptoAllowances');
     return rows.map((ca) => new CryptoAllowance(ca));
   }
 
-  getAccountCryptoAllowancesWithFiltersQuery(whereConditions, whereParams, spenderOrder, limit) {
+  getAccountAllowancesQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
+    params.push(limit);
     const query = [
       CryptoAllowanceService.accountAllowanceQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
-      super.getOrderByQuery(CryptoAllowance.SPENDER, spenderOrder),
-      super.getLimitQuery(params.length + 1),
+      super.getOrderByQuery({column: CryptoAllowance.SPENDER, order}),
+      super.getLimitQuery(params.length),
     ].join('\n');
-    params.push(limit);
 
-    return [query, params];
+    return {query, params};
   }
 }
 

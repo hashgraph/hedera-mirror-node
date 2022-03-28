@@ -26,12 +26,18 @@ const _ = require('lodash');
  * Base service class that other services should inherit from for their retrieval business logic
  */
 class BaseService {
-  getOrderByQuery(column, order) {
-    return `order by ${column} ${order}`;
+  getLimitQuery(position) {
+    return `limit $${position}`;
   }
 
-  getLimitQuery(limitParamCount) {
-    return `limit $${limitParamCount}`;
+  /**
+   * Gets the order by query from the order specs
+   *
+   * @param {{column: string, order: 'asc'|'desc'}} orderSpecs
+   * @return {string}
+   */
+  getOrderByQuery(...orderSpecs) {
+    return `order by ${orderSpecs.map((spec) => `${spec.column} ${spec.order}`)}`;
   }
 
   async getRows(query, params, functionName = '') {

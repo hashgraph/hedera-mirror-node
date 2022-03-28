@@ -58,6 +58,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadTopicMessages(testDataJson.topicmessages);
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
+  await loadTokenAllowances(testDataJson.tokenAllowances);
   await loadTransactions(testDataJson.transactions);
   await loadTransactionSignatures(testDataJson.transactionsignatures);
 };
@@ -228,6 +229,16 @@ const loadTokenAccounts = async (tokenAccounts) => {
 
   for (const tokenAccount of tokenAccounts) {
     await addTokenAccount(tokenAccount);
+  }
+};
+
+const loadTokenAllowances = async (tokenAllowances) => {
+  if (tokenAllowances == null) {
+    return;
+  }
+
+  for (const tokenAllowance of tokenAllowances) {
+    await addTokenAllowance(tokenAllowance);
   }
 };
 
@@ -976,6 +987,23 @@ const addTokenAccount = async (tokenAccount) => {
       EntityId.parse(tokenAccount.token_id).getEncodedId(),
     ]
   );
+};
+
+const addTokenAllowance = async (tokenAllowance) => {
+  const insertFields = ['amount', 'owner', 'payer_account_id', 'spender', 'token_id', 'timestamp_range'];
+
+  tokenAllowance = {
+    amount: 0,
+    owner: 1000,
+    payer_account_id: 1000,
+    spender: 2000,
+    token_id: 3000,
+    timestamp_range: '[0,)',
+    ...tokenAllowance,
+  };
+
+  const table = tokenAllowance.timestamp_range.endsWith(',)') ? 'token_allowance' : 'token_allowance_history';
+  await insertDomainObject(table, insertFields, tokenAllowance);
 };
 
 const addNft = async (nft) => {

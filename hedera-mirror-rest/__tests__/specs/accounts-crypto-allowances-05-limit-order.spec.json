@@ -64,7 +64,6 @@
       {
         "amount": 33,
         "owner": "0.0.1001",
-        "payer_account_id": "0.0.1001",
         "spender": "0.0.2001",
         "timestamp": {
           "from": "1234567890.000000001",
@@ -74,7 +73,6 @@
       {
         "amount": 44,
         "owner": "0.0.1001",
-        "payer_account_id": "0.0.2001",
         "spender": "0.0.3001",
         "timestamp": {
           "from": "1234567890.000000002",

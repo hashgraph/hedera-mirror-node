@@ -52,9 +52,9 @@ class NftService extends BaseService {
     return _.isEmpty(rows) ? null : new Nft(rows[0]);
   }
 
-  getNftsFiltersQuery(whereConditions, whereParams, nftOrder, limit, paramsLength = whereParams.length) {
+  getNftsFiltersQuery(whereConditions, whereParams, order, limit, paramsLength = whereParams.length) {
     const params = whereParams;
-    const orderClause = [super.getOrderByQuery(Nft.TOKEN_ID, nftOrder), `${Nft.SERIAL_NUMBER} ${nftOrder}`].join(', ');
+    const orderClause = super.getOrderByQuery({column: Nft.TOKEN_ID, order}, {column: Nft.SERIAL_NUMBER, order});
     const query = [
       NftService.nftQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
@@ -104,7 +104,7 @@ class NftService extends BaseService {
     // if more than 1 query was combined add an additional order and limit to format joined results
     if (allQueries.length > 1) {
       unionQuery = unionQuery
-        .concat(`\n${[super.getOrderByQuery(Nft.TOKEN_ID, order), `${Nft.SERIAL_NUMBER} ${order}`].join(', ')}`)
+        .concat(`\n${super.getOrderByQuery({column: Nft.TOKEN_ID, order}, {column: Nft.SERIAL_NUMBER, order})}`)
         .concat(`\n${super.getLimitQuery(allParams.length)}`);
     }
 

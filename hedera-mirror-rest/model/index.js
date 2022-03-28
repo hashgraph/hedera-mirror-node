@@ -36,6 +36,7 @@ module.exports = {
   RecordFile: require('./recordFile'),
   SignatureType: require('./signatureType'),
   Token: require('./token'),
+  TokenAllowance: require('./tokenAllowance'),
   TokenFreezeStatus: require('./tokenFreezeStatus'),
   TokenKycStatus: require('./tokenKycStatus'),
   TokenTransfer: require('./tokenTransfer'),

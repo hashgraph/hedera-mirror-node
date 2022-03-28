@@ -83,7 +83,7 @@ class ContractService extends BaseService {
     const query = [
       ContractService.detailedContractResultsQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
-      super.getOrderByQuery(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order),
+      super.getOrderByQuery({column: ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order}),
       super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
     ].join('\n');
     params.push(limit);
@@ -135,10 +135,10 @@ class ContractService extends BaseService {
    */
   getContractLogsByIdAndFiltersQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit) {
     const params = whereParams;
-    const orderClause = [
-      super.getOrderByQuery(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
-      `${ContractLog.getFullName(ContractLog.INDEX)} ${indexOrder}`,
-    ].join(', ');
+    const orderClause = super.getOrderByQuery(
+      {column: ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), order: timestampOrder},
+      {column: ContractLog.getFullName(ContractLog.INDEX), order: indexOrder}
+    );
     const query = [
       ContractService.contractLogsQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',

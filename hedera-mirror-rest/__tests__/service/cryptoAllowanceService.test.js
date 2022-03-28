@@ -20,8 +20,6 @@
 
 'use strict';
 
-const _ = require('lodash');
-
 const {CryptoAllowanceService} = require('../../service');
 const {assertSqlQueryEqual} = require('../testutils');
 
@@ -56,15 +54,10 @@ beforeEach(async () => {
 
 const defaultOwnerFilter = 'owner = $1';
 const additionalConditions = [defaultOwnerFilter, 'spender > $2'];
-describe('CryptoAllowanceService.getAccountCryptoAllowancesWithFiltersQuery tests', () => {
+describe('CryptoAllowanceService.getAccountAllowancesQuery tests', () => {
   test('Verify simple query', async () => {
-    const [query, params] = CryptoAllowanceService.getAccountCryptoAllowancesWithFiltersQuery(
-      [defaultOwnerFilter],
-      [2],
-      'asc',
-      5
-    );
-    const expected = `select amount,owner,payer_account_id,spender,timestamp_range
+    const {query, params} = CryptoAllowanceService.getAccountAllowancesQuery([defaultOwnerFilter], [2], 'asc', 5);
+    const expected = `select *
     from crypto_allowance
     where owner = $1
     order by spender asc limit $2`;
@@ -73,13 +66,8 @@ describe('CryptoAllowanceService.getAccountCryptoAllowancesWithFiltersQuery test
   });
 
   test('Verify additional conditions', async () => {
-    const [query, params] = CryptoAllowanceService.getAccountCryptoAllowancesWithFiltersQuery(
-      additionalConditions,
-      [2, 10],
-      'asc',
-      5
-    );
-    const expected = `select amount,owner,payer_account_id,spender,timestamp_range
+    const {query, params} = CryptoAllowanceService.getAccountAllowancesQuery(additionalConditions, [2, 10], 'asc', 5);
+    const expected = `select *
     from crypto_allowance
     where owner = $1 and spender > $2
     order by spender asc limit $3`;
@@ -168,7 +156,7 @@ describe('CryptoAllowanceService.getAccountCrytoAllownces tests', () => {
     },
   ];
 
-  test('CryptoAllowanceService.getAccountCrytoAllownces - Matching spender gt entity', async () => {
+  test('CryptoAllowanceService.getAccountCryptoAllowances - Matching spender gt entity', async () => {
     await integrationDomainOps.loadCryptoAllowances(inputCryptoAllowance);
 
     await expect(
@@ -176,7 +164,7 @@ describe('CryptoAllowanceService.getAccountCrytoAllownces tests', () => {
     ).resolves.toMatchObject(expectedCryptoAllowance);
   });
 
-  test('CryptoAllowanceService.getAccountCrytoAllownces - Matching spender entity', async () => {
+  test('CryptoAllowanceService.getAccountCryptoAllowances - Matching spender entity', async () => {
     await integrationDomainOps.loadCryptoAllowances(inputCryptoAllowance);
 
     await expect(

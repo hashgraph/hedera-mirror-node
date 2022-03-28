@@ -20,7 +20,6 @@
 
 'use strict';
 
-const {TransactionID} = require('@hashgraph/proto');
 const _ = require('lodash');
 const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
@@ -50,7 +49,10 @@ const opsMap = {
   ne: ' != ',
 };
 
-const gtLtPattern = /(g|l)t[e]?:/;
+const gtGte = [opsMap.gt, opsMap.gte];
+const ltLte = [opsMap.lt, opsMap.lte];
+
+const gtLtPattern = /[gl]t[e]?:/;
 
 /**
  * Check if the given number is numeric
@@ -558,13 +560,12 @@ const convertMySqlStyleQueryToPostgres = (sqlQuery, startIndex = 1) => {
  * Create pagination (next) link
  * @param {HTTPRequest} req HTTP query request object
  * @param {Boolean} isEnd Is the next link valid or not
- * @param {String} field The query parameter field name
- * @param {Object} lastValueMap Map of key value pairs representing last values of columns that may be filtered on
+ * @param {{string: {value: string, inclusive: boolean}}} lastValueMap Map of key value pairs representing last values
+ *   of columns that may be filtered on
  * @param {String} order Order of sorting the results
- * @param {Object} inclusiveKeys map of keys to adopt inclusive comparion parmaeters
  * @return {String} next Fully formed link to the next page
  */
-const getPaginationLink = (req, isEnd, lastValueMap, order, inclusiveKeys = {}) => {
+const getPaginationLink = (req, isEnd, lastValueMap, order) => {
   let urlPrefix;
   if (config.port !== undefined && config.response.includeHostInLink) {
     urlPrefix = `${req.protocol}://${req.hostname}:${config.port}`;
@@ -575,7 +576,7 @@ const getPaginationLink = (req, isEnd, lastValueMap, order, inclusiveKeys = {}) 
   let next = '';
 
   if (!isEnd) {
-    next = getNextParamQueries(order, req.query, lastValueMap, inclusiveKeys);
+    next = getNextParamQueries(order, req.query, lastValueMap);
 
     // remove the '/' at the end of req.path
     const path = req.path.endsWith('/') ? req.path.slice(0, -1) : req.path;
@@ -610,13 +611,7 @@ const updateReqQuery = (reqQuery, field, pattern, insertValue) => {
   const fieldValues = reqQuery[field];
   const patternMatch = pattern.test(fieldValues);
   if (Array.isArray(fieldValues)) {
-    for (const fieldValue of fieldValues) {
-      if (pattern.test(fieldValue)) {
-        reqQuery[field] = reqQuery[field].filter(function (value, index, arr) {
-          return value !== fieldValue;
-        });
-      }
-    }
+    reqQuery[field] = fieldValues.filter((value) => !pattern.test(value));
   } else if (patternMatch) {
     delete reqQuery[field];
   }
@@ -630,15 +625,24 @@ const updateReqQuery = (reqQuery, field, pattern, insertValue) => {
   }
 };
 
-const getNextParamQueries = (order, reqQuery, lastValueMap, inclusiveKeys) => {
-  const pattern = order === constants.orderFilterValues.ASC ? /gt[e]?:/ : /lt[e]?:/;
-  const insertedPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
+const operatorPatterns = {
+  [constants.orderFilterValues.ASC]: /gt[e]?:/,
+  [constants.orderFilterValues.DESC]: /lt[e]?:/,
+};
+
+const getNextParamQueries = (order, reqQuery, lastValueMap) => {
+  const pattern = operatorPatterns[order];
+  const newPattern = order === constants.orderFilterValues.ASC ? 'gt' : 'lt';
 
   for (const [field, lastValue] of Object.entries(lastValueMap)) {
-    if (!_.isNil(lastValue)) {
-      const comparisonPattern = inclusiveKeys[field] === true ? `${insertedPattern}e` : insertedPattern;
-      updateReqQuery(reqQuery, field, pattern, `${comparisonPattern}:${lastValue}`);
+    let value = lastValue;
+    let inclusive = false;
+    if (typeof value === 'object' && 'value' in lastValue) {
+      value = lastValue.value;
+      inclusive = lastValue.inclusive;
     }
+    const insertValue = inclusive ? `${newPattern}e:${value}` : `${newPattern}:${value}`;
+    updateReqQuery(reqQuery, field, pattern, insertValue);
   }
 
   return constructStringFromUrlQuery(reqQuery);
@@ -1148,6 +1152,7 @@ module.exports = {
   getNullableNumber,
   getPaginationLink,
   getPoolClass,
+  gtGte,
   ipMask,
   isNonNegativeInt32,
   isRepeatedQueryParameterValidLength,
@@ -1159,6 +1164,7 @@ module.exports = {
   isValidValueIgnoreCase,
   isValidTimestampParam,
   loadPgRange,
+  ltLte,
   mergeParams,
   nsToSecNs,
   nsToSecNsWithHyphen,

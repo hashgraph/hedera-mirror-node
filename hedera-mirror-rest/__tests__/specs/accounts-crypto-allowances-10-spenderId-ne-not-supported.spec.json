@@ -1,5 +1,5 @@
 {
-  "description": "Account api call for all crypto allowances for a specific spender",
+  "description": "Account api call for all crypto allowances with ne operator not supported",
   "setup": {
     "accounts": [
       {
@@ -57,29 +57,15 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/1001/allowances/crypto?spender.id=5001",
-    "/api/v1/accounts/0.1001/allowances/crypto?spender.id=0.5001",
-    "/api/v1/accounts/0.0.1001/allowances/crypto?spender.id=0.0.5001",
-    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/crypto?spender.id=5001",
-    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/crypto?spender.id=5001",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/crypto?spender.id=5001"
-  ],
-  "responseStatus": 200,
+  "url": "/api/v1/accounts/1001/allowances/crypto?spender.id=ne:5001",
+  "responseStatus": 400,
   "responseJson": {
-    "allowances": [
-      {
-        "amount": 77,
-        "owner": "0.0.1001",
-        "spender": "0.0.5001",
-        "timestamp": {
-          "from": "1234567890.000000005",
-          "to": null
+    "_status": {
+      "messages": [
+        {
+          "message": "Not equal (ne) comparison operator is not supported for spender.id"
         }
-      }
-    ],
-    "links": {
-      "next": null
+      ]
     }
   }
 }

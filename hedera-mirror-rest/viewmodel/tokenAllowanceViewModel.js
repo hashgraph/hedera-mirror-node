@@ -24,23 +24,24 @@ const EntityId = require('../entityId');
 const utils = require('../utils');
 
 /**
- * CryptoAllowance view model
+ * TokenAllowance view model
  */
-class CryptoAllowanceViewModel {
+class TokenAllowanceViewModel {
   /**
-   * Constructs cryptoAllowance view model
+   * Constructs tokenAllowance view model
    *
-   * @param {CryptoAllowance} cryptoAllowance
+   * @param {TokenAllowance} tokenAllowance
    */
-  constructor(cryptoAllowance) {
-    this.amount = Number(cryptoAllowance.amount);
-    this.owner = EntityId.parse(cryptoAllowance.owner).toString();
-    this.spender = EntityId.parse(cryptoAllowance.spender).toString();
+  constructor(tokenAllowance) {
+    this.amount = Number(tokenAllowance.amount);
+    this.owner = EntityId.parse(tokenAllowance.owner).toString();
+    this.spender = EntityId.parse(tokenAllowance.spender).toString();
+    this.token_id = EntityId.parse(tokenAllowance.tokenId).toString();
     this.timestamp = {
-      from: utils.nsToSecNs(cryptoAllowance.timestampRange.begin),
-      to: utils.nsToSecNs(cryptoAllowance.timestampRange.end),
+      from: utils.nsToSecNs(tokenAllowance.timestampRange.begin),
+      to: utils.nsToSecNs(tokenAllowance.timestampRange.end),
     };
   }
 }
 
-module.exports = CryptoAllowanceViewModel;
+module.exports = TokenAllowanceViewModel;

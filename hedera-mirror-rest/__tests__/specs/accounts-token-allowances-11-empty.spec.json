@@ -1,0 +1,31 @@
+{
+  "description": "Account api call for token allowances with invalid parameters",
+  "setup": {
+    "accounts": [
+      {
+        "num": 1001,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
+      },
+      {
+        "num": 2001
+      },
+      {
+        "num": 3001
+      },
+      {
+        "num": 4001
+      },
+      {
+        "num": 5001
+      }
+    ]
+  },
+  "url": "/api/v1/accounts/1001/allowances/tokens",
+  "responseStatus": 200,
+  "responseJson": {
+    "allowances": [],
+    "links": {
+      "next": null
+    }
+  }
+}

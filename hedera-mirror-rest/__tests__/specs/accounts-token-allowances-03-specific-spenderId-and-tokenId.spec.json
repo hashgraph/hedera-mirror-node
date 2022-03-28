@@ -1,5 +1,5 @@
 {
-  "description": "Account api call for all crypto allowances for a specific spender",
+  "description": "Account api call for token allowances of a specific spender id and a specific token id",
   "setup": {
     "accounts": [
       {
@@ -19,61 +19,55 @@
         "num": 5001
       }
     ],
-    "cryptoAllowances": [
+    "tokenAllowances": [
       {
         "amount": 33,
         "owner": 1001,
-        "payer_account_id": 1001,
         "spender": 2001,
+        "token_id": 10001,
         "timestamp_range": "[1234567890000000001,)"
       },
       {
         "amount": 44,
         "owner": 1001,
-        "payer_account_id": 2001,
-        "spender": 3001,
+        "spender": 2001,
+        "token_id": 10002,
         "timestamp_range": "[1234567890000000002,)"
       },
       {
         "amount": 55,
         "owner": 2001,
-        "payer_account_id": 2001,
         "spender": 3001,
+        "token_id": 10001,
         "timestamp_range": "[1234567890000000003,)"
       },
       {
         "amount": 66,
         "owner": 1001,
-        "payer_account_id": 2001,
-        "spender": 4001,
+        "spender": 2001,
+        "token_id": 10006,
         "timestamp_range": "[1234567890000000004,)"
       },
       {
         "amount": 77,
         "owner": 1001,
-        "payer_account_id": 2001,
-        "spender": 5001,
+        "spender": 3001,
+        "token_id": 10005,
         "timestamp_range": "[1234567890000000005,)"
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/1001/allowances/crypto?spender.id=5001",
-    "/api/v1/accounts/0.1001/allowances/crypto?spender.id=0.5001",
-    "/api/v1/accounts/0.0.1001/allowances/crypto?spender.id=0.0.5001",
-    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/crypto?spender.id=5001",
-    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/crypto?spender.id=5001",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/crypto?spender.id=5001"
-  ],
+  "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=2001&token.id=0.0.10002",
   "responseStatus": 200,
   "responseJson": {
     "allowances": [
       {
-        "amount": 77,
+        "amount": 44,
         "owner": "0.0.1001",
-        "spender": "0.0.5001",
+        "spender": "0.0.2001",
+        "token_id": "0.0.10002",
         "timestamp": {
-          "from": "1234567890.000000005",
+          "from": "1234567890.000000002",
           "to": null
         }
       }
