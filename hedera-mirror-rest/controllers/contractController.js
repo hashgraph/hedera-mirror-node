@@ -388,7 +388,7 @@ const contractResultsByIdParamSupportMap = {
  * Verify contractId meets entity id format
  */
 const validateContractIdParam = (contractId) => {
-  if (EntityId.isValidEvmAddress(contractId)) {
+  if (EntityId.isValidEvmAddress(contractId, constants.EvmAddressType.EVM_ADDRESS_WITH_SHARD_AND_REALM)) {
     return;
   }
 
@@ -410,7 +410,10 @@ const getAndValidateContractIdRequestPathParam = (req) => {
  */
 const validateContractIdAndConsensusTimestampParam = (consensusTimestamp, contractId) => {
   const params = [];
-  if (!EntityId.isValidEntityId(contractId) && !EntityId.isValidEvmAddress(contractId)) {
+  if (
+    !EntityId.isValidEntityId(contractId) &&
+    !EntityId.isValidEvmAddress(contractId, constants.EvmAddressType.EVM_ADDRESS_WITH_SHARD_AND_REALM)
+  ) {
     params.push(constants.filterKeys.CONTRACTID);
   }
   if (!utils.isValidTimestampParam(consensusTimestamp)) {

@@ -23,6 +23,7 @@
 const _ = require('lodash');
 const mem = require('mem');
 const quickLru = require('quick-lru');
+const {filterKeys} = require('./constants');
 
 const {
   cache: {entityId: entityIdCacheConfig},
@@ -93,11 +94,14 @@ const toHex = (num) => {
   return num.toString(16);
 };
 
-const isValidEvmAddress = (address, evmAddressType = EvmAddressType.CREATE1) => {
-  if (evmAddressType === EvmAddressType.CREATE2) {
-    return typeof address === 'string' && evmAddressRegex.test(address);
+const isValidEvmAddress = (address, evmAddressType = EvmAddressType.ACCOUNT) => {
+  if (typeof address !== 'string') {
+    return false;
   }
-  return typeof address === 'string' && evmAddressShardRealmRegex.test(address);
+  if (evmAddressType === EvmAddressType.ACCOUNT) {
+    return evmAddressRegex.test(address);
+  }
+  return evmAddressShardRealmRegex.test(address);
 };
 
 const isValidEntityId = (entityId) => {
@@ -106,7 +110,7 @@ const isValidEntityId = (entityId) => {
 };
 
 const isCreate2EvmAddress = (evmAddress) => {
-  if (!isValidEvmAddress(evmAddress)) {
+  if (!isValidEvmAddress(evmAddress, EvmAddressType.EVM_ADDRESS_WITH_SHARD_AND_REALM)) {
     return false;
   }
   const idPartsFromEvmAddress = parseFromEvmAddress(_.last(evmAddress.split('.')));
@@ -228,11 +232,11 @@ const parseMemoized = mem(
    * @param {Function} error
    * @return {EntityId}
    */
-  (id, error) => {
+  (id, idType, error) => {
     let shard, realm, num;
     if (isValidEntityId(id)) {
       [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
-    } else if (isValidEvmAddress(id) || isValidEvmAddress(id, EvmAddressType.CREATE2)) {
+    } else if (isValidEvmAddress(id, idType)) {
       [shard, realm, num] = parseFromEvmAddress(id);
     } else {
       throw error();
@@ -273,8 +277,13 @@ const parse = (id, ...rest) => {
   // lazily create error object
   const error = () =>
     paramName ? InvalidArgumentError.forParams(paramName) : new InvalidArgumentError(`Invalid entity ID "${id}"`);
-
-  return checkNullId(id, isNullable) || parseMemoized(`${id}`, error);
+  let idType = null;
+  if (paramName === filterKeys.FROM) {
+    idType = EvmAddressType.ACCOUNT;
+  } else if (paramName === filterKeys.CONTRACTID || paramName === filterKeys.CONTRACT_ID) {
+    idType = EvmAddressType.EVM_ADDRESS_WITH_SHARD_AND_REALM;
+  }
+  return checkNullId(id, isNullable) || parseMemoized(`${id}`, idType, error);
 };
 
 module.exports = {

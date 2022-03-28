@@ -68,8 +68,8 @@ const entityTypes = {
 };
 
 const EvmAddressType = {
-  CREATE1: 'create1',
-  CREATE2: 'create2',
+  ACCOUNT: 'account',
+  EVM_ADDRESS_WITH_SHARD_AND_REALM: 'evm address with shard and realm',
 };
 
 const keyTypes = {

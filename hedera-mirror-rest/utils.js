@@ -32,6 +32,7 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const config = require('./config');
 const ed25519 = require('./ed25519');
+const contants = require('./constants');
 const {ContractService} = require('./service');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
@@ -199,7 +200,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidPublicKeyQuery(val);
       break;
     case constants.filterKeys.FROM:
-      ret = EntityId.isValidEntityId(val) || EntityId.isValidEvmAddress(val, constants.EvmAddressType.CREATE2);
+      ret = EntityId.isValidEntityId(val) || EntityId.isValidEvmAddress(val);
       break;
     case constants.filterKeys.INDEX:
       ret = isNumeric(val) && val >= 0;
@@ -261,7 +262,7 @@ const filterValidityChecks = (param, op, val) => {
 };
 
 const isValidContractIdQueryParam = (op, val) => {
-  if (EntityId.isValidEvmAddress(val)) {
+  if (EntityId.isValidEvmAddress(val, contants.EvmAddressType.EVM_ADDRESS_WITH_SHARD_AND_REALM)) {
     return op === constants.queryParamOperators.eq;
   }
   return EntityId.isValidEntityId(val);
@@ -935,7 +936,7 @@ const formatComparator = (comparator) => {
         comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.FROM:
-        comparator.value = EntityId.parse(comparator.value).getEncodedId();
+        comparator.value = EntityId.parse(comparator.value, contants.filterKeys.FROM).getEncodedId();
         break;
       case constants.filterKeys.LIMIT:
         comparator.value = Number(comparator.value);
