@@ -107,7 +107,6 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         contractResult.setContractId(contractEntityId);
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
-        transactionHandler.updateContractResult(contractResult, recordItem);
 
         if (isValidContractFunctionResult(functionResult)) {
             // amount, gasLimit and functionParameters were missing from record proto prior to HAPI v0.25
@@ -126,6 +125,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             processContractStateChanges(functionResult, contractResult);
         }
 
+        transactionHandler.updateContractResult(contractResult, recordItem);
         entityListener.onContractResult(contractResult);
     }
 
