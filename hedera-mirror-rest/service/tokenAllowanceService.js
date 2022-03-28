@@ -102,7 +102,7 @@ class TokenAllowanceService extends BaseService {
   async getAccountTokenAllowances(query) {
     const {sqlQuery, params} = this.getQuery(query);
     const rows = await super.getRows(sqlQuery, params, 'getAccountTokenAllowances');
-    return rows.map((ca) => new TokenAllowance(ca));
+    return rows.map((ta) => new TokenAllowance(ta));
   }
 }
 
