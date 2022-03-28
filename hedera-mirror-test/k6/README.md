@@ -69,7 +69,6 @@ The following parameters can be used to configure a rest test:
 - DEFAULT_TOPIC_ID
 - DEFAULT_TOPIC_SEQUENCE
 - DEFAULT_TRANSACTION_ID
-- DEFAULT_TRANSACTION_TYPE
 
 The following parameters can be used to configure a rosetta test:
 

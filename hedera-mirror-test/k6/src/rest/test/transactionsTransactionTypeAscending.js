@@ -31,7 +31,7 @@ const { options, run } = new TestScenarioBuilder()
   .name('transactionsByTransactionType') // use unique scenario name among all tests
   .tags({ url: urlTag })
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/transactions?transactionType=${testParameters['DEFAULT_TRANSACTION_TYPE']}&limit=${testParameters['DEFAULT_LIMIT']}&order=asc`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/transactions?transactionType=CRYPTOTRANSFER&limit=${testParameters['DEFAULT_LIMIT']}&order=asc`;
     return http.get(url);
   })
   .check('Transactions by transaction type OK', (r) => isValidListResponse(r, transactionListName))

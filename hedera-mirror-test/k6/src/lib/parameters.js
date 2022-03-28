@@ -148,13 +148,12 @@ export const computeFungibleTokenParameters = (configuration) =>
 
 export const computeTransactionParameters = (configuration) =>
   computeProperties(
-    ['DEFAULT_TRANSACTION_ID', 'DEFAULT_TRANSACTION_TYPE'],
+    ['DEFAULT_TRANSACTION_ID'],
     () => {
       const tokenPath = `${configuration.baseApiUrl}/transactions?limit=1&transactiontype=cryptotransfer&order=desc`;
       const firstTransaction = getFirstEntity(tokenPath, transactionListName)
       return {
-        DEFAULT_TRANSACTION_ID: firstTransaction.transaction_id,
-        DEFAULT_TRANSACTION_TYPE: firstTransaction.name
+        DEFAULT_TRANSACTION_ID: firstTransaction.transaction_id
       };
     }
   );
