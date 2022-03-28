@@ -85,34 +85,14 @@
       "responseJson": {
         "allowances": [
           {
-            "amount": 98,
+            "amount": 44,
             "owner": "0.0.1001",
-            "spender": "0.0.3101",
+            "spender": "0.0.2001",
             "timestamp": {
-              "from": "1234567890.000000007",
+              "from": "1234567890.000000002",
               "to": null
             },
-            "token_id": "0.0.10006"
-          },
-          {
-            "amount": 78,
-            "owner": "0.0.1001",
-            "spender": "0.0.3101",
-            "timestamp": {
-              "from": "1234567890.000000006",
-              "to": null
-            },
-            "token_id": "0.0.10005"
-          },
-          {
-            "amount": 77,
-            "owner": "0.0.1001",
-            "spender": "0.0.3001",
-            "timestamp": {
-              "from": "1234567890.000000005",
-              "to": null
-            },
-            "token_id": "0.0.10005"
+            "token_id": "0.0.10002"
           },
           {
             "amount": 66,
@@ -125,14 +105,34 @@
             "token_id": "0.0.10006"
           },
           {
-            "amount": 44,
+            "amount": 77,
             "owner": "0.0.1001",
-            "spender": "0.0.2001",
+            "spender": "0.0.3001",
             "timestamp": {
-              "from": "1234567890.000000002",
+              "from": "1234567890.000000005",
               "to": null
             },
-            "token_id": "0.0.10002"
+            "token_id": "0.0.10005"
+          },
+          {
+            "amount": 78,
+            "owner": "0.0.1001",
+            "spender": "0.0.3101",
+            "timestamp": {
+              "from": "1234567890.000000006",
+              "to": null
+            },
+            "token_id": "0.0.10005"
+          },
+          {
+            "amount": 98,
+            "owner": "0.0.1001",
+            "spender": "0.0.3101",
+            "timestamp": {
+              "from": "1234567890.000000007",
+              "to": null
+            },
+            "token_id": "0.0.10006"
           }
         ],
         "links": {
@@ -146,37 +146,6 @@
       "responseJson": {
         "allowances": [
           {
-            "amount": 98,
-            "owner": "0.0.1001",
-            "spender": "0.0.3101",
-            "timestamp": {
-              "from": "1234567890.000000007",
-              "to": null
-            },
-            "token_id": "0.0.10006"
-          },
-          {
-            "amount": 78,
-            "owner": "0.0.1001",
-            "spender": "0.0.3101",
-            "timestamp": {
-              "from": "1234567890.000000006",
-              "to": null
-            },
-            "token_id": "0.0.10005"
-          }
-        ],
-        "links": {
-          "next": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&spender.id=lte:0.0.3101&token.id=gt:10001&token.id=lt:0.0.10005&limit=2"
-        }
-      }
-    },
-    {
-      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&token.id=gt:10001&spender.id=lte:3102&token.id=lt:10006&order=asc&limit=2",
-      "responseStatus": 200,
-      "responseJson": {
-        "allowances": [
-          {
             "amount": 44,
             "owner": "0.0.1001",
             "spender": "0.0.2001",
@@ -198,7 +167,38 @@
           }
         ],
         "links": {
-          "next": "/api/v1/accounts/1001/allowances/tokens?spender.id=lte:3102&spender.id=gte:0.0.2001&token.id=lt:10006&token.id=gt:0.0.10006&order=asc&limit=2"
+          "next": "/api/v1/accounts/1001/allowances/tokens?spender.id=lte:3102&spender.id=gte:0.0.2001&token.id=lt:10006&token.id=gt:0.0.10006&limit=2"
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&token.id=gt:10001&spender.id=lte:3102&token.id=lt:10006&order=desc&limit=2",
+      "responseStatus": 200,
+      "responseJson": {
+        "allowances": [
+          {
+            "amount": 98,
+            "owner": "0.0.1001",
+            "spender": "0.0.3101",
+            "timestamp": {
+              "from": "1234567890.000000007",
+              "to": null
+            },
+            "token_id": "0.0.10006"
+          },
+          {
+            "amount": 78,
+            "owner": "0.0.1001",
+            "spender": "0.0.3101",
+            "timestamp": {
+              "from": "1234567890.000000006",
+              "to": null
+            },
+            "token_id": "0.0.10005"
+          }
+        ],
+        "links": {
+          "next": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&spender.id=lte:0.0.3101&token.id=gt:10001&token.id=lt:0.0.10005&order=desc&limit=2"
         }
       }
     }

@@ -181,7 +181,7 @@ class TokenAllowanceController extends BaseController {
       [constants.filterKeys.TOKEN_ID]: tokenIdBound,
     };
     let limit = defaultLimit;
-    let order = constants.orderFilterValues.DESC;
+    let order = constants.orderFilterValues.ASC;
 
     for (const filter of filters) {
       switch (filter.key) {

@@ -137,7 +137,7 @@ paths:
         The order is governed by a combination of the spender id and the token id values, with spender id being the parent column.
         The token id value governs its order within the given spender id.
 
-        Note: The default order for this API is currently DESC
+        Note: The default order for this API is currently ASC
 
         ## Filtering
         When filtering there are some restrictions enforced to ensure correctness and scalability.

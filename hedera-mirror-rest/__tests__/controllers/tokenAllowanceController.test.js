@@ -57,7 +57,7 @@ describe('extractTokenMultiUnionQuery', () => {
     inner: [],
     upper: [],
     ownerAccountId,
-    order: constants.orderFilterValues.DESC,
+    order: constants.orderFilterValues.ASC,
     limit: defaultLimit,
   };
 
@@ -68,9 +68,9 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: defaultExpected,
     },
     {
-      name: 'order asc',
-      filters: [{key: ORDER, operator: eq, value: 'asc'}],
-      expected: {...defaultExpected, order: 'asc'},
+      name: 'order desc',
+      filters: [{key: ORDER, operator: eq, value: 'desc'}],
+      expected: {...defaultExpected, order: 'desc'},
     },
     {
       name: 'limit',

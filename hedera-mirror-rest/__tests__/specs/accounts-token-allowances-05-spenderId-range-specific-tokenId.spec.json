@@ -85,11 +85,11 @@
       "responseJson": {
         "allowances": [
           {
-            "amount": 99,
+            "amount": 66,
             "owner": "0.0.1001",
-            "spender": "0.0.3102",
+            "spender": "0.0.2001",
             "timestamp": {
-              "from": "1234567890.000000008",
+              "from": "1234567890.000000004",
               "to": null
             },
             "token_id": "0.0.10006"
@@ -105,11 +105,11 @@
             "token_id": "0.0.10006"
           },
           {
-            "amount": 66,
+            "amount": 99,
             "owner": "0.0.1001",
-            "spender": "0.0.2001",
+            "spender": "0.0.3102",
             "timestamp": {
-              "from": "1234567890.000000004",
+              "from": "1234567890.000000008",
               "to": null
             },
             "token_id": "0.0.10006"
@@ -126,11 +126,11 @@
       "responseJson": {
         "allowances": [
           {
-            "amount": 99,
+            "amount": 66,
             "owner": "0.0.1001",
-            "spender": "0.0.3102",
+            "spender": "0.0.2001",
             "timestamp": {
-              "from": "1234567890.000000008",
+              "from": "1234567890.000000004",
               "to": null
             },
             "token_id": "0.0.10006"
@@ -147,7 +147,7 @@
           }
         ],
         "links": {
-          "next": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&spender.id=lt:0.0.3101&token.id=10006&limit=2"
+          "next": "/api/v1/accounts/1001/allowances/tokens?spender.id=lte:3102&spender.id=gt:0.0.3101&token.id=10006&limit=2"
         }
       }
     }
