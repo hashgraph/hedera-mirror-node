@@ -67,6 +67,11 @@ const entityTypes = {
   SCHEDULE: 'SCHEDULE',
 };
 
+const EvmAddressType = {
+  CREATE1: 'create1',
+  CREATE2: 'create2',
+};
+
 const keyTypes = {
   ECDSA_SECP256K1: 'ECDSA_SECP256K1',
   ED25519: 'ED25519',
@@ -207,4 +212,5 @@ module.exports = {
   transactionColumns,
   transactionResultFilter,
   zeroRandomPageCostQueryHint,
+  EvmAddressType,
 };

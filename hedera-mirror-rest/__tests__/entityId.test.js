@@ -77,24 +77,6 @@ describe('EntityId isValidEntityId tests', () => {
   });
 });
 
-describe('EntityId isValidDeprecatedEvmAddressInputRegex tests', () => {
-  test('Verify invalid for null', () => {
-    expect(EntityId.isValidDeprecatedEvmAddressInputRegex(null)).toBe(false);
-  });
-  test('Verify invalid for empty input', () => {
-    expect(EntityId.isValidDeprecatedEvmAddressInputRegex('')).toBe(false);
-  });
-  test('Verify invalid for hex string with invalid length', () => {
-    expect(EntityId.isValidDeprecatedEvmAddressInputRegex('000000000000000000000000000000000002329')).toBe(false);
-  });
-  test('Verify valid for hex string', () => {
-    expect(EntityId.isValidDeprecatedEvmAddressInputRegex('0000000000000000000000000000000000002329')).toBe(true);
-  });
-  test('Verify valid for hex string with 0x prefix', () => {
-    expect(EntityId.isValidDeprecatedEvmAddressInputRegex('0x0000000000000000000000000000000000002329')).toBe(true);
-  });
-});
-
 describe('EntityId parse from entityId string', () => {
   const specs = [
     {

@@ -29,6 +29,7 @@ const {
   shard: systemShard,
 } = require('./config');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const {EvmAddressType} = require('./constants');
 
 // format: |0|15-bit shard|16-bit realm|32-bit num|
 const numBits = 32n;
@@ -92,7 +93,10 @@ const toHex = (num) => {
   return num.toString(16);
 };
 
-const isValidEvmAddress = (address) => {
+const isValidEvmAddress = (address, evmAddressType = EvmAddressType.CREATE1) => {
+  if (evmAddressType === EvmAddressType.CREATE2) {
+    return typeof address === 'string' && evmAddressRegex.test(address);
+  }
   return typeof address === 'string' && evmAddressShardRealmRegex.test(address);
 };
 
@@ -109,10 +113,6 @@ const isCreate2EvmAddress = (evmAddress) => {
   return (
     idPartsFromEvmAddress[0] > maxShard || idPartsFromEvmAddress[1] > maxRealm || idPartsFromEvmAddress[2] > maxNum
   );
-};
-
-const isValidDeprecatedEvmAddressInputRegex = (entityId) => {
-  return typeof entityId === 'string' && evmAddressRegex.test(entityId);
 };
 
 /**
@@ -232,7 +232,7 @@ const parseMemoized = mem(
     let shard, realm, num;
     if (isValidEntityId(id)) {
       [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
-    } else if (isValidEvmAddress(id) || isValidDeprecatedEvmAddressInputRegex(id)) {
+    } else if (isValidEvmAddress(id) || isValidEvmAddress(id, EvmAddressType.CREATE2)) {
       [shard, realm, num] = parseFromEvmAddress(id);
     } else {
       throw error();
@@ -280,8 +280,6 @@ const parse = (id, ...rest) => {
 module.exports = {
   isValidEntityId,
   isValidEvmAddress,
-  isValidDeprecatedEvmAddressInputRegex,
-  isCreate2EvmAddress,
   computeContractIdPartsFromContractIdValue,
   of,
   parse,
