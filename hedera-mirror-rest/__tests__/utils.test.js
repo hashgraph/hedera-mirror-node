@@ -19,7 +19,8 @@
  */
 
 'use strict';
-const proto = require('@hashgraph/proto');
+
+const {proto} = require('@hashgraph/proto');
 
 const utils = require('../utils.js');
 const config = require('../config.js');

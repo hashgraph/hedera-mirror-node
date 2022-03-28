@@ -23,7 +23,7 @@
 const _ = require('lodash');
 
 const EntityId = require('../entityId');
-const {TransactionID} = require('@hashgraph/proto');
+const {proto} = require('@hashgraph/proto');
 const utils = require('../utils');
 
 /**
@@ -36,7 +36,7 @@ class TransactionIdViewModel {
    * @param {TransactionId|TransactionID} transactionId
    */
   constructor(transactionId) {
-    if (transactionId instanceof TransactionID) {
+    if (transactionId instanceof proto.TransactionID) {
       // handle proto format
       const {accountID, transactionValidStart, nonce, scheduled} = transactionId;
       this.account_id = EntityId.of(accountID.shardNum, accountID.realmNum, accountID.accountNum).toString();

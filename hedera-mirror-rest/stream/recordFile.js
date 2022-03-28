@@ -20,7 +20,7 @@
 
 'use strict';
 
-const proto = require('@hashgraph/proto');
+const {proto} = require('@hashgraph/proto');
 const {logger, protoTransactionIdToTransactionId} = require('./utils');
 
 class RecordFile {
