@@ -65,7 +65,6 @@ import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -467,7 +466,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.REVOKED);
     }
 
-    @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenAssociatePrecompile() {
         entityProperties.getPersist().setContractResults(true);
@@ -481,7 +479,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         assertTokenAccountInRepository(TOKEN_ID, PAYER2, ASSOCIATE_TIMESTAMP, ASSOCIATE_TIMESTAMP, true,
-                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE);
+                TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.REVOKED);
 
         assertContractResult(ASSOCIATE_TIMESTAMP, contractFunctionResultAtomic.get());
     }
@@ -515,7 +513,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(latestTokenAccount(TOKEN_ID, PAYER2)).get().isEqualTo(expected);
     }
 
-    @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenDissociatePrecompile() {
         entityProperties.getPersist().setContractResults(true);
@@ -968,13 +965,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, INITIAL_SUPPLY + amount);
     }
 
-    @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenBurnFtsPrecompile() {
         tokenSupplyFtsPrecompile(false);
     }
 
-    @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenMintFtsPrecompile() {
         tokenSupplyFtsPrecompile(true);
@@ -1037,28 +1032,45 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .getBytes(), EntityId.of(PAYER), false);
     }
 
-    @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenBurnNftsPrecompile() {
-        tokenSupplyNftsPrecompile(false);
+        long mintTimestamp = 10L;
+        tokenSupplyMintNftsPrecompile(mintTimestamp);
+
+        long burnTimestamp = 15L;
+
+        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, false, 0,
+                SERIAL_NUMBER_LIST);
+        AtomicReference<ContractFunctionResult> contractFunctionResultAtomic = new AtomicReference<>();
+        insertAndParseTransaction(burnTimestamp, transaction, builder -> {
+            builder.getReceiptBuilder()
+                    .setNewTotalSupply(SERIAL_NUMBER_LIST.size())
+                    .addAllSerialNumbers(SERIAL_NUMBER_LIST);
+            buildContractFunctionResult(builder.getContractCallResultBuilder());
+            contractFunctionResultAtomic.set(builder.getContractCallResult());
+        });
+
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, true, mintTimestamp, burnTimestamp, METADATA
+                .getBytes(), null, true);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, mintTimestamp, burnTimestamp, METADATA
+                .getBytes(), null, true);
+        assertContractResult(burnTimestamp, contractFunctionResultAtomic.get());
     }
 
-    @Disabled("ContractFunctionResult is missing input fields")
     @Test
     void tokenMintNftsPrecompile() {
-        tokenSupplyNftsPrecompile(true);
+        tokenSupplyMintNftsPrecompile(10L);
     }
 
-    private void tokenSupplyNftsPrecompile(boolean isMint) {
+    private void tokenSupplyMintNftsPrecompile(long timestamp) {
         entityProperties.getPersist().setContractResults(true);
 
         // given
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP, PAYER2, false, false, false, 0);
 
-        long timestamp = 10L;
         TokenTransferList mintTransfer = nftTransfer(TOKEN_ID, PAYER, DEFAULT_ACCOUNT_ID, SERIAL_NUMBER_LIST);
-        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, isMint, 0,
+        Transaction transaction = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0,
                 SERIAL_NUMBER_LIST);
 
         // when
@@ -1081,7 +1093,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .getBytes(), EntityId.of(PAYER), false);
         assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, timestamp, timestamp, METADATA
                 .getBytes(), EntityId.of(PAYER), false);
-
         assertContractResult(timestamp, contractFunctionResultAtomic.get());
     }
 
@@ -1119,7 +1130,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         tokenTransfer(assessedCustomFees, protoAssessedCustomFees, false, false);
     }
 
-    @Disabled("ContractFunctionResult is missing input fields")
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideAssessedCustomFees")
     void tokenTransferPrecompile(String name, List<AssessedCustomFee> assessedCustomFees,
@@ -1797,7 +1807,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void assertContractResult(long timestamp, ContractFunctionResult contractFunctionResult) {
-        assertEquals(1, contractResultRepository.count());
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
                 .filteredOn(c -> c.getConsensusTimestamp().equals(timestamp))
                 .hasSize(1)

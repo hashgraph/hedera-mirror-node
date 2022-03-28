@@ -85,7 +85,11 @@ public class ContractResultServiceImpl implements ContractResultService {
         // contractResult
         TransactionHandler transactionHandler = transactionHandlerFactory
                 .get(TransactionType.of(transaction.getType()));
-        processContractResult(recordItem, transaction.getEntityId(), functionResult, transactionHandler);
+
+        // in pre-compile case transaction is not a contract type and entityId will be of a different type
+        var contractId = isContractCreateOrCall(recordItem.getTransactionBody()) ? transaction.getEntityId() :
+                entityIdService.lookup(functionResult.getContractID());
+        processContractResult(recordItem, contractId, functionResult, transactionHandler);
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
@@ -106,7 +110,11 @@ public class ContractResultServiceImpl implements ContractResultService {
         transactionHandler.updateContractResult(contractResult, recordItem);
 
         if (isValidContractFunctionResult(functionResult)) {
-            // amount, gasLimit and functionParameters are missing from record proto and will be populated once added
+            // amount, gasLimit and functionParameters were missing from record proto prior to HAPI v0.25
+            contractResult.setAmount(functionResult.getAmount());
+            contractResult.setGasLimit(functionResult.getGas());
+            contractResult.setFunctionParameters(DomainUtils.toBytes(functionResult.getFunctionParameters()));
+
             contractResult.setBloom(DomainUtils.toBytes(functionResult.getBloom()));
             contractResult.setCallResult(DomainUtils.toBytes(functionResult.getContractCallResult()));
             contractResult.setCreatedContractIds(getCreatedContractIds(functionResult, recordItem, contractResult));
@@ -165,7 +173,6 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
-    @SuppressWarnings("deprecation")
     private List<Long> getCreatedContractIds(ContractFunctionResult functionResult, RecordItem recordItem,
                                              ContractResult contractResult) {
         List<Long> createdContractIds = new ArrayList<>();

@@ -60,9 +60,17 @@ class ContractCallTransactionHandler implements TransactionHandler {
     @Override
     public void updateContractResult(ContractResult contractResult, RecordItem recordItem) {
         var contractCallTransactionBody = recordItem.getTransactionBody().getContractCall();
-        contractResult.setAmount(contractCallTransactionBody.getAmount());
-        contractResult.setFunctionParameters(
-                DomainUtils.toBytes(contractCallTransactionBody.getFunctionParameters()));
-        contractResult.setGasLimit(contractCallTransactionBody.getGas());
+        if (contractResult.getAmount() == null) {
+            contractResult.setAmount(contractCallTransactionBody.getAmount());
+        }
+
+        if (contractResult.getFunctionParameters() == null || contractResult.getFunctionParameters().length == 0) {
+            contractResult.setFunctionParameters(DomainUtils.toBytes(
+                    contractCallTransactionBody.getFunctionParameters()));
+        }
+
+        if (contractResult.getGasLimit() == null) {
+            contractResult.setGasLimit(contractCallTransactionBody.getGas());
+        }
     }
 }

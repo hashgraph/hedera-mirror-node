@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.domain;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -144,11 +144,14 @@ public class RecordItemBuilder {
 
     public ContractFunctionResult.Builder contractFunctionResult(ContractID contractId) {
         return ContractFunctionResult.newBuilder()
+                .setAmount(5_000L)
                 .setBloom(bytes(256))
                 .setContractCallResult(bytes(16))
                 .setContractID(contractId)
                 .addCreatedContractIDs(contractId())
                 .setErrorMessage(text(10))
+                .setFunctionParameters(bytes(64))
+                .setGas(10_000L)
                 .setGasUsed(1000L)
                 .addLogInfo(ContractLoginfo.newBuilder()
                         .setBloom(bytes(256))
@@ -335,7 +338,7 @@ public class RecordItemBuilder {
 
         public RecordItem build() {
             var field = transactionBodyWrapper.getDescriptorForType().findFieldByNumber(type.getProtoId());
-            transactionBodyWrapper.setField(field, this.transactionBody.build());
+            transactionBodyWrapper.setField(field, transactionBody.build());
 
             Transaction transaction = transaction().build();
             TransactionRecord record = transactionRecord.build();

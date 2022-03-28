@@ -352,9 +352,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .setAmount(amount);
     }
 
-    protected boolean isAccountAmountReceiverAccountAmount(final CryptoTransfer cryptoTransfer,
-                                                           final AccountAmount receiver) {
-        final CryptoTransfer.Id cryptoTransferId = cryptoTransfer.getId();
+    protected boolean isAccountAmountReceiverAccountAmount(CryptoTransfer cryptoTransfer,
+                                                           AccountAmount receiver) {
+        CryptoTransfer.Id cryptoTransferId = cryptoTransfer.getId();
         return cryptoTransferId.getEntityId() == receiver.getAccountID().getAccountNum() &&
                 cryptoTransferId.getAmount() == receiver.getAmount();
     }
@@ -447,6 +447,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     @SneakyThrows
     protected void buildContractFunctionResult(ContractFunctionResult.Builder builder) {
+        builder.setAmount(10);
         builder.setBloom(ByteString.copyFromUtf8("bloom"));
         builder.setContractCallResult(ByteString.copyFromUtf8("call result"));
         builder.setContractID(CONTRACT_ID);
@@ -454,6 +455,8 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         builder.addCreatedContractIDs(CREATED_CONTRACT_ID);
         builder.setErrorMessage("call error message");
         builder.setEvmAddress(BytesValue.of(DomainUtils.fromBytes(domainBuilder.create2EvmAddress())));
+        builder.setFunctionParameters(ByteString.copyFromUtf8("function parameters"));
+        builder.setGas(20);
         builder.setGasUsed(30);
         builder.addLogInfo(ContractLoginfo.newBuilder()
                 .setBloom(ByteString.copyFromUtf8("bloom"))

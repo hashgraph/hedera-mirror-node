@@ -101,9 +101,16 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     @Override
     public void updateContractResult(ContractResult contractResult, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
-        contractResult.setAmount(transactionBody.getInitialBalance());
-        contractResult.setFunctionParameters(
-                DomainUtils.toBytes(transactionBody.getConstructorParameters()));
-        contractResult.setGasLimit(transactionBody.getGas());
+        if (contractResult.getAmount() == null) {
+            contractResult.setAmount(transactionBody.getInitialBalance());
+        }
+
+        if (contractResult.getFunctionParameters() == null || contractResult.getFunctionParameters().length == 0) {
+            contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
+        }
+
+        if (contractResult.getGasLimit() == null) {
+            contractResult.setGasLimit(transactionBody.getGas());
+        }
     }
 }
