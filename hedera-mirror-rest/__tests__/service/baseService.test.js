@@ -31,7 +31,7 @@ describe('getOrderByQuery', () => {
 
   test('multiple', () => {
     expect(baseService.getOrderByQuery({column: 'a', order: 'asc'}, {column: 'b', order: 'desc'})).toEqual(
-      'order by a asc,b desc'
+      'order by a asc, b desc'
     );
   });
 });

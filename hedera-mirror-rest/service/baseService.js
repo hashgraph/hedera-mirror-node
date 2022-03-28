@@ -37,7 +37,7 @@ class BaseService {
    * @return {string}
    */
   getOrderByQuery(...orderSpecs) {
-    return `order by ${orderSpecs.map((spec) => `${spec.column} ${spec.order}`)}`;
+    return 'order by ' + orderSpecs.map((spec) => `${spec.column} ${spec.order}`).join(', ');
   }
 
   async getRows(query, params, functionName = '') {
