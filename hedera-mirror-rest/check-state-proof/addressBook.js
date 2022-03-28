@@ -24,7 +24,7 @@
 
 // external libraries
 const log4js = require('log4js');
-const proto = require('@hashgraph/proto');
+const {proto} = require('@hashgraph/proto');
 
 const logger = log4js.getLogger();
 
