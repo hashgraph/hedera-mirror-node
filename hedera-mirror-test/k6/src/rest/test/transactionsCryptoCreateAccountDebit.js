@@ -40,7 +40,7 @@ const { options, run } = new TestScenarioBuilder()
   .name('transactionsCryptoCreateAccountDebit') // use unique scenario name among all tests
   .tags({ url: urlTag })
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/transactions?transactiontype=CRYPTOCREATEACCOUNT&type=debit&limit=${testParameters['DEFAULT_LIMIT']}`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/transactions?transactiontype=CRYPTOCREATEACCOUNT&type=debit&order=asc&limit=${testParameters['DEFAULT_LIMIT']}`;
     return http.get(url);
   })
   .check('Transactions of type CRYPTOCREATEACCOUNT and debit balance modification type OK', (r) => isValidListResponse(r, transactionListName))
