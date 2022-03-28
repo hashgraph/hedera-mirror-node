@@ -1,16 +1,16 @@
-FROM node:16.13.0-alpine3.14
+FROM node:16.14.2-alpine3.15
 LABEL maintainer="mirrornode@hedera.com"
 
 # Setup
+ENV NODE_ENV production
+EXPOSE 5551
 WORKDIR /home/node/app/
 RUN chown -R node:node .
 COPY --chown=node:node . ./
 USER node
 
 # Build
-ENV NODE_ENV production
 RUN npm ci --only=production && npm cache clean --force --loglevel=error
 
 # Run
-EXPOSE 5551
 CMD ["node", "server.js"]

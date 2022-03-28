@@ -58,6 +58,7 @@
         <dependency-check.version>7.0.0</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.39.1</docker-maven-plugin.version>
+        <docker.base.image>eclipse-temurin:11.0.14.1_1-jre-focal</docker.base.image>
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
@@ -67,7 +68,7 @@
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.45.0</grpc.version>
         <guava.version>31.1-jre</guava.version>
-        <hedera-protobuf.version>0.23.1</hedera-protobuf.version>
+        <hedera-protobuf.version>0.24.0</hedera-protobuf.version>
         <hibernate-types.version>2.14.0</hibernate-types.version>
         <jacoco.version>0.8.7</jacoco.version>
         <java.version>11</java.version>
@@ -257,7 +258,11 @@
                             <jvmFlags>
                                 <jvmFlag>-XX:MaxRAMPercentage=80</jvmFlag>
                             </jvmFlags>
+                            <user>1000:1000</user>
                         </container>
+                        <from>
+                            <image>${docker.base.image}</image>
+                        </from>
                         <to>
                             <image>${docker.push.repository}/${project.artifactId}:${docker.tag.version}</image>
                         </to>

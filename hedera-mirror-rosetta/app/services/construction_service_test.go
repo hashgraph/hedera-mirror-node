@@ -340,7 +340,7 @@ func TestConstructionCombineThrowsWithInvalidSignatureType(t *testing.T) {
 	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, 0, 0, nil)
 
 	// when
-	res, e := service.ConstructionCombine(nil, request)
+	res, e := service.ConstructionCombine(defaultContext, request)
 
 	// then
 	assert.Nil(t, res)
@@ -354,7 +354,7 @@ func TestConstructionCombineThrowsWhenDecodeStringFails(t *testing.T) {
 
 	// when:
 	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, 0, 0, nil)
-	res, e := service.ConstructionCombine(nil, request)
+	res, e := service.ConstructionCombine(defaultContext, request)
 
 	// then:
 	assert.Nil(t, res)
@@ -368,7 +368,7 @@ func TestConstructionCombineThrowsWhenUnmarshallFails(t *testing.T) {
 
 	// when:
 	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, 0, 0, nil)
-	res, e := service.ConstructionCombine(nil, request)
+	res, e := service.ConstructionCombine(defaultContext, request)
 
 	// then:
 	assert.Nil(t, res)
@@ -382,7 +382,7 @@ func TestConstructionCombineThrowsWithInvalidPublicKey(t *testing.T) {
 
 	// when:
 	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, 0, 0, nil)
-	res, e := service.ConstructionCombine(nil, request)
+	res, e := service.ConstructionCombine(defaultContext, request)
 
 	// then:
 	assert.Nil(t, res)
@@ -396,7 +396,7 @@ func TestConstructionCombineThrowsWithInvalidSignature(t *testing.T) {
 
 	// when:
 	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, 0, 0, nil)
-	res, e := service.ConstructionCombine(nil, request)
+	res, e := service.ConstructionCombine(defaultContext, request)
 
 	// then:
 	assert.Nil(t, res)
@@ -410,7 +410,7 @@ func TestConstructionCombineThrowsWithInvalidTransactionType(t *testing.T) {
 
 	// when:
 	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, 0, 0, nil)
-	res, e := service.ConstructionCombine(nil, request)
+	res, e := service.ConstructionCombine(defaultContext, request)
 
 	// then:
 	assert.Nil(t, res)
@@ -491,7 +491,7 @@ func TestConstructionHash(t *testing.T) {
 
 	// when:
 	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, 0, 0, nil)
-	res, e := service.ConstructionHash(nil, request)
+	res, e := service.ConstructionHash(defaultContext, request)
 
 	// then:
 	assert.Equal(t, expected, res)
@@ -504,7 +504,7 @@ func TestConstructionHashThrowsWhenDecodeStringFails(t *testing.T) {
 
 	// when:
 	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, 0, 0, nil)
-	res, e := service.ConstructionHash(nil, request)
+	res, e := service.ConstructionHash(defaultContext, request)
 
 	// then:
 	assert.Nil(t, res)
@@ -512,30 +512,128 @@ func TestConstructionHashThrowsWhenDecodeStringFails(t *testing.T) {
 }
 
 func TestConstructionMetadata(t *testing.T) {
-	// given:
-	expectedResponse := &rTypes.ConstructionMetadataResponse{
-		Metadata: make(map[string]interface{}),
+	tests := []struct {
+		name        string
+		baseService BaseService
+	}{
+		{
+			name:        "online",
+			baseService: onlineBaseService,
+		},
+		{
+			name:        "offline",
+			baseService: offlineBaseService,
+		},
 	}
 
-	// when:
-	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, 0, 0, nil)
-	res, e := service.ConstructionMetadata(nil, nil)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			mockTransactionConstructor := &mocks.MockTransactionConstructor{}
+			mockTransactionConstructor.
+				On("GetDefaultMaxTransactionFee", types.OperationTypeCryptoTransfer).
+				Return(types.HbarAmount{Value: 100}, mocks.NilError)
+			request := &rTypes.ConstructionMetadataRequest{
+				NetworkIdentifier: networkIdentifier(),
+				Options:           map[string]interface{}{optionKeyOperationType: types.OperationTypeCryptoTransfer},
+			}
+			expectedResponse := &rTypes.ConstructionMetadataResponse{
+				Metadata:     make(map[string]interface{}),
+				SuggestedFee: []*rTypes.Amount{{Value: "100", Currency: types.CurrencyHbar}},
+			}
 
-	// then:
-	assert.Equal(t, expectedResponse, res)
-	assert.Nil(t, e)
+			// when
+			service, _ := NewConstructionAPIService(
+				tt.baseService,
+				defaultNetwork,
+				defaultNodes,
+				0,
+				0,
+				mockTransactionConstructor,
+			)
+			res, e := service.ConstructionMetadata(defaultContext, request)
+
+			// then
+			mockTransactionConstructor.AssertExpectations(t)
+			assert.Equal(t, expectedResponse, res)
+			assert.Nil(t, e)
+		})
+	}
 }
 
-func TestConstructionMetadataOffline(t *testing.T) {
+func TestConstructionMetadataFailsWhenInvalidOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		request *rTypes.ConstructionMetadataRequest
+	}{
+		{
+			name:    "nil options",
+			request: &rTypes.ConstructionMetadataRequest{NetworkIdentifier: networkIdentifier(), Options: nil},
+		},
+		{
+			name: "empty options",
+			request: &rTypes.ConstructionMetadataRequest{
+				NetworkIdentifier: networkIdentifier(),
+				Options:           map[string]interface{}{},
+			},
+		},
+		{
+			name: "incorrect value type",
+			request: &rTypes.ConstructionMetadataRequest{
+				NetworkIdentifier: networkIdentifier(),
+				Options: map[string]interface{}{
+					optionKeyOperationType: 1,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// when
+			service, _ := NewConstructionAPIService(
+				onlineBaseService,
+				defaultNetwork,
+				defaultNodes,
+				0,
+				0,
+				nil,
+			)
+			res, e := service.ConstructionMetadata(defaultContext, tt.request)
+
+			// then
+			assert.Nil(t, res)
+			assert.NotNil(t, e)
+		})
+	}
+}
+
+func TestConstructionMetadataFailsWhenTransactionConstructorFails(t *testing.T) {
 	// given
-	service, _ := NewConstructionAPIService(offlineBaseService, defaultNetwork, defaultNodes, 0, 0, nil)
+	mockTransactionConstructor := &mocks.MockTransactionConstructor{}
+	mockTransactionConstructor.
+		On("GetDefaultMaxTransactionFee", types.OperationTypeCryptoTransfer).
+		Return(types.HbarAmount{}, errors.ErrInvalidOperationType)
+	request := &rTypes.ConstructionMetadataRequest{
+		NetworkIdentifier: networkIdentifier(),
+		Options:           map[string]interface{}{optionKeyOperationType: types.OperationTypeCryptoTransfer},
+	}
+	service, _ := NewConstructionAPIService(
+		onlineBaseService,
+		defaultNetwork,
+		defaultNodes,
+		0,
+		0,
+		mockTransactionConstructor,
+	)
 
-	// when:
-	res, e := service.ConstructionMetadata(nil, nil)
+	// when
+	response, err := service.ConstructionMetadata(defaultContext, request)
 
-	// then:
-	assert.Equal(t, errors.ErrEndpointNotSupportedInOfflineMode, e)
-	assert.Nil(t, res)
+	// then
+	mockTransactionConstructor.AssertExpectations(t)
+	assert.Nil(t, response)
+	assert.NotNil(t, err)
 }
 
 func TestConstructionParse(t *testing.T) {
@@ -608,7 +706,7 @@ func TestConstructionParseThrowsWhenDecodeStringFails(t *testing.T) {
 	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, 0, 0, mockConstructor)
 
 	// when
-	res, e := service.ConstructionParse(nil, getConstructionParseRequest(invalidTransaction, false))
+	res, e := service.ConstructionParse(defaultContext, getConstructionParseRequest(invalidTransaction, false))
 
 	// then
 	assert.Nil(t, res)
@@ -621,7 +719,7 @@ func TestConstructionParseThrowsWhenUnmarshallFails(t *testing.T) {
 	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, defaultNodes, 0, 0, mockConstructor)
 
 	// when
-	res, e := service.ConstructionParse(nil, getConstructionParseRequest(corruptedTransaction, false))
+	res, e := service.ConstructionParse(defaultContext, getConstructionParseRequest(corruptedTransaction, false))
 
 	// then
 	assert.Nil(t, res)
@@ -792,6 +890,7 @@ func TestConstructionSubmitOffline(t *testing.T) {
 func TestConstructionPreprocess(t *testing.T) {
 	// given:
 	expected := &rTypes.ConstructionPreprocessResponse{
+		Options:            map[string]interface{}{optionKeyOperationType: types.OperationTypeCryptoTransfer},
 		RequiredPublicKeys: []*rTypes.AccountIdentifier{defaultCryptoAccountId1.ToRosetta()},
 	}
 	mockConstructor := &mocks.MockTransactionConstructor{}

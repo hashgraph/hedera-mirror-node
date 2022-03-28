@@ -111,6 +111,11 @@ podAnnotations: {}
 
 podSecurityContext:
   fsGroup: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  seccompProfile:
+    type: RuntimeDefault
 
 priorityClassName: ""
 
@@ -204,7 +209,7 @@ prometheusRules:
       description: "Publish TPS dropped to {{ $value }} for '{{ $labels.scenario }}' scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "Publishing stopped"
     enabled: true
-    expr: sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) <= 0
+    expr: (sum(rate(hedera_mirror_monitor_publish_submit_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) / sum(rate(hedera_mirror_monitor_publish_submit_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, scenario) > 0 or on() vector(0)) <= 0
     for: 2m
     labels:
       severity: critical
@@ -239,7 +244,7 @@ prometheusRules:
       description: "TPS dropped to {{ $value }} for '{{ $labels.scenario }}' #{{ $labels.subscriber }} scenario for {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "Subscription stopped"
     enabled: true
-    expr: sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, subscriber, scenario) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, subscriber, scenario) <= 0
+    expr: (sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_sum{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, subscriber, scenario) / sum(rate(hedera_mirror_monitor_subscribe_e2e_seconds_count{application="hedera-mirror-monitor"}[2m])) by (namespace, pod, subscriber, scenario) > 0 or on() vector(0)) <= 0
     for: 2m
     labels:
       severity: critical
@@ -269,12 +274,10 @@ resources:
 revisionHistoryLimit: 3
 
 securityContext:
+  allowPrivilegeEscalation: false
   capabilities:
     drop: [ALL]
   readOnlyRootFilesystem: true
-  runAsGroup: 1000
-  runAsNonRoot: true
-  runAsUser: 1000
 
 service:
   annotations: {}

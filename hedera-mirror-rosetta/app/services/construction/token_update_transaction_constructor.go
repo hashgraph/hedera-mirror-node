@@ -22,7 +22,6 @@ package construction
 
 import (
 	"context"
-	"reflect"
 	"time"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -50,7 +49,7 @@ type tokenUpdate struct {
 }
 
 type tokenUpdateTransactionConstructor struct {
-	transactionType string
+	commonTransactionConstructor
 }
 
 func (t *tokenUpdateTransactionConstructor) Construct(
@@ -113,14 +112,6 @@ func (t *tokenUpdateTransactionConstructor) Construct(
 	}
 
 	return tx, signers, nil
-}
-
-func (t *tokenUpdateTransactionConstructor) GetOperationType() string {
-	return types.OperationTypeTokenUpdate
-}
-
-func (t *tokenUpdateTransactionConstructor) GetSdkTransactionType() string {
-	return t.transactionType
 }
 
 func (t *tokenUpdateTransactionConstructor) Parse(_ context.Context, transaction interfaces.Transaction) (
@@ -268,6 +259,10 @@ func (t *tokenUpdateTransactionConstructor) preprocess(operations types.Operatio
 }
 
 func newTokenUpdateTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenUpdateTransaction{}).Name()
-	return &tokenUpdateTransactionConstructor{transactionType: transactionType}
+	return &tokenUpdateTransactionConstructor{
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenUpdateTransaction(),
+			types.OperationTypeTokenUpdate,
+		),
+	}
 }

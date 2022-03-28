@@ -67,27 +67,12 @@ var (
 		Symbol:   symbolC,
 		Type:     domain.TokenTypeNonFungibleUnique,
 	}
-	tokenEntityIdA        = domain.MustDecodeEntityId(212)
-	tokenEntityIdB        = domain.MustDecodeEntityId(252)
-	tokenEntityIdC        = domain.MustDecodeEntityId(282)
-	tokenACurrency        = types.Token{Token: dbTokenA}.ToRosettaCurrency()
-	tokenBCurrency        = types.Token{Token: dbTokenB}.ToRosettaCurrency()
-	tokenCCurrency        = types.Token{Token: dbTokenC}.ToRosettaCurrency()
-	tokenAPartialCurrency = newRosettaCurrencyBuilder().
-				setSymbol(tokenEntityIdA.String()).
-				setType(domain.TokenTypeUnknown).
-				build()
-	tokenBPartialCurrency = newRosettaCurrencyBuilder().
-				setSymbol(tokenEntityIdB.String()).
-				setType(domain.TokenTypeUnknown).
-				build()
-	tokenCPartialCurrency = newRosettaCurrencyBuilder().
-				setSymbol(tokenEntityIdC.String()).
-				setType(domain.TokenTypeUnknown).
-				build()
-	tokenIdA = hedera.TokenID{Token: 212}
-	tokenIdB = hedera.TokenID{Token: 252}
-	tokenIdC = hedera.TokenID{Token: 282}
+	tokenEntityIdA = domain.MustDecodeEntityId(212)
+	tokenEntityIdB = domain.MustDecodeEntityId(252)
+	tokenEntityIdC = domain.MustDecodeEntityId(282)
+	tokenIdA       = hedera.TokenID{Token: 212}
+	tokenIdB       = hedera.TokenID{Token: 252}
+	tokenIdC       = hedera.TokenID{Token: 282}
 )
 
 type newConstructorFunc func() transactionConstructorWithType
@@ -109,6 +94,31 @@ func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestNewTokenAs
 func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestNewTokenDissociateTransactionConstructor() {
 	h := newTokenDissociateTransactionConstructor()
 	assert.NotNil(suite.T(), h)
+}
+
+func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestGetDefaultMaxTransactionFee() {
+	tests := []struct {
+		name                   string
+		transactionConstructor transactionConstructorWithType
+		expected               types.HbarAmount
+	}{
+		{
+			name:                   "tokenAssociate",
+			transactionConstructor: newTokenAssociateTransactionConstructor(),
+			expected:               types.HbarAmount{Value: 5_00000000},
+		},
+		{
+			name:                   "tokenDissociate",
+			transactionConstructor: newTokenDissociateTransactionConstructor(),
+			expected:               types.HbarAmount{Value: 5_00000000},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.T().Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.transactionConstructor.GetDefaultMaxTransactionFee())
+		})
+	}
 }
 
 func (suite *tokenAssociateDissociateTransactionConstructorSuite) TestGetOperationType() {

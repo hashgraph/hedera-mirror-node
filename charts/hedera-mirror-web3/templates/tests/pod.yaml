@@ -18,6 +18,18 @@ spec:
         - https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/{{ regexReplaceAll "(\\d+\\.\\d+\\.\\d+(-\\w+)?)" .Chart.AppVersion "v${1}" }}/hedera-mirror-web3/postman.json
         - --env-var
         - baseUrl=http://{{ include "hedera-mirror-web3.fullname" . }}:{{ .Values.service.port }}
-  terminationGracePeriodSeconds: 1
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+        readOnlyRootFilesystem: true
   restartPolicy: Never
+  securityContext:
+    fsGroup: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  terminationGracePeriodSeconds: 1
 {{- end -}}

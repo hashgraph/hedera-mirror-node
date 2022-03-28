@@ -22,10 +22,8 @@ package construction
 
 import (
 	"context"
-	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
-	"github.com/go-playground/validator/v10"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
@@ -34,8 +32,7 @@ import (
 )
 
 type tokenWipeTransactionConstructor struct {
-	transactionType string
-	validate        *validator.Validate
+	commonTransactionConstructor
 }
 
 func (t *tokenWipeTransactionConstructor) Construct(
@@ -157,17 +154,11 @@ func (t *tokenWipeTransactionConstructor) preprocess(operations types.OperationS
 	return &payerAccountId, &operation.AccountId, tokenAmount, nil
 }
 
-func (t *tokenWipeTransactionConstructor) GetOperationType() string {
-	return types.OperationTypeTokenWipe
-}
-
-func (t *tokenWipeTransactionConstructor) GetSdkTransactionType() string {
-	return t.transactionType
-}
-
 func newTokenWipeTransactionConstructor() transactionConstructorWithType {
 	return &tokenWipeTransactionConstructor{
-		transactionType: reflect.TypeOf(hedera.TokenWipeTransaction{}).Name(),
-		validate:        validator.New(),
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenWipeTransaction(),
+			types.OperationTypeTokenWipe,
+		),
 	}
 }

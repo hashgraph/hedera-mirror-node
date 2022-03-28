@@ -22,7 +22,6 @@ package construction
 
 import (
 	"context"
-	"reflect"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
@@ -33,8 +32,7 @@ import (
 )
 
 type tokenBurnMintTransactionConstructor struct {
-	operationType   string
-	transactionType string
+	commonTransactionConstructor
 }
 
 func (t *tokenBurnMintTransactionConstructor) Construct(
@@ -149,14 +147,6 @@ func (t *tokenBurnMintTransactionConstructor) Preprocess(_ context.Context, oper
 	return []types.AccountId{*payer}, nil
 }
 
-func (t *tokenBurnMintTransactionConstructor) GetOperationType() string {
-	return t.operationType
-}
-
-func (t *tokenBurnMintTransactionConstructor) GetSdkTransactionType() string {
-	return t.transactionType
-}
-
 func (t *tokenBurnMintTransactionConstructor) preprocess(operations types.OperationSlice) (
 	*types.AccountId,
 	*types.TokenAmount,
@@ -204,17 +194,19 @@ func (t *tokenBurnMintTransactionConstructor) preprocessOperationAmount(amount t
 }
 
 func newTokenBurnTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenBurnTransaction{}).Name()
 	return &tokenBurnMintTransactionConstructor{
-		operationType:   types.OperationTypeTokenBurn,
-		transactionType: transactionType,
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenBurnTransaction(),
+			types.OperationTypeTokenBurn,
+		),
 	}
 }
 
 func newTokenMintTransactionConstructor() transactionConstructorWithType {
-	transactionType := reflect.TypeOf(hedera.TokenMintTransaction{}).Name()
 	return &tokenBurnMintTransactionConstructor{
-		operationType:   types.OperationTypeTokenMint,
-		transactionType: transactionType,
+		commonTransactionConstructor: newCommonTransactionConstructor(
+			hedera.NewTokenMintTransaction(),
+			types.OperationTypeTokenMint,
+		),
 	}
 }

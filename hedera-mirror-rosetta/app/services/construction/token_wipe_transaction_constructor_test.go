@@ -43,6 +43,11 @@ func (suite *tokenWipeTransactionConstructorSuite) TestNewTransactionConstructor
 	assert.NotNil(suite.T(), h)
 }
 
+func (suite *tokenWipeTransactionConstructorSuite) TestGetDefaultMaxTransactionFee() {
+	h := newTokenWipeTransactionConstructor()
+	assert.Equal(suite.T(), types.HbarAmount{Value: 30_00000000}, h.GetDefaultMaxTransactionFee())
+}
+
 func (suite *tokenWipeTransactionConstructorSuite) TestGetOperationType() {
 	h := newTokenWipeTransactionConstructor()
 	assert.Equal(suite.T(), types.OperationTypeTokenWipe, h.GetOperationType())

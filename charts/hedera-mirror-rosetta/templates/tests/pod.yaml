@@ -18,6 +18,18 @@ spec:
         - https://raw.githubusercontent.com/hashgraph/hedera-mirror-node/{{ regexReplaceAll "(\\d+\\.\\d+\\.\\d+(-\\w+)?)" .Chart.AppVersion "v${1}" }}/hedera-mirror-rosetta/scripts/validation/postman/rosetta-api-postman.json
         - --env-var
         - base_url=http://{{ include "hedera-mirror-rosetta.fullname" . }}:{{ .Values.service.port }}
-  terminationGracePeriodSeconds: 1
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: [ALL]
+        readOnlyRootFilesystem: true
   restartPolicy: Never
+  securityContext:
+    fsGroup: 1000
+    runAsGroup: 1000
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  terminationGracePeriodSeconds: 1
 {{- end -}}

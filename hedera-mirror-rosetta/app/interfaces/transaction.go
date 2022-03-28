@@ -31,6 +31,9 @@ type Transaction interface {
 	// IsFrozen returns if the transaction is frozen
 	IsFrozen() bool
 
+	// GetMaxTransactionFee returns the max transaction fee set for the Transaction
+	GetMaxTransactionFee() hedera.Hbar
+
 	// GetNodeAccountIDs returns the node accounts ids set for the Transaction
 	GetNodeAccountIDs() []hedera.AccountID
 

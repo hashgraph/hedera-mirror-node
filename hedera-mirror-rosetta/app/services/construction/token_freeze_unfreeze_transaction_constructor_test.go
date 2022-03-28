@@ -48,6 +48,31 @@ func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestNewTokenUnfreez
 	assert.NotNil(suite.T(), h)
 }
 
+func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestGetDefaultMaxTransactionFee() {
+	tests := []struct {
+		name                   string
+		transactionConstructor transactionConstructorWithType
+		expected               types.HbarAmount
+	}{
+		{
+			name:                   "tokenFreeze",
+			transactionConstructor: newTokenFreezeTransactionConstructor(),
+			expected:               types.HbarAmount{Value: 30_00000000},
+		},
+		{
+			name:                   "tokenUnfreeze",
+			transactionConstructor: newTokenUnfreezeTransactionConstructor(),
+			expected:               types.HbarAmount{Value: 30_00000000},
+		},
+	}
+
+	for _, tt := range tests {
+		suite.T().Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.transactionConstructor.GetDefaultMaxTransactionFee())
+		})
+	}
+}
+
 func (suite *tokenFreezeUnfreezeTransactionConstructorSuite) TestGetOperationType() {
 	tests := []struct {
 		name       string

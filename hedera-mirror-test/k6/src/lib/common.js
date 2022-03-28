@@ -107,7 +107,7 @@ function getSequentialTestScenarios(tests) {
         }
       }
       thresholds[getMetricNameWithTags('http_reqs', tag)] = ['count>0'];
-      thresholds[getMetricNameWithTags(SCENARIO_DURATION_METRIC_NAME,tag)] = ['value>0'];
+      thresholds[getMetricNameWithTags(SCENARIO_DURATION_METRIC_NAME, tag)] = ['value>0'];
     }
   }
 
@@ -129,8 +129,8 @@ function getScenario(metricKey) {
 
 function markdownReport(data, isFirstColumnUrl, scenarios) {
   const firstColumnName = isFirstColumnUrl ? 'URL' : 'Scenario';
-  const header = `| ${firstColumnName} | VUS | Pass% | RPS | Avg. Req Duration | Comment |
-|----------|-----|-------|-----|-------------------|---------|`;
+  const header = `| ${firstColumnName} | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Comment |
+|----------|-----|-------|-----|----------|-------------------|---------|`;
 
   // collect the metrics
   const {metrics} = data;
@@ -168,16 +168,17 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
     const httpReqs = scenarioMetric['http_reqs'].values.count;
     const duration = scenarioMetric['scenario_duration'].values.value; // in ms
     const rps = ((httpReqs * 1.0 / duration) * 1000).toFixed(2);
+    const passRps = (rps * passPercentage / 100.0).toFixed(2);
     const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
 
     const firstColumn = isFirstColumnUrl ? scenarioUrls[scenario] : scenario;
-    markdown += `| ${firstColumn} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${httpReqDuration}ms | |\n`;
+    markdown += `| ${firstColumn} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | |\n`;
   }
 
   return markdown;
 }
 
-function TestScenarioBuilder () {
+function TestScenarioBuilder() {
   this._checks = {};
   this._name = null;
   this._request = null;

@@ -32,7 +32,8 @@ import (
 )
 
 type transactionConstructorWithType interface {
-	TransactionConstructor
+	BaseTransactionConstructor
+	GetDefaultMaxTransactionFee() types.HbarAmount
 	GetOperationType() string
 	GetSdkTransactionType() string
 }
@@ -52,6 +53,17 @@ func (c *compositeTransactionConstructor) Construct(
 	}
 
 	return h.Construct(ctx, operations)
+}
+
+func (c *compositeTransactionConstructor) GetDefaultMaxTransactionFee(operationType string) (
+	types.HbarAmount,
+	*rTypes.Error,
+) {
+	h, ok := c.constructorsByOperationType[operationType]
+	if !ok {
+		return types.HbarAmount{}, errors.ErrInvalidOperationType
+	}
+	return h.GetDefaultMaxTransactionFee(), nil
 }
 
 func (c *compositeTransactionConstructor) Parse(ctx context.Context, transaction interfaces.Transaction) (

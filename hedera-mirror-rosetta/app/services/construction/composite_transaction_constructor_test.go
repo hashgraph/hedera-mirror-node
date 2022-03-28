@@ -51,11 +51,11 @@ func TestCompositeTransactionConstructorSuite(t *testing.T) {
 type compositeTransactionConstructorSuite struct {
 	suite.Suite
 	constructor     TransactionConstructor
-	mockConstructor *mocks.MockTransactionConstructor
+	mockConstructor *mocks.MockTransactionConstructorWithType
 }
 
 func (suite *compositeTransactionConstructorSuite) SetupTest() {
-	mockConstructor := &mocks.MockTransactionConstructor{}
+	mockConstructor := &mocks.MockTransactionConstructorWithType{}
 	constructor := &compositeTransactionConstructor{
 		constructorsByOperationType:   map[string]transactionConstructorWithType{},
 		constructorsByTransactionType: map[string]transactionConstructorWithType{},
@@ -140,6 +140,31 @@ func (suite *compositeTransactionConstructorSuite) TestConstructMixedOperations(
 	assert.Nil(suite.T(), actualTx)
 	assert.Nil(suite.T(), actualSigners)
 	suite.mockConstructor.AssertExpectations(suite.T())
+}
+
+func (suite *compositeTransactionConstructorSuite) TestGetDefaultMaxTransactionFee() {
+	// given
+	expected := types.HbarAmount{Value: 1000}
+	suite.mockConstructor.On("GetDefaultMaxTransactionFee").Return(expected)
+
+	// when
+	actual, err := suite.constructor.GetDefaultMaxTransactionFee(types.OperationTypeCryptoTransfer)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expected, actual)
+	suite.mockConstructor.AssertExpectations(suite.T())
+}
+
+func (suite *compositeTransactionConstructorSuite) TestGetDefaultMaxTransactionFeeInvalidOperationType() {
+	// given
+	// when
+	actual, err := suite.constructor.GetDefaultMaxTransactionFee("invalidOperationType")
+
+	// then
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), types.HbarAmount{}, actual)
+	suite.mockConstructor.AssertNotCalled(suite.T(), "GetDefaultMaxTransactionFee")
 }
 
 func (suite *compositeTransactionConstructorSuite) TestParse() {
