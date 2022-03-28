@@ -47,8 +47,8 @@ const maxEncodedId = 2n ** 63n - 1n;
 
 const entityIdRegex = /^(\d{1,5}\.){1,2}\d{1,10}$/;
 const encodedEntityIdRegex = /^\d{1,19}$/;
-const evmAddressRegex = /^(\d{1,10}\.){0,2}[A-Fa-f0-9]{40}$/;
-const deprecatedEvmAddressInputRegex = /^(0x)?[A-Fa-f0-9]{40}$/;
+const evmAddressShardRealmRegex = /^(\d{1,10}\.){0,2}[A-Fa-f0-9]{40}$/;
+const evmAddressRegex = /^(0x)?[A-Fa-f0-9]{40}$/;
 
 class EntityId {
   constructor(shard, realm, num) {
@@ -93,7 +93,7 @@ const toHex = (num) => {
 };
 
 const isValidEvmAddress = (address) => {
-  return typeof address === 'string' && evmAddressRegex.test(address);
+  return typeof address === 'string' && evmAddressShardRealmRegex.test(address);
 };
 
 const isValidEntityId = (entityId) => {
@@ -112,7 +112,7 @@ const isCreate2EvmAddress = (evmAddress) => {
 };
 
 const isValidDeprecatedEvmAddressInputRegex = (entityId) => {
-  return typeof entityId === 'string' && deprecatedEvmAddressInputRegex.test(entityId);
+  return typeof entityId === 'string' && evmAddressRegex.test(entityId);
 };
 
 /**
