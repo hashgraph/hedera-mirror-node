@@ -308,7 +308,7 @@ const getNftsByAccountId = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query);
 
   // build multi union query and request applicable rows
-  const {lower, inner, upper, order, limit} = await extractNftMultiUnionQuery(filters, accountId);
+  const {lower, inner, upper, order, limit} = extractNftMultiUnionQuery(filters, accountId);
   const nfts = await NftService.getNftOwnership(lower, inner, upper, order, limit);
 
   const response = {
