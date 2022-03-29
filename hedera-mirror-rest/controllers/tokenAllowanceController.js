@@ -106,7 +106,7 @@ class TokenAllowanceController extends BaseController {
     if (!tokenIdBound.hasBound()) {
       filters = [spenderBound.equal, spenderBound.lower, spenderBound.upper, tokenIdBound.equal];
     } else if (spenderBound.hasLower() && tokenIdBound.hasLower()) {
-      filters = [{...spenderBound.lower, operator: utils.opsMap.eq}, tokenIdBound.lower, tokenIdBound.equal];
+      filters = [{...spenderBound.lower, operator: utils.opsMap.eq}, tokenIdBound.lower];
     }
     return filters.filter((f) => !_.isNil(f));
   }
