@@ -23,7 +23,7 @@
 class OrderSpec {
   /**
    * Creates an OrderSpec object
-   * @param {string}column
+   * @param {string} column
    * @param {'asc'|'desc'} order
    */
   constructor(column, order) {
