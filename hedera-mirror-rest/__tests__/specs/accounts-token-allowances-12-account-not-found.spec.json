@@ -1,5 +1,5 @@
 {
-  "description": "Account api call for token allowances with invalid parameters",
+  "description": "Account api call for token allowances when owner account not found",
   "setup": {},
   "tests": [
     {

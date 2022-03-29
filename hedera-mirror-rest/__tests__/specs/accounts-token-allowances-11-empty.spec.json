@@ -1,5 +1,5 @@
 {
-  "description": "Account api call for token allowances with invalid parameters",
+  "description": "Account api call for token allowances with no matching rows found",
   "setup": {
     "accounts": [
       {

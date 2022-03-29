@@ -18,43 +18,6 @@
       {
         "num": 5001
       }
-    ],
-    "cryptoAllowances": [
-      {
-        "amount": 33,
-        "owner": 1001,
-        "payer_account_id": 1001,
-        "spender": 2001,
-        "timestamp_range": "[1234567890000000001,)"
-      },
-      {
-        "amount": 44,
-        "owner": 1001,
-        "payer_account_id": 2001,
-        "spender": 3001,
-        "timestamp_range": "[1234567890000000002,)"
-      },
-      {
-        "amount": 55,
-        "owner": 2001,
-        "payer_account_id": 2001,
-        "spender": 3001,
-        "timestamp_range": "[1234567890000000003,)"
-      },
-      {
-        "amount": 66,
-        "owner": 1001,
-        "payer_account_id": 2001,
-        "spender": 4001,
-        "timestamp_range": "[1234567890000000004,)"
-      },
-      {
-        "amount": 77,
-        "owner": 1001,
-        "payer_account_id": 2001,
-        "spender": 5001,
-        "timestamp_range": "[1234567890000000005,)"
-      }
     ]
   },
   "url": "/api/v1/accounts/1001/allowances/crypto?spender.id=ne:5001",

@@ -1,5 +1,5 @@
 {
-  "description": "Account api call for token allowances of spenderId and tokenId greater than a lower bound",
+  "description": "Account api call for token allowances of spenderId and tokenId less than a upper bound",
   "setup": {
     "accounts": [
       {
