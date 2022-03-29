@@ -25,7 +25,7 @@ const _ = require('lodash');
 const EntityId = require('../entityId');
 const utils = require('../utils');
 const TransactionId = require('../model/transactionId');
-const {TransactionID} = require('@hashgraph/proto');
+const {proto} = require('@hashgraph/proto');
 const TransactionIdViewModel = require('./transactionIdViewModel');
 
 /**
@@ -54,7 +54,7 @@ class ChunkInfoViewModel {
   constructor(topicMessage) {
     let initialTransactionId;
     if (!_.isNil(topicMessage.initialTransactionId)) {
-      initialTransactionId = TransactionID.decode(topicMessage.initialTransactionId);
+      initialTransactionId = proto.TransactionID.decode(topicMessage.initialTransactionId);
     } else {
       initialTransactionId = new TransactionId(
         topicMessage.payerAccountId,

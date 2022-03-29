@@ -23,16 +23,15 @@ package com.hedera.mirror.grpc.listener;
 import java.time.Duration;
 import java.time.Instant;
 import javax.annotation.Resource;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
@@ -47,6 +46,12 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
     @Override
     protected ListenerProperties.ListenerType getType() {
         return ListenerProperties.ListenerType.NOTIFY;
+    }
+
+    @BeforeEach
+    void warmup() {
+        // Warm up the database connection
+        topicListener.channel.block(Duration.ofSeconds(1));
     }
 
     // Test deserialization from JSON to verify contract with PostgreSQL listen/notify

@@ -3,11 +3,11 @@ module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 go 1.18
 
 require (
-	github.com/coinbase/rosetta-sdk-go v0.7.4
-	github.com/cucumber/godog v0.12.4
+	github.com/coinbase/rosetta-sdk-go v0.7.6
+	github.com/cucumber/godog v0.12.5
 	github.com/go-playground/validator/v10 v10.10.1
-	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220204040204-50a9ffe2cb34
-	github.com/hashgraph/hedera-sdk-go/v2 v2.10.0
+	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220222084737-119eab707793
+	github.com/hashgraph/hedera-sdk-go/v2 v2.11.0
 	github.com/hellofresh/health-go/v4 v4.5.0
 	github.com/jackc/pgtype v1.10.0
 	github.com/lib/pq v1.10.4
@@ -86,6 +86,7 @@ require (
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
+	github.com/rs/zerolog v1.26.1 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -102,12 +103,12 @@ require (
 	go.opentelemetry.io/otel v1.0.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20211215153901-e495a2d5b3d3 // indirect
+	golang.org/x/crypto v0.0.0-20211215165025-cf75a172585e // indirect
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	google.golang.org/genproto v0.0.0-20210602131652-f16073e35f0c // indirect
-	google.golang.org/grpc v1.44.0 // indirect
+	google.golang.org/grpc v1.45.0 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
