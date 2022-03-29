@@ -135,6 +135,29 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
   // collect the metrics
   const {metrics} = data;
   const scenarioMetrics = {};
+  const defaultMetrics = {
+    "checks": {
+      "values": {
+        "rate": 0
+      },
+    },
+    "http_req_duration": {
+      "values": {
+        "avg": 0
+      }
+    },
+    "http_reqs": {
+      "values": {
+        "count": 0
+      },
+    },
+    "scenario_duration": {
+      "values": {
+        "value": 0
+      }
+    }
+  };
+
   for (const [key, value] of Object.entries(metrics)) {
     let name;
     if (checksRegex.test(key)) {
@@ -150,7 +173,8 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
     }
 
     const scenario = getScenario(key);
-    scenarioMetrics[scenario] = Object.assign(scenarioMetrics[scenario] || {}, {[name]: value});
+    const existingMetrics = scenarioMetrics[scenario] || Object.assign({}, defaultMetrics);
+    scenarioMetrics[scenario] = Object.assign(existingMetrics, {[name]: value});
   }
 
   const scenarioUrls = {};
@@ -160,19 +184,23 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
     }
   }
 
-  // generate the markdown report
+  // Generate the markdown report
   let markdown = `${header}\n`;
   for (const scenario of Object.keys(scenarioMetrics).sort()) {
-    const scenarioMetric = scenarioMetrics[scenario];
-    const passPercentage = (scenarioMetric['checks'].values.rate * 100.0).toFixed(2);
-    const httpReqs = scenarioMetric['http_reqs'].values.count;
-    const duration = scenarioMetric['scenario_duration'].values.value; // in ms
-    const rps = ((httpReqs * 1.0 / duration) * 1000).toFixed(2);
-    const passRps = (rps * passPercentage / 100.0).toFixed(2);
-    const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
+    try {
+      const scenarioMetric = scenarioMetrics[scenario];
+      const passPercentage = (scenarioMetric['checks'].values.rate * 100.0).toFixed(2);
+      const httpReqs = scenarioMetric['http_reqs'].values.count;
+      const duration = scenarioMetric['scenario_duration'].values.value; // in ms
+      const rps = ((httpReqs * 1.0 / duration) * 1000).toFixed(2);
+      const passRps = (rps * passPercentage / 100.0).toFixed(2);
+      const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
 
-    const firstColumn = isFirstColumnUrl ? scenarioUrls[scenario] : scenario;
-    markdown += `| ${firstColumn} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | |\n`;
+      const firstColumn = isFirstColumnUrl ? scenarioUrls[scenario] : scenario;
+      markdown += `| ${firstColumn} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | |\n`;
+    } catch (err) {
+      console.error(`Unable to render report for scenario ${scenario}`);
+    }
   }
 
   return markdown;
