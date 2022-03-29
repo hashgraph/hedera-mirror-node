@@ -77,7 +77,7 @@ class NftService extends BaseService {
       const [innerQuery, innerParams] = this.getNftsFiltersQuery(
         inner.conditions,
         inner.params,
-        order,
+        orderClause,
         limit,
         inner.params.length + allParams.length
       );
@@ -89,7 +89,7 @@ class NftService extends BaseService {
       const [upperQuery, upperParams] = this.getNftsFiltersQuery(
         upper.conditions,
         upper.params,
-        order,
+        orderClause,
         limit,
         upper.params.length + allParams.length
       );
