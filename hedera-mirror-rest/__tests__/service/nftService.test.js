@@ -20,8 +20,6 @@
 
 'use strict';
 
-const _ = require('lodash');
-
 const {NftService} = require('../../service');
 const {assertSqlQueryEqual} = require('../testutils');
 
@@ -55,8 +53,9 @@ beforeEach(async () => {
 });
 
 describe('NftService.getNftsFiltersQuery tests', () => {
+  const orderClause = 'order by token_id asc, serial_number asc';
   test('Verify simple query', async () => {
-    const [query, params] = NftService.getNftsFiltersQuery(['account_id = $1'], [2], 'asc', 5);
+    const [query, params] = NftService.getNftsFiltersQuery(['account_id = $1'], [2], orderClause, 5);
     const expected = `select account_id,created_timestamp,deleted,metadata,modified_timestamp,serial_number,token_id
         from nft
         where account_id = $1
@@ -68,7 +67,7 @@ describe('NftService.getNftsFiltersQuery tests', () => {
 
   test('Verify additional conditions', async () => {
     const additionalConditions = ['account_id = $1', 'token_id > $2', 'serial_number = $3'];
-    const [query, params] = NftService.getNftsFiltersQuery(additionalConditions, [2, 10, 20], 'asc', 5);
+    const [query, params] = NftService.getNftsFiltersQuery(additionalConditions, [2, 10, 20], orderClause, 5);
     const expected = `select account_id,created_timestamp,deleted,metadata,modified_timestamp,serial_number,token_id
         from nft
         where account_id = $1

@@ -22,6 +22,7 @@
 
 const BaseService = require('./baseService');
 const {CryptoAllowance} = require('../model');
+const OrderSpec = require('./orderSpec');
 
 /**
  * CryptoAllowance business model
@@ -41,7 +42,7 @@ class CryptoAllowanceService extends BaseService {
     const query = [
       CryptoAllowanceService.accountAllowanceQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
-      super.getOrderByQuery({column: CryptoAllowance.SPENDER, order}),
+      super.getOrderByQuery(OrderSpec.from(CryptoAllowance.SPENDER, order)),
       super.getLimitQuery(params.length),
     ].join('\n');
 

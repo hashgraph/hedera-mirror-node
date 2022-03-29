@@ -20,24 +20,24 @@
 
 'use strict';
 
-const BaseService = require('../../service/baseService');
-const OrderSpec = require('../../service/orderSpec');
+class OrderSpec {
+  /**
+   * Creates an OrderSpec object
+   * @param {string}column
+   * @param {'asc'|'desc'} order
+   */
+  constructor(column, order) {
+    this.column = column;
+    this.order = order;
+  }
 
-describe('getOrderByQuery', () => {
-  const baseService = new BaseService();
+  toString() {
+    return `${this.column} ${this.order}`;
+  }
 
-  test('single', () => {
-    expect(baseService.getOrderByQuery(OrderSpec.from('a', 'asc'))).toEqual('order by a asc');
-  });
+  static from(column, order) {
+    return new OrderSpec(column, order);
+  }
+}
 
-  test('multiple', () => {
-    expect(baseService.getOrderByQuery(OrderSpec.from('a', 'asc'), OrderSpec.from('b', 'desc'))).toEqual(
-      'order by a asc, b desc'
-    );
-  });
-});
-
-test('getLimitQuery', () => {
-  const baseService = new BaseService();
-  expect(baseService.getLimitQuery(1)).toEqual('limit $1');
-});
+module.exports = OrderSpec;

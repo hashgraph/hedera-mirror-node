@@ -23,6 +23,7 @@
 const _ = require('lodash');
 
 const BaseService = require('./baseService');
+const OrderSpec = require('./orderSpec');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
   response: {
@@ -83,7 +84,7 @@ class ContractService extends BaseService {
     const query = [
       ContractService.detailedContractResultsQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
-      super.getOrderByQuery({column: ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order}),
+      super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
       super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
     ].join('\n');
     params.push(limit);
@@ -136,8 +137,8 @@ class ContractService extends BaseService {
   getContractLogsByIdAndFiltersQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit) {
     const params = whereParams;
     const orderClause = super.getOrderByQuery(
-      {column: ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), order: timestampOrder},
-      {column: ContractLog.getFullName(ContractLog.INDEX), order: indexOrder}
+      OrderSpec.from(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
+      OrderSpec.from(ContractLog.getFullName(ContractLog.INDEX), indexOrder)
     );
     const query = [
       ContractService.contractLogsQuery,

@@ -880,6 +880,19 @@ components:
           $ref: '#/components/schemas/Accounts'
         links:
           $ref: '#/components/schemas/Links'
+    Allowance:
+      type: object
+      properties:
+        amount:
+          description: The amount of the spender's allowance.
+          type: integer
+          example: 100
+        owner:
+          $ref: '#/components/schemas/EntityId'
+        spender:
+          $ref: '#/components/schemas/EntityId'
+        timestamp:
+          $ref: '#/components/schemas/TimestampRange'
     BalancesResponse:
       type: object
       properties:
@@ -941,8 +954,9 @@ components:
           example: "3999999999999999949"
           type: string
         timestamp:
-          description: The consensus timestamp at which the released supply was valid
-          $ref: '#/components/schemas/Timestamp'
+          allOf:
+            - $ref: '#/components/schemas/Timestamp'
+            - description: The consensus timestamp at which the released supply was valid
         total_supply:
           description: The network's total supply of hbars in tinybars
           example: "5000000000000000000"
@@ -1380,18 +1394,13 @@ components:
           items:
             $ref: '#/components/schemas/RoyaltyFee'
     CryptoAllowance:
-      type: object
-      properties:
-        amount:
-          description: The amount of the spender's allowance in tinybars.
-          type: integer
-          example: 100
-        owner:
-          $ref: '#/components/schemas/EntityId'
-        spender:
-          $ref: '#/components/schemas/EntityId'
-        timestamp:
-          $ref: '#/components/schemas/TimestampRange'
+      allOf:
+        - $ref: '#/components/schemas/Allowance'
+        - properties:
+            amount:
+              description: The amount of the spender's allowance in tinybars.
+              type: integer
+              example: 100
     CryptoAllowances:
       type: array
       items:
@@ -1710,24 +1719,15 @@ components:
         admin_key: null
         type: FUNGIBLE_COMMON
     TokenAllowance:
-      type: object
-      properties:
-        amount:
-          description: The amount of the spender's token allowance.
-          type: integer
-          example: 100
-        owner:
-          $ref: '#/components/schemas/EntityId'
-        spender:
-          $ref: '#/components/schemas/EntityId'
-        timestamp:
-          $ref: '#/components/schemas/TimestampRange'
-        token_id:
-          $ref: '#/components/schemas/EntityId'
+      allOf:
+        - $ref: '#/components/schemas/Allowance'
+        - properties:
+            token_id:
+              $ref: '#/components/schemas/EntityId'
     TokenAllowances:
       type: array
       items:
-        $ref: '#/components/schemas/CryptoAllowance'
+        $ref: '#/components/schemas/TokenAllowance'
     TokenBalance:
       type: object
       required:

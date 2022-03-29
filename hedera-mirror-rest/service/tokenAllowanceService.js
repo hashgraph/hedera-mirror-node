@@ -22,6 +22,7 @@
 
 const BaseService = require('./baseService');
 const constants = require('../constants');
+const OrderSpec = require('./orderSpec');
 const {TokenAllowance} = require('../model');
 
 /**
@@ -74,7 +75,7 @@ class TokenAllowanceService extends BaseService {
     const accountIdCondition = `${TokenAllowance.OWNER} = $1`;
     const limitClause = super.getLimitQuery(2);
     const orderClause = super.getOrderByQuery(
-      ...TokenAllowanceService.orderByColumns.map((column) => ({column, order}))
+      ...TokenAllowanceService.orderByColumns.map((column) => OrderSpec.from(column, order))
     );
 
     const subQueries = [lower, inner, upper]

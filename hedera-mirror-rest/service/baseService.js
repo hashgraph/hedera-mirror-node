@@ -33,11 +33,11 @@ class BaseService {
   /**
    * Gets the order by query from the order specs
    *
-   * @param {{column: string, order: 'asc'|'desc'}} orderSpecs
+   * @param {OrderSpec} orderSpecs
    * @return {string}
    */
   getOrderByQuery(...orderSpecs) {
-    return 'order by ' + orderSpecs.map((spec) => `${spec.column} ${spec.order}`).join(', ');
+    return 'order by ' + orderSpecs.map((spec) => `${spec}`).join(', ');
   }
 
   async getRows(query, params, functionName = '') {
