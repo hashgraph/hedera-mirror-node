@@ -23,7 +23,7 @@
 /**
  * Network address book service endpoint view model
  */
-class AddressBookServiceEndpoint {
+class AddressBookServiceEndpointViewModel {
   /**
    * Constructs address book service endpoint view model
    *
@@ -35,4 +35,4 @@ class AddressBookServiceEndpoint {
   }
 }
 
-module.exports = AddressBookServiceEndpoint;
+module.exports = AddressBookServiceEndpointViewModel;

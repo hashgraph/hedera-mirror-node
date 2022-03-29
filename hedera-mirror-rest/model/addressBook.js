@@ -20,8 +20,6 @@
 
 'use strict';
 
-const _ = require('lodash');
-
 class AddressBook {
   /**
    * Parses address_book table columns into object

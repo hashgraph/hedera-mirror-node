@@ -40,7 +40,7 @@ class NetworkNodeViewModel {
     this.node_id = Number(networkNode.addressBookEntry.nodeId);
     this.node_account_id = EntityId.parse(networkNode.addressBookEntry.nodeAccountId).toString();
     this.node_cert_hash = utils.encodeBase64(networkNode.addressBookEntry.nodeCertHash);
-    this.public_key = utils.nsToSecNs(networkNode.addressBookEntry.publicKey);
+    this.public_key = utils.encodeBase64(networkNode.addressBookEntry.publicKey);
     this.service_endpoints = networkNode.addressBookServiceEndpoints.map(
       (x) => new AddressBookServiceEndpointViewModel(x)
     );

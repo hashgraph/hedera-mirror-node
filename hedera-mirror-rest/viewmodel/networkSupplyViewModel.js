@@ -30,7 +30,7 @@ class NetworkSupplyViewModel {
    * Constructs network supply view model
    *
    * @param {Object} networkSupply
-   * @param {Number} totalSupply
+   * @param {BigInt} totalSupply
    */
   constructor(networkSupply, totalSupply) {
     const unreleasedSupply = BigInt(networkSupply.unreleased_supply);

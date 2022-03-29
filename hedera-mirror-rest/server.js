@@ -36,7 +36,6 @@ const balances = require('./balances');
 const config = require('./config');
 const constants = require('./constants');
 const health = require('./health');
-// const network = require('./network');
 const schedules = require('./schedules');
 const stateproof = require('./stateproof');
 const tokens = require('./tokens');

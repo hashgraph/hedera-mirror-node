@@ -21,7 +21,7 @@
 'use strict';
 
 module.exports = {
-  AddressBookServiceEndpoint: require('./addressBookServiceEndpointViewModel'),
+  AddressBookServiceEndpointViewModel: require('./addressBookServiceEndpointViewModel'),
   AssessedCustomFeeViewModel: require('./assessedCustomFeeViewModel'),
   CustomFeeViewModel: require('./customFeeViewModel'),
   ContractViewModel: require('./contractViewModel'),

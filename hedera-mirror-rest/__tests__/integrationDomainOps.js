@@ -328,7 +328,7 @@ const addAddressBookEntry = async (addressBookEntryInput) => {
 
   const addressBookEntry = {
     consensus_timestamp: 0,
-    memo: 1000,
+    memo: '0.0.3',
     public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     node_id: 2000,
     node_account_id: 3,
@@ -340,7 +340,7 @@ const addAddressBookEntry = async (addressBookEntryInput) => {
 
   addressBookEntry.node_cert_hash =
     typeof addressBookEntryInput.node_cert_hash === 'string'
-      ? Buffer.from(addressBookEntryInput.node_cert_hash, 'utf-8')
+      ? Buffer.from(addressBookEntryInput.node_cert_hash, 'hex')
       : Buffer.from(addressBookEntry.node_cert_hash);
 
   await insertDomainObject('address_book_entry', insertFields, addressBookEntry);

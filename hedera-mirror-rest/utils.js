@@ -129,9 +129,9 @@ const isValidEncoding = (query) => {
 
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
 
-const addressBookFileIdPattern = /101|102/;
-const isValidAddressBookFileIdPattern = (query) => {
-  return addressBookFileIdPattern.test(query);
+const addressBookFileIdPattern = ['101', '0.101', '0.0.101', '102', '0.102', '0.0.102'];
+const isValidAddressBookFileIdPattern = (fileId) => {
+  return addressBookFileIdPattern.includes(fileId);
 };
 
 /**
@@ -182,7 +182,10 @@ const filterValidityChecks = (param, op, val) => {
       ret = isPositiveLong(val, true);
       break;
     case constants.filterKeys.ADDRESS_BOOK_FILE_ID:
-      ret = EntityId.isValidEntityId(val) && isValidAddressBookFileIdPattern(val);
+      ret =
+        op === constants.queryParamOperators.eq &&
+        EntityId.isValidEntityId(val) &&
+        isValidAddressBookFileIdPattern(val);
       break;
     case constants.filterKeys.ACCOUNT_ID:
       ret = EntityId.isValidEntityId(val);

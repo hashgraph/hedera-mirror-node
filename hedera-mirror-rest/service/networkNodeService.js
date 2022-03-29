@@ -29,9 +29,6 @@ const BaseService = require('./baseService');
  * Network node business model
  */
 class NetworkNodeService extends BaseService {
-  static customName = 'Tripler';
-  static serviceNodeAddressBookFileID = 101;
-  static mirrorNodeAddressBookFileID = 102;
   static networkNodesBaseQuery = `with ${AddressBook.tableAlias} as (
     select ${AddressBook.START_CONSENSUS_TIMESTAMP}, ${AddressBook.END_CONSENSUS_TIMESTAMP}, ${AddressBook.FILE_ID}
     from ${AddressBook.tableName} where ${AddressBook.FILE_ID} = $1
@@ -58,7 +55,7 @@ class NetworkNodeService extends BaseService {
       '${AddressBookServiceEndpoint.IP_ADDRESS_V4}', ${AddressBookServiceEndpoint.IP_ADDRESS_V4}, 
       '${AddressBookServiceEndpoint.PORT}', ${AddressBookServiceEndpoint.PORT}
       ) 
-      order by ${AddressBookServiceEndpoint.PORT} desc
+      order by ${AddressBookServiceEndpoint.IP_ADDRESS_V4} desc, ${AddressBookServiceEndpoint.PORT} desc
     ) as service_endpoints
     from ${AddressBookServiceEndpoint.tableName} ${AddressBookServiceEndpoint.tableAlias}
     join ${AddressBook.tableAlias} 
