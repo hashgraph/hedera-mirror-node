@@ -4,6 +4,7 @@
     "addressbooks": [
       {
         "start_consensus_timestamp": 1,
+        "memo": null,
         "file_id": 101,
         "node_count": 1
       },
@@ -14,6 +15,7 @@
       },
       {
         "start_consensus_timestamp": 187654000123456,
+        "memo": null,
         "file_id": 101,
         "node_count": 2
       },
@@ -108,7 +110,7 @@
         "node_account_id": "0.0.3",
         "node_cert_hash": "ZWQ1NWQ5OGQ1M2ZkNTVjOWNhZjVmNjFhZmZlODhjZDI5NzhkMzcxMjhlYzU0YWY1ZGFjZTI5YjZmZDI3MWNiZDA3OWViZTQ4N2JkYTVmMjI3MDg3ZTI2MzhiMTEwMGNm",
         "node_id": 0,
-        "public_key": "4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a.40463b96f",
+        "public_key": "4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f",
         "service_endpoints": [
           {
             "ip_address_v4": "128.0.0.1",

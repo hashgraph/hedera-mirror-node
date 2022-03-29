@@ -66,7 +66,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
      ),
      endpoints as (
-      select consensus_timestamp, node_id, jsonb_agg(jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port) order by port desc) as service_endpoints
+      select consensus_timestamp, node_id, jsonb_agg(jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port) order by ip_address_v4 desc,port desc) as service_endpoints
       from address_book_service_endpoint abse
       join adb on adb.start_consensus_timestamp = abse.consensus_timestamp
       group by consensus_timestamp, node_id
