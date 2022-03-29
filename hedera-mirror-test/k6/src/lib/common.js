@@ -127,15 +127,8 @@ function getScenario(metricKey) {
   return match[1];
 }
 
-function markdownReport(data, isFirstColumnUrl, scenarios) {
-  const firstColumnName = isFirstColumnUrl ? 'URL' : 'Scenario';
-  const header = `| ${firstColumnName} | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Comment |
-|----------|-----|-------|-----|----------|-------------------|---------|`;
-
-  // collect the metrics
-  const {metrics} = data;
-  const scenarioMetrics = {};
-  const defaultMetrics = {
+function defaultMetrics() {
+  return {
     "checks": {
       "values": {
         "rate": 0
@@ -157,6 +150,16 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
       }
     }
   };
+}
+
+function markdownReport(data, isFirstColumnUrl, scenarios) {
+  const firstColumnName = isFirstColumnUrl ? 'URL' : 'Scenario';
+  const header = `| ${firstColumnName} | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Comment |
+|----------|-----|-------|-----|----------|-------------------|---------|`;
+
+  // collect the metrics
+  const {metrics} = data;
+  const scenarioMetrics = {};
 
   for (const [key, value] of Object.entries(metrics)) {
     let name;
@@ -173,7 +176,7 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
     }
 
     const scenario = getScenario(key);
-    const existingMetrics = scenarioMetrics[scenario] || Object.assign({}, defaultMetrics);
+    const existingMetrics = scenarioMetrics[scenario] || defaultMetrics();
     scenarioMetrics[scenario] = Object.assign(existingMetrics, {[name]: value});
   }
 
