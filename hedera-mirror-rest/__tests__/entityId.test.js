@@ -22,6 +22,7 @@
 
 const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+const constants = require('../constants');
 
 describe('EntityId isValidEntityId tests', () => {
   test('Verify invalid for null', () => {
@@ -114,18 +115,22 @@ describe('EntityId parse from entityId string', () => {
     {
       entityIdStr: '0x0000000000000000000000000000000000000001',
       expected: EntityId.of(0, 0, 1),
+      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: '0000000000000000000000000000000000000001',
       expected: EntityId.of(0, 0, 1),
+      paramName: constants.filterKeys.CONTRACT_ID,
     },
     {
       entityIdStr: '0x0000000100000000000000020000000000000003',
       expected: EntityId.of(1, 2, 3),
+      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: '0x00007fff000000000000ffff00000000ffffffff',
       expected: EntityId.of(32767, 65535, 4294967295),
+      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: null,
@@ -173,22 +178,27 @@ describe('EntityId parse from entityId string', () => {
     {
       entityIdStr: '0x',
       expectErr: true,
+      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: '0x010203',
       expectErr: true,
+      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: '0x00000001000000000000000200000000000000034',
       expectErr: true,
+      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: '0x2540be3f6001fffffffffffff001fffffffffffff', // 9999999990, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER
       expectErr: true,
+      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: '0x10000000000000000000000000000000000000000', // ffffffffffffffffffffffffffffffffffffffff + 1
       expectErr: true,
+      paramName: constants.filterKeys.FROM,
     },
   ];
 
@@ -320,7 +330,7 @@ describe('EntityId toEvmAddress', () => {
   });
 
   test('32767.65535.4294967295', () => {
-    expect(EntityId.of(32767n, 65535n, 4294967295n).toEvmAddress()).toEqual(
+    expect(EntityId.of(32767n, 65535n, 4294967295n, constants.EvmAddressType.NO_SHARD_REALM).toEvmAddress()).toEqual(
       '0x00007fff000000000000ffff00000000ffffffff'
     );
   });

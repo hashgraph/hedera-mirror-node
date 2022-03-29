@@ -68,8 +68,8 @@ const entityTypes = {
 };
 
 const EvmAddressType = {
-  ACCOUNT: 'account',
-  EVM_ADDRESS_WITH_SHARD_AND_REALM: 'evm address with shard and realm',
+  NO_SHARD_REALM: 'evm address without shard and realm and with 0x prefix',
+  OPTIONAL_SHARD_REALM: 'evm address with shard and realm as optionals',
 };
 
 const keyTypes = {

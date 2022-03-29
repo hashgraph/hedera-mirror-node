@@ -262,7 +262,7 @@ const filterValidityChecks = (param, op, val) => {
 };
 
 const isValidContractIdQueryParam = (op, val) => {
-  if (EntityId.isValidEvmAddress(val, contants.EvmAddressType.EVM_ADDRESS_WITH_SHARD_AND_REALM)) {
+  if (EntityId.isValidEvmAddress(val, contants.EvmAddressType.OPTIONAL_SHARD_REALM)) {
     return op === constants.queryParamOperators.eq;
   }
   return EntityId.isValidEntityId(val);

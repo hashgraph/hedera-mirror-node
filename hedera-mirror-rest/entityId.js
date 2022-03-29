@@ -94,11 +94,11 @@ const toHex = (num) => {
   return num.toString(16);
 };
 
-const isValidEvmAddress = (address, evmAddressType = EvmAddressType.ACCOUNT) => {
+const isValidEvmAddress = (address, evmAddressType = EvmAddressType.NO_SHARD_REALM) => {
   if (typeof address !== 'string') {
     return false;
   }
-  if (evmAddressType === EvmAddressType.ACCOUNT) {
+  if (evmAddressType === EvmAddressType.NO_SHARD_REALM) {
     return evmAddressRegex.test(address);
   }
   return evmAddressShardRealmRegex.test(address);
@@ -110,7 +110,7 @@ const isValidEntityId = (entityId) => {
 };
 
 const isCreate2EvmAddress = (evmAddress) => {
-  if (!isValidEvmAddress(evmAddress, EvmAddressType.EVM_ADDRESS_WITH_SHARD_AND_REALM)) {
+  if (!isValidEvmAddress(evmAddress, EvmAddressType.OPTIONAL_SHARD_REALM)) {
     return false;
   }
   const idPartsFromEvmAddress = parseFromEvmAddress(_.last(evmAddress.split('.')));
@@ -277,9 +277,9 @@ const parse = (id, ...rest) => {
     paramName ? InvalidArgumentError.forParams(paramName) : new InvalidArgumentError(`Invalid entity ID "${id}"`);
   let idType = null;
   if (paramName === filterKeys.FROM) {
-    idType = EvmAddressType.ACCOUNT;
+    idType = EvmAddressType.NO_SHARD_REALM;
   } else if (paramName === filterKeys.CONTRACTID || paramName === filterKeys.CONTRACT_ID) {
-    idType = EvmAddressType.EVM_ADDRESS_WITH_SHARD_AND_REALM;
+    idType = EvmAddressType.OPTIONAL_SHARD_REALM;
   }
   return checkNullId(id, isNullable) || parseMemoized(`${id}`, idType, error);
 };

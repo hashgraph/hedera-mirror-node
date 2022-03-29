@@ -256,7 +256,7 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
   } else {
     const encodedId = EntityId.parse(_.last(contractIdParam.split('.'))).getEncodedId();
     params.push(encodedId);
-    conditions.push(`${Contract.ID} = $${params.length}`);
+    conditions.push(`${Contract.getFullName(Contract.ID)} = $${params.length}`);
   }
 
   const tableUnionQueries = [getContractByIdOrAddressQueryForTable(Contract.tableName, conditions)];
@@ -388,7 +388,7 @@ const contractResultsByIdParamSupportMap = {
  * Verify contractId meets entity id format
  */
 const validateContractIdParam = (contractId) => {
-  if (EntityId.isValidEvmAddress(contractId, constants.EvmAddressType.EVM_ADDRESS_WITH_SHARD_AND_REALM)) {
+  if (EntityId.isValidEvmAddress(contractId, constants.EvmAddressType.OPTIONAL_SHARD_REALM)) {
     return;
   }
 
@@ -412,7 +412,7 @@ const validateContractIdAndConsensusTimestampParam = (consensusTimestamp, contra
   const params = [];
   if (
     !EntityId.isValidEntityId(contractId) &&
-    !EntityId.isValidEvmAddress(contractId, constants.EvmAddressType.EVM_ADDRESS_WITH_SHARD_AND_REALM)
+    !EntityId.isValidEvmAddress(contractId, constants.EvmAddressType.OPTIONAL_SHARD_REALM)
   ) {
     params.push(constants.filterKeys.CONTRACTID);
   }
@@ -435,7 +435,9 @@ const extractContractIdAndFiltersFromValidatedRequest = (req) => {
   utils.validateReq(req);
   // extract filters from query param
   const contractId = getAndValidateContractIdRequestPathParam(req);
+
   const filters = utils.buildAndValidateFilters(req.query);
+
   return {
     contractId,
     filters,
