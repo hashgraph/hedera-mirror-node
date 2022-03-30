@@ -59,28 +59,34 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
   test('Verify simple query', async () => {
     const [query, params] = NetworkNodeService.getNetworkNodesWithFiltersQuery([], [102], 'asc', 5);
     const expected = `with adb as (
-      select start_consensus_timestamp, end_consensus_timestamp, file_id
-      from address_book 
-      where file_id = $1
-      order by start_consensus_timestamp desc limit 1
-     ),
-     entries as (
-      select abe.description, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, abe.public_key,
-      adb.file_id, adb.start_consensus_timestamp, adb.end_consensus_timestamp, 
-      jsonb_agg(jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port) order by ip_address_v4 asc,port asc) 
-        as service_endpoints
-      from address_book_entry abe
-      join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
-      join address_book_service_endpoint abse 
-        on abe.consensus_timestamp = abse.consensus_timestamp and abe.node_id = abse.node_id
-      group by adb.start_consensus_timestamp, abe.node_id, abe.description, abe.memo, abe.node_account_id, 
-        abe.node_cert_hash, abe.public_key, adb.file_id, adb.end_consensus_timestamp
-     )
-     select abe.description, abe.file_id, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, 
-      abe.start_consensus_timestamp, abe.end_consensus_timestamp, abe.service_endpoints, abe.public_key
-     from entries abe
-     order by abe.node_id asc, abe.start_consensus_timestamp asc
-     limit $2`;
+        select start_consensus_timestamp,end_consensus_timestamp,file_id
+        from address_book
+        where file_id = $1
+        order by start_consensus_timestamp desc limit 1
+      )
+      select
+        abe.description,
+        abe.memo,
+        abe.node_id,
+        abe.node_account_id,
+        abe.node_cert_hash,
+        abe.public_key,
+        adb.file_id,
+        adb.start_consensus_timestamp,
+        adb.end_consensus_timestamp,
+        coalesce(
+          (
+            select jsonb_agg(
+              jsonb_build_object('ip_address_v4',ip_address_v4,'port',port) order by ip_address_v4 asc,port asc)
+            from address_book_service_endpoint abse
+            where abse.consensus_timestamp = abe.consensus_timestamp and abse.node_id = abe.node_id
+          ),
+          '[]'
+        ) as service_endpoints
+        from address_book_entry abe
+        join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
+        order by abe.node_id asc,abe.consensus_timestamp asc
+        limit $2`;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([102, 5]);
   });
@@ -88,30 +94,35 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
   test('Verify node file query', async () => {
     const [query, params] = NetworkNodeService.getNetworkNodesWithFiltersQuery([defaultNodeFilter], [102, 3], 'asc', 5);
     const expected = `with adb as (
-      select start_consensus_timestamp, end_consensus_timestamp, file_id
-      from address_book 
+      select start_consensus_timestamp,end_consensus_timestamp,file_id
+      from address_book
       where file_id = $1
       order by start_consensus_timestamp desc limit 1
-     ),
-     entries as (
-      select abe.description, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, abe.public_key,
-        adb.file_id, adb.start_consensus_timestamp, adb.end_consensus_timestamp,
-        jsonb_agg(jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port) order by ip_address_v4 asc,port asc)
-          as service_endpoints
+    )
+    select
+      abe.description,
+      abe.memo,
+      abe.node_id,
+      abe.node_account_id,
+      abe.node_cert_hash,
+      abe.public_key,
+      adb.file_id,
+      adb.start_consensus_timestamp,
+      adb.end_consensus_timestamp,
+      coalesce(
+        (
+          select jsonb_agg(
+            jsonb_build_object('ip_address_v4',ip_address_v4,'port',port) order by ip_address_v4 asc,port asc)
+          from address_book_service_endpoint abse
+          where abse.consensus_timestamp = abe.consensus_timestamp and abse.node_id = abe.node_id
+        ),
+        '[]'
+      ) as service_endpoints
       from address_book_entry abe
       join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
-      join address_book_service_endpoint abse 
-        on abe.consensus_timestamp = abse.consensus_timestamp and abe.node_id = abse.node_id
-      group by adb.start_consensus_timestamp, abe.node_id, abe.description, abe.memo, abe.node_account_id,
-        abe.node_cert_hash, abe.public_key, adb.file_id, adb.end_consensus_timestamp
-     )
-     select abe.description, abe.file_id, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash,
-      abe.start_consensus_timestamp, abe.end_consensus_timestamp,
-     abe.service_endpoints, abe.public_key
-     from entries abe
-     where abe.node_id = $2
-     order by abe.node_id asc, abe.start_consensus_timestamp asc
-     limit $3`;
+      where abe.node_id = $2 
+      order by abe.node_id asc,abe.consensus_timestamp asc
+      limit $3`;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([102, 3, 5]);
   });

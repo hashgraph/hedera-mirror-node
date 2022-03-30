@@ -31,60 +31,33 @@ const BaseService = require('./baseService');
 class NetworkNodeService extends BaseService {
   // add node filter
   static networkNodesBaseQuery = `with ${AddressBook.tableAlias} as (
-    select ${AddressBook.START_CONSENSUS_TIMESTAMP}, ${AddressBook.END_CONSENSUS_TIMESTAMP}, ${AddressBook.FILE_ID}
-    from ${AddressBook.tableName} where ${AddressBook.FILE_ID} = $1
-    order by ${AddressBook.START_CONSENSUS_TIMESTAMP} desc limit 1
-   ),
-   entries as (
+      select ${AddressBook.START_CONSENSUS_TIMESTAMP}, ${AddressBook.END_CONSENSUS_TIMESTAMP}, ${AddressBook.FILE_ID}
+      from ${AddressBook.tableName} where ${AddressBook.FILE_ID} = $1
+      order by ${AddressBook.START_CONSENSUS_TIMESTAMP} desc limit 1
+    )
     select ${AddressBookEntry.getFullName(AddressBookEntry.DESCRIPTION)}, 
-    ${AddressBookEntry.getFullName(AddressBookEntry.MEMO)}, 
-    ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)}, 
-    ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ACCOUNT_ID)}, 
-    ${AddressBookEntry.getFullName(AddressBookEntry.NODE_CERT_HASH)}, 
-    ${AddressBookEntry.getFullName(AddressBookEntry.PUBLIC_KEY)}, 
-    ${AddressBook.getFullName(AddressBook.FILE_ID)}, 
-    ${AddressBook.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP)}, 
-    ${AddressBook.getFullName(AddressBook.END_CONSENSUS_TIMESTAMP)}, 
-    jsonb_agg(jsonb_build_object(
-      '${AddressBookServiceEndpoint.IP_ADDRESS_V4}', ${AddressBookServiceEndpoint.IP_ADDRESS_V4}, 
-      '${AddressBookServiceEndpoint.PORT}', ${AddressBookServiceEndpoint.PORT}
-      ) 
-      order by ${AddressBookServiceEndpoint.IP_ADDRESS_V4} asc, ${AddressBookServiceEndpoint.PORT} asc
-    ) as service_endpoints
+      ${AddressBookEntry.getFullName(AddressBookEntry.MEMO)}, 
+      ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)}, 
+      ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ACCOUNT_ID)}, 
+      ${AddressBookEntry.getFullName(AddressBookEntry.NODE_CERT_HASH)}, 
+      ${AddressBookEntry.getFullName(AddressBookEntry.PUBLIC_KEY)}, 
+      ${AddressBook.getFullName(AddressBook.FILE_ID)}, 
+      ${AddressBook.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP)}, 
+      ${AddressBook.getFullName(AddressBook.END_CONSENSUS_TIMESTAMP)}, 
+      coalesce((
+        select jsonb_agg(jsonb_build_object(
+        '${AddressBookServiceEndpoint.IP_ADDRESS_V4}', ${AddressBookServiceEndpoint.IP_ADDRESS_V4}, 
+        '${AddressBookServiceEndpoint.PORT}', ${AddressBookServiceEndpoint.PORT}
+        ) order by ${AddressBookServiceEndpoint.IP_ADDRESS_V4} asc, ${AddressBookServiceEndpoint.PORT} asc)
+        from ${AddressBookServiceEndpoint.tableName} ${AddressBookServiceEndpoint.tableAlias}
+        where ${AddressBookServiceEndpoint.getFullName(AddressBookServiceEndpoint.CONSENSUS_TIMESTAMP)} =
+          ${AddressBookEntry.getFullName(AddressBookEntry.CONSENSUS_TIMESTAMP)} and
+          ${AddressBookServiceEndpoint.getFullName(AddressBookServiceEndpoint.NODE_ID)} =
+          ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)}      
+      ), '[]') as service_endpoints
     from ${AddressBookEntry.tableName} ${AddressBookEntry.tableAlias}
-    join ${AddressBook.tableAlias} on ${AddressBook.getFullName(
-    AddressBook.START_CONSENSUS_TIMESTAMP
-  )} = ${AddressBookEntry.getFullName(AddressBookEntry.CONSENSUS_TIMESTAMP)}
-  join ${AddressBookServiceEndpoint.tableName} ${AddressBookServiceEndpoint.tableAlias} 
-      on ${AddressBookEntry.getFullName(
-        AddressBookEntry.CONSENSUS_TIMESTAMP
-      )} = ${AddressBookServiceEndpoint.getFullName(AddressBookServiceEndpoint.CONSENSUS_TIMESTAMP)} and 
-    ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)} = ${AddressBookServiceEndpoint.getFullName(
-    AddressBookServiceEndpoint.NODE_ID
-  )}
-    group by ${AddressBook.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP)}, ${AddressBookEntry.getFullName(
-    AddressBookEntry.NODE_ID
-  )}, 
-    ${AddressBookEntry.getFullName(AddressBookEntry.DESCRIPTION)}, ${AddressBookEntry.getFullName(
-    AddressBookEntry.MEMO
-  )}, 
-    ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ACCOUNT_ID)}, ${AddressBookEntry.getFullName(
-    AddressBookEntry.NODE_CERT_HASH
-  )},
-    ${AddressBookEntry.getFullName(AddressBookEntry.PUBLIC_KEY)}, ${AddressBook.getFullName(AddressBook.FILE_ID)},
-    ${AddressBook.getFullName(AddressBook.END_CONSENSUS_TIMESTAMP)}
-   )
-   select ${AddressBookEntry.getFullName(AddressBookEntry.DESCRIPTION)}, 
-    ${AddressBookEntry.getFullName(AddressBook.FILE_ID)}, 
-    ${AddressBookEntry.getFullName(AddressBookEntry.MEMO)}, 
-    ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)}, 
-    ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ACCOUNT_ID)}, 
-    ${AddressBookEntry.getFullName(AddressBookEntry.NODE_CERT_HASH)},
-    ${AddressBookEntry.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP)}, 
-    ${AddressBookEntry.getFullName(AddressBook.END_CONSENSUS_TIMESTAMP)},
-    ${AddressBookEntry.getFullName('service_endpoints')}, 
-    ${AddressBookEntry.getFullName(AddressBookEntry.PUBLIC_KEY)}
-   from entries ${AddressBookEntry.tableAlias}`;
+    join ${AddressBook.tableAlias} on ${AddressBook.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP)} =
+      ${AddressBookEntry.getFullName(AddressBookEntry.CONSENSUS_TIMESTAMP)}`;
 
   getNetworkNodes = async (whereConditions, whereParams, order, limit) => {
     const [query, params] = this.getNetworkNodesWithFiltersQuery(whereConditions, whereParams, order, limit);
@@ -102,7 +75,7 @@ class NetworkNodeService extends BaseService {
       `${super.getOrderByQuery(
         AddressBookEntry.getFullName(AddressBookEntry.NODE_ID),
         nodeOrder
-      )}, ${AddressBookEntry.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP)} ${nodeOrder}`,
+      )}, ${AddressBookEntry.getFullName(AddressBookEntry.CONSENSUS_TIMESTAMP)} ${nodeOrder}`,
       super.getLimitQuery(params.length),
     ].join('\n');
 
