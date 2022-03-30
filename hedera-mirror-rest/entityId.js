@@ -23,12 +23,14 @@
 const _ = require('lodash');
 const mem = require('mem');
 const quickLru = require('quick-lru');
+const {filterKeys} = require('./constants');
 
 const {
   cache: {entityId: entityIdCacheConfig},
   shard: systemShard,
 } = require('./config');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+const {EvmAddressType} = require('./constants');
 
 // format: |0|15-bit shard|16-bit realm|32-bit num|
 const numBits = 32n;
@@ -47,6 +49,7 @@ const maxEncodedId = 2n ** 63n - 1n;
 
 const entityIdRegex = /^(\d{1,5}\.){1,2}\d{1,10}$/;
 const encodedEntityIdRegex = /^\d{1,19}$/;
+const evmAddressShardRealmRegex = /^(\d{1,10}\.){0,2}[A-Fa-f0-9]{40}$/;
 const evmAddressRegex = /^(0x)?[A-Fa-f0-9]{40}$/;
 
 class EntityId {
@@ -91,14 +94,29 @@ const toHex = (num) => {
   return num.toString(16);
 };
 
-const isValidEvmAddress = (address) => {
-  // Accepted forms: 0x...
-  return typeof address === 'string' && evmAddressRegex.test(address);
+const isValidEvmAddress = (address, evmAddressType = EvmAddressType.NO_SHARD_REALM) => {
+  if (typeof address !== 'string') {
+    return false;
+  }
+  if (evmAddressType === EvmAddressType.NO_SHARD_REALM) {
+    return evmAddressRegex.test(address);
+  }
+  return evmAddressShardRealmRegex.test(address);
 };
 
 const isValidEntityId = (entityId) => {
   // Accepted forms: shard.realm.num, realm.num, or encodedId
   return (typeof entityId === 'string' && entityIdRegex.test(entityId)) || encodedEntityIdRegex.test(entityId);
+};
+
+const isCreate2EvmAddress = (evmAddress) => {
+  if (!isValidEvmAddress(evmAddress, EvmAddressType.OPTIONAL_SHARD_REALM)) {
+    return false;
+  }
+  const idPartsFromEvmAddress = parseFromEvmAddress(_.last(evmAddress.split('.')));
+  return (
+    idPartsFromEvmAddress[0] > maxShard || idPartsFromEvmAddress[1] > maxRealm || idPartsFromEvmAddress[2] > maxNum
+  );
 };
 
 /**
@@ -156,21 +174,18 @@ const parseFromEncodedId = (id, error) => {
 
 /**
  * Parses shard, realm, num from EVM address string.
- * @param {string} address
+ * @param {string} evmAddress
  * @return {bigint[3]}
  */
-const parseFromEvmAddress = (address) => {
+const parseFromEvmAddress = (evmAddress) => {
   // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
-  const hexDigits = address.replace('0x', '');
-  const parts = [
-    Number.parseInt(hexDigits.slice(0, 8), 16), // shard
-    Number.parseInt(hexDigits.slice(8, 24), 16), // realm
-    Number.parseInt(hexDigits.slice(24, 40), 16), // num
+  const hexDigits = evmAddress.replace('0x', '');
+  return [
+    BigInt('0x' + hexDigits.slice(0, 8)), // shard
+    BigInt('0x' + hexDigits.slice(8, 24)), // realm
+    BigInt('0x' + hexDigits.slice(24, 40)), // num
   ];
-
-  return parts.map((part) => BigInt(part));
 };
-
 /**
  * Parses shard, realm, num from entity ID string, can be shard.realm.num or realm.num.
  * @param {string} id
@@ -183,6 +198,21 @@ const parseFromString = (id) => {
   }
 
   return parts.map((part) => BigInt(part));
+};
+
+const computeContractIdPartsFromContractIdValue = (contractId) => {
+  const idPieces = contractId.split('.');
+  idPieces.unshift(...[null, null].slice(0, 3 - idPieces.length));
+  const contractIdParts = {
+    shard: idPieces[0] !== null ? BigInt(idPieces[0]) : null,
+    realm: idPieces[1] !== null ? BigInt(idPieces[1]) : null,
+  };
+  if (isCreate2EvmAddress(idPieces[2])) {
+    contractIdParts.create2_evm_address = idPieces[2];
+  } else {
+    contractIdParts.num = idPieces[2];
+  }
+  return contractIdParts;
 };
 
 const entityIdCacheOptions = {
@@ -200,11 +230,11 @@ const parseMemoized = mem(
    * @param {Function} error
    * @return {EntityId}
    */
-  (id, error) => {
+  (id, idType, error) => {
     let shard, realm, num;
     if (isValidEntityId(id)) {
       [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
-    } else if (isValidEvmAddress(id)) {
+    } else if (isValidEvmAddress(id, idType)) {
       [shard, realm, num] = parseFromEvmAddress(id);
     } else {
       throw error();
@@ -245,13 +275,19 @@ const parse = (id, ...rest) => {
   // lazily create error object
   const error = () =>
     paramName ? InvalidArgumentError.forParams(paramName) : new InvalidArgumentError(`Invalid entity ID "${id}"`);
-
-  return checkNullId(id, isNullable) || parseMemoized(`${id}`, error);
+  let idType = null;
+  if (paramName === filterKeys.FROM) {
+    idType = EvmAddressType.NO_SHARD_REALM;
+  } else if (paramName === filterKeys.CONTRACTID || paramName === filterKeys.CONTRACT_ID) {
+    idType = EvmAddressType.OPTIONAL_SHARD_REALM;
+  }
+  return checkNullId(id, isNullable) || parseMemoized(`${id}`, idType, error);
 };
 
 module.exports = {
   isValidEntityId,
   isValidEvmAddress,
+  computeContractIdPartsFromContractIdValue,
   of,
   parse,
 };

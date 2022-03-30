@@ -124,8 +124,8 @@ describe('extractSqlFromContractFilters', () => {
   ];
 
   specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(contracts.extractSqlFromContractFilters(spec.input)).toEqual(spec.expected);
+    test(`${spec.name}`, async () => {
+      expect(await contracts.extractSqlFromContractFilters(spec.input)).toEqual(spec.expected);
     });
   });
 });
@@ -192,12 +192,12 @@ describe('extractTimestampConditionsFromContractFilters', () => {
       ],
       expected: {
         conditions: [
+          `${timestampColumn} && $1`,
           `${timestampColumn} && $2`,
           `${timestampColumn} && $3`,
           `${timestampColumn} && $4`,
           `${timestampColumn} && $5`,
-          `${timestampColumn} && $6`,
-          `not ${timestampColumn} @> $7`,
+          `not ${timestampColumn} @> $6`,
         ],
         params: [
           Range(null, '200', '(]'),
@@ -259,46 +259,90 @@ describe('formatContractRow', () => {
   });
 });
 
-describe('getContractByIdQuery', () => {
+describe('getContractByIdOrAddressQuery', () => {
   const mainQuery = `select ${[...contractFields, 'cf.bytecode']}
     from contract c, contract_file cf`;
-  const queryForTable = (table, extraConditions) => {
+
+  const queryForTable = ({table, extraConditions, columnName}) => {
     return `select ${contractFields}
       from ${table} c
-      where c.id = $1 ${(extraConditions && ' and ' + extraConditions.join(' and ')) || ''}`;
+      where ${(extraConditions && extraConditions.join(' and ') + ' and ') || ''} c.${columnName} = $3`;
   };
-  const timestampConditions = ['c.timestamp_range && $2', 'c.timestamp_range && $3'];
+
+  const timestampConditions = ['c.timestamp_range && $1', 'c.timestamp_range && $2'];
 
   const specs = [
     {
       name: 'latest',
-      input: [],
-      expected: `with contract as (
-        ${queryForTable('contract')}
-      ), contract_file as (
-          ${contracts.fileDataQuery}
-      )
-      ${mainQuery}`,
+      isCreate2Test: false,
+      input: {timestampConditions: [], timestampParams: [1234, 5678], contractIdParam: '0.0.2'},
+      expected: (columnName) => `
+        with contract as (
+          ${queryForTable({table: 'contract', columnName})}
+        ), contract_file as (
+            ${contracts.fileDataQuery}
+        )
+        ${mainQuery}`,
     },
     {
       name: 'historical',
-      input: timestampConditions,
-      expected: `with contract as (
-        ${queryForTable('contract', timestampConditions)}
-        union
-        ${queryForTable('contract_history', timestampConditions)}
-        order by timestamp_range desc
-        limit 1
-    ), contract_file as (
-        ${contracts.fileDataQuery}
-    )
-      ${mainQuery}`,
+      isCreate2Test: true,
+      input: {
+        timestampConditions,
+        timestampParams: [5678, 1234],
+        contractIdParam: '70f2b2914a2a4b783faefb75f459a580616fcb5e',
+      },
+      expected: (columnName) => `
+        with contract as (
+            ${queryForTable({table: 'contract', extraConditions: timestampConditions, columnName})}
+            union
+            ${queryForTable({table: 'contract_history', extraConditions: timestampConditions, columnName})}
+            order by timestamp_range desc
+            limit 1
+        ), contract_file as (
+            ${contracts.fileDataQuery}
+        )
+        ${mainQuery}`,
+    },
+    {
+      name: 'latest',
+      isCreate2Test: true,
+      input: {
+        timestampConditions: [],
+        timestampParams: [1234, 5678],
+        contractIdParam: '70f2b2914a2a4b783faefb75f459a580616fcb5e',
+      },
+      expected: (columnName) => `
+        with contract as (
+          ${queryForTable({table: 'contract', columnName})}
+        ), contract_file as (
+            ${contracts.fileDataQuery}
+        )
+        ${mainQuery}`,
+    },
+    {
+      name: 'historical',
+      isCreate2Test: false,
+      input: {timestampConditions, timestampParams: [5678, 1234], contractIdParam: '0.0.1'},
+      expected: (columnName) => `
+        with contract as (
+            ${queryForTable({table: 'contract', extraConditions: timestampConditions, columnName})}
+            union
+            ${queryForTable({table: 'contract_history', extraConditions: timestampConditions, columnName})}
+            order by timestamp_range desc
+            limit 1
+        ), contract_file as (
+            ${contracts.fileDataQuery}
+        )
+        ${mainQuery}`,
     },
   ];
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      assertSqlQueryEqual(contracts.getContractByIdQuery(spec.input), spec.expected);
+      const actualQuery = contracts.getContractByIdOrAddressQuery(spec.input).query;
+      const expectedQuery = spec.expected(spec.isCreate2Test ? Contract.EVM_ADDRESS : Contract.ID);
+      assertSqlQueryEqual(actualQuery, expectedQuery);
     });
   });
 });
