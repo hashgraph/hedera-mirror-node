@@ -1,0 +1,48 @@
+{
+  "description": "Find a contract by the its create1 evm address",
+  "setup": {
+    "contracts": [
+      {
+        "created_timestamp": "987654999123200",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "8001",
+        "timestamp_range": "[987654999123200, 987654999123299]"
+      },
+      {
+        "created_timestamp": "987654999123200",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "1000",
+        "timestamp_range": "[987654999123300,)"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/0.0.00000000000000000000000000000000000003e8",
+    "/api/v1/contracts/0.00000000000000000000000000000000000003e8",
+    "/api/v1/contracts/00000000000000000000000000000000000003e8"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "admin_key": {
+      "_type": "ProtobufEncoded",
+      "key": "010101"
+    },
+    "auto_renew_period": null,
+    "contract_id": "0.0.1000",
+    "created_timestamp": "987654.999123200",
+    "deleted": false,
+    "evm_address": "0x00000000000000000000000000000000000003e8",
+    "expiration_timestamp": null,
+    "file_id": "0.0.5001",
+    "memo": "contract memo",
+    "obtainer_id": null,
+    "proxy_account_id": null,
+    "timestamp": {
+      "from": "987654.999123300",
+      "to": null
+    },
+    "bytecode": null
+  }
+}

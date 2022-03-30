@@ -1,6 +1,24 @@
 {
   "description": "Contract logs api calls with order param desc",
   "setup": {
+    "contracts": [
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "8001",
+        "timestamp_range": "[987654999123200, 987654999123299]"
+      },
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "60f3f640a8508fc6a86d45df051962668e1e8ac7",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "1000",
+        "timestamp_range": "[987654999123300,)"
+      }
+    ],
     "contractlogs": [
       {
         "consensus_timestamp": 1639010141000000000,
@@ -28,7 +46,10 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/0.0.1000/results/logs?order=desc"],
+  "urls": [
+    "/api/v1/contracts/0.0.1000/results/logs?order=desc",
+    "/api/v1/contracts/60f3f640a8508fc6a86d45df051962668e1e8ac7/results/logs?order=desc"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "logs": [

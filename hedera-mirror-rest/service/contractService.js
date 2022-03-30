@@ -24,6 +24,10 @@ const _ = require('lodash');
 
 const BaseService = require('./baseService');
 const OrderSpec = require('./orderSpec');
+const Contract = require('../model/contract');
+const EntityId = require('../entityId');
+const constants = require('../constants');
+const {NotFoundError} = require('../errors/notFoundError');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
   response: {
@@ -78,6 +82,25 @@ class ContractService extends BaseService {
     ${ContractLog.TOPIC2},
     ${ContractLog.TOPIC3}
     from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
+
+  static contractIdByEvmAddressQuery = `select
+    ${Contract.ID}
+    from ${Contract.tableName} ${Contract.tableAlias}
+    where deleted <> true`;
+  static contractByEvmAddressQueryFilters = [
+    {
+      partName: 'shard',
+      columnName: Contract.getFullName(Contract.SHARD),
+    },
+    {
+      partName: 'realm',
+      columnName: Contract.getFullName(Contract.REALM),
+    },
+    {
+      partName: 'create2_evm_address',
+      columnName: Contract.getFullName(Contract.EVM_ADDRESS),
+    },
+  ];
 
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
@@ -209,6 +232,52 @@ class ContractService extends BaseService {
     const query = [ContractService.contractStateChangesQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractStateChangesByTimestamps');
     return rows.map((row) => new ContractStateChange(row));
+  }
+
+  computeConditionsAndParamsFromEvmAddressFilter({evmAddressFilter, paramOffset = 0}) {
+    const params = [];
+    const conditions = [];
+    ContractService.contractByEvmAddressQueryFilters.forEach(({partName, columnName}) => {
+      if (evmAddressFilter[partName] === null) {
+        return;
+      }
+      if (partName === 'create2_evm_address') {
+        evmAddressFilter[partName] = Buffer.from(evmAddressFilter[partName], 'hex');
+      }
+      const length = params.push(evmAddressFilter[partName]);
+      conditions.push(`${columnName} = $${length + paramOffset}`);
+    });
+    return {params, conditions};
+  }
+
+  async getContractIdByEvmAddress(evmAddressFilter) {
+    const {params, conditions} = this.computeConditionsAndParamsFromEvmAddressFilter({evmAddressFilter});
+    const query = `${ContractService.contractIdByEvmAddressQuery} and ${conditions.join(' and ')}`;
+    const rows = await super.getRows(query, params, 'getContractIdByEvmAddress');
+    if (rows.length === 0) {
+      throw new NotFoundError(
+        `No contract with the given evm address: ${JSON.stringify(evmAddressFilter)} has been found.`
+      );
+    }
+    //since evm_address is not an unique index, it is important to make this check.
+    if (rows.length > 1) {
+      throw new Error(
+        `More than one contract with the evm address ${JSON.stringify(evmAddressFilter)} have been found.`
+      );
+    }
+    const contractId = rows[0];
+    return BigInt(contractId.id);
+  }
+
+  async computeContractIdFromString(contractIdValue) {
+    const contractIdParts = EntityId.computeContractIdPartsFromContractIdValue(contractIdValue);
+
+    if (contractIdParts.hasOwnProperty('create2_evm_address')) {
+      contractIdParts.create2_evm_address = Buffer.from(contractIdParts.create2_evm_address, 'hex');
+      return this.getContractIdByEvmAddress(contractIdParts);
+    }
+
+    return EntityId.parse(contractIdValue, constants.filterKeys.CONTRACTID).getEncodedId();
   }
 }
 

@@ -31,6 +31,8 @@ const constants = require('./constants');
 const EntityId = require('./entityId');
 const config = require('./config');
 const ed25519 = require('./ed25519');
+const contants = require('./constants');
+const {ContractService} = require('./service');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
@@ -186,7 +188,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidBooleanOpAndValue(op, val);
       break;
     case constants.filterKeys.CONTRACT_ID:
-      ret = EntityId.isValidEntityId(val);
+      ret = isValidContractIdQueryParam(op, val);
       break;
     case constants.filterKeys.CREDIT_TYPE:
       // Acceptable words: credit or debit
@@ -259,6 +261,13 @@ const filterValidityChecks = (param, op, val) => {
   }
 
   return ret;
+};
+
+const isValidContractIdQueryParam = (op, val) => {
+  if (EntityId.isValidEvmAddress(val, contants.EvmAddressType.OPTIONAL_SHARD_REALM)) {
+    return op === constants.queryParamOperators.eq;
+  }
+  return EntityId.isValidEntityId(val);
 };
 
 /**
@@ -927,14 +936,11 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);
         break;
-      case constants.filterKeys.CONTRACT_ID:
-        comparator.value = EntityId.parse(comparator.value).getEncodedId();
-        break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.FROM:
-        comparator.value = EntityId.parse(comparator.value).getEncodedId();
+        comparator.value = EntityId.parse(comparator.value, contants.filterKeys.FROM).getEncodedId();
         break;
       case constants.filterKeys.LIMIT:
         comparator.value = Number(comparator.value);
