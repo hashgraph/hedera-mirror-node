@@ -44,7 +44,9 @@ class NetworkNodeViewModel {
     this.node_cert_hash = _.isNil(networkNode.addressBookEntry.nodeCertHash)
       ? null
       : utils.addHexPrefix(utils.encodeUtf8(networkNode.addressBookEntry.nodeCertHash));
-    this.public_key = utils.addHexPrefix(networkNode.addressBookEntry.publicKey);
+    this.public_key = _.isEmpty(networkNode.addressBookEntry.publicKey)
+      ? null
+      : utils.addHexPrefix(networkNode.addressBookEntry.publicKey);
     this.service_endpoints = networkNode.addressBookServiceEndpoints.map(
       (x) => new AddressBookServiceEndpointViewModel(x)
     );
