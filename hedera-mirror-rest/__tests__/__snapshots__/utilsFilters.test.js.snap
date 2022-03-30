@@ -44,66 +44,6 @@ Array [
 ]
 `;
 
-exports[`utils validateAndParseFilters address book file id tests Verify validateAndParseFilters for invalid {"key":"addressbook.file.id","operator":"eq","value":"0.0.2000"} 1`] = `
-Array [
-  "Invalid parameter: addressbook.file.id",
-]
-`;
-
-exports[`utils validateAndParseFilters address book file id tests Verify validateAndParseFilters for invalid {"key":"addressbook.file.id","operator":"eq","value":"1.2.3"} 1`] = `
-Array [
-  "Invalid parameter: addressbook.file.id",
-]
-`;
-
-exports[`utils validateAndParseFilters address book file id tests Verify validateAndParseFilters for invalid {"key":"addressbook.file.id","operator":"eq","value":"123"} 1`] = `
-Array [
-  "Invalid parameter: addressbook.file.id",
-]
-`;
-
-exports[`utils validateAndParseFilters address book file id tests Verify validateAndParseFilters for invalid {"key":"addressbook.file.id","operator":"eq","value":"1234567890"} 1`] = `
-Array [
-  "Invalid parameter: addressbook.file.id",
-]
-`;
-
-exports[`utils validateAndParseFilters address book file id tests Verify validateAndParseFilters for invalid {"key":"addressbook.file.id","operator":"gt","value":"100"} 1`] = `
-Array [
-  "Invalid parameter: addressbook.file.id",
-]
-`;
-
-exports[`utils validateAndParseFilters address book file id tests Verify validateAndParseFilters for invalid {"key":"addressbook.file.id","operator":"gte","value":"101"} 1`] = `
-Array [
-  "Invalid parameter: addressbook.file.id",
-]
-`;
-
-exports[`utils validateAndParseFilters address book file id tests Verify validateAndParseFilters for invalid {"key":"addressbook.file.id","operator":"lt","value":"-1"} 1`] = `
-Array [
-  "Invalid parameter: addressbook.file.id",
-]
-`;
-
-exports[`utils validateAndParseFilters address book file id tests Verify validateAndParseFilters for invalid {"key":"addressbook.file.id","operator":"lt","value":"0.1.23456789012345"} 1`] = `
-Array [
-  "Invalid parameter: addressbook.file.id",
-]
-`;
-
-exports[`utils validateAndParseFilters address book file id tests Verify validateAndParseFilters for invalid {"key":"addressbook.file.id","operator":"lt","value":"103"} 1`] = `
-Array [
-  "Invalid parameter: addressbook.file.id",
-]
-`;
-
-exports[`utils validateAndParseFilters address book file id tests Verify validateAndParseFilters for invalid {"key":"addressbook.file.id","operator":"lte","value":"102"} 1`] = `
-Array [
-  "Invalid parameter: addressbook.file.id",
-]
-`;
-
 exports[`utils validateAndParseFilters address book file id tests Verify validateAndParseFilters for invalid {"key":"file.id","operator":"eq","value":"0.0.2000"} 1`] = `
 Array [
   "Invalid parameter: file.id",

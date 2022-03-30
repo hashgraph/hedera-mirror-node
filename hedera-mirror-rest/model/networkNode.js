@@ -20,7 +20,6 @@
 
 'use strict';
 
-// const {AddressBook, AddressBookEntry, AddressBookServiceEndpoint} = require('./');
 const AddressBook = require('./addressBook');
 const AddressBookEntry = require('./addressBookEntry');
 const AddressBookServiceEndpoint = require('./addressBookServiceEndpoint');

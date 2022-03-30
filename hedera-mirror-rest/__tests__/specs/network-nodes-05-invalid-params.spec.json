@@ -1,13 +1,13 @@
 {
   "description": "Network nodes API with all invalid params",
   "setup": {},
-  "url": "/api/v1/network/nodes?addressbook.file.id=a&node.id=b&limit=c&order=d",
+  "url": "/api/v1/network/nodes?file.id=a&node.id=b&limit=c&order=d",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Invalid parameter: addressbook.file.id"
+          "message": "Invalid parameter: file.id"
         },
         {
           "message": "Invalid parameter: node.id"

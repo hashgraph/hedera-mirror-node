@@ -101,6 +101,7 @@ class NetworkController extends BaseController {
     const conditions = [];
     const params = [];
     const nodeInValues = [];
+    let fileIdSpecified = false;
 
     for (const filter of filters) {
       if (_.isNil(filter)) {
@@ -109,12 +110,16 @@ class NetworkController extends BaseController {
 
       switch (filter.key) {
         case constants.filterKeys.FILE_ID:
+          if (fileIdSpecified) {
+            throw new InvalidArgumentError(`Only a single instance is supported for ${constants.filterKeys.FILE_ID}`);
+          }
           if (utils.opsMap.eq !== filter.operator) {
             throw new InvalidArgumentError(
               `Only equals (eq) comparison operator is supported for ${constants.filterKeys.FILE_ID}`
             );
           }
           fileId = filter.value;
+          fileIdSpecified = true;
           break;
         case constants.filterKeys.NODE_ID:
           this.updateConditionsAndParamsWithInValues(
@@ -178,7 +183,7 @@ class NetworkController extends BaseController {
       const last = {
         [constants.filterKeys.NODE_ID]: lastRow.node_id,
       };
-      response.links.next = utils.getPaginationLink(req, false, last, order, {[constants.filterKeys.NODE_ID]: true});
+      response.links.next = utils.getPaginationLink(req, false, last, order);
     }
 
     res.locals[constants.responseDataLabel] = response;

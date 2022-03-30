@@ -950,9 +950,6 @@ const formatComparator = (comparator) => {
         // Accepted forms: shard.realm.num or encoded ID string
         comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;
-      case constants.filterKeys.CONTRACT_ID:
-        comparator.value = EntityId.parse(comparator.value).getEncodedId();
-        break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);
         break;
@@ -962,6 +959,7 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.LIMIT:
         comparator.value = Number(comparator.value);
         break;
+      case constants.filterKeys.NODE_ID:
       case constants.filterKeys.NONCE:
         comparator.value = Number(comparator.value);
         break;

@@ -65,15 +65,19 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       order by start_consensus_timestamp desc limit 1
      ),
      entries as (
-      select abe.description, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, abe.public_key, adb.file_id, adb.start_consensus_timestamp,
-      adb.end_consensus_timestamp, jsonb_agg(jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port) order by ip_address_v4 asc,port asc) as service_endpoints
+      select abe.description, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, abe.public_key,
+      adb.file_id, adb.start_consensus_timestamp, adb.end_consensus_timestamp, 
+      jsonb_agg(jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port) order by ip_address_v4 asc,port asc) 
+        as service_endpoints
       from address_book_entry abe
       join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
-      join address_book_service_endpoint abse on abe.consensus_timestamp = abse.consensus_timestamp and abe.node_id = abse.node_id
-      group by adb.start_consensus_timestamp, abe.node_id, abe.description, abe.memo, abe.node_account_id, abe.node_cert_hash, abe.public_key, adb.file_id, adb.end_consensus_timestamp
+      join address_book_service_endpoint abse 
+        on abe.consensus_timestamp = abse.consensus_timestamp and abe.node_id = abse.node_id
+      group by adb.start_consensus_timestamp, abe.node_id, abe.description, abe.memo, abe.node_account_id, 
+        abe.node_cert_hash, abe.public_key, adb.file_id, adb.end_consensus_timestamp
      )
-     select abe.description, abe.file_id, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, abe.start_consensus_timestamp, abe.end_consensus_timestamp,
-     abe.service_endpoints, abe.public_key
+     select abe.description, abe.file_id, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, 
+      abe.start_consensus_timestamp, abe.end_consensus_timestamp, abe.service_endpoints, abe.public_key
      from entries abe
      order by abe.node_id asc, abe.start_consensus_timestamp asc
      limit $2`;
@@ -90,14 +94,19 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       order by start_consensus_timestamp desc limit 1
      ),
      entries as (
-      select abe.description, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, abe.public_key, adb.file_id, adb.start_consensus_timestamp,
-      adb.end_consensus_timestamp, jsonb_agg(jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port) order by ip_address_v4 asc,port asc) as service_endpoints
+      select abe.description, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, abe.public_key,
+        adb.file_id, adb.start_consensus_timestamp, adb.end_consensus_timestamp,
+        jsonb_agg(jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port) order by ip_address_v4 asc,port asc)
+          as service_endpoints
       from address_book_entry abe
       join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
-      join address_book_service_endpoint abse on abe.consensus_timestamp = abse.consensus_timestamp and abe.node_id = abse.node_id
-      group by adb.start_consensus_timestamp, abe.node_id, abe.description, abe.memo, abe.node_account_id, abe.node_cert_hash, abe.public_key, adb.file_id, adb.end_consensus_timestamp
+      join address_book_service_endpoint abse 
+        on abe.consensus_timestamp = abse.consensus_timestamp and abe.node_id = abse.node_id
+      group by adb.start_consensus_timestamp, abe.node_id, abe.description, abe.memo, abe.node_account_id,
+        abe.node_cert_hash, abe.public_key, adb.file_id, adb.end_consensus_timestamp
      )
-     select abe.description, abe.file_id, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, abe.start_consensus_timestamp, abe.end_consensus_timestamp,
+     select abe.description, abe.file_id, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash,
+      abe.start_consensus_timestamp, abe.end_consensus_timestamp,
      abe.service_endpoints, abe.public_key
      from entries abe
      where abe.node_id = $2
@@ -292,7 +301,7 @@ describe('NetworkNodeService.getNetworkNodes tests', () => {
 });
 
 describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
-  test('NetworkNodeService.getNetworkNodes - No match', async () => {
+  test('NetworkNodeService.getNetworkNodes - No match on nodes', async () => {
     await expect(NetworkNodeService.getNetworkNodes([defaultNodeFilter], [2, 0], 'asc', 5)).resolves.toStrictEqual([]);
   });
 
@@ -340,7 +349,7 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
     },
   ];
 
-  test('NetworkNodeService.getNetworkNodes - Matching 101 entity', async () => {
+  test('NetworkNodeService.getNetworkNodes - Matching 101 entity node', async () => {
     await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
     await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
     await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
@@ -350,7 +359,7 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
     );
   });
 
-  test('NetworkNodeService.getNetworkNodes - Matching 102 entity', async () => {
+  test('NetworkNodeService.getNetworkNodes - Matching 102 entity node', async () => {
     await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
     await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
     await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
@@ -358,34 +367,5 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
     await expect(NetworkNodeService.getNetworkNodes([defaultNodeFilter], [102, 0], 'asc', 5)).resolves.toMatchObject(
       expectedNetworkNode102
     );
-  });
-});
-
-const defaultTimestampFilter = 'abe.start_consensus_timestamp >= $2';
-describe('NetworkNodeService.getNetworkNodes tests timestamp filter', () => {
-  test('NetworkNodeService.getNetworkNodes - No match', async () => {
-    await expect(NetworkNodeService.getNetworkNodes([defaultTimestampFilter], [2, 0], 'asc', 5)).resolves.toStrictEqual(
-      []
-    );
-  });
-
-  test('NetworkNodeService.getNetworkNodes - Matching 101 entity', async () => {
-    await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
-    await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
-    await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
-
-    await expect(
-      NetworkNodeService.getNetworkNodes([defaultTimestampFilter], [101, 1], 'desc', 5)
-    ).resolves.toMatchObject(defaultExpectedNetworkNode101);
-  });
-
-  test('NetworkNodeService.getNetworkNodes - Matching 102 entity', async () => {
-    await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
-    await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
-    await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
-
-    await expect(
-      NetworkNodeService.getNetworkNodes([defaultTimestampFilter], [102, 2], 'asc', 5)
-    ).resolves.toMatchObject(defaultExpectedNetworkNode102);
   });
 });

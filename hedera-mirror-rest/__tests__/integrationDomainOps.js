@@ -38,6 +38,8 @@ const DEFAULT_TREASURY_ID = '98';
 
 let sqlConnection;
 
+const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750';
+
 const setUp = async (testDataJson, sqlconn) => {
   sqlConnection = sqlconn;
   await loadAccounts(testDataJson.accounts);
@@ -302,7 +304,7 @@ const addAddressBook = async (addressBookInput) => {
     end_consensus_timestamp: null,
     file_id: 102,
     node_count: 20,
-    file_data: '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+    file_data: defaultFileData,
     ...addressBookInput,
   };
 
@@ -785,7 +787,7 @@ const addContractLog = async (contractLogInput) => {
     index: 0,
     payer_account_id: 2,
     root_contract_id: null,
-    topic0: '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+    topic0: defaultFileData,
     topic1: '\\x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
     topic2: '\\xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
     topic3: '\\xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
@@ -821,7 +823,7 @@ const addContractStateChange = async (contractStateChangeInput) => {
     contract_id: 1,
     payer_account_id: 2,
     slot: '\\x0123',
-    value_read: '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+    value_read: defaultFileData,
     value_written: '\\x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
     ...contractStateChangeInput,
   };

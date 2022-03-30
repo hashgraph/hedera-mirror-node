@@ -26,6 +26,7 @@ const {
   },
 } = require('../../config');
 const constants = require('../../constants');
+const {NetworkController} = require('../../controllers');
 const networkCtrl = require('../../controllers/networkController');
 const utils = require('../../utils');
 
@@ -95,6 +96,94 @@ describe('extractNetworkNodesQuery', () => {
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
       expect(networkCtrl.extractNetworkNodesQuery(spec.input.filters)).toEqual(spec.expected);
+    });
+  });
+});
+
+describe('validateExtractNetworkNodesQuery throw', () => {
+  const specs = [
+    {
+      name: 'file.id ne',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.FILE_ID,
+            operator: utils.opsMap.ne,
+            value: '1000',
+          },
+        ],
+      },
+    },
+    {
+      name: 'file.id gt',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.FILE_ID,
+            operator: utils.opsMap.gt,
+            value: '1000',
+          },
+        ],
+      },
+    },
+    {
+      name: 'file.id gte',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.FILE_ID,
+            operator: utils.opsMap.gte,
+            value: '1000',
+          },
+        ],
+      },
+    },
+    {
+      name: 'file.id lte',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.FILE_ID,
+            operator: utils.opsMap.lt,
+            value: '1000',
+          },
+        ],
+      },
+    },
+    {
+      name: 'file.id lte',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.FILE_ID,
+            operator: utils.opsMap.lte,
+            value: '1000',
+          },
+        ],
+      },
+    },
+    {
+      name: 'multi file.id eq',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.FILE_ID,
+            operator: utils.opsMap.eq,
+            value: '101',
+          },
+          {
+            key: constants.filterKeys.FILE_ID,
+            operator: utils.opsMap.eq,
+            value: '102',
+          },
+        ],
+      },
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(() => NetworkController.extractNetworkNodesQuery(spec.input.filters)).toThrowErrorMatchingSnapshot();
     });
   });
 });
