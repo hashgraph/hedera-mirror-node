@@ -301,7 +301,6 @@ public class DomainBuilder {
                 .approvedForAll(false)
                 .owner(entityId(ACCOUNT).getId())
                 .payerAccountId(entityId(ACCOUNT))
-                .serialNumbers(List.of(1L, 2L, 3L))
                 .spender(entityId(ACCOUNT).getId())
                 .timestampRange(Range.atLeast(timestamp()))
                 .tokenId(entityId(TOKEN).getId());

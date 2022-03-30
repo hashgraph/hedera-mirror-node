@@ -93,6 +93,10 @@ public interface EntityListener {
     default void onNftAllowance(NftAllowance nftAllowance) {
     }
 
+    default void onNftInstanceAllowance(Nft nft) {
+        onNft(nft);
+    }
+
     default void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
     }
 

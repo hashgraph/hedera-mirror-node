@@ -25,12 +25,10 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.google.common.base.CaseFormat;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -41,7 +39,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -605,11 +602,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         var builder = domainBuilder.nftAllowance();
         NftAllowance nftAllowanceCreate = builder.get();
 
-        NftAllowance nftAllowanceUpdate1 = builder.customize(c -> c.serialNumbers(List.of(4L, 5L, 6L))).get();
+//        NftAllowance nftAllowanceUpdate1 = builder.customize(c -> c.serialNumbers(List.of(4L, 5L, 6L))).get();
+        NftAllowance nftAllowanceUpdate1 = builder.get();
         nftAllowanceUpdate1.setTimestampLower(nftAllowanceCreate.getTimestampLower() + 1);
 
-        NftAllowance nftAllowanceUpdate2 = builder.customize(c -> c.approvedForAll(true).serialNumbers(List.of()))
-                .get();
+//        NftAllowance nftAllowanceUpdate2 = builder.customize(c -> c.approvedForAll(true).serialNumbers(List.of()))
+//                .get();
+        NftAllowance nftAllowanceUpdate2 = builder.customize(c -> c.approvedForAll(true)).get();
         nftAllowanceUpdate2.setTimestampLower(nftAllowanceCreate.getTimestampLower() + 2);
 
         // Expected merged objects

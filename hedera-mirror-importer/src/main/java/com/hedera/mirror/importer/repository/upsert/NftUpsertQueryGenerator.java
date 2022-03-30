@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,13 +39,17 @@ public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> 
     private final String finalTableName = "nft";
     private final String temporaryTableName = getFinalTableName() + "_temp";
     private final List<String> conflictIdColumns = List.of(NftId_.TOKEN_ID, NftId_.SERIAL_NUMBER);
-    private final Set<String> nullableColumns = Set.of(Nft_.ACCOUNT_ID);
+    private final Set<String> nullableColumns = Set.of(Nft_.ACCOUNT_ID, Nft_.ALLOWANCE_GRANTED_TIMESTAMP,
+            Nft_.DELEGATING_SPENDER, Nft_.SPENDER);
     private final Set<String> nonUpdatableColumns = Set.of(Nft_.CREATED_TIMESTAMP, Nft_.ID, Nft_.METADATA,
             NftId_.SERIAL_NUMBER, NftId_.TOKEN_ID);
     @Getter(lazy = true)
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    private final Set<SingularAttribute> selectableColumns = Set.of(Nft_.accountId, Nft_.createdTimestamp, Nft_.deleted,
-            Nft_.modifiedTimestamp, Nft_.metadata, NftId_.serialNumber, NftId_.tokenId);
+    private final Set<SingularAttribute> selectableColumns = Set.of(Nft_.accountId, Nft_.allowanceGrantedTimestamp,
+            Nft_.createdTimestamp, Nft_.delegatingSpender, Nft_.deleted, Nft_.modifiedTimestamp, Nft_.metadata,
+            NftId_.serialNumber, Nft_.spender, NftId_.tokenId);
+    private final Set<String> volatileColumns = Set.of(Nft_.ALLOWANCE_GRANTED_TIMESTAMP, Nft_.DELEGATING_SPENDER,
+            Nft_.SPENDER);
 
     @Override
     public String getInsertWhereClause() {
@@ -90,6 +94,12 @@ public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> 
                     getFormattedColumnName(Nft_.DELETED),
                     getFullTempTableColumnName(Nft_.DELETED),
                     getFullFinalTableColumnName(Nft_.DELETED));
+        } else if (volatileColumns.contains(attributeName)) {
+            return String.format(
+                    "%s = %s",
+                    getFormattedColumnName(attributeName),
+                    getFullTempTableColumnName(attributeName)
+            );
         }
 
         return super.getAttributeUpdateQuery(attributeName);

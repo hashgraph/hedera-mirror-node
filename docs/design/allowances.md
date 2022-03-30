@@ -47,12 +47,12 @@ create table if not exists crypto_allowance_history
 #### NFT Allowance
 
 ```sql
+
 create table if not exists nft_allowance
 (
   approved_for_all boolean   not null,
   owner            bigint    not null,
   payer_account_id bigint    not null,
-  serial_numbers   bigint[]  not null,
   spender          bigint    not null,
   timestamp_range  int8range not null,
   token_id         bigint    not null,
@@ -66,6 +66,18 @@ create table if not exists nft_allowance_history
   like nft_allowance including defaults,
   primary key (owner, spender, token_id, timestamp_range)
 );
+```
+
+Update `nft` table to add new columns and index for nft instance allowance.
+
+```sql
+alter table nft
+   add column if not exists allowance_granted_timestamp bigint default null,
+   add column if not exists delegating_spender bigint default null,
+   add column if not exists spender bigint default null;
+
+create index if not exists nft__allowance on nft (account_id, spender, token_id, serial_number)
+   where spender is not null;
 ```
 
 #### Token Allowance
@@ -141,24 +153,50 @@ Optional Filters
     {
       "approved_for_all": false,
       "owner": "0.0.1000",
-      "payer_account_id": "0.0.1000",
-      "serial_numbers": [
-        1,
-        2,
-        3
-      ],
+      "serial_number": 1,
       "spender": "0.0.8488",
       "token_id": "0.0.1032",
       "timestamp": {
         "from": "1633466229.96874612",
-        "to": "1633466568.31556926"
+        "to": null
+      }
+    },
+     {
+        "approved_for_all": false,
+        "owner": "0.0.1000",
+        "serial_number": 2,
+        "spender": "0.0.8488",
+        "token_id": "0.0.1032",
+        "timestamp": {
+           "from": "1633466229.96874612",
+           "to": null
+        }
+     },
+     {
+        "approved_for_all": true,
+        "owner": "0.0.1000",
+        "serial_number": null,
+        "spender": "0.0.8488",
+        "token_id": "0.0.1033",
+        "timestamp": {
+           "from": "1633466229.96874612",
+           "to": null
+        }
+     },
+    {
+      "approved_for_all": false,
+      "owner": "0.0.1000",
+      "serial_number": 1,
+      "spender": "0.0.8488",
+      "token_id": "0.0.1034",
+      "timestamp": {
+        "from": "1633466229.96874612",
+        "to": null
       }
     },
     {
       "approved_for_all": true,
       "owner": "0.0.1000",
-      "payer_account_id": "0.0.1000",
-      "serial_numbers": [],
       "spender": "0.0.9857",
       "token_id": "0.0.1032",
       "timestamp": {
@@ -174,9 +212,10 @@ Optional Filters
 Optional Filters
 
 * `limit`: The maximum amount of items to return.
-* `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
-* `spender.id`: Filter by the spender account ID. Only need to support `eq` operator and allow multiple.
-* `token.id`: Filter by the token ID. Only need to support `eq` operator and allow multiple.
+* `order`: Order by `token.id` and `serialnumber`. Accepts `asc` or `desc` with a default of `asc`.
+* `spender.id`: Filter by the spender ID. `ne` filter is not supported.
+* `token.id`: Filter by the token ID. `ne` filter is not supported.
+* `serialnumber`: Filter by the nft serial number. `ne` filter is not supported.
 
 #### Token Allowances
 

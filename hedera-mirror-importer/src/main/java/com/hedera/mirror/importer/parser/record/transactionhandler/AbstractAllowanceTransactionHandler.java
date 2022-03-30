@@ -27,6 +27,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
@@ -57,16 +58,30 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
         }
 
         for (var nftApproval : getNftAllowances(recordItem)) {
-            var approvedForAll = nftApproval.hasApprovedForAll() && nftApproval.getApprovedForAll().getValue();
-            NftAllowance nftAllowance = new NftAllowance();
-            nftAllowance.setApprovedForAll(approvedForAll);
-            nftAllowance.setOwner(EntityId.of(nftApproval.getOwner()).getId());
-            nftAllowance.setPayerAccountId(payerAccountId);
-            nftAllowance.setSerialNumbers(nftApproval.getSerialNumbersList());
-            nftAllowance.setSpender(EntityId.of(nftApproval.getSpender()).getId());
-            nftAllowance.setTokenId(EntityId.of(nftApproval.getTokenId()).getId());
-            nftAllowance.setTimestampLower(consensusTimestamp);
-            entityListener.onNftAllowance(nftAllowance);
+            EntityId ownerAccountId = EntityId.of(nftApproval.getOwner());
+            EntityId spender = EntityId.of(nftApproval.getSpender());
+            EntityId tokenId = EntityId.of(nftApproval.getTokenId());
+
+            if (nftApproval.hasApprovedForAll()) {
+                NftAllowance nftAllowance = new NftAllowance();
+                nftAllowance.setApprovedForAll(nftApproval.getApprovedForAll().getValue());
+                nftAllowance.setOwner(ownerAccountId.getId());
+                nftAllowance.setPayerAccountId(payerAccountId);
+                nftAllowance.setSpender(spender.getId());
+                nftAllowance.setTokenId(tokenId.getId());
+                nftAllowance.setTimestampLower(consensusTimestamp);
+                entityListener.onNftAllowance(nftAllowance);
+            } else {
+                EntityId delegatingSpender = EntityId.of(nftApproval.getDelegatingSpender());
+                for (var serialNumber : nftApproval.getSerialNumbersList()) {
+                    Nft nft = new Nft(serialNumber, tokenId);
+                    nft.setAccountId(ownerAccountId);
+                    nft.setSpender(spender);
+                    nft.setAllowanceGrantedTimestamp(consensusTimestamp);
+                    nft.setDelegatingSpender(delegatingSpender);
+                    entityListener.onNftInstanceAllowance(nft);
+                }
+            }
         }
 
         for (var tokenApproval : getTokenAllowances(recordItem)) {
