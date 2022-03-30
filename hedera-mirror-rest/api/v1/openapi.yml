@@ -301,9 +301,8 @@ paths:
       description: Returns the network's list of nodes used in consensus
       operationId: getNetworkNodes
       parameters:
-        - $ref: '#/components/parameters/addressBookFileIdQueryParam'
+        - $ref: '#/components/parameters/fileIdQueryParam'
         - $ref: '#/components/parameters/nodeIdQueryParam'
-        - $ref: '#/components/parameters/timestampQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
       responses:
@@ -2323,28 +2322,6 @@ components:
       example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
       schema:
         type: string
-    addressBookFileIdQueryParam:
-      name: addressbook.file.id
-      description: The ID of the address book file
-      in: query
-      examples:
-        noValue:
-          summary: --
-          value: ""
-        entityNumNoOperator:
-          summary: Example of entityNum equals with no operator
-          value: 100
-        idNoOperator:
-          summary: Example of id equals with no operator
-          value: 0.0.100
-        entityNumEqOperator:
-          summary: Example of entityNum equals operator
-          value: eq:200
-        idEqOperator:
-          summary: Example of id equals operator
-          value: eq:0.0.200
-      schema:
-        $ref: '#/components/schemas/EntityIdQuery'
     balanceQueryParam:
       name: balance
       in: query
@@ -2426,6 +2403,28 @@ components:
       description: Entity id
       schema:
         $ref: '#/components/schemas/EntityId'
+    fileIdQueryParam:
+      name: file.id
+      description: The ID of the file entity
+      in: query
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        entityNumNoOperator:
+          summary: Example of entityNum equals with no operator
+          value: 100
+        idNoOperator:
+          summary: Example of id equals with no operator
+          value: 0.0.100
+        entityNumEqOperator:
+          summary: Example of entityNum equals operator
+          value: eq:200
+        idEqOperator:
+          summary: Example of id equals operator
+          value: eq:0.0.200
+      schema:
+        $ref: '#/components/schemas/EntityIdQuery'
     scheduleIdPathParam:
       name: scheduleId
       in: path
