@@ -102,7 +102,6 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
-        - tokens
   /api/v1/accounts/{accountAliasOrAccountId}/allowances/crypto:
     get:
       summary: Get crypto allowances for an account info
@@ -126,7 +125,6 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
-        - crypto
   /api/v1/balances:
     get:
       summary: List account balances
@@ -680,7 +678,6 @@ paths:
         - $ref: '#/components/parameters/orderQueryParam'
         - $ref: '#/components/parameters/accountPublicKeyQueryParam'
         - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/publicKeyQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
       responses:
         200:

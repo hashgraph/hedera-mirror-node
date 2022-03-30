@@ -349,7 +349,9 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.rest.metrics.config.uriPath`              | '/swagger'              | The REST API metrics uri path                                                                  |
 | `hedera.mirror.rest.openapi.specFileName`                | 'openapi'               | The file name of the OpenAPI spec file                                                         |
 | `hedera.mirror.rest.openapi.swaggerUIPath`               | '/docs'                 | Swagger UI path for your REST API                                                              |
-| `hedera.mirror.rest.response.compression`                | true                    | Whether GZIP compression should be enabled for response bodies                                 |
+| `hedera.mirror.rest.response.compression`                | true                    | Whether content negotiation should occur to compress response bodies if requested              |
+| `hedera.mirror.rest.response.headers.default`            | See application.yml     | The default headers to add to every response.                                                  |
+| `hedera.mirror.rest.response.headers.path`               | See application.yml     | The per path headers to add to every response. The key is the route name and the value is a header map. |
 | `hedera.mirror.rest.response.includeHostInLink`          | false                   | Whether to include the hostname and port in the next link in the response                      |
 | `hedera.mirror.rest.response.limit.default`              | 25                      | The default value for the limit parameter that controls the REST API response size             |
 | `hedera.mirror.rest.response.limit.max`                  | 100                     | The maximum size the limit parameter can be that controls the REST API response size           |
