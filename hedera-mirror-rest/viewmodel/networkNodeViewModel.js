@@ -20,6 +20,8 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 const AddressBookServiceEndpointViewModel = require('./addressBookServiceEndpointViewModel');
 const EntityId = require('../entityId');
 const utils = require('../utils');
@@ -39,8 +41,10 @@ class NetworkNodeViewModel {
     this.memo = networkNode.addressBookEntry.memo;
     this.node_id = Number(networkNode.addressBookEntry.nodeId);
     this.node_account_id = EntityId.parse(networkNode.addressBookEntry.nodeAccountId).toString();
-    this.node_cert_hash = utils.encodeBase64(networkNode.addressBookEntry.nodeCertHash);
-    this.public_key = utils.encodeBase64(networkNode.addressBookEntry.publicKey);
+    this.node_cert_hash = _.isNil(networkNode.addressBookEntry.nodeCertHash)
+      ? null
+      : utils.addHexPrefix(utils.encodeUtf8(networkNode.addressBookEntry.nodeCertHash));
+    this.public_key = utils.addHexPrefix(networkNode.addressBookEntry.publicKey);
     this.service_endpoints = networkNode.addressBookServiceEndpoints.map(
       (x) => new AddressBookServiceEndpointViewModel(x)
     );

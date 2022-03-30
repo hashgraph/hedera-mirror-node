@@ -332,7 +332,7 @@ const addAddressBookEntry = async (addressBookEntryInput) => {
     public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     node_id: 2000,
     node_account_id: 3,
-    node_cert_hash: 'ed55d98d53fd55c9caf5f61affe88cd2978d37128ec54af5dace29b6fd271cbd079ebe487bda5f227087e2638b1100cf',
+    node_cert_hash: '01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16',
     description: 'description',
     stake: 0,
     ...addressBookEntryInput,
