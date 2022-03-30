@@ -565,11 +565,12 @@ describe('utils validateAndParseFilters nonce key tests', () => {
 });
 
 describe('utils validateAndParseFilters address book file id tests', () => {
-  const key = constants.filterKeys.ADDRESS_BOOK_FILE_ID;
+  const key = constants.filterKeys.FILE_ID;
   const invalidFilters = [
     // erroneous data
     utils.buildComparatorFilter(key, 'lt:-1'),
     utils.buildComparatorFilter(key, '123'),
+    utils.buildComparatorFilter(key, '101102'),
     utils.buildComparatorFilter(key, '1.2.3'),
     utils.buildComparatorFilter(key, '0.0.2000'),
     utils.buildComparatorFilter(key, 'eq:1234567890'),

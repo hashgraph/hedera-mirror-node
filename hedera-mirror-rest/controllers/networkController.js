@@ -33,7 +33,7 @@ const utils = require('../utils');
 
 const BaseController = require('./baseController');
 
-const {AddressBook, AddressBookEntry, AddressBookServiceEndpoint} = require('../model');
+const {AddressBookEntry} = require('../model');
 const {NetworkNodeService} = require('../service');
 const {NetworkNodeViewModel, NetworkSupplyViewModel} = require('../viewmodel');
 
@@ -101,7 +101,6 @@ class NetworkController extends BaseController {
     const conditions = [];
     const params = [];
     const nodeInValues = [];
-    const timestampInValues = [];
 
     for (const filter of filters) {
       if (_.isNil(filter)) {
@@ -109,10 +108,10 @@ class NetworkController extends BaseController {
       }
 
       switch (filter.key) {
-        case constants.filterKeys.ADDRESS_BOOK_FILE_ID:
+        case constants.filterKeys.FILE_ID:
           if (utils.opsMap.eq !== filter.operator) {
             throw new InvalidArgumentError(
-              `Only equals (eq) comparison operator is supported for ${constants.filterKeys.ADDRESS_BOOK_FILE_ID}`
+              `Only equals (eq) comparison operator is supported for ${constants.filterKeys.FILE_ID}`
             );
           }
           fileId = filter.value;
@@ -127,16 +126,6 @@ class NetworkController extends BaseController {
             startPosition + conditions.length
           );
           break;
-        case constants.filterKeys.TIMESTAMP:
-          this.updateConditionsAndParamsWithInValues(
-            filter,
-            timestampInValues,
-            params,
-            conditions,
-            AddressBookEntry.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP),
-            startPosition + conditions.length
-          );
-          break;
         case constants.filterKeys.LIMIT:
           limit = filter.value;
           break;
@@ -148,19 +137,11 @@ class NetworkController extends BaseController {
       }
     }
 
-    const fileIdOffset = 1;
     this.updateQueryFiltersWithInValues(
       params,
       conditions,
       nodeInValues,
       AddressBookEntry.getFullName(AddressBookEntry.NODE_ID),
-      params.length + startPosition
-    );
-    this.updateQueryFiltersWithInValues(
-      params,
-      conditions,
-      timestampInValues,
-      AddressBookEntry.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP),
       params.length + startPosition
     );
 
@@ -196,7 +177,6 @@ class NetworkController extends BaseController {
       const lastRow = _.last(response.nodes);
       const last = {
         [constants.filterKeys.NODE_ID]: lastRow.node_id,
-        [constants.filterKeys.TIMESTAMP]: lastRow.timestamp.from,
       };
       response.links.next = utils.getPaginationLink(req, false, last, order, {[constants.filterKeys.NODE_ID]: true});
     }

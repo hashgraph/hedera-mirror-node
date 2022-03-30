@@ -34,7 +34,7 @@ const filterKeys = {
   CREDIT_TYPE: 'type',
   ENCODING: 'encoding',
   ENTITY_PUBLICKEY: 'publickey',
-  ADDRESS_BOOK_FILE_ID: 'addressbook.file.id',
+  FILE_ID: 'file.id',
   FROM: 'from',
   INDEX: 'index',
   LIMIT: 'limit',

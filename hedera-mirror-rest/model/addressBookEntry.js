@@ -45,7 +45,7 @@ class AddressBookEntry {
   static MEMO = 'memo';
   static PUBLIC_KEY = 'public_key';
   static NODE_ID = 'node_id';
-  static NODE_ACCOUN_ID = 'node_account_id';
+  static NODE_ACCOUNT_ID = 'node_account_id';
   static NODE_CERT_HASH = 'node_cert_hash';
   static DESCRIPTION = 'description';
   static STAKE = 'stake';

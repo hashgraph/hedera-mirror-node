@@ -90,45 +90,6 @@ describe('extractNetworkNodesQuery', () => {
         params: ['102', '10'],
       },
     },
-    {
-      name: 'timestamp',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.eq,
-            value: '10',
-          },
-        ],
-      },
-      expected: {
-        ...defaultExpected,
-        conditions: ['abe.start_consensus_timestamp in ($2)'],
-        params: ['102', '10'],
-      },
-    },
-    {
-      name: 'node.id and timestamp',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.NODE_ID,
-            operator: utils.opsMap.eq,
-            value: '10',
-          },
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.eq,
-            value: '1',
-          },
-        ],
-      },
-      expected: {
-        ...defaultExpected,
-        conditions: ['abe.node_id in ($2)', 'abe.start_consensus_timestamp in ($3)'],
-        params: ['102', '10', '1'],
-      },
-    },
   ];
 
   specs.forEach((spec) => {

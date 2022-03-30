@@ -181,7 +181,7 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.ACCOUNT_BALANCE:
       ret = isPositiveLong(val, true);
       break;
-    case constants.filterKeys.ADDRESS_BOOK_FILE_ID:
+    case constants.filterKeys.FILE_ID:
       ret =
         op === constants.queryParamOperators.eq &&
         EntityId.isValidEntityId(val) &&
@@ -946,7 +946,7 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);
         break;
-      case constants.filterKeys.ADDRESS_BOOK_FILE_ID:
+      case constants.filterKeys.FILE_ID:
         // Accepted forms: shard.realm.num or encoded ID string
         comparator.value = EntityId.parse(comparator.value).getEncodedId();
         break;

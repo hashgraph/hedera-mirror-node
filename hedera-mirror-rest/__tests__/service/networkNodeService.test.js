@@ -54,31 +54,57 @@ beforeEach(async () => {
   await integrationDbOps.cleanUp(dbConfig.sqlConnection);
 });
 
+const defaultNodeFilter = 'abe.node_id = $2';
 describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
   test('Verify simple query', async () => {
     const [query, params] = NetworkNodeService.getNetworkNodesWithFiltersQuery([], [102], 'asc', 5);
     const expected = `with adb as (
-      select start_consensus_timestamp, end_consensus_timestamp, file_id from address_book where file_id = $1
+      select start_consensus_timestamp, end_consensus_timestamp, file_id
+      from address_book 
+      where file_id = $1
+      order by start_consensus_timestamp desc limit 1
      ),
      entries as (
-      select description, memo, node_id, node_account_id, node_cert_hash, public_key, adb.file_id, adb.start_consensus_timestamp, adb.end_consensus_timestamp
+      select abe.description, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, abe.public_key, adb.file_id, adb.start_consensus_timestamp,
+      adb.end_consensus_timestamp, jsonb_agg(jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port) order by ip_address_v4 asc,port asc) as service_endpoints
       from address_book_entry abe
       join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
-     ),
-     endpoints as (
-      select consensus_timestamp, node_id, jsonb_agg(jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port) order by ip_address_v4 desc,port desc) as service_endpoints
-      from address_book_service_endpoint abse
-      join adb on adb.start_consensus_timestamp = abse.consensus_timestamp
-      group by consensus_timestamp, node_id
+      join address_book_service_endpoint abse on abe.consensus_timestamp = abse.consensus_timestamp and abe.node_id = abse.node_id
+      group by adb.start_consensus_timestamp, abe.node_id, abe.description, abe.memo, abe.node_account_id, abe.node_cert_hash, abe.public_key, adb.file_id, adb.end_consensus_timestamp
      )
      select abe.description, abe.file_id, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, abe.start_consensus_timestamp, abe.end_consensus_timestamp,
-     abse.service_endpoints, abe.public_key
+     abe.service_endpoints, abe.public_key
      from entries abe
-     left join endpoints abse on abe.start_consensus_timestamp = abse.consensus_timestamp and abe.node_id = abse.node_id
      order by abe.node_id asc, abe.start_consensus_timestamp asc
      limit $2`;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([102, 5]);
+  });
+
+  test('Verify node file query', async () => {
+    const [query, params] = NetworkNodeService.getNetworkNodesWithFiltersQuery([defaultNodeFilter], [102, 3], 'asc', 5);
+    const expected = `with adb as (
+      select start_consensus_timestamp, end_consensus_timestamp, file_id
+      from address_book 
+      where file_id = $1
+      order by start_consensus_timestamp desc limit 1
+     ),
+     entries as (
+      select abe.description, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, abe.public_key, adb.file_id, adb.start_consensus_timestamp,
+      adb.end_consensus_timestamp, jsonb_agg(jsonb_build_object('ip_address_v4', ip_address_v4, 'port', port) order by ip_address_v4 asc,port asc) as service_endpoints
+      from address_book_entry abe
+      join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
+      join address_book_service_endpoint abse on abe.consensus_timestamp = abse.consensus_timestamp and abe.node_id = abse.node_id
+      group by adb.start_consensus_timestamp, abe.node_id, abe.description, abe.memo, abe.node_account_id, abe.node_cert_hash, abe.public_key, adb.file_id, adb.end_consensus_timestamp
+     )
+     select abe.description, abe.file_id, abe.memo, abe.node_id, abe.node_account_id, abe.node_cert_hash, abe.start_consensus_timestamp, abe.end_consensus_timestamp,
+     abe.service_endpoints, abe.public_key
+     from entries abe
+     where abe.node_id = $2
+     order by abe.node_id asc, abe.start_consensus_timestamp asc
+     limit $3`;
+    assertSqlQueryEqual(query, expected);
+    expect(params).toEqual([102, 3, 5]);
   });
 });
 
@@ -265,7 +291,6 @@ describe('NetworkNodeService.getNetworkNodes tests', () => {
   });
 });
 
-const defaultNodeFilter = 'abe.node_id = $2';
 describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
   test('NetworkNodeService.getNetworkNodes - No match', async () => {
     await expect(NetworkNodeService.getNetworkNodes([defaultNodeFilter], [2, 0], 'asc', 5)).resolves.toStrictEqual([]);
