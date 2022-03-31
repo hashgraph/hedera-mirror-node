@@ -52,7 +52,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 @EnabledIfV1
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.56.0")
-public class FixZeroAllowanceOwnerMigrationTest extends IntegrationTest  {
+class FixZeroAllowanceOwnerMigrationTest extends IntegrationTest  {
 
     private static final Converter<String, String> CASE_CONVERTER = CaseFormat.UPPER_CAMEL.converterTo(CaseFormat.LOWER_UNDERSCORE);
 
