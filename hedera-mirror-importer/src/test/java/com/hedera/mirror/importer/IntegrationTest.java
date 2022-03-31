@@ -82,7 +82,14 @@ public abstract class IntegrationTest {
         log.info("Executing: {}", testInfo.getDisplayName());
     }
 
+    protected<T> Collection<T> findEntity(Class<T> entityClass, String ids) {
+        return findEntity(entityClass, ids, null);
+    }
+
     protected<T> Collection<T> findEntity(Class<T> entityClass, String ids, String table) {
+        if (StringUtils.isEmpty(table)) {
+            table = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, entityClass.getSimpleName());
+        }
         String sql = String.format("select * from %s order by %s, timestamp_range asc", table, ids);
         return jdbcOperations.query(sql, rowMapper(entityClass));
     }
