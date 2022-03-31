@@ -63,7 +63,6 @@ import lombok.Builder;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.util.Lists;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -389,11 +388,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         entityProperties.getPersist().setTokens(true);
     }
 
-    @AfterEach
-    void after() {
-        entityProperties.getPersist().setContractResults(false);
-    }
-
     @ParameterizedTest(name = "{0}")
     @MethodSource("provideTokenCreateFtArguments")
     void tokenCreateWithAutoTokenAssociations(String name, List<CustomFee> customFees, boolean freezeDefault,
@@ -468,7 +462,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenAssociatePrecompile() {
-        entityProperties.getPersist().setContractResults(true);
         createTokenEntity(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, true, true, true);
 
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER2);
@@ -515,7 +508,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Test
     void tokenDissociatePrecompile() {
-        entityProperties.getPersist().setContractResults(true);
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, false, INITIAL_SUPPLY);
 
@@ -976,8 +968,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void tokenSupplyFtsPrecompile(boolean isMint) {
-        entityProperties.getPersist().setContractResults(true);
-
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, false, INITIAL_SUPPLY);
 
@@ -1063,8 +1053,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void tokenSupplyMintNftsPrecompile(long timestamp) {
-        entityProperties.getPersist().setContractResults(true);
-
         // given
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP,
                 ASSOCIATE_TIMESTAMP, PAYER2, false, false, false, 0);
@@ -1134,7 +1122,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @MethodSource("provideAssessedCustomFees")
     void tokenTransferPrecompile(String name, List<AssessedCustomFee> assessedCustomFees,
                                  List<com.hederahashgraph.api.proto.java.AssessedCustomFee> protoAssessedCustomFees) {
-        entityProperties.getPersist().setContractResults(true);
         tokenTransfer(assessedCustomFees, protoAssessedCustomFees, false, true);
     }
 

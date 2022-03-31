@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.ObjectAssert;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -70,11 +69,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private final RecordStreamFileListener recordStreamFileListener;
     private final TransactionTemplate transactionTemplate;
 
-    @BeforeEach
-    void setup() {
-        entityProperties.getPersist().setContractResults(false);
-    }
-
     @Test
     void getContractResultOnCall() {
         RecordItem recordItem = recordItemBuilder.contractCall().build();
@@ -93,7 +87,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void getContractResultOnTokenMintFT() {
-        entityProperties.getPersist().setContractResults(true);
         RecordItem recordItem = recordItemBuilder.tokenMint(TokenType.FUNGIBLE_COMMON)
                 .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
                 .build();
@@ -104,7 +97,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void getContractResultOnTokenMintNFT() {
-        entityProperties.getPersist().setContractResults(true);
         RecordItem recordItem = recordItemBuilder.tokenMint(TokenType.NON_FUNGIBLE_UNIQUE)
                 .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
                 .build();

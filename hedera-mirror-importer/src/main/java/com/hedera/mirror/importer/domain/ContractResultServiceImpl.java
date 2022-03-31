@@ -125,7 +125,9 @@ public class ContractResultServiceImpl implements ContractResultService {
             processContractStateChanges(functionResult, contractResult);
         }
 
-        transactionHandler.updateContractResult(contractResult, recordItem);
+        if (isContractCreateOrCall(recordItem.getTransactionBody())) {
+            transactionHandler.updateContractResult(contractResult, recordItem);
+        }
         entityListener.onContractResult(contractResult);
     }
 
