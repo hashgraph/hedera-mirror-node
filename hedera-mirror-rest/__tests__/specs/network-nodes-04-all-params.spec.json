@@ -99,7 +99,7 @@
       }
     ]
   },
-  "url": "/api/v1/network/nodes?file.id=102&node.id=0&limit=1&order=asc",
+  "url": "/api/v1/network/nodes?file.id=102&node.id=0&limit=1&order=desc",
   "responseStatus": 200,
   "responseJson": {
     "nodes": [
@@ -124,7 +124,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/network/nodes?file.id=102&node.id=0&limit=1&order=asc"
+      "next": "/api/v1/network/nodes?file.id=102&node.id=0&limit=1&order=desc"
     }
   }
 }

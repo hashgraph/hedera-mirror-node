@@ -72,10 +72,7 @@ class NetworkNodeService extends BaseService {
     const query = [
       NetworkNodeService.networkNodesBaseQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
-      `${super.getOrderByQuery(
-        AddressBookEntry.getFullName(AddressBookEntry.NODE_ID),
-        nodeOrder
-      )}, ${AddressBookEntry.getFullName(AddressBookEntry.CONSENSUS_TIMESTAMP)} ${nodeOrder}`,
+      `${super.getOrderByQuery(AddressBookEntry.getFullName(AddressBookEntry.NODE_ID), nodeOrder)}`,
       super.getLimitQuery(params.length),
     ].join('\n');
 

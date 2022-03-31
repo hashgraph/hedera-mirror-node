@@ -95,7 +95,7 @@ class NetworkController extends BaseController {
    */
   extractNetworkNodesQuery = (filters) => {
     let limit = defaultLimit;
-    let order = constants.orderFilterValues.DESC;
+    let order = constants.orderFilterValues.ASC;
     let fileId = '102'; // default fileId for mirror node
     const startPosition = 2; // 1st index is reserved for fileId
     const conditions = [];

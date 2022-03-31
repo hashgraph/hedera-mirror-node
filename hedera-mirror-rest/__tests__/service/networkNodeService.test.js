@@ -85,7 +85,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         ) as service_endpoints
         from address_book_entry abe
         join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
-        order by abe.node_id asc,abe.consensus_timestamp asc
+        order by abe.node_id asc
         limit $2`;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([102, 5]);
@@ -121,7 +121,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       from address_book_entry abe
       join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
       where abe.node_id = $2 
-      order by abe.node_id asc,abe.consensus_timestamp asc
+      order by abe.node_id asc
       limit $3`;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([102, 3, 5]);

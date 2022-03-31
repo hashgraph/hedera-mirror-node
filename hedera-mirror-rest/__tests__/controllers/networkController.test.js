@@ -34,7 +34,7 @@ describe('extractNetworkNodesQuery', () => {
   const defaultExpected = {
     conditions: [],
     params: [],
-    order: constants.orderFilterValues.DESC,
+    order: constants.orderFilterValues.ASC,
     limit: defaultLimit,
   };
 
@@ -57,19 +57,19 @@ describe('extractNetworkNodesQuery', () => {
       },
     },
     {
-      name: 'order asc',
+      name: 'order desc',
       input: {
         filters: [
           {
             key: constants.filterKeys.ORDER,
             operator: utils.opsMap.eq,
-            value: constants.orderFilterValues.ASC,
+            value: constants.orderFilterValues.DESC,
           },
         ],
       },
       expected: {
         ...defaultExpected,
-        order: constants.orderFilterValues.ASC,
+        order: constants.orderFilterValues.DESC,
         conditions: [],
         params: ['102'],
       },

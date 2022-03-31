@@ -38,6 +38,18 @@
         "memo": "0.0.7",
         "node_id": 4,
         "node_account_id": 7
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "memo": "0.0.8",
+        "node_id": 5,
+        "node_account_id": 8
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "memo": "0.0.9",
+        "node_id": 6,
+        "node_account_id": 9
       }
     ],
     "addressbookserviceendpoints": [
@@ -70,32 +82,25 @@
         "ip_address_v4": "128.0.0.5",
         "node_id": 4,
         "port": 50215
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "ip_address_v4": "128.0.0.6",
+        "node_id": 5,
+        "port": 50216
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "ip_address_v4": "128.0.0.7",
+        "node_id": 6,
+        "port": 50217
       }
     ]
   },
-  "urls": ["/api/v1/network/nodes?node.id=gt:2", "/api/v1/network/nodes?node.id=gte:3"],
+  "urls": ["/api/v1/network/nodes?node.id=gt:2&limit=2", "/api/v1/network/nodes?node.id=gte:3&limit=2"],
   "responseStatus": 200,
   "responseJson": {
     "nodes": [
-      {
-        "description": "description",
-        "file_id": "0.0.102",
-        "memo": "0.0.7",
-        "node_account_id": "0.0.7",
-        "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
-        "node_id": 4,
-        "public_key": "0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f",
-        "service_endpoints": [
-          {
-            "ip_address_v4": "128.0.0.5",
-            "port": 50215
-          }
-        ],
-        "timestamp": {
-          "from": "187654.000123457",
-          "to": null
-        }
-      },
       {
         "description": "description",
         "file_id": "0.0.102",
@@ -114,10 +119,29 @@
           "from": "187654.000123457",
           "to": null
         }
+      },
+      {
+        "description": "description",
+        "file_id": "0.0.102",
+        "memo": "0.0.7",
+        "node_account_id": "0.0.7",
+        "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
+        "node_id": 4,
+        "public_key": "0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f",
+        "service_endpoints": [
+          {
+            "ip_address_v4": "128.0.0.5",
+            "port": 50215
+          }
+        ],
+        "timestamp": {
+          "from": "187654.000123457",
+          "to": null
+        }
       }
     ],
     "links": {
-      "next": null
+      "next": "/api/v1/network/nodes?limit=2&node.id=gt:4"
     }
   }
 }

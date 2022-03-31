@@ -727,8 +727,13 @@ const randomString = async (length) => {
   return bytes.toString('hex');
 };
 
-const addHexPrefix = (hexString) => {
-  return `0x${hexString}`;
+const hexPrefix = '0x';
+const addHexPrefix = (hexString, isNullable = false) => {
+  if (_.isEmpty(hexString)) {
+    return isNullable ? null : hexPrefix;
+  }
+
+  return `${hexPrefix}${hexString}`;
 };
 
 /**
