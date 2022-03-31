@@ -311,7 +311,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/NetworkSupplyResponse'
+                $ref: '#/components/schemas/NetworkNodesResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
