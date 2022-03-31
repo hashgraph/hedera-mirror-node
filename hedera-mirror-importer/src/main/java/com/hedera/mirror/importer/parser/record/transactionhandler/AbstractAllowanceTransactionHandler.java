@@ -88,6 +88,14 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
 
     protected abstract List<com.hederahashgraph.api.proto.java.TokenAllowance> getTokenAllowances(RecordItem recordItem);
 
+    /**
+     * Gets the owner of the allowance. An empty owner in the *Allowance protobuf message implies the payer of the
+     * transaction is the owner of the resource the spender is granted allowance of.
+     *
+     * @param owner The owner in the *Allowance protobuf message
+     * @param payerAccountId The payer of the transaction
+     * @return The effective owner id
+     */
     private long getOwner(AccountID owner, EntityId payerAccountId) {
         var ownerAccountId = owner == AccountID.getDefaultInstance() ? payerAccountId : EntityId.of(owner);
         return ownerAccountId.getId();
