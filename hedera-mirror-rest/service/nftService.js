@@ -24,7 +24,7 @@ const _ = require('lodash');
 
 const {Nft} = require('../model');
 const BaseService = require('./baseService');
-const OrderSpec = require('./orderSpec');
+const {OrderSpec} = require('../sql');
 
 /**
  * Nft business model

@@ -22,7 +22,7 @@
 
 const BaseService = require('./baseService');
 const constants = require('../constants');
-const OrderSpec = require('./orderSpec');
+const {OrderSpec} = require('../sql');
 const {TokenAllowance} = require('../model');
 
 /**
@@ -44,7 +44,7 @@ class TokenAllowanceService extends BaseService {
    * @param {string} accountIdCondition
    * @param {string} limitClause
    * @param {string} orderClause
-   * @return {string|null}
+   * @return {string}
    */
   getSubQuery(filters, params, accountIdCondition, limitClause, orderClause) {
     const conditions = [
@@ -84,6 +84,7 @@ class TokenAllowanceService extends BaseService {
 
     let sqlQuery;
     if (subQueries.length === 0) {
+      // if all three filters are empty, the subqueries will be empty too, just create the query with empty filters
       sqlQuery = this.getSubQuery([], params, accountIdCondition, limitClause, orderClause);
     } else if (subQueries.length === 1) {
       sqlQuery = subQueries[0];

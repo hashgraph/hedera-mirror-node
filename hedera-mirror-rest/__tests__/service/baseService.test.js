@@ -21,7 +21,7 @@
 'use strict';
 
 const BaseService = require('../../service/baseService');
-const OrderSpec = require('../../service/orderSpec');
+const {OrderSpec} = require('../../sql');
 
 describe('getOrderByQuery', () => {
   const baseService = new BaseService();

@@ -21,8 +21,5 @@
 'use strict';
 
 module.exports = {
-  AccountController: require('./accountController'),
-  ContractController: require('./contractController'),
-  CryptoAllowanceController: require('./cryptoAllowanceController'),
-  TokenAllowanceController: require('./tokenAllowanceController'),
+  OrderSpec: require('./orderSpec'),
 };

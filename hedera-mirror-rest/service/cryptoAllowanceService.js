@@ -22,7 +22,7 @@
 
 const BaseService = require('./baseService');
 const {CryptoAllowance} = require('../model');
-const OrderSpec = require('./orderSpec');
+const {OrderSpec} = require('../sql');
 
 /**
  * CryptoAllowance business model

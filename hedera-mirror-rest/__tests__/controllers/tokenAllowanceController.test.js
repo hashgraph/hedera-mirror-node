@@ -26,7 +26,6 @@ const {
   },
 } = require('../../config');
 const constants = require('../../constants');
-const {controller, Bound} = require('../../controllers/tokenAllowanceController');
 const utils = require('../../utils');
 
 const {
@@ -35,6 +34,9 @@ const {
 const {
   opsMap: {eq, gt, gte, lt, lte, ne},
 } = utils;
+
+const Bound = require('../../controllers/bound');
+const {TokenAllowanceController} = require('../../controllers');
 
 const ownerAccountId = BigInt(1);
 
@@ -328,7 +330,7 @@ describe('extractTokenMultiUnionQuery', () => {
 
   specs.forEach((spec) => {
     test(spec.name, () => {
-      expect(controller.extractTokenMultiUnionQuery(spec.filters, ownerAccountId)).toEqual(spec.expected);
+      expect(TokenAllowanceController.extractTokenMultiUnionQuery(spec.filters, ownerAccountId)).toEqual(spec.expected);
     });
   });
 });
@@ -399,7 +401,9 @@ describe('extractTokenMultiUnionQuery throw', () => {
 
   specs.forEach((spec) => {
     test(spec.name, () => {
-      expect(() => controller.extractTokenMultiUnionQuery(spec.filters, ownerAccountId)).toThrowErrorMatchingSnapshot();
+      expect(() =>
+        TokenAllowanceController.extractTokenMultiUnionQuery(spec.filters, ownerAccountId)
+      ).toThrowErrorMatchingSnapshot();
     });
   });
 });

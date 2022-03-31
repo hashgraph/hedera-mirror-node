@@ -31,6 +31,7 @@ const constants = require('../constants');
 const utils = require('../utils');
 
 const BaseController = require('./baseController');
+const Bound = require('./bound');
 
 const {EntityService, TokenAllowanceService} = require('../service');
 const {TokenAllowanceViewModel} = require('../viewmodel');
@@ -38,64 +39,9 @@ const {TokenAllowanceViewModel} = require('../viewmodel');
 // errors
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
-class Bound {
-  constructor() {
-    this.equal = null;
-    this.lower = null;
-    this.upper = null;
-  }
-
-  hasBound() {
-    return this.hasLower() || this.hasUpper();
-  }
-
-  hasEqual() {
-    return !_.isNil(this.equal);
-  }
-
-  hasLower() {
-    return !_.isNil(this.lower);
-  }
-
-  hasUpper() {
-    return !_.isNil(this.upper);
-  }
-
-  isEmpty() {
-    return !this.hasEqual() && !this.hasLower() && !this.hasUpper();
-  }
-
-  parse(filter) {
-    const operator = filter.operator;
-    if (operator === utils.opsMap.eq) {
-      if (this.hasEqual()) {
-        throw new InvalidArgumentError('Only one equal (eq) operator is allowed');
-      }
-      this.equal = filter;
-    } else if (utils.gtGte.includes(operator)) {
-      if (this.hasLower()) {
-        throw new InvalidArgumentError('Only one gt/gte operator is allowed');
-      }
-      this.lower = filter;
-    } else if (utils.ltLte.includes(operator)) {
-      if (this.hasUpper()) {
-        throw new InvalidArgumentError('Only one lt/lte operator is allowed');
-      }
-      this.upper = filter;
-    } else {
-      throw new InvalidArgumentError('Not equal (ne) operator is not supported');
-    }
-  }
-
-  // for test only
-  static create(properties) {
-    return Object.assign(new Bound(), properties);
-  }
-}
-
 class TokenAllowanceController extends BaseController {
   /**
-   * Gets filters for the lower part of the multi-union query
+   * Gets filters for the lower part of the multi-union query.
    *
    * @param {Bound} spenderBound
    * @param {Bound} tokenIdBound
@@ -104,8 +50,12 @@ class TokenAllowanceController extends BaseController {
   getLowerFilters(spenderBound, tokenIdBound) {
     let filters = [];
     if (!tokenIdBound.hasBound()) {
+      // no token.id bound filters or no token.id filters at all, everything goes into the lower part and there
+      // shouldn't be inner or upper part.
       filters = [spenderBound.equal, spenderBound.lower, spenderBound.upper, tokenIdBound.equal];
     } else if (spenderBound.hasLower() && tokenIdBound.hasLower()) {
+      // both have lower. If spender.id has lower and token.id doesn't have lower, the lower bound of spender.id
+      // will go into the inner part.
       filters = [{...spenderBound.lower, operator: utils.opsMap.eq}, tokenIdBound.lower];
     }
     return filters.filter((f) => !_.isNil(f));
@@ -124,7 +74,9 @@ class TokenAllowanceController extends BaseController {
     }
 
     return [
+      // if token.id has lower bound, the spender.id filter should be spender.id > ?
       {filter: spenderBound.lower, newOperator: tokenIdBound.hasLower() ? utils.opsMap.gt : null},
+      // if token.id has upper bound, the spender.id filter should be spender.id < ?
       {filter: spenderBound.upper, newOperator: tokenIdBound.hasUpper() ? utils.opsMap.lt : null},
     ]
       .filter((f) => !_.isNil(f.filter))
@@ -142,6 +94,7 @@ class TokenAllowanceController extends BaseController {
     if (!spenderBound.hasUpper() || !tokenIdBound.hasUpper()) {
       return [];
     }
+    // the upper part should always have spender.id = ?
     return [{...spenderBound.upper, operator: utils.opsMap.eq}, tokenIdBound.upper];
   }
 
@@ -168,7 +121,8 @@ class TokenAllowanceController extends BaseController {
   }
 
   /**
-   * Extract multiple queries to be combined in union
+   * Extracts multiple queries to be combined in union.
+   *
    * @param {[]} filters req filters
    * @param {BigInt} ownerAccountId Encoded owner entityId
    * @returns {{bounds: {string: Bound}, lower: *[], inner: *[], upper: *[], accountId: BigInt, order: 'asc'|'desc', limit: number}}
@@ -269,10 +223,4 @@ class TokenAllowanceController extends BaseController {
   }
 }
 
-module.exports = {
-  controller: new TokenAllowanceController(),
-};
-
-if (utils.isTestEnv()) {
-  Object.assign(module.exports, {Bound});
-}
+module.exports = new TokenAllowanceController();

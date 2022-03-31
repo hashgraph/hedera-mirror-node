@@ -22,19 +22,20 @@
 
 const _ = require('lodash');
 
-const BaseService = require('./baseService');
-const OrderSpec = require('./orderSpec');
-const Contract = require('../model/contract');
-const EntityId = require('../entityId');
 const constants = require('../constants');
-const {NotFoundError} = require('../errors/notFoundError');
+const Contract = require('../model/contract');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
   response: {
     limit: {default: defaultLimit},
   },
 } = require('../config');
+const EntityId = require('../entityId');
+const {NotFoundError} = require('../errors/notFoundError');
 const {orderFilterValues} = require('../constants');
+const {OrderSpec} = require('../sql');
+
+const BaseService = require('./baseService');
 
 /**
  * Contract retrieval business logic
