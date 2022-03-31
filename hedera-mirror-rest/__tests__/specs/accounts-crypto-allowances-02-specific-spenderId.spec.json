@@ -69,7 +69,7 @@
   "responseJson": {
     "allowances": [
       {
-        "amount": 77,
+        "amount_granted": 77,
         "owner": "0.0.1001",
         "spender": "0.0.5001",
         "timestamp": {

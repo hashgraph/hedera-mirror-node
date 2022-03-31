@@ -883,8 +883,9 @@ components:
     Allowance:
       type: object
       properties:
-        amount:
-          description: The amount of the spender's allowance.
+        amount_granted:
+          description: The granted amount of the spender's allowance.
+          format: int64
           type: integer
           example: 100
         owner:
@@ -1397,10 +1398,8 @@ components:
       allOf:
         - $ref: '#/components/schemas/Allowance'
         - properties:
-            amount:
-              description: The amount of the spender's allowance in tinybars.
-              type: integer
-              example: 100
+            amount_granted:
+              description: The granted amount of the spender's allowance in tinybars.
     CryptoAllowances:
       type: array
       items:

@@ -62,7 +62,7 @@
   "responseJson": {
     "allowances": [
       {
-        "amount": 33,
+        "amount_granted": 33,
         "owner": "0.0.1001",
         "spender": "0.0.2001",
         "timestamp": {
@@ -71,7 +71,7 @@
         }
       },
       {
-        "amount": 44,
+        "amount_granted": 44,
         "owner": "0.0.1001",
         "spender": "0.0.3001",
         "timestamp": {
@@ -80,7 +80,7 @@
         }
       },
       {
-        "amount": 66,
+        "amount_granted": 66,
         "owner": "0.0.1001",
         "spender": "0.0.4001",
         "timestamp": {

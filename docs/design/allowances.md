@@ -101,7 +101,7 @@ create table if not exists token_allowance_history
 {
   "allowances": [
     {
-      "amount": 10,
+      "amount_granted": 10,
       "owner": "0.0.1000",
       "spender": "0.0.8488",
       "timestamp": {
@@ -110,7 +110,7 @@ create table if not exists token_allowance_history
       }
     },
     {
-      "amount": 5,
+      "amount_granted": 5,
       "owner": "0.0.1000",
       "spender": "0.0.9857",
       "timestamp": {
@@ -182,7 +182,7 @@ Optional Filters
 {
   "allowances": [
     {
-      "amount": 10,
+      "amount_granted": 10,
       "owner": "0.0.1000",
       "spender": "0.0.8488",
       "token_id": "0.0.1032",
@@ -192,7 +192,7 @@ Optional Filters
       }
     },
     {
-      "amount": 5,
+      "amount_granted": 5,
       "owner": "0.0.1000",
       "spender": "0.0.9857",
       "token_id": "0.0.1032",

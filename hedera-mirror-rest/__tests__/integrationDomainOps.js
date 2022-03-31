@@ -618,7 +618,7 @@ const addContract = async (contract) => {
   contract.id = EntityId.of(BigInt(contract.shard), BigInt(contract.realm), BigInt(contract.num)).getEncodedId();
   contract.key = contract.key != null ? Buffer.from(contract.key) : null;
 
-  const table = getTableName('contract', contract.timestamp_range);
+  const table = getTableName('contract', contract);
   await insertDomainObject(table, insertFields, contract);
 };
 
@@ -762,7 +762,7 @@ const addCryptoAllowance = async (cryptoAllowanceInput) => {
     ...cryptoAllowanceInput,
   };
 
-  const table = getTableName('crypto_allowance', cryptoAllowance.timestamp_range);
+  const table = getTableName('crypto_allowance', cryptoAllowance);
   await insertDomainObject(table, insertFields, cryptoAllowance);
 };
 
@@ -1001,7 +1001,7 @@ const addTokenAllowance = async (tokenAllowance) => {
     ...tokenAllowance,
   };
 
-  const table = getTableName('token_allowance', tokenAllowance.timestamp_range);
+  const table = getTableName('token_allowance', tokenAllowance);
   await insertDomainObject(table, insertFields, tokenAllowance);
 };
 
@@ -1095,7 +1095,7 @@ const insertDomainObject = async (table, fields, obj) => {
 
 // for a pair of current and history tables, if the timestamp range is open-ended, use the current table, otherwise
 // use the history table
-const getTableName = (base, timestampRange) => (timestampRange.endsWith(',)') ? base : `${base}_history`);
+const getTableName = (base, entity) => (entity.timestamp_range.endsWith(',)') ? base : `${base}_history`);
 
 module.exports = {
   addAccount,

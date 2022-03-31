@@ -64,7 +64,7 @@
       "responseJson": {
         "allowances": [
           {
-            "amount": 33,
+            "amount_granted": 33,
             "owner": "0.0.1001",
             "spender": "0.0.2001",
             "timestamp": {
@@ -74,7 +74,7 @@
             "token_id": "0.0.10001"
           },
           {
-            "amount": 44,
+            "amount_granted": 44,
             "owner": "0.0.1001",
             "spender": "0.0.2001",
             "timestamp": {
@@ -84,7 +84,7 @@
             "token_id": "0.0.10002"
           },
           {
-            "amount": 66,
+            "amount_granted": 66,
             "owner": "0.0.1001",
             "spender": "0.0.2001",
             "timestamp": {
@@ -105,7 +105,7 @@
       "responseJson": {
         "allowances": [
           {
-            "amount": 33,
+            "amount_granted": 33,
             "owner": "0.0.1001",
             "spender": "0.0.2001",
             "timestamp": {
@@ -115,7 +115,7 @@
             "token_id": "0.0.10001"
           },
           {
-            "amount": 44,
+            "amount_granted": 44,
             "owner": "0.0.1001",
             "spender": "0.0.2001",
             "timestamp": {
