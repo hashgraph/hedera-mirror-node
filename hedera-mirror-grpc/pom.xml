@@ -206,6 +206,10 @@
                 <artifactId>download-maven-plugin</artifactId>
             </plugin>
             <plugin>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
             </plugin>
@@ -214,17 +218,6 @@
                 <artifactId>license-maven-plugin</artifactId>
                 <configuration>
                     <excludedScopes>test</excludedScopes>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>com.google.cloud.tools</groupId>
-                <artifactId>jib-maven-plugin</artifactId>
-                <configuration>
-                    <extraDirectories>
-                        <paths>
-                            <path>${docker.resources}</path>
-                        </paths>
-                    </extraDirectories>
                 </configuration>
             </plugin>
             <plugin>
@@ -242,15 +235,6 @@
                         <goals>
                             <goal>build-info</goal>
                         </goals>
-                    </execution>
-                    <execution>
-                        <id>repackage</id>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                        <configuration>
-                            <classifier>exec</classifier>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

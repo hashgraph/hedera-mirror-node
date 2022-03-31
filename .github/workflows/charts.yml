@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install ct
-        uses: helm/chart-testing-action@v2.2.0
+        uses: helm/chart-testing-action@v2.2.1
 
       - name: Run lint
         run: ct lint --config .github/ct.yaml --all
@@ -30,33 +30,20 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build images
-        run: ./mvnw install -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest,hedera-mirror-rosetta,hedera-mirror-web3 -Dskip.npm -DskipTests -Ddocker.tag.version=${IMAGE_TAG}
+      - name: Install k3d
+        run: curl --retry 3 -fsL https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
 
       - name: Create k3d cluster
+        run: k3d cluster create mirror --agents 1 --timeout 5m --registry-create registry:0.0.0.0:5001 --image rancher/k3s:v1.22.8-k3s1
         timeout-minutes: 3
-        run: |
-          set -ex
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-          k3d cluster create mirror --agents 1 --timeout 5m --image rancher/k3s:v1.21.7-k3s1
 
-      - name: Import images
-        uses: nick-invision/retry@v2
-        with:
-          timeout_minutes: 1
-          max_attempts: 3
-          command: |
-            k3d image import -c mirror \
-              "gcr.io/mirrornode/hedera-mirror-grpc:${IMAGE_TAG}" \
-              "gcr.io/mirrornode/hedera-mirror-importer:${IMAGE_TAG}" \
-              "gcr.io/mirrornode/hedera-mirror-rest:${IMAGE_TAG}" \
-              "gcr.io/mirrornode/hedera-mirror-rosetta:${IMAGE_TAG}" \
-              "gcr.io/mirrornode/hedera-mirror-web3:${IMAGE_TAG}"
+      - name: Build images
+        run: ./mvnw deploy -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest,hedera-mirror-rosetta,hedera-mirror-web3 -Dmvn.golang.skip=true -Dskip.npm -DskipTests -Ddocker.push.repository=localhost:5001/mirrornode -Ddocker.tag.version=${IMAGE_TAG}
 
       - name: Install ct
-        uses: helm/chart-testing-action@v2.2.0
+        uses: helm/chart-testing-action@v2.2.1
 
       - name: Install chart
         run: |
-          echo -e "global:\n  image:\n    tag: ${IMAGE_TAG}" | tee -a charts/hedera-mirror/ci/*
+          echo -e "global:\n  image:\n    registry: registry:5000\n    tag: ${IMAGE_TAG}" | tee -a charts/hedera-mirror/ci/*
           ct install --config .github/ct.yaml --charts=charts/hedera-mirror

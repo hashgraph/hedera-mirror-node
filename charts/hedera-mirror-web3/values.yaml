@@ -65,7 +65,8 @@ hpa:
 
 image:
   pullPolicy: IfNotPresent
-  repository: gcr.io/mirrornode/hedera-mirror-web3
+  registry: gcr.io
+  repository: mirrornode/hedera-mirror-web3
   tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []

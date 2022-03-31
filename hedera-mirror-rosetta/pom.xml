@@ -31,11 +31,6 @@
             <plugin>
                 <groupId>io.fabric8</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
-                <configuration>
-                    <buildArgs>
-                        <VERSION>${release.version}</VERSION>
-                    </buildArgs>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>com.igormaznitsa</groupId>
@@ -82,10 +77,6 @@
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

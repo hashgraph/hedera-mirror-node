@@ -35,8 +35,9 @@ spec:
             {{- end }}
             {{- end }}
           envFrom: {{ tpl (toYaml .Values.envFrom) . | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.global.image.tag | default .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.global.image.pullPolicy | default .Values.image.pullPolicy }}
+          {{ $image := mergeOverwrite .Values.image .Values.global.image -}}
+          image: "{{ $image.registry }}/{{ $image.repository }}:{{ $image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ $image.pullPolicy }}
           livenessProbe: {{ toYaml .Values.livenessProbe | nindent 12 }}
           ports:
             - containerPort: 8545

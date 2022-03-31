@@ -1,12 +1,12 @@
+**/*_test.go
+*.iml
+*.txt
+*.xml
 .project
 .settings/**
+Dockerfile
 bin/**
 build/**
 scripts/**
 target/**
 test/**
-Dockerfile
-*.iml
-*.txt
-*.xml
-**/*_test.go
