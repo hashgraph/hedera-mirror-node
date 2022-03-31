@@ -70,11 +70,10 @@ public class ContractResultServiceImpl implements ContractResultService {
                 transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
 
         // handle non create/call transactions
-        if (!isContractCreateOrCall(recordItem.getTransactionBody())) {
-            if (!isValidContractFunctionResult(functionResult)) {
-                // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
-                return;
-            }
+        if (!isContractCreateOrCall(recordItem
+                .getTransactionBody()) && !isValidContractFunctionResult(functionResult)) {
+            // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
+            return;
         }
 
         // contractResult
@@ -168,6 +167,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private List<Long> getCreatedContractIds(ContractFunctionResult functionResult, RecordItem recordItem,
                                              ContractResult contractResult) {
         List<Long> createdContractIds = new ArrayList<>();
