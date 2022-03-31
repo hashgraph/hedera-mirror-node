@@ -714,7 +714,12 @@ const randomString = async (length) => {
 };
 
 const addHexPrefix = (hexString) => {
-  return `0x${hexString}`;
+  if (_.isNil(hexString)) {
+    return null;
+  }
+
+  hexString = `${hexString}`;
+  return hexString.substring(0, 2) === '0x' ? hexString : `0x` + hexString;
 };
 
 /**
