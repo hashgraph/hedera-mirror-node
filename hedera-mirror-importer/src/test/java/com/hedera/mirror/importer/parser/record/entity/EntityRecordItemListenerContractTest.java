@@ -835,11 +835,11 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .filteredOn(c -> c.getConsensusTimestamp().equals(consensusTimestamp))
                 .hasSize(1)
                 .first()
-                .returns(result.getAmount(), ContractResult::getAmount)
+                .returns(transactionBody.getInitialBalance(), ContractResult::getAmount)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
                 .returns(EntityId.of(receipt.getContractID()), ContractResult::getContractId)
-                .returns(toBytes(result.getFunctionParameters()), ContractResult::getFunctionParameters)
-                .returns(result.getGas(), ContractResult::getGasLimit);
+                .returns(toBytes(transactionBody.getConstructorParameters()), ContractResult::getFunctionParameters)
+                .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
         if (receipt.getStatus() == ResponseCodeEnum.SUCCESS) {
             contractResult.returns(EntityId.of(receipt.getContractID()), ContractResult::getContractId);
@@ -861,11 +861,11 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .filteredOn(c -> c.getConsensusTimestamp().equals(consensusTimestamp))
                 .hasSize(1)
                 .first()
-                .returns(result.getAmount(), ContractResult::getAmount)
+                .returns(transactionBody.getAmount(), ContractResult::getAmount)
                 .returns(contractId, ContractResult::getContractId)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
-                .returns(toBytes(result.getFunctionParameters()), ContractResult::getFunctionParameters)
-                .returns(result.getGas(), ContractResult::getGasLimit);
+                .returns(toBytes(transactionBody.getFunctionParameters()), ContractResult::getFunctionParameters)
+                .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
         assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
                 result.getStateChangesList());

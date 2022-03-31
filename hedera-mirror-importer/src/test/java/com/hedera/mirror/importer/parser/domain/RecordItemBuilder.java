@@ -65,7 +65,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import javax.inject.Named;
@@ -220,8 +219,6 @@ public class RecordItemBuilder {
                 .addTokenAllowances(tokenAllowance);
         return new Builder<>(TransactionType.CRYPTOADJUSTALLOWANCE, builder)
                 .record(r -> r.addCryptoAdjustments(cryptoAllowance.setAmount(5L))
-                        .addNftAdjustments(nftAllowance1.clearSerialNumbers().addAllSerialNumbers(List.of(2L, 3L)))
-                        .addNftAdjustments(nftAllowance2)
                         .addTokenAdjustments(tokenAllowance.setAmount(5L)));
     }
 
@@ -329,11 +326,11 @@ public class RecordItemBuilder {
         private Version hapiVersion = RecordFile.HAPI_VERSION_NOT_SET;
 
         private Builder(TransactionType type, T transactionBody) {
-            this.payerAccountId = accountId();
+            payerAccountId = accountId();
             this.type = type;
             this.transactionBody = transactionBody;
-            this.transactionBodyWrapper = defaultTransactionBody();
-            this.transactionRecord = defaultTransactionRecord();
+            transactionBodyWrapper = defaultTransactionBody();
+            transactionRecord = defaultTransactionRecord();
         }
 
         public RecordItem build() {

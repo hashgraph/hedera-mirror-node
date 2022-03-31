@@ -125,22 +125,14 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Test
-    void updateContractResultNonEmptyContractCallFunctionParams() {
-        long initialAmount = 123L;
-        long initialGas = 456L;
-        byte[] initialFunctionParams = new byte[] {0, 1, 2, 3};
-        ContractResult contractResult = ContractResult.builder()
-                .amount(initialAmount)
-                .gasLimit(initialGas)
-                .functionParameters(initialFunctionParams)
-                .build();
-        var recordItem = recordItemBuilder.contractCreate().build();
+    void updateContractResultNonContractCallTransaction() {
+        ContractResult contractResult = ContractResult.builder().build();
+        var recordItem = recordItemBuilder.contractCall().build();
         transactionHandler.updateContractResult(contractResult, recordItem);
 
         assertThat(contractResult)
-                .returns(initialAmount, ContractResult::getAmount)
-                .returns(initialGas, ContractResult::getGasLimit)
-                .returns(DomainUtils
-                        .toBytes(ByteString.copyFrom(initialFunctionParams)), ContractResult::getFunctionParameters);
+                .returns(null, ContractResult::getAmount)
+                .returns(null, ContractResult::getGasLimit)
+                .returns(null, ContractResult::getFunctionParameters);
     }
 }

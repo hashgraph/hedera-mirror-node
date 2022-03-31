@@ -75,11 +75,6 @@ public class ContractResultServiceImpl implements ContractResultService {
                 // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
                 return;
             }
-
-            if (!entityProperties.getPersist().isContractResults()) {
-                // feature gate precompile scenarios for now. When complete feature gate all contractResults together
-                return;
-            }
         }
 
         // contractResult
@@ -125,9 +120,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             processContractStateChanges(functionResult, contractResult);
         }
 
-        if (isContractCreateOrCall(recordItem.getTransactionBody())) {
-            transactionHandler.updateContractResult(contractResult, recordItem);
-        }
+        transactionHandler.updateContractResult(contractResult, recordItem);
         entityListener.onContractResult(contractResult);
     }
 
