@@ -1492,11 +1492,13 @@ components:
       properties:
         description:
           description: a memo associated with the address book
+          nullable: true
           type: string
         file_id:
           $ref: '#/components/schemas/EntityId'
         memo:
           description: memo
+          nullable: true
           type: string
         node_id:
           description: A non-sequential identifier for the node
@@ -1505,12 +1507,12 @@ components:
           $ref: '#/components/schemas/EntityId'
         node_cert_hash:
           description: hex encoded hash of the node’s TLS certificate
+          nullable: true
           type: string
-          format: byte
         public_key:
           description: hex encoded X509 RSA public key used to sign stream files
+          nullable: true
           type: string
-          format: byte
         service_endpoints:
           $ref: '#/components/schemas/ServiceEndpoints'
         timestamp:

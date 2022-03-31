@@ -77,23 +77,23 @@ const loadAccounts = async (accounts) => {
   }
 };
 
-const loadAddressBooks = async (addressBook) => {
-  if (addressBook == null) {
+const loadAddressBooks = async (addressBooks) => {
+  if (addressBooks == null) {
     return;
   }
 
-  for (const account of addressBook) {
-    await addAddressBook(account);
+  for (const addressBook of addressBooks) {
+    await addAddressBook(addressBook);
   }
 };
 
-const loadAddressBookEntries = async (entry) => {
-  if (entry == null) {
+const loadAddressBookEntries = async (entries) => {
+  if (entries == null) {
     return;
   }
 
-  for (const account of entry) {
-    await addAddressBookEntry(account);
+  for (const addressBookEntry of entries) {
+    await addAddressBookEntry(addressBookEntry);
   }
 };
 
@@ -102,8 +102,8 @@ const loadAddressBookServiceEndpoints = async (endpoints) => {
     return;
   }
 
-  for (const account of endpoints) {
-    await addAddressBookServiceEndpoint(account);
+  for (const endpoint of endpoints) {
+    await addAddressBookServiceEndpoint(endpoint);
   }
 };
 
