@@ -719,7 +719,7 @@ const addHexPrefix = (hexString) => {
   }
 
   hexString = `${hexString}`;
-  return hexString.substring(0, 2) === '0x' ? hexString : `0x` + hexString;
+  return hexString.substring(0, 2) === '0x' ? hexString : `0x${hexString}`;
 };
 
 /**
