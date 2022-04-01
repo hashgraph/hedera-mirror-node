@@ -23,9 +23,6 @@
 const _ = require('lodash');
 
 const {
-  response: {
-    limit: {default: defaultLimit},
-  },
   network: {unreleasedSupplyAccounts: defaultUnreleasedSupplyAccounts},
 } = require('../config');
 const constants = require('../constants');

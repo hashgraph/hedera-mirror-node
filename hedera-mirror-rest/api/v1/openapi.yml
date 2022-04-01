@@ -2474,7 +2474,7 @@ components:
         maximum: 100
     nodeIdQueryParam:
       name: node.id
-      description: The ID of the node id
+      description: The ID of the node
       in: query
       examples:
         noValue:
