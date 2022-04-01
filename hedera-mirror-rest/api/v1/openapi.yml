@@ -304,7 +304,7 @@ paths:
         - $ref: '#/components/parameters/fileIdQueryParam'
         - $ref: '#/components/parameters/nodeIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/orderQueryParam'
       responses:
         200:
           description: OK
@@ -1501,7 +1501,7 @@ components:
           nullable: true
           type: string
         node_id:
-          description: A non-sequential identifier for the node
+          description: An identifier for the node
           type: number
         node_account_id:
           $ref: '#/components/schemas/EntityId'
@@ -2500,7 +2500,7 @@ components:
           value: lte:6
       schema:
         type: string
-        pattern: ^((eq|gt|gte|lt|lte):)?\d{1,19}?$
+        pattern: ^((eq|gt|gte|lt|lte):)?\d{1,19}$
     nonceQueryParam:
       name: nonce
       in: query

@@ -43,6 +43,9 @@ const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const entityId = require('../entityId');
 const {NotFoundError} = require('../errors/notFoundError');
 
+const networkNodesDefaultSize = 10;
+const networkNodesMaxSize = 25;
+
 class NetworkController extends BaseController {
   static totalSupply = 5000000000000000000n;
   static unreleasedSupplyAccounts = defaultUnreleasedSupplyAccounts.map((a) => entityId.parse(a).getEncodedId());
@@ -94,7 +97,7 @@ class NetworkController extends BaseController {
    * @param {Number} startPosition param index start position
    */
   extractNetworkNodesQuery = (filters) => {
-    let limit = defaultLimit;
+    let limit = networkNodesDefaultSize;
     let order = constants.orderFilterValues.ASC;
     let fileId = '102'; // default fileId for mirror node
     const startPosition = 2; // 1st index is reserved for fileId
@@ -132,6 +135,12 @@ class NetworkController extends BaseController {
           );
           break;
         case constants.filterKeys.LIMIT:
+          // response per address book node can be large so a reduced limit is enforced
+          if (filter.value > networkNodesMaxSize) {
+            throw new InvalidArgumentError(
+              `Max value of ${networkNodesMaxSize} is supported for ${constants.filterKeys.LIMIT}`
+            );
+          }
           limit = filter.value;
           break;
         case constants.filterKeys.ORDER:
