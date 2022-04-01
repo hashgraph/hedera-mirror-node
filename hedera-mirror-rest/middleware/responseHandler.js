@@ -20,6 +20,9 @@
 
 'use strict';
 
+const {
+  response: {headers},
+} = require('../config');
 const constants = require('../constants');
 const {NotFoundError} = require('../errors/notFoundError');
 
@@ -31,10 +34,14 @@ const responseHandler = async (req, res, next) => {
     // unmatched route will have no response data, pass NotFoundError to next middleware
     throw new NotFoundError();
   } else {
+    res.set(headers.default);
+    res.set(headers.path[req.route.path]);
+
     // set response json
     const code = res.locals.statusCode;
     const data = res.locals[constants.responseDataLabel];
-    res.status(code).json(data);
+    res.status(code);
+    res.json(data);
 
     const startTime = res.locals[constants.requestStartTime];
     const elapsed = startTime ? Date.now() - startTime : 0;

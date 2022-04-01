@@ -127,7 +127,7 @@ Optional Filters
 
 * `limit`: The maximum amount of items to return.
 * `order`: Order by `spender`. Accepts `asc` or `desc` with a default of `asc`.
-* `spender.id`: Filter by the spender account ID. `ne` operator is not supported..
+* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
 
 #### NFT Allowances
 
@@ -171,8 +171,8 @@ Optional Filters
 
 * `limit`: The maximum amount of items to return.
 * `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
-* `spender.id`: Filter by the spender account ID. `ne` operator is not supported..
-* `token.id`: Filter by the token ID. `ne` operator is not supported..
+* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
+* `token.id`: Filter by the token ID. `ne` operator is not supported.
 
 #### Token Allowances
 
@@ -210,8 +210,8 @@ Optional Filters
 
 * `limit`: The maximum amount of items to return.
 * `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
-* `spender.id`: Filter by the spender account ID. `ne` operator is not supported..
-* `token.id`: Filter by the token ID. `ne` operator is not supported..
+* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
+* `token.id`: Filter by the token ID. `ne` operator is not supported.
 
 #### Transactions APIs
 

@@ -52,9 +52,6 @@ class BaseService {
   }
 
   async getSingleRow(query, params, functionName = '') {
-    if (logger.isTraceEnabled()) {
-      logger.trace(`${functionName} query: ${query}, params: ${params}`);
-    }
     const rows = await this.getRows(query, params, functionName);
     if (_.isEmpty(rows) || rows.length > 1) {
       return null;
