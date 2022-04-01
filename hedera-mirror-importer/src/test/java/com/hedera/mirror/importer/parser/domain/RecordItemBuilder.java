@@ -99,21 +99,15 @@ public class RecordItemBuilder {
     }
 
     public Builder<ContractCallTransactionBody.Builder> contractCall(ContractID contractId) {
-        Long amount = 5_000L;
-        Long gas = 10_000L;
-        ByteString functionParameters = bytes(64);
         ContractCallTransactionBody.Builder transactionBody = ContractCallTransactionBody.newBuilder()
-                .setAmount(amount)
+                .setAmount(5_000L)
                 .setContractID(contractId)
-                .setFunctionParameters(functionParameters)
-                .setGas(gas);
+                .setFunctionParameters(bytes(64))
+                .setGas(10_000L);
 
         return new Builder<>(TransactionType.CONTRACTCALL, transactionBody)
                 .receipt(r -> r.setContractID(contractId))
-                .record(r -> r.setContractCallResult(contractFunctionResult(contractId)
-                        .setAmount(amount)
-                        .setGas(gas)
-                        .setFunctionParameters(functionParameters)));
+                .record(r -> r.setContractCallResult(contractFunctionResult(contractId)));
     }
 
     public Builder<ContractCreateTransactionBody.Builder> contractCreate() {
@@ -121,16 +115,13 @@ public class RecordItemBuilder {
     }
 
     public Builder<ContractCreateTransactionBody.Builder> contractCreate(ContractID contractId) {
-        Long amount = 20_000L;
-        Long gas = 10_000L;
-        ByteString functionParameters = bytes(64);
         ContractCreateTransactionBody.Builder transactionBody = ContractCreateTransactionBody.newBuilder()
                 .setAdminKey(key())
                 .setAutoRenewPeriod(duration(30))
-                .setConstructorParameters(functionParameters)
+                .setConstructorParameters(bytes(64))
                 .setFileID(fileId())
-                .setGas(gas)
-                .setInitialBalance(amount)
+                .setGas(10_000L)
+                .setInitialBalance(20_000L)
                 .setMemo(text(16))
                 .setNewRealmAdminKey(key())
                 .setProxyAccountID(accountId())
@@ -140,10 +131,7 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.CONTRACTCREATEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId))
                 .record(r -> r.setContractCreateResult(contractFunctionResult(contractId)
-                        .setAmount(amount)
-                        .addCreatedContractIDs(contractId)
-                        .setGas(gas)
-                        .setFunctionParameters(functionParameters)));
+                        .addCreatedContractIDs(contractId)));
     }
 
     public Builder<ContractDeleteTransactionBody.Builder> contractDelete() {
