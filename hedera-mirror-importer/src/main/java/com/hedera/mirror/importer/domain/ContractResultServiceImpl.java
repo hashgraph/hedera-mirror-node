@@ -175,6 +175,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private List<Long> getCreatedContractIds(ContractFunctionResult functionResult, RecordItem recordItem,
                                              EntityId parentEntityContractId) {
         List<Long> createdContractIds = new ArrayList<>();
