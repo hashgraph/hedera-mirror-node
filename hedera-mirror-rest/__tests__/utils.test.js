@@ -1428,28 +1428,18 @@ describe('Utils getNextParamQueries', () => {
 describe('Utils addHexPrefix tests', () => {
   const specs = [
     {
-      name: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f not nullable',
-      args: ['4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', false],
+      name: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+      args: ['4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'],
       expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     },
     {
-      name: '"" not nullable',
-      args: ['', false],
-      expected: '0x',
-    },
-    {
-      name: 'null not nullable',
-      args: [null, false],
-      expected: '0x',
-    },
-    {
-      name: '"" nullable',
-      args: ['', true],
+      name: '""',
+      args: [''],
       expected: null,
     },
     {
-      name: 'null nullable',
-      args: [null, true],
+      name: 'null',
+      args: [null],
       expected: null,
     },
   ];

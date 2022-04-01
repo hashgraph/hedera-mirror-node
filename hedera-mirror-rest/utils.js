@@ -20,7 +20,6 @@
 
 'use strict';
 
-const {TransactionID} = require('@hashgraph/proto');
 const _ = require('lodash');
 const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
@@ -33,7 +32,6 @@ const EntityId = require('./entityId');
 const config = require('./config');
 const ed25519 = require('./ed25519');
 const contants = require('./constants');
-const {ContractService} = require('./service');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
@@ -728,12 +726,8 @@ const randomString = async (length) => {
 };
 
 const hexPrefix = '0x';
-const addHexPrefix = (hexString, isNullable = false) => {
-  if (_.isEmpty(hexString)) {
-    return isNullable ? null : hexPrefix;
-  }
-
-  return `${hexPrefix}${hexString}`;
+const addHexPrefix = (hexString) => {
+  return _.isEmpty(hexString) ? null : `${hexPrefix}${hexString}`;
 };
 
 /**

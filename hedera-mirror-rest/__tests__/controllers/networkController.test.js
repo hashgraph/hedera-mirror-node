@@ -20,11 +20,6 @@
 
 'use strict';
 
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../../config');
 const constants = require('../../constants');
 const {NetworkController} = require('../../controllers');
 const networkCtrl = require('../../controllers/networkController');
@@ -35,7 +30,7 @@ describe('extractNetworkNodesQuery', () => {
     conditions: [],
     params: [],
     order: constants.orderFilterValues.ASC,
-    limit: defaultLimit,
+    limit: 10,
   };
 
   const specs = [
