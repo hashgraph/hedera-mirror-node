@@ -1018,37 +1018,6 @@ describe('Utils toHexString tests', () => {
   });
 });
 
-describe('Utils addHexPrefix tests', () => {
-  const specs = [
-    {
-      name: 'undefined hexString',
-      args: [undefined],
-      expected: null,
-    },
-    {
-      name: 'null hexString',
-      args: [null],
-      expected: null,
-    },
-    {
-      name: 'no prefix added to hexString',
-      args: ['0xab'],
-      expected: '0xab',
-    },
-    {
-      name: 'prefix added to hexString',
-      args: ['a'],
-      expected: '0xa',
-    },
-  ];
-
-  specs.forEach((spec) => {
-    test(spec.name, () => {
-      expect(utils.addHexPrefix(...spec.args)).toEqual(spec.expected);
-    });
-  });
-});
-
 describe('Utils getLimitParamValue', () => {
   test('undefined', () => {
     expect(getLimitParamValue(undefined)).toEqual(responseLimit.default);
@@ -1452,6 +1421,37 @@ describe('Utils getNextParamQueries', () => {
   testSpecs.forEach((spec) => {
     test(spec.name, () => {
       expect(utils.getNextParamQueries(...spec.args)).toEqual(spec.expected);
+    });
+  });
+
+  describe('Utils addHexPrefix tests', () => {
+    const specs = [
+      {
+        name: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+        args: ['4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'],
+        expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+      },
+      {
+        name: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+        args: ['0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'],
+        expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+      },
+      {
+        name: '""',
+        args: [''],
+        expected: null,
+      },
+      {
+        name: 'null',
+        args: [null],
+        expected: null,
+      },
+    ];
+
+    specs.forEach((spec) => {
+      test(spec.name, () => {
+        expect(utils.addHexPrefix(...spec.args)).toEqual(spec.expected);
+      });
     });
   });
 });

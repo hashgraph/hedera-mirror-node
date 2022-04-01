@@ -713,13 +713,14 @@ const randomString = async (length) => {
   return bytes.toString('hex');
 };
 
+const hexPrefix = '0x';
 const addHexPrefix = (hexString) => {
-  if (_.isNil(hexString)) {
+  if (_.isEmpty(hexString)) {
     return null;
   }
 
   hexString = `${hexString}`;
-  return hexString.substring(0, 2) === '0x' ? hexString : `0x${hexString}`;
+  return hexString.substring(0, 2) === hexPrefix ? hexString : `${hexPrefix}${hexString}`;
 };
 
 /**
