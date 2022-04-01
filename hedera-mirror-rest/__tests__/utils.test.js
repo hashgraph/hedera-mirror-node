@@ -1018,6 +1018,37 @@ describe('Utils toHexString tests', () => {
   });
 });
 
+describe('Utils addHexPrefix tests', () => {
+  const specs = [
+    {
+      name: 'undefined hexString',
+      args: [undefined],
+      expected: null,
+    },
+    {
+      name: 'null hexString',
+      args: [null],
+      expected: null,
+    },
+    {
+      name: 'no prefix added to hexString',
+      args: ['0xab'],
+      expected: '0xab',
+    },
+    {
+      name: 'prefix added to hexString',
+      args: ['a'],
+      expected: '0xa',
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(spec.name, () => {
+      expect(utils.addHexPrefix(...spec.args)).toEqual(spec.expected);
+    });
+  });
+});
+
 describe('Utils getLimitParamValue', () => {
   test('undefined', () => {
     expect(getLimitParamValue(undefined)).toEqual(responseLimit.default);
