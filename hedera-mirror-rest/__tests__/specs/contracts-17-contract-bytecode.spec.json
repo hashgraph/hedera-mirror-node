@@ -4,7 +4,7 @@
     "contracts": [
       {
         "created_timestamp": "987654000123456",
-        "evm_address": "0x62cf9068fed962cf9068fed962cf9068fed9dddd",
+        "evm_address": "62cf9068fed962cf9068fed962cf9068fed9dddd",
         "file_id": "5001",
         "key": [1, 1, 1],
         "num": "8001",
@@ -12,7 +12,7 @@
       },
       {
         "created_timestamp": "987654000123456",
-        "evm_address": "0x62cf9068fed962cf9aaabbb962cf9068fed9dddd",
+        "evm_address": "62cf9068fed962cf9aaabbb962cf9068fed9dddd",
         "file_id": "5001",
         "key": [1, 1, 1],
         "num": "8001",
