@@ -197,7 +197,7 @@ public class AccountFeature extends AbstractFeature {
                 .isNotEmpty()
                 .first()
                 .isNotNull()
-                .returns(approvedAmount, MirrorCryptoAllowance::getAmount)
+                .returns(approvedAmount, MirrorCryptoAllowance::getAmountGranted)
                 .returns(ownerString, MirrorCryptoAllowance::getOwner)
                 .returns(spenderString, MirrorCryptoAllowance::getSpender)
                 .extracting(MirrorCryptoAllowance::getTimestamp)
@@ -226,7 +226,7 @@ public class AccountFeature extends AbstractFeature {
                 .isEmpty(mirrorCryptoAllowanceResponse.getAllowances())) {
             mirrorCryptoAllowanceResponse.getAllowances().forEach(x -> {
                 // set allowance to 0 for each non zero
-                if (x.getAmount() > 0) {
+                if (x.getAmountGranted() > 0) {
                     setCryptoAllowance(AccountId.fromString(x.getSpender()), 0, true);
                 }
             });
@@ -240,7 +240,7 @@ public class AccountFeature extends AbstractFeature {
                 mirrorClient.getAccountCryptoAllowance(accountClient.getClient().getOperatorAccountId().toString());
         var allowances = mirrorCryptoAllowanceResponse.getAllowances();
         assertThat(allowances).isNotEmpty();
-        assertThat(allowances.stream().map(MirrorCryptoAllowance::getAmount).reduce(0L, Long::sum)).isZero();
+        assertThat(allowances.stream().map(MirrorCryptoAllowance::getAmountGranted).reduce(0L, Long::sum)).isZero();
     }
 
     private void setCryptoAllowance(String accountName, long amount) {
