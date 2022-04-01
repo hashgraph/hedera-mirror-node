@@ -98,6 +98,11 @@ hedera:
       port: 5551
       response:
         compression: true
+        headers:
+          default: { 'Cache-Control': 'public, max-age=1' }
+          path:
+            /api/v1/transactions/:transactionId: { 'Cache-Control': 'public, max-age=300' }
+            /api/v1/transactions/:transactionId/stateproof: { 'Cache-Control': 'public, max-age=600' }
         includeHostInLink: false
         limit:
           default: 25
