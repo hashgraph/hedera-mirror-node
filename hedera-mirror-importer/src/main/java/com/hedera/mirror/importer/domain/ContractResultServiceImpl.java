@@ -97,20 +97,29 @@ public class ContractResultServiceImpl implements ContractResultService {
     private void processContractResult(RecordItem recordItem, EntityId contractEntityId,
                                        ContractFunctionResult functionResult,
                                        TransactionHandler transactionHandler) {
+        // create child contracts regardless of contractResults support
+        List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
+        if (!entityProperties.getPersist().isContractResults()) {
+            return;
+        }
+
         ContractResult contractResult = new ContractResult();
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         contractResult.setContractId(contractEntityId);
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
+        transactionHandler.updateContractResult(contractResult, recordItem);
 
         if (isValidContractFunctionResult(functionResult)) {
-            // amount, gasLimit and functionParameters were missing from record proto prior to HAPI v0.25
-            contractResult.setAmount(functionResult.getAmount());
-            contractResult.setGasLimit(functionResult.getGas());
-            contractResult.setFunctionParameters(DomainUtils.toBytes(functionResult.getFunctionParameters()));
+            if (!isContractCreateOrCall(recordItem.getTransactionBody())) {
+                // amount, gasLimit and functionParameters were missing from record proto prior to HAPI v0.25
+                contractResult.setAmount(functionResult.getAmount());
+                contractResult.setGasLimit(functionResult.getGas());
+                contractResult.setFunctionParameters(DomainUtils.toBytes(functionResult.getFunctionParameters()));
+            }
 
             contractResult.setBloom(DomainUtils.toBytes(functionResult.getBloom()));
             contractResult.setCallResult(DomainUtils.toBytes(functionResult.getContractCallResult()));
-            contractResult.setCreatedContractIds(getCreatedContractIds(functionResult, recordItem, contractResult));
+            contractResult.setCreatedContractIds(contractIds);
             contractResult.setErrorMessage(functionResult.getErrorMessage());
             contractResult.setFunctionResult(functionResult.toByteArray());
             contractResult.setGasUsed(functionResult.getGasUsed());
@@ -119,7 +128,6 @@ public class ContractResultServiceImpl implements ContractResultService {
             processContractStateChanges(functionResult, contractResult);
         }
 
-        transactionHandler.updateContractResult(contractResult, recordItem);
         entityListener.onContractResult(contractResult);
     }
 
@@ -167,9 +175,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
-    @SuppressWarnings("deprecation")
     private List<Long> getCreatedContractIds(ContractFunctionResult functionResult, RecordItem recordItem,
-                                             ContractResult contractResult) {
+                                             EntityId parentEntityContractId) {
         List<Long> createdContractIds = new ArrayList<>();
         boolean persist = shouldPersistCreatedContractIDs(recordItem);
         for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
@@ -177,7 +184,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             if (!EntityId.isEmpty(contractId)) {
                 createdContractIds.add(contractId.getId());
                 // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
-                if (persist && !contractId.equals(contractResult.getContractId())) {
+                if (persist && !contractId.equals(parentEntityContractId)) {
                     processCreatedContractEntity(recordItem, contractId);
                 }
             }
