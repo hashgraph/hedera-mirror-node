@@ -76,11 +76,14 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
             } else {
                 EntityId delegatingSpender = EntityId.of(nftApproval.getDelegatingSpender());
                 for (var serialNumber : nftApproval.getSerialNumbersList()) {
-                    Nft nft = new Nft(serialNumber, tokenId);
+                    // nft instance allowance update doesn't set nft modifiedTimestamp
+                    Nft nft = new Nft(Math.abs(serialNumber), tokenId);
                     nft.setAccountId(ownerAccountId);
-                    nft.setSpender(spender);
-                    nft.setAllowanceGrantedTimestamp(consensusTimestamp);
-                    nft.setDelegatingSpender(delegatingSpender);
+                    if (serialNumber > 0) {
+                        nft.setSpender(spender);
+                        nft.setAllowanceGrantedTimestamp(consensusTimestamp);
+                        nft.setDelegatingSpender(delegatingSpender);
+                    }
                     entityListener.onNftInstanceAllowance(nft);
                 }
             }
@@ -106,11 +109,11 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
     protected abstract List<com.hederahashgraph.api.proto.java.TokenAllowance> getTokenAllowances(RecordItem recordItem);
 
     /**
-     * Gets the owner of the allowance. An empty owner in the *Allowance protobuf message implies the payer of the
-     * transaction is the owner of the resource the spender is granted allowance of.
+     * Gets the owner of the allowance. An empty owner in the *Allowance protobuf message implies the transaction payer
+     * is the owner of the resource the spender is granted allowance of.
      *
      * @param owner The owner in the *Allowance protobuf message
-     * @param payerAccountId The payer of the transaction
+     * @param payerAccountId The transaction payer
      * @return The effective owner account id
      */
     private EntityId getOwnerAccountId(AccountID owner, EntityId payerAccountId) {

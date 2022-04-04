@@ -28,6 +28,26 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import javax.annotation.Resource;
+import org.assertj.core.api.Condition;
+import org.assertj.core.api.IterableAssert;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -45,36 +65,22 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.time.Instant;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-import javax.annotation.Resource;
-import org.assertj.core.api.Condition;
-import org.assertj.core.api.IterableAssert;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EnumSource;
-
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
+import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -93,6 +99,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private NftAllowanceRepository nftAllowanceRepository;
 
     @Resource
+    private NftRepository nftRepository;
+
+    @Resource
     private RecordParserProperties parserProperties;
 
     @Resource
@@ -107,16 +116,28 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     @Test
     void cryptoAdjustAllowance() {
+        // given
         RecordItem recordItem = recordItemBuilder.cryptoAdjustAllowance().build();
+        List<Nft> expectedNfts = setupNftInstanceAllowance(recordItem);
+
+        // when
         parseRecordItemAndCommit(recordItem);
-        assertAllowances(recordItem);
+
+        // then
+        assertAllowances(recordItem, expectedNfts);
     }
 
     @Test
     void cryptoApproveAllowance() {
+        // given
         RecordItem recordItem = recordItemBuilder.cryptoApproveAllowance().build();
+        List<Nft> expectedNfts = setupNftInstanceAllowance(recordItem);
+
+        // when
         parseRecordItemAndCommit(recordItem);
-        assertAllowances(recordItem);
+
+        // then
+        assertAllowances(recordItem, expectedNfts);
     }
 
     @Test
@@ -788,7 +809,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         testRawBytes(transaction, null);
     }
 
-    private void assertAllowances(RecordItem recordItem) {
+    private void assertAllowances(RecordItem recordItem, List<Nft> expectedNfts) {
         assertAll(
                 () -> assertEquals(1, cryptoAllowanceRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
@@ -805,11 +826,11 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
                 () -> assertThat(nftAllowanceRepository.findAll())
                         .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
-//                        .allSatisfy(a -> assertThat(a.getSerialNumbers()).isNotNull())
                         .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
                         .allSatisfy(a -> assertThat(a.getTokenId()).isPositive())
                         .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
                         .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
+                () -> assertThat(nftRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedNfts),
                 () -> assertThat(tokenAllowanceRepository.findAll())
                         .allSatisfy(a -> assertThat(a.getAmount()).isPositive())
                         .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
@@ -945,6 +966,43 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
             transferListBuilder.addAccountAmounts(accountAmount);
         });
         recordBuilder.setTransferList(transferListBuilder);
+    }
+
+    private List<Nft> setupNftInstanceAllowance(RecordItem recordItem) {
+        var nftCreatedTimestamp = new AtomicLong(100L);
+        List<Nft> expectedNfts = new ArrayList<>();
+        var transactionBody = recordItem.getTransactionBody();
+        var nftAllowances = transactionBody.hasCryptoAdjustAllowance() ?
+                transactionBody.getCryptoAdjustAllowance().getNftAllowancesList() :
+                transactionBody.getCryptoApproveAllowance().getNftAllowancesList();
+        var nfts = nftAllowances.stream()
+                .filter(nftAllowance -> !nftAllowance.hasApprovedForAll())
+                .flatMap(nftAllowance -> {
+                    var owner = EntityId.of(nftAllowance.getOwner());
+                    var tokenId = EntityId.of(nftAllowance.getTokenId());
+                    return nftAllowance.getSerialNumbersList().stream().map(serialNumber -> {
+                        var nft = new Nft(Math.abs(serialNumber), tokenId);
+                        nft.setAccountId(owner);
+                        nft.setCreatedTimestamp(nftCreatedTimestamp.getAndIncrement());
+                        nft.setModifiedTimestamp(nft.getCreatedTimestamp());
+
+                        var expectedNft = TestUtils.clone(nft);
+                        var spender = EntityId.of(nftAllowance.getSpender());
+                        if (serialNumber > 0) {
+                            expectedNft.setAllowanceGrantedTimestamp(recordItem.getConsensusTimestamp());
+                            expectedNft.setSpender(spender);
+                        } else {
+                            nft.setAllowanceGrantedTimestamp(nft.getCreatedTimestamp() + 10L);
+                            nft.setSpender(spender);
+                        }
+                        expectedNfts.add(expectedNft);
+
+                        return nft;
+                    });
+                })
+                .collect(Collectors.toList());
+        nftRepository.saveAll(nfts);
+        return expectedNfts;
     }
 
     private void testRawBytes(Transaction transaction, byte[] expectedBytes) {

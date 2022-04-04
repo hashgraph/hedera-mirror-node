@@ -77,7 +77,7 @@ alter table nft
    add column if not exists spender bigint default null;
 
 create index if not exists nft__allowance on nft (account_id, spender, token_id, serial_number)
-   where spender is not null;
+   where account_id is not null and spender is not null;
 ```
 
 #### Token Allowance

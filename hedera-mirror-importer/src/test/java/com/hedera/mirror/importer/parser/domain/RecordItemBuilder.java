@@ -29,6 +29,16 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.StringValue;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import javax.inject.Named;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.data.util.Version;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -63,16 +73,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-import javax.inject.Named;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.data.util.Version;
-
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -204,6 +204,11 @@ public class RecordItemBuilder {
                 .setOwner(accountId())
                 .setSpender(accountId())
                 .setTokenId(tokenId());
+        var nftAllowance3 = NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(false))
+                .setOwner(accountId())
+                .setSpender(accountId())
+                .setTokenId(tokenId());
         var tokenAllowance = TokenAllowance.newBuilder()
                 .setAmount(-10L)
                 .setOwner(accountId())
@@ -213,11 +218,10 @@ public class RecordItemBuilder {
                 .addCryptoAllowances(cryptoAllowance)
                 .addNftAllowances(nftAllowance1)
                 .addNftAllowances(nftAllowance2)
+                .addNftAllowances(nftAllowance3)
                 .addTokenAllowances(tokenAllowance);
         return new Builder<>(TransactionType.CRYPTOADJUSTALLOWANCE, builder)
                 .record(r -> r.addCryptoAdjustments(cryptoAllowance.setAmount(5L))
-//                        .addNftAdjustments(nftAllowance1.clearSerialNumbers().addAllSerialNumbers(List.of(2L, 3L)))
-//                        .addNftAdjustments(nftAllowance2)
                         .addTokenAdjustments(tokenAllowance.setAmount(5L)));
     }
 
@@ -231,6 +235,11 @@ public class RecordItemBuilder {
                         .setOwner(accountId())
                         .addSerialNumbers(1L)
                         .addSerialNumbers(2L)
+                        .setSpender(accountId())
+                        .setTokenId(tokenId()))
+                .addNftAllowances(NftAllowance.newBuilder()
+                        .setApprovedForAll(BoolValue.of(false))
+                        .setOwner(accountId())
                         .setSpender(accountId())
                         .setTokenId(tokenId()))
                 .addNftAllowances(NftAllowance.newBuilder()

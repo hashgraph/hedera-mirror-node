@@ -24,6 +24,8 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import javax.persistence.Convert;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -32,7 +34,9 @@ import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
 @Data
+@Builder
 @Entity
+@AllArgsConstructor
 @NoArgsConstructor
 @Upsertable
 public class Nft {

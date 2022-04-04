@@ -28,9 +28,6 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
@@ -51,6 +48,9 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionOperations;
 
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
@@ -68,6 +68,8 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
@@ -293,6 +295,18 @@ public class DomainBuilder {
                 .timestampRange(Range.atLeast(timestamp))
                 .type(ACCOUNT);
 
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<Nft, Nft.NftBuilder> nft() {
+        var createdTimestamp = timestamp();
+        var builder = Nft.builder()
+                .accountId(entityId(ACCOUNT))
+                .createdTimestamp(createdTimestamp)
+                .deleted(false)
+                .id(new NftId(id(), entityId(TOKEN)))
+                .metadata(bytes(16))
+                .modifiedTimestamp(createdTimestamp);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
