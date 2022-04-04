@@ -1427,29 +1427,29 @@ describe('Utils getNextParamQueries', () => {
   describe('Utils addHexPrefix tests', () => {
     const specs = [
       {
-        name: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
         args: ['4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'],
         expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
       },
       {
-        name: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
         args: ['0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'],
         expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
       },
       {
-        name: '""',
+        args: [Buffer.from('4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'hex')],
+        expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+      },
+      {
         args: [''],
         expected: null,
       },
       {
-        name: 'null',
         args: [null],
         expected: null,
       },
     ];
 
     specs.forEach((spec) => {
-      test(spec.name, () => {
+      test(`"${spec.input}"`, () => {
         expect(utils.addHexPrefix(...spec.args)).toEqual(spec.expected);
       });
     });

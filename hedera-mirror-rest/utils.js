@@ -714,13 +714,13 @@ const randomString = async (length) => {
 };
 
 const hexPrefix = '0x';
-const addHexPrefix = (hexString) => {
-  if (_.isEmpty(hexString)) {
+const addHexPrefix = (hexData) => {
+  if (_.isEmpty(hexData)) {
     return null;
   }
 
-  hexString = `${hexString}`;
-  return hexString.substring(0, 2) === hexPrefix ? hexString : `${hexPrefix}${hexString}`;
+  const hexString = Buffer.isBuffer(hexData) ? hexData.toString('hex') : hexData;
+  return hexString.startsWith(hexPrefix) ? hexString : `${hexPrefix}${hexString}`;
 };
 
 /**
