@@ -18,18 +18,19 @@ x-google-marketplace:
   publishedVersionMetadata:
     releaseNote: >-
 
-      v0.53 brings a combination of feature support since v0.42. Namely Smart Contract support and expose at endpoints `/api/v1/contracts/{id}`
-      Performance gains were also realized on Import ingestion and REST API reads. and for <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-18.md">HTS custom fees</a>,
-      <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-23.md">automatic token associations</a>, and
-      <a href="https://github.com/hashgraph/hedera-improvement-proposal/blob/master/HIP/hip-24.md">the HTS pause feature</a>, as well as
-      various new REST APIs and performance improvements. Some breaking changes were introduced aroudn REST API return limits.
-      The maximum was reduced from 500 to 100 and the default was set to 25.
-
+      v0.53 brings a collection of feature support since v0.42.
+      Namely Smart Contract support and exposure of endpoints `/api/v1/contracts/{id}`, `/api/v1/contracts/{id}/results`
+      `/api/v1/contracts/{id}/results/{timestamp}`, `/api/v1/contracts/results/{transactionId}` and `/api/v1/contracts/{id}/results/logs`.
+      Increased NFT tracing was added with endpoint `/api/v1/accounts/{accountId}/nfts`.
+      Performance gains were also realized on Import ingestion and REST API query results.
+      Account creation using an alias support was also added.
+      Some breaking changes were introduced for REST API return limits. The maximum return size was reduced from 500 to 100 and the default was set to 25.
       For detailed release notes refer to <a href="https://github.com/hashgraph/hedera-mirror-node/releases">hedera-mirror-node releases</a>
 
     # releaseTypes - Feature | BugFix | Security
     releaseTypes:
       - Feature
+      - Security
     # If "recommended" is "true", users using older releases are encouraged
     # to update as soon as possible. This is useful if, for example, this release
     # fixes a critical issue.
