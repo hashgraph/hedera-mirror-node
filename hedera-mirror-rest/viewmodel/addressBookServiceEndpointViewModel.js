@@ -20,9 +20,19 @@
 
 'use strict';
 
-module.exports = {
-  AccountController: require('./accountController'),
-  AllowanceController: require('./allowanceController'),
-  ContractController: require('./contractController'),
-  NetworkController: require('./networkController'),
-};
+/**
+ * Network address book service endpoint view model
+ */
+class AddressBookServiceEndpointViewModel {
+  /**
+   * Constructs address book service endpoint view model
+   *
+   * @param {AddressBook} addressBook
+   */
+  constructor(serviceEndpoint) {
+    this.ip_address_v4 = serviceEndpoint.ipAddressV4;
+    this.port = Number(serviceEndpoint.port);
+  }
+}
+
+module.exports = AddressBookServiceEndpointViewModel;

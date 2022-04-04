@@ -38,9 +38,14 @@ const DEFAULT_TREASURY_ID = '98';
 
 let sqlConnection;
 
+const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750';
+
 const setUp = async (testDataJson, sqlconn) => {
   sqlConnection = sqlconn;
   await loadAccounts(testDataJson.accounts);
+  await loadAddressBooks(testDataJson.addressbooks);
+  await loadAddressBookEntries(testDataJson.addressbookentries);
+  await loadAddressBookServiceEndpoints(testDataJson.addressbookserviceendpoints);
   await loadAssessedCustomFees(testDataJson.assessedcustomfees);
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
@@ -69,6 +74,36 @@ const loadAccounts = async (accounts) => {
 
   for (const account of accounts) {
     await addAccount(account);
+  }
+};
+
+const loadAddressBooks = async (addressBooks) => {
+  if (addressBooks == null) {
+    return;
+  }
+
+  for (const addressBook of addressBooks) {
+    await addAddressBook(addressBook);
+  }
+};
+
+const loadAddressBookEntries = async (entries) => {
+  if (entries == null) {
+    return;
+  }
+
+  for (const addressBookEntry of entries) {
+    await addAddressBookEntry(addressBookEntry);
+  }
+};
+
+const loadAddressBookServiceEndpoints = async (endpoints) => {
+  if (endpoints == null) {
+    return;
+  }
+
+  for (const endpoint of endpoints) {
+    await addAddressBookServiceEndpoint(endpoint);
   }
 };
 
@@ -259,6 +294,72 @@ const loadTopicMessages = async (messages) => {
   for (const message of messages) {
     await addTopicMessage(message);
   }
+};
+
+const addAddressBook = async (addressBookInput) => {
+  const insertFields = ['start_consensus_timestamp', 'end_consensus_timestamp', 'file_id', 'node_count', 'file_data'];
+
+  const addressBook = {
+    start_consensus_timestamp: 0,
+    end_consensus_timestamp: null,
+    file_id: 102,
+    node_count: 20,
+    file_data: defaultFileData,
+    ...addressBookInput,
+  };
+
+  addressBook.file_data =
+    typeof addressBookInput.file_data === 'string'
+      ? Buffer.from(addressBookInput.file_data, 'utf-8')
+      : Buffer.from(addressBook.file_data);
+
+  await insertDomainObject('address_book', insertFields, addressBook);
+};
+
+const addAddressBookEntry = async (addressBookEntryInput) => {
+  const insertFields = [
+    'consensus_timestamp',
+    'memo',
+    'public_key',
+    'node_id',
+    'node_account_id',
+    'node_cert_hash',
+    'description',
+    'stake',
+  ];
+
+  const addressBookEntry = {
+    consensus_timestamp: 0,
+    memo: '0.0.3',
+    public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    node_id: 2000,
+    node_account_id: 3,
+    node_cert_hash: '01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16',
+    description: 'description',
+    stake: 0,
+    ...addressBookEntryInput,
+  };
+
+  addressBookEntry.node_cert_hash =
+    typeof addressBookEntryInput.node_cert_hash === 'string'
+      ? Buffer.from(addressBookEntryInput.node_cert_hash, 'hex')
+      : Buffer.from(addressBookEntry.node_cert_hash);
+
+  await insertDomainObject('address_book_entry', insertFields, addressBookEntry);
+};
+
+const addAddressBookServiceEndpoint = async (addressBookServiceEndpointInput) => {
+  const insertFields = ['consensus_timestamp', 'ip_address_v4', 'node_id', 'port'];
+
+  const addressBookServiceEndpoint = {
+    consensus_timestamp: 0,
+    ip_address_v4: '127.0.0.1',
+    node_id: 0,
+    port: 50211,
+    ...addressBookServiceEndpointInput,
+  };
+
+  await insertDomainObject('address_book_service_endpoint', insertFields, addressBookServiceEndpoint);
 };
 
 const addEntity = async (defaults, entity) => {
@@ -686,7 +787,7 @@ const addContractLog = async (contractLogInput) => {
     index: 0,
     payer_account_id: 2,
     root_contract_id: null,
-    topic0: '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+    topic0: defaultFileData,
     topic1: '\\x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
     topic2: '\\xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
     topic3: '\\xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
@@ -722,7 +823,7 @@ const addContractStateChange = async (contractStateChangeInput) => {
     contract_id: 1,
     payer_account_id: 2,
     slot: '\\x0123',
-    value_read: '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+    value_read: defaultFileData,
     value_written: '\\x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
     ...contractStateChangeInput,
   };
@@ -1071,6 +1172,9 @@ module.exports = {
   addCryptoTransaction,
   addNft,
   addToken,
+  loadAddressBooks,
+  loadAddressBookEntries,
+  loadAddressBookServiceEndpoints,
   loadContracts,
   loadContractResults,
   loadCryptoAllowances,

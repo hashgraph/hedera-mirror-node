@@ -52,7 +52,7 @@ class ContractViewModel {
     };
 
     if (contract.bytecode !== undefined) {
-      this.bytecode = contract.bytecode === null ? null : utils.addHexPrefix(contract.bytecode);
+      this.bytecode = utils.addHexPrefix(contract.bytecode, true);
     }
   }
 }

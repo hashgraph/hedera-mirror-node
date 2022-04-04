@@ -1424,3 +1424,29 @@ describe('Utils getNextParamQueries', () => {
     });
   });
 });
+
+describe('Utils addHexPrefix tests', () => {
+  const specs = [
+    {
+      name: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+      args: ['4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'],
+      expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    },
+    {
+      name: '""',
+      args: [''],
+      expected: null,
+    },
+    {
+      name: 'null',
+      args: [null],
+      expected: null,
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(spec.name, () => {
+      expect(utils.addHexPrefix(...spec.args)).toEqual(spec.expected);
+    });
+  });
+});

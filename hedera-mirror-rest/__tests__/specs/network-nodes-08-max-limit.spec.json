@@ -1,0 +1,15 @@
+{
+  "description": "Network nodes API with limit greater than max",
+  "setup": {},
+  "url": "/api/v1/network/nodes?limit=26",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Max value of 25 is supported for limit"
+        }
+      ]
+    }
+  }
+}
