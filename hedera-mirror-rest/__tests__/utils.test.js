@@ -1442,11 +1442,6 @@ describe('Utils getNextParamQueries', () => {
         expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
       },
       {
-        name: 'Buffer from string 0x',
-        args: [Buffer.from('0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'hex')],
-        expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
-      },
-      {
         name: 'Buffer from ints',
         args: [Buffer.from([1, 2, 3, 4, 5, 6])],
         expected: '0x010203040506',
