@@ -20,7 +20,6 @@
 
 'use strict';
 
-const {TransactionID} = require('@hashgraph/proto');
 const _ = require('lodash');
 const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
@@ -33,7 +32,6 @@ const EntityId = require('./entityId');
 const config = require('./config');
 const ed25519 = require('./ed25519');
 const contants = require('./constants');
-const {ContractService} = require('./service');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
@@ -129,6 +127,11 @@ const isValidEncoding = (query) => {
 
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
 
+const addressBookFileIdPattern = ['101', '0.101', '0.0.101', '102', '0.102', '0.0.102'];
+const isValidAddressBookFileIdPattern = (fileId) => {
+  return addressBookFileIdPattern.includes(fileId);
+};
+
 /**
  * Validate input parameters for the rest apis
  * @param {String} param Parameter to be validated
@@ -176,6 +179,12 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.ACCOUNT_BALANCE:
       ret = isPositiveLong(val, true);
       break;
+    case constants.filterKeys.FILE_ID:
+      ret =
+        op === constants.queryParamOperators.eq &&
+        EntityId.isValidEntityId(val) &&
+        isValidAddressBookFileIdPattern(val);
+      break;
     case constants.filterKeys.ACCOUNT_ID:
       ret = EntityId.isValidEntityId(val);
       break;
@@ -207,6 +216,9 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.LIMIT:
       ret = isPositiveLong(val);
+      break;
+    case constants.filterKeys.NODE_ID:
+      ret = isNumeric(val) && val >= 0;
       break;
     case constants.filterKeys.NONCE:
       ret = op === constants.queryParamOperators.eq && isNonNegativeInt32(val);
@@ -938,6 +950,10 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);
         break;
+      case constants.filterKeys.FILE_ID:
+        // Accepted forms: shard.realm.num or encoded ID string
+        comparator.value = EntityId.parse(comparator.value).getEncodedId();
+        break;
       case constants.filterKeys.ENTITY_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);
         break;
@@ -947,6 +963,7 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.LIMIT:
         comparator.value = Number(comparator.value);
         break;
+      case constants.filterKeys.NODE_ID:
       case constants.filterKeys.NONCE:
         comparator.value = Number(comparator.value);
         break;

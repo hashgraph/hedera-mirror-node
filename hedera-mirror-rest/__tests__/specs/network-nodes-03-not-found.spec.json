@@ -1,0 +1,108 @@
+{
+  "description": "Network nodes API with no match",
+  "setup": {
+    "addressbooks": [
+      {
+        "start_consensus_timestamp": 1,
+        "file_id": 101,
+        "node_count": 1
+      },
+      {
+        "start_consensus_timestamp": 2,
+        "file_id": 102,
+        "node_count": 1
+      },
+      {
+        "start_consensus_timestamp": 187654000123456,
+        "file_id": 101,
+        "node_count": 2
+      },
+      {
+        "start_consensus_timestamp": 187654000123457,
+        "file_id": 102,
+        "node_count": 2
+      }
+    ],
+    "addressbookentries": [
+      {
+        "consensus_timestamp": 1,
+        "node_id": 0,
+        "node_account_id": 3
+      },
+      {
+        "consensus_timestamp": 2,
+        "memo": "0.0.3",
+        "node_id": 0,
+        "node_account_id": 3
+      },
+      {
+        "consensus_timestamp": 187654000123456,
+        "node_id": 0,
+        "node_account_id": 3
+      },
+      {
+        "consensus_timestamp": 187654000123456,
+        "node_id": 1,
+        "node_account_id": 4
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "memo": "0.0.3",
+        "node_id": 0,
+        "node_account_id": 3
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "memo": "0.0.4",
+        "node_id": 1,
+        "node_account_id": 4
+      }
+    ],
+    "addressbookserviceendpoints": [
+      {
+        "consensus_timestamp": 1,
+        "ip_address_v4": "127.0.0.1",
+        "node_id": 0,
+        "port": 50211
+      },
+      {
+        "consensus_timestamp": 2,
+        "ip_address_v4": "128.0.0.1",
+        "node_id": 0,
+        "port": 50212
+      },
+      {
+        "consensus_timestamp": 187654000123456,
+        "ip_address_v4": "127.0.0.3",
+        "node_id": 0,
+        "port": 50213
+      },
+      {
+        "consensus_timestamp": 187654000123456,
+        "ip_address_v4": "127.0.0.4",
+        "node_id": 1,
+        "port": 50214
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "ip_address_v4": "128.0.0.5",
+        "node_id": 0,
+        "port": 50215
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "ip_address_v4": "128.0.0.6",
+        "node_id": 1,
+        "port": 50216
+      }
+    ]
+  },
+  "url": "/api/v1/network/nodes?node.id=23",
+  "responseStatus": 200,
+  "responseJson": {
+    "nodes": [],
+    "links": {
+      "next": null
+    }
+  }
+}

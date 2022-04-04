@@ -20,9 +20,19 @@
 
 'use strict';
 
-module.exports = {
-  AccountController: require('./accountController'),
-  AllowanceController: require('./allowanceController'),
-  ContractController: require('./contractController'),
-  NetworkController: require('./networkController'),
-};
+const AddressBook = require('./addressBook');
+const AddressBookEntry = require('./addressBookEntry');
+const AddressBookServiceEndpoint = require('./addressBookServiceEndpoint');
+
+class NetworkNode {
+  /**
+   * Parses address book related table columns into object
+   */
+  constructor(networkNodeDb) {
+    this.addressBook = new AddressBook(networkNodeDb);
+    this.addressBookEntry = new AddressBookEntry(networkNodeDb);
+    this.addressBookServiceEndpoints = networkNodeDb.service_endpoints.map((x) => new AddressBookServiceEndpoint(x));
+  }
+}
+
+module.exports = NetworkNode;

@@ -98,4 +98,43 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .returns(recordItem.getPayerAccountId(), TokenAllowance::getPayerAccountId)
                 .returns(timestamp, TokenAllowance::getTimestampLower)));
     }
+
+    @Test
+    void updateTransactionSuccessfulWithImplicitOwner() {
+        var recordItem = recordItemBuilder.cryptoApproveAllowance().transactionBody(b -> {
+            b.getCryptoAllowancesBuilderList().forEach(builder -> builder.clearOwner());
+            b.getNftAllowancesBuilderList().forEach(builder -> builder.clearOwner());
+            b.getTokenAllowancesBuilderList().forEach(builder -> builder.clearOwner());
+        }).build();
+        var effectiveOwner = recordItem.getPayerAccountId().getId();
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        verify(entityListener).onCryptoAllowance(assertArg(t -> assertThat(t)
+                .isNotNull()
+                .satisfies(a -> assertThat(a.getAmount()).isPositive())
+                .returns(effectiveOwner, CryptoAllowance::getOwner)
+                .satisfies(a -> assertThat(a.getSpender()).isPositive())
+                .returns(recordItem.getPayerAccountId(), CryptoAllowance::getPayerAccountId)
+                .returns(timestamp, CryptoAllowance::getTimestampLower)));
+
+        verify(entityListener, times(2)).onNftAllowance(assertArg(t -> assertThat(t)
+                .isNotNull()
+                .satisfies(a -> assertThat(a.isApprovedForAll()).isNotNull())
+                .returns(effectiveOwner, NftAllowance::getOwner)
+                .satisfies(a -> assertThat(a.getSpender()).isPositive())
+                .satisfies(a -> assertThat(a.getTokenId()).isPositive())
+                .returns(recordItem.getPayerAccountId(), NftAllowance::getPayerAccountId)
+                .returns(timestamp, NftAllowance::getTimestampLower)));
+
+        verify(entityListener).onTokenAllowance(assertArg(t -> assertThat(t)
+                .isNotNull()
+                .satisfies(a -> assertThat(a.getAmount()).isPositive())
+                .returns(effectiveOwner, TokenAllowance::getOwner)
+                .satisfies(a -> assertThat(a.getSpender()).isNotNull())
+                .satisfies(a -> assertThat(a.getTokenId()).isPositive())
+                .returns(recordItem.getPayerAccountId(), TokenAllowance::getPayerAccountId)
+                .returns(timestamp, TokenAllowance::getTimestampLower)));
+    }
 }

@@ -56,10 +56,15 @@ class BaseController {
     }
   };
 
-  updateQueryFiltersWithInValues = (existingParams, existingConditions, invalues, fullName) => {
+  updateQueryFiltersWithInValues = (
+    existingParams,
+    existingConditions,
+    invalues,
+    fullName,
+    start = existingParams.length + 1
+  ) => {
     if (!_.isNil(invalues) && !_.isEmpty(invalues)) {
       // add the condition 'c.id in ()'
-      const start = existingParams.length + 1; // start is the next positional index
       existingParams.push(...invalues);
       const positions = _.range(invalues.length)
         .map((position) => position + start)
