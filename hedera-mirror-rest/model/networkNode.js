@@ -20,14 +20,19 @@
 
 'use strict';
 
-module.exports = {
-  ContractService: require('./contractService'),
-  CryptoAllowanceService: require('./cryptoAllowanceService'),
-  EntityService: require('./entityService'),
-  NetworkNodeService: require('./networkNodeService'),
-  NftService: require('./nftService'),
-  RecordFileService: require('./recordFileService'),
-  TokenAllowanceService: require('./tokenAllowanceService'),
-  TokenService: require('./tokenService'),
-  TransactionService: require('./transactionService'),
-};
+const AddressBook = require('./addressBook');
+const AddressBookEntry = require('./addressBookEntry');
+const AddressBookServiceEndpoint = require('./addressBookServiceEndpoint');
+
+class NetworkNode {
+  /**
+   * Parses address book related table columns into object
+   */
+  constructor(networkNodeDb) {
+    this.addressBook = new AddressBook(networkNodeDb);
+    this.addressBookEntry = new AddressBookEntry(networkNodeDb);
+    this.addressBookServiceEndpoints = networkNodeDb.service_endpoints.map((x) => new AddressBookServiceEndpoint(x));
+  }
+}
+
+module.exports = NetworkNode;

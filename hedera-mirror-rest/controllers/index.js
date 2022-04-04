@@ -24,5 +24,6 @@ module.exports = {
   AccountController: require('./accountController'),
   ContractController: require('./contractController'),
   CryptoAllowanceController: require('./cryptoAllowanceController'),
+  NetworkController: require('./networkController'),
   TokenAllowanceController: require('./tokenAllowanceController'),
 };

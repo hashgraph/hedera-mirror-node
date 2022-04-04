@@ -20,14 +20,19 @@
 
 'use strict';
 
-module.exports = {
-  ContractService: require('./contractService'),
-  CryptoAllowanceService: require('./cryptoAllowanceService'),
-  EntityService: require('./entityService'),
-  NetworkNodeService: require('./networkNodeService'),
-  NftService: require('./nftService'),
-  RecordFileService: require('./recordFileService'),
-  TokenAllowanceService: require('./tokenAllowanceService'),
-  TokenService: require('./tokenService'),
-  TransactionService: require('./transactionService'),
-};
+/**
+ * Network address book service endpoint view model
+ */
+class AddressBookServiceEndpointViewModel {
+  /**
+   * Constructs address book service endpoint view model
+   *
+   * @param {AddressBook} addressBook
+   */
+  constructor(serviceEndpoint) {
+    this.ip_address_v4 = serviceEndpoint.ipAddressV4;
+    this.port = Number(serviceEndpoint.port);
+  }
+}
+
+module.exports = AddressBookServiceEndpointViewModel;

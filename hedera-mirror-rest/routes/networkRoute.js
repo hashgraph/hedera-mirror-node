@@ -20,14 +20,17 @@
 
 'use strict';
 
+// external libraries
+const {Router} = require('@awaitjs/express');
+const {NetworkController} = require('../controllers');
+
+const router = Router();
+
+const resource = 'network';
+router.getAsync('/nodes', NetworkController.getNetworkNodes);
+router.getAsync('/supply', NetworkController.getSupply);
+
 module.exports = {
-  ContractService: require('./contractService'),
-  CryptoAllowanceService: require('./cryptoAllowanceService'),
-  EntityService: require('./entityService'),
-  NetworkNodeService: require('./networkNodeService'),
-  NftService: require('./nftService'),
-  RecordFileService: require('./recordFileService'),
-  TokenAllowanceService: require('./tokenAllowanceService'),
-  TokenService: require('./tokenService'),
-  TransactionService: require('./transactionService'),
+  resource,
+  router,
 };

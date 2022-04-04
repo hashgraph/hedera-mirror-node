@@ -345,6 +345,27 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
+  /api/v1/network/nodes:
+    get:
+      summary: Get the network address book nodes
+      description: Returns the network's list of nodes used in consensus
+      operationId: getNetworkNodes
+      parameters:
+        - $ref: '#/components/parameters/fileIdQueryParam'
+        - $ref: '#/components/parameters/nodeIdQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkNodesResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - network
   /api/v1/network/supply:
     get:
       summary: Get the network supply
@@ -943,6 +964,13 @@ components:
           $ref: '#/components/schemas/CryptoAllowances'
         links:
           $ref: '#/components/schemas/Links'
+    NetworkNodesResponse:
+      type: object
+      properties:
+        nodes:
+          $ref: '#/components/schemas/NetworkNodes'
+        links:
+          $ref: '#/components/schemas/Links'
     NetworkSupplyResponse:
       type: object
       properties:
@@ -1522,6 +1550,54 @@ components:
         next:
           example: null
           nullable: true
+    NetworkNode:
+      type: object
+      properties:
+        description:
+          description: a memo associated with the address book
+          nullable: true
+          type: string
+        file_id:
+          $ref: '#/components/schemas/EntityId'
+        memo:
+          description: memo
+          nullable: true
+          type: string
+        node_id:
+          description: An identifier for the node
+          type: number
+        node_account_id:
+          $ref: '#/components/schemas/EntityId'
+        node_cert_hash:
+          description: hex encoded hash of the node’s TLS certificate
+          nullable: true
+          type: string
+        public_key:
+          description: hex encoded X509 RSA public key used to sign stream files
+          nullable: true
+          type: string
+        service_endpoints:
+          $ref: '#/components/schemas/ServiceEndpoints'
+        timestamp:
+          $ref: '#/components/schemas/TimestampRange'
+      example:
+        description: "address book 1"
+        file_id: '0.0.102'
+        memo: '0.0.4'
+        node_account_id: '0.0.4'
+        node_cert_hash: '0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16'
+        node_id: 1
+        public_key: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'
+        service_endpoints:
+          - ip_address_v4: 128.0.0.6
+            port: 50216
+        timestamp:
+          from: 187654.000123457
+          to: null
+    NetworkNodes:
+      type: array
+      items:
+        $ref: '#/components/schemas/NetworkNode'
     Nft:
       type: object
       properties:
@@ -1643,6 +1719,23 @@ components:
           type: string
           enum: [ CONTRACT, ED25519, RSA_3072, ECDSA_384, ECDSA_SECP256K1, UNKNOWN ]
           example: "ED25519"
+    ServiceEndpoint:
+      type: object
+      required:
+        - ip_address_v4
+        - port
+      properties:
+        ip_address_v4:
+          type: string
+        port:
+          type: number
+      example:
+        ip_address_v4: 127.0.0.1
+        port: 50211
+    ServiceEndpoints:
+      type: array
+      items:
+        $ref: '#/components/schemas/ServiceEndpoint'
     StateProofFiles:
       type: object
       properties:
@@ -2384,6 +2477,28 @@ components:
       description: Entity id
       schema:
         $ref: '#/components/schemas/EntityId'
+    fileIdQueryParam:
+      name: file.id
+      description: The ID of the file entity
+      in: query
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        entityNumNoOperator:
+          summary: Example of entityNum equals with no operator
+          value: 100
+        idNoOperator:
+          summary: Example of id equals with no operator
+          value: 0.0.100
+        entityNumEqOperator:
+          summary: Example of entityNum equals operator
+          value: eq:200
+        idEqOperator:
+          summary: Example of id equals operator
+          value: eq:0.0.200
+      schema:
+        $ref: '#/components/schemas/EntityIdQuery'
     scheduleIdPathParam:
       name: scheduleId
       in: path
@@ -2430,6 +2545,35 @@ components:
         default: 25
         minimum: 1
         maximum: 100
+    nodeIdQueryParam:
+      name: node.id
+      description: The ID of the node
+      in: query
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        serialNumNoOperator:
+          summary: Example of nodeId equals with no operator
+          value: 1
+        serialNumEqOperator:
+          summary: Example of nodeId equals operator
+          value: eq:2
+        serialNumGtOperator:
+          summary: Example of nodeId greater than operator
+          value: gt:3
+        serialNumGteOperator:
+          summary: Example of nodeId greater than or equals operator
+          value: gte:4
+        serialNumLtOperator:
+          summary: Example of nodeId less than operator
+          value: lt:5
+        serialNumLteOperator:
+          summary: Example of nodeId less than or equals operator
+          value: lte:6
+      schema:
+        type: string
+        pattern: ^((eq|gt|gte|lt|lte):)?\d{1,19}$
     nonceQueryParam:
       name: nonce
       in: query
