@@ -9,6 +9,7 @@
       {
         "auto_renew_period": 1500,
         "created_timestamp": "987654000123456",
+        "evm_address": "4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38",
         "file_id": "5001",
         "key": [1, 1, 1],
         "num": "8001",
@@ -72,7 +73,7 @@
     "contract_id": "0.0.8001",
     "created_timestamp": "987654.000123456",
     "deleted": false,
-    "evm_address": "0x0000000000000000000000000000000000001f41",
+    "evm_address": "0x4d1a2e2bb4f88f0250f26ffff098b0b30b26bf38",
     "expiration_timestamp": null,
     "file_id": "0.0.5001",
     "memo": "contract memo",

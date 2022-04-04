@@ -1,6 +1,24 @@
 {
   "description": "Contract results api call using contract id and timestamp where contract state was read but not written or a zero value was written",
   "setup": {
+    "contracts": [
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "8001",
+        "timestamp_range": "[987654999123200, 987654999123299]"
+      },
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "5001",
+        "timestamp_range": "[987654999123300,)"
+      }
+    ],
     "contractresults": [
       {
         "amount": 30,
@@ -84,7 +102,8 @@
   "urls": [
     "/api/v1/contracts/0.0.5001/results/167654.000123456",
     "/api/v1/contracts/0.5001/results/167654.000123456",
-    "/api/v1/contracts/5001/results/167654.000123456"
+    "/api/v1/contracts/5001/results/167654.000123456",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results/167654.000123456"
   ],
   "responseStatus": 200,
   "responseJson": {

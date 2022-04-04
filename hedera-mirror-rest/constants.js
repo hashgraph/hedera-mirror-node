@@ -67,6 +67,11 @@ const entityTypes = {
   SCHEDULE: 'SCHEDULE',
 };
 
+const EvmAddressType = {
+  NO_SHARD_REALM: 'evm address without shard and realm and with 0x prefix',
+  OPTIONAL_SHARD_REALM: 'evm address with shard and realm as optionals',
+};
+
 const keyTypes = {
   ECDSA_SECP256K1: 'ECDSA_SECP256K1',
   ED25519: 'ED25519',
@@ -207,4 +212,5 @@ module.exports = {
   transactionColumns,
   transactionResultFilter,
   zeroRandomPageCostQueryHint,
+  EvmAddressType,
 };

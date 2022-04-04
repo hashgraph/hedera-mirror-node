@@ -22,7 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {messageListName, urlPrefix} from '../../lib/constants.js';
-import {isValidListResponse} from "./common.js";
+import {isSuccess} from "./common.js";
 import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
 const urlTag = '/topics/{id}/messages/{sequenceNumber}';
@@ -34,7 +34,7 @@ const {options, run} = new TestScenarioBuilder()
     const url = `${testParameters['BASE_URL']}${urlPrefix}/topics/${testParameters['DEFAULT_TOPIC_ID']}/messages/${testParameters['DEFAULT_TOPIC_SEQUENCE']}`;
     return http.get(url);
   })
-  .check('Topics id messages sequenceNumber OK', (r) => isValidListResponse(r, messageListName))
+  .check('Topics id messages sequenceNumber OK', (r) => isSuccess(r, messageListName))
   .build();
 
 

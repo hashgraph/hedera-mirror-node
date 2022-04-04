@@ -1,7 +1,11 @@
 {
   "description": "Contract results api call for a specific contract using invalid contract id and timestamp params",
   "setup": {},
-  "urls": ["/api/v1/contracts/-1.0.1/results/167654.000123456.2", "/api/v1/contracts/x/results/167654.000123456.2"],
+  "urls": [
+    "/api/v1/contracts/-1.0.1/results/167654.000123456.2",
+    "/api/v1/contracts/x/results/167654.000123456.2",
+    "/api/v1/contracts/0f2b2914a2a4b783faefb75f459a580616fcb5e/results/167654.000123456.2"
+  ],
   "responseStatus": 400,
   "responseJson": {
     "_status": {

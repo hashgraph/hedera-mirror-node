@@ -603,7 +603,7 @@ const addContract = async (contract) => {
     timestamp_range: '[0,)',
     ...contract,
   };
-  contract.evm_address = contract.evm_address != null ? Buffer.from(contract.evm_address) : null;
+  contract.evm_address = contract.evm_address != null ? Buffer.from(contract.evm_address, 'hex') : null;
   contract.id = EntityId.of(BigInt(contract.shard), BigInt(contract.realm), BigInt(contract.num)).getEncodedId();
   contract.key = contract.key != null ? Buffer.from(contract.key) : null;
 
@@ -1071,6 +1071,7 @@ module.exports = {
   addCryptoTransaction,
   addNft,
   addToken,
+  loadContracts,
   loadContractResults,
   loadCryptoAllowances,
   loadEntities,
