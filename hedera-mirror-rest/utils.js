@@ -731,10 +731,9 @@ const addHexPrefix = (hexData) => {
     return null;
   }
 
-  console.log('addHexPrefix input: ', hexData);
-  const hexString = Buffer.isBuffer(hexData) ? hexData.toString('hex') : hexData;
-  console.log('Converted hexString: ', hexString);
-  return hexString.startsWith(hexPrefix) ? hexString : `${hexPrefix}${hexString}`;
+  const hexString = typeof hexData === 'string' ? hexData : Buffer.from(hexData).toString();
+
+  return hexString.indexOf(hexPrefix) === 0 ? hexString : `${hexPrefix}${hexString}`;
 };
 
 /**

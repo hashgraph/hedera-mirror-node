@@ -1438,13 +1438,28 @@ describe('Utils getNextParamQueries', () => {
       },
       {
         name: 'Buffer from string',
-        args: [Buffer.from('4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'hex')],
+        args: [Buffer.from('4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'utf-8')],
         expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
       },
       {
-        name: 'Buffer from ints',
-        args: [Buffer.from([1, 2, 3, 4, 5, 6])],
-        expected: '0x010203040506',
+        name: 'Ascii byte array without prefix',
+        args: [[0x61, 0x62]],
+        expected: '0xab',
+      },
+      {
+        name: 'Ascii byte array with prefix',
+        args: [[0x30, 0x78, 0x61, 0x62]],
+        expected: '0xab',
+      },
+      {
+        name: 'Byte array without prefix',
+        args: [[97, 98]],
+        expected: '0xab',
+      },
+      {
+        name: 'Byte array with prefix',
+        args: [[48, 120, 97, 98]],
+        expected: '0xab',
       },
       {
         name: '""',
