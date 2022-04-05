@@ -21,6 +21,7 @@
 package services
 
 import (
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"testing"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -38,8 +39,8 @@ func TestMempool(t *testing.T) {
 	res, e := NewMempoolAPIService().Mempool(defaultContext, &rTypes.NetworkRequest{})
 
 	// then:
-	assert.Nil(t, e)
-	assert.Equal(t, &rTypes.MempoolResponse{TransactionIdentifiers: []*rTypes.TransactionIdentifier{}}, res)
+	assert.Equal(t, errors.ErrNotImplemented, e)
+	assert.Nil(t, res)
 }
 
 func TestMempoolTransaction(t *testing.T) {
@@ -47,6 +48,6 @@ func TestMempoolTransaction(t *testing.T) {
 	res, e := NewMempoolAPIService().MempoolTransaction(defaultContext, &rTypes.MempoolTransactionRequest{})
 
 	// then:
-	assert.Nil(t, e)
-	assert.Equal(t, &rTypes.MempoolTransactionResponse{}, res)
+	assert.Equal(t, errors.ErrNotImplemented, e)
+	assert.Nil(t, res)
 }
