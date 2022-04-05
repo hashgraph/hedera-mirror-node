@@ -136,7 +136,7 @@ const retrieveNftComponentQuery = (firstBoundary, secondBoundary, orderFilter, l
 
 /**
  * Extract multiple queries to be combined in union
- * @param {Object} filters req filters
+ * @param {[]} filters req filters
  * @param {*} accountId Encoded owner entityId
  * @returns {{lower: Object, inner: Object, upper: Object, order: 'asc'|'desc', limit: number}}
  */
@@ -292,17 +292,7 @@ const validateSingleFilterKeyOccurence = (filterMap, filter) => {
  */
 const getNftsByAccountId = async (req, res) => {
   // extract filters from query param
-  let accountId = null;
-  try {
-    accountId = await EntityService.getEncodedIdAccountIdOrAlias(req.params.accountAliasOrAccountId);
-  } catch (err) {
-    if (err instanceof InvalidArgumentError) {
-      throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID_OR_ALIAS);
-    }
-
-    // rethrow any other error
-    throw err;
-  }
+  const accountId = await EntityService.getEncodedIdAccountIdOrAlias(req.params.accountAliasOrAccountId);
 
   // extract filters from query param
   const filters = utils.buildAndValidateFilters(req.query);
@@ -320,13 +310,16 @@ const getNftsByAccountId = async (req, res) => {
 
   if (!_.isEmpty(response.nfts)) {
     const lastRow = _.last(response.nfts);
-    const last = {
-      [constants.filterKeys.TOKEN_ID]: lastRow.token_id,
-      [constants.filterKeys.SERIAL_NUMBER]: lastRow.serial_number,
+    const lastValues = {
+      [constants.filterKeys.TOKEN_ID]: {
+        value: lastRow.token_id,
+        inclusive: true,
+      },
+      [constants.filterKeys.SERIAL_NUMBER]: {
+        value: lastRow.serial_number,
+      },
     };
-    response.links.next = utils.getPaginationLink(req, response.nfts.length !== limit, last, order, {
-      [constants.filterKeys.TOKEN_ID]: true,
-    });
+    response.links.next = utils.getPaginationLink(req, response.nfts.length !== limit, lastValues, order);
   }
 
   res.locals[constants.responseDataLabel] = response;

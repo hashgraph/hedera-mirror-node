@@ -101,9 +101,8 @@ create table if not exists token_allowance_history
 {
   "allowances": [
     {
-      "amount": 10,
+      "amount_granted": 10,
       "owner": "0.0.1000",
-      "payer_account_id": "0.0.1000",
       "spender": "0.0.8488",
       "timestamp": {
         "from": "1633466229.96874612",
@@ -111,9 +110,8 @@ create table if not exists token_allowance_history
       }
     },
     {
-      "amount": 5,
+      "amount_granted": 5,
       "owner": "0.0.1000",
-      "payer_account_id": "0.0.1001",
       "spender": "0.0.9857",
       "timestamp": {
         "from": "1633466229.96874612",
@@ -129,7 +127,7 @@ Optional Filters
 
 * `limit`: The maximum amount of items to return.
 * `order`: Order by `spender`. Accepts `asc` or `desc` with a default of `asc`.
-* `spender.id`: Filter by the spender account ID. Only need to support `eq` operator and allow multiple.
+* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
 
 #### NFT Allowances
 
@@ -141,7 +139,6 @@ Optional Filters
     {
       "approved_for_all": false,
       "owner": "0.0.1000",
-      "payer_account_id": "0.0.1000",
       "serial_numbers": [
         1,
         2,
@@ -157,7 +154,6 @@ Optional Filters
     {
       "approved_for_all": true,
       "owner": "0.0.1000",
-      "payer_account_id": "0.0.1000",
       "serial_numbers": [],
       "spender": "0.0.9857",
       "token_id": "0.0.1032",
@@ -175,8 +171,8 @@ Optional Filters
 
 * `limit`: The maximum amount of items to return.
 * `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
-* `spender.id`: Filter by the spender account ID. Only need to support `eq` operator and allow multiple.
-* `token.id`: Filter by the token ID. Only need to support `eq` operator and allow multiple.
+* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
+* `token.id`: Filter by the token ID. `ne` operator is not supported.
 
 #### Token Allowances
 
@@ -186,9 +182,8 @@ Optional Filters
 {
   "allowances": [
     {
-      "amount": 10,
+      "amount_granted": 10,
       "owner": "0.0.1000",
-      "payer_account_id": "0.0.1000",
       "spender": "0.0.8488",
       "token_id": "0.0.1032",
       "timestamp": {
@@ -197,9 +192,8 @@ Optional Filters
       }
     },
     {
-      "amount": 5,
+      "amount_granted": 5,
       "owner": "0.0.1000",
-      "payer_account_id": "0.0.1000",
       "spender": "0.0.9857",
       "token_id": "0.0.1032",
       "timestamp": {
@@ -216,8 +210,8 @@ Optional Filters
 
 * `limit`: The maximum amount of items to return.
 * `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
-* `spender.id`: Filter by the spender account ID. Only need to support `eq` operator and allow multiple.
-* `token.id`: Filter by the token ID. Only need to support `eq` operator and allow multiple.
+* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
+* `token.id`: Filter by the token ID. `ne` operator is not supported.
 
 #### Transactions APIs
 

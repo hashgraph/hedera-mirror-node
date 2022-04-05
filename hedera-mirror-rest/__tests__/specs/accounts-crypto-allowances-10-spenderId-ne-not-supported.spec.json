@@ -1,0 +1,34 @@
+{
+  "description": "Account api call for all crypto allowances with ne operator not supported",
+  "setup": {
+    "accounts": [
+      {
+        "num": 1001,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
+      },
+      {
+        "num": 2001
+      },
+      {
+        "num": 3001
+      },
+      {
+        "num": 4001
+      },
+      {
+        "num": 5001
+      }
+    ]
+  },
+  "url": "/api/v1/accounts/1001/allowances/crypto?spender.id=ne:5001",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not equal (ne) comparison operator is not supported for spender.id"
+        }
+      ]
+    }
+  }
+}

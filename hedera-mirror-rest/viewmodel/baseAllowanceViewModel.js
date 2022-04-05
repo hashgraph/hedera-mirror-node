@@ -20,21 +20,26 @@
 
 'use strict';
 
-const BaseAllowanceViewModel = require('./baseAllowanceViewModel');
+const EntityId = require('../entityId');
+const utils = require('../utils');
 
 /**
- * CryptoAllowance view model
+ * BaseAllowance view model, captures the common fields of the allowance view model classes
  */
-class CryptoAllowanceViewModel extends BaseAllowanceViewModel {
+class BaseAllowanceViewModel {
   /**
-   * Constructs cryptoAllowance view model
+   * Constructs base allowance view model
    *
-   * @param {CryptoAllowance} cryptoAllowance
+   * @param {{owner: string, spender: string, timestampRange: {begin: string, end: string}}} baseAllowance
    */
-  constructor(cryptoAllowance) {
-    super(cryptoAllowance);
-    this.amount_granted = Number(cryptoAllowance.amount);
+  constructor(baseAllowance) {
+    this.owner = EntityId.parse(baseAllowance.owner).toString();
+    this.spender = EntityId.parse(baseAllowance.spender).toString();
+    this.timestamp = {
+      from: utils.nsToSecNs(baseAllowance.timestampRange.begin),
+      to: utils.nsToSecNs(baseAllowance.timestampRange.end),
+    };
   }
 }
 
-module.exports = CryptoAllowanceViewModel;
+module.exports = BaseAllowanceViewModel;

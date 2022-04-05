@@ -20,14 +20,24 @@
 
 'use strict';
 
-module.exports = {
-  ContractService: require('./contractService'),
-  CryptoAllowanceService: require('./cryptoAllowanceService'),
-  EntityService: require('./entityService'),
-  NetworkNodeService: require('./networkNodeService'),
-  NftService: require('./nftService'),
-  RecordFileService: require('./recordFileService'),
-  TokenAllowanceService: require('./tokenAllowanceService'),
-  TokenService: require('./tokenService'),
-  TransactionService: require('./transactionService'),
-};
+class OrderSpec {
+  /**
+   * Creates an OrderSpec object
+   * @param {string} column
+   * @param {'asc'|'desc'} order
+   */
+  constructor(column, order) {
+    this.column = column;
+    this.order = order;
+  }
+
+  toString() {
+    return `${this.column} ${this.order}`;
+  }
+
+  static from(column, order) {
+    return new OrderSpec(column, order);
+  }
+}
+
+module.exports = OrderSpec;

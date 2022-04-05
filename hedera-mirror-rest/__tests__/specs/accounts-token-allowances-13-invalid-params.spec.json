@@ -1,0 +1,171 @@
+{
+  "description": "Account api call for token allowances with invalid parameters",
+  "setup": {},
+  "tests": [
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=abc&token.id=xyz&order=x&limit=y",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: spender.id"
+            },
+            {
+              "message": "Invalid parameter: token.id"
+            },
+            {
+              "message": "Invalid parameter: order"
+            },
+            {
+              "message": "Invalid parameter: limit"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=1001&spender.id=1002",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Only one equal (eq) operator is allowed"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?token.id=10001",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "token.id without a spender.id parameter filter"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=1001&token.id=10001&token.id=10002",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Only one equal (eq) operator is allowed"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gt:1001&spender.id=gte:1002",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Only one gt/gte operator is allowed"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=lt:1001&spender.id=lte:1002",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Only one lt/lte operator is allowed"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:1001&token.id=gt:10001&token.id=gte:10005",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Only one gt/gte operator is allowed"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=lte:1001&token.id=lt:10001&token.id=lte:10005",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Only one lt/lte operator is allowed"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:1001&token.id=lt:1008&spender.id=1004",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Can't support both range and equal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:1001&token.id=gt:10001&token.id=10005",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Can't support both range and equal"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gt:1001&token.id=gt:1008",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Unsupported combination"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=lt:1001&token.id=lt:1008",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Unsupported combination"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

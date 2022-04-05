@@ -20,8 +20,6 @@
 
 'use strict';
 
-const _ = require('lodash');
-
 const {NetworkNodeService} = require('../../service');
 const {assertSqlQueryEqual} = require('../testutils');
 

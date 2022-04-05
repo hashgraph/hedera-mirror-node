@@ -26,11 +26,10 @@ const {
   },
 } = require('../../config');
 const constants = require('../../constants');
-const {AllowanceController} = require('../../controllers');
+const {CryptoAllowanceController} = require('../../controllers');
 const utils = require('../../utils');
 
 const ownerIdFilter = 'owner = $1';
-const spenderIdFIlter = 'spender in ($2)';
 describe('extractCryptoAllowancesQuery', () => {
   const defaultExpected = {
     conditions: [ownerIdFilter],
@@ -89,7 +88,7 @@ describe('extractCryptoAllowancesQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [ownerIdFilter, spenderIdFIlter],
+        conditions: [ownerIdFilter, 'spender in ($2)'],
         params: [3, '1000'],
       },
     },
@@ -121,11 +120,56 @@ describe('extractCryptoAllowancesQuery', () => {
         params: [3, '1000', '1001', '1002'],
       },
     },
+    {
+      name: 'spender.id all allowed operators',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.SPENDER_ID,
+            operator: utils.opsMap.eq,
+            value: '1000',
+          },
+          {
+            key: constants.filterKeys.SPENDER_ID,
+            operator: utils.opsMap.gt,
+            value: '200',
+          },
+          {
+            key: constants.filterKeys.SPENDER_ID,
+            operator: utils.opsMap.gte,
+            value: '202',
+          },
+          {
+            key: constants.filterKeys.SPENDER_ID,
+            operator: utils.opsMap.lt,
+            value: '3000',
+          },
+          {
+            key: constants.filterKeys.SPENDER_ID,
+            operator: utils.opsMap.lte,
+            value: '3005',
+          },
+        ],
+        accountId: 3,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [
+          ownerIdFilter,
+          'spender > $2',
+          'spender >= $3',
+          'spender < $4',
+          'spender <= $5',
+          'spender in ($6)',
+        ],
+        params: [3, '200', '202', '3000', '3005', '1000'],
+      },
+    },
   ];
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      expect(AllowanceController.extractCryptoAllowancesQuery(spec.input.filters, spec.input.accountId)).toEqual(
+      expect(CryptoAllowanceController.extractCryptoAllowancesQuery(spec.input.filters, spec.input.accountId)).toEqual(
         spec.expected
       );
     });
@@ -147,64 +191,12 @@ describe('validateExtractCryptoAllowancesQuery throw', () => {
         accountId: 3,
       },
     },
-    {
-      name: 'spender.id gt',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.SPENDER_ID,
-            operator: utils.opsMap.gt,
-            value: '1000',
-          },
-        ],
-        accountId: 3,
-      },
-    },
-    {
-      name: 'spender.id gte',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.SPENDER_ID,
-            operator: utils.opsMap.gte,
-            value: '1000',
-          },
-        ],
-        accountId: 3,
-      },
-    },
-    {
-      name: 'spender.id lte',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.SPENDER_ID,
-            operator: utils.opsMap.lt,
-            value: '1000',
-          },
-        ],
-        accountId: 3,
-      },
-    },
-    {
-      name: 'spender.id lte',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.SPENDER_ID,
-            operator: utils.opsMap.lte,
-            value: '1000',
-          },
-        ],
-        accountId: 3,
-      },
-    },
   ];
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
       expect(() =>
-        AllowanceController.extractCryptoAllowancesQuery(spec.input.filters, spec.input.accountId)
+        CryptoAllowanceController.extractCryptoAllowancesQuery(spec.input.filters, spec.input.accountId)
       ).toThrowErrorMatchingSnapshot();
     });
   });
