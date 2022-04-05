@@ -3,3 +3,9 @@
 exports[`EntityService.getAccountFromAlias tests EntityService.getAccountFromAlias - Duplicate alias 1`] = `"Multiple alive entities matching alias"`;
 
 exports[`EntityService.getAccountIdFromAlias tests EntityService.getAccountIdFromAlias - No match 1`] = `"No account with a matching alias found"`;
+
+exports[`EntityService.getEncodedIdAccountIdOrAlias tests EntityService.getEncodedIdAccountIdOrAlias - Invalid alias 1`] = `
+Array [
+  "Invalid parameter: accountAliasOrAccountId",
+]
+`;

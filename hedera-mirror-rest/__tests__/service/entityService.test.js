@@ -134,11 +134,23 @@ describe('EntityService.getEncodedIdAccountIdOrAlias tests', () => {
     );
   });
 
-  test('EntityService.getEncodedIdAccountIdOrAlias - Matching', async () => {
+  test('EntityService.getEncodedIdAccountIdOrAlias - Matching id', async () => {
     await integrationDomainOps.loadEntities(defaultInputEntity);
 
     await expect(EntityService.getEncodedIdAccountIdOrAlias(defaultInputEntity[0].id)).resolves.toBe(
       defaultExpectedEntity.id
     );
+  });
+
+  test('EntityService.getEncodedIdAccountIdOrAlias - Matching alias', async () => {
+    await integrationDomainOps.loadEntities(defaultInputEntity);
+
+    await expect(EntityService.getEncodedIdAccountIdOrAlias(defaultInputEntity[0].alias)).resolves.toBe(
+      defaultExpectedEntity.id
+    );
+  });
+
+  test('EntityService.getEncodedIdAccountIdOrAlias - Invalid alias', async () => {
+    await expect(EntityService.getEncodedIdAccountIdOrAlias('deadbeef=')).rejects.toThrowErrorMatchingSnapshot();
   });
 });

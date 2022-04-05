@@ -27,8 +27,6 @@ public class MirrorTransferAllowance {
 
     private String owner;
 
-    private String payerAccountId;
-
     private String spender;
 
     private MirrorTimestampRange timestamp;

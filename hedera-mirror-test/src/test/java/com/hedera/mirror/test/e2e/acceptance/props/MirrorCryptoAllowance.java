@@ -24,5 +24,5 @@ import lombok.Data;
 
 @Data
 public class MirrorCryptoAllowance extends MirrorTransferAllowance {
-    private long amount;
+    private long amountGranted;
 }

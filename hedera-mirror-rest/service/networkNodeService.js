@@ -20,10 +20,9 @@
 
 'use strict';
 
-const _ = require('lodash');
-
 const {AddressBook, AddressBookEntry, AddressBookServiceEndpoint, NetworkNode} = require('../model');
 const BaseService = require('./baseService');
+const {OrderSpec} = require('../sql');
 
 /**
  * Network node business model
@@ -72,7 +71,7 @@ class NetworkNodeService extends BaseService {
     const query = [
       NetworkNodeService.networkNodesBaseQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
-      `${super.getOrderByQuery(AddressBookEntry.getFullName(AddressBookEntry.NODE_ID), nodeOrder)}`,
+      `${super.getOrderByQuery(OrderSpec.from(AddressBookEntry.getFullName(AddressBookEntry.NODE_ID), nodeOrder))}`,
       super.getLimitQuery(params.length),
     ].join('\n');
 

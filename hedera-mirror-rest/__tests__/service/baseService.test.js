@@ -20,14 +20,24 @@
 
 'use strict';
 
-module.exports = {
-  ContractService: require('./contractService'),
-  CryptoAllowanceService: require('./cryptoAllowanceService'),
-  EntityService: require('./entityService'),
-  NetworkNodeService: require('./networkNodeService'),
-  NftService: require('./nftService'),
-  RecordFileService: require('./recordFileService'),
-  TokenAllowanceService: require('./tokenAllowanceService'),
-  TokenService: require('./tokenService'),
-  TransactionService: require('./transactionService'),
-};
+const BaseService = require('../../service/baseService');
+const {OrderSpec} = require('../../sql');
+
+describe('getOrderByQuery', () => {
+  const baseService = new BaseService();
+
+  test('single', () => {
+    expect(baseService.getOrderByQuery(OrderSpec.from('a', 'asc'))).toEqual('order by a asc');
+  });
+
+  test('multiple', () => {
+    expect(baseService.getOrderByQuery(OrderSpec.from('a', 'asc'), OrderSpec.from('b', 'desc'))).toEqual(
+      'order by a asc, b desc'
+    );
+  });
+});
+
+test('getLimitQuery', () => {
+  const baseService = new BaseService();
+  expect(baseService.getLimitQuery(1)).toEqual('limit $1');
+});

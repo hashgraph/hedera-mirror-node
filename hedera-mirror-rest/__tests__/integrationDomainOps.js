@@ -63,6 +63,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadTopicMessages(testDataJson.topicmessages);
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
+  await loadTokenAllowances(testDataJson.tokenAllowances);
   await loadTransactions(testDataJson.transactions);
   await loadTransactionSignatures(testDataJson.transactionsignatures);
 };
@@ -263,6 +264,16 @@ const loadTokenAccounts = async (tokenAccounts) => {
 
   for (const tokenAccount of tokenAccounts) {
     await addTokenAccount(tokenAccount);
+  }
+};
+
+const loadTokenAllowances = async (tokenAllowances) => {
+  if (tokenAllowances == null) {
+    return;
+  }
+
+  for (const tokenAllowance of tokenAllowances) {
+    await addTokenAllowance(tokenAllowance);
   }
 };
 
@@ -708,8 +719,7 @@ const addContract = async (contract) => {
   contract.id = EntityId.of(BigInt(contract.shard), BigInt(contract.realm), BigInt(contract.num)).getEncodedId();
   contract.key = contract.key != null ? Buffer.from(contract.key) : null;
 
-  // use 'contract' table if the range is open-ended, otherwise use 'contract_history'
-  const table = contract.timestamp_range.endsWith(',)') ? 'contract' : 'contract_history';
+  const table = getTableName('contract', contract);
   await insertDomainObject(table, insertFields, contract);
 };
 
@@ -853,7 +863,7 @@ const addCryptoAllowance = async (cryptoAllowanceInput) => {
     ...cryptoAllowanceInput,
   };
 
-  const table = cryptoAllowance.timestamp_range.endsWith(',)') ? 'crypto_allowance' : 'crypto_allowance_history';
+  const table = getTableName('crypto_allowance', cryptoAllowance);
   await insertDomainObject(table, insertFields, cryptoAllowance);
 };
 
@@ -1079,6 +1089,23 @@ const addTokenAccount = async (tokenAccount) => {
   );
 };
 
+const addTokenAllowance = async (tokenAllowance) => {
+  const insertFields = ['amount', 'owner', 'payer_account_id', 'spender', 'token_id', 'timestamp_range'];
+
+  tokenAllowance = {
+    amount: 0,
+    owner: 1000,
+    payer_account_id: 1000,
+    spender: 2000,
+    token_id: 3000,
+    timestamp_range: '[0,)',
+    ...tokenAllowance,
+  };
+
+  const table = getTableName('token_allowance', tokenAllowance);
+  await insertDomainObject(table, insertFields, tokenAllowance);
+};
+
 const addNft = async (nft) => {
   // create nft account object
   nft = {
@@ -1166,6 +1193,10 @@ const insertDomainObject = async (table, fields, obj) => {
 
   logger.trace(`Inserted row to ${table}`);
 };
+
+// for a pair of current and history tables, if the timestamp range is open-ended, use the current table, otherwise
+// use the history table
+const getTableName = (base, entity) => (entity.timestamp_range.endsWith(',)') ? base : `${base}_history`);
 
 module.exports = {
   addAccount,

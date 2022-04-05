@@ -35,6 +35,7 @@ module.exports = {
   NftTransactionHistoryViewModel: require('./nftTransactionHistoryViewModel'),
   NftTransferViewModel: require('./nftTransferViewModel'),
   NftViewModel: require('./nftViewModel'),
+  TokenAllowanceViewModel: require('./tokenAllowanceViewModel'),
   TopicMessageViewModel: require('./topicMessageViewModel'),
   TransactionIdViewModel: require('./transactionIdViewModel'),
 };

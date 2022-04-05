@@ -24,12 +24,7 @@ const _ = require('lodash');
 
 const {Nft} = require('../model');
 const BaseService = require('./baseService');
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../config');
-const {orderFilterValues} = require('../constants');
+const {OrderSpec} = require('../sql');
 
 /**
  * Nft business model
@@ -52,9 +47,8 @@ class NftService extends BaseService {
     return _.isEmpty(rows) ? null : new Nft(rows[0]);
   }
 
-  getNftsFiltersQuery(whereConditions, whereParams, nftOrder, limit, paramsLength = whereParams.length) {
+  getNftsFiltersQuery(whereConditions, whereParams, orderClause, limit, paramsLength = whereParams.length) {
     const params = whereParams;
-    const orderClause = [super.getOrderByQuery(Nft.TOKEN_ID, nftOrder), `${Nft.SERIAL_NUMBER} ${nftOrder}`].join(', ');
     const query = [
       NftService.nftQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
@@ -69,8 +63,12 @@ class NftService extends BaseService {
   async getNftOwnership(lower, inner, upper, order, limit) {
     let allParams = [];
     let allQueries = [];
+    const orderClause = super.getOrderByQuery(
+      OrderSpec.from(Nft.TOKEN_ID, order),
+      OrderSpec.from(Nft.SERIAL_NUMBER, order)
+    );
     if (!_.isEmpty(lower)) {
-      const [lowerQuery, lowerParams] = this.getNftsFiltersQuery(lower.conditions, lower.params, order, limit);
+      const [lowerQuery, lowerParams] = this.getNftsFiltersQuery(lower.conditions, lower.params, orderClause, limit);
       allQueries = allQueries.concat(`(${lowerQuery})`);
       allParams = allParams.concat(lowerParams);
     }
@@ -79,7 +77,7 @@ class NftService extends BaseService {
       const [innerQuery, innerParams] = this.getNftsFiltersQuery(
         inner.conditions,
         inner.params,
-        order,
+        orderClause,
         limit,
         inner.params.length + allParams.length
       );
@@ -91,7 +89,7 @@ class NftService extends BaseService {
       const [upperQuery, upperParams] = this.getNftsFiltersQuery(
         upper.conditions,
         upper.params,
-        order,
+        orderClause,
         limit,
         upper.params.length + allParams.length
       );
@@ -103,9 +101,7 @@ class NftService extends BaseService {
 
     // if more than 1 query was combined add an additional order and limit to format joined results
     if (allQueries.length > 1) {
-      unionQuery = unionQuery
-        .concat(`\n${[super.getOrderByQuery(Nft.TOKEN_ID, order), `${Nft.SERIAL_NUMBER} ${order}`].join(', ')}`)
-        .concat(`\n${super.getLimitQuery(allParams.length)}`);
+      unionQuery = [unionQuery, orderClause, super.getLimitQuery(allParams.length)].join('\n');
     }
 
     const rows = await super.getRows(unionQuery, allParams, 'getNftOwnership');

@@ -20,14 +20,23 @@
 
 'use strict';
 
-module.exports = {
-  ContractService: require('./contractService'),
-  CryptoAllowanceService: require('./cryptoAllowanceService'),
-  EntityService: require('./entityService'),
-  NetworkNodeService: require('./networkNodeService'),
-  NftService: require('./nftService'),
-  RecordFileService: require('./recordFileService'),
-  TokenAllowanceService: require('./tokenAllowanceService'),
-  TokenService: require('./tokenService'),
-  TransactionService: require('./transactionService'),
-};
+const BaseAllowanceViewModel = require('./baseAllowanceViewModel');
+const EntityId = require('../entityId');
+
+/**
+ * TokenAllowance view model
+ */
+class TokenAllowanceViewModel extends BaseAllowanceViewModel {
+  /**
+   * Constructs tokenAllowance view model
+   *
+   * @param {TokenAllowance} tokenAllowance
+   */
+  constructor(tokenAllowance) {
+    super(tokenAllowance);
+    this.amount_granted = Number(tokenAllowance.amount);
+    this.token_id = EntityId.parse(tokenAllowance.tokenId).toString();
+  }
+}
+
+module.exports = TokenAllowanceViewModel;

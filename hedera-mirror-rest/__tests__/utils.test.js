@@ -1408,10 +1408,7 @@ describe('Utils getNextParamQueries', () => {
         },
         {
           [constants.filterKeys.SERIAL_NUMBER]: 3,
-          [constants.filterKeys.TOKEN_ID]: 100,
-        },
-        {
-          [constants.filterKeys.TOKEN_ID]: true,
+          [constants.filterKeys.TOKEN_ID]: {value: 100, inclusive: true},
         },
       ],
       expected: '?order=asc&limit=2&serialnumber=gt:3&token.id=gte:100',

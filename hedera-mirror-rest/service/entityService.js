@@ -40,10 +40,10 @@ class EntityService extends BaseService {
     super();
   }
 
-  static entityFromAliasQuery = `select ${Entity.ID} 
+  static entityFromAliasQuery = `select ${Entity.ID}
     from ${Entity.tableName}`;
   // use a small column in existence check to reduce return payload size
-  static entityExistenceQuery = `select ${Entity.TYPE} 
+  static entityExistenceQuery = `select ${Entity.TYPE}
     from ${Entity.tableName} where ${Entity.ID} = $1`;
 
   static aliasColumns = [Entity.SHARD, Entity.REALM, Entity.ALIAS];
@@ -52,7 +52,6 @@ class EntityService extends BaseService {
   static missingEntityIdMessage = 'No entity with a matching id found';
   static missingAccountAlias = 'No account with a matching alias found';
   static multipleAliasMatch = `Multiple alive entities matching alias`;
-  static invalidEntityIdMessage = 'Invalid entity';
 
   /**
    * Retrieves the entity containing matching the given alias
@@ -114,19 +113,25 @@ class EntityService extends BaseService {
    * Throws {@link InvalidArgumentError} if the account alias string is invalid
    * Throws {@link NotFoundError} if the account is not present when retrieving by alias
    * @param {String} accountIdString accountIdOrAlias query string
+   * @param {String} paramName the parameter name
    * @returns {Promise} entityId
    */
-  async getEncodedIdAccountIdOrAlias(accountIdString) {
-    let entityId = null;
-    if (EntityId.isValidEntityId(accountIdString)) {
-      entityId = EntityId.parse(accountIdString, constants.filterKeys.ACCOUNT_ID).getEncodedId();
-    } else if (AccountAlias.isValid(accountIdString)) {
-      entityId = await this.getAccountIdFromAlias(AccountAlias.fromString(accountIdString));
-    } else {
-      throw new InvalidArgumentError(EntityService.invalidEntityIdMessage);
+  async getEncodedIdAccountIdOrAlias(accountIdString, paramName = constants.filterKeys.ACCOUNT_ID_OR_ALIAS) {
+    try {
+      if (EntityId.isValidEntityId(accountIdString)) {
+        return EntityId.parse(accountIdString, paramName).getEncodedId();
+      } else if (AccountAlias.isValid(accountIdString)) {
+        return await this.getAccountIdFromAlias(AccountAlias.fromString(accountIdString));
+      }
+    } catch (ex) {
+      if (ex instanceof InvalidArgumentError) {
+        throw InvalidArgumentError.forParams(paramName);
+      }
+      // rethrow
+      throw ex;
     }
 
-    return entityId;
+    throw InvalidArgumentError.forParams(paramName);
   }
 }
 
