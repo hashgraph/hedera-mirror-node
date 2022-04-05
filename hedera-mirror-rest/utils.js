@@ -732,7 +732,6 @@ const addHexPrefix = (hexData) => {
   }
 
   const hexString = typeof hexData === 'string' ? hexData : Buffer.from(hexData).toString();
-
   return hexString.indexOf(hexPrefix) === 0 ? hexString : `${hexPrefix}${hexString}`;
 };
 

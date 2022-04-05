@@ -308,12 +308,10 @@ const addAddressBook = async (addressBookInput) => {
     ...addressBookInput,
   };
 
-  console.log('AddressBookInput.file_date = ', addressBookInput.file_data);
   addressBook.file_data =
     typeof addressBookInput.file_data === 'string'
       ? Buffer.from(addressBookInput.file_data, 'utf-8')
       : Buffer.from(addressBook.file_data);
-  console.log('Becomes: ', addressBook.file_data);
 
   await insertDomainObject('address_book', insertFields, addressBook);
 };
