@@ -104,4 +104,3 @@ The following table lists the available properties along with their default valu
 | `hedera.mirror.rosetta.test.server.onlineUrl`           | http://localhost:5700 | The url of the online rosetta server                                       |
 | `hedera.mirror.rosetta.test.server.submitRetry.backOff` | 200ms                 | The amount of time to wait between submit request retries                  |
 | `hedera.mirror.rosetta.test.server.submitRetry.max`     | 5                     | The max retries of a submit request                                        |
-
