@@ -1423,6 +1423,7 @@ describe('Utils getNextParamQueries', () => {
       expect(utils.getNextParamQueries(...spec.args)).toEqual(spec.expected);
     });
   });
+});
 
 describe('Utils addHexPrefix tests', () => {
   const specs = [
