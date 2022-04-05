@@ -1424,64 +1424,63 @@ describe('Utils getNextParamQueries', () => {
     });
   });
 
-  describe('Utils addHexPrefix tests', () => {
-    const specs = [
-      {
-        name: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
-        args: ['4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'],
-        expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
-      },
-      {
-        name: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
-        args: ['0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'],
-        expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
-      },
-      {
-        name: 'Buffer from string',
-        args: [Buffer.from('4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'utf-8')],
-        expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
-      },
-      {
-        name: 'Buffer from string with prefix',
-        args: [Buffer.from('0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'utf-8')],
-        expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
-      },
-      {
-        name: 'Ascii byte array without prefix',
-        args: [[0x61, 0x62]],
-        expected: '0xab',
-      },
-      {
-        name: 'Ascii byte array with prefix',
-        args: [[0x30, 0x78, 0x61, 0x62]],
-        expected: '0xab',
-      },
-      {
-        name: 'Byte array without prefix',
-        args: [[97, 98]],
-        expected: '0xab',
-      },
-      {
-        name: 'Byte array with prefix',
-        args: [[48, 120, 97, 98]],
-        expected: '0xab',
-      },
-      {
-        name: '""',
-        args: [''],
-        expected: null,
-      },
-      {
-        name: 'null',
-        args: [null],
-        expected: null,
-      },
-    ];
+describe('Utils addHexPrefix tests', () => {
+  const specs = [
+    {
+      name: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+      args: ['4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'],
+      expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    },
+    {
+      name: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+      args: ['0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f'],
+      expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    },
+    {
+      name: 'Buffer from string',
+      args: [Buffer.from('4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'utf-8')],
+      expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    },
+    {
+      name: 'Buffer from string with prefix',
+      args: [Buffer.from('0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'utf-8')],
+      expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    },
+    {
+      name: 'Ascii byte array without prefix',
+      args: [[0x61, 0x62]],
+      expected: '0xab',
+    },
+    {
+      name: 'Ascii byte array with prefix',
+      args: [[0x30, 0x78, 0x61, 0x62]],
+      expected: '0xab',
+    },
+    {
+      name: 'Byte array without prefix',
+      args: [[97, 98]],
+      expected: '0xab',
+    },
+    {
+      name: 'Byte array with prefix',
+      args: [[48, 120, 97, 98]],
+      expected: '0xab',
+    },
+    {
+      name: '""',
+      args: [''],
+      expected: null,
+    },
+    {
+      name: 'null',
+      args: [null],
+      expected: null,
+    },
+  ];
 
-    specs.forEach((spec) => {
-      test(spec.name, () => {
-        expect(utils.addHexPrefix(...spec.args)).toEqual(spec.expected);
-      });
+  specs.forEach((spec) => {
+    test(spec.name, () => {
+      expect(utils.addHexPrefix(...spec.args)).toEqual(spec.expected);
     });
   });
 });
