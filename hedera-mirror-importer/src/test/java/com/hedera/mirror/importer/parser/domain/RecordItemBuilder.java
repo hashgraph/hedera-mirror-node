@@ -209,6 +209,13 @@ public class RecordItemBuilder {
                 .setOwner(accountId())
                 .setSpender(accountId())
                 .setTokenId(tokenId());
+        var nftAllowance4 = NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(true))
+                .setOwner(accountId())
+                .addSerialNumbers(3L)
+                .addSerialNumbers(4L)
+                .setSpender(accountId())
+                .setTokenId(tokenId());
         var tokenAllowance = TokenAllowance.newBuilder()
                 .setAmount(-10L)
                 .setOwner(accountId())
@@ -219,6 +226,7 @@ public class RecordItemBuilder {
                 .addNftAllowances(nftAllowance1)
                 .addNftAllowances(nftAllowance2)
                 .addNftAllowances(nftAllowance3)
+                .addNftAllowances(nftAllowance4)
                 .addTokenAllowances(tokenAllowance);
         return new Builder<>(TransactionType.CRYPTOADJUSTALLOWANCE, builder)
                 .record(r -> r.addCryptoAdjustments(cryptoAllowance.setAmount(5L))
@@ -245,6 +253,13 @@ public class RecordItemBuilder {
                 .addNftAllowances(NftAllowance.newBuilder()
                         .setApprovedForAll(BoolValue.of(true))
                         .setOwner(accountId())
+                        .setSpender(accountId())
+                        .setTokenId(tokenId()))
+                .addNftAllowances(NftAllowance.newBuilder()
+                        .setApprovedForAll(BoolValue.of(true))
+                        .setOwner(accountId())
+                        .addSerialNumbers(2L)
+                        .addSerialNumbers(3L)
                         .setSpender(accountId())
                         .setTokenId(tokenId()))
                 .addTokenAllowances(TokenAllowance.newBuilder()
@@ -279,7 +294,7 @@ public class RecordItemBuilder {
         return AccountAmount.newBuilder().setAccountID(accountID).setAmount(amount).build();
     }
 
-    private AccountID accountId() {
+    public AccountID accountId() {
         return AccountID.newBuilder().setAccountNum(id()).build();
     }
 
@@ -317,11 +332,11 @@ public class RecordItemBuilder {
         return RandomStringUtils.randomAlphanumeric(characters);
     }
 
-    private Timestamp timestamp() {
+    public Timestamp timestamp() {
         return Utility.instantToTimestamp(now.plusSeconds(id()));
     }
 
-    private TokenID tokenId() {
+    public TokenID tokenId() {
         return TokenID.newBuilder().setTokenNum(id()).build();
     }
 

@@ -34,7 +34,7 @@ import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
 @Data
-@Builder
+@Builder(toBuilder = true)
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor

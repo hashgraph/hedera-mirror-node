@@ -26,6 +26,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Range;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -38,6 +39,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 class CryptoAdjustAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -62,69 +64,27 @@ class CryptoAdjustAllowanceTransactionHandlerTest extends AbstractTransactionHan
 
     @Test
     void updateTransaction() {
-        var nftSpender = 1500L;
-        var nftSpenderAccountId = EntityId.of(nftSpender, EntityType.ACCOUNT);
-        var recordItem = recordItemBuilder.cryptoAdjustAllowance()
-                .transactionBody(body -> body
-                        .getNftAllowancesBuilderList()
-                        .forEach(b -> b.getSpenderBuilder().setAccountNum(nftSpender)))
-                .build();
+        var recordItem = recordItemBuilder.cryptoAdjustAllowance().build();
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
         transactionHandler.updateTransaction(transaction, recordItem);
-
-        verify(entityListener).onCryptoAllowance(assertArg(t -> assertThat(t)
-                .isNotNull()
-                .satisfies(a -> assertThat(a.getAmount()).isPositive())
-                .satisfies(a -> assertThat(a.getOwner()).isPositive())
-                .satisfies(a -> assertThat(a.getSpender()).isPositive())
-                .returns(recordItem.getPayerAccountId(), CryptoAllowance::getPayerAccountId)
-                .returns(timestamp, CryptoAllowance::getTimestampLower)));
-
-        verify(entityListener, times(2)).onNftAllowance(nftAllowanceCaptor.capture());
-        assertThat(nftAllowanceCaptor.getAllValues())
-                .allSatisfy(n -> assertAll(
-                        () -> assertThat(n.getOwner()).isPositive(),
-                        () -> assertThat(n.getSpender()).isEqualTo(nftSpender),
-                        () -> assertThat(n.getTokenId()).isPositive(),
-                        () -> assertThat(n.getPayerAccountId()).isEqualTo(recordItem.getPayerAccountId()),
-                        () -> assertThat(n.getTimestampRange()).isEqualTo(Range.atLeast(timestamp))
-                ))
-                .extracting("approvedForAll").
-                containsExactlyInAnyOrder(true, false);
-
-        verify(entityListener, times(2)).onNftInstanceAllowance(assertArg(t -> assertThat(t)
-                .isNotNull()
-                .satisfies(a -> assertThat(a.getAccountId().getId()).isPositive())
-                .returns(timestamp, Nft::getAllowanceGrantedTimestamp)
-                .returns(EntityId.EMPTY, Nft::getDelegatingSpender)
-                .satisfies(a -> assertThat(a.getId().getSerialNumber()).isPositive())
-                .returns(nftSpenderAccountId, Nft::getSpender)
-                .satisfies(a -> assertThat(a.getId().getTokenId().getId()).isPositive())));
-
-        verify(entityListener).onTokenAllowance(assertArg(t -> assertThat(t)
-                .isNotNull()
-                .satisfies(a -> assertThat(a.getAmount()).isPositive())
-                .satisfies(a -> assertThat(a.getOwner()).isPositive())
-                .satisfies(a -> assertThat(a.getSpender()).isNotNull())
-                .satisfies(a -> assertThat(a.getTokenId()).isPositive())
-                .returns(recordItem.getPayerAccountId(), TokenAllowance::getPayerAccountId)
-                .returns(timestamp, TokenAllowance::getTimestampLower)));
+        assertAllowances(recordItem, owner -> assertThat(owner).isPositive());
     }
 
     @Test
     void updateTransactionWithImplicitNftAllowanceOwner() {
-        var nftSpender = 1500L;
-        var nftSpenderAccountId = EntityId.of(nftSpender, EntityType.ACCOUNT);
         var recordItem = recordItemBuilder.cryptoAdjustAllowance()
-                .transactionBody(body -> body.getNftAllowancesBuilderList()
-                        .forEach(b -> b.clearOwner().getSpenderBuilder().setAccountNum(nftSpender)))
+                .transactionBody(body -> body.getNftAllowancesBuilderList().forEach(b -> b.clearOwner()))
                 .build();
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
         transactionHandler.updateTransaction(transaction, recordItem);
-        var effectiveNftOwner = recordItem.getPayerAccountId();
+        var effectiveNftOwner = recordItem.getPayerAccountId().getId();
+        assertAllowances(recordItem, owner -> assertThat(owner).isEqualTo(effectiveNftOwner));
+    }
 
+    private void assertAllowances(RecordItem recordItem, Consumer<Long> assertNftOwner) {
+        var timestamp = recordItem.getConsensusTimestamp();
         verify(entityListener).onCryptoAllowance(assertArg(t -> assertThat(t)
                 .isNotNull()
                 .satisfies(a -> assertThat(a.getAmount()).isPositive())
@@ -133,25 +93,25 @@ class CryptoAdjustAllowanceTransactionHandlerTest extends AbstractTransactionHan
                 .returns(recordItem.getPayerAccountId(), CryptoAllowance::getPayerAccountId)
                 .returns(timestamp, CryptoAllowance::getTimestampLower)));
 
-        verify(entityListener, times(2)).onNftAllowance(nftAllowanceCaptor.capture());
+        verify(entityListener, times(3)).onNftAllowance(nftAllowanceCaptor.capture());
         assertThat(nftAllowanceCaptor.getAllValues())
                 .allSatisfy(n -> assertAll(
-                        () -> assertThat(n.getOwner()).isEqualTo(effectiveNftOwner.getId()),
+                        () -> assertNftOwner.accept(n.getOwner()),
                         () -> assertThat(n.getSpender()).isPositive(),
                         () -> assertThat(n.getTokenId()).isPositive(),
                         () -> assertThat(n.getPayerAccountId()).isEqualTo(recordItem.getPayerAccountId()),
                         () -> assertThat(n.getTimestampRange()).isEqualTo(Range.atLeast(timestamp))
                 ))
-                .extracting("approvedForAll").
-                containsExactlyInAnyOrder(true, false);
+                .extracting("approvedForAll")
+                .containsExactlyInAnyOrder(true, false, true);
 
-        verify(entityListener, times(2)).onNftInstanceAllowance(assertArg(t -> assertThat(t)
+        verify(entityListener, times(4)).onNftInstanceAllowance(assertArg(t -> assertThat(t)
                 .isNotNull()
-                .returns(effectiveNftOwner, Nft::getAccountId)
+                .satisfies(a -> assertNftOwner.accept(a.getAccountId().getId()))
                 .returns(timestamp, Nft::getAllowanceGrantedTimestamp)
                 .returns(EntityId.EMPTY, Nft::getDelegatingSpender)
                 .satisfies(a -> assertThat(a.getId().getSerialNumber()).isPositive())
-                .returns(nftSpenderAccountId, Nft::getSpender)
+                .satisfies(a -> assertThat(a.getSpender().getId()).isPositive())
                 .satisfies(a -> assertThat(a.getId().getTokenId().getId()).isPositive())));
 
         verify(entityListener).onTokenAllowance(assertArg(t -> assertThat(t)

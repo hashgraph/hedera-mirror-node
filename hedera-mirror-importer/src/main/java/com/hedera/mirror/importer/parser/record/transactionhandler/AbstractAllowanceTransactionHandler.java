@@ -64,29 +64,29 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
             EntityId spender = EntityId.of(nftApproval.getSpender());
             EntityId tokenId = EntityId.of(nftApproval.getTokenId());
 
-            // duplicate
             if (nftApproval.hasApprovedForAll()) {
+                var approvedForAll = nftApproval.getApprovedForAll().getValue();
                 NftAllowance nftAllowance = new NftAllowance();
-                nftAllowance.setApprovedForAll(nftApproval.getApprovedForAll().getValue());
+                nftAllowance.setApprovedForAll(approvedForAll);
                 nftAllowance.setOwner(ownerAccountId.getId());
                 nftAllowance.setPayerAccountId(payerAccountId);
                 nftAllowance.setSpender(spender.getId());
                 nftAllowance.setTokenId(tokenId.getId());
                 nftAllowance.setTimestampLower(consensusTimestamp);
                 entityListener.onNftAllowance(nftAllowance);
-            } else {
-                EntityId delegatingSpender = EntityId.of(nftApproval.getDelegatingSpender());
-                for (var serialNumber : nftApproval.getSerialNumbersList()) {
-                    // nft instance allowance update doesn't set nft modifiedTimestamp
-                    // services allows the same serial number of a nft token appears in multiple nft allowances to
-                    // different accounts. The last spender will be granted such allowance.
-                    Nft nft = new Nft(serialNumber, tokenId);
-                    nft.setAccountId(ownerAccountId);
-                    nft.setSpender(spender);
-                    nft.setAllowanceGrantedTimestamp(consensusTimestamp);
-                    nft.setDelegatingSpender(delegatingSpender);
-                    entityListener.onNftInstanceAllowance(nft);
-                }
+            }
+
+            EntityId delegatingSpender = EntityId.of(nftApproval.getDelegatingSpender());
+            for (var serialNumber : nftApproval.getSerialNumbersList()) {
+                // nft instance allowance update doesn't set nft modifiedTimestamp
+                // services allows the same serial number of a nft token appears in multiple nft allowances to
+                // different spenders. The last spender will be granted such allowance.
+                Nft nft = new Nft(serialNumber, tokenId);
+                nft.setAccountId(ownerAccountId);
+                nft.setSpender(spender);
+                nft.setAllowanceGrantedTimestamp(consensusTimestamp);
+                nft.setDelegatingSpender(delegatingSpender);
+                entityListener.onNftInstanceAllowance(nft);
             }
         }
 

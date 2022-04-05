@@ -29,14 +29,13 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Resource;
 import org.assertj.core.api.Condition;
@@ -56,6 +55,7 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ShardID;
@@ -68,13 +68,13 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
@@ -117,8 +117,13 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     @Test
     void cryptoAdjustAllowance() {
         // given
-        RecordItem recordItem = recordItemBuilder.cryptoAdjustAllowance().build();
-        List<Nft> expectedNfts = setupNftInstanceAllowance(recordItem);
+        var consensusTimestamp = recordItemBuilder.timestamp();
+        List<Nft> expectedNfts = new LinkedList<>();
+        var nftAllowances = customizeNftAllowances(consensusTimestamp, expectedNfts);
+        RecordItem recordItem = recordItemBuilder.cryptoAdjustAllowance()
+                .transactionBody(b -> b.clearNftAllowances().addAllNftAllowances(nftAllowances))
+                .record(r -> r.setConsensusTimestamp(consensusTimestamp))
+                .build();
 
         // when
         parseRecordItemAndCommit(recordItem);
@@ -130,8 +135,13 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     @Test
     void cryptoApproveAllowance() {
         // given
-        RecordItem recordItem = recordItemBuilder.cryptoApproveAllowance().build();
-        List<Nft> expectedNfts = setupNftInstanceAllowance(recordItem);
+        var consensusTimestamp = recordItemBuilder.timestamp();
+        List<Nft> expectedNfts = new LinkedList<>();
+        var nftAllowances = customizeNftAllowances(consensusTimestamp, expectedNfts);
+        RecordItem recordItem = recordItemBuilder.cryptoApproveAllowance()
+                .transactionBody(b -> b.clearNftAllowances().addAllNftAllowances(nftAllowances))
+                .record(r -> r.setConsensusTimestamp(consensusTimestamp))
+                .build();
 
         // when
         parseRecordItemAndCommit(recordItem);
@@ -809,12 +819,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         testRawBytes(transaction, null);
     }
 
-    private void assertAllowances(RecordItem recordItem, List<Nft> expectedNfts) {
+    private void assertAllowances(RecordItem recordItem, Collection<Nft> expectedNfts) {
         assertAll(
                 () -> assertEquals(1, cryptoAllowanceRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(0, entityRepository.count()),
-                () -> assertEquals(2, nftAllowanceRepository.count()),
+                () -> assertEquals(3, nftAllowanceRepository.count()),
                 () -> assertEquals(1, tokenAllowanceRepository.count()),
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord()),
@@ -875,6 +885,72 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 cryptoTransferRepository.findAll())
                 .hasSize(expectedNumberOfCryptoTransfers)
                 .allSatisfy(a -> assertThat(a.getId().getAmount()).isNotZero());
+    }
+
+    private List<NftAllowance> customizeNftAllowances(Timestamp consensusTimestamp, List<Nft> expectedNfts) {
+        var owner = recordItemBuilder.accountId();
+        var spender1 =  recordItemBuilder.accountId();
+        var spender2 =  recordItemBuilder.accountId();
+        var tokenId = recordItemBuilder.tokenId();
+        var nft1 = Nft.builder()
+                .id(new NftId(1L, EntityId.of(tokenId)))
+                .accountId(EntityId.of(owner))
+                .createdTimestamp(101L)
+                .modifiedTimestamp(101L)
+                .build();
+        var nft2 = Nft.builder()
+                .id(new NftId(2L, EntityId.of(tokenId)))
+                .accountId(EntityId.of(owner))
+                .createdTimestamp(102L)
+                .modifiedTimestamp(102L)
+                .build();
+        var nft3 = Nft.builder()
+                .id(new NftId(3L, EntityId.of(tokenId)))
+                .accountId(EntityId.of(owner))
+                .createdTimestamp(103L)
+                .modifiedTimestamp(103L)
+                .build();
+        var timestamp = consensusTimestamp.getSeconds() * 1_000_000_000 + consensusTimestamp.getNanos();
+        List<NftAllowance> nftAllowances = new LinkedList<>();
+
+        nftAllowances.add(NftAllowance.newBuilder()
+                .setOwner(owner)
+                .addSerialNumbers(1L)
+                .addSerialNumbers(2L)
+                .setSpender(spender1)
+                .setTokenId(tokenId)
+                .build());
+        expectedNfts.add(nft1.toBuilder().allowanceGrantedTimestamp(timestamp).spender(EntityId.of(spender1)).build());
+
+        nftAllowances.add(NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(false))
+                .setOwner(recordItemBuilder.accountId())
+                .setSpender(recordItemBuilder.accountId())
+                .setTokenId(recordItemBuilder.tokenId())
+                .build());
+        nftAllowances.add(NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(true))
+                .setOwner(recordItemBuilder.accountId())
+                .setSpender(recordItemBuilder.accountId())
+                .setTokenId(recordItemBuilder.tokenId())
+                .build());
+
+        nftAllowances.add(NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(true))
+                .setOwner(owner)
+                .addSerialNumbers(2L)
+                .addSerialNumbers(3L)
+                .setSpender(spender2)
+                .setTokenId(tokenId)
+                .build());
+        // serial number 2's allowance is granted twice, the allowance should be granted to spender2 since it appears
+        // after the intent to grant allowance to spender1
+        expectedNfts.add(nft2.toBuilder().allowanceGrantedTimestamp(timestamp).spender(EntityId.of(spender2)).build());
+        expectedNfts.add(nft3.toBuilder().allowanceGrantedTimestamp(timestamp).spender(EntityId.of(spender2)).build());
+
+        nftRepository.saveAll(List.of(nft1, nft2, nft3));
+
+        return nftAllowances;
     }
 
     private void createAccount() {
@@ -966,43 +1042,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
             transferListBuilder.addAccountAmounts(accountAmount);
         });
         recordBuilder.setTransferList(transferListBuilder);
-    }
-
-    private List<Nft> setupNftInstanceAllowance(RecordItem recordItem) {
-        var nftCreatedTimestamp = new AtomicLong(100L);
-        List<Nft> expectedNfts = new ArrayList<>();
-        var transactionBody = recordItem.getTransactionBody();
-        var nftAllowances = transactionBody.hasCryptoAdjustAllowance() ?
-                transactionBody.getCryptoAdjustAllowance().getNftAllowancesList() :
-                transactionBody.getCryptoApproveAllowance().getNftAllowancesList();
-        var nfts = nftAllowances.stream()
-                .filter(nftAllowance -> !nftAllowance.hasApprovedForAll())
-                .flatMap(nftAllowance -> {
-                    var owner = EntityId.of(nftAllowance.getOwner());
-                    var tokenId = EntityId.of(nftAllowance.getTokenId());
-                    return nftAllowance.getSerialNumbersList().stream().map(serialNumber -> {
-                        var nft = new Nft(Math.abs(serialNumber), tokenId);
-                        nft.setAccountId(owner);
-                        nft.setCreatedTimestamp(nftCreatedTimestamp.getAndIncrement());
-                        nft.setModifiedTimestamp(nft.getCreatedTimestamp());
-
-                        var expectedNft = TestUtils.clone(nft);
-                        var spender = EntityId.of(nftAllowance.getSpender());
-                        if (serialNumber > 0) {
-                            expectedNft.setAllowanceGrantedTimestamp(recordItem.getConsensusTimestamp());
-                            expectedNft.setSpender(spender);
-                        } else {
-                            nft.setAllowanceGrantedTimestamp(nft.getCreatedTimestamp() + 10L);
-                            nft.setSpender(spender);
-                        }
-                        expectedNfts.add(expectedNft);
-
-                        return nft;
-                    });
-                })
-                .collect(Collectors.toList());
-        nftRepository.saveAll(nfts);
-        return expectedNfts;
     }
 
     private void testRawBytes(Transaction transaction, byte[] expectedBytes) {

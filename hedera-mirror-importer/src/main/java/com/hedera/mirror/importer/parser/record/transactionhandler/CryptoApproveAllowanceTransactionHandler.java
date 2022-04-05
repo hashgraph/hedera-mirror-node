@@ -20,12 +20,13 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
 import java.util.List;
 import javax.inject.Named;
 
+import com.hederahashgraph.api.proto.java.CryptoAllowance;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -52,16 +53,20 @@ class CryptoApproveAllowanceTransactionHandler extends AbstractAllowanceTransact
 
     @Override
     protected List<CryptoAllowance> getCryptoAllowances(RecordItem recordItem) {
-        return recordItem.getTransactionBody().getCryptoApproveAllowance().getCryptoAllowancesList();
+        return getTransactionBody(recordItem).getCryptoAllowancesList();
     }
 
     @Override
     protected List<NftAllowance> getNftAllowances(RecordItem recordItem) {
-        return recordItem.getTransactionBody().getCryptoApproveAllowance().getNftAllowancesList();
+        return getTransactionBody(recordItem).getNftAllowancesList();
     }
 
     @Override
     protected List<TokenAllowance> getTokenAllowances(RecordItem recordItem) {
-        return recordItem.getTransactionBody().getCryptoApproveAllowance().getTokenAllowancesList();
+        return getTransactionBody(recordItem).getTokenAllowancesList();
+    }
+
+    private CryptoApproveAllowanceTransactionBody getTransactionBody(RecordItem recordItem) {
+        return recordItem.getTransactionBody().getCryptoApproveAllowance();
     }
 }
