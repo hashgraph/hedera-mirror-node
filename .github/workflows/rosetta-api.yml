@@ -181,6 +181,8 @@ jobs:
         if: steps.changed-files-module.outputs.any_changed == 'true'
         working-directory: ./hedera-mirror-rosetta/test/bdd-client
         run: |
+          export GOROOT=$GOROOT_1_18_X64
+          export PATH=$GOROOT/bin:$PATH
           jq -r '.[] | {"privateKey": .privkey, "id": .account_identifier.address}' /tmp/accounts.json | \
             jq -s '. | {operators: .} | .server.offlineUrl="${{ env.OFFLINE_URL }}" | {test: .} | {rosetta: .}
               | {mirror: .} | {hedera: .}' | \
