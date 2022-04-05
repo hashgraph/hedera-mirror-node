@@ -62,7 +62,7 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.1.4</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.1.5</embedded.testcontainers.version>
         <flyway.version>7.15.0</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
@@ -79,8 +79,8 @@
         <micrometer.version>1.8.3</micrometer.version> <!-- Temporarily added for postgresql metrics bug fix -->
         <msgpack.version>0.9.1</msgpack.version>
         <protobuf.version>3.19.4</protobuf.version>
-        <release.version>0.54.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.41.0-SNAPSHOT</release.chartVersion>
+        <release.version>0.55.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
+        <release.chartVersion>0.42.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
         <!--suppress UnresolvedMavenProperty -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
