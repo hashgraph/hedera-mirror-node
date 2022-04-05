@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.domain;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -65,7 +65,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.security.SecureRandom;
 import java.time.Instant;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import javax.inject.Named;
@@ -96,7 +95,10 @@ public class RecordItemBuilder {
     private final SecureRandom random = new SecureRandom();
 
     public Builder<ContractCallTransactionBody.Builder> contractCall() {
-        var contractId = contractId();
+        return contractCall(contractId());
+    }
+
+    public Builder<ContractCallTransactionBody.Builder> contractCall(ContractID contractId) {
         ContractCallTransactionBody.Builder transactionBody = ContractCallTransactionBody.newBuilder()
                 .setAmount(5_000L)
                 .setContractID(contractId)
@@ -144,11 +146,14 @@ public class RecordItemBuilder {
 
     public ContractFunctionResult.Builder contractFunctionResult(ContractID contractId) {
         return ContractFunctionResult.newBuilder()
+                .setAmount(5_000L)
                 .setBloom(bytes(256))
                 .setContractCallResult(bytes(16))
                 .setContractID(contractId)
                 .addCreatedContractIDs(contractId())
                 .setErrorMessage(text(10))
+                .setFunctionParameters(bytes(64))
+                .setGas(10_000L)
                 .setGasUsed(1000L)
                 .addLogInfo(ContractLoginfo.newBuilder()
                         .setBloom(bytes(256))
@@ -217,8 +222,6 @@ public class RecordItemBuilder {
                 .addTokenAllowances(tokenAllowance);
         return new Builder<>(TransactionType.CRYPTOADJUSTALLOWANCE, builder)
                 .record(r -> r.addCryptoAdjustments(cryptoAllowance.setAmount(5L))
-                        .addNftAdjustments(nftAllowance1.clearSerialNumbers().addAllSerialNumbers(List.of(2L, 3L)))
-                        .addNftAdjustments(nftAllowance2)
                         .addTokenAdjustments(tokenAllowance.setAmount(5L)));
     }
 
@@ -326,16 +329,16 @@ public class RecordItemBuilder {
         private Version hapiVersion = RecordFile.HAPI_VERSION_NOT_SET;
 
         private Builder(TransactionType type, T transactionBody) {
-            this.payerAccountId = accountId();
+            payerAccountId = accountId();
             this.type = type;
             this.transactionBody = transactionBody;
-            this.transactionBodyWrapper = defaultTransactionBody();
-            this.transactionRecord = defaultTransactionRecord();
+            transactionBodyWrapper = defaultTransactionBody();
+            transactionRecord = defaultTransactionRecord();
         }
 
         public RecordItem build() {
             var field = transactionBodyWrapper.getDescriptorForType().findFieldByNumber(type.getProtoId());
-            transactionBodyWrapper.setField(field, this.transactionBody.build());
+            transactionBodyWrapper.setField(field, transactionBody.build());
 
             Transaction transaction = transaction().build();
             TransactionRecord record = transactionRecord.build();

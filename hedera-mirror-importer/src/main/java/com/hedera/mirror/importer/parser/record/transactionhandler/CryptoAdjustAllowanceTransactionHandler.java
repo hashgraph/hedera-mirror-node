@@ -49,7 +49,7 @@ class CryptoAdjustAllowanceTransactionHandler extends AbstractAllowanceTransacti
 
     @Override
     protected List<NftAllowance> getNftAllowances(RecordItem recordItem) {
-        return recordItem.getRecord().getNftAdjustmentsList();
+        return recordItem.getTransactionBody().getCryptoAdjustAllowance().getNftAllowancesList();
     }
 
     @Override

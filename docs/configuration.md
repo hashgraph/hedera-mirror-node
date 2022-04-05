@@ -112,6 +112,7 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.entity.notify.maxJsonPayloadSize`     | 8000                    | Max number of bytes for json payload used in pg_notify of db inserts                           |
 | `hedera.mirror.importer.parser.record.entity.persist.claims`                | false                   | Persist claim data to the database                                                             |
 | `hedera.mirror.importer.parser.record.entity.persist.contracts`             | true                    | Persist contract data to the database                                                          |
+| `hedera.mirror.importer.parser.record.entity.persist.contractResults`       | true                    | Persist contract results data to the database                                                  |
 | `hedera.mirror.importer.parser.record.entity.persist.cryptoTransferAmounts` | true                    | Persist crypto transfer amounts to the database                                                |
 | `hedera.mirror.importer.parser.record.entity.persist.files`                 | true                    | Persist all file data to the database                                                          |
 | `hedera.mirror.importer.parser.record.entity.persist.nonFeeTransfers`       | false                   | Persist non-fee transfers for transactions that explicitly request hbar transfers              |
