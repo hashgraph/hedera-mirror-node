@@ -1442,6 +1442,11 @@ describe('Utils getNextParamQueries', () => {
         expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
       },
       {
+        name: 'Buffer from string with prefix',
+        args: [Buffer.from('0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'utf-8')],
+        expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+      },
+      {
         name: 'Ascii byte array without prefix',
         args: [[0x61, 0x62]],
         expected: '0xab',
