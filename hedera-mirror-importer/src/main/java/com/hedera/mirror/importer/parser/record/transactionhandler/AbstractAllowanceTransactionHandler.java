@@ -64,6 +64,7 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
             EntityId spender = EntityId.of(nftApproval.getSpender());
             EntityId tokenId = EntityId.of(nftApproval.getTokenId());
 
+            // duplicate
             if (nftApproval.hasApprovedForAll()) {
                 NftAllowance nftAllowance = new NftAllowance();
                 nftAllowance.setApprovedForAll(nftApproval.getApprovedForAll().getValue());
@@ -77,13 +78,13 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
                 EntityId delegatingSpender = EntityId.of(nftApproval.getDelegatingSpender());
                 for (var serialNumber : nftApproval.getSerialNumbersList()) {
                     // nft instance allowance update doesn't set nft modifiedTimestamp
-                    Nft nft = new Nft(Math.abs(serialNumber), tokenId);
+                    // services allows the same serial number of a nft token appears in multiple nft allowances to
+                    // different accounts. The last spender will be granted such allowance.
+                    Nft nft = new Nft(serialNumber, tokenId);
                     nft.setAccountId(ownerAccountId);
-                    if (serialNumber > 0) {
-                        nft.setSpender(spender);
-                        nft.setAllowanceGrantedTimestamp(consensusTimestamp);
-                        nft.setDelegatingSpender(delegatingSpender);
-                    }
+                    nft.setSpender(spender);
+                    nft.setAllowanceGrantedTimestamp(consensusTimestamp);
+                    nft.setDelegatingSpender(delegatingSpender);
                     entityListener.onNftInstanceAllowance(nft);
                 }
             }

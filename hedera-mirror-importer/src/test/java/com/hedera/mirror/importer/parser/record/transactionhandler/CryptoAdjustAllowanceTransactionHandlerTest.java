@@ -26,7 +26,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Range;
-import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -44,9 +43,6 @@ class CryptoAdjustAllowanceTransactionHandlerTest extends AbstractTransactionHan
 
     @Captor
     private ArgumentCaptor<NftAllowance> nftAllowanceCaptor;
-
-    @Captor
-    private ArgumentCaptor<Nft> nftCaptor;
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -97,18 +93,14 @@ class CryptoAdjustAllowanceTransactionHandlerTest extends AbstractTransactionHan
                 .extracting("approvedForAll").
                 containsExactlyInAnyOrder(true, false);
 
-        verify(entityListener, times(2)).onNftInstanceAllowance(nftCaptor.capture());
-        assertThat(nftCaptor.getAllValues())
-                .allSatisfy(n -> assertAll(
-                        () -> assertThat(n.getAccountId().getId()).isPositive(),
-                        () -> assertThat(n.getId().getSerialNumber()).isPositive(),
-                        () -> assertThat(n.getId().getTokenId().getId()).isPositive()
-                ))
-                .extracting("allowanceGrantedTimestamp", "delegatingSpender", "spender")
-                .containsExactlyInAnyOrder(
-                        new Tuple(timestamp, EntityId.EMPTY, nftSpenderAccountId),
-                        new Tuple(null, null, null)
-                );
+        verify(entityListener, times(2)).onNftInstanceAllowance(assertArg(t -> assertThat(t)
+                .isNotNull()
+                .satisfies(a -> assertThat(a.getAccountId().getId()).isPositive())
+                .returns(timestamp, Nft::getAllowanceGrantedTimestamp)
+                .returns(EntityId.EMPTY, Nft::getDelegatingSpender)
+                .satisfies(a -> assertThat(a.getId().getSerialNumber()).isPositive())
+                .returns(nftSpenderAccountId, Nft::getSpender)
+                .satisfies(a -> assertThat(a.getId().getTokenId().getId()).isPositive())));
 
         verify(entityListener).onTokenAllowance(assertArg(t -> assertThat(t)
                 .isNotNull()
@@ -153,18 +145,14 @@ class CryptoAdjustAllowanceTransactionHandlerTest extends AbstractTransactionHan
                 .extracting("approvedForAll").
                 containsExactlyInAnyOrder(true, false);
 
-        verify(entityListener, times(2)).onNftInstanceAllowance(nftCaptor.capture());
-        assertThat(nftCaptor.getAllValues())
-                .allSatisfy(n -> assertAll(
-                        () -> assertThat(n.getAccountId()).isEqualTo(effectiveNftOwner),
-                        () -> assertThat(n.getId().getSerialNumber()).isPositive(),
-                        () -> assertThat(n.getId().getTokenId().getId()).isPositive()
-                ))
-                .extracting("allowanceGrantedTimestamp", "delegatingSpender", "spender")
-                .containsExactlyInAnyOrder(
-                        new Tuple(timestamp, EntityId.EMPTY, nftSpenderAccountId),
-                        new Tuple(null, null, null)
-                );
+        verify(entityListener, times(2)).onNftInstanceAllowance(assertArg(t -> assertThat(t)
+                .isNotNull()
+                .returns(effectiveNftOwner, Nft::getAccountId)
+                .returns(timestamp, Nft::getAllowanceGrantedTimestamp)
+                .returns(EntityId.EMPTY, Nft::getDelegatingSpender)
+                .satisfies(a -> assertThat(a.getId().getSerialNumber()).isPositive())
+                .returns(nftSpenderAccountId, Nft::getSpender)
+                .satisfies(a -> assertThat(a.getId().getTokenId().getId()).isPositive())));
 
         verify(entityListener).onTokenAllowance(assertArg(t -> assertThat(t)
                 .isNotNull()

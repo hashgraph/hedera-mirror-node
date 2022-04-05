@@ -197,7 +197,7 @@ public class RecordItemBuilder {
                 .setOwner(accountId())
                 .setSpender(accountId())
                 .setTokenId(tokenId())
-                .addSerialNumbers(-1L)
+                .addSerialNumbers(1L)
                 .addSerialNumbers(2L);
         var nftAllowance2 = NftAllowance.newBuilder()
                 .setApprovedForAll(BoolValue.of(true))
