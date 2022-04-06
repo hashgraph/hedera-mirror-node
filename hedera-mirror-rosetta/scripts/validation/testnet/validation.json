@@ -25,7 +25,7 @@
   },
   "data": {
     "balance_tracking_disabled": false,
-    "historical_balance_enabled": true,
+    "historical_balance_disabled": false,
     "inactive_discrepancy_search_disabled": false,
     "reconciliation_disabled": false,
     "start_index": 1,
