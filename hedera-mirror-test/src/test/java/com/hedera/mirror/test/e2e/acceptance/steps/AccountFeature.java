@@ -28,13 +28,10 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.cucumber.junit.platform.engine.Cucumber;
 import java.util.List;
-import junit.framework.AssertionFailedError;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.hashgraph.sdk.AccountId;
@@ -155,9 +152,6 @@ public class AccountFeature extends AbstractFeature {
     }
 
     @Then("the mirror node REST API should return status {int} for the crypto transfer transaction")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorAPICryptoTransferResponse(int status) {
         log.info("Verify transaction");
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
@@ -190,9 +184,6 @@ public class AccountFeature extends AbstractFeature {
     }
 
     @Then("the mirror node REST API should confirm the approved {long} tℏ crypto transfer allowance")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorAPIApprovedCryptoTransferResponse(long approvedAmount) {
         verifyMirrorTransactionsResponse(mirrorClient, HttpStatus.OK.value());
 
@@ -221,9 +212,6 @@ public class AccountFeature extends AbstractFeature {
     }
 
     @Then("the mirror node REST API should confirm the crypto allowance deletion")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyCryptoAllowanceDelete() {
         log.info("Verify crypto allowance deletion transaction");
         verifyMirrorAPIApprovedCryptoTransferResponse(0);
