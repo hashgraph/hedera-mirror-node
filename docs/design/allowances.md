@@ -113,16 +113,18 @@ Add the following class members to the `Nft` domain class:
   - `delegatingSpender`
   - `spender`
 
-### Nft Allowance Parsing
+#### Nft Allowance Parsing
 
-Approved for all nft allowances (either grant or revoke) are persisted into the `nft_allowance` table, while nft
-allowances by (token id, serial number) are persisted into the `nft` table by updating `allowance_granted_timestamp`,
-`delegating_spender`, and `spender`.
+When parsing nft allowances,
 
-In order to do so, add
+  - Persist approved for all nft allowances (either grant or revoke) to the `nft_allowance` table
+  - Persist nft allowances by (token id, serial number) to the `nft` table by updating `allowance_granted_timestamp`,
+    `delegating_spender`, and `spender`.
 
-  - `EntityListner.onNftAllowance(NftAllowance nft)` for approved for all nft allowances
-  - `EntityListner.onNftInstanceAllowance(Nft nft)` for nft allowances by (token id, serial number)
+Update `EntityListener`
+
+  - Add `EntityListner.onNftAllowance(NftAllowance nft)` for approved for all nft allowances
+  - Add `EntityListner.onNftInstanceAllowance(Nft nft)` for nft allowances by (token id, serial number)
 
 ### REST API
 
