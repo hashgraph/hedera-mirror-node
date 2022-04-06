@@ -20,23 +20,17 @@
 
 'use strict';
 
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../../config');
 const constants = require('../../constants');
-const {AllowanceController} = require('../../controllers');
+const {NetworkController} = require('../../controllers');
+const networkCtrl = require('../../controllers/networkController');
 const utils = require('../../utils');
 
-const ownerIdFilter = 'owner = $1';
-const spenderIdFIlter = 'spender in ($2)';
-describe('extractCryptoAllowancesQuery', () => {
+describe('extractNetworkNodesQuery', () => {
   const defaultExpected = {
-    conditions: [ownerIdFilter],
-    params: [1],
-    order: constants.orderFilterValues.DESC,
-    limit: defaultLimit,
+    conditions: [],
+    params: [],
+    order: constants.orderFilterValues.ASC,
+    limit: 10,
   };
 
   const specs = [
@@ -50,162 +44,141 @@ describe('extractCryptoAllowancesQuery', () => {
             value: 20,
           },
         ],
-        accountId: 1,
       },
       expected: {
         ...defaultExpected,
         limit: 20,
+        params: ['102'],
       },
     },
     {
-      name: 'order asc',
+      name: 'order desc',
       input: {
         filters: [
           {
             key: constants.filterKeys.ORDER,
             operator: utils.opsMap.eq,
-            value: constants.orderFilterValues.ASC,
+            value: constants.orderFilterValues.DESC,
           },
         ],
-        accountId: 1,
       },
       expected: {
         ...defaultExpected,
-        order: constants.orderFilterValues.ASC,
-        conditions: [ownerIdFilter],
+        order: constants.orderFilterValues.DESC,
+        conditions: [],
+        params: ['102'],
       },
     },
     {
-      name: 'spender.id single',
+      name: 'node.id',
       input: {
         filters: [
           {
-            key: constants.filterKeys.SPENDER_ID,
+            key: constants.filterKeys.NODE_ID,
             operator: utils.opsMap.eq,
-            value: '1000',
+            value: '10',
           },
         ],
-        accountId: 3,
       },
       expected: {
         ...defaultExpected,
-        conditions: [ownerIdFilter, spenderIdFIlter],
-        params: [3, '1000'],
-      },
-    },
-    {
-      name: 'spender.id multiple',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.SPENDER_ID,
-            operator: utils.opsMap.eq,
-            value: '1000',
-          },
-          {
-            key: constants.filterKeys.SPENDER_ID,
-            operator: utils.opsMap.eq,
-            value: '1001',
-          },
-          {
-            key: constants.filterKeys.SPENDER_ID,
-            operator: utils.opsMap.eq,
-            value: '1002',
-          },
-        ],
-        accountId: 3,
-      },
-      expected: {
-        ...defaultExpected,
-        conditions: [ownerIdFilter, 'spender in ($2,$3,$4)'],
-        params: [3, '1000', '1001', '1002'],
+        conditions: ['abe.node_id in ($2)'],
+        params: ['102', '10'],
       },
     },
   ];
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      expect(AllowanceController.extractCryptoAllowancesQuery(spec.input.filters, spec.input.accountId)).toEqual(
-        spec.expected
-      );
+      expect(networkCtrl.extractNetworkNodesQuery(spec.input.filters)).toEqual(spec.expected);
     });
   });
 });
 
-describe('validateExtractCryptoAllowancesQuery throw', () => {
+describe('validateExtractNetworkNodesQuery throw', () => {
   const specs = [
     {
-      name: 'spender.id ne',
+      name: 'file.id ne',
       input: {
         filters: [
           {
-            key: constants.filterKeys.SPENDER_ID,
+            key: constants.filterKeys.FILE_ID,
             operator: utils.opsMap.ne,
             value: '1000',
           },
         ],
-        accountId: 3,
       },
     },
     {
-      name: 'spender.id gt',
+      name: 'file.id gt',
       input: {
         filters: [
           {
-            key: constants.filterKeys.SPENDER_ID,
+            key: constants.filterKeys.FILE_ID,
             operator: utils.opsMap.gt,
             value: '1000',
           },
         ],
-        accountId: 3,
       },
     },
     {
-      name: 'spender.id gte',
+      name: 'file.id gte',
       input: {
         filters: [
           {
-            key: constants.filterKeys.SPENDER_ID,
+            key: constants.filterKeys.FILE_ID,
             operator: utils.opsMap.gte,
             value: '1000',
           },
         ],
-        accountId: 3,
       },
     },
     {
-      name: 'spender.id lte',
+      name: 'file.id lte',
       input: {
         filters: [
           {
-            key: constants.filterKeys.SPENDER_ID,
+            key: constants.filterKeys.FILE_ID,
             operator: utils.opsMap.lt,
             value: '1000',
           },
         ],
-        accountId: 3,
       },
     },
     {
-      name: 'spender.id lte',
+      name: 'file.id lte',
       input: {
         filters: [
           {
-            key: constants.filterKeys.SPENDER_ID,
+            key: constants.filterKeys.FILE_ID,
             operator: utils.opsMap.lte,
             value: '1000',
           },
         ],
-        accountId: 3,
+      },
+    },
+    {
+      name: 'multi file.id eq',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.FILE_ID,
+            operator: utils.opsMap.eq,
+            value: '101',
+          },
+          {
+            key: constants.filterKeys.FILE_ID,
+            operator: utils.opsMap.eq,
+            value: '102',
+          },
+        ],
       },
     },
   ];
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      expect(() =>
-        AllowanceController.extractCryptoAllowancesQuery(spec.input.filters, spec.input.accountId)
-      ).toThrowErrorMatchingSnapshot();
+      expect(() => NetworkController.extractNetworkNodesQuery(spec.input.filters)).toThrowErrorMatchingSnapshot();
     });
   });
 });

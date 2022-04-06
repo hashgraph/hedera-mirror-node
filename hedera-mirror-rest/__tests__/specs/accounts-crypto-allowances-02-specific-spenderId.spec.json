@@ -69,9 +69,8 @@
   "responseJson": {
     "allowances": [
       {
-        "amount": 77,
+        "amount_granted": 77,
         "owner": "0.0.1001",
-        "payer_account_id": "0.0.2001",
         "spender": "0.0.5001",
         "timestamp": {
           "from": "1234567890.000000005",

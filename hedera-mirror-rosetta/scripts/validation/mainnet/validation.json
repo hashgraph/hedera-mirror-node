@@ -19,6 +19,7 @@
   "tip_delay": 20,
   "data": {
     "active_reconciliation_concurrency": 64,
+    "historical_balance_disabled": false,
     "inactive_reconciliation_concurrency": 4,
     "inactive_reconciliation_frequency": 250,
     "pruning_disabled": true,

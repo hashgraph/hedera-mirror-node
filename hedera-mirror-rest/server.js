@@ -36,7 +36,6 @@ const balances = require('./balances');
 const config = require('./config');
 const constants = require('./constants');
 const health = require('./health');
-const network = require('./network');
 const schedules = require('./schedules');
 const stateproof = require('./stateproof');
 const tokens = require('./tokens');
@@ -51,7 +50,7 @@ const {requestLogger, requestQueryParser} = require('./middleware/requestHandler
 const fs = require('fs');
 
 // routes
-const {AccountRoutes, ContractRoutes} = require('./routes');
+const {AccountRoutes, ContractRoutes, NetworkRoutes} = require('./routes');
 
 // Logger
 const logger = log4js.getLogger();
@@ -159,7 +158,7 @@ app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
 app.useAsync(`${apiPrefix}/${ContractRoutes.resource}`, ContractRoutes.router);
 
 // network routes
-app.getAsync(`${apiPrefix}/network/supply`, network.getSupply);
+app.useAsync(`${apiPrefix}/${NetworkRoutes.resource}`, NetworkRoutes.router);
 
 // schedules routes
 app.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);

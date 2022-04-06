@@ -39,32 +39,25 @@ const {CryptoAllowanceViewModel} = require('../viewmodel');
 // errors
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
-class AllowanceController extends BaseController {
+class CryptoAllowanceController extends BaseController {
   /**
-   * Extracts SQL where conditions, params, order, and limit
+   * Extracts SQL where conditions, params, order, and limit from crypto allowances query
    *
    * @param {[]} filters parsed and validated filters
    * @param {Number} accountId parsed accountId from path
-   * @param {Number} startPosition param index start position
    */
-  extractCryptoAllowancesQuery = (filters, accountId, startPosition = 1) => {
+  extractCryptoAllowancesQuery = (filters, accountId) => {
     let limit = defaultLimit;
     let order = constants.orderFilterValues.DESC;
-    const conditions = [`${CryptoAllowance.OWNER} = $${startPosition}`];
+    const conditions = [`${CryptoAllowance.OWNER} = $1`];
     const params = [accountId];
     const spenderInValues = [];
 
     for (const filter of filters) {
-      if (_.isNil(filter)) {
-        continue;
-      }
-
       switch (filter.key) {
         case constants.filterKeys.SPENDER_ID:
-          if (utils.opsMap.eq !== filter.operator) {
-            throw new InvalidArgumentError(
-              `Only equals (eq) comparison operator is supported for ${constants.filterKeys.SPENDER_ID}`
-            );
+          if (utils.opsMap.ne === filter.operator) {
+            throw new InvalidArgumentError(`Not equal (ne) comparison operator is not supported for ${filter.key}`);
           }
           this.updateConditionsAndParamsWithInValues(
             filter,
@@ -72,7 +65,7 @@ class AllowanceController extends BaseController {
             params,
             conditions,
             CryptoAllowance.SPENDER,
-            startPosition + conditions.length
+            conditions.length + 1
           );
           break;
         case constants.filterKeys.LIMIT:
@@ -103,22 +96,8 @@ class AllowanceController extends BaseController {
    * @returns {Promise<void>}
    */
   getAccountCryptoAllowances = async (req, res) => {
-    // extract filters from query param
-    let accountId = null;
-    try {
-      accountId = await EntityService.getEncodedIdAccountIdOrAlias(req.params.accountAliasOrAccountId);
-    } catch (err) {
-      if (err instanceof InvalidArgumentError) {
-        throw InvalidArgumentError.forParams(constants.filterKeys.ACCOUNT_ID_OR_ALIAS);
-      }
-
-      // rethrow any other error
-      throw err;
-    }
-
-    // extract filters from query param
+    const accountId = await EntityService.getEncodedIdAccountIdOrAlias(req.params.accountAliasOrAccountId);
     const filters = utils.buildAndValidateFilters(req.query);
-
     const {conditions, params, order, limit} = this.extractCryptoAllowancesQuery(filters, accountId);
     const allowances = await CryptoAllowanceService.getAccountCryptoAllowances(conditions, params, order, limit);
 
@@ -130,19 +109,15 @@ class AllowanceController extends BaseController {
     };
 
     if (response.allowances.length === limit) {
-      // skip limit on single account and spender combo. Doesn't check for operator since only eq is supported
-      const spenderFilter = filters.filter((x) => x.key === constants.filterKeys.SPENDER_ID);
-      if (spenderFilter.length !== 1) {
-        const lastRow = _.last(response.allowances);
-        const last = {
-          [constants.filterKeys.SPENDER_ID]: lastRow.spender,
-        };
-        response.links.next = utils.getPaginationLink(req, false, last, order);
-      }
+      const lastRow = _.last(response.allowances);
+      const lastValues = {
+        [constants.filterKeys.SPENDER_ID]: {value: lastRow.spender},
+      };
+      response.links.next = utils.getPaginationLink(req, false, lastValues, order);
     }
 
     res.locals[constants.responseDataLabel] = response;
   };
 }
 
-module.exports = new AllowanceController();
+module.exports = new CryptoAllowanceController();

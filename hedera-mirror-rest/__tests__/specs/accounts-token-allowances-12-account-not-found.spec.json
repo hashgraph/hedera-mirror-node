@@ -1,0 +1,29 @@
+{
+  "description": "Account api call for token allowances when owner account not found",
+  "setup": {},
+  "tests": [
+    {
+      "url": "/api/v1/accounts/1001/allowances/tokens",
+      "responseStatus": 200,
+      "responseJson": {
+        "allowances": [],
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/tokens",
+      "responseStatus": 404,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "No account with a matching alias found"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

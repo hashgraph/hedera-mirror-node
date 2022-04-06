@@ -134,9 +134,8 @@ In order to do so, add
 {
   "allowances": [
     {
-      "amount": 10,
+      "amount_granted": 10,
       "owner": "0.0.1000",
-      "payer_account_id": "0.0.1000",
       "spender": "0.0.8488",
       "timestamp": {
         "from": "1633466229.96874612",
@@ -144,9 +143,8 @@ In order to do so, add
       }
     },
     {
-      "amount": 5,
+      "amount_granted": 5,
       "owner": "0.0.1000",
-      "payer_account_id": "0.0.1001",
       "spender": "0.0.9857",
       "timestamp": {
         "from": "1633466229.96874612",
@@ -162,7 +160,7 @@ Optional Filters
 
 * `limit`: The maximum amount of items to return.
 * `order`: Order by `spender`. Accepts `asc` or `desc` with a default of `asc`.
-* `spender.id`: Filter by the spender account ID. Only need to support `eq` operator and allow multiple.
+* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
 
 #### NFT Allowances
 
@@ -182,28 +180,28 @@ Optional Filters
         "to": null
       }
     },
-     {
-        "approved_for_all": null,
-        "owner": "0.0.1000",
-        "serial_number": 2,
-        "spender": "0.0.8488",
-        "token_id": "0.0.1032",
-        "timestamp": {
-           "from": "1633466229.96874612",
-           "to": null
-        }
-     },
-     {
-        "approved_for_all": true,
-        "owner": "0.0.1000",
-        "serial_number": null,
-        "spender": "0.0.8488",
-        "token_id": "0.0.1033",
-        "timestamp": {
-           "from": "1633466229.96874612",
-           "to": null
-        }
-     },
+    {
+      "approved_for_all": null,
+      "owner": "0.0.1000",
+      "serial_number": 2,
+      "spender": "0.0.8488",
+      "token_id": "0.0.1032",
+      "timestamp": {
+        "from": "1633466229.96874612",
+        "to": null
+      }
+    },
+    {
+      "approved_for_all": true,
+      "owner": "0.0.1000",
+      "serial_number": null,
+      "spender": "0.0.8488",
+      "token_id": "0.0.1033",
+      "timestamp": {
+        "from": "1633466229.96874612",
+        "to": null
+      }
+    },
     {
       "approved_for_all": null,
       "owner": "0.0.1000",
@@ -224,17 +222,17 @@ Optional Filters
 ```json
 {
   "allowances": [
-     {
-        "approved_for_all": true,
-        "owner": "0.0.1000",
-        "serial_number": null,
-        "spender": "0.0.8488",
-        "token_id": "0.0.1033",
-        "timestamp": {
-           "from": "1633466229.96874612",
-           "to": null
-        }
-     },
+    {
+      "approved_for_all": true,
+      "owner": "0.0.1000",
+      "serial_number": null,
+      "spender": "0.0.8488",
+      "token_id": "0.0.1033",
+      "timestamp": {
+        "from": "1633466229.96874612",
+        "to": null
+      }
+    },
     {
       "approved_for_all": false,
       "owner": "0.0.1000",
@@ -280,9 +278,8 @@ Optional Filters
 {
   "allowances": [
     {
-      "amount": 10,
+      "amount_granted": 10,
       "owner": "0.0.1000",
-      "payer_account_id": "0.0.1000",
       "spender": "0.0.8488",
       "token_id": "0.0.1032",
       "timestamp": {
@@ -291,9 +288,8 @@ Optional Filters
       }
     },
     {
-      "amount": 5,
+      "amount_granted": 5,
       "owner": "0.0.1000",
-      "payer_account_id": "0.0.1000",
       "spender": "0.0.9857",
       "token_id": "0.0.1032",
       "timestamp": {
@@ -310,8 +306,8 @@ Optional Filters
 
 * `limit`: The maximum amount of items to return.
 * `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
-* `spender.id`: Filter by the spender account ID. Only need to support `eq` operator and allow multiple.
-* `token.id`: Filter by the token ID. Only need to support `eq` operator and allow multiple.
+* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
+* `token.id`: Filter by the token ID. `ne` operator is not supported.
 
 #### Transactions APIs
 

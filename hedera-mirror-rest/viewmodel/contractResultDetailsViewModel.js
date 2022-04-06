@@ -46,7 +46,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
   constructor(contractResult, recordFile, transaction, contractLogs, contractStateChanges) {
     super(contractResult);
     Object.assign(this, {
-      block_hash: utils.addHexPrefix(recordFile.hash),
+      block_hash: utils.addHexPrefix(recordFile.hash, false),
       block_number: Number(recordFile.index),
       hash: utils.toHexString(transaction.transactionHash, true),
       logs: contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog)),

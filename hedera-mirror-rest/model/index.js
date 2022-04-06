@@ -21,6 +21,9 @@
 'use strict';
 
 module.exports = {
+  AddressBook: require('./addressBook'),
+  AddressBookEntry: require('./addressBookEntry'),
+  AddressBookServiceEndpoint: require('./addressBookServiceEndpoint'),
   AssessedCustomFee: require('./assessedCustomFee'),
   Contract: require('./contract'),
   CryptoAllowance: require('./cryptoAllowance'),
@@ -31,11 +34,13 @@ module.exports = {
   CustomFee: require('./customFee'),
   Entity: require('./entity'),
   FileData: require('./fileData'),
+  NetworkNode: require('./networkNode'),
   Nft: require('./nft'),
   NftTransfer: require('./nftTransfer'),
   RecordFile: require('./recordFile'),
   SignatureType: require('./signatureType'),
   Token: require('./token'),
+  TokenAllowance: require('./tokenAllowance'),
   TokenFreezeStatus: require('./tokenFreezeStatus'),
   TokenKycStatus: require('./tokenKycStatus'),
   TokenTransfer: require('./tokenTransfer'),

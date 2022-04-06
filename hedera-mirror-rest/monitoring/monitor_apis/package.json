@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/mirror-monitor",
-  "version": "0.54.0-SNAPSHOT",
+  "version": "0.55.0-SNAPSHOT",
   "description": "Hedera Mirror Node Monitor",
   "main": "server.js",
   "private": true,
@@ -15,7 +15,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "abort-controller": "^3.0.0",
-    "body-parser": "^1.19.1",
+    "body-parser": "^1.20.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
     "express": "^4.17.3",
@@ -23,7 +23,7 @@
     "http-errors": "^2.0.0",
     "lodash": "^4.17.21",
     "log4js": "^6.4.4",
-    "mathjs": "^10.4.1",
+    "mathjs": "^10.4.2",
     "node-fetch": "^2.6.7",
     "parse-duration": "^1.0.2",
     "pretty-ms": "^7.0.1"

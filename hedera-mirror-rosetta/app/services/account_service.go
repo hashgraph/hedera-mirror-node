@@ -94,5 +94,5 @@ func (a *AccountAPIService) AccountCoins(
 	_ context.Context,
 	_ *rTypes.AccountCoinsRequest,
 ) (*rTypes.AccountCoinsResponse, *rTypes.Error) {
-	return &rTypes.AccountCoinsResponse{}, nil
+	return nil, errors.ErrNotImplemented
 }

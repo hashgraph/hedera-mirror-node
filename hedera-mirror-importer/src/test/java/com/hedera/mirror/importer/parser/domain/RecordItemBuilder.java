@@ -95,7 +95,10 @@ public class RecordItemBuilder {
     private final SecureRandom random = new SecureRandom();
 
     public Builder<ContractCallTransactionBody.Builder> contractCall() {
-        var contractId = contractId();
+        return contractCall(contractId());
+    }
+
+    public Builder<ContractCallTransactionBody.Builder> contractCall(ContractID contractId) {
         ContractCallTransactionBody.Builder transactionBody = ContractCallTransactionBody.newBuilder()
                 .setAmount(5_000L)
                 .setContractID(contractId)
@@ -143,11 +146,14 @@ public class RecordItemBuilder {
 
     public ContractFunctionResult.Builder contractFunctionResult(ContractID contractId) {
         return ContractFunctionResult.newBuilder()
+                .setAmount(5_000L)
                 .setBloom(bytes(256))
                 .setContractCallResult(bytes(16))
                 .setContractID(contractId)
                 .addCreatedContractIDs(contractId())
                 .setErrorMessage(text(10))
+                .setFunctionParameters(bytes(64))
+                .setGas(10_000L)
                 .setGasUsed(1000L)
                 .addLogInfo(ContractLoginfo.newBuilder()
                         .setBloom(bytes(256))
@@ -349,16 +355,16 @@ public class RecordItemBuilder {
         private Version hapiVersion = RecordFile.HAPI_VERSION_NOT_SET;
 
         private Builder(TransactionType type, T transactionBody) {
-            this.payerAccountId = accountId();
+            payerAccountId = accountId();
             this.type = type;
             this.transactionBody = transactionBody;
-            this.transactionBodyWrapper = defaultTransactionBody();
-            this.transactionRecord = defaultTransactionRecord();
+            transactionBodyWrapper = defaultTransactionBody();
+            transactionRecord = defaultTransactionRecord();
         }
 
         public RecordItem build() {
             var field = transactionBodyWrapper.getDescriptorForType().findFieldByNumber(type.getProtoId());
-            transactionBodyWrapper.setField(field, this.transactionBody.build());
+            transactionBodyWrapper.setField(field, transactionBody.build());
 
             Transaction transaction = transaction().build();
             TransactionRecord record = transactionRecord.build();

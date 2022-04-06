@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
@@ -35,11 +36,14 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
@@ -104,5 +108,31 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Override
     protected EntityType getExpectedEntityIdType() {
         return CONTRACT;
+    }
+
+    @Test
+    void updateContractResultEmptyContractCallFunctionParams() {
+        ContractResult contractResult = new ContractResult();
+        var recordItem = recordItemBuilder.contractCreate().build();
+        transactionHandler.updateContractResult(contractResult, recordItem);
+
+        var transaction = recordItem.getTransactionBody().getContractCreateInstance();
+        assertThat(contractResult)
+                .returns(transaction.getInitialBalance(), ContractResult::getAmount)
+                .returns(transaction.getGas(), ContractResult::getGasLimit)
+                .returns(DomainUtils.toBytes(transaction.getConstructorParameters()),
+                        ContractResult::getFunctionParameters);
+    }
+
+    @Test
+    void updateContractResultNonContractCallTransaction() {
+        ContractResult contractResult = ContractResult.builder().build();
+        var recordItem = recordItemBuilder.contractCall().build();
+        transactionHandler.updateContractResult(contractResult, recordItem);
+
+        assertThat(contractResult)
+                .returns(null, ContractResult::getAmount)
+                .returns(null, ContractResult::getGasLimit)
+                .returns(null, ContractResult::getFunctionParameters);
     }
 }

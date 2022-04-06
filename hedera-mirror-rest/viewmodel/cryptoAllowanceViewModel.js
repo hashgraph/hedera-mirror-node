@@ -20,27 +20,20 @@
 
 'use strict';
 
-const EntityId = require('../entityId');
-const utils = require('../utils');
+const BaseAllowanceViewModel = require('./baseAllowanceViewModel');
 
 /**
  * CryptoAllowance view model
  */
-class CryptoAllowanceViewModel {
+class CryptoAllowanceViewModel extends BaseAllowanceViewModel {
   /**
    * Constructs cryptoAllowance view model
    *
    * @param {CryptoAllowance} cryptoAllowance
    */
   constructor(cryptoAllowance) {
-    this.amount = Number(cryptoAllowance.amount);
-    this.owner = EntityId.parse(cryptoAllowance.owner).toString();
-    this.payer_account_id = EntityId.parse(cryptoAllowance.payerAccountId).toString();
-    this.spender = EntityId.parse(cryptoAllowance.spender).toString();
-    this.timestamp = {
-      from: utils.nsToSecNs(cryptoAllowance.timestampRange.begin),
-      to: utils.nsToSecNs(cryptoAllowance.timestampRange.end),
-    };
+    super(cryptoAllowance);
+    this.amount_granted = Number(cryptoAllowance.amount);
   }
 }
 

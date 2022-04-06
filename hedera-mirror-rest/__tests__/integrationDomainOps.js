@@ -38,9 +38,14 @@ const DEFAULT_TREASURY_ID = '98';
 
 let sqlConnection;
 
+const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750';
+
 const setUp = async (testDataJson, sqlconn) => {
   sqlConnection = sqlconn;
   await loadAccounts(testDataJson.accounts);
+  await loadAddressBooks(testDataJson.addressbooks);
+  await loadAddressBookEntries(testDataJson.addressbookentries);
+  await loadAddressBookServiceEndpoints(testDataJson.addressbookserviceendpoints);
   await loadAssessedCustomFees(testDataJson.assessedcustomfees);
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
@@ -58,6 +63,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadTopicMessages(testDataJson.topicmessages);
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
+  await loadTokenAllowances(testDataJson.tokenAllowances);
   await loadTransactions(testDataJson.transactions);
   await loadTransactionSignatures(testDataJson.transactionsignatures);
 };
@@ -69,6 +75,36 @@ const loadAccounts = async (accounts) => {
 
   for (const account of accounts) {
     await addAccount(account);
+  }
+};
+
+const loadAddressBooks = async (addressBooks) => {
+  if (addressBooks == null) {
+    return;
+  }
+
+  for (const addressBook of addressBooks) {
+    await addAddressBook(addressBook);
+  }
+};
+
+const loadAddressBookEntries = async (entries) => {
+  if (entries == null) {
+    return;
+  }
+
+  for (const addressBookEntry of entries) {
+    await addAddressBookEntry(addressBookEntry);
+  }
+};
+
+const loadAddressBookServiceEndpoints = async (endpoints) => {
+  if (endpoints == null) {
+    return;
+  }
+
+  for (const endpoint of endpoints) {
+    await addAddressBookServiceEndpoint(endpoint);
   }
 };
 
@@ -231,6 +267,16 @@ const loadTokenAccounts = async (tokenAccounts) => {
   }
 };
 
+const loadTokenAllowances = async (tokenAllowances) => {
+  if (tokenAllowances == null) {
+    return;
+  }
+
+  for (const tokenAllowance of tokenAllowances) {
+    await addTokenAllowance(tokenAllowance);
+  }
+};
+
 const loadTokens = async (tokens) => {
   if (tokens == null) {
     return;
@@ -259,6 +305,72 @@ const loadTopicMessages = async (messages) => {
   for (const message of messages) {
     await addTopicMessage(message);
   }
+};
+
+const addAddressBook = async (addressBookInput) => {
+  const insertFields = ['start_consensus_timestamp', 'end_consensus_timestamp', 'file_id', 'node_count', 'file_data'];
+
+  const addressBook = {
+    start_consensus_timestamp: 0,
+    end_consensus_timestamp: null,
+    file_id: 102,
+    node_count: 20,
+    file_data: defaultFileData,
+    ...addressBookInput,
+  };
+
+  addressBook.file_data =
+    typeof addressBookInput.file_data === 'string'
+      ? Buffer.from(addressBookInput.file_data, 'utf-8')
+      : Buffer.from(addressBook.file_data);
+
+  await insertDomainObject('address_book', insertFields, addressBook);
+};
+
+const addAddressBookEntry = async (addressBookEntryInput) => {
+  const insertFields = [
+    'consensus_timestamp',
+    'memo',
+    'public_key',
+    'node_id',
+    'node_account_id',
+    'node_cert_hash',
+    'description',
+    'stake',
+  ];
+
+  const addressBookEntry = {
+    consensus_timestamp: 0,
+    memo: '0.0.3',
+    public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    node_id: 2000,
+    node_account_id: 3,
+    node_cert_hash: '01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16',
+    description: 'description',
+    stake: 0,
+    ...addressBookEntryInput,
+  };
+
+  addressBookEntry.node_cert_hash =
+    typeof addressBookEntryInput.node_cert_hash === 'string'
+      ? Buffer.from(addressBookEntryInput.node_cert_hash, 'hex')
+      : Buffer.from(addressBookEntry.node_cert_hash);
+
+  await insertDomainObject('address_book_entry', insertFields, addressBookEntry);
+};
+
+const addAddressBookServiceEndpoint = async (addressBookServiceEndpointInput) => {
+  const insertFields = ['consensus_timestamp', 'ip_address_v4', 'node_id', 'port'];
+
+  const addressBookServiceEndpoint = {
+    consensus_timestamp: 0,
+    ip_address_v4: '127.0.0.1',
+    node_id: 0,
+    port: 50211,
+    ...addressBookServiceEndpointInput,
+  };
+
+  await insertDomainObject('address_book_service_endpoint', insertFields, addressBookServiceEndpoint);
 };
 
 const addEntity = async (defaults, entity) => {
@@ -607,8 +719,7 @@ const addContract = async (contract) => {
   contract.id = EntityId.of(BigInt(contract.shard), BigInt(contract.realm), BigInt(contract.num)).getEncodedId();
   contract.key = contract.key != null ? Buffer.from(contract.key) : null;
 
-  // use 'contract' table if the range is open-ended, otherwise use 'contract_history'
-  const table = contract.timestamp_range.endsWith(',)') ? 'contract' : 'contract_history';
+  const table = getTableName('contract', contract);
   await insertDomainObject(table, insertFields, contract);
 };
 
@@ -686,7 +797,7 @@ const addContractLog = async (contractLogInput) => {
     index: 0,
     payer_account_id: 2,
     root_contract_id: null,
-    topic0: '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+    topic0: defaultFileData,
     topic1: '\\x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
     topic2: '\\xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
     topic3: '\\xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
@@ -722,7 +833,7 @@ const addContractStateChange = async (contractStateChangeInput) => {
     contract_id: 1,
     payer_account_id: 2,
     slot: '\\x0123',
-    value_read: '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+    value_read: defaultFileData,
     value_written: '\\x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
     ...contractStateChangeInput,
   };
@@ -752,7 +863,7 @@ const addCryptoAllowance = async (cryptoAllowanceInput) => {
     ...cryptoAllowanceInput,
   };
 
-  const table = cryptoAllowance.timestamp_range.endsWith(',)') ? 'crypto_allowance' : 'crypto_allowance_history';
+  const table = getTableName('crypto_allowance', cryptoAllowance);
   await insertDomainObject(table, insertFields, cryptoAllowance);
 };
 
@@ -978,6 +1089,23 @@ const addTokenAccount = async (tokenAccount) => {
   );
 };
 
+const addTokenAllowance = async (tokenAllowance) => {
+  const insertFields = ['amount', 'owner', 'payer_account_id', 'spender', 'token_id', 'timestamp_range'];
+
+  tokenAllowance = {
+    amount: 0,
+    owner: 1000,
+    payer_account_id: 1000,
+    spender: 2000,
+    token_id: 3000,
+    timestamp_range: '[0,)',
+    ...tokenAllowance,
+  };
+
+  const table = getTableName('token_allowance', tokenAllowance);
+  await insertDomainObject(table, insertFields, tokenAllowance);
+};
+
 const addNft = async (nft) => {
   // create nft account object
   nft = {
@@ -1066,11 +1194,18 @@ const insertDomainObject = async (table, fields, obj) => {
   logger.trace(`Inserted row to ${table}`);
 };
 
+// for a pair of current and history tables, if the timestamp range is open-ended, use the current table, otherwise
+// use the history table
+const getTableName = (base, entity) => (entity.timestamp_range.endsWith(',)') ? base : `${base}_history`);
+
 module.exports = {
   addAccount,
   addCryptoTransaction,
   addNft,
   addToken,
+  loadAddressBooks,
+  loadAddressBookEntries,
+  loadAddressBookServiceEndpoints,
   loadContracts,
   loadContractResults,
   loadCryptoAllowances,

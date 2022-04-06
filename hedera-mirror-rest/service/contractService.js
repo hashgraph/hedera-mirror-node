@@ -22,18 +22,20 @@
 
 const _ = require('lodash');
 
-const BaseService = require('./baseService');
-const Contract = require('../model/contract');
-const EntityId = require('../entityId');
 const constants = require('../constants');
-const {NotFoundError} = require('../errors/notFoundError');
+const Contract = require('../model/contract');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
   response: {
     limit: {default: defaultLimit},
   },
 } = require('../config');
+const EntityId = require('../entityId');
+const {NotFoundError} = require('../errors/notFoundError');
 const {orderFilterValues} = require('../constants');
+const {OrderSpec} = require('../sql');
+
+const BaseService = require('./baseService');
 
 /**
  * Contract retrieval business logic
@@ -106,7 +108,7 @@ class ContractService extends BaseService {
     const query = [
       ContractService.detailedContractResultsQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
-      super.getOrderByQuery(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order),
+      super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
       super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
     ].join('\n');
     params.push(limit);
@@ -158,10 +160,10 @@ class ContractService extends BaseService {
    */
   getContractLogsByIdAndFiltersQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit) {
     const params = whereParams;
-    const orderClause = [
-      super.getOrderByQuery(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
-      `${ContractLog.getFullName(ContractLog.INDEX)} ${indexOrder}`,
-    ].join(', ');
+    const orderClause = super.getOrderByQuery(
+      OrderSpec.from(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
+      OrderSpec.from(ContractLog.getFullName(ContractLog.INDEX), indexOrder)
+    );
     const query = [
       ContractService.contractLogsQuery,
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',

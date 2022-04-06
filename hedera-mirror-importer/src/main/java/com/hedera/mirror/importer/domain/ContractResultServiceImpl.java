@@ -70,22 +70,20 @@ public class ContractResultServiceImpl implements ContractResultService {
                 transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
 
         // handle non create/call transactions
-        if (!isContractCreateOrCall(recordItem.getTransactionBody())) {
-            if (!isValidContractFunctionResult(functionResult)) {
-                // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
-                return;
-            }
-
-            if (!entityProperties.getPersist().isContractResults()) {
-                // feature gate precompile scenarios for now. When complete feature gate all contractResults together
-                return;
-            }
+        if (!isContractCreateOrCall(recordItem
+                .getTransactionBody()) && !isValidContractFunctionResult(functionResult)) {
+            // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
+            return;
         }
 
         // contractResult
         TransactionHandler transactionHandler = transactionHandlerFactory
                 .get(TransactionType.of(transaction.getType()));
-        processContractResult(recordItem, transaction.getEntityId(), functionResult, transactionHandler);
+
+        // in pre-compile case transaction is not a contract type and entityId will be of a different type
+        var contractId = isContractCreateOrCall(recordItem.getTransactionBody()) ? transaction.getEntityId() :
+                entityIdService.lookup(functionResult.getContractID());
+        processContractResult(recordItem, contractId, functionResult, transactionHandler);
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
@@ -99,6 +97,12 @@ public class ContractResultServiceImpl implements ContractResultService {
     private void processContractResult(RecordItem recordItem, EntityId contractEntityId,
                                        ContractFunctionResult functionResult,
                                        TransactionHandler transactionHandler) {
+        // create child contracts regardless of contractResults support
+        List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
+        if (!entityProperties.getPersist().isContractResults()) {
+            return;
+        }
+
         ContractResult contractResult = new ContractResult();
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         contractResult.setContractId(contractEntityId);
@@ -106,10 +110,16 @@ public class ContractResultServiceImpl implements ContractResultService {
         transactionHandler.updateContractResult(contractResult, recordItem);
 
         if (isValidContractFunctionResult(functionResult)) {
-            // amount, gasLimit and functionParameters are missing from record proto and will be populated once added
+            if (!isContractCreateOrCall(recordItem.getTransactionBody())) {
+                // amount, gasLimit and functionParameters were missing from record proto prior to HAPI v0.25
+                contractResult.setAmount(functionResult.getAmount());
+                contractResult.setGasLimit(functionResult.getGas());
+                contractResult.setFunctionParameters(DomainUtils.toBytes(functionResult.getFunctionParameters()));
+            }
+
             contractResult.setBloom(DomainUtils.toBytes(functionResult.getBloom()));
             contractResult.setCallResult(DomainUtils.toBytes(functionResult.getContractCallResult()));
-            contractResult.setCreatedContractIds(getCreatedContractIds(functionResult, recordItem, contractResult));
+            contractResult.setCreatedContractIds(contractIds);
             contractResult.setErrorMessage(functionResult.getErrorMessage());
             contractResult.setFunctionResult(functionResult.toByteArray());
             contractResult.setGasUsed(functionResult.getGasUsed());
@@ -167,7 +177,7 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     @SuppressWarnings("deprecation")
     private List<Long> getCreatedContractIds(ContractFunctionResult functionResult, RecordItem recordItem,
-                                             ContractResult contractResult) {
+                                             EntityId parentEntityContractId) {
         List<Long> createdContractIds = new ArrayList<>();
         boolean persist = shouldPersistCreatedContractIDs(recordItem);
         for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
@@ -175,7 +185,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             if (!EntityId.isEmpty(contractId)) {
                 createdContractIds.add(contractId.getId());
                 // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
-                if (persist && !contractId.equals(contractResult.getContractId())) {
+                if (persist && !contractId.equals(parentEntityContractId)) {
                     processCreatedContractEntity(recordItem, contractId);
                 }
             }
