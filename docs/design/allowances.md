@@ -192,17 +192,6 @@ Optional Filters
       }
     },
     {
-      "approved_for_all": true,
-      "owner": "0.0.1000",
-      "serial_number": null,
-      "spender": "0.0.8488",
-      "token_id": "0.0.1033",
-      "timestamp": {
-        "from": "1633466229.96874612",
-        "to": null
-      }
-    },
-    {
       "approved_for_all": null,
       "owner": "0.0.1000",
       "serial_number": 1,
@@ -236,7 +225,7 @@ Optional Filters
     {
       "approved_for_all": false,
       "owner": "0.0.1000",
-      "serial_number": 1,
+      "serial_number": null,
       "spender": "0.0.8488",
       "token_id": "0.0.1034",
       "timestamp": {
@@ -247,6 +236,7 @@ Optional Filters
     {
       "approved_for_all": true,
       "owner": "0.0.1000",
+      "serial_number": null,
       "spender": "0.0.9857",
       "token_id": "0.0.1032",
       "timestamp": {
