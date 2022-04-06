@@ -1242,6 +1242,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         insertAndParseTransaction(transferTimestamp, transaction, builder -> {
             builder.addAllTokenTransferLists(List.of(transferList1, transferList2));
         });
+        expectedNft1.setAccountId(EntityId.of(RECEIVER));
         expectedNft1.setAllowanceGrantedTimestamp(null);
         expectedNft1.setModifiedTimestamp(transferTimestamp);
         expectedNft1.setSpender(null);
