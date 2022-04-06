@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -888,6 +889,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     private List<NftAllowance> customizeNftAllowances(Timestamp consensusTimestamp, List<Nft> expectedNfts) {
+        var delegatingSpender = recordItemBuilder.accountId();
         var owner = recordItemBuilder.accountId();
         var spender1 =  recordItemBuilder.accountId();
         var spender2 =  recordItemBuilder.accountId();
@@ -914,13 +916,18 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         List<NftAllowance> nftAllowances = new LinkedList<>();
 
         nftAllowances.add(NftAllowance.newBuilder()
+                .setDelegatingSpender(delegatingSpender)
                 .setOwner(owner)
                 .addSerialNumbers(1L)
                 .addSerialNumbers(2L)
                 .setSpender(spender1)
                 .setTokenId(tokenId)
                 .build());
-        expectedNfts.add(nft1.toBuilder().allowanceGrantedTimestamp(timestamp).spender(EntityId.of(spender1)).build());
+        expectedNfts.add(nft1.toBuilder()
+                .allowanceGrantedTimestamp(timestamp)
+                .delegatingSpender(EntityId.of(delegatingSpender))
+                .spender(EntityId.of(spender1))
+                .build());
 
         nftAllowances.add(NftAllowance.newBuilder()
                 .setApprovedForAll(BoolValue.of(false))

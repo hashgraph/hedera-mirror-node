@@ -103,6 +103,27 @@ create table if not exists token_allowance_history
 );
 ```
 
+### Importer
+
+#### Nft
+
+Add the following class members to the `Nft` domain class:
+
+  - `allowanceGrantedTimestamp`
+  - `delegatingSpender`
+  - `spender`
+
+### Nft Allowance Parsing
+
+Approved for all nft allowances (either grant or revoke) are persisted into the `nft_allowance` table, while nft
+allowances by (token id, serial number) are persisted into the `nft` table by updating `allowance_granted_timestamp`,
+`delegating_spender`, and `spender`.
+
+In order to do so, add
+
+  - `EntityListner.onNftAllowance(NftAllowance nft)` for approved for all nft allowances
+  - `EntityListner.onNftInstanceAllowance(Nft nft)` for nft allowances by (token id, serial number)
+
 ### REST API
 
 #### Crypto Allowances
@@ -151,7 +172,7 @@ Optional Filters
 {
   "allowances": [
     {
-      "approved_for_all": false,
+      "approved_for_all": null,
       "owner": "0.0.1000",
       "serial_number": 1,
       "spender": "0.0.8488",
@@ -162,7 +183,7 @@ Optional Filters
       }
     },
      {
-        "approved_for_all": false,
+        "approved_for_all": null,
         "owner": "0.0.1000",
         "serial_number": 2,
         "spender": "0.0.8488",
@@ -172,6 +193,37 @@ Optional Filters
            "to": null
         }
      },
+     {
+        "approved_for_all": true,
+        "owner": "0.0.1000",
+        "serial_number": null,
+        "spender": "0.0.8488",
+        "token_id": "0.0.1033",
+        "timestamp": {
+           "from": "1633466229.96874612",
+           "to": null
+        }
+     },
+    {
+      "approved_for_all": null,
+      "owner": "0.0.1000",
+      "serial_number": 1,
+      "spender": "0.0.8488",
+      "token_id": "0.0.1034",
+      "timestamp": {
+        "from": "1633466229.96874612",
+        "to": null
+      }
+    }
+  ],
+  "links": {}
+}
+```
+
+`/api/v1/accounts/{accountId}/allowances/nfts?approval.type=approved_for_all`
+```json
+{
+  "allowances": [
      {
         "approved_for_all": true,
         "owner": "0.0.1000",
@@ -212,10 +264,13 @@ Optional Filters
 Optional Filters
 
 * `limit`: The maximum amount of items to return.
-* `order`: Order by `token.id` and `serialnumber`. Accepts `asc` or `desc` with a default of `asc`.
+* `order`: Order by `spender.id`, `token.id` and `serialnumber`. Accepts `asc` or `desc` with a default of `asc`.
+* `approval.type`: Filter by the nft allowance approval type. Accepts `approved_for_all` or `serialnumber` with a
+  default of `serialnumber`.
 * `spender.id`: Filter by the spender ID. `ne` filter is not supported.
 * `token.id`: Filter by the token ID. `ne` filter is not supported.
-* `serialnumber`: Filter by the nft serial number. `ne` filter is not supported.
+* `serialnumber`: Filter by the nft serial number. `ne` filter is not supported. Note the filter is ignored
+  if `approval.type` is `approved_for_all`.
 
 #### Token Allowances
 
