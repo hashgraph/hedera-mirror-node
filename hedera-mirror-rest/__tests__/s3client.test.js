@@ -154,6 +154,14 @@ describe('createS3Client with valid config', () => {
       name: 'valid config with empty secretKey',
       override: {secretKey: ''},
     },
+    {
+      name: 'valid config with maxRetries 10',
+      override: {maxRetries: 10},
+    },
+    {
+      name: 'valid config with updated httpOptions',
+      override: {httpOptions: {connectTimeout: 10, timeout: 50}},
+    },
   ];
 
   testSpecs.forEach((spec) => {
