@@ -117,6 +117,10 @@ hedera:
           cloudProvider: 'S3'
           endpointOverride:
           gcpProjectId:
+          httpOptions:
+            connectTimeout: 2000
+            timeout: 5000
+          maxRetries: 3
           network: 'DEMO'
           region: 'us-east-1'
           secretKey:
