@@ -118,8 +118,8 @@ hedera:
           endpointOverride:
           gcpProjectId:
           httpOptions:
-            connectTimeout: 2000 # The number of milliseconds to wait to establish a connection
-            timeout: 5000 # The number of milliseconds a request can take before automatically being terminated
+            connectTimeout: 2000
+            timeout: 5000
           maxRetries: 3
           network: 'DEMO'
           region: 'us-east-1'
