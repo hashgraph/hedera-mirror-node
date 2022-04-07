@@ -749,7 +749,7 @@ const addHexPrefix = (hexData) => {
  * @return {String} Converted hex string
  */
 const toHexString = (byteArray, addPrefix = false, padLength = undefined) => {
-  if (_.isNil(byteArray) || _.isEmpty(byteArray)) {
+  if (_.isEmpty(byteArray)) {
     return hexPrefix;
   }
 
