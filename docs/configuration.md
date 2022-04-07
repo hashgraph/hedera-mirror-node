@@ -318,54 +318,57 @@ recursively merged into) the current configuration:
 The following table lists the available properties along with their default values. Unless you need to set a non-default
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
-| Name                                                     | Default                 | Description                                                                                    |
-| -------------------------------------------------------- |-------------------------| ---------------------------------------------------------------------------------------------- |
-| `hedera.mirror.rest.cache.entityId.maxAge`               | 1800                    | The number of seconds until the entityId cache entry expires                                   |
-| `hedera.mirror.rest.cache.entityId.maxSize`              | 100000                  | The maximum number of entries in the entityId cache                                            |
-| `hedera.mirror.rest.db.host`                             | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
-| `hedera.mirror.rest.db.name`                             | mirror_node             | The name of the database                                                                       |
-| `hedera.mirror.rest.db.password`                         | mirror_api_pass         | The database password the processor uses to connect.                                           |
-| `hedera.mirror.rest.db.pool.connectionTimeout`           | 20000                   | The number of milliseconds to wait before timing out when connecting a new database client     |
-| `hedera.mirror.rest.db.pool.maxConnections`              | 10                      | The maximum number of clients the database pool can contain                                    |
-| `hedera.mirror.rest.db.pool.statementTimeout`            | 20000                   | The number of milliseconds to wait before timing out a query statement                         |
-| `hedera.mirror.rest.db.port`                             | 5432                    | The port used to connect to the database                                                       |
-| `hedera.mirror.rest.db.sslMode`                          | DISABLE                 | The ssl level of protection against Eavesdropping, Man-in-the-middle (MITM) and Impersonation on the db connection. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL. |
-| `hedera.mirror.rest.db.tls.ca`                           | ""                      | The path to the certificate authority used by the database for secure connections              |
-| `hedera.mirror.rest.db.tls.cert`                         | ""                      | The path to the public key the client should use to securely connect to the database           |
-| `hedera.mirror.rest.db.tls.enabled`                      | false                   | Whether TLS should be used for the database connection                                         |
-| `hedera.mirror.rest.db.tls.key`                          | ""                      | The path to the private key the client should use to securely connect to the database          |
-| `hedera.mirror.rest.db.username`                         | mirror_api              | The username the processor uses to connect to the database                                     |
-| `hedera.mirror.rest.log.level`                           | info                    | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
-| `hedera.mirror.rest.maxRepeatedQueryParameters`          | 100                     | The maximum number of times any query parameter can be repeated in the uri                     |
-| `hedera.mirror.rest.maxTimestampRange`                   | 7d                      | The maximum amount of time a timestamp range query param can span for some APIs.               |
-| `hedera.mirror.rest.metrics.enabled`                     | true                    | Whether metrics should be collected and exposed for scraping                                   |
-| `hedera.mirror.rest.metrics.config`                      | See application.yml     | The configuration to pass to Swagger stats (https://swaggerstats.io/guide/conf.html#options)   |
-| `hedera.mirror.rest.metrics.ipMetrics`                   | false                   | Whether metrics should be associated with a masked client IP label                             |
-| `hedera.mirror.rest.network.unreleasedSupplyAccounts`    | [0.0.2, 0.0.42, ...]    | An array of account IDs whose aggregated balance subtracted from the total supply is the released supply |
-| `hedera.mirror.rest.port`                                | 5551                    | The REST API port                                                                              |
-| `hedera.mirror.rest.metrics.enabled`                     | true                    | Whether metrics are enabled for the REST API                                                   |
-| `hedera.mirror.rest.metrics.config.authentication`       | true                    | Whether access to metrics for the REST API is authenticated                                    |
-| `hedera.mirror.rest.metrics.config.username`             | mirror_api_metrics      | The REST API metrics username to access the dashboard                                          |
-| `hedera.mirror.rest.metrics.config.password`             | mirror_api_metrics_pass | The REST API metrics password to access the dashboard                                          |
-| `hedera.mirror.rest.metrics.config.uriPath`              | '/swagger'              | The REST API metrics uri path                                                                  |
-| `hedera.mirror.rest.openapi.specFileName`                | 'openapi'               | The file name of the OpenAPI spec file                                                         |
-| `hedera.mirror.rest.openapi.swaggerUIPath`               | '/docs'                 | Swagger UI path for your REST API                                                              |
-| `hedera.mirror.rest.response.compression`                | true                    | Whether content negotiation should occur to compress response bodies if requested              |
-| `hedera.mirror.rest.response.headers.default`            | See application.yml     | The default headers to add to every response.                                                  |
-| `hedera.mirror.rest.response.headers.path`               | See application.yml     | The per path headers to add to every response. The key is the route name and the value is a header map. |
-| `hedera.mirror.rest.response.includeHostInLink`          | false                   | Whether to include the hostname and port in the next link in the response                      |
-| `hedera.mirror.rest.response.limit.default`              | 25                      | The default value for the limit parameter that controls the REST API response size             |
-| `hedera.mirror.rest.response.limit.max`                  | 100                     | The maximum size the limit parameter can be that controls the REST API response size           |
-| `hedera.mirror.rest.shard`                               | 0                       | The default shard number that this mirror node participates in                                 |
-| `hedera.mirror.rest.stateproof.enabled`                  | false                   | Whether to enable stateproof REST API or not                                                   |
-| `hedera.mirror.rest.stateproof.streams.accessKey`        | ""                      | The cloud storage access key                                                                   |
-| `hedera.mirror.rest.stateproof.streams.bucketName`       |                         | The cloud storage bucket name to download streamed files. This value takes priority over network hardcoded bucket names regardless of `hedera.mirror.rest.stateproof.streams.network` |
-| `hedera.mirror.rest.stateproof.streams.cloudProvider`    | S3                      | The cloud provider to download files from. Either `S3` or `GCP`                                |
-| `hedera.mirror.rest.stateproof.streams.endpointOverride` |                         | Can be specified to download streams from a source other than S3 and GCP. Should be S3 compatible |
-| `hedera.mirror.rest.stateproof.streams.gcpProjectId`     |                         | GCP project id to bill for requests to GCS bucket which has Requester Pays enabled.            |
-| `hedera.mirror.rest.stateproof.streams.network`          | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
-| `hedera.mirror.rest.stateproof.streams.region`           | us-east-1               | The region associated with the bucket                                                          |
-| `hedera.mirror.rest.stateproof.streams.secretKey`        | ""                      | The cloud storage secret key                                                                   |
+| Name                                                               | Default                 | Description                                                                                    |
+| -------------------------------------------------------------------|-------------------------| ---------------------------------------------------------------------------------------------- |
+| `hedera.mirror.rest.cache.entityId.maxAge`                         | 1800                    | The number of seconds until the entityId cache entry expires                                   |
+| `hedera.mirror.rest.cache.entityId.maxSize`                        | 100000                  | The maximum number of entries in the entityId cache                                            |
+| `hedera.mirror.rest.db.host`                                       | 127.0.0.1               | The IP or hostname used to connect to the database                                             |
+| `hedera.mirror.rest.db.name`                                       | mirror_node             | The name of the database                                                                       |
+| `hedera.mirror.rest.db.password`                                   | mirror_api_pass         | The database password the processor uses to connect.                                           |
+| `hedera.mirror.rest.db.pool.connectionTimeout`                     | 20000                   | The number of milliseconds to wait before timing out when connecting a new database client     |
+| `hedera.mirror.rest.db.pool.maxConnections`                        | 10                      | The maximum number of clients the database pool can contain                                    |
+| `hedera.mirror.rest.db.pool.statementTimeout`                      | 20000                   | The number of milliseconds to wait before timing out a query statement                         |
+| `hedera.mirror.rest.db.port`                                       | 5432                    | The port used to connect to the database                                                       |
+| `hedera.mirror.rest.db.sslMode`                                    | DISABLE                 | The ssl level of protection against Eavesdropping, Man-in-the-middle (MITM) and Impersonation on the db connection. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL. |
+| `hedera.mirror.rest.db.tls.ca`                                     | ""                      | The path to the certificate authority used by the database for secure connections              |
+| `hedera.mirror.rest.db.tls.cert`                                   | ""                      | The path to the public key the client should use to securely connect to the database           |
+| `hedera.mirror.rest.db.tls.enabled`                                | false                   | Whether TLS should be used for the database connection                                         |
+| `hedera.mirror.rest.db.tls.key`                                    | ""                      | The path to the private key the client should use to securely connect to the database          |
+| `hedera.mirror.rest.db.username`                                   | mirror_api              | The username the processor uses to connect to the database                                     |
+| `hedera.mirror.rest.log.level`                                     | info                    | The logging level. Can be trace, debug, info, warn, error or fatal.                            |
+| `hedera.mirror.rest.maxRepeatedQueryParameters`                    | 100                     | The maximum number of times any query parameter can be repeated in the uri                     |
+| `hedera.mirror.rest.maxTimestampRange`                             | 7d                      | The maximum amount of time a timestamp range query param can span for some APIs.               |
+| `hedera.mirror.rest.metrics.enabled`                               | true                    | Whether metrics should be collected and exposed for scraping                                   |
+| `hedera.mirror.rest.metrics.config`                                | See application.yml     | The configuration to pass to Swagger stats (https://swaggerstats.io/guide/conf.html#options)   |
+| `hedera.mirror.rest.metrics.ipMetrics`                             | false                   | Whether metrics should be associated with a masked client IP label                             |
+| `hedera.mirror.rest.network.unreleasedSupplyAccounts`              | [0.0.2, 0.0.42, ...]    | An array of account IDs whose aggregated balance subtracted from the total supply is the released supply |
+| `hedera.mirror.rest.port`                                          | 5551                    | The REST API port                                                                              |
+| `hedera.mirror.rest.metrics.enabled`                               | true                    | Whether metrics are enabled for the REST API                                                   |
+| `hedera.mirror.rest.metrics.config.authentication`                 | true                    | Whether access to metrics for the REST API is authenticated                                    |
+| `hedera.mirror.rest.metrics.config.username`                       | mirror_api_metrics      | The REST API metrics username to access the dashboard                                          |
+| `hedera.mirror.rest.metrics.config.password`                       | mirror_api_metrics_pass | The REST API metrics password to access the dashboard                                          |
+| `hedera.mirror.rest.metrics.config.uriPath`                        | '/swagger'              | The REST API metrics uri path                                                                  |
+| `hedera.mirror.rest.openapi.specFileName`                          | 'openapi'               | The file name of the OpenAPI spec file                                                         |
+| `hedera.mirror.rest.openapi.swaggerUIPath`                         | '/docs'                 | Swagger UI path for your REST API                                                              |
+| `hedera.mirror.rest.response.compression`                          | true                    | Whether content negotiation should occur to compress response bodies if requested              |
+| `hedera.mirror.rest.response.headers.default`                      | See application.yml     | The default headers to add to every response.                                                  |
+| `hedera.mirror.rest.response.headers.path`                         | See application.yml     | The per path headers to add to every response. The key is the route name and the value is a header map. |
+| `hedera.mirror.rest.response.includeHostInLink`                    | false                   | Whether to include the hostname and port in the next link in the response                      |
+| `hedera.mirror.rest.response.limit.default`                        | 25                      | The default value for the limit parameter that controls the REST API response size             |
+| `hedera.mirror.rest.response.limit.max`                            | 100                     | The maximum size the limit parameter can be that controls the REST API response size           |
+| `hedera.mirror.rest.shard`                                         | 0                       | The default shard number that this mirror node participates in                                 |
+| `hedera.mirror.rest.stateproof.enabled`                            | false                   | Whether to enable stateproof REST API or not                                                   |
+| `hedera.mirror.rest.stateproof.streams.accessKey`                  | ""                      | The cloud storage access key                                                                   |
+| `hedera.mirror.rest.stateproof.streams.bucketName`                 |                         | The cloud storage bucket name to download streamed files. This value takes priority over network hardcoded bucket names regardless of `hedera.mirror.rest.stateproof.streams.network` |
+| `hedera.mirror.rest.stateproof.streams.cloudProvider`              | S3                      | The cloud provider to download files from. Either `S3` or `GCP`                                |
+| `hedera.mirror.rest.stateproof.streams.endpointOverride`           |                         | Can be specified to download streams from a source other than S3 and GCP. Should be S3 compatible |
+| `hedera.mirror.rest.stateproof.streams.gcpProjectId`               |                         | GCP project id to bill for requests to GCS bucket which has Requester Pays enabled.            |
+| `hedera.mirror.rest.stateproof.streams.httpOptions.connectTimeout` | 2000                    | The number of milliseconds to wait to establish a connection                                   |
+| `hedera.mirror.rest.stateproof.streams.httpOptions.timeout`        | 5000                    | The number of milliseconds a request can take before automatically being terminated            |
+| `hedera.mirror.rest.stateproof.streams.maxRetries`                 | 3                       | The maximum amount of retries to perform for a cloud storage download request.                  |
+| `hedera.mirror.rest.stateproof.streams.network`                    | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `TESTNET`, `PREVIEWNET` or `OTHER` |
+| `hedera.mirror.rest.stateproof.streams.region`                     | us-east-1               | The region associated with the bucket                                                          |
+| `hedera.mirror.rest.stateproof.streams.secretKey`                  | ""                      | The cloud storage secret key                                                                   |
 
 ### Enable State Proof Alpha
 
