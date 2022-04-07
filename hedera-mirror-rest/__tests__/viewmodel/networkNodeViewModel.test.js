@@ -96,8 +96,8 @@ describe('NetworkNodeViewModel', () => {
       ...defaultExpected,
       description: null,
       memo: null,
-      node_cert_hash: null,
-      public_key: null,
+      node_cert_hash: '0x',
+      public_key: '0x',
     });
   });
 });

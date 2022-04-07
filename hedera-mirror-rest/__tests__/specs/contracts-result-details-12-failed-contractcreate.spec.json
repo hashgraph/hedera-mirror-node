@@ -47,7 +47,7 @@
     "bloom": "0x0505",
     "block_hash": "0x6ceecd8bb224da491",
     "block_number": 17,
-    "call_result": null,
+    "call_result": "0x",
     "contract_id": null,
     "created_contract_ids": [],
     "error_message": "fatal",

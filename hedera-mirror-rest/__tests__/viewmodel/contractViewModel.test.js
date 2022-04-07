@@ -90,7 +90,7 @@ describe('ContractViewModel', () => {
       })
     ).toEqual({
       ...defaultExpected,
-      bytecode: null,
+      bytecode: '0x',
     });
   });
 

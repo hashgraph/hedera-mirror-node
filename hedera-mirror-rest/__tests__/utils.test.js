@@ -971,6 +971,7 @@ describe('Utils ipMask tests', () => {
   });
 });
 
+const hexPrefix = '0x';
 describe('Utils toHexString tests', () => {
   const byteArray = [1, 2, 0xab];
   const specs = [
@@ -1008,6 +1009,36 @@ describe('Utils toHexString tests', () => {
       name: 'add prefix pad to 2',
       args: [byteArray, true, 2],
       expected: '0x0102ab',
+    },
+    {
+      name: 'empty array',
+      args: [[], true, 2],
+      expected: '0x',
+    },
+    {
+      name: 'null array',
+      args: [null, true, 2],
+      expected: hexPrefix,
+    },
+    {
+      name: 'undefined array',
+      args: [undefined, true, 2],
+      expected: hexPrefix,
+    },
+    {
+      name: 'empty array no prefix',
+      args: [[], false, 2],
+      expected: hexPrefix,
+    },
+    {
+      name: 'null array no prefix',
+      args: [null, false, 2],
+      expected: hexPrefix,
+    },
+    {
+      name: 'undefined array no prefix',
+      args: [undefined, false, 2],
+      expected: hexPrefix,
     },
   ];
 
@@ -1467,12 +1498,12 @@ describe('Utils addHexPrefix tests', () => {
     {
       name: '""',
       args: [''],
-      expected: null,
+      expected: hexPrefix,
     },
     {
       name: 'null',
       args: [null],
-      expected: null,
+      expected: hexPrefix,
     },
   ];
 
