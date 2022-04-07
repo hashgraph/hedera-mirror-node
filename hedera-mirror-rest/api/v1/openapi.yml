@@ -1653,6 +1653,8 @@ components:
           $ref: '#/components/schemas/TransactionTypes'
         token_id:
           $ref: '#/components/schemas/EntityId'
+        is_approval:
+          type: boolean
       example:
         consensus_timestamp: "1618591023.997420021"
         id: "0.0.19789-1618591023-997420021"
@@ -1660,6 +1662,7 @@ components:
         sender_account_id: "0.0.10"
         type: "CRYPTOTRANSFER"
         token_id: "0.0.1000"
+        is_approval: false
     NftTransactionHistory:
       type: object
       properties:
@@ -2065,6 +2068,8 @@ components:
                 $ref: '#/components/schemas/EntityId'
               amount:
                 type: number
+              is_approval:
+                type: boolean
             required:
               - token_id
               - account
@@ -2083,6 +2088,8 @@ components:
                 $ref: '#/components/schemas/EntityId'
               amount:
                 type: number
+              is_approval:
+                type: boolean
             required:
               - account
               - amount
@@ -2109,16 +2116,21 @@ components:
           - token_id: 0.0.90000
             account: 0.0.9
             amount: 1200
+            is_approval: false
           - token_id: 0.0.90000
             account: 0.0.8
             amount: -1200
+            is_approval: false
         transfers:
           - account: 0.0.3
             amount: 2
+            is_approval: false
           - account: 0.0.8
             amount: -3
+            is_approval: false
           - account: 0.0.98
             amount: 1
+            is_approval: false
         valid_duration_seconds: 11
         valid_start_timestamp: "1234567890.000000006"
     TransactionDetail:
@@ -2154,6 +2166,8 @@ components:
                     type: number
                   token_id:
                     $ref: '#/components/schemas/EntityId'
+                  is_approval:
+                    type: boolean
                 required:
                   - serial_number
                   - token_id
@@ -2177,10 +2191,12 @@ components:
             sender_account_id: 0.0.122
             serial_number: 1
             token_id: 0.0.123
+            is_approval: true
           - receiver_account_id: 0.0.321
             sender_account_id: 0.0.422
             serial_number: 2
             token_id: 0.0.123
+            is_approval: true
         node: 0.0.3
         nonce: 0
         parent_consensus_timestamp: "1234567890.000000007"
@@ -2192,16 +2208,21 @@ components:
           - token_id: 0.0.90000
             account: 0.0.9
             amount: 1200
+            is_approval: true
           - token_id: 0.0.90000
             account: 0.0.8
             amount: -1200
+            is_approval: true
         transfers:
           - account: 0.0.3
             amount: 2
+            is_approval: true
           - account: 0.0.8
             amount: -3
+            is_approval: true
           - account: 0.0.98
             amount: 1
+            is_approval: true
         valid_duration_seconds: 11
         valid_start_timestamp: "1234567890.000000006"
     TransactionDetails:
