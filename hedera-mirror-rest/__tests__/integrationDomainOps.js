@@ -609,27 +609,33 @@ const insertTransfers = async (
   if (transfers.length === 0 && hasChargedTransactionFee && payerAccountId) {
     // insert default crypto transfers to node and treasury
     await sqlConnection.query(
-      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id)
-       VALUES ($1, $2, $3, $4);`,
-      [consensusTimestamp.toString(), NODE_FEE, nodeAccount || DEFAULT_NODE_ID, payerAccountId]
+      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
+       VALUES ($1, $2, $3, $4, $5);`,
+      [consensusTimestamp.toString(), NODE_FEE, nodeAccount || DEFAULT_NODE_ID, payerAccountId, false]
     );
     await sqlConnection.query(
-      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id)
-       VALUES ($1, $2, $3, $4);`,
-      [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_TREASURY_ID, payerAccountId]
+      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
+       VALUES ($1, $2, $3, $4, $5);`,
+      [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_TREASURY_ID, payerAccountId, false]
     );
     await sqlConnection.query(
-      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id)
-       VALUES ($1, $2, $3, $4);`,
-      [consensusTimestamp.toString(), -(NODE_FEE + NETWORK_FEE), payerAccountId, payerAccountId]
+      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
+       VALUES ($1, $2, $3, $4, $5);`,
+      [consensusTimestamp.toString(), -(NODE_FEE + NETWORK_FEE), payerAccountId, payerAccountId, false]
     );
   }
 
   for (const transfer of transfers) {
     await sqlConnection.query(
-      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id)
-       VALUES ($1, $2, $3, $4);`,
-      [consensusTimestamp.toString(), transfer.amount, EntityId.parse(transfer.account).getEncodedId(), payerAccountId]
+      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
+       VALUES ($1, $2, $3, $4, $5);`,
+      [
+        consensusTimestamp.toString(),
+        transfer.amount,
+        EntityId.parse(transfer.account).getEncodedId(),
+        payerAccountId,
+        transfer.isApproval,
+      ]
     );
   }
 };
@@ -877,12 +883,23 @@ const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('recipientAccountId' in cryptoTransfer)) {
     cryptoTransfer.recipientAccountId = cryptoTransfer.nodeAccountId;
   }
+  if (!('isApproval' in cryptoTransfer)) {
+    cryptoTransfer.isApproval = false;
+  }
 
   if (!('transfers' in cryptoTransfer)) {
     cryptoTransfer.transfers = [
-      {account: cryptoTransfer.senderAccountId, amount: -NETWORK_FEE - cryptoTransfer.amount},
-      {account: cryptoTransfer.recipientAccountId, amount: cryptoTransfer.amount},
-      {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE},
+      {
+        account: cryptoTransfer.senderAccountId,
+        amount: -NETWORK_FEE - cryptoTransfer.amount,
+        isApproval: cryptoTransfer.isApproval,
+      },
+      {
+        account: cryptoTransfer.recipientAccountId,
+        amount: cryptoTransfer.amount,
+        isApproval: cryptoTransfer.isApproval,
+      },
+      {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE, isApproval: cryptoTransfer.isApproval},
     ];
   }
   await addTransaction(cryptoTransfer);
