@@ -98,12 +98,14 @@
           {
             "token_id": "0.0.90000",
             "account": "0.0.8",
-            "amount": -1200
+            "amount": -1200,
+            "is_approval": true
           },
           {
             "token_id": "0.0.90000",
             "account": "0.0.9",
-            "amount": 1200
+            "amount": 1200,
+            "is_approval": true
           }
         ]
       },
@@ -116,12 +118,14 @@
           {
             "token_id": "0.0.90000",
             "account": "0.0.8",
-            "amount": -200
+            "amount": -200,
+            "is_approval": true
           },
           {
             "token_id": "0.0.90000",
             "account": "0.0.1679",
-            "amount": 200
+            "amount": 200,
+            "is_approval": true
           }
         ]
       }
@@ -151,12 +155,14 @@
           {
             "account": "0.0.8",
             "amount": -200,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": true
           },
           {
             "account": "0.0.1679",
             "amount": 200,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": true
           }
         ],
         "transaction_hash": "aGFzaA==",
@@ -164,15 +170,18 @@
         "transfers": [
           {
             "account": "0.0.3",
-            "amount": 2
+            "amount": 2,
+            "is_approval": true
           },
           {
             "account": "0.0.8",
-            "amount": -3
+            "amount": -3,
+            "is_approval": true
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": true
           }
         ],
         "valid_duration_seconds": "11",
@@ -196,27 +205,32 @@
         "transfers": [
           {
             "account": "0.0.3",
-            "amount": 2
+            "amount": 2,
+            "is_approval": true
           },
           {
             "account": "0.0.8",
-            "amount": -3
+            "amount": -3,
+            "is_approval": true
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": true
           }
         ],
         "token_transfers": [
           {
             "account": "0.0.8",
             "amount": -1200,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": true
           },
           {
             "account": "0.0.9",
             "amount": 1200,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": true
           }
         ],
         "valid_duration_seconds": "11",
