@@ -71,12 +71,12 @@ describe('ContractResultViewModel', () => {
     ).toEqual({
       ...defaultExpected,
       amount: null,
-      bloom: null,
-      call_result: null,
+      bloom: '0x',
+      call_result: '0x',
       contract_id: null,
       created_contract_ids: [],
       error_message: null,
-      function_parameters: null,
+      function_parameters: '0x',
       gas_used: null,
       to: null,
     });
