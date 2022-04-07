@@ -611,17 +611,17 @@ const insertTransfers = async (
     await sqlConnection.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
        VALUES ($1, $2, $3, $4, $5);`,
-      [consensusTimestamp.toString(), NODE_FEE, nodeAccount || DEFAULT_NODE_ID, payerAccountId, false]
+      [consensusTimestamp.toString(), NODE_FEE, nodeAccount || DEFAULT_NODE_ID, payerAccountId, true]
     );
     await sqlConnection.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
        VALUES ($1, $2, $3, $4, $5);`,
-      [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_TREASURY_ID, payerAccountId, false]
+      [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_TREASURY_ID, payerAccountId, true]
     );
     await sqlConnection.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
        VALUES ($1, $2, $3, $4, $5);`,
-      [consensusTimestamp.toString(), -(NODE_FEE + NETWORK_FEE), payerAccountId, payerAccountId, false]
+      [consensusTimestamp.toString(), -(NODE_FEE + NETWORK_FEE), payerAccountId, payerAccountId, true]
     );
   }
 
@@ -652,12 +652,13 @@ const insertTokenTransfers = async (consensusTimestamp, transfers, payerAccountI
       EntityId.parse(transfer.account).getEncodedId(),
       transfer.amount,
       payerAccountId,
+      transfer.isApproval,
     ];
   });
 
   await sqlConnection.query(
     pgformat(
-      'INSERT INTO token_transfer (consensus_timestamp, token_id, account_id, amount, payer_account_id) VALUES %L',
+      'INSERT INTO token_transfer (consensus_timestamp, token_id, account_id, amount, payer_account_id, is_approval) VALUES %L',
       tokenTransfers
     )
   );
@@ -676,12 +677,13 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAcco
       transfer.serial_number,
       EntityId.parse(transfer.token_id).getEncodedId().toString(),
       payerAccountId,
+      transfer.isApproval,
     ];
   });
 
   await sqlConnection.query(
     pgformat(
-      'INSERT INTO nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, serial_number, token_id, payer_account_id) VALUES %L',
+      'INSERT INTO nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, serial_number, token_id, payer_account_id, is_approval) VALUES %L',
       nftTransfers
     )
   );
@@ -883,23 +885,20 @@ const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('recipientAccountId' in cryptoTransfer)) {
     cryptoTransfer.recipientAccountId = cryptoTransfer.nodeAccountId;
   }
-  if (!('isApproval' in cryptoTransfer)) {
-    cryptoTransfer.isApproval = false;
-  }
 
   if (!('transfers' in cryptoTransfer)) {
     cryptoTransfer.transfers = [
       {
         account: cryptoTransfer.senderAccountId,
         amount: -NETWORK_FEE - cryptoTransfer.amount,
-        isApproval: cryptoTransfer.isApproval,
+        isApproval: true,
       },
       {
         account: cryptoTransfer.recipientAccountId,
         amount: cryptoTransfer.amount,
-        isApproval: cryptoTransfer.isApproval,
+        isApproval: true,
       },
-      {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE, isApproval: cryptoTransfer.isApproval},
+      {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE, isApproval: true},
     ];
   }
   await addTransaction(cryptoTransfer);
