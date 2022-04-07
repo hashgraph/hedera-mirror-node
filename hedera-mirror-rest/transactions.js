@@ -112,7 +112,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     select jsonb_agg(jsonb_build_object(
           '${TokenTransfer.ACCOUNT_ID}', ${TokenTransfer.ACCOUNT_ID},
           '${TokenTransfer.AMOUNT}', ${TokenTransfer.AMOUNT},
-          '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.TOKEN_ID}
+          '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.TOKEN_ID},
+          '${TokenTransfer.IS_APPROVAL}', ${TokenTransfer.IS_APPROVAL}
         ) order by ${TokenTransfer.TOKEN_ID}, ${TokenTransfer.ACCOUNT_ID}
       ) as ttr_list,
       ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
@@ -126,7 +127,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
           '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID},
           '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID},
           '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER},
-          '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID}
+          '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID},
+          '${NftTransfer.IS_APPROVAL}', ${NftTransfer.IS_APPROVAL}
         ) order by ${NftTransfer.TOKEN_ID}, ${NftTransfer.SERIAL_NUMBER}
       ) as ntr_list,
       ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)}
@@ -226,10 +228,11 @@ const createCryptoTransferList = (cryptoTransferList) => {
   }
 
   return cryptoTransferList.map((transfer) => {
-    const {entity_id: accountId, amount} = transfer;
+    const {entity_id: accountId, amount, is_approval} = transfer;
     return {
       account: EntityId.parse(accountId).toString(),
       amount,
+      is_approval: _.isNil(is_approval) ? false : is_approval,
     };
   });
 };
@@ -246,11 +249,12 @@ const createTokenTransferList = (tokenTransferList) => {
   }
 
   return tokenTransferList.map((transfer) => {
-    const {token_id: tokenId, account_id: accountId, amount} = transfer;
+    const {token_id: tokenId, account_id: accountId, amount, is_approval} = transfer;
     return {
       token_id: EntityId.parse(tokenId).toString(),
       account: EntityId.parse(accountId).toString(),
       amount,
+      is_approval: _.isNil(is_approval) ? false : is_approval,
     };
   });
 };

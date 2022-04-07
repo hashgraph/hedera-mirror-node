@@ -21,6 +21,7 @@
 'use strict';
 
 const EntityId = require('../entityId');
+const _ = require('lodash');
 
 /**
  * Nft transfer view model
@@ -31,6 +32,7 @@ class NftTransferViewModel {
     this.sender_account_id = EntityId.parse(nftTransferModel.senderAccountId, true).toString();
     this.serial_number = nftTransferModel.serialNumber;
     this.token_id = EntityId.parse(nftTransferModel.tokenId).toString();
+    this.is_approval = _.isNil(nftTransferModel.isApproval) ? false : nftTransferModel.isApproval;
   }
 }
 

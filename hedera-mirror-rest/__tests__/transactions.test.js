@@ -474,28 +474,34 @@ describe('createCryptoTransferList', () => {
       {
         amount: 8,
         entity_id: 3,
+        is_approval: null,
       },
       {
         amount: -27,
         entity_id: 9001,
+        is_approval: true,
       },
       {
         amount: 19,
         entity_id: 98,
+        is_approval: true,
       },
     ];
     const expected = [
       {
         account: '0.0.3',
         amount: 8,
+        is_approval: false,
       },
       {
         account: '0.0.9001',
         amount: -27,
+        is_approval: true,
       },
       {
         account: '0.0.98',
         amount: 19,
+        is_approval: true,
       },
     ];
 
@@ -520,6 +526,7 @@ describe('createNftTransferList', () => {
         sender_account_id: 98,
         serial_number: 1,
         token_id: 2000,
+        is_approval: null,
       },
       {
         consensus_timestamp: 10,
@@ -527,6 +534,7 @@ describe('createNftTransferList', () => {
         sender_account_id: 98,
         serial_number: 2,
         token_id: 2000,
+        is_approval: false,
       },
       {
         consensus_timestamp: 100,
@@ -534,6 +542,7 @@ describe('createNftTransferList', () => {
         sender_account_id: 1005,
         serial_number: 2,
         token_id: 2000,
+        is_approval: true,
       },
     ];
 
@@ -543,18 +552,21 @@ describe('createNftTransferList', () => {
         sender_account_id: '0.0.98',
         serial_number: 1,
         token_id: '0.0.2000',
+        is_approval: false,
       },
       {
         receiver_account_id: '0.0.1005',
         sender_account_id: '0.0.98',
         serial_number: 2,
         token_id: '0.0.2000',
+        is_approval: false,
       },
       {
         receiver_account_id: '0.0.98',
         sender_account_id: '0.0.1005',
         serial_number: 2,
         token_id: '0.0.2000',
+        is_approval: true,
       },
     ];
 
@@ -571,6 +583,7 @@ describe('create transferLists', () => {
         sender_account_id: 98,
         serial_number: 1,
         token_id: 2000,
+        is_approval: null,
       },
       {
         consensus_timestamp: 10,
@@ -578,6 +591,7 @@ describe('create transferLists', () => {
         sender_account_id: 98,
         serial_number: 2,
         token_id: 2000,
+        is_approval: true,
       },
       {
         consensus_timestamp: 100,
@@ -585,6 +599,7 @@ describe('create transferLists', () => {
         sender_account_id: 1005,
         serial_number: 2,
         token_id: 2000,
+        is_approval: true,
       },
     ];
 
@@ -607,7 +622,7 @@ describe('create transferLists', () => {
         transaction_bytes: 'bytes',
         node_account_id: 2,
         payer_account_id: 3,
-        crypto_transfer_list: [{amount: 100, entity_id: 98}],
+        crypto_transfer_list: [{amount: 100, entity_id: 98, is_approval: true}],
         nft_transfer_list: nftTransfersFromDb,
       },
       {
@@ -628,7 +643,7 @@ describe('create transferLists', () => {
         transaction_bytes: 'bytes',
         node_account_id: 2,
         payer_account_id: 3,
-        crypto_transfer_list: [{amount: 100, entity_id: 100}],
+        crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: null}],
         nft_transfer_list: undefined,
       },
     ];
@@ -639,18 +654,21 @@ describe('create transferLists', () => {
         sender_account_id: '0.0.98',
         serial_number: 1,
         token_id: '0.0.2000',
+        is_approval: false,
       },
       {
         receiver_account_id: '0.0.1005',
         sender_account_id: '0.0.98',
         serial_number: 2,
         token_id: '0.0.2000',
+        is_approval: true,
       },
       {
         receiver_account_id: '0.0.98',
         sender_account_id: '0.0.1005',
         serial_number: 2,
         token_id: '0.0.2000',
+        is_approval: true,
       },
     ];
 
@@ -676,6 +694,7 @@ describe('create transferLists', () => {
           {
             account: '0.0.98',
             amount: 100,
+            is_approval: true,
           },
         ],
         nft_transfers: expectedNftTransfersList,
@@ -703,6 +722,7 @@ describe('create transferLists', () => {
           {
             account: '0.0.100',
             amount: 100,
+            is_approval: false,
           },
         ],
         valid_duration_seconds: null,
@@ -757,7 +777,8 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
       select jsonb_agg(jsonb_build_object(
           'account_id', account_id,
           'amount', amount,
-          'token_id', token_id
+          'token_id', token_id,
+          'is_approval', is_approval
         ) order by token_id, account_id) as ttr_list,
         tk_tr.consensus_timestamp
       from token_transfer tk_tr
@@ -769,7 +790,8 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
           'receiver_account_id', receiver_account_id,
           'sender_account_id', sender_account_id,
           'serial_number', serial_number,
-          'token_id', token_id
+          'token_id', token_id,
+          'is_approval', is_approval
         ) order by token_id, serial_number) as ntr_list,
         nft_tr.consensus_timestamp
       from nft_transfer nft_tr

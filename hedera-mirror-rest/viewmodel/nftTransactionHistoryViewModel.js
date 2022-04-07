@@ -23,6 +23,7 @@
 const EntityId = require('../entityId');
 const utils = require('../utils');
 const {TransactionType} = require('../model');
+const _ = require('lodash');
 
 /**
  * Nft transaction history transfer view model
@@ -38,6 +39,7 @@ class NftTransactionHistoryViewModel {
       transactionModel.validStartNs
     );
     this.type = TransactionType.getName(transactionModel.type);
+    this.is_approval = _.isNil(nftTransferModel.isApproval) ? false : nftTransferModel.isApproval;
   }
 }
 

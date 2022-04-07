@@ -32,6 +32,7 @@ class NftTransfer {
     this.senderAccountId = nftTransfer.sender_account_id;
     this.serialNumber = nftTransfer.serial_number;
     this.tokenId = nftTransfer.token_id;
+    this.isApproval = nftTransfer.is_approval;
   }
 
   static tableAlias = 'nft_tr';
@@ -42,6 +43,7 @@ class NftTransfer {
   static SENDER_ACCOUNT_ID = `sender_account_id`;
   static SERIAL_NUMBER = `serial_number`;
   static TOKEN_ID = `token_id`;
+  static IS_APPROVAL = `is_approval`;
 
   static FILTER_MAP = {
     [constants.filterKeys.TIMESTAMP]: NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP),

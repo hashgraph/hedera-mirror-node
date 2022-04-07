@@ -29,6 +29,7 @@ class TokenTransfer {
     this.amount = tokenTransfer.amount;
     this.consensusTimestamp = tokenTransfer.consensus_timestamp;
     this.tokenId = tokenTransfer.token_id;
+    this.isApproval = tokenTransfer.is_approval;
   }
 
   static tableAlias = 'tk_tr';
@@ -38,6 +39,7 @@ class TokenTransfer {
   static AMOUNT = 'amount';
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
   static TOKEN_ID = 'token_id';
+  static IS_APPROVAL = `is_approval`;
 
   /**
    * Gets full column name with table alias prepended.

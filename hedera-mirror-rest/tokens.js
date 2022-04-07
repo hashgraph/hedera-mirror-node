@@ -905,6 +905,7 @@ const nftTransferHistoryCteSelectFields = [
   NftTransfer.RECEIVER_ACCOUNT_ID,
   NftTransfer.SENDER_ACCOUNT_ID,
   NftTransfer.TOKEN_ID,
+  NftTransfer.IS_APPROVAL,
 ];
 
 /**
