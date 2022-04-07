@@ -733,11 +733,11 @@ const randomString = async (length) => {
 const hexPrefix = '0x';
 const addHexPrefix = (hexData) => {
   if (_.isEmpty(hexData)) {
-    return null;
+    return hexPrefix;
   }
 
   const hexString = typeof hexData === 'string' ? hexData : Buffer.from(hexData).toString();
-  return hexString.indexOf(hexPrefix) === 0 ? hexString : `${hexPrefix}${hexString}`;
+  return hexString.substring(0, 2) === hexPrefix ? hexString : `${hexPrefix}${hexString}`;
 };
 
 /**
@@ -749,7 +749,7 @@ const addHexPrefix = (hexData) => {
  */
 const toHexString = (byteArray, addPrefix = false, padLength = undefined) => {
   if (_.isNil(byteArray)) {
-    return null;
+    return hexPrefix;
   }
 
   const modifiers = [];
