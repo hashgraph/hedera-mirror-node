@@ -35,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.ResourceUtils;
@@ -219,8 +220,12 @@ public class ContractFeature extends AbstractFeature {
         assertThat(contractResult.getHash()).isNotBlank();
     }
 
+    private boolean isEmptyHex(String hexString) {
+        return StringUtils.isEmpty(hexString) || hexString.equals("0x");
+    }
+
     private void verifyContractExecutionResults(MirrorContractResult contractResult) {
-        ContractExecutionStage contractExecutionStage = contractResult.getFunctionParameters().equals("0x") ?
+        ContractExecutionStage contractExecutionStage = isEmptyHex(contractResult.getFunctionParameters()) ?
                 ContractExecutionStage.CREATION : ContractExecutionStage.CALL;
 
         assertThat(contractResult.getCallResult()).isNotBlank();
@@ -242,12 +247,12 @@ public class ContractFeature extends AbstractFeature {
             case CREATION:
                 amount = 1000;
                 assertThat(createdIds).contains(contractId.toString());
-                assertThat(contractResult.getFunctionParameters()).isEqualTo("0x");
+                assertThat(isEmptyHex(contractResult.getFunctionParameters())).isTrue();
                 break;
             case CALL:
                 numCreatedIds = 1;
                 assertThat(createdIds).doesNotContain(contractId.toString());
-                assertThat(contractResult.getFunctionParameters()).isNotEqualTo("0x");
+                assertThat(isEmptyHex(contractResult.getFunctionParameters())).isFalse();
                 break;
             default:
                 break;
