@@ -70,7 +70,7 @@ postgresql:
   postgresql:
     upgradeRepmgrExtension: true  # Upgrade repmgr version to 5.2 or else container spinup fails
   postgresqlImage:
-    tag: 12.5.0-debian-10-r88
+    tag: 14.2.0-debian-10-r57
 
 redis:
   enabled: false
