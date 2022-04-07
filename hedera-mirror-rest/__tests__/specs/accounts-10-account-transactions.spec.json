@@ -87,7 +87,8 @@
         "recipientAccountId": "0.0.8",
         "amount": 25,
         "nodeAccountId": "0.0.3",
-        "treasuryAccountId": "0.0.98"
+        "treasuryAccountId": "0.0.98",
+        "isApproval": true
       },
       {
         "consensus_timestamp": "1234567890000000005",
@@ -95,7 +96,8 @@
         "recipientAccountId": "0.0.9",
         "amount": 10,
         "nodeAccountId": "0.0.3",
-        "treasuryAccountId": "0.0.98"
+        "treasuryAccountId": "0.0.98",
+        "isApproval": true
       }
     ]
   },
@@ -128,15 +130,18 @@
         "transfers": [
           {
             "account": "0.0.3",
-            "amount": 2
+            "amount": 2,
+            "is_approval": true
           },
           {
             "account": "0.0.8",
-            "amount": -3
+            "amount": -3,
+            "is_approval": true
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": true
           }
         ],
         "valid_duration_seconds": "11",
@@ -160,15 +165,18 @@
         "transfers": [
           {
             "account": "0.0.8",
-            "amount": -11
+            "amount": -11,
+            "is_approval": true
           },
           {
             "account": "0.0.9",
-            "amount": 10
+            "amount": 10,
+            "is_approval": true
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": true
           }
         ],
         "valid_duration_seconds": "11",
@@ -192,15 +200,18 @@
         "transfers": [
           {
             "account": "0.0.7",
-            "amount": -26
+            "amount": -26,
+            "is_approval": true
           },
           {
             "account": "0.0.8",
-            "amount": 25
+            "amount": 25,
+            "is_approval": true
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": true
           }
         ],
         "valid_duration_seconds": "11",
