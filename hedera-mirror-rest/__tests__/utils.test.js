@@ -1013,7 +1013,7 @@ describe('Utils toHexString tests', () => {
     {
       name: 'empty array',
       args: [[], true, 2],
-      expected: '0x00',
+      expected: '0x',
     },
     {
       name: 'null array',
@@ -1023,6 +1023,21 @@ describe('Utils toHexString tests', () => {
     {
       name: 'undefined array',
       args: [undefined, true, 2],
+      expected: hexPrefix,
+    },
+    {
+      name: 'empty array no prefix',
+      args: [[], false, 2],
+      expected: hexPrefix,
+    },
+    {
+      name: 'null array no prefix',
+      args: [null, false, 2],
+      expected: hexPrefix,
+    },
+    {
+      name: 'undefined array no prefix',
+      args: [undefined, false, 2],
       expected: hexPrefix,
     },
   ];

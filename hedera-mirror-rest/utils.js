@@ -742,13 +742,14 @@ const addHexPrefix = (hexData) => {
 
 /**
  * Converts the byte array returned by SQL queries into hex string
+ * Logic conforms with ETH hex value encoding, therefore nill and empty return '0x'
  * @param {Array} byteArray Array of bytes to be converted to hex string
  * @param {boolean} addPrefix Whether to add the '0x' prefix to the hex string
  * @param {Number} padLength The length to left pad the result hex string
  * @return {String} Converted hex string
  */
 const toHexString = (byteArray, addPrefix = false, padLength = undefined) => {
-  if (_.isNil(byteArray)) {
+  if (_.isNil(byteArray) || _.isEmpty(byteArray)) {
     return hexPrefix;
   }
 
@@ -776,11 +777,12 @@ const PATTERN_ED25519 = /^(1220|32240a221220|2a28080112240a221220)([A-Fa-f0-9]{6
  * @return {Object} Key object - with type decoration for primitive keys, if detected
  */
 const encodeKey = (key) => {
-  if (key === null) {
+  if (_.isNil(key)) {
     return null;
   }
 
-  const keyHex = toHexString(key);
+  // check for empty case to support differentiation between empty and null keys
+  const keyHex = _.isEmpty(key) ? '' : toHexString(key);
   const ed25519Key = keyHex.match(PATTERN_ED25519);
   if (ed25519Key) {
     return {
