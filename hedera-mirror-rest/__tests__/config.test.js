@@ -207,6 +207,11 @@ describe('Override stateproof config', () => {
       accessKey: null,
       endpointOverride: null,
       gcpProjectId: null,
+      httpOptions: {
+        connectTimeout: 2000,
+        timeout: 5000,
+      },
+      maxRetries: 3,
       secretKey: null,
     };
     Object.assign(streamsConfig, override);
