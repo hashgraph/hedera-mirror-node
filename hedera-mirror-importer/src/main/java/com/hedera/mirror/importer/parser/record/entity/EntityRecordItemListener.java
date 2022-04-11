@@ -423,14 +423,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         var body = recordItem.getTransactionBody();
         boolean failedTransfer = !recordItem.isSuccessful() && body.hasCryptoTransfer();
 
-        Function<AccountAmount, Optional<AccountAmount>> findAccountAmountInsideBody = aa -> body
-                .getCryptoTransfer()
-                .getTransfers()
-                .getAccountAmountsList()
-                .stream()
-                .filter(a -> aa.getAmount() == a.getAmount() && aa.getAccountID().equals(a.getAccountID()))
-                .findFirst();
-
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
             var account = EntityId.of(aa.getAccountID());
@@ -438,9 +430,10 @@ public class EntityRecordItemListener implements RecordItemListener {
             cryptoTransfer.setAmount(aa.getAmount());
             cryptoTransfer.setConsensusTimestamp(consensusTimestamp);
             cryptoTransfer.setEntityId(account.getId());
+            cryptoTransfer.setIsApproval(false);
             cryptoTransfer.setPayerAccountId(payerAccountId);
 
-            Optional<AccountAmount> isAccountAmountInsideBody = findAccountAmountInsideBody.apply(aa);
+            Optional<AccountAmount> isAccountAmountInsideBody = findAccountAmountInTransferListInsideBody(aa, body);
 
             if(isAccountAmountInsideBody.isPresent()){
                 cryptoTransfer.setIsApproval(isAccountAmountInsideBody.get().getIsApproval());
@@ -654,6 +647,25 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
+    private Optional<AccountAmount> findAccountAmountInTransferListInsideBody(AccountAmount aa, TransactionBody body) {
+        return body.getCryptoTransfer()
+                .getTransfers()
+                .getAccountAmountsList()
+                .stream()
+                .filter(a -> aa.getAmount() == a.getAmount() && aa.getAccountID().equals(a.getAccountID()))
+                .findFirst();
+    }
+
+    private Optional<AccountAmount> findAccountAmountInTokenTransferListInsideBody(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId, TransactionBody body){
+        return body.getCryptoTransfer()
+                .getTokenTransfersList()
+                .stream()
+                .filter(transferList -> transferList.getToken().equals(tokenId))
+                .flatMap(transferList -> transferList.getTransfersList().stream())
+                .filter(accountAmountPredicate)
+                .findFirst();
+    }
+
     private Optional<com.hederahashgraph.api.proto.java.NftTransfer> findNftTransferInsideBody(
             com.hederahashgraph.api.proto.java.NftTransfer nftTransfer,
             TokenID nftId,
@@ -668,16 +680,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                             t.getReceiverAccountID().equals(nftTransfer.getReceiverAccountID()) &&
                             t.getSenderAccountID().equals(nftTransfer.getSenderAccountID())
                 )
-                .findFirst();
-    }
-
-    private Optional<AccountAmount> findAccountAmountInTokenTransferListInsideBody(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId, TransactionBody body){
-        return body.getCryptoTransfer()
-                .getTokenTransfersList()
-                .stream()
-                .filter(transferList -> transferList.getToken().equals(tokenId))
-                .flatMap(transferList -> transferList.getTransfersList().stream())
-                .filter(accountAmountPredicate)
                 .findFirst();
     }
 
@@ -742,6 +744,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                 NftTransfer nftTransferDomain = new NftTransfer();
                 nftTransferDomain.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
+                nftTransferDomain.setIsApproval(false);
                 nftTransferDomain.setReceiverAccountId(receiverId);
                 nftTransferDomain.setSenderAccountId(senderId);
                 nftTransferDomain.setPayerAccountId(recordItem.getPayerAccountId());

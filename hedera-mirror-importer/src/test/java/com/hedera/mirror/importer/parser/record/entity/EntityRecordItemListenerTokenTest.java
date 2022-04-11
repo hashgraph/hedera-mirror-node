@@ -1925,7 +1925,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     private void assertNftTransferInRepository(long consensusTimestamp, long serialNumber, TokenID tokenID,
             AccountID receiverId, AccountID senderId){
-        assertNftTransferInRepository(consensusTimestamp, serialNumber, tokenID, receiverId, senderId, null);
+        assertNftTransferInRepository(consensusTimestamp, serialNumber, tokenID, receiverId, senderId, false);
     }
 
     private void assertNftTransferInRepository(long consensusTimestamp, long serialNumber, TokenID tokenID,
