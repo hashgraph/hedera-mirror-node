@@ -68,7 +68,7 @@
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.45.1</grpc.version>
         <guava.version>31.1-jre</guava.version>
-        <hedera-protobuf.version>0.25.0</hedera-protobuf.version>
+        <hedera-protobuf.version>0.25.1</hedera-protobuf.version>
         <hibernate-types.version>2.14.1</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>11</java.version>
