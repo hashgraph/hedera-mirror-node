@@ -86,7 +86,7 @@ abstract class AbstractAllowanceTransactionHandler implements TransactionHandler
                 nft.setSpender(spender);
                 nft.setAllowanceGrantedTimestamp(consensusTimestamp);
                 nft.setDelegatingSpender(delegatingSpender);
-                entityListener.onNftInstanceAllowance(nft);
+                entityListener.onNft(nft);
             }
         }
 

@@ -628,7 +628,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onNftInstanceAllowance() {
+    void onNftWithInstanceAllowance() {
         // given
         var nft1 = domainBuilder.nft().persist();
         var nft2 = domainBuilder.nft()
@@ -656,8 +656,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         nftUpdate1.setModifiedTimestamp(null);
 
         // when
-        sqlEntityListener.onNftInstanceAllowance(nftUpdate1);
-        sqlEntityListener.onNftInstanceAllowance(nftUpdate2);
+        sqlEntityListener.onNft(nftUpdate1);
+        sqlEntityListener.onNft(nftUpdate2);
         completeFileAndCommit();
 
         // then

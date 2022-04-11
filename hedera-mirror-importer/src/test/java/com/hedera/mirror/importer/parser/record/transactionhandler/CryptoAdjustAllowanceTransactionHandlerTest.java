@@ -105,7 +105,7 @@ class CryptoAdjustAllowanceTransactionHandlerTest extends AbstractTransactionHan
                 .extracting("approvedForAll")
                 .containsExactlyInAnyOrder(true, false, true);
 
-        verify(entityListener, times(4)).onNftInstanceAllowance(assertArg(t -> assertThat(t)
+        verify(entityListener, times(4)).onNft(assertArg(t -> assertThat(t)
                 .isNotNull()
                 .satisfies(a -> assertNftOwner.accept(a.getAccountId().getId()))
                 .returns(timestamp, Nft::getAllowanceGrantedTimestamp)
