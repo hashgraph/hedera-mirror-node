@@ -18,7 +18,7 @@
         <commons-math3.version>3.6.1</commons-math3.version>
         <hedera-sdk.version>2.9.0</hedera-sdk.version>
         <meanbean.version>3.0.0-M9</meanbean.version>
-        <springdoc.version>1.6.6</springdoc.version>
+        <springdoc.version>1.6.7</springdoc.version>
     </properties>
 
     <dependencies>
