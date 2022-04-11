@@ -119,12 +119,12 @@ When parsing nft allowances,
 
   - Persist approved for all nft allowances (either grant or revoke) to the `nft_allowance` table
   - Persist nft allowances by (token id, serial number) to the `nft` table by updating `allowance_granted_timestamp`,
-    `delegating_spender`, and `spender`.
+    `delegating_spender`, and `spender`
 
 Update `EntityListener`
 
   - Add `EntityListner.onNftAllowance(NftAllowance nft)` for approved for all nft allowances
-  - Add `EntityListner.onNftInstanceAllowance(Nft nft)` for nft allowances by (token id, serial number)
+  - Update `EntityListner.onNft(Nft nft)` to handle nft allowances by (token id, serial number)
 
 ### REST API
 
@@ -166,57 +166,72 @@ Optional Filters
 
 #### NFT Allowances
 
-`/api/v1/accounts/{accountId}/allowances/nfts`
+##### NFT Allowances by Serial Numbers
+
+Update `/api/v1/accounts/{accountId}/nfts` to show nft allowance
 
 ```json
 {
-  "allowances": [
+  "nfts": [
     {
-      "approved_for_all": null,
-      "owner": "0.0.1000",
+      "account_id": "0.0.1000",
+      "allowance_granted_timestamp": null,
+      "created_timestamp": "1234567891.000000001",
+      "delegating_spender": null,
+      "deleted": false,
+      "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
+      "modified_timestamp": "1610682446.003266001",
       "serial_number": 1,
-      "spender": "0.0.8488",
-      "token_id": "0.0.1032",
-      "timestamp": {
-        "from": "1633466229.96874612",
-        "to": null
-      }
+      "spender": null,
+      "token_id": "0.0.1033"
     },
     {
-      "approved_for_all": null,
-      "owner": "0.0.1000",
+      "account_id": "0.0.1000",
+      "allowance_granted_timestamp": "1610682500.000000002",
+      "created_timestamp": "1234567890.000000001",
+      "delegating_spender": null,
+      "deleted": false,
+      "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
+      "modified_timestamp": "1610682445.003266001",
       "serial_number": 2,
-      "spender": "0.0.8488",
-      "token_id": "0.0.1032",
-      "timestamp": {
-        "from": "1633466229.96874612",
-        "to": null
-      }
+      "spender": "0.0.1201",
+      "token_id": "0.0.1032"
     },
     {
-      "approved_for_all": null,
-      "owner": "0.0.1000",
+      "account_id": "0.0.1000",
+      "allowance_granted_timestamp": "1610682500.000000001",
+      "created_timestamp": "1234567890.000000001",
+      "delegating_spender": "0.0.1300",
+      "deleted": false,
+      "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
+      "modified_timestamp": "1610682445.003266001",
       "serial_number": 1,
-      "spender": "0.0.8488",
-      "token_id": "0.0.1034",
-      "timestamp": {
-        "from": "1633466229.96874612",
-        "to": null
-      }
+      "spender": "0.0.1200",
+      "token_id": "0.0.1032"
     }
   ],
   "links": {}
 }
 ```
 
-`/api/v1/accounts/{accountId}/allowances/nfts?approval.type=approved_for_all`
+Optional Filters
+
+* Add `spender.id`: Filter by the spender account ID. `ne` operator is not supported. Note if no `spender.id` filter
+  is specified, the REST api will show all nfts owned by the account, regardless of nft allowance; if `spender.id`
+  filter is specified, the REST api will only show nfts owned by the account with allowance spender matching `spender.id`.
+* `order`: Order by `spender`, `toke_id`, and `serial_number` if `spender.id` is specified, otherwise order by `token_id`
+  and `serial_number`. Accepts `asc` or `desc` with a default of `desc`.
+
+##### Approved For All NFT Allowances
+
+`/api/v1/accounts/{accountId}/allowances/nfts`
+
 ```json
 {
   "allowances": [
     {
       "approved_for_all": true,
       "owner": "0.0.1000",
-      "serial_number": null,
       "spender": "0.0.8488",
       "token_id": "0.0.1033",
       "timestamp": {
@@ -227,7 +242,6 @@ Optional Filters
     {
       "approved_for_all": false,
       "owner": "0.0.1000",
-      "serial_number": null,
       "spender": "0.0.8488",
       "token_id": "0.0.1034",
       "timestamp": {
@@ -238,7 +252,6 @@ Optional Filters
     {
       "approved_for_all": true,
       "owner": "0.0.1000",
-      "serial_number": null,
       "spender": "0.0.9857",
       "token_id": "0.0.1032",
       "timestamp": {
@@ -254,13 +267,11 @@ Optional Filters
 Optional Filters
 
 * `limit`: The maximum amount of items to return.
-* `order`: Order by `spender.id`, `token.id` and `serialnumber`. Accepts `asc` or `desc` with a default of `asc`.
-* `approval.type`: Filter by the nft allowance approval type. Accepts `approved_for_all` or `serialnumber` with a
-  default of `serialnumber`.
-* `spender.id`: Filter by the spender ID. `ne` filter is not supported.
-* `token.id`: Filter by the token ID. `ne` filter is not supported.
-* `serialnumber`: Filter by the nft serial number. `ne` filter is not supported. Note the filter is ignored
-  if `approval.type` is `approved_for_all`.
+* `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
+* `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
+* `token.id`: Filter by the token ID. `ne` operator is not supported.
+
+Note this API is optional.
 
 #### Token Allowances
 
@@ -322,5 +333,5 @@ the transactions REST APIs.
 
 2) What happens if client populates both `approvedForAll` and `serialNumbers`?
 
-   It is an error if they populate `approvedForAll=true` and a non-empty `serialNumbers`. It is allowed, but not
-   required, to populate `approvedForAll=false` when providing a non-empty `serialNumbers`.
+   `approvedForAll` nft allowance and `serialNumbers` nft allowance are orthogonal. The two types of nft allowances can
+   appear in the same `NftAllowance` protobuf message, mirrornode should parse them separately.
