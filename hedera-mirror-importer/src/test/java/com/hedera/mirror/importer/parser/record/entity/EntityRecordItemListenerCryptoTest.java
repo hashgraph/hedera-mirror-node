@@ -28,6 +28,9 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+
+import com.hedera.mirror.common.domain.DomainBuilder;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -50,6 +53,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.annotation.Resource;
@@ -77,6 +81,9 @@ import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.util.Utility;
+
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.runners.Parameterized;
 
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
@@ -625,6 +632,59 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                                 .get()
                                 .extracting(CryptoTransfer::getErrata)
                                 .isEqualTo(ErrataType.DELETE);
+                    }
+                }
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void cryptoTransferHasCorrectIsApprovalValue(boolean correctIsApprovalValue){
+        final long[] accountNums = {6,7,8};
+        final long[] amounts = {210,300,15};
+        final boolean[] isApprovals = {false, true, false};
+        Transaction transaction = buildTransaction(r -> {
+            for(int i = 0; i < accountNums.length; i++){
+                var accountAmount = accountAmount(accountNums[i], amounts[i]).setIsApproval(isApprovals[i]).build();
+                r.getCryptoTransferBuilder()
+                        .getTransfersBuilder()
+                        .addAccountAmounts(accountAmount);
+            }
+        });
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        AtomicInteger totalValuesInRecord = new AtomicInteger(0);
+        TransactionRecord record = buildTransactionRecord(r -> {
+            for(int i = 0; i < isApprovals.length; i++){
+                if(isApprovals[i] != correctIsApprovalValue){
+                    continue;
+                }
+                totalValuesInRecord.incrementAndGet();
+                var accountAmount = accountAmount(accountNums[i], amounts[i]).setIsApproval(false).build();
+                r.getTransferListBuilder()
+                        .addAccountAmounts(accountAmount);
+            }
+        }, transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
+
+        var recordItem = new RecordItem(transaction, record);
+        parseRecordItemAndCommit(recordItem);
+
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                //3 default transactions being inserted by buildTransactionRecord
+                () -> assertEquals(3 + amounts.length + totalValuesInRecord.get(), cryptoTransferRepository.count()),
+                () -> {
+                    for (int i = 0; i < isApprovals.length; i++) {
+                        if(isApprovals[i] != correctIsApprovalValue){
+                            continue;
+                        }
+                        for(var cryptoTransfer : cryptoTransferRepository.findAll()){
+                            if(cryptoTransfer.getEntityId() != accountNums[i]){
+                                continue;
+                            }
+                            assertThat(cryptoTransfer)
+                                    .extracting(CryptoTransfer::getIsApproval)
+                                    .isEqualTo(correctIsApprovalValue);
+                        }
                     }
                 }
         );

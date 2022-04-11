@@ -43,6 +43,7 @@ import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
@@ -56,7 +57,9 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Named;
@@ -414,12 +417,19 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertTransferList(RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
+
         var transferList = recordItem.getRecord().getTransferList();
         EntityId payerAccountId = recordItem.getPayerAccountId();
         var body = recordItem.getTransactionBody();
         boolean failedTransfer = !recordItem.isSuccessful() && body.hasCryptoTransfer();
-        Predicate<AccountAmount> isFailedNonFeeTransfer = a -> failedTransfer &&
-                body.getCryptoTransfer().getTransfers().getAccountAmountsList().contains(a);
+
+        Function<AccountAmount, Optional<AccountAmount>> findAccountAmountInsideBody = aa -> body
+                .getCryptoTransfer()
+                .getTransfers()
+                .getAccountAmountsList()
+                .stream()
+                .filter(a -> aa.getAmount() == a.getAmount() && aa.getAccountID().equals(a.getAccountID()))
+                .findFirst();
 
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
@@ -428,9 +438,16 @@ public class EntityRecordItemListener implements RecordItemListener {
             cryptoTransfer.setAmount(aa.getAmount());
             cryptoTransfer.setConsensusTimestamp(consensusTimestamp);
             cryptoTransfer.setEntityId(account.getId());
-            cryptoTransfer.setIsApproval(aa.getIsApproval());
             cryptoTransfer.setPayerAccountId(payerAccountId);
-            cryptoTransfer.setErrata(isFailedNonFeeTransfer.test(aa) ? ErrataType.DELETE : null);
+
+            Optional<AccountAmount> isAccountAmountInsideBody = findAccountAmountInsideBody.apply(aa);
+
+            if(isAccountAmountInsideBody.isPresent()){
+                cryptoTransfer.setIsApproval(isAccountAmountInsideBody.get().getIsApproval());
+                if(failedTransfer) {
+                    cryptoTransfer.setErrata(ErrataType.DELETE);
+                }
+            }
             entityListener.onCryptoTransfer(cryptoTransfer);
         }
     }
@@ -637,62 +654,110 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
+    private Optional<com.hederahashgraph.api.proto.java.NftTransfer> findNftTransferInsideBody(
+            com.hederahashgraph.api.proto.java.NftTransfer nftTransfer,
+            TokenID nftId,
+            TransactionBody body) {
+        return body
+                .getCryptoTransfer()
+                .getTokenTransfersList()
+                .stream()
+                .filter(tokenTransferList -> tokenTransferList.getToken().equals(nftId))
+                .flatMap(tokenTransferList -> tokenTransferList.getNftTransfersList().stream())
+                .filter(t ->  t.getSerialNumber() == nftTransfer.getSerialNumber() &&
+                            t.getReceiverAccountID().equals(nftTransfer.getReceiverAccountID()) &&
+                            t.getSenderAccountID().equals(nftTransfer.getSenderAccountID())
+                )
+                .findFirst();
+    }
+
+    private Optional<AccountAmount> findAccountAmountInTokenTransferListInsideBody(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId, TransactionBody body){
+        return body.getCryptoTransfer()
+                .getTokenTransfersList()
+                .stream()
+                .filter(transferList -> transferList.getToken().equals(tokenId))
+                .flatMap(transferList -> transferList.getTransfersList().stream())
+                .filter(accountAmountPredicate)
+                .findFirst();
+    }
+
     private void insertTokenTransfers(RecordItem recordItem) {
-        if (entityProperties.getPersist().isTokens()) {
-            long consensusTimestamp = recordItem.getConsensusTimestamp();
-            TransactionBody body = recordItem.getTransactionBody();
-            boolean isTokenDissociate = body.hasTokenDissociate();
-
-            recordItem.getRecord().getTokenTransferListsList().forEach(tokenTransferList -> {
-                EntityId tokenId = EntityId.of(tokenTransferList.getToken());
-
-                tokenTransferList.getTransfersList().forEach(accountAmount -> {
-                    EntityId accountId = EntityId.of(accountAmount.getAccountID());
-                    long amount = accountAmount.getAmount();
-                    TokenTransfer tokenTransfer = new TokenTransfer();
-                    tokenTransfer.setAmount(amount);
-                    tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
-                    tokenTransfer.setIsApproval(accountAmount.getIsApproval());
-                    tokenTransfer.setPayerAccountId(recordItem.getPayerAccountId());
-                    tokenTransfer.setTokenDissociate(isTokenDissociate);
-                    entityListener.onTokenTransfer(tokenTransfer);
-
-                    if (isTokenDissociate) {
-                        // token transfers in token dissociate are for deleted tokens and the amount is negative to
-                        // bring the account's balance of the token to 0. Set the totalSupply of the token object to the
-                        // negative amount, later in the pipeline the token total supply will be reduced accordingly
-                        Token token = Token.of(tokenId);
-                        token.setModifiedTimestamp(consensusTimestamp);
-                        token.setTotalSupply(accountAmount.getAmount());
-                        entityListener.onToken(token);
-                    }
-                });
-
-                tokenTransferList.getNftTransfersList().forEach(nftTransfer -> {
-                    long serialNumber = nftTransfer.getSerialNumber();
-                    if (serialNumber == NftTransferId.WILDCARD_SERIAL_NUMBER) {
-                        // do not persist nft transfers with the wildcard serial number (-1) which signify an nft token
-                        // treasury change
-                        return;
-                    }
-
-                    EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
-                    EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
-
-                    NftTransfer nftTransferDomain = new NftTransfer();
-                    nftTransferDomain.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
-                    nftTransferDomain.setIsApproval(nftTransfer.getIsApproval());
-                    nftTransferDomain.setReceiverAccountId(receiverId);
-                    nftTransferDomain.setSenderAccountId(senderId);
-                    nftTransferDomain.setPayerAccountId(recordItem.getPayerAccountId());
-
-                    entityListener.onNftTransfer(nftTransferDomain);
-                    if (!EntityId.isEmpty(receiverId)) {
-                        transferNftOwnership(consensusTimestamp, serialNumber, tokenId, receiverId);
-                    }
-                });
-            });
+        if(!entityProperties.getPersist().isTokens()){
+            return ;
         }
+
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        TransactionBody body = recordItem.getTransactionBody();
+        boolean isTokenDissociate = body.hasTokenDissociate();
+
+        recordItem.getRecord().getTokenTransferListsList().forEach(tokenTransferList -> {
+            EntityId tokenId = EntityId.of(tokenTransferList.getToken());
+
+            tokenTransferList.getTransfersList().forEach(accountAmount -> {
+                EntityId accountId = EntityId.of(accountAmount.getAccountID());
+                long amount = accountAmount.getAmount();
+                TokenTransfer tokenTransfer = new TokenTransfer();
+                tokenTransfer.setAmount(amount);
+                tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
+                tokenTransfer.setIsApproval(accountAmount.getIsApproval());
+                tokenTransfer.setPayerAccountId(recordItem.getPayerAccountId());
+                tokenTransfer.setTokenDissociate(isTokenDissociate);
+
+                if(accountAmount.getAmount() < 0){
+                    final Optional<AccountAmount> accountAmountInsideTransferList =
+                            findAccountAmountInTokenTransferListInsideBody(
+                            accountAmount::equals, tokenTransferList.getToken(), body);
+                    if(!accountAmountInsideTransferList.isPresent()){
+                        final Optional<AccountAmount> accountAmountWithSameAccountIdInsideTransferList =
+                                findAccountAmountInTokenTransferListInsideBody(
+                                aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(), tokenTransferList.getToken(), body);
+                        if(accountAmountWithSameAccountIdInsideTransferList.isPresent()){
+                            tokenTransfer.setIsApproval(true);
+                        }
+                    }
+                }
+                entityListener.onTokenTransfer(tokenTransfer);
+
+                if (isTokenDissociate) {
+                    // token transfers in token dissociate are for deleted tokens and the amount is negative to
+                    // bring the account's balance of the token to 0. Set the totalSupply of the token object to the
+                    // negative amount, later in the pipeline the token total supply will be reduced accordingly
+                    Token token = Token.of(tokenId);
+                    token.setModifiedTimestamp(consensusTimestamp);
+                    token.setTotalSupply(accountAmount.getAmount());
+                    entityListener.onToken(token);
+                }
+            });
+
+            tokenTransferList.getNftTransfersList().forEach(nftTransfer -> {
+                long serialNumber = nftTransfer.getSerialNumber();
+                if (serialNumber == NftTransferId.WILDCARD_SERIAL_NUMBER) {
+                    // do not persist nft transfers with the wildcard serial number (-1) which signify an nft token
+                    // treasury change
+                    return;
+                }
+
+                EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
+                EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
+
+                NftTransfer nftTransferDomain = new NftTransfer();
+                nftTransferDomain.setId(new NftTransferId(consensusTimestamp, serialNumber, tokenId));
+                nftTransferDomain.setReceiverAccountId(receiverId);
+                nftTransferDomain.setSenderAccountId(senderId);
+                nftTransferDomain.setPayerAccountId(recordItem.getPayerAccountId());
+
+                Optional<com.hederahashgraph.api.proto.java.NftTransfer> isNftTransferInsideBody =
+                        findNftTransferInsideBody(nftTransfer, tokenTransferList.getToken(), body);
+                if(isNftTransferInsideBody.isPresent()){
+                    nftTransferDomain.setIsApproval(isNftTransferInsideBody.get().getIsApproval());
+                }
+
+                entityListener.onNftTransfer(nftTransferDomain);
+                if (!EntityId.isEmpty(receiverId)) {
+                    transferNftOwnership(consensusTimestamp, serialNumber, tokenId, receiverId);
+                }
+            });
+        });
     }
 
     private void insertAutomaticTokenAssociations(RecordItem recordItem) {
