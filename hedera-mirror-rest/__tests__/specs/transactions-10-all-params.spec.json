@@ -91,15 +91,18 @@
         "transfers": [
           {
             "account": "0.0.9",
-            "amount": 20
+            "amount": 20,
+            "is_approval": true
           },
           {
             "account": "0.0.10",
-            "amount": -21
+            "amount": -21,
+            "is_approval": true
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": true
           }
         ]
       }

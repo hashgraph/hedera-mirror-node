@@ -28,6 +28,7 @@ class CryptoTransfer {
     this.amount = cryptoTransfer.amount;
     this.consensusTimestamp = cryptoTransfer.consensus_timestamp;
     this.entityId = cryptoTransfer.entity_id;
+    this.isApproval = cryptoTransfer.isApproval;
   }
 
   static tableAlias = 'ctr';
@@ -36,6 +37,7 @@ class CryptoTransfer {
   static AMOUNT = 'amount';
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
   static ENTITY_ID = 'entity_id';
+  static IS_APPROVAL = 'is_approval';
 
   /**
    * Gets full column name with table alias prepended.

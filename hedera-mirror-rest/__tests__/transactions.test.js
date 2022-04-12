@@ -643,7 +643,7 @@ describe('create transferLists', () => {
         transaction_bytes: 'bytes',
         node_account_id: 2,
         payer_account_id: 3,
-        crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: null}],
+        crypto_transfer_list: [{amount: 100, entity_id: 100, is_approval: true}],
         nft_transfer_list: undefined,
       },
     ];
@@ -722,7 +722,7 @@ describe('create transferLists', () => {
           {
             account: '0.0.100',
             amount: 100,
-            is_approval: false,
+            is_approval: true,
           },
         ],
         valid_duration_seconds: null,
@@ -766,7 +766,8 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
     ), c_list as (
       select jsonb_agg(jsonb_build_object(
           'amount', amount,
-          'entity_id', ctr.entity_id
+          'entity_id', ctr.entity_id,
+          'is_approval', is_approval
         ) order by ctr.entity_id, amount) as ctr_list,
          ctr.consensus_timestamp
       from crypto_transfer ctr

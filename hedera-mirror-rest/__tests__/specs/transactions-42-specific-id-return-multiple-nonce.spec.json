@@ -103,11 +103,13 @@
         "transfers": [
           {
             "account": "0.0.9",
-            "amount": 100
+            "amount": 100,
+            "is_approval": false
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": false
           }
         ],
         "valid_duration_seconds": "11",
@@ -131,11 +133,13 @@
         "transfers": [
           {
             "account": "0.0.9",
-            "amount": 101
+            "amount": 101,
+            "is_approval": false
           },
           {
             "account": "0.0.98",
-            "amount": 2
+            "amount": 2,
+            "is_approval": false
           }
         ],
         "valid_duration_seconds": "11",
@@ -159,11 +163,13 @@
         "transfers": [
           {
             "account": "0.0.9",
-            "amount": 102
+            "amount": 102,
+            "is_approval": false
           },
           {
             "account": "0.0.98",
-            "amount": 3
+            "amount": 3,
+            "is_approval": false
           }
         ],
         "valid_duration_seconds": "11",

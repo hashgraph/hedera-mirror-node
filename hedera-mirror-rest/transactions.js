@@ -99,7 +99,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
   const cryptoTransferListCte = `c_list as (
       select jsonb_agg(jsonb_build_object(
               '${CryptoTransfer.AMOUNT}', ${CryptoTransfer.AMOUNT},
-              '${CryptoTransfer.ENTITY_ID}', ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)}
+              '${CryptoTransfer.ENTITY_ID}', ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)},
+              '${CryptoTransfer.IS_APPROVAL}', ${CryptoTransfer.IS_APPROVAL}
           ) order by ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)}, ${CryptoTransfer.AMOUNT}
         ) as ctr_list,
         ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}

@@ -35,13 +35,15 @@
             "receiver_account_id": "0.0.8",
             "sender_account_id": "0.0.3",
             "serial_number": 1,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": true
           },
           {
             "receiver_account_id": "0.0.9",
             "sender_account_id": "0.0.3",
             "serial_number": 2,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": false
           },
           {
             "receiver_account_id": "0.0.10",
@@ -77,15 +79,18 @@
         "transfers": [
           {
             "account": "0.0.3",
-            "amount": 2
+            "amount": 2,
+            "is_approval": true
           },
           {
             "account": "0.0.8",
-            "amount": -3
+            "amount": -3,
+            "is_approval": true
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": true
           }
         ],
         "nft_transfers": [
@@ -93,19 +98,22 @@
             "receiver_account_id": "0.0.8",
             "sender_account_id": "0.0.3",
             "serial_number": 1,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": true
           },
           {
             "receiver_account_id": "0.0.9",
             "sender_account_id": "0.0.3",
             "serial_number": 2,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": false
           },
           {
             "receiver_account_id": "0.0.10",
             "sender_account_id": "0.0.3",
             "serial_number": 3,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": false
           }
         ]
       }

@@ -109,15 +109,18 @@
         "transfers": [
           {
             "account": "0.0.8",
-            "amount": -41
+            "amount": -41,
+            "is_approval": true
           },
           {
             "account": "0.0.9",
-            "amount": 40
+            "amount": 40,
+            "is_approval": true
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": true
           }
         ],
         "valid_duration_seconds": "11",
@@ -141,15 +144,18 @@
         "transfers": [
           {
             "account": "0.0.3",
-            "amount": 2
+            "amount": 2,
+            "is_approval": true
           },
           {
             "account": "0.0.8",
-            "amount": -3
+            "amount": -3,
+            "is_approval": true
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": true
           }
         ],
         "valid_duration_seconds": "11",

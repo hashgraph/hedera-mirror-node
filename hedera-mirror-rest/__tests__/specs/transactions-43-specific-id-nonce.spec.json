@@ -105,11 +105,13 @@
         "transfers": [
           {
             "account": "0.0.9",
-            "amount": 101
+            "amount": 101,
+            "is_approval": false
           },
           {
             "account": "0.0.98",
-            "amount": 2
+            "amount": 2,
+            "is_approval": false
           }
         ],
         "valid_duration_seconds": "11",

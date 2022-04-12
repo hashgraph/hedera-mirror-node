@@ -169,6 +169,7 @@ const mapTransactionResults = (rows) => {
       return {
         amount: transfer.amount,
         account: EntityId.parse(transfer.entity_id).toString(),
+        is_approval: transfer.is_approval,
       };
     });
     return {
@@ -187,25 +188,25 @@ const expectedTransactionRowsDesc = [
   {
     consensusTimestamp: '1052',
     cryptoTransfers: [
-      {account: '0.15.8', amount: -31},
-      {account: '0.15.9', amount: 30},
-      {account: '0.15.98', amount: 1},
+      {account: '0.15.8', amount: -31, is_approval: true},
+      {account: '0.15.9', amount: 30, is_approval: true},
+      {account: '0.15.98', amount: 1, is_approval: true},
     ],
   },
   {
     consensusTimestamp: '1051',
     cryptoTransfers: [
-      {account: '0.15.9', amount: 20},
-      {account: '0.15.10', amount: -21},
-      {account: '0.15.98', amount: 1},
+      {account: '0.15.9', amount: 20, is_approval: true},
+      {account: '0.15.10', amount: -21, is_approval: true},
+      {account: '0.15.98', amount: 1, is_approval: true},
     ],
   },
   {
     consensusTimestamp: '1050',
     cryptoTransfers: [
-      {account: '0.15.9', amount: 10},
-      {account: '0.15.10', amount: -11},
-      {account: '0.15.98', amount: 1},
+      {account: '0.15.9', amount: 10, is_approval: true},
+      {account: '0.15.10', amount: -11, is_approval: true},
+      {account: '0.15.98', amount: 1, is_approval: true},
     ],
   },
 ];
@@ -256,17 +257,17 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
     {
       consensusTimestamp: '2064',
       cryptoTransfers: [
-        {account: '0.15.63', amount: 20},
-        {account: '0.15.82', amount: -21},
-        {account: '0.15.98', amount: 1},
+        {account: '0.15.63', amount: 20, is_approval: true},
+        {account: '0.15.82', amount: -21, is_approval: true},
+        {account: '0.15.98', amount: 1, is_approval: true},
       ],
     },
     {
       consensusTimestamp: '2063',
       cryptoTransfers: [
-        {account: '0.15.63', amount: -71},
-        {account: '0.15.82', amount: 70},
-        {account: '0.15.98', amount: 1},
+        {account: '0.15.63', amount: -71, is_approval: true},
+        {account: '0.15.82', amount: 70, is_approval: true},
+        {account: '0.15.98', amount: 1, is_approval: true},
       ],
     },
   ];
@@ -358,15 +359,15 @@ describe('DB integration test - spec based', () => {
   jest.setTimeout(40000);
 
   beforeAll(async () => {
-    s3Ops = new S3Ops();
-    await s3Ops.start();
-    configS3ForStateProof(s3Ops.getEndpointUrl());
-    await uploadFilesToS3(s3Ops.getEndpointUrl());
+    //s3Ops = new S3Ops();
+    //await s3Ops.start();
+    //configS3ForStateProof(s3Ops.getEndpointUrl());
+    //await uploadFilesToS3(s3Ops.getEndpointUrl());
     configClone = _.cloneDeep(config);
   }, defaultBeforeAllTimeoutMillis);
 
   afterAll(async () => {
-    await s3Ops.stop();
+    //await s3Ops.stop();
   });
 
   const loadSqlScripts = async (pathPrefix, sqlScripts) => {
@@ -455,6 +456,7 @@ describe('DB integration test - spec based', () => {
   // process applicable .spec.json files
   fs.readdirSync(specPath)
     .filter((f) => f.endsWith('.spec.json'))
+    //.filter((f) => f.startsWith('transactions-')) // .endsWith('history-01-no-args.spec'))
     .forEach((file) => {
       const p = path.join(specPath, file);
       const specText = fs.readFileSync(p, 'utf8');

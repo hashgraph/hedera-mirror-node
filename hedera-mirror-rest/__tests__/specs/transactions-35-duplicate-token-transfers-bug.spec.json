@@ -105,12 +105,14 @@
           {
             "account": "0.0.11200",
             "amount": -1200,
-            "token_id": "0.0.30000"
+            "token_id": "0.0.30000",
+            "is_approval": false
           },
           {
             "account": "0.0.12500",
             "amount": 1200,
-            "token_id": "0.0.30000"
+            "token_id": "0.0.30000",
+            "is_approval": false
           }
         ],
         "transaction_hash": "aGFzaA==",
@@ -118,19 +120,23 @@
         "transfers": [
           {
             "account": "0.0.3",
-            "amount": 1
+            "amount": 1,
+            "is_approval": false
           },
           {
             "account": "0.0.98",
-            "amount": 2
+            "amount": 2,
+            "is_approval": false
           },
           {
             "account": "0.0.11200",
-            "amount": -103
+            "amount": -103,
+            "is_approval": false
           },
           {
             "account": "0.0.12500",
-            "amount": 100
+            "amount": 100,
+            "is_approval": false
           }
         ],
         "valid_duration_seconds": "11",

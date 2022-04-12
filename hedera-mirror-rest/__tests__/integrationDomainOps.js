@@ -634,7 +634,7 @@ const insertTransfers = async (
         transfer.amount,
         EntityId.parse(transfer.account).getEncodedId(),
         payerAccountId,
-        transfer.isApproval,
+        transfer.is_approval,
       ]
     );
   }
@@ -652,7 +652,7 @@ const insertTokenTransfers = async (consensusTimestamp, transfers, payerAccountI
       EntityId.parse(transfer.account).getEncodedId(),
       transfer.amount,
       payerAccountId,
-      transfer.isApproval,
+      transfer.is_approval,
     ];
   });
 
@@ -677,7 +677,7 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAcco
       transfer.serial_number,
       EntityId.parse(transfer.token_id).getEncodedId().toString(),
       payerAccountId,
-      transfer.isApproval,
+      transfer.is_approval,
     ];
   });
 
@@ -891,14 +891,14 @@ const addCryptoTransaction = async (cryptoTransfer) => {
       {
         account: cryptoTransfer.senderAccountId,
         amount: -NETWORK_FEE - cryptoTransfer.amount,
-        isApproval: true,
+        is_approval: true,
       },
       {
         account: cryptoTransfer.recipientAccountId,
         amount: cryptoTransfer.amount,
-        isApproval: true,
+        is_approval: true,
       },
-      {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE, isApproval: true},
+      {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE, is_approval: true},
     ];
   }
   await addTransaction(cryptoTransfer);
