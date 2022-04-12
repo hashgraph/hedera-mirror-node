@@ -882,7 +882,6 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
     order by ${Transaction.CONSENSUS_TIMESTAMP} ${order}
     ${limitQuery}`;
 
-  console.log(query);
   return utils.buildPgSqlObject(query, params, order, limit);
 };
 

@@ -359,15 +359,15 @@ describe('DB integration test - spec based', () => {
   jest.setTimeout(40000);
 
   beforeAll(async () => {
-    //s3Ops = new S3Ops();
-    //await s3Ops.start();
-    //configS3ForStateProof(s3Ops.getEndpointUrl());
-    //await uploadFilesToS3(s3Ops.getEndpointUrl());
+    s3Ops = new S3Ops();
+    await s3Ops.start();
+    configS3ForStateProof(s3Ops.getEndpointUrl());
+    await uploadFilesToS3(s3Ops.getEndpointUrl());
     configClone = _.cloneDeep(config);
   }, defaultBeforeAllTimeoutMillis);
 
   afterAll(async () => {
-    //await s3Ops.stop();
+    await s3Ops.stop();
   });
 
   const loadSqlScripts = async (pathPrefix, sqlScripts) => {
@@ -456,7 +456,6 @@ describe('DB integration test - spec based', () => {
   // process applicable .spec.json files
   fs.readdirSync(specPath)
     .filter((f) => f.endsWith('.spec.json'))
-    //.filter((f) => f.startsWith('transactions-')) // .endsWith('history-01-no-args.spec'))
     .forEach((file) => {
       const p = path.join(specPath, file);
       const specText = fs.readFileSync(p, 'utf8');
