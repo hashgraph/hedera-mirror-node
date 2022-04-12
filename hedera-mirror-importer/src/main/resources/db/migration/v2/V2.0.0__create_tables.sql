@@ -164,7 +164,7 @@ create table if not exists crypto_allowance
     spender          bigint    not null,
     timestamp_range  int8range not null
 );
-comment on table crypto_allowance is 'Hbar allowances delegated by payer to spender';
+comment on table crypto_allowance is 'Hbar allowances delegated by owner to spender';
 
 create table if not exists crypto_allowance_history
 (
@@ -270,13 +270,16 @@ create table if not exists live_hash
 -- nft
 create table if not exists nft
 (
-    account_id         bigint,
-    created_timestamp  bigint,
-    deleted            boolean,
-    metadata           bytea,
-    modified_timestamp bigint not null,
-    serial_number      bigint not null,
-    token_id           bigint not null
+    account_id                  bigint,
+    allowance_granted_timestamp bigint default null,
+    created_timestamp           bigint,
+    delegating_spender          bigint default null,
+    deleted                     boolean,
+    metadata                    bytea,
+    modified_timestamp          bigint not null,
+    serial_number               bigint not null,
+    spender                     bigint default null,
+    token_id                    bigint not null
 );
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 
@@ -285,12 +288,11 @@ create table if not exists nft_allowance
     approved_for_all boolean   not null,
     owner            bigint    not null,
     payer_account_id bigint    not null,
-    serial_numbers   bigint[]  not null,
     spender          bigint    not null,
     timestamp_range  int8range not null,
     token_id         bigint    not null
 );
-comment on table nft_allowance is 'NFT allowances delegated by payer to spender';
+comment on table nft_allowance is 'NFT allowances delegated by owner to spender';
 
 create table if not exists nft_allowance_history
 (
@@ -406,7 +408,7 @@ create table if not exists token_allowance
     timestamp_range  int8range not null,
     token_id         bigint    not null
 );
-comment on table token_allowance is 'Token allowances delegated by payer to spender';
+comment on table token_allowance is 'Token allowances delegated by owner to spender';
 
 create table if not exists token_allowance_history
 (
