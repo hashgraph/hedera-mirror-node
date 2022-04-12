@@ -21,8 +21,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
-import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -61,7 +59,9 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         long consensusTimestamp = transaction.getConsensusTimestamp();
         var payerAccountId = recordItem.getPayerAccountId();
 
-        for (var cryptoApproval : getCryptoAllowances(recordItem)) {
+        var transactionBody = recordItem.getTransactionBody().getCryptoApproveAllowance();
+
+        for (var cryptoApproval : transactionBody.getCryptoAllowancesList()) {
             CryptoAllowance cryptoAllowance = new CryptoAllowance();
             EntityId ownerAccountId = getOwnerAccountId(cryptoApproval.getOwner(), payerAccountId);
             cryptoAllowance.setAmount(cryptoApproval.getAmount());
@@ -72,7 +72,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             entityListener.onCryptoAllowance(cryptoAllowance);
         }
 
-        for (var nftApproval : getNftAllowances(recordItem)) {
+        for (var nftApproval : transactionBody.getNftAllowancesList()) {
             EntityId ownerAccountId = getOwnerAccountId(nftApproval.getOwner(), payerAccountId);
             EntityId spender = EntityId.of(nftApproval.getSpender());
             EntityId tokenId = EntityId.of(nftApproval.getTokenId());
@@ -103,7 +103,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             }
         }
 
-        for (var tokenApproval : getTokenAllowances(recordItem)) {
+        for (var tokenApproval : transactionBody.getTokenAllowancesList()) {
             TokenAllowance tokenAllowance = new TokenAllowance();
             EntityId ownerAccountId = getOwnerAccountId(tokenApproval.getOwner(), payerAccountId);
             tokenAllowance.setAmount(tokenApproval.getAmount());
@@ -114,22 +114,6 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             tokenAllowance.setTimestampLower(consensusTimestamp);
             entityListener.onTokenAllowance(tokenAllowance);
         }
-    }
-
-    protected List<com.hederahashgraph.api.proto.java.CryptoAllowance> getCryptoAllowances(RecordItem recordItem) {
-        return getTransactionBody(recordItem).getCryptoAllowancesList();
-    }
-
-    protected List<com.hederahashgraph.api.proto.java.NftAllowance> getNftAllowances(RecordItem recordItem) {
-        return getTransactionBody(recordItem).getNftAllowancesList();
-    }
-
-    protected List<com.hederahashgraph.api.proto.java.TokenAllowance> getTokenAllowances(RecordItem recordItem) {
-        return getTransactionBody(recordItem).getTokenAllowancesList();
-    }
-
-    private CryptoApproveAllowanceTransactionBody getTransactionBody(RecordItem recordItem) {
-        return recordItem.getTransactionBody().getCryptoApproveAllowance();
     }
 
     /**
