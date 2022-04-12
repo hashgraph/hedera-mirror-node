@@ -218,9 +218,9 @@ Optional Filters
 
 * Add `spender.id`: Filter by the spender account ID. `ne` operator is not supported. Note if no `spender.id` filter
   is specified, the REST api will show all nfts owned by the account, regardless of nft allowance; if `spender.id`
-  filter is specified, the REST api will only show nfts owned by the account with allowance spender matching `spender.id`.
-* `order`: Order by `spender`, `toke_id`, and `serial_number` if `spender.id` is specified, otherwise order by `token_id`
-  and `serial_number`. Accepts `asc` or `desc` with a default of `desc`.
+  filter is specified, the REST api will only show nfts owned by the account with allowance spender matching
+  `spender.id`.
+* `order`: Order by `token_id` and `serial_number`. Accepts `asc` or `desc` with a default of `desc`.
 
 ##### Approved For All NFT Allowances
 
