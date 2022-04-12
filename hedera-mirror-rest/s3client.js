@@ -65,7 +65,8 @@ class S3Client {
 }
 
 const buildS3ConfigFromStreamsConfig = () => {
-  const {cloudProvider, endpointOverride, gcpProjectId, accessKey, secretKey, region} = config.stateproof.streams;
+  const {accessKey, cloudProvider, endpointOverride, gcpProjectId, httpOptions, maxRetries, secretKey, region} =
+    config.stateproof.streams;
   const hasEndpointOverride = !!endpointOverride;
   const isGCP = cloudProvider === cloudProviders.GCP;
 
@@ -74,6 +75,8 @@ const buildS3ConfigFromStreamsConfig = () => {
 
   const s3Config = {
     endpoint,
+    httpOptions,
+    maxRetries,
     region,
     s3ForcePathStyle,
   };
