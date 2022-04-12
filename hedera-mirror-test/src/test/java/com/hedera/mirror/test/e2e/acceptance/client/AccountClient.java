@@ -29,7 +29,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
 
-import com.hedera.hashgraph.sdk.AccountAllowanceAdjustTransaction;
 import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
@@ -221,23 +220,6 @@ public class AccountClient extends AbstractNetworkClient {
                 ownerAccountId);
 
         var transaction = new AccountAllowanceApproveTransaction()
-                .addHbarAllowance(spender, hbarAmount);
-
-        NetworkTransactionResponse networkTransactionResponse =
-                executeTransactionAndRetrieveReceipt(transaction);
-
-        log.debug("Sent Account Allowance Approval");
-
-        return networkTransactionResponse;
-    }
-
-    public NetworkTransactionResponse adjustCryptoAllowance(AccountId spender, Hbar hbarAmount) {
-
-        var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
-        log.debug("Adjust spender {} allowance to {} tℏ on {}'s account", spender,
-                hbarAmount.toTinybars(), ownerAccountId);
-
-        var transaction = new AccountAllowanceAdjustTransaction()
                 .addHbarAllowance(spender, hbarAmount);
 
         NetworkTransactionResponse networkTransactionResponse =

@@ -116,24 +116,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     @Test
-    void cryptoAdjustAllowance() {
-        // given
-        var consensusTimestamp = recordItemBuilder.timestamp();
-        List<Nft> expectedNfts = new LinkedList<>();
-        var nftAllowances = customizeNftAllowances(consensusTimestamp, expectedNfts);
-        RecordItem recordItem = recordItemBuilder.cryptoAdjustAllowance()
-                .transactionBody(b -> b.clearNftAllowances().addAllNftAllowances(nftAllowances))
-                .record(r -> r.setConsensusTimestamp(consensusTimestamp))
-                .build();
-
-        // when
-        parseRecordItemAndCommit(recordItem);
-
-        // then
-        assertAllowances(recordItem, expectedNfts);
-    }
-
-    @Test
     void cryptoApproveAllowance() {
         // given
         var consensusTimestamp = recordItemBuilder.timestamp();
@@ -165,10 +147,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        final var accountEntityId = EntityId.of(accountId1);
-        final var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
-        final var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
-        final Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
+        var accountEntityId = EntityId.of(accountId1);
+        var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
+        var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
+        Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
                 initialBalance, consensusTimestamp, accountEntityId.getId()));
 
         assertAll(
@@ -196,10 +178,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        final var accountEntityId = EntityId.of(accountId1);
-        final var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
-        final var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
-        final Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
+        var accountEntityId = EntityId.of(accountId1);
+        var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
+        var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
+        Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
                 initialBalance, consensusTimestamp, accountEntityId.getId()));
 
         assertAll(
@@ -376,8 +358,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         bodyBuilder.getCryptoUpdateAccountBuilder().setProxyAccountID(AccountID.getDefaultInstance());
         transactionBody = bodyBuilder.build();
         transaction = Transaction.newBuilder().setSignedTransactionBytes(SignedTransaction.newBuilder()
-                        .setBodyBytes(transactionBody.toByteString())
-                        .build().toByteString())
+                .setBodyBytes(transactionBody.toByteString())
+                .build().toByteString())
                 .build();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
@@ -1029,9 +1011,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         });
     }
 
-    private void groupCryptoTransfersByAccountId(final TransactionRecord.Builder recordBuilder,
-                                                 final List<AccountAmount.Builder> amountsToBeAdded) {
-        final var accountAmounts = recordBuilder.getTransferListBuilder().getAccountAmountsBuilderList();
+    private void groupCryptoTransfersByAccountId(TransactionRecord.Builder recordBuilder,
+                                                 List<AccountAmount.Builder> amountsToBeAdded) {
+        var accountAmounts = recordBuilder.getTransferListBuilder().getAccountAmountsBuilderList();
 
         var transfers = new HashMap<AccountID, Long>();
         Stream.concat(accountAmounts.stream(), amountsToBeAdded.stream())

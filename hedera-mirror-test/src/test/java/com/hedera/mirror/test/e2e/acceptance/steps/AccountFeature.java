@@ -129,7 +129,7 @@ public class AccountFeature extends AbstractFeature {
     public void adjustCryptoAllowance(String accountName, long amount) {
         senderAccountId = accountClient
                 .getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        setCryptoAllowance(senderAccountId.getAccountId(), -amount, false);
+        setCryptoAllowance(senderAccountId.getAccountId(), amount);
     }
 
     @When("{string} transfers {long} tℏ from their approved balance to {string}")
@@ -227,7 +227,7 @@ public class AccountFeature extends AbstractFeature {
             mirrorCryptoAllowanceResponse.getAllowances().forEach(x -> {
                 // set allowance to 0 for each non zero
                 if (x.getAmountGranted() > 0) {
-                    setCryptoAllowance(AccountId.fromString(x.getSpender()), 0, true);
+                    setCryptoAllowance(AccountId.fromString(x.getSpender()), 0);
                 }
             });
         }
@@ -245,14 +245,12 @@ public class AccountFeature extends AbstractFeature {
 
     private void setCryptoAllowance(String accountName, long amount) {
         senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        setCryptoAllowance(senderAccountId.getAccountId(), amount, true);
+        setCryptoAllowance(senderAccountId.getAccountId(), amount);
     }
 
-    private void setCryptoAllowance(AccountId accountId, long amount, boolean approve) {
+    private void setCryptoAllowance(AccountId accountId, long amount) {
         ownerAccountId = accountClient.getClient().getOperatorAccountId();
-        networkTransactionResponse = approve ?
-                accountClient.approveCryptoAllowance(accountId, Hbar.fromTinybars(amount)) :
-                accountClient.adjustCryptoAllowance(accountId, Hbar.fromTinybars(amount));
+        networkTransactionResponse = accountClient.approveCryptoAllowance(accountId, Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
