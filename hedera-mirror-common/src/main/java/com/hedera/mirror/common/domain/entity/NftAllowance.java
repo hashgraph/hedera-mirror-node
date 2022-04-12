@@ -26,18 +26,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.io.Serializable;
-import java.util.Collections;
-import java.util.List;
 import javax.persistence.Convert;
 import javax.persistence.IdClass;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.LongListToStringSerializer;
 import com.hedera.mirror.common.converter.RangeToStringDeserializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.domain.History;
@@ -62,10 +58,6 @@ public class NftAllowance implements History {
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
-
-    @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
-    @JsonSerialize(using = LongListToStringSerializer.class)
-    private List<Long> serialNumbers = Collections.emptyList();
 
     @javax.persistence.Id
     private long spender;
