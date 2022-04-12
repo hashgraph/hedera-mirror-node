@@ -33,14 +33,6 @@ spec:
     - kind: Secret
       name: mirror
   values:
-    grpc:
-      ingress:
-        enabled: false
-        middleware:
-          enabled: false
-      service:
-        annotations:
-          cloud.google.com/neg: '{"ingress": true, "exposed_ports": {"5600": {}, "8081": {}}}'
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
@@ -51,44 +43,15 @@ spec:
         HEDERA_MIRROR_MONITOR_NODEVALIDATION_MAXATTEMPTS: "8"
         HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_PROPERTIES_TOPICID: "0.0.798453"
         HEDERA_MIRROR_MONITOR_SUBSCRIBE_GRPC_HCS_TOPICID: "0.0.798453"
-      ingress:
-        enabled: false
       prometheusRules:
         MonitorPublishLatency:
           enabled: false
         MonitorSubscribeLatency:
           enabled: false
-      service:
-        annotations:
-          cloud.google.com/neg: '{"ingress": true}'
     postgresql:
       enabled: false
     redis:
       enabled: false
-    rest:
-      ingress:
-        enabled: false
-        middleware:
-          enabled: false
-      service:
-        annotations:
-          cloud.google.com/neg: '{"ingress": true}'
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
-      ingress:
-        enabled: false
-        middleware:
-          enabled: false
-      service:
-        annotations:
-          cloud.google.com/neg: '{"ingress": true}'
-    web3:
-      ingress:
-        enabled: false
-        middleware:
-          enabled: false
-      service:
-        annotations:
-          cloud.google.com/neg: '{"ingress": true}'
-

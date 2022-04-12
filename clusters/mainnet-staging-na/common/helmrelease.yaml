@@ -37,5 +37,6 @@ spec:
             external_labels:
               cluster: mainnet-staging-na
     traefik:
-      enabled: false
-
+      service:
+        annotations:
+          cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-staging-na"} } }'
