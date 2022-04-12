@@ -21,16 +21,16 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
+import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -62,10 +62,10 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         var payerAccountId = recordItem.getPayerAccountId();
 
         for (var cryptoApproval : getCryptoAllowances(recordItem)) {
-            com.hedera.mirror.common.domain.entity.CryptoAllowance cryptoAllowance =
-                    new com.hedera.mirror.common.domain.entity.CryptoAllowance();
+            CryptoAllowance cryptoAllowance = new CryptoAllowance();
+            EntityId ownerAccountId = getOwnerAccountId(cryptoApproval.getOwner(), payerAccountId);
             cryptoAllowance.setAmount(cryptoApproval.getAmount());
-            cryptoAllowance.setOwner(getOwner(cryptoApproval.getOwner(), payerAccountId));
+            cryptoAllowance.setOwner(ownerAccountId.getId());
             cryptoAllowance.setPayerAccountId(payerAccountId);
             cryptoAllowance.setSpender(EntityId.of(cryptoApproval.getSpender()).getId());
             cryptoAllowance.setTimestampLower(consensusTimestamp);
@@ -73,24 +73,41 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         }
 
         for (var nftApproval : getNftAllowances(recordItem)) {
-            var approvedForAll = nftApproval.hasApprovedForAll() && nftApproval.getApprovedForAll().getValue();
-            com.hedera.mirror.common.domain.entity.NftAllowance nftAllowance =
-                    new com.hedera.mirror.common.domain.entity.NftAllowance();
-            nftAllowance.setApprovedForAll(approvedForAll);
-            nftAllowance.setOwner(getOwner(nftApproval.getOwner(), payerAccountId));
-            nftAllowance.setPayerAccountId(payerAccountId);
-            nftAllowance.setSerialNumbers(nftApproval.getSerialNumbersList());
-            nftAllowance.setSpender(EntityId.of(nftApproval.getSpender()).getId());
-            nftAllowance.setTokenId(EntityId.of(nftApproval.getTokenId()).getId());
-            nftAllowance.setTimestampLower(consensusTimestamp);
-            entityListener.onNftAllowance(nftAllowance);
+            EntityId ownerAccountId = getOwnerAccountId(nftApproval.getOwner(), payerAccountId);
+            EntityId spender = EntityId.of(nftApproval.getSpender());
+            EntityId tokenId = EntityId.of(nftApproval.getTokenId());
+
+            if (nftApproval.hasApprovedForAll()) {
+                var approvedForAll = nftApproval.getApprovedForAll().getValue();
+                NftAllowance nftAllowance = new NftAllowance();
+                nftAllowance.setApprovedForAll(approvedForAll);
+                nftAllowance.setOwner(ownerAccountId.getId());
+                nftAllowance.setPayerAccountId(payerAccountId);
+                nftAllowance.setSpender(spender.getId());
+                nftAllowance.setTokenId(tokenId.getId());
+                nftAllowance.setTimestampLower(consensusTimestamp);
+                entityListener.onNftAllowance(nftAllowance);
+            }
+
+            EntityId delegatingSpender = EntityId.of(nftApproval.getDelegatingSpender());
+            for (var serialNumber : nftApproval.getSerialNumbersList()) {
+                // nft instance allowance update doesn't set nft modifiedTimestamp
+                // services allows the same serial number of a nft token appears in multiple nft allowances to
+                // different spenders. The last spender will be granted such allowance.
+                Nft nft = new Nft(serialNumber, tokenId);
+                nft.setAccountId(ownerAccountId);
+                nft.setSpender(spender);
+                nft.setAllowanceGrantedTimestamp(consensusTimestamp);
+                nft.setDelegatingSpender(delegatingSpender);
+                entityListener.onNft(nft);
+            }
         }
 
         for (var tokenApproval : getTokenAllowances(recordItem)) {
-            com.hedera.mirror.common.domain.entity.TokenAllowance tokenAllowance =
-                    new com.hedera.mirror.common.domain.entity.TokenAllowance();
+            TokenAllowance tokenAllowance = new TokenAllowance();
+            EntityId ownerAccountId = getOwnerAccountId(tokenApproval.getOwner(), payerAccountId);
             tokenAllowance.setAmount(tokenApproval.getAmount());
-            tokenAllowance.setOwner(getOwner(tokenApproval.getOwner(), payerAccountId));
+            tokenAllowance.setOwner(ownerAccountId.getId());
             tokenAllowance.setPayerAccountId(payerAccountId);
             tokenAllowance.setSpender(EntityId.of(tokenApproval.getSpender()).getId());
             tokenAllowance.setTokenId(EntityId.of(tokenApproval.getTokenId()).getId());
@@ -99,15 +116,15 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         }
     }
 
-    protected List<CryptoAllowance> getCryptoAllowances(RecordItem recordItem) {
+    protected List<com.hederahashgraph.api.proto.java.CryptoAllowance> getCryptoAllowances(RecordItem recordItem) {
         return getTransactionBody(recordItem).getCryptoAllowancesList();
     }
 
-    protected List<NftAllowance> getNftAllowances(RecordItem recordItem) {
+    protected List<com.hederahashgraph.api.proto.java.NftAllowance> getNftAllowances(RecordItem recordItem) {
         return getTransactionBody(recordItem).getNftAllowancesList();
     }
 
-    protected List<TokenAllowance> getTokenAllowances(RecordItem recordItem) {
+    protected List<com.hederahashgraph.api.proto.java.TokenAllowance> getTokenAllowances(RecordItem recordItem) {
         return getTransactionBody(recordItem).getTokenAllowancesList();
     }
 
@@ -116,15 +133,14 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
     }
 
     /**
-     * Gets the owner of the allowance. An empty owner in the *Allowance protobuf message implies the payer of the
-     * transaction is the owner of the resource the spender is granted allowance of.
+     * Gets the owner of the allowance. An empty owner in the *Allowance protobuf message implies the transaction payer
+     * is the owner of the resource the spender is granted allowance of.
      *
      * @param owner          The owner in the *Allowance protobuf message
-     * @param payerAccountId The payer of the transaction
-     * @return The effective owner id
+     * @param payerAccountId The transaction payer
+     * @return The effective owner account id
      */
-    private long getOwner(AccountID owner, EntityId payerAccountId) {
-        var ownerAccountId = owner == AccountID.getDefaultInstance() ? payerAccountId : EntityId.of(owner);
-        return ownerAccountId.getId();
+    private EntityId getOwnerAccountId(AccountID owner, EntityId payerAccountId) {
+        return owner == AccountID.getDefaultInstance() ? payerAccountId : EntityId.of(owner);
     }
 }
