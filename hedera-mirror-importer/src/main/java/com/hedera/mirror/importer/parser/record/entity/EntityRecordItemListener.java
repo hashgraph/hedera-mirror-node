@@ -700,11 +700,19 @@ public class EntityRecordItemListener implements RecordItemListener {
             tokenTransfer.setPayerAccountId(payerAccountId);
             tokenTransfer.setTokenDissociate(isTokenDissociate);
 
+            // If a record AccountAmount with amount < 0 is not in the body;
+            // but an AccountAmount with the same (TokenID, AccountID) combination is in the body with is_approval=true,
+            // then again set is_approval=true
             if (accountAmount.getAmount() < 0) {
+
+                // Is the accountAmount from the record also inside a body's transfer list for the given tokenId?
                 final Optional<AccountAmount> accountAmountInsideTransferList =
                         findAccountAmountInTokenTransferListInsideBody(
                                 accountAmount::equals, tokenId, body);
                 if (!accountAmountInsideTransferList.isPresent()) {
+
+                    // Is there any account amount inside the body's transfer list for the given tokenId
+                    // with the same accountId as the accountAmount from the record?
                     final Optional<AccountAmount> accountAmountWithSameAccountIdInsideTransferList =
                             findAccountAmountInTokenTransferListInsideBody(
                                     aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
