@@ -888,16 +888,8 @@ const addCryptoTransaction = async (cryptoTransfer) => {
 
   if (!('transfers' in cryptoTransfer)) {
     cryptoTransfer.transfers = [
-      {
-        account: cryptoTransfer.senderAccountId,
-        amount: -NETWORK_FEE - cryptoTransfer.amount,
-        is_approval: true,
-      },
-      {
-        account: cryptoTransfer.recipientAccountId,
-        amount: cryptoTransfer.amount,
-        is_approval: true,
-      },
+      {account: cryptoTransfer.senderAccountId, amount: -NETWORK_FEE - cryptoTransfer.amount, is_approval: true},
+      {account: cryptoTransfer.recipientAccountId, amount: cryptoTransfer.amount, is_approval: true},
       {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE, is_approval: true},
     ];
   }

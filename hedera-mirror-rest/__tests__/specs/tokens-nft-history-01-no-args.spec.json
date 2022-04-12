@@ -179,7 +179,11 @@
       }
     ]
   },
-  "urls": ["/api/v1/tokens/0.0.1500/nfts/2/transactions"],
+  "urls": [
+    "/api/v1/tokens/1500/nfts/2/transactions",
+    "/api/v1/tokens/0.1500/nfts/2/transactions",
+    "/api/v1/tokens/0.0.1500/nfts/2/transactions"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "transactions": [

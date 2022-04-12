@@ -25,7 +25,7 @@
         "consensus_timestamp": "1565779111711927001",
         "payerAccountId": "0.0.10",
         "recipientAccountId": "0.0.9",
-        "amount": 1000,
+        "amount": 10,
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98",
         "is_approval": false
