@@ -652,7 +652,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     @ValueSource(booleans = {false, true})
     void cryptoTransferHasCorrectIsApprovalValue(boolean correctIsApprovalValue){
         final long[] accountNums = {6,7,8};
-        final long[] amounts = {210,300,15};
+        final long[] amounts = {210,-300,15};
         final boolean[] isApprovals = {false, true, false};
         Transaction transaction = buildTransaction(r -> {
             for (int i = 0; i < accountNums.length; i++){

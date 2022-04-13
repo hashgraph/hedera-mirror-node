@@ -437,9 +437,12 @@ public class EntityRecordItemListener implements RecordItemListener {
             cryptoTransfer.setIsApproval(false);
             cryptoTransfer.setPayerAccountId(payerAccountId);
 
-            AccountAmount accountAmountInsideBody = findAccountAmountInTransferListInsideBody(aa, body);
+            AccountAmount accountAmountInsideBody = null;
+            if (cryptoTransfer.getAmount() < 0 || failedTransfer) {
+                accountAmountInsideBody = findAccountAmountInTransferListInsideBody(aa, body);
+            }
 
-            if (accountAmountInsideBody != null){
+            if (accountAmountInsideBody != null) {
                 cryptoTransfer.setIsApproval(accountAmountInsideBody.getIsApproval());
                 if (failedTransfer) {
                     cryptoTransfer.setErrata(ErrataType.DELETE);
@@ -656,8 +659,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             return null;
         }
         List<AccountAmount> accountAmountsList = body.getCryptoTransfer().getTransfers().getAccountAmountsList();
-        for (AccountAmount a : accountAmountsList){
-            if (aa.getAmount() == a.getAmount() && aa.getAccountID().equals(a.getAccountID())){
+        for (AccountAmount a : accountAmountsList) {
+            if (aa.getAmount() == a.getAmount() && aa.getAccountID().equals(a.getAccountID())) {
                 return a;
             }
         }
@@ -665,16 +668,16 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private AccountAmount findAccountAmountInTokenTransferListInsideBody(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId, TransactionBody body){
-        if (!body.hasCryptoTransfer()){
+        if (!body.hasCryptoTransfer()) {
             return null;
         }
         final List<TokenTransferList> tokenTransfersLists = body.getCryptoTransfer().getTokenTransfersList();
         for (TokenTransferList transferList : tokenTransfersLists) {
-            if (!transferList.getToken().equals(tokenId)){
+            if (!transferList.getToken().equals(tokenId)) {
                 continue;
             }
-            for (AccountAmount aa : transferList.getTransfersList()){
-                if (accountAmountPredicate.test(aa)){
+            for (AccountAmount aa : transferList.getTransfersList()) {
+                if (accountAmountPredicate.test(aa)) {
                     return aa;
                 }
             }
@@ -686,18 +689,18 @@ public class EntityRecordItemListener implements RecordItemListener {
             com.hederahashgraph.api.proto.java.NftTransfer nftTransfer,
             TokenID nftId,
             TransactionBody body) {
-        if (!body.hasCryptoTransfer()){
+        if (!body.hasCryptoTransfer()) {
             return null;
         }
         List<TokenTransferList> tokenTransfersList = body.getCryptoTransfer().getTokenTransfersList();
-        for (TokenTransferList transferList : tokenTransfersList){
-            if (!transferList.getToken().equals(nftId)){
+        for (TokenTransferList transferList : tokenTransfersList) {
+            if (!transferList.getToken().equals(nftId)) {
                 continue;
             }
-            for (NftTransfer transfer : transferList.getNftTransfersList()){
+            for (NftTransfer transfer : transferList.getNftTransfersList()) {
                 if (transfer.getSerialNumber() == nftTransfer.getSerialNumber() &&
                         transfer.getReceiverAccountID().equals(nftTransfer.getReceiverAccountID()) &&
-                        transfer.getSenderAccountID().equals(nftTransfer.getSenderAccountID())){
+                        transfer.getSenderAccountID().equals(nftTransfer.getSenderAccountID())) {
                     return transfer;
                 }
             }
@@ -714,7 +717,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             TokenTransfer tokenTransfer = new TokenTransfer();
             tokenTransfer.setAmount(amount);
             tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, entityTokenId, accountId));
-            tokenTransfer.setIsApproval(accountAmount.getIsApproval());
+            tokenTransfer.setIsApproval(false);
             tokenTransfer.setPayerAccountId(payerAccountId);
             tokenTransfer.setTokenDissociate(isTokenDissociate);
 
@@ -755,7 +758,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertTokenTransfers(RecordItem recordItem) {
-        if (!entityProperties.getPersist().isTokens()){
+        if (!entityProperties.getPersist().isTokens()) {
             return;
         }
 
@@ -782,7 +785,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertNonFungibleTokenTransfers(
             long consensusTimestamp, TransactionBody body, TokenID tokenId,
             EntityId entityTokenId, EntityId payerAccountId, List<com.hederahashgraph.api.proto.java.NftTransfer> nftTransfersList) {
-        for (NftTransfer nftTransfer : nftTransfersList){
+        for (NftTransfer nftTransfer : nftTransfersList) {
             long serialNumber = nftTransfer.getSerialNumber();
             if (serialNumber == NftTransferId.WILDCARD_SERIAL_NUMBER) {
                 // do not persist nft transfers with the wildcard serial number (-1) which signify an nft token
@@ -802,7 +805,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             com.hederahashgraph.api.proto.java.NftTransfer nftTransferInsideBody =
                     findNftTransferInsideBody(nftTransfer, tokenId, body);
-            if (nftTransferInsideBody != null){
+            if (nftTransferInsideBody != null) {
                 nftTransferDomain.setIsApproval(nftTransferInsideBody.getIsApproval());
             }
 
