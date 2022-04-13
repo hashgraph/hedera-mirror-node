@@ -28,7 +28,7 @@ class CryptoTransfer {
     this.amount = cryptoTransfer.amount;
     this.consensusTimestamp = cryptoTransfer.consensus_timestamp;
     this.entityId = cryptoTransfer.entity_id;
-    this.isApproval = cryptoTransfer.isApproval;
+    this.isApproval = cryptoTransfer.is_approval;
   }
 
   static tableAlias = 'ctr';

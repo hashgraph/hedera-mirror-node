@@ -611,17 +611,17 @@ const insertTransfers = async (
     await sqlConnection.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
        VALUES ($1, $2, $3, $4, $5);`,
-      [consensusTimestamp.toString(), NODE_FEE, nodeAccount || DEFAULT_NODE_ID, payerAccountId, true]
+      [consensusTimestamp.toString(), NODE_FEE, nodeAccount || DEFAULT_NODE_ID, payerAccountId, false]
     );
     await sqlConnection.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
        VALUES ($1, $2, $3, $4, $5);`,
-      [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_TREASURY_ID, payerAccountId, true]
+      [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_TREASURY_ID, payerAccountId, false]
     );
     await sqlConnection.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
        VALUES ($1, $2, $3, $4, $5);`,
-      [consensusTimestamp.toString(), -(NODE_FEE + NETWORK_FEE), payerAccountId, payerAccountId, true]
+      [consensusTimestamp.toString(), -(NODE_FEE + NETWORK_FEE), payerAccountId, payerAccountId, false]
     );
   }
 
@@ -888,9 +888,9 @@ const addCryptoTransaction = async (cryptoTransfer) => {
 
   if (!('transfers' in cryptoTransfer)) {
     cryptoTransfer.transfers = [
-      {account: cryptoTransfer.senderAccountId, amount: -NETWORK_FEE - cryptoTransfer.amount, is_approval: true},
-      {account: cryptoTransfer.recipientAccountId, amount: cryptoTransfer.amount, is_approval: true},
-      {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE, is_approval: true},
+      {account: cryptoTransfer.senderAccountId, amount: -NETWORK_FEE - cryptoTransfer.amount, is_approval: false},
+      {account: cryptoTransfer.recipientAccountId, amount: cryptoTransfer.amount, is_approval: false},
+      {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE, is_approval: false},
     ];
   }
   await addTransaction(cryptoTransfer);

@@ -1640,6 +1640,8 @@ components:
       properties:
         consensus_timestamp:
           $ref: '#/components/schemas/Timestamp'
+        is_approval:
+          type: boolean
         nonce:
           type: integer
           minimum: 0
@@ -1653,16 +1655,14 @@ components:
           $ref: '#/components/schemas/TransactionTypes'
         token_id:
           $ref: '#/components/schemas/EntityId'
-        is_approval:
-          type: boolean
       example:
         consensus_timestamp: "1618591023.997420021"
         id: "0.0.19789-1618591023-997420021"
+        is_approval: false
         receiver_account_id: "0.0.11"
         sender_account_id: "0.0.10"
         type: "CRYPTOTRANSFER"
         token_id: "0.0.1000"
-        is_approval: false
     NftTransactionHistory:
       type: object
       properties:
@@ -2158,6 +2158,8 @@ components:
               items:
                 type: object
                 properties:
+                  is_approval:
+                    type: boolean
                   receiver_account_id:
                     $ref: '#/components/schemas/EntityId'
                   sender_account_id:
@@ -2166,8 +2168,6 @@ components:
                     type: number
                   token_id:
                     $ref: '#/components/schemas/EntityId'
-                  is_approval:
-                    type: boolean
                 required:
                   - serial_number
                   - token_id
@@ -2187,16 +2187,16 @@ components:
         memo_base64: null
         name: CRYPTOTRANSFER
         nft_transfers:
-          - receiver_account_id: 0.0.121
+          - is_approval: true
+            receiver_account_id: 0.0.121
             sender_account_id: 0.0.122
             serial_number: 1
             token_id: 0.0.123
-            is_approval: true
-          - receiver_account_id: 0.0.321
+          - is_approval: true
+            receiver_account_id: 0.0.321
             sender_account_id: 0.0.422
             serial_number: 2
             token_id: 0.0.123
-            is_approval: true
         node: 0.0.3
         nonce: 0
         parent_consensus_timestamp: "1234567890.000000007"

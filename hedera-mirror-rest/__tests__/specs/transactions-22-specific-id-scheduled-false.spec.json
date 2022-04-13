@@ -28,8 +28,7 @@
         "transfers": [
           {
             "account": "0.0.9",
-            "amount": 10,
-            "is_approval": false
+            "amount": 10
           },
           {
             "account": "0.0.98",

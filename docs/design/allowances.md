@@ -316,12 +316,35 @@ Optional Filters
 
 Update all APIs that show transfers to return `is_approval` in its response.
 
-###Accounts Endpoint
+### Accounts Endpoint
 Update `/api/v1/accounts/{accountId}` to return `is_approval` for all transfers.
 
 ```json
 {
   "account": "0.1.2",
+  "auto_renew_period": "string",
+  "balance": {
+    "balance": 80,
+    "timestamp": "0.000002345",
+    "tokens": [
+      {
+        "token_id": "0.0.200001",
+        "balance": 8
+      }
+    ]
+  },
+  "deleted": true,
+  "expiry_timestamp": "1586567700.453054000",
+  "key": {
+    "_type": "ProtobufEncoded",
+    "key": "7b2231222c2231222c2231227d"
+  },
+  "links": {
+    "next": null
+  },
+  "max_automatic_token_associations": 0,
+  "memo": "string",
+  "receiver_sig_required": true,
   "transactions": [
     {
       "consensus_timestamp": "1234567890.000000007",
@@ -335,18 +358,18 @@ Update `/api/v1/accounts/{accountId}` to return `is_approval` for all transfers.
       "name": "CRYPTOTRANSFER",
       "nft_transfers": [
         {
+          "is_approval": true,
           "receiver_account_id": "0.0.121",
           "sender_account_id": "0.0.122",
           "serial_number": 1,
-          "token_id": "0.0.123",
-          "is_approval": true
+          "token_id": "0.0.123"
         },
         {
+          "is_approval": true,
           "receiver_account_id": "0.0.321",
           "sender_account_id": "0.0.422",
           "serial_number": 2,
-          "token_id": "0.0.123",
-          "is_approval": true
+          "token_id": "0.0.123"
         }
       ],
       "max_fee": 33,
@@ -384,12 +407,30 @@ Update `/api/v1/accounts/{accountId}` to return `is_approval` for all transfers.
           "amount": -1200,
           "is_approval": false
         }
+      ],
+      "assessed_custom_fees": [
+        {
+          "amount": 150,
+          "collector_account_id": "0.0.87501",
+          "effective_payer_account_ids": [
+            "0.0.87501"
+          ],
+          "token_id": null
+        },
+        {
+          "amount": 10,
+          "collector_account_id": "0.0.87502",
+          "effective_payer_account_ids": [
+            "0.0.10"
+          ],
+          "token_id": "0.0.90000"
+        }
       ]
     }
   ]
 }
 ```
-###Transactions Endpoint
+### Transactions Endpoint
 
 Update `/api/v1/transactions/{id}` to include `is_approval` for all transfers.
 
@@ -457,12 +498,30 @@ Update `/api/v1/transactions/{id}` to include `is_approval` for all transfers.
           "amount": -1200,
           "is_approval": true
         }
+      ],
+      "assessed_custom_fees": [
+        {
+          "amount": 150,
+          "collector_account_id": "0.0.87501",
+          "effective_payer_account_ids": [
+            "0.0.87501"
+          ],
+          "token_id": null
+        },
+        {
+          "amount": 10,
+          "collector_account_id": "0.0.87502",
+          "effective_payer_account_ids": [
+            "0.0.10"
+          ],
+          "token_id": "0.0.90000"
+        }
       ]
     }
   ]
 }
 ```
-###NFT Transaction History Endpoint
+### NFT Transaction History Endpoint
 Update `/api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions` to include `is_approval` for all transfers.
 ```json
 {

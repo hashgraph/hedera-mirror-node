@@ -186,17 +186,17 @@
           {
             "account": "0.0.3",
             "amount": 2,
-            "is_approval": true
+            "is_approval": false
           },
           {
             "account": "0.0.8",
             "amount": -3,
-            "is_approval": true
+            "is_approval": false
           },
           {
             "account": "0.0.98",
             "amount": 1,
-            "is_approval": true
+            "is_approval": false
           }
         ],
         "token_transfers": [

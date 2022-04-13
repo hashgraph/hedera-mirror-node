@@ -92,17 +92,17 @@
           {
             "account": "0.0.98",
             "amount": 1,
-            "is_approval": true
+            "is_approval": false
           },
           {
             "account": "0.0.1820",
             "amount": 40,
-            "is_approval": true
+            "is_approval": false
           },
           {
             "account": "0.0.1950",
             "amount": -41,
-            "is_approval": true
+            "is_approval": false
           }
         ],
         "valid_duration_seconds": "11",
@@ -141,17 +141,17 @@
           {
             "account": "0.0.98",
             "amount": 1,
-            "is_approval": true
+            "is_approval": false
           },
           {
             "account": "0.0.1810",
             "amount": 30,
-            "is_approval": true
+            "is_approval": false
           },
           {
             "account": "0.0.1820",
             "amount": -31,
-            "is_approval": true
+            "is_approval": false
           }
         ],
         "valid_duration_seconds": "11",

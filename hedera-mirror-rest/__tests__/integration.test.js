@@ -188,25 +188,25 @@ const expectedTransactionRowsDesc = [
   {
     consensusTimestamp: '1052',
     cryptoTransfers: [
-      {account: '0.15.8', amount: -31, is_approval: true},
-      {account: '0.15.9', amount: 30, is_approval: true},
-      {account: '0.15.98', amount: 1, is_approval: true},
+      {account: '0.15.8', amount: -31, is_approval: false},
+      {account: '0.15.9', amount: 30, is_approval: false},
+      {account: '0.15.98', amount: 1, is_approval: false},
     ],
   },
   {
     consensusTimestamp: '1051',
     cryptoTransfers: [
-      {account: '0.15.9', amount: 20, is_approval: true},
-      {account: '0.15.10', amount: -21, is_approval: true},
-      {account: '0.15.98', amount: 1, is_approval: true},
+      {account: '0.15.9', amount: 20, is_approval: false},
+      {account: '0.15.10', amount: -21, is_approval: false},
+      {account: '0.15.98', amount: 1, is_approval: false},
     ],
   },
   {
     consensusTimestamp: '1050',
     cryptoTransfers: [
-      {account: '0.15.9', amount: 10, is_approval: true},
-      {account: '0.15.10', amount: -11, is_approval: true},
-      {account: '0.15.98', amount: 1, is_approval: true},
+      {account: '0.15.9', amount: 10, is_approval: false},
+      {account: '0.15.10', amount: -11, is_approval: false},
+      {account: '0.15.98', amount: 1, is_approval: false},
     ],
   },
 ];
@@ -257,17 +257,17 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
     {
       consensusTimestamp: '2064',
       cryptoTransfers: [
-        {account: '0.15.63', amount: 20, is_approval: true},
-        {account: '0.15.82', amount: -21, is_approval: true},
-        {account: '0.15.98', amount: 1, is_approval: true},
+        {account: '0.15.63', amount: 20, is_approval: false},
+        {account: '0.15.82', amount: -21, is_approval: false},
+        {account: '0.15.98', amount: 1, is_approval: false},
       ],
     },
     {
       consensusTimestamp: '2063',
       cryptoTransfers: [
-        {account: '0.15.63', amount: -71, is_approval: true},
-        {account: '0.15.82', amount: 70, is_approval: true},
-        {account: '0.15.98', amount: 1, is_approval: true},
+        {account: '0.15.63', amount: -71, is_approval: false},
+        {account: '0.15.82', amount: 70, is_approval: false},
+        {account: '0.15.98', amount: 1, is_approval: false},
       ],
     },
   ];
