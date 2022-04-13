@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -41,7 +42,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.hederahashgraph.api.proto.java.Key;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
@@ -649,11 +649,15 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // revoke allowance
         var expectedNft2 = TestUtils.clone(nft2);
+        expectedNft2.setAllowanceGrantedTimestamp(null);
+        expectedNft2.setSpender(null);
         expectedNfts.add(expectedNft2);
 
         var nftUpdate2 = TestUtils.clone(expectedNft2);
+        nftUpdate2.setAllowanceGrantedTimestamp(null);
         nftUpdate2.setCreatedTimestamp(null);
-        nftUpdate1.setModifiedTimestamp(null);
+        nftUpdate2.setModifiedTimestamp(null);
+        nftUpdate2.setSpender(null);
 
         // when
         sqlEntityListener.onNft(nftUpdate1);

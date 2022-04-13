@@ -20,9 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -35,10 +33,11 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-@RequiredArgsConstructor
-class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
+class CryptoApproveAllowanceTransactionHandler extends AbstractAllowanceTransactionHandler {
 
-    private final EntityListener entityListener;
+    public CryptoApproveAllowanceTransactionHandler(EntityListener entityListener) {
+        super(entityListener);
+    }
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -114,17 +113,5 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             tokenAllowance.setTimestampLower(consensusTimestamp);
             entityListener.onTokenAllowance(tokenAllowance);
         }
-    }
-
-    /**
-     * Gets the owner of the allowance. An empty owner in the *Allowance protobuf message implies the transaction payer
-     * is the owner of the resource the spender is granted allowance of.
-     *
-     * @param owner          The owner in the *Allowance protobuf message
-     * @param payerAccountId The transaction payer
-     * @return The effective owner account id
-     */
-    private EntityId getOwnerAccountId(AccountID owner, EntityId payerAccountId) {
-        return owner == AccountID.getDefaultInstance() ? payerAccountId : EntityId.of(owner);
     }
 }
