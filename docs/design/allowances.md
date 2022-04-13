@@ -329,7 +329,8 @@ the transactions REST APIs.
 
 1) How will we handle adjust allowance for serial numbers?
 
-   The full list of allowed serials that result from the transaction will be provided in the record.
+   Crypto approve allowance transactions can grant nft allowances by serial numbers and crypto delete allowance 
+   transactions revoke them.
 
 2) What happens if client populates both `approvedForAll` and `serialNumbers`?
 
