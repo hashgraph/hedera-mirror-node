@@ -52,6 +52,7 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
@@ -664,14 +665,22 @@ public class EntityRecordItemListener implements RecordItemListener {
         return null;
     }
 
-    private Optional<AccountAmount> findAccountAmountInTokenTransferListInsideBody(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId, TransactionBody body){
-        return body.getCryptoTransfer()
-                .getTokenTransfersList()
-                .stream()
-                .filter(transferList -> transferList.getToken().equals(tokenId))
-                .flatMap(transferList -> transferList.getTransfersList().stream())
-                .filter(accountAmountPredicate)
-                .findFirst();
+    private AccountAmount findAccountAmountInTokenTransferListInsideBody(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId, TransactionBody body){
+        if (!body.hasCryptoTransfer()){
+            return null;
+        }
+        final List<TokenTransferList> tokenTransfersLists = body.getCryptoTransfer().getTokenTransfersList();
+        for (TokenTransferList transferList : tokenTransfersLists) {
+            if (!transferList.getToken().equals(tokenId)){
+                continue;
+            }
+            for (AccountAmount aa : transferList.getTransfersList()){
+                if (accountAmountPredicate.test(aa)){
+                    return aa;
+                }
+            }
+        }
+        return null;
     }
 
     private Optional<com.hederahashgraph.api.proto.java.NftTransfer> findNftTransferInsideBody(
@@ -710,18 +719,18 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (accountAmount.getAmount() < 0) {
 
                 // Is the accountAmount from the record also inside a body's transfer list for the given tokenId?
-                final Optional<AccountAmount> accountAmountInsideTransferList =
+                final AccountAmount accountAmountInsideTransferList =
                         findAccountAmountInTokenTransferListInsideBody(
                                 accountAmount::equals, tokenId, body);
-                if (!accountAmountInsideTransferList.isPresent()) {
+                if (accountAmountInsideTransferList == null) {
 
                     // Is there any account amount inside the body's transfer list for the given tokenId
                     // with the same accountId as the accountAmount from the record?
-                    final Optional<AccountAmount> accountAmountWithSameAccountIdInsideTransferList =
+                    final AccountAmount accountAmountWithSameAccountIdInsideTransferList =
                             findAccountAmountInTokenTransferListInsideBody(
                                     aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
                                     tokenId, body);
-                    if (accountAmountWithSameAccountIdInsideTransferList.isPresent()) {
+                    if (accountAmountWithSameAccountIdInsideTransferList != null) {
                         tokenTransfer.setIsApproval(true);
                     }
                 }
