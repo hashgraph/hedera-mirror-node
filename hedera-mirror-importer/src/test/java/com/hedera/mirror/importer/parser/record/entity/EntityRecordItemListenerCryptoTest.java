@@ -83,7 +83,6 @@ import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.runners.Parameterized;
 
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
