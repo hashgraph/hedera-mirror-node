@@ -449,18 +449,18 @@ Update `/api/v1/transactions/{id}` to include `is_approval` for all transfers.
       "name": "CRYPTOTRANSFER",
       "nft_transfers": [
         {
+          "is_approval": true,
           "receiver_account_id": "0.0.121",
           "sender_account_id": "0.0.122",
           "serial_number": 1,
-          "token_id": "0.0.123",
-          "is_approval": true
+          "token_id": "0.0.123"
         },
         {
+          "is_approval": false,
           "receiver_account_id": "0.0.321",
           "sender_account_id": "0.0.422",
           "serial_number": 2,
-          "token_id": "0.0.123",
-          "is_approval": false
+          "token_id": "0.0.123"
         }
       ],
       "max_fee": 33,
@@ -528,21 +528,21 @@ Update `/api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions` to include `i
   "transactions": [
     {
       "consensus_timestamp": "1234567890.000000007",
+      "is_approval": false,
       "nonce": 0,
       "transaction_id": "0.0.8-1234567890-000000007",
       "receiver_account_id": "0.0.3001",
       "sender_account_id": "0.0.2001",
-      "type": "CRYPTOTRANSFER",
-      "is_approval": false
+      "type": "CRYPTOTRANSFER"
     },
     {
       "consensus_timestamp": "1234567890.000000006",
+      "is_approval": false,
       "nonce": 1,
       "transaction_id": "0.0.8-1234567890-000000006",
       "receiver_account_id": "0.0.2001",
       "sender_account_id": "0.0.1001",
-      "type": "CRYPTOTRANSFER",
-      "is_approval": false
+      "type": "CRYPTOTRANSFER"
     }
   ]
 }
