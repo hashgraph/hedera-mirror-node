@@ -396,16 +396,16 @@ Update `/api/v1/accounts/{accountId}` to return `is_approval` for all transfers.
       ],
       "token_transfers": [
         {
-          "token_id": "0.0.90000",
           "account": "0.0.9",
           "amount": 1200,
-          "is_approval": true
+          "is_approval": true,
+          "token_id": "0.0.90000"
         },
         {
-          "token_id": "0.0.90000",
           "account": "0.0.8",
           "amount": -1200,
-          "is_approval": false
+          "is_approval": false,
+          "token_id": "0.0.90000"
         }
       ],
       "assessed_custom_fees": [
@@ -487,16 +487,16 @@ Update `/api/v1/transactions/{id}` to include `is_approval` for all transfers.
       ],
       "token_transfers": [
         {
-          "token_id": "0.0.90000",
           "account": "0.0.9",
           "amount": 1200,
-          "is_approval": false
+          "is_approval": false,
+          "token_id": "0.0.90000"
         },
         {
-          "token_id": "0.0.90000",
           "account": "0.0.8",
           "amount": -1200,
-          "is_approval": true
+          "is_approval": true,
+          "token_id": "0.0.90000"
         }
       ],
       "assessed_custom_fees": [
