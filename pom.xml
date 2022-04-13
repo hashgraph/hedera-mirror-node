@@ -62,14 +62,14 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.1.5</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.1.7</embedded.testcontainers.version>
         <flyway.version>7.15.0</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.45.1</grpc.version>
         <guava.version>31.1-jre</guava.version>
-        <hedera-protobuf.version>0.25.0</hedera-protobuf.version>
-        <hibernate-types.version>2.14.1</hibernate-types.version>
+        <hedera-protobuf.version>0.25.1</hedera-protobuf.version>
+        <hibernate-types.version>2.15.2</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
@@ -124,7 +124,7 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>spring-cloud-gcp-dependencies</artifactId>
-                <version>3.2.0</version>
+                <version>3.2.1</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,28 +30,11 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.RealmID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ShardID;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -66,8 +50,28 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.RealmID;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.ShardID;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import com.hederahashgraph.api.proto.java.TransferList;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
@@ -79,6 +83,7 @@ import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
+import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -99,6 +104,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private NftAllowanceRepository nftAllowanceRepository;
 
     @Resource
+    private NftRepository nftRepository;
+
+    @Resource
     private RecordParserProperties parserProperties;
 
     @Resource
@@ -112,17 +120,21 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     @Test
-    void cryptoAdjustAllowance() {
-        RecordItem recordItem = recordItemBuilder.cryptoAdjustAllowance().build();
-        parseRecordItemAndCommit(recordItem);
-        assertAllowances(recordItem);
-    }
-
-    @Test
     void cryptoApproveAllowance() {
-        RecordItem recordItem = recordItemBuilder.cryptoApproveAllowance().build();
+        // given
+        var consensusTimestamp = recordItemBuilder.timestamp();
+        List<Nft> expectedNfts = new LinkedList<>();
+        var nftAllowances = customizeNftAllowances(consensusTimestamp, expectedNfts);
+        RecordItem recordItem = recordItemBuilder.cryptoApproveAllowance()
+                .transactionBody(b -> b.clearNftAllowances().addAllNftAllowances(nftAllowances))
+                .record(r -> r.setConsensusTimestamp(consensusTimestamp))
+                .build();
+
+        // when
         parseRecordItemAndCommit(recordItem);
-        assertAllowances(recordItem);
+
+        // then
+        assertAllowances(recordItem, expectedNfts);
     }
 
     @Test
@@ -139,10 +151,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        final var accountEntityId = EntityId.of(accountId1);
-        final var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
-        final var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
-        final Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
+        var accountEntityId = EntityId.of(accountId1);
+        var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
+        var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
+        Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
                 initialBalance, consensusTimestamp, accountEntityId.getId()));
 
         assertAll(
@@ -170,10 +182,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         parseRecordItemAndCommit(new RecordItem(transaction, record));
 
-        final var accountEntityId = EntityId.of(accountId1);
-        final var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
-        final var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
-        final Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
+        var accountEntityId = EntityId.of(accountId1);
+        var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
+        var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
+        Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
                 initialBalance, consensusTimestamp, accountEntityId.getId()));
 
         assertAll(
@@ -350,8 +362,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         bodyBuilder.getCryptoUpdateAccountBuilder().setProxyAccountID(AccountID.getDefaultInstance());
         transactionBody = bodyBuilder.build();
         transaction = Transaction.newBuilder().setSignedTransactionBytes(SignedTransaction.newBuilder()
-                        .setBodyBytes(transactionBody.toByteString())
-                        .build().toByteString())
+                .setBodyBytes(transactionBody.toByteString())
+                .build().toByteString())
                 .build();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
@@ -847,12 +859,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         testRawBytes(transaction, null);
     }
 
-    private void assertAllowances(RecordItem recordItem) {
+    private void assertAllowances(RecordItem recordItem, Collection<Nft> expectedNfts) {
         assertAll(
                 () -> assertEquals(1, cryptoAllowanceRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(0, entityRepository.count()),
-                () -> assertEquals(2, nftAllowanceRepository.count()),
+                () -> assertEquals(3, nftAllowanceRepository.count()),
                 () -> assertEquals(1, tokenAllowanceRepository.count()),
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord()),
@@ -864,11 +876,11 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
                 () -> assertThat(nftAllowanceRepository.findAll())
                         .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
-                        .allSatisfy(a -> assertThat(a.getSerialNumbers()).isNotNull())
                         .allSatisfy(a -> assertThat(a.getSpender()).isPositive())
                         .allSatisfy(a -> assertThat(a.getTokenId()).isPositive())
                         .allMatch(a -> recordItem.getConsensusTimestamp() == a.getTimestampLower())
                         .allMatch(a -> recordItem.getPayerAccountId().equals(a.getPayerAccountId())),
+                () -> assertThat(nftRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedNfts),
                 () -> assertThat(tokenAllowanceRepository.findAll())
                         .allSatisfy(a -> assertThat(a.getAmount()).isPositive())
                         .allSatisfy(a -> assertThat(a.getOwner()).isPositive())
@@ -913,6 +925,78 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 cryptoTransferRepository.findAll())
                 .hasSize(expectedNumberOfCryptoTransfers)
                 .allSatisfy(a -> assertThat(a.getId().getAmount()).isNotZero());
+    }
+
+    private List<NftAllowance> customizeNftAllowances(Timestamp consensusTimestamp, List<Nft> expectedNfts) {
+        var delegatingSpender = recordItemBuilder.accountId();
+        var owner = recordItemBuilder.accountId();
+        var spender1 =  recordItemBuilder.accountId();
+        var spender2 =  recordItemBuilder.accountId();
+        var tokenId = recordItemBuilder.tokenId();
+        var nft1 = Nft.builder()
+                .id(new NftId(1L, EntityId.of(tokenId)))
+                .accountId(EntityId.of(owner))
+                .createdTimestamp(101L)
+                .modifiedTimestamp(101L)
+                .build();
+        var nft2 = Nft.builder()
+                .id(new NftId(2L, EntityId.of(tokenId)))
+                .accountId(EntityId.of(owner))
+                .createdTimestamp(102L)
+                .modifiedTimestamp(102L)
+                .build();
+        var nft3 = Nft.builder()
+                .id(new NftId(3L, EntityId.of(tokenId)))
+                .accountId(EntityId.of(owner))
+                .createdTimestamp(103L)
+                .modifiedTimestamp(103L)
+                .build();
+        var timestamp = consensusTimestamp.getSeconds() * 1_000_000_000 + consensusTimestamp.getNanos();
+        List<NftAllowance> nftAllowances = new LinkedList<>();
+
+        nftAllowances.add(NftAllowance.newBuilder()
+                .setDelegatingSpender(delegatingSpender)
+                .setOwner(owner)
+                .addSerialNumbers(1L)
+                .addSerialNumbers(2L)
+                .setSpender(spender1)
+                .setTokenId(tokenId)
+                .build());
+        expectedNfts.add(nft1.toBuilder()
+                .allowanceGrantedTimestamp(timestamp)
+                .delegatingSpender(EntityId.of(delegatingSpender))
+                .spender(EntityId.of(spender1))
+                .build());
+
+        nftAllowances.add(NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(false))
+                .setOwner(recordItemBuilder.accountId())
+                .setSpender(recordItemBuilder.accountId())
+                .setTokenId(recordItemBuilder.tokenId())
+                .build());
+        nftAllowances.add(NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(true))
+                .setOwner(recordItemBuilder.accountId())
+                .setSpender(recordItemBuilder.accountId())
+                .setTokenId(recordItemBuilder.tokenId())
+                .build());
+
+        nftAllowances.add(NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(true))
+                .setOwner(owner)
+                .addSerialNumbers(2L)
+                .addSerialNumbers(3L)
+                .setSpender(spender2)
+                .setTokenId(tokenId)
+                .build());
+        // serial number 2's allowance is granted twice, the allowance should be granted to spender2 since it appears
+        // after the nft allowance to spender1
+        expectedNfts.add(nft2.toBuilder().allowanceGrantedTimestamp(timestamp).spender(EntityId.of(spender2)).build());
+        expectedNfts.add(nft3.toBuilder().allowanceGrantedTimestamp(timestamp).spender(EntityId.of(spender2)).build());
+
+        nftRepository.saveAll(List.of(nft1, nft2, nft3));
+
+        return nftAllowances;
     }
 
     private void createAccount() {
@@ -984,9 +1068,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         });
     }
 
-    private void groupCryptoTransfersByAccountId(final TransactionRecord.Builder recordBuilder,
-                                                 final List<AccountAmount.Builder> amountsToBeAdded) {
-        final var accountAmounts = recordBuilder.getTransferListBuilder().getAccountAmountsBuilderList();
+    private void groupCryptoTransfersByAccountId(TransactionRecord.Builder recordBuilder,
+                                                 List<AccountAmount.Builder> amountsToBeAdded) {
+        var accountAmounts = recordBuilder.getTransferListBuilder().getAccountAmountsBuilderList();
 
         var transfers = new HashMap<AccountID, Long>();
         Stream.concat(accountAmounts.stream(), amountsToBeAdded.stream())

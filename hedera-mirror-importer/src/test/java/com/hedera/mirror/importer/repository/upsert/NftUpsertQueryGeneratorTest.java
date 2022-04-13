@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,9 +36,11 @@ class NftUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
 
     @Override
     protected String getInsertQuery() {
-        return "insert into nft (account_id, created_timestamp, deleted, metadata, modified_timestamp, serial_number," +
-                " token_id) select nft_temp.account_id, nft_temp.created_timestamp, nft_temp.deleted, " +
-                "nft_temp.metadata, nft_temp.modified_timestamp, nft_temp.serial_number, nft_temp.token_id " +
+        return "insert into nft (account_id, allowance_granted_timestamp, created_timestamp, delegating_spender," +
+                "deleted, metadata, modified_timestamp, serial_number, spender, token_id) " +
+                "select nft_temp.account_id, nft_temp.allowance_granted_timestamp, nft_temp.created_timestamp," +
+                "nft_temp.delegating_spender, nft_temp.deleted, nft_temp.metadata, nft_temp.modified_timestamp, " +
+                "nft_temp.serial_number, nft_temp.spender, nft_temp.token_id " +
                 "from nft_temp " +
                 "join token on nft_temp.token_id = token.token_id " +
                 "where nft_temp.created_timestamp is not null " +
@@ -49,8 +51,11 @@ class NftUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     protected String getUpdateQuery() {
         return "update nft set account_id = case when nft_temp.deleted = true then null " +
                 "else coalesce(nft_temp.account_id, nft.account_id) end, " +
+                "allowance_granted_timestamp = nft_temp.allowance_granted_timestamp, " +
+                "delegating_spender = nft_temp.delegating_spender, " +
                 "deleted = coalesce(nft_temp.deleted, nft.deleted), " +
-                "modified_timestamp = coalesce(nft_temp.modified_timestamp, nft.modified_timestamp) " +
+                "modified_timestamp = coalesce(nft_temp.modified_timestamp, nft.modified_timestamp), " +
+                "spender = nft_temp.spender " +
                 "from nft_temp where nft.created_timestamp is not null and " +
                 "nft.token_id = nft_temp.token_id and nft.serial_number = nft_temp.serial_number";
     }

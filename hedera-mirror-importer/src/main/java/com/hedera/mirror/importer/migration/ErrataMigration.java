@@ -40,11 +40,10 @@ import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
-import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
@@ -65,7 +64,6 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
     private final Resource balanceOffsets;
     private final EntityRecordItemListener entityRecordItemListener;
     private final NamedParameterJdbcOperations jdbcOperations;
-    private final MirrorDateRangePropertiesProcessor dateRangeProcessor;
     private final MirrorProperties mirrorProperties;
     private final RecordStreamFileListener recordStreamFileListener;
     private final TransactionRepository transactionRepository;
@@ -73,7 +71,7 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
 
     @Override
     public Integer getChecksum() {
-        return 1; // Change this if this migration should be rerun
+        return 2; // Change this if this migration should be rerun
     }
 
     @Override
@@ -150,7 +148,7 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
         var resourceResolver = new PathMatchingResourcePatternResolver();
         Resource[] resources = resourceResolver.getResources("classpath*:errata/mainnet/missingtransactions/*.bin");
         recordStreamFileListener.onStart();
-        var dateRangeFilter = dateRangeProcessor.getDateRangeFilter(StreamType.RECORD);
+        var dateRangeFilter = new DateRangeFilter(mirrorProperties.getStartDate(), mirrorProperties.getEndDate());
 
         for (Resource resource : resources) {
             String name = resource.getFilename();

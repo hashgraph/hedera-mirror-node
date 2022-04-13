@@ -42,11 +42,11 @@
 
 \copy live_hash (livehash, consensus_timestamp) from live_hash.csv csv;
 
-\copy nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id) from nft.csv csv;
+\copy nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id, allowance_granted_timestamp, delegating_spender, spender) from nft.csv csv;
 
-\copy nft_allowance (approved_for_all, payer_account_id, serial_numbers, spender, timestamp_range, token_id) from nft_allowance.csv csv;
+\copy nft_allowance (approved_for_all, payer_account_id, spender, timestamp_range, token_id) from nft_allowance.csv csv;
 
-\copy nft_allowance_history (approved_for_all, payer_account_id, serial_numbers, spender, timestamp_range, token_id) from nft_allowance_history.csv csv;
+\copy nft_allowance_history (approved_for_all, payer_account_id, spender, timestamp_range, token_id) from nft_allowance_history.csv csv;
 
 \copy nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, serial_number, token_id, is_approval) from nft_transfer.csv csv
 

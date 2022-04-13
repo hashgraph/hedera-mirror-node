@@ -37,6 +37,7 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
@@ -125,6 +126,13 @@ public class ErrataMigrationTest extends IntegrationTest {
         assertErrataTransfers(ErrataType.DELETE, 6)
                 .extracting(CryptoTransfer::getConsensusTimestamp)
                 .containsOnly(1L, 2L, RECEIVER_PAYER_TIMESTAMP);
+    }
+
+    @Test
+    void migrateWithExistingData() throws Exception {
+        var now = DomainUtils.convertToNanosMax(Instant.now());
+        domainBuilder.recordFile().customize(r -> r.consensusStart(now)).persist();
+        migrateMainnet();
     }
 
     @Test

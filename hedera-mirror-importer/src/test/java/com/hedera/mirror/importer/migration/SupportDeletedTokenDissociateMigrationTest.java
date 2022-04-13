@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.migration;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,28 +27,24 @@ import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_U
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Types;
+import java.util.Collection;
 import java.util.List;
 import javax.annotation.Resource;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
@@ -60,7 +56,8 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.importer.repository.NftRepository;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 
 @EnabledIfV1
@@ -78,9 +75,6 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
     @Value("classpath:db/migration/v1/V1.45.0__support_deleted_token_dissociate.sql")
     private File migrationSql;
-
-    @Resource
-    private NftRepository nftRepository;
 
     @Resource
     private TokenAccountRepository tokenAccountRepository;
@@ -163,7 +157,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         // - 1 for <account2, nftId2>, already deleted, account2 dissociated nftId2 before nft class deletion
         // - 1 for <account1, nftId3>
         // - 1 for <account2, nftId3>
-        nftRepository.saveAll(List.of(
+        persistNfts(List.of(
                 nft(account1, 25L, true, 27L, 1L, nftId1),
                 nft(account1, 25L, false, 25L, 2L, nftId1),
                 nft(account1, 30L, true, 35L, 1L, nftId2),
@@ -194,7 +188,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         migrate();
 
         // then
-        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(
+        assertThat(findAllNfts()).containsExactlyInAnyOrder(
                 nft(account1, 25L, true, 27L, 1L, nftId1),
                 nft(account1, 25L, true, account1Nft1DissociateTimestamp, 2L, nftId1),
                 nft(account1, 30L, true, 35L, 1L, nftId2),
@@ -222,8 +216,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                 .containsExactlyInAnyOrder(
                         new TokenTransfer(account1Ft1DissociateTimestamp, -10, ftId1, account1)
                 );
-        assertThat(findAllTransactions())
-                .containsExactlyInAnyOrderElementsOf(transactions);
+        assertThat(findAllTransactions()).containsExactlyInAnyOrderElementsOf(transactions);
     }
 
     @SneakyThrows
@@ -247,14 +240,51 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         return entity;
     }
 
-    private Nft nft(EntityId accountId, long createdTimestamp, boolean deleted, long modifiedTimestamp,
+    private Collection<MigrationNft> findAllNfts() {
+        return jdbcOperations.query("select * from nft", (rs, rowNum) -> {
+            var nft = new MigrationNft();
+            nft.setAccountId(rs.getLong("account_id"));
+            nft.setCreatedTimestamp(rs.getLong("created_timestamp"));
+            nft.setDeleted(rs.getBoolean("deleted"));
+            nft.setMetadata(rs.getBytes("metadata"));
+            nft.setModifiedTimestamp(rs.getLong("modified_timestamp"));
+            nft.setSerialNumber(rs.getLong("serial_number"));
+            nft.setTokenId(rs.getLong("token_id"));
+            return nft;
+        });
+    }
+
+    private List<Token> findAllTokens() {
+        return jdbcOperations.query("select * from token", (rs, rowNum) -> {
+            Token token = new Token();
+            token.setCreatedTimestamp(rs.getLong("created_timestamp"));
+            token.setDecimals(rs.getInt("decimals"));
+            token.setFreezeDefault(rs.getBoolean("freeze_default"));
+            token.setInitialSupply(rs.getLong("initial_supply"));
+            token.setModifiedTimestamp(rs.getLong("modified_timestamp"));
+            token.setName(rs.getString("name"));
+            token.setSupplyType(TokenSupplyTypeEnum.valueOf(rs.getString("supply_type")));
+            token.setSymbol(rs.getString("symbol"));
+            token.setTokenId(new TokenId(EntityIdEndec.decode(rs.getLong("token_id"), TOKEN)));
+            token.setTotalSupply(rs.getLong("total_supply"));
+            token.setTreasuryAccountId(EntityIdEndec.decode(rs.getLong("treasury_account_id"),
+                    EntityType.TOKEN));
+            token.setType(TokenTypeEnum.valueOf(rs.getString("type")));
+            return token;
+        });
+    }
+
+
+    private MigrationNft nft(EntityId accountId, long createdTimestamp, boolean deleted, long modifiedTimestamp,
                     long serialNumber, EntityId tokenId) {
-        Nft nft = new Nft(serialNumber, tokenId);
-        nft.setAccountId(accountId);
+        var nft = new MigrationNft();
+        nft.setAccountId(accountId != null ? accountId.getId() : null);
         nft.setCreatedTimestamp(createdTimestamp);
         nft.setDeleted(deleted);
         nft.setMetadata(new byte[] {1});
         nft.setModifiedTimestamp(modifiedTimestamp);
+        nft.setSerialNumber(serialNumber);
+        nft.setTokenId(tokenId.getId());
         return nft;
     }
 
@@ -307,30 +337,6 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         return token;
     }
 
-    private List<Token> findAllTokens() {
-        return jdbcOperations.query("select * from token", new RowMapper<>() {
-
-            @Override
-            public Token mapRow(ResultSet rs, int rowNum) throws SQLException {
-                Token token = new Token();
-                token.setCreatedTimestamp(rs.getLong("created_timestamp"));
-                token.setDecimals(rs.getInt("decimals"));
-                token.setFreezeDefault(rs.getBoolean("freeze_default"));
-                token.setInitialSupply(rs.getLong("initial_supply"));
-                token.setModifiedTimestamp(rs.getLong("modified_timestamp"));
-                token.setName(rs.getString("name"));
-                token.setSupplyType(TokenSupplyTypeEnum.valueOf(rs.getString("supply_type")));
-                token.setSymbol(rs.getString("symbol"));
-                token.setTokenId(new TokenId(EntityIdEndec.decode(rs.getLong("token_id"), TOKEN)));
-                token.setTotalSupply(rs.getLong("total_supply"));
-                token.setTreasuryAccountId(EntityIdEndec.decode(rs.getLong("treasury_account_id"),
-                        EntityType.TOKEN));
-                token.setType(TokenTypeEnum.valueOf(rs.getString("type")));
-                return token;
-            }
-        });
-    }
-
     private TokenAccount tokenAccount(EntityId accountId, boolean associated, long createdTimestamp,
                                       long modifiedTimestamp, EntityId tokenId) {
         TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, modifiedTimestamp);
@@ -371,14 +377,30 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         }
     }
 
+    private void persistNfts(List<MigrationNft> nfts) {
+        for (var nft : nfts) {
+            jdbcOperations.update(
+                    "insert into nft (account_id, created_timestamp, deleted, metadata, modified_timestamp, " +
+                            "serial_number, token_id)" +
+                            " values(?,?,?,?::bytea,?,?,?)",
+                    nft.getAccountId(),
+                    nft.getCreatedTimestamp(),
+                    nft.getDeleted(),
+                    "\\x" + Hex.encodeHexString(nft.getMetadata()),
+                    nft.getModifiedTimestamp(),
+                    nft.getSerialNumber(),
+                    nft.getTokenId()
+            );
+        }
+    }
+
     private void persistTransactions(List<Transaction> transactions) {
         for (Transaction transaction : transactions) {
             jdbcOperations
                     .update("insert into transaction (charged_tx_fee, consensus_ns, entity_id, initial_balance, " +
-                                    "max_fee, " +
-                                    "memo, " +
-                                    "node_account_id, payer_account_id, result, scheduled, transaction_bytes, " +
-                                    "transaction_hash, type, valid_duration_seconds, valid_start_ns)" +
+                                    "max_fee, memo, node_account_id, payer_account_id, result, scheduled, " +
+                                    "transaction_bytes, transaction_hash, type, valid_duration_seconds, " +
+                                    "valid_start_ns)" +
                                     " values" +
                                     " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                             transaction.getChargedTxFee(),
@@ -430,63 +452,51 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     }
 
     private List<Transaction> findAllTransactions() {
-        return jdbcOperations.query("select * from transaction", new RowMapper<>() {
-
-            @Override
-            public Transaction mapRow(ResultSet rs, int rowNum) throws SQLException {
-                Transaction transaction = new Transaction();
-                transaction.setConsensusTimestamp(rs.getLong("consensus_ns"));
-                transaction.setEntityId(EntityId.of(0, 0, rs.getLong("entity_id"), EntityType.ACCOUNT));
-                transaction.setMemo(rs.getBytes("transaction_bytes"));
-                transaction.setNodeAccountId(EntityId.of(0, 0, rs.getLong("node_account_id"), EntityType.ACCOUNT));
-                transaction
-                        .setPayerAccountId(EntityId.of(0, 0, rs.getLong("payer_account_id"), EntityType.ACCOUNT));
-                transaction.setResult(rs.getInt("result"));
-                transaction.setType(rs.getInt("type"));
-                transaction.setValidStartNs(rs.getLong("valid_start_ns"));
-                return transaction;
-            }
+        return jdbcOperations.query("select * from transaction", (rs, rowNum) -> {
+            Transaction transaction = new Transaction();
+            transaction.setConsensusTimestamp(rs.getLong("consensus_ns"));
+            transaction.setEntityId(EntityId.of(0, 0, rs.getLong("entity_id"), EntityType.ACCOUNT));
+            transaction.setMemo(rs.getBytes("transaction_bytes"));
+            transaction.setNodeAccountId(EntityId.of(0, 0, rs.getLong("node_account_id"), EntityType.ACCOUNT));
+            transaction
+                    .setPayerAccountId(EntityId.of(0, 0, rs.getLong("payer_account_id"), EntityType.ACCOUNT));
+            transaction.setResult(rs.getInt("result"));
+            transaction.setType(rs.getInt("type"));
+            transaction.setValidStartNs(rs.getLong("valid_start_ns"));
+            return transaction;
         });
     }
 
     private List<TokenTransfer> findAllTokenTransfers() {
-        return jdbcOperations.query("select * from token_transfer", new RowMapper<>() {
-
-            @Override
-            public TokenTransfer mapRow(ResultSet rs, int rowNum) throws SQLException {
-                TokenTransfer tokenTransfer = new TokenTransfer();
-                tokenTransfer
-                        .setId(new TokenTransfer.Id(
-                                rs.getLong("consensus_timestamp"),
-                                EntityIdEndec.decode(rs.getLong("token_id"), TOKEN),
-                                EntityIdEndec.decode(rs.getLong("account_id"), ACCOUNT)));
-                tokenTransfer.setAmount(rs.getLong("amount"));
-                return tokenTransfer;
-            }
+        return jdbcOperations.query("select * from token_transfer", (rs, rowNum) -> {
+            TokenTransfer tokenTransfer = new TokenTransfer();
+            tokenTransfer
+                    .setId(new TokenTransfer.Id(
+                            rs.getLong("consensus_timestamp"),
+                            EntityIdEndec.decode(rs.getLong("token_id"), TOKEN),
+                            EntityIdEndec.decode(rs.getLong("account_id"), ACCOUNT)));
+            tokenTransfer.setAmount(rs.getLong("amount"));
+            return tokenTransfer;
         });
     }
 
     private List<NftTransfer> findAllNftTransfers() {
-        return jdbcOperations.query("select * from nft_transfer", new RowMapper<>() {
-
-            @Override
-            public NftTransfer mapRow(ResultSet rs, int rowNum) throws SQLException {
-                var receiver = rs.getLong("receiver_account_id");
-                var sender = rs.getLong("sender_account_id");
-                NftTransfer nftTransfer = new NftTransfer();
-                nftTransfer
-                        .setId(new NftTransferId(
-                                rs.getLong("consensus_timestamp"),
-                                rs.getLong("serial_number"),
-                                EntityIdEndec.decode(rs.getLong("token_id"), TOKEN)));
-                nftTransfer.setReceiverAccountId(receiver == 0 ? null : EntityIdEndec.decode(receiver, ACCOUNT));
-                nftTransfer.setSenderAccountId(sender == 0 ? null : EntityIdEndec.decode(sender, ACCOUNT));
-                return nftTransfer;
-            }
+        return jdbcOperations.query("select * from nft_transfer", (rs, rowNum) -> {
+            var receiver = rs.getLong("receiver_account_id");
+            var sender = rs.getLong("sender_account_id");
+            NftTransfer nftTransfer = new NftTransfer();
+            nftTransfer
+                    .setId(new NftTransferId(
+                            rs.getLong("consensus_timestamp"),
+                            rs.getLong("serial_number"),
+                            EntityIdEndec.decode(rs.getLong("token_id"), TOKEN)));
+            nftTransfer.setReceiverAccountId(receiver == 0 ? null : EntityIdEndec.decode(receiver, ACCOUNT));
+            nftTransfer.setSenderAccountId(sender == 0 ? null : EntityIdEndec.decode(sender, ACCOUNT));
+            return nftTransfer;
         });
     }
 
-    // Use a custom class for Entity table since its columns have changed from the current domain object
+    // Use a custom class for entity table since its columns have changed from the current domain object
     @Data
     @NoArgsConstructor
     private static class MigrationEntity {
@@ -498,5 +508,18 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         private long realm = 0;
         private long shard = 0;
         private int type;
+    }
+
+    // Use a custom class for nft table since its columns have changed from the current domain object
+    @Data
+    @NoArgsConstructor
+    private static class MigrationNft {
+        private Long accountId;
+        private Long createdTimestamp;
+        private Boolean deleted;
+        private byte[] metadata;
+        private long modifiedTimestamp;
+        private long serialNumber;
+        private long tokenId;
     }
 }

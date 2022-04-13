@@ -126,6 +126,8 @@ alter table live_hash
 alter table nft
     add constraint nft__pk primary key (token_id, serial_number);
 create index if not exists nft__account_token_serialnumber on nft(account_id, token_id, serial_number);
+create index if not exists nft__allowance on nft (account_id, spender, token_id, serial_number)
+  where account_id is not null and spender is not null;
 
 -- nft_allowance
 alter table if exists nft_allowance
