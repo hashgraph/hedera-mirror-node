@@ -643,7 +643,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         final long[] amounts = {210,300,15};
         final boolean[] isApprovals = {false, true, false};
         Transaction transaction = buildTransaction(r -> {
-            for(int i = 0; i < accountNums.length; i++){
+            for (int i = 0; i < accountNums.length; i++){
                 var accountAmount = accountAmount(accountNums[i], amounts[i]).setIsApproval(isApprovals[i]).build();
                 r.getCryptoTransferBuilder()
                         .getTransfersBuilder()
@@ -653,8 +653,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         TransactionBody transactionBody = getTransactionBody(transaction);
         AtomicInteger totalValuesInRecord = new AtomicInteger(0);
         TransactionRecord record = buildTransactionRecord(r -> {
-            for(int i = 0; i < isApprovals.length; i++){
-                if(isApprovals[i] != correctIsApprovalValue){
+            for (int i = 0; i < isApprovals.length; i++){
+                if (isApprovals[i] != correctIsApprovalValue){
                     continue;
                 }
                 totalValuesInRecord.incrementAndGet();
@@ -673,11 +673,11 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(3 + amounts.length + totalValuesInRecord.get(), cryptoTransferRepository.count()),
                 () -> {
                     for (int i = 0; i < isApprovals.length; i++) {
-                        if(isApprovals[i] != correctIsApprovalValue){
+                        if (isApprovals[i] != correctIsApprovalValue){
                             continue;
                         }
-                        for(var cryptoTransfer : cryptoTransferRepository.findAll()){
-                            if(cryptoTransfer.getEntityId() != accountNums[i]){
+                        for (var cryptoTransfer : cryptoTransferRepository.findAll()){
+                            if (cryptoTransfer.getEntityId() != accountNums[i]){
                                 continue;
                             }
                             assertThat(cryptoTransfer)
