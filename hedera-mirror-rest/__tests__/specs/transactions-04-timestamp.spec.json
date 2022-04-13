@@ -35,7 +35,8 @@
         "recipientAccountId": "0.0.9",
         "amount": 20,
         "nodeAccountId": "0.0.3",
-        "treasuryAccountId": "0.0.98"
+        "treasuryAccountId": "0.0.98",
+        "is_approval": true
       },
       {
         "consensus_timestamp": "1565779333711927001",
@@ -43,7 +44,8 @@
         "recipientAccountId": "0.0.9",
         "amount": 30,
         "nodeAccountId": "0.0.3",
-        "treasuryAccountId": "0.0.98"
+        "treasuryAccountId": "0.0.98",
+        "is_approval": true
       }
     ]
   },
@@ -71,15 +73,18 @@
         "transfers": [
           {
             "account": "0.0.9",
-            "amount": 20
+            "amount": 20,
+            "is_approval": false
           },
           {
             "account": "0.0.10",
-            "amount": -21
+            "amount": -21,
+            "is_approval": false
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": false
           }
         ]
       }
