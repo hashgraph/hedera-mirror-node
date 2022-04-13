@@ -28,22 +28,22 @@ class NftTransfer {
    */
   constructor(nftTransfer) {
     this.consensusTimestamp = nftTransfer.consensus_timestamp;
+    this.isApproval = nftTransfer.is_approval;
     this.receiverAccountId = nftTransfer.receiver_account_id;
     this.senderAccountId = nftTransfer.sender_account_id;
     this.serialNumber = nftTransfer.serial_number;
     this.tokenId = nftTransfer.token_id;
-    this.isApproval = nftTransfer.is_approval;
   }
 
   static tableAlias = 'nft_tr';
   static tableName = 'nft_transfer';
 
   static CONSENSUS_TIMESTAMP = `consensus_timestamp`;
+  static IS_APPROVAL = `is_approval`;
   static RECEIVER_ACCOUNT_ID = `receiver_account_id`;
   static SENDER_ACCOUNT_ID = `sender_account_id`;
   static SERIAL_NUMBER = `serial_number`;
   static TOKEN_ID = `token_id`;
-  static IS_APPROVAL = `is_approval`;
 
   static FILTER_MAP = {
     [constants.filterKeys.TIMESTAMP]: NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP),

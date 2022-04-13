@@ -28,8 +28,8 @@ class TokenTransfer {
     this.accountId = tokenTransfer.account_id;
     this.amount = tokenTransfer.amount;
     this.consensusTimestamp = tokenTransfer.consensus_timestamp;
-    this.tokenId = tokenTransfer.token_id;
     this.isApproval = tokenTransfer.is_approval;
+    this.tokenId = tokenTransfer.token_id;
   }
 
   static tableAlias = 'tk_tr';
@@ -38,8 +38,8 @@ class TokenTransfer {
   static ACCOUNT_ID = 'account_id';
   static AMOUNT = 'amount';
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
-  static TOKEN_ID = 'token_id';
   static IS_APPROVAL = `is_approval`;
+  static TOKEN_ID = 'token_id';
 
   /**
    * Gets full column name with table alias prepended.

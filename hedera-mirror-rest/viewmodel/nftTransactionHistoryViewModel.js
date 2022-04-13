@@ -31,6 +31,7 @@ const _ = require('lodash');
 class NftTransactionHistoryViewModel {
   constructor(nftTransferModel, transactionModel) {
     this.consensus_timestamp = utils.nsToSecNs(nftTransferModel.consensusTimestamp);
+    this.is_approval = _.isNil(nftTransferModel.isApproval) ? false : nftTransferModel.isApproval;
     this.nonce = Number(transactionModel.nonce);
     this.receiver_account_id = EntityId.parse(nftTransferModel.receiverAccountId, true).toString();
     this.sender_account_id = EntityId.parse(nftTransferModel.senderAccountId, true).toString();
@@ -39,7 +40,6 @@ class NftTransactionHistoryViewModel {
       transactionModel.validStartNs
     );
     this.type = TransactionType.getName(transactionModel.type);
-    this.is_approval = _.isNil(nftTransferModel.isApproval) ? false : nftTransferModel.isApproval;
   }
 }
 
