@@ -683,21 +683,27 @@ public class EntityRecordItemListener implements RecordItemListener {
         return null;
     }
 
-    private Optional<com.hederahashgraph.api.proto.java.NftTransfer> findNftTransferInsideBody(
+    private com.hederahashgraph.api.proto.java.NftTransfer findNftTransferInsideBody(
             com.hederahashgraph.api.proto.java.NftTransfer nftTransfer,
             TokenID nftId,
             TransactionBody body) {
-        return body
-                .getCryptoTransfer()
-                .getTokenTransfersList()
-                .stream()
-                .filter(tokenTransferList -> tokenTransferList.getToken().equals(nftId))
-                .flatMap(tokenTransferList -> tokenTransferList.getNftTransfersList().stream())
-                .filter(t ->  t.getSerialNumber() == nftTransfer.getSerialNumber() &&
-                            t.getReceiverAccountID().equals(nftTransfer.getReceiverAccountID()) &&
-                            t.getSenderAccountID().equals(nftTransfer.getSenderAccountID())
-                )
-                .findFirst();
+        if (!body.hasCryptoTransfer()){
+            return null;
+        }
+        List<TokenTransferList> tokenTransfersList = body.getCryptoTransfer().getTokenTransfersList();
+        for (TokenTransferList transferList : tokenTransfersList){
+            if (!transferList.getToken().equals(nftId)){
+                continue;
+            }
+            for (NftTransfer transfer : transferList.getNftTransfersList()){
+                if (transfer.getSerialNumber() == nftTransfer.getSerialNumber() &&
+                        transfer.getReceiverAccountID().equals(nftTransfer.getReceiverAccountID()) &&
+                        transfer.getSenderAccountID().equals(nftTransfer.getSenderAccountID())){
+                    return transfer;
+                }
+            }
+        }
+        return null;
     }
 
     private void insertFungibleTokenTransfers(
@@ -795,10 +801,10 @@ public class EntityRecordItemListener implements RecordItemListener {
             nftTransferDomain.setSenderAccountId(senderId);
             nftTransferDomain.setPayerAccountId(payerAccountId);
 
-            Optional<com.hederahashgraph.api.proto.java.NftTransfer> isNftTransferInsideBody =
+            com.hederahashgraph.api.proto.java.NftTransfer nftTransferInsideBody =
                     findNftTransferInsideBody(nftTransfer, tokenId, body);
-            if (isNftTransferInsideBody.isPresent()){
-                nftTransferDomain.setIsApproval(isNftTransferInsideBody.get().getIsApproval());
+            if (nftTransferInsideBody != null){
+                nftTransferDomain.setIsApproval(nftTransferInsideBody.getIsApproval());
             }
 
             entityListener.onNftTransfer(nftTransferDomain);
