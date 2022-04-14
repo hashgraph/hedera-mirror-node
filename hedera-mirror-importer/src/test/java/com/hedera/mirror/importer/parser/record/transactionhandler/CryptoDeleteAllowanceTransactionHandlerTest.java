@@ -29,7 +29,6 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -71,7 +70,7 @@ class CryptoDeleteAllowanceTransactionHandlerTest extends AbstractTransactionHan
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertAllowances(owner -> assertThat(owner).isPositive());
+        assertAllowances(timestamp);
     }
 
     @Test
@@ -82,19 +81,18 @@ class CryptoDeleteAllowanceTransactionHandlerTest extends AbstractTransactionHan
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertAllowances(owner -> assertThat(owner).isEqualTo(effectiveOwner));
+        assertAllowances(timestamp);
     }
 
-    private void assertAllowances(Consumer<Long> assertOwner) {
+    private void assertAllowances(long timestamp) {
         verify(entityListener, times(4)).onNft(assertArg(t -> assertThat(t)
                 .isNotNull()
-                .satisfies(n -> assertOwner.accept(n.getAccountId().getId()))
-                .returns(null, Nft::getAllowanceGrantedTimestamp)
+                .returns(null, Nft::getAccountId)
                 .returns(null, Nft::getCreatedTimestamp)
                 .returns(null, Nft::getDelegatingSpender)
                 .returns(null, Nft::getDeleted)
                 .returns(null, Nft::getMetadata)
-                .returns(null, Nft::getModifiedTimestamp)
+                .returns(timestamp, Nft::getModifiedTimestamp)
                 .satisfies(n -> assertThat(n.getId().getSerialNumber()).isPositive())
                 .returns(null, Nft::getSpender)
                 .satisfies(n -> assertThat(n.getId().getTokenId().getId()).isPositive())));

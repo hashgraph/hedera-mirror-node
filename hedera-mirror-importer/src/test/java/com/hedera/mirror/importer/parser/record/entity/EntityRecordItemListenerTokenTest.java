@@ -28,6 +28,27 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.FixedFee;
+import com.hederahashgraph.api.proto.java.Fraction;
+import com.hederahashgraph.api.proto.java.FractionalFee;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TokenAssociation;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenSupplyType;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
+import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.Transaction;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,27 +72,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.Fraction;
-import com.hederahashgraph.api.proto.java.FractionalFee;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.NftTransfer;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.RoyaltyFee;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenAssociation;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
-import com.hederahashgraph.api.proto.java.TokenType;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -895,12 +895,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         var expectedNft1 = Nft.builder()
                 .id(new NftId(SERIAL_NUMBER_1, EntityId.of(TOKEN_ID)))
-                .allowanceGrantedTimestamp(approveAllowanceTimestamp)
                 .accountId(EntityId.of(PAYER))
                 .createdTimestamp(mintTimestamp)
                 .deleted(false)
                 .metadata(METADATA.getBytes())
-                .modifiedTimestamp(mintTimestamp)
+                .modifiedTimestamp(approveAllowanceTimestamp)
                 .spender(EntityId.of(SPENDER))
                 .build();
         assertThat(nftRepository.findById(expectedNft1.getId())).get().isEqualTo(expectedNft1);
@@ -915,7 +914,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         });
 
         expectedNft1.setAccountId(null);
-        expectedNft1.setAllowanceGrantedTimestamp(null);
         expectedNft1.setDeleted(true);
         expectedNft1.setModifiedTimestamp(burnTimestamp);
         expectedNft1.setSpender(null);
@@ -1201,12 +1199,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         var expectedNft1 = Nft.builder()
                 .id(new NftId(SERIAL_NUMBER_1, EntityId.of(TOKEN_ID)))
-                .allowanceGrantedTimestamp(approveAllowanceTimestamp)
                 .accountId(EntityId.of(PAYER))
                 .createdTimestamp(mintTimestamp1)
                 .deleted(false)
                 .metadata(METADATA.getBytes())
-                .modifiedTimestamp(mintTimestamp1)
+                .modifiedTimestamp(approveAllowanceTimestamp)
                 .spender(EntityId.of(SPENDER))
                 .build();
         assertThat(nftRepository.findById(expectedNft1.getId())).get().isEqualTo(expectedNft1);
@@ -1243,7 +1240,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             builder.addAllTokenTransferLists(List.of(transferList1, transferList2));
         });
         expectedNft1.setAccountId(EntityId.of(RECEIVER));
-        expectedNft1.setAllowanceGrantedTimestamp(null);
         expectedNft1.setModifiedTimestamp(transferTimestamp);
         expectedNft1.setSpender(null);
         var expectedNft2 =  Nft.builder()
@@ -1353,12 +1349,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         var expectedNft1 = Nft.builder()
                 .id(new NftId(SERIAL_NUMBER_1, EntityId.of(TOKEN_ID)))
-                .allowanceGrantedTimestamp(approveAllowanceTimestamp)
                 .accountId(EntityId.of(PAYER))
                 .createdTimestamp(mintTimestamp)
                 .deleted(false)
                 .metadata(METADATA.getBytes())
-                .modifiedTimestamp(mintTimestamp)
+                .modifiedTimestamp(approveAllowanceTimestamp)
                 .spender(EntityId.of(SPENDER))
                 .build();
         assertThat(nftRepository.findById(expectedNft1.getId())).get().isEqualTo(expectedNft1);
@@ -1371,7 +1366,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             builder.addTokenTransferLists(wipeTransfer);
         });
         expectedNft1.setAccountId(null);
-        expectedNft1.setAllowanceGrantedTimestamp(null);
         expectedNft1.setDeleted(true);
         expectedNft1.setModifiedTimestamp(wipeTimestamp);
         expectedNft1.setSpender(null);

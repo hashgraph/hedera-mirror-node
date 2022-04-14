@@ -36,9 +36,9 @@ class NftUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
 
     @Override
     protected String getInsertQuery() {
-        return "insert into nft (account_id, allowance_granted_timestamp, created_timestamp, delegating_spender," +
+        return "insert into nft (account_id, created_timestamp, delegating_spender," +
                 "deleted, metadata, modified_timestamp, serial_number, spender, token_id) " +
-                "select nft_temp.account_id, nft_temp.allowance_granted_timestamp, nft_temp.created_timestamp," +
+                "select nft_temp.account_id, nft_temp.created_timestamp," +
                 "nft_temp.delegating_spender, nft_temp.deleted, nft_temp.metadata, nft_temp.modified_timestamp, " +
                 "nft_temp.serial_number, nft_temp.spender, nft_temp.token_id " +
                 "from nft_temp " +
@@ -51,7 +51,6 @@ class NftUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
     protected String getUpdateQuery() {
         return "update nft set account_id = case when nft_temp.deleted = true then null " +
                 "else coalesce(nft_temp.account_id, nft.account_id) end, " +
-                "allowance_granted_timestamp = nft_temp.allowance_granted_timestamp, " +
                 "delegating_spender = nft_temp.delegating_spender, " +
                 "deleted = coalesce(nft_temp.deleted, nft.deleted), " +
                 "modified_timestamp = coalesce(nft_temp.modified_timestamp, nft.modified_timestamp), " +

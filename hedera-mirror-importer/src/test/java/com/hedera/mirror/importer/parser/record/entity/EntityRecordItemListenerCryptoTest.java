@@ -293,42 +293,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var spender2 = EntityId.of(recordItemBuilder.accountId());
         var tokenId1 = EntityId.of(recordItemBuilder.tokenId());
         var tokenId2 = EntityId.of(recordItemBuilder.tokenId());
-        var nft1 = Nft.builder()
-                .accountId(ownerAccountId)
-                .createdTimestamp(10L)
-                .deleted(false)
-                .id(new NftId(1L, tokenId1))
-                .modifiedTimestamp(10L)
-                .build();
-        var nft2 = Nft.builder()
-                .accountId(ownerAccountId)
-                .createdTimestamp(11L)
-                .deleted(false)
-                .id(new NftId(2L, tokenId1))
-                .modifiedTimestamp(11L)
-                .build();
-        var nft3 = Nft.builder()
-                .accountId(ownerAccountId)
-                .createdTimestamp(12L)
-                .deleted(false)
-                .id(new NftId(1L, tokenId2))
-                .modifiedTimestamp(12L)
-                .build();
-        var nft4 = Nft.builder()
-                .accountId(ownerAccountId)
-                .createdTimestamp(13L)
-                .deleted(false)
-                .id(new NftId(2L, tokenId2))
-                .modifiedTimestamp(13L)
-                .build();
-        List<Nft> nftsWithAllowance = Stream.of(
-                nft1.toBuilder().allowanceGrantedTimestamp(20L).delegatingSpender(delegatingSpender).spender(spender1),
-                nft2.toBuilder().allowanceGrantedTimestamp(21L).spender(spender2),
-                nft3.toBuilder().allowanceGrantedTimestamp(22L).spender(spender1),
-                nft4.toBuilder().allowanceGrantedTimestamp(23L).spender(spender2)
-        ).map(Nft.NftBuilder::build).collect(Collectors.toList());
-        nftRepository.saveAll(nftsWithAllowance);
-
         List<NftRemoveAllowance> nftRemoveAllowances = List.of(
                 NftRemoveAllowance.newBuilder()
                         .setOwner(AccountID.newBuilder().setAccountNum(ownerAccountId.getEntityNum()))
@@ -347,6 +311,42 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         RecordItem recordItem = recordItemBuilder.cryptoDeleteAllowance()
                 .transactionBody(b -> b.clearNftAllowances().addAllNftAllowances(nftRemoveAllowances))
                 .build();
+
+        var nft1 = Nft.builder()
+                .accountId(ownerAccountId)
+                .createdTimestamp(10L)
+                .deleted(false)
+                .id(new NftId(1L, tokenId1))
+                .modifiedTimestamp(recordItem.getConsensusTimestamp())
+                .build();
+        var nft2 = Nft.builder()
+                .accountId(ownerAccountId)
+                .createdTimestamp(11L)
+                .deleted(false)
+                .id(new NftId(2L, tokenId1))
+                .modifiedTimestamp(recordItem.getConsensusTimestamp())
+                .build();
+        var nft3 = Nft.builder()
+                .accountId(ownerAccountId)
+                .createdTimestamp(12L)
+                .deleted(false)
+                .id(new NftId(1L, tokenId2))
+                .modifiedTimestamp(recordItem.getConsensusTimestamp())
+                .build();
+        var nft4 = Nft.builder()
+                .accountId(ownerAccountId)
+                .createdTimestamp(13L)
+                .deleted(false)
+                .id(new NftId(2L, tokenId2))
+                .modifiedTimestamp(recordItem.getConsensusTimestamp())
+                .build();
+        List<Nft> nftsWithAllowance = Stream.of(
+                nft1.toBuilder().delegatingSpender(delegatingSpender).modifiedTimestamp(15L).spender(spender1),
+                nft2.toBuilder().modifiedTimestamp(16L).spender(spender2),
+                nft3.toBuilder().modifiedTimestamp(17L).spender(spender1),
+                nft4.toBuilder().modifiedTimestamp(18L).spender(spender2)
+        ).map(Nft.NftBuilder::build).collect(Collectors.toList());
+        nftRepository.saveAll(nftsWithAllowance);
 
         // when
         parseRecordItemAndCommit(recordItem);
@@ -984,8 +984,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .setTokenId(tokenId)
                 .build());
         expectedNfts.add(nft1.toBuilder()
-                .allowanceGrantedTimestamp(timestamp)
                 .delegatingSpender(EntityId.of(delegatingSpender))
+                .modifiedTimestamp(timestamp)
                 .spender(EntityId.of(spender1))
                 .build());
 
@@ -1012,8 +1012,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .build());
         // serial number 2's allowance is granted twice, the allowance should be granted to spender2 since it appears
         // after the nft allowance to spender1
-        expectedNfts.add(nft2.toBuilder().allowanceGrantedTimestamp(timestamp).spender(EntityId.of(spender2)).build());
-        expectedNfts.add(nft3.toBuilder().allowanceGrantedTimestamp(timestamp).spender(EntityId.of(spender2)).build());
+        expectedNfts.add(nft2.toBuilder().modifiedTimestamp(timestamp).spender(EntityId.of(spender2)).build());
+        expectedNfts.add(nft3.toBuilder().modifiedTimestamp(timestamp).spender(EntityId.of(spender2)).build());
 
         nftRepository.saveAll(List.of(nft1, nft2, nft3));
 

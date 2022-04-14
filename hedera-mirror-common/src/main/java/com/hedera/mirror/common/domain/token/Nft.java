@@ -48,8 +48,6 @@ public class Nft {
     @Convert(converter = AccountIdConverter.class)
     private EntityId accountId;
 
-    private Long allowanceGrantedTimestamp;
-
     private Long createdTimestamp;
 
     @Convert(converter = AccountIdConverter.class)

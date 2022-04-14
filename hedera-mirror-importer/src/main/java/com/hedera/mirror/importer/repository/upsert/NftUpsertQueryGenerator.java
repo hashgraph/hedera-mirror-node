@@ -39,17 +39,15 @@ public class NftUpsertQueryGenerator extends AbstractUpsertQueryGenerator<Nft_> 
     private final String finalTableName = "nft";
     private final String temporaryTableName = getFinalTableName() + "_temp";
     private final List<String> conflictIdColumns = List.of(NftId_.TOKEN_ID, NftId_.SERIAL_NUMBER);
-    private final Set<String> nullableColumns = Set.of(Nft_.ACCOUNT_ID, Nft_.ALLOWANCE_GRANTED_TIMESTAMP,
-            Nft_.DELEGATING_SPENDER, Nft_.SPENDER);
+    private final Set<String> nullableColumns = Set.of(Nft_.ACCOUNT_ID, Nft_.DELEGATING_SPENDER, Nft_.SPENDER);
     private final Set<String> nonUpdatableColumns = Set.of(Nft_.CREATED_TIMESTAMP, Nft_.ID, Nft_.METADATA,
             NftId_.SERIAL_NUMBER, NftId_.TOKEN_ID);
     @Getter(lazy = true)
     // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    private final Set<SingularAttribute> selectableColumns = Set.of(Nft_.accountId, Nft_.allowanceGrantedTimestamp,
-            Nft_.createdTimestamp, Nft_.delegatingSpender, Nft_.deleted, Nft_.modifiedTimestamp, Nft_.metadata,
-            NftId_.serialNumber, Nft_.spender, NftId_.tokenId);
-    private final Set<String> volatileColumns = Set.of(Nft_.ALLOWANCE_GRANTED_TIMESTAMP, Nft_.DELEGATING_SPENDER,
-            Nft_.SPENDER);
+    private final Set<SingularAttribute> selectableColumns = Set.of(Nft_.accountId, Nft_.createdTimestamp,
+            Nft_.delegatingSpender, Nft_.deleted, Nft_.modifiedTimestamp, Nft_.metadata, NftId_.serialNumber,
+            Nft_.spender, NftId_.tokenId);
+    private final Set<String> volatileColumns = Set.of(Nft_.DELEGATING_SPENDER, Nft_.SPENDER);
 
     @Override
     public String getInsertWhereClause() {

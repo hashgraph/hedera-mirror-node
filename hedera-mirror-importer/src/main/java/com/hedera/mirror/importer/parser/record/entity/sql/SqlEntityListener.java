@@ -513,7 +513,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cachedNft.setModifiedTimestamp(newNft.getModifiedTimestamp());
 
         // copy allowance related fields
-        cachedNft.setAllowanceGrantedTimestamp(newNft.getAllowanceGrantedTimestamp());
         cachedNft.setDelegatingSpender(newNft.getDelegatingSpender());
         cachedNft.setSpender(newNft.getSpender());
 

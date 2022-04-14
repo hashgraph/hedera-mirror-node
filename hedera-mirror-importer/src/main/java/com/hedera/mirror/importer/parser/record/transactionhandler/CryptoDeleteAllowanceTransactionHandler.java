@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -30,11 +31,10 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-class CryptoDeleteAllowanceTransactionHandler extends AbstractAllowanceTransactionHandler {
+@RequiredArgsConstructor
+class CryptoDeleteAllowanceTransactionHandler implements TransactionHandler {
 
-    public CryptoDeleteAllowanceTransactionHandler(EntityListener entityListener) {
-        super(entityListener);
-    }
+    private final EntityListener entityListener;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -53,11 +53,10 @@ class CryptoDeleteAllowanceTransactionHandler extends AbstractAllowanceTransacti
         }
 
         for (var nftAllowance : recordItem.getTransactionBody().getCryptoDeleteAllowance().getNftAllowancesList()) {
-            var ownerAccountId = getOwnerAccountId(nftAllowance.getOwner(), recordItem.getPayerAccountId());
             var tokenId = EntityId.of(nftAllowance.getTokenId());
             for (var serialNumber : nftAllowance.getSerialNumbersList()) {
                 var nft = new Nft(serialNumber, tokenId);
-                nft.setAccountId(ownerAccountId);
+                nft.setModifiedTimestamp(recordItem.getConsensusTimestamp());
                 entityListener.onNft(nft);
             }
         }

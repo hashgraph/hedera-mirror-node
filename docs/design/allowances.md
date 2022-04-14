@@ -72,7 +72,6 @@ Update `nft` table to add new columns and index for nft instance allowance.
 
 ```sql
 alter table nft
-   add column if not exists allowance_granted_timestamp bigint default null,
    add column if not exists delegating_spender bigint default null,
    add column if not exists spender bigint default null;
 
@@ -118,8 +117,8 @@ Add the following class members to the `Nft` domain class:
 When parsing nft allowances,
 
   - Persist approved for all nft allowances (either grant or revoke) to the `nft_allowance` table
-  - Persist nft allowances by (token id, serial number) to the `nft` table by updating `allowance_granted_timestamp`,
-    `delegating_spender`, and `spender`
+  - Persist nft allowances by (token id, serial number) to the `nft` table by updating `delegating_spender`,
+    `modified_timestamp` and `spender`
 
 Update `EntityListener`
 
@@ -175,7 +174,6 @@ Update `/api/v1/accounts/{accountId}/nfts` to show nft allowance
   "nfts": [
     {
       "account_id": "0.0.1000",
-      "allowance_granted_timestamp": null,
       "created_timestamp": "1234567891.000000001",
       "delegating_spender": null,
       "deleted": false,
@@ -187,24 +185,22 @@ Update `/api/v1/accounts/{accountId}/nfts` to show nft allowance
     },
     {
       "account_id": "0.0.1000",
-      "allowance_granted_timestamp": "1610682500.000000002",
       "created_timestamp": "1234567890.000000001",
       "delegating_spender": null,
       "deleted": false,
       "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
-      "modified_timestamp": "1610682445.003266001",
+      "modified_timestamp": "1610682500.000000002",
       "serial_number": 2,
       "spender": "0.0.1201",
       "token_id": "0.0.1032"
     },
     {
       "account_id": "0.0.1000",
-      "allowance_granted_timestamp": "1610682500.000000001",
       "created_timestamp": "1234567890.000000001",
       "delegating_spender": "0.0.1300",
       "deleted": false,
       "metadata": "VGhpcyBpcyBhIHRlc3QgTkZU",
-      "modified_timestamp": "1610682445.003266001",
+      "modified_timestamp": "1610682500.000000001",
       "serial_number": 1,
       "spender": "0.0.1200",
       "token_id": "0.0.1032"

@@ -271,7 +271,6 @@ create table if not exists live_hash
 create table if not exists nft
 (
     account_id                  bigint,
-    allowance_granted_timestamp bigint default null,
     created_timestamp           bigint,
     delegating_spender          bigint default null,
     deleted                     boolean,
