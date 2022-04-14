@@ -1392,6 +1392,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         TokenTransferList transferList1 = TokenTransferList.newBuilder()
                 .setToken(TOKEN_ID)
                 .addTransfers(AccountAmount.newBuilder().setAccountID(PAYER).setAmount(-1000).build())
+                .addTransfers(AccountAmount.newBuilder().setAccountID(PAYER2).setAmount(-100).setIsApproval(true).build())
                 .addTransfers(AccountAmount.newBuilder().setAccountID(accountId).setAmount(1000).build())
                 .build();
         TokenTransferList transferList2 = TokenTransferList.newBuilder()
@@ -1410,6 +1411,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             .setAmount(-600)
                             .setIsApproval(true)
                             .build())
+                    .addTransfers(AccountAmount.newBuilder()
+                            .setAccountID(PAYER2)
+                            .setAmount(-100)
+                            .setIsApproval(true)
+                            .build())
                     .addTransfers(AccountAmount.newBuilder().setAccountID(accountId).setAmount(-333).build())
                     .build();
             builder
@@ -1422,6 +1428,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         // then
         assertTokenTransferInRepository(TOKEN_ID, PAYER, TRANSFER_TIMESTAMP, -1000, true);
+        assertTokenTransferInRepository(TOKEN_ID, PAYER2, TRANSFER_TIMESTAMP, -100, true);
         assertTokenTransferInRepository(TOKEN_ID, accountId, TRANSFER_TIMESTAMP, 1000);
         assertTokenTransferInRepository(tokenId2, PAYER, TRANSFER_TIMESTAMP, 333);
         assertTokenTransferInRepository(tokenId2, accountId, TRANSFER_TIMESTAMP, -333);

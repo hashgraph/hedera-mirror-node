@@ -727,20 +727,23 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (accountAmount.getAmount() < 0) {
 
                 // Is the accountAmount from the record also inside a body's transfer list for the given tokenId?
-                final AccountAmount accountAmountInsideTransferList =
+                AccountAmount accountAmountInsideTransferList =
                         findAccountAmountInTokenTransferListInsideBody(
                                 accountAmount::equals, tokenId, body);
                 if (accountAmountInsideTransferList == null) {
 
                     // Is there any account amount inside the body's transfer list for the given tokenId
                     // with the same accountId as the accountAmount from the record?
-                    final AccountAmount accountAmountWithSameAccountIdInsideTransferList =
+                    AccountAmount accountAmountWithSameAccountIdInsideTransferList =
                             findAccountAmountInTokenTransferListInsideBody(
                                     aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
                                     tokenId, body);
                     if (accountAmountWithSameAccountIdInsideTransferList != null) {
                         tokenTransfer.setIsApproval(true);
                     }
+                }
+                else {
+                    tokenTransfer.setIsApproval(accountAmountInsideTransferList.getIsApproval());
                 }
             }
             entityListener.onTokenTransfer(tokenTransfer);
