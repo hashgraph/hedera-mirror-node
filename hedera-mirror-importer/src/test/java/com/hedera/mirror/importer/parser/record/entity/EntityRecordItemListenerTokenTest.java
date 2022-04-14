@@ -1297,38 +1297,58 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             builder.addTokenTransferLists(mintTransfer2);
         });
 
-        //NFT transfer list 1
-        TokenTransferList transferList1 = TokenTransferList.newBuilder()
-                .setToken(TOKEN_ID)
-                .addNftTransfers(NftTransfer.newBuilder()
-                        .setReceiverAccountID(RECEIVER)
-                        .setSenderAccountID(PAYER)
-                        .setSerialNumber(SERIAL_NUMBER_1)
-                        .setIsApproval(isApproval1)
-                        .build())
-                .build();
-
-        //NFT transfer list 2
-        TokenTransferList transferList2 = TokenTransferList.newBuilder()
-                .setToken(TOKEN_ID)
-                .addNftTransfers(NftTransfer.newBuilder()
-                        .setReceiverAccountID(RECEIVER)
-                        .setSenderAccountID(PAYER)
-                        .setSerialNumber(SERIAL_NUMBER_2)
-                        .setIsApproval(isApproval2)
-                        .build())
-                .build();
-
         // token transfer
-        Transaction transaction = buildTransaction(builder ->
+        Transaction transaction = buildTransaction(builder -> {
+            //NFT transfer list 1
+            TokenTransferList transferList1 = TokenTransferList.newBuilder()
+                    .setToken(TOKEN_ID)
+                    .addNftTransfers(NftTransfer.newBuilder()
+                            .setReceiverAccountID(RECEIVER)
+                            .setSenderAccountID(PAYER)
+                            .setSerialNumber(SERIAL_NUMBER_1)
+                            .setIsApproval(isApproval1)
+                            .build())
+                    .build();
+
+            //NFT transfer list 2
+            TokenTransferList transferList2 = TokenTransferList.newBuilder()
+                    .setToken(TOKEN_ID)
+                    .addNftTransfers(NftTransfer.newBuilder()
+                            .setReceiverAccountID(RECEIVER)
+                            .setSenderAccountID(PAYER)
+                            .setSerialNumber(SERIAL_NUMBER_2)
+                            .setIsApproval(isApproval2)
+                            .build())
+                    .build();
+
             builder
                     .getCryptoTransferBuilder()
                     .addTokenTransfers(transferList1)
-                    .addTokenTransfers(transferList2)
-        );
+                    .addTokenTransfers(transferList2);
+        });
 
         long transferTimestamp = 40L;
         insertAndParseTransaction(transferTimestamp, transaction, builder -> {
+            //NFT transfer list 1
+            TokenTransferList transferList1 = TokenTransferList.newBuilder()
+                    .setToken(TOKEN_ID)
+                    .addNftTransfers(NftTransfer.newBuilder()
+                            .setReceiverAccountID(RECEIVER)
+                            .setSenderAccountID(PAYER)
+                            .setSerialNumber(SERIAL_NUMBER_1)
+                            .build())
+                    .build();
+
+            //NFT transfer list 2
+            TokenTransferList transferList2 = TokenTransferList.newBuilder()
+                    .setToken(TOKEN_ID)
+                    .addNftTransfers(NftTransfer.newBuilder()
+                            .setReceiverAccountID(RECEIVER)
+                            .setSenderAccountID(PAYER)
+                            .setSerialNumber(SERIAL_NUMBER_2)
+                            .build())
+                    .build();
+
             builder.addAllTokenTransferLists(List.of(transferList1, transferList2));
         });
 
@@ -1392,7 +1412,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         TokenTransferList transferList1 = TokenTransferList.newBuilder()
                 .setToken(TOKEN_ID)
                 .addTransfers(AccountAmount.newBuilder().setAccountID(PAYER).setAmount(-1000).build())
-                .addTransfers(AccountAmount.newBuilder().setAccountID(PAYER2).setAmount(-100).setIsApproval(true).build())
+                .addTransfers(AccountAmount.newBuilder().setAccountID(PAYER2).setAmount(-100).build())
                 .addTransfers(AccountAmount.newBuilder().setAccountID(accountId).setAmount(1000).build())
                 .build();
         TokenTransferList transferList2 = TokenTransferList.newBuilder()

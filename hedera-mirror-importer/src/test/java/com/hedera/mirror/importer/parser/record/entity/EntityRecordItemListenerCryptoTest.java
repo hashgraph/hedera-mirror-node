@@ -37,7 +37,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.annotation.Resource;
@@ -86,8 +85,6 @@ import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.util.Utility;
-
-import org.junit.jupiter.params.provider.ValueSource;
 
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
@@ -648,10 +645,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         );
     }
 
-    @ParameterizedTest
-    @ValueSource(booleans = {false, true})
-    void cryptoTransferHasCorrectIsApprovalValue(boolean correctIsApprovalValue){
-        final long[] accountNums = {6,7,8};
+    @Test
+    void cryptoTransferHasCorrectIsApprovalValue(){
+        final long[] accountNums = {PAYER.getAccountNum(),PAYER2.getAccountNum(),PAYER3.getAccountNum()};
         final long[] amounts = {210,-300,15};
         final boolean[] isApprovals = {false, true, false};
         Transaction transaction = buildTransaction(r -> {
@@ -663,15 +659,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
             }
         });
         TransactionBody transactionBody = getTransactionBody(transaction);
-        AtomicInteger totalValuesInRecord = new AtomicInteger(0);
-        TransactionRecord record = buildTransactionRecord(r -> {
-            for (int i = 0; i < isApprovals.length; i++){
-                if (isApprovals[i] != correctIsApprovalValue){
-                    continue;
-                }
-                totalValuesInRecord.incrementAndGet();
+        TransactionRecord record = buildTransactionRecordWithNoTransactions(builder -> {
+            for (int i = 0; i < accountNums.length; i++){
                 var accountAmount = accountAmount(accountNums[i], amounts[i]).setIsApproval(false).build();
-                r.getTransferListBuilder()
+                builder.getTransferListBuilder()
                         .addAccountAmounts(accountAmount);
             }
         }, transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
@@ -681,20 +672,16 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                //3 default transactions being inserted by buildTransactionRecord
-                () -> assertEquals(3 + amounts.length + totalValuesInRecord.get(), cryptoTransferRepository.count()),
+                () -> assertEquals(amounts.length, cryptoTransferRepository.count()),
                 () -> {
-                    for (int i = 0; i < isApprovals.length; i++) {
-                        if (isApprovals[i] != correctIsApprovalValue){
-                            continue;
-                        }
-                        for (var cryptoTransfer : cryptoTransferRepository.findAll()){
-                            if (cryptoTransfer.getEntityId() != accountNums[i]){
+                    for (var cryptoTransfer : cryptoTransferRepository.findAll()){
+                        for (int i = 0; i < isApprovals.length; i++) {
+                            if (cryptoTransfer.getEntityId() != accountNums[i]) {
                                 continue;
                             }
                             assertThat(cryptoTransfer)
                                     .extracting(CryptoTransfer::getIsApproval)
-                                    .isEqualTo(correctIsApprovalValue);
+                                    .isEqualTo(isApprovals[i]);
                         }
                     }
                 }
