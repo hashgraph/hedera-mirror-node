@@ -108,7 +108,6 @@ create table if not exists token_allowance_history
 
 Add the following class members to the `Nft` domain class:
 
-  - `allowanceGrantedTimestamp`
   - `delegatingSpender`
   - `spender`
 
