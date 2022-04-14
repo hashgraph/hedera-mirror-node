@@ -146,7 +146,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
      * @param payerAccountId The transaction payer
      * @return The effective owner account id
      */
-    protected EntityId getOwnerAccountId(AccountID owner, EntityId payerAccountId) {
+    private EntityId getOwnerAccountId(AccountID owner, EntityId payerAccountId) {
         if (owner == AccountID.getDefaultInstance()) {
             return payerAccountId;
         }
