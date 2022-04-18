@@ -29,16 +29,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.StringValue;
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-import javax.inject.Named;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.data.util.Version;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -51,10 +41,12 @@ import com.hederahashgraph.api.proto.java.ContractStateChange;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
+import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.ShardID;
@@ -72,6 +64,16 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import javax.inject.Named;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.data.util.Version;
+
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -228,6 +230,21 @@ public class RecordItemBuilder {
                         .setSpender(accountId())
                         .setTokenId(tokenId()));
         return new Builder<>(TransactionType.CRYPTOAPPROVEALLOWANCE, builder);
+    }
+
+    public Builder<CryptoDeleteAllowanceTransactionBody.Builder> cryptoDeleteAllowance() {
+        var builder = CryptoDeleteAllowanceTransactionBody.newBuilder()
+                .addNftAllowances(NftRemoveAllowance.newBuilder()
+                        .setOwner(accountId())
+                        .addSerialNumbers(1L)
+                        .addSerialNumbers(2L)
+                        .setTokenId(tokenId()))
+                .addNftAllowances(NftRemoveAllowance.newBuilder()
+                        .setOwner(accountId())
+                        .addSerialNumbers(2L)
+                        .addSerialNumbers(3L)
+                        .setTokenId(tokenId()));
+        return new Builder<>(TransactionType.CRYPTODELETEALLOWANCE, builder);
     }
 
     private StorageChange.Builder storageChange() {

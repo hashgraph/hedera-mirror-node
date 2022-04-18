@@ -42,7 +42,7 @@
 
 \copy live_hash (livehash, consensus_timestamp) from live_hash.csv csv;
 
-\copy nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id, allowance_granted_timestamp, delegating_spender, spender) from nft.csv csv;
+\copy nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id, delegating_spender, spender) from nft.csv csv;
 
 \copy nft_allowance (approved_for_all, payer_account_id, spender, timestamp_range, token_id) from nft_allowance.csv csv;
 

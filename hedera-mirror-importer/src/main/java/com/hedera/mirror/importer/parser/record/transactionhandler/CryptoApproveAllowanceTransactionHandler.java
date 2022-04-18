@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.importer.parser.PartialDataAction.DEFAULT;
+import static com.hedera.mirror.importer.parser.PartialDataAction.ERROR;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -32,13 +35,20 @@ import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 @RequiredArgsConstructor
 class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
+    private final EntityIdService entityIdService;
+
     private final EntityListener entityListener;
+
+    private final RecordParserProperties recordParserProperties;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -62,8 +72,14 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         var transactionBody = recordItem.getTransactionBody().getCryptoApproveAllowance();
 
         for (var cryptoApproval : transactionBody.getCryptoAllowancesList()) {
-            CryptoAllowance cryptoAllowance = new CryptoAllowance();
             EntityId ownerAccountId = getOwnerAccountId(cryptoApproval.getOwner(), payerAccountId);
+            if (ownerAccountId == EntityId.EMPTY) {
+                // ownerAccountId will be EMPTY only when getOwnerAccountId fails to resolve the owner in the alias form
+                // and the partialDataAction is SKIP
+                continue;
+            }
+
+            CryptoAllowance cryptoAllowance = new CryptoAllowance();
             cryptoAllowance.setAmount(cryptoApproval.getAmount());
             cryptoAllowance.setOwner(ownerAccountId.getId());
             cryptoAllowance.setPayerAccountId(payerAccountId);
@@ -74,6 +90,12 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
         for (var nftApproval : transactionBody.getNftAllowancesList()) {
             EntityId ownerAccountId = getOwnerAccountId(nftApproval.getOwner(), payerAccountId);
+            if (ownerAccountId == EntityId.EMPTY) {
+                // ownerAccountId will be EMPTY only when getOwnerAccountId fails to resolve the owner in the alias form
+                // and the partialDataAction is SKIP
+                continue;
+            }
+
             EntityId spender = EntityId.of(nftApproval.getSpender());
             EntityId tokenId = EntityId.of(nftApproval.getTokenId());
 
@@ -96,16 +118,22 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                 // different spenders. The last spender will be granted such allowance.
                 Nft nft = new Nft(serialNumber, tokenId);
                 nft.setAccountId(ownerAccountId);
-                nft.setSpender(spender);
-                nft.setAllowanceGrantedTimestamp(consensusTimestamp);
                 nft.setDelegatingSpender(delegatingSpender);
+                nft.setModifiedTimestamp(consensusTimestamp);
+                nft.setSpender(spender);
                 entityListener.onNft(nft);
             }
         }
 
         for (var tokenApproval : transactionBody.getTokenAllowancesList()) {
-            TokenAllowance tokenAllowance = new TokenAllowance();
             EntityId ownerAccountId = getOwnerAccountId(tokenApproval.getOwner(), payerAccountId);
+            if (ownerAccountId == EntityId.EMPTY) {
+                // ownerAccountId will be EMPTY only when getOwnerAccountId fails to resolve the owner in the alias form
+                // and the partialDataAction is SKIP
+                continue;
+            }
+
+            TokenAllowance tokenAllowance = new TokenAllowance();
             tokenAllowance.setAmount(tokenApproval.getAmount());
             tokenAllowance.setOwner(ownerAccountId.getId());
             tokenAllowance.setPayerAccountId(payerAccountId);
@@ -125,6 +153,19 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
      * @return The effective owner account id
      */
     private EntityId getOwnerAccountId(AccountID owner, EntityId payerAccountId) {
-        return owner == AccountID.getDefaultInstance() ? payerAccountId : EntityId.of(owner);
+        if (owner == AccountID.getDefaultInstance()) {
+            return payerAccountId;
+        }
+
+        var accountId = entityIdService.lookup(owner);
+        if (accountId == EntityId.EMPTY) {
+            // Owner has alias and entityIdService lookup failed
+            var partialDataAction = recordParserProperties.getPartialDataAction();
+            if (partialDataAction == DEFAULT || partialDataAction == ERROR) {
+                // There is no appropriate default for allowance owner, so throw an exception
+                throw new InvalidEntityException("Invalid owner for allowance");
+            }
+        }
+        return accountId;
     }
 }

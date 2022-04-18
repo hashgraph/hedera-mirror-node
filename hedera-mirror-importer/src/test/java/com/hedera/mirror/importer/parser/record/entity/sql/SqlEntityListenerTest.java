@@ -26,9 +26,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -41,7 +41,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.hederahashgraph.api.proto.java.Key;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
@@ -627,41 +626,42 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(findHistory(NftAllowance.class, idColumns)).containsExactly(mergedCreate);
     }
 
-    @Test
-    void onNftWithInstanceAllowance() {
+    @ValueSource(ints = {1, 2})
+    @ParameterizedTest
+    void onNftWithInstanceAllowance(int commitIndex) {
         // given
-        var nft1 = domainBuilder.nft().persist();
-        var nft2 = domainBuilder.nft()
-                .customize(c -> c.allowanceGrantedTimestamp(domainBuilder.timestamp()).
-                        spender(domainBuilder.entityId(ACCOUNT)))
-                .persist();
-        var expectedNfts = new LinkedList<Nft>();
+        var nft = domainBuilder.nft().persist();
 
         // grant allowance
-        var expectedNft1 = TestUtils.clone(nft1);
-        expectedNft1.setAllowanceGrantedTimestamp(domainBuilder.timestamp());
-        expectedNft1.setSpender(domainBuilder.entityId(ACCOUNT));
-        expectedNfts.add(expectedNft1);
+        var expectedNft = TestUtils.clone(nft);
+        expectedNft.setDelegatingSpender(domainBuilder.entityId(ACCOUNT));
+        expectedNft.setModifiedTimestamp(domainBuilder.timestamp());
+        expectedNft.setSpender(domainBuilder.entityId(ACCOUNT));
 
-        var nftUpdate1 = TestUtils.clone(expectedNft1);
-        nftUpdate1.setCreatedTimestamp(null);
-        nftUpdate1.setModifiedTimestamp(null);
+        var nftUpdate = TestUtils.clone(expectedNft);
+        nftUpdate.setCreatedTimestamp(null);
+
+        sqlEntityListener.onNft(nftUpdate);
+        if (commitIndex > 1) {
+            // when
+            completeFileAndCommit();
+            // then
+            assertThat(nftRepository.findAll()).containsOnly(expectedNft);
+        }
 
         // revoke allowance
-        var expectedNft2 = TestUtils.clone(nft2);
-        expectedNfts.add(expectedNft2);
+        expectedNft = TestUtils.clone(nft);
+        expectedNft.setModifiedTimestamp(domainBuilder.timestamp());
 
-        var nftUpdate2 = TestUtils.clone(expectedNft2);
-        nftUpdate2.setCreatedTimestamp(null);
-        nftUpdate1.setModifiedTimestamp(null);
+        nftUpdate = TestUtils.clone(expectedNft);
+        nftUpdate.setCreatedTimestamp(null);
+        sqlEntityListener.onNft(nftUpdate);
 
         // when
-        sqlEntityListener.onNft(nftUpdate1);
-        sqlEntityListener.onNft(nftUpdate2);
         completeFileAndCommit();
 
         // then
-        assertThat(nftRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedNfts);
+        assertThat(nftRepository.findAll()).containsOnly(expectedNft);
     }
 
     @Test
