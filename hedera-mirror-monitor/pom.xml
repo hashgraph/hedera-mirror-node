@@ -54,6 +54,7 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
+        <!-- Fixes error 'Unable to load io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider' -->
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-resolver-dns-native-macos</artifactId>
