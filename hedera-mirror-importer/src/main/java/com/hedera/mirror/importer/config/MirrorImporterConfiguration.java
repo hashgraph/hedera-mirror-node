@@ -21,12 +21,9 @@ package com.hedera.mirror.importer.config;
  */
 
 import io.micrometer.core.instrument.MeterRegistry;
-import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnCloudPlatform;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -35,7 +32,6 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration;
 import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomizer;
 import org.springframework.boot.cloud.CloudPlatform;
-import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.annotation.EnableRetry;
@@ -62,18 +58,6 @@ public class MirrorImporterConfiguration {
     public static final String TOKEN_DISSOCIATE_BATCH_PERSISTER = "tokenDissociateTransferBatchPersister";
 
     private final MirrorProperties mirrorProperties;
-
-    @Autowired(required = false)
-    @Qualifier("webServerStartStop")
-    private SmartLifecycle webServerStartStop;
-
-    @PostConstruct
-    void init() {
-        // Start the web server ASAP so kubernetes probes are up before long-running migrations
-        if (webServerStartStop != null) {
-            webServerStartStop.start();
-        }
-    }
 
     @Bean
     @ConditionalOnCloudPlatform(CloudPlatform.KUBERNETES)
