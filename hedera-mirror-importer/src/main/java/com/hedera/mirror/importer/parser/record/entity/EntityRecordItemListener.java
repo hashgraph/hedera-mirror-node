@@ -23,14 +23,11 @@ package com.hedera.mirror.importer.parser.record.entity;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
-import com.hederahashgraph.api.proto.java.EntityID;
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
@@ -62,9 +59,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Named;
@@ -439,7 +434,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             AccountAmount accountAmountInsideBody = null;
             if (cryptoTransfer.getAmount() < 0 || failedTransfer) {
-                accountAmountInsideBody = findAccountAmountInTransferListInsideBody(aa, body);
+                accountAmountInsideBody = findAccountAmount(aa, body);
             }
 
             if (accountAmountInsideBody != null) {
@@ -654,7 +649,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private AccountAmount findAccountAmountInTransferListInsideBody(AccountAmount aa, TransactionBody body) {
+    private AccountAmount findAccountAmount(AccountAmount aa, TransactionBody body) {
         if (!body.hasCryptoTransfer()) {
             return null;
         }
@@ -667,7 +662,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         return null;
     }
 
-    private AccountAmount findAccountAmountInTokenTransferListInsideBody(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId, TransactionBody body){
+    private AccountAmount findAccountAmount(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId, TransactionBody body){
         if (!body.hasCryptoTransfer()) {
             return null;
         }
@@ -724,21 +719,20 @@ public class EntityRecordItemListener implements RecordItemListener {
             // If a record AccountAmount with amount < 0 is not in the body;
             // but an AccountAmount with the same (TokenID, AccountID) combination is in the body with is_approval=true,
             // then again set is_approval=true
-            if (accountAmount.getAmount() < 0) {
+            if (amount < 0) {
 
                 // Is the accountAmount from the record also inside a body's transfer list for the given tokenId?
                 AccountAmount accountAmountInsideTransferList =
-                        findAccountAmountInTokenTransferListInsideBody(
+                        findAccountAmount(
                                 accountAmount::equals, tokenId, body);
                 if (accountAmountInsideTransferList == null) {
 
                     // Is there any account amount inside the body's transfer list for the given tokenId
                     // with the same accountId as the accountAmount from the record?
-                    AccountAmount accountAmountWithSameAccountIdInsideTransferList =
-                            findAccountAmountInTokenTransferListInsideBody(
+                    AccountAmount accountAmountWithSameIdInsideBody = findAccountAmount(
                                     aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
                                     tokenId, body);
-                    if (accountAmountWithSameAccountIdInsideTransferList != null) {
+                    if (accountAmountWithSameIdInsideBody != null) {
                         tokenTransfer.setIsApproval(true);
                     }
                 }
@@ -799,15 +793,14 @@ public class EntityRecordItemListener implements RecordItemListener {
             EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
             EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
 
-            com.hedera.mirror.common.domain.token.NftTransfer nftTransferDomain = new com.hedera.mirror.common.domain.token.NftTransfer();
+            var nftTransferDomain = new com.hedera.mirror.common.domain.token.NftTransfer();
             nftTransferDomain.setId(new NftTransferId(consensusTimestamp, serialNumber, entityTokenId));
             nftTransferDomain.setIsApproval(false);
             nftTransferDomain.setReceiverAccountId(receiverId);
             nftTransferDomain.setSenderAccountId(senderId);
             nftTransferDomain.setPayerAccountId(payerAccountId);
 
-            com.hederahashgraph.api.proto.java.NftTransfer nftTransferInsideBody =
-                    findNftTransferInsideBody(nftTransfer, tokenId, body);
+            var nftTransferInsideBody = findNftTransferInsideBody(nftTransfer, tokenId, body);
             if (nftTransferInsideBody != null) {
                 nftTransferDomain.setIsApproval(nftTransferInsideBody.getIsApproval());
             }
