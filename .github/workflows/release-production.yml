@@ -6,10 +6,18 @@ on:
 
 jobs:
   image:
+    strategy:
+      matrix:
+        module: [ grpc, importer, monitor, rest, rosetta, web3 ]
+    env:
+      MODULE: hedera-mirror-${{ matrix.module }}
     name: Publish images
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
+      - name: Get tag
+        run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
 
       - name: Install JDK
         uses: actions/setup-java@v2
@@ -29,8 +37,24 @@ jobs:
       - name: Configure Docker
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
+      - name: Build
+        run: ./mvnw dependency:copy-dependencies license:download-licenses package -DskipTests -pl ${MODULE} -Dmvn.golang.skip=true -Dskip.npm
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
       - name: Build and push images
-        run: ./mvnw dependency:copy-dependencies license:download-licenses deploy -DskipTests
+        uses: docker/build-push-action@v2
+        with:
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          context: ${{env.MODULE}}
+          platforms: linux/amd64, linux/arm64
+          push: true
+          tags: gcr.io/mirrornode/${{env.MODULE}}:${{env.TAG}}
 
   chart:
     name: Publish charts

@@ -325,8 +325,8 @@ test:
   enabled: false
   image:
     pullPolicy: IfNotPresent
-    repository: gcr.io/mirrornode/hedera-mirror-test
-    tag: ""  # Defaults to the chart's app version
+    repository: alpine
+    tag: latest
 
 timescaledb:
   enabled: false

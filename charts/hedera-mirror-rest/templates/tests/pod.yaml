@@ -11,7 +11,7 @@ metadata:
 spec:
   containers:
     - name: test
-      image: "{{ .Values.test.image.repository }}:{{ .Values.test.image.tag | default .Chart.AppVersion }}"
+      image: "{{ .Values.test.image.repository }}:{{ .Values.test.image.tag }}"
       imagePullPolicy: {{ .Values.test.image.pullPolicy }}
       args:
         - /usr/lib/hedera-mirror-rest/test.sh

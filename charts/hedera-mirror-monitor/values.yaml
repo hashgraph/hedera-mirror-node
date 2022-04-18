@@ -79,7 +79,8 @@ global:
 
 image:
   pullPolicy: IfNotPresent
-  repository: gcr.io/mirrornode/hedera-mirror-monitor
+  registry: gcr.io
+  repository: mirrornode/hedera-mirror-monitor
   tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []

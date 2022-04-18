@@ -135,26 +135,6 @@
         </dependency>
     </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>io.fabric8</groupId>
-                <artifactId>docker-maven-plugin</artifactId>
-                <inherited>false</inherited>
-                <configuration>
-                    <images>
-                        <image>
-                            <build>
-                                <contextDir>${maven.multiModuleProjectDirectory}</contextDir>
-                                <dockerFile>${project.basedir}/src/main/resources/Dockerfile</dockerFile>
-                            </build>
-                        </image>
-                    </images>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
-
     <profiles>
         <profile>
             <id>acceptance-tests</id>

@@ -64,7 +64,8 @@ hpa:
 
 image:
   pullPolicy: IfNotPresent
-  repository: gcr.io/mirrornode/hedera-mirror-rosetta
+  registry: gcr.io
+  repository: mirrornode/hedera-mirror-rosetta
   tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []
