@@ -27,10 +27,12 @@ class Nft {
   constructor(nft) {
     this.accountId = nft.account_id;
     this.createdTimestamp = nft.created_timestamp;
+    this.delegatingSpender = nft.delegating_spender;
     this.deleted = nft.deleted;
     this.metadata = nft.metadata;
     this.modifiedTimestamp = nft.modified_timestamp;
     this.serialNumber = nft.serial_number;
+    this.spender = nft.spender;
     this.tokenId = nft.token_id;
   }
 
@@ -39,10 +41,12 @@ class Nft {
 
   static ACCOUNT_ID = 'account_id';
   static CREATED_TIMESTAMP = 'created_timestamp';
+  static DELEGATING_SPENDER = 'delegating_spender';
   static DELETED = 'deleted';
   static METADATA = 'metadata';
   static MODIFIED_TIMESTAMP = 'modified_timestamp';
   static SERIAL_NUMBER = 'serial_number';
+  static SPENDER = 'spender';
   static TOKEN_ID = 'token_id';
 
   /**

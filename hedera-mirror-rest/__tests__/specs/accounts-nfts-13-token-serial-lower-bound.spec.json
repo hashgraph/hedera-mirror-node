@@ -90,46 +90,56 @@
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890.000000005",
+        "delegating_spender": null,
         "deleted": false,
         "metadata": "bTM=",
         "modified_timestamp": "1234567890.000000005",
         "serial_number": 4,
+        "spender": null,
         "token_id": "0.0.101"
       },
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890.000000004",
+        "delegating_spender": null,
         "deleted": false,
         "metadata": "bTI=",
         "modified_timestamp": "1234567890.000000004",
         "serial_number": 3,
+        "spender": null,
         "token_id": "0.0.101"
       },
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890.000000003",
+        "delegating_spender": null,
         "deleted": false,
         "metadata": "bTE=",
         "modified_timestamp": "1234567890.000000003",
         "serial_number": 1,
+        "spender": null,
         "token_id": "0.0.101"
       },
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890.000000002",
+        "delegating_spender": null,
         "deleted": false,
         "metadata": "YTU=",
         "modified_timestamp": "1234567890.000000002",
         "serial_number": 5,
+        "spender": null,
         "token_id": "0.0.100"
       },
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890.000000001",
+        "delegating_spender": null,
         "deleted": false,
         "metadata": "YTQ=",
         "modified_timestamp": "1234567890.000000001",
         "serial_number": 4,
+        "spender": null,
         "token_id": "0.0.100"
       }
     ],

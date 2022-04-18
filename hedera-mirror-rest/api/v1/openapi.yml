@@ -1605,6 +1605,8 @@ components:
           $ref: '#/components/schemas/EntityId'
         created_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
+        delegating_spender:
+          $ref: '#/components/schemas/EntityId'
         deleted:
           description: whether the nft or the token it belongs to has been deleted
           type: boolean
@@ -1616,6 +1618,8 @@ components:
           $ref: '#/components/schemas/TimestampNullable'
         serial_number:
           type: number
+        spender:
+          $ref: '#/components/schemas/EntityId'
         token_id:
           $ref: '#/components/schemas/EntityId'
       example:

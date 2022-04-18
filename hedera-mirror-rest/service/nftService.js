@@ -35,10 +35,12 @@ class NftService extends BaseService {
   static nftQuery = `select
     ${Nft.ACCOUNT_ID},
     ${Nft.CREATED_TIMESTAMP},
+    ${Nft.DELEGATING_SPENDER},
     ${Nft.DELETED},
     ${Nft.METADATA},
     ${Nft.MODIFIED_TIMESTAMP},
     ${Nft.SERIAL_NUMBER},
+    ${Nft.SPENDER},
     ${Nft.TOKEN_ID}
     from ${Nft.tableName}`;
 
