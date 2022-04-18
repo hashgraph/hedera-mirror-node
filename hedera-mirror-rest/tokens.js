@@ -81,8 +81,8 @@ const nftFilterColumnMap = {
 
 const nftSelectFields = [
   'nft.account_id',
-  'nft.delegating_spender',
   'nft.created_timestamp',
+  'nft.delegating_spender',
   'nft.deleted or coalesce(e.deleted, false) as deleted',
   'nft.metadata',
   'nft.modified_timestamp',
