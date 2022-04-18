@@ -84,7 +84,8 @@
         "transfers": [
           {
             "account": "0.0.8",
-            "amount": -1234
+            "amount": -1234,
+            "is_approval": true
           },
           {
             "account": "0.0.3",
@@ -139,32 +140,38 @@
         "transfers": [
           {
             "account": "0.0.3",
-            "amount": 1
+            "amount": 1,
+            "is_approval": false
           },
           {
             "account": "0.0.8",
-            "amount": -1234
+            "amount": -1234,
+            "is_approval": true
           },
           {
             "account": "0.0.9",
-            "amount": 1233
+            "amount": 1233,
+            "is_approval": false
           }
         ],
         "token_transfers": [
           {
             "account": "0.0.3",
             "amount": 200,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": false
           },
           {
             "account": "0.0.8",
             "amount": -1200,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": false
           },
           {
             "account": "0.0.9",
             "amount": 1000,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": false
           }
         ]
       },
@@ -188,15 +195,18 @@
         "transfers": [
           {
             "account": "0.0.3",
-            "amount": 1
+            "amount": 1,
+            "is_approval": false
           },
           {
             "account": "0.0.8",
-            "amount": -1234
+            "amount": -1234,
+            "is_approval": false
           },
           {
             "account": "0.0.9",
-            "amount": 1233
+            "amount": 1233,
+            "is_approval": false
           }
         ]
       },
@@ -220,32 +230,38 @@
         "transfers": [
           {
             "account": "0.0.3",
-            "amount": 2
+            "amount": 2,
+            "is_approval": false
           },
           {
             "account": "0.0.8",
-            "amount": -3
+            "amount": -3,
+            "is_approval": false
           },
           {
             "account": "0.0.98",
-            "amount": 1
+            "amount": 1,
+            "is_approval": false
           }
         ],
         "token_transfers": [
           {
             "account": "0.0.3",
             "amount": 200,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": false
           },
           {
             "account": "0.0.8",
             "amount": -1200,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": false
           },
           {
             "account": "0.0.9",
             "amount": 1000,
-            "token_id": "0.0.90000"
+            "token_id": "0.0.90000",
+            "is_approval": false
           }
         ]
       }

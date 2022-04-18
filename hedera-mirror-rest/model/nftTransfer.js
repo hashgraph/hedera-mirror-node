@@ -28,6 +28,7 @@ class NftTransfer {
    */
   constructor(nftTransfer) {
     this.consensusTimestamp = nftTransfer.consensus_timestamp;
+    this.isApproval = nftTransfer.is_approval;
     this.receiverAccountId = nftTransfer.receiver_account_id;
     this.senderAccountId = nftTransfer.sender_account_id;
     this.serialNumber = nftTransfer.serial_number;
@@ -38,6 +39,7 @@ class NftTransfer {
   static tableName = 'nft_transfer';
 
   static CONSENSUS_TIMESTAMP = `consensus_timestamp`;
+  static IS_APPROVAL = `is_approval`;
   static RECEIVER_ACCOUNT_ID = `receiver_account_id`;
   static SENDER_ACCOUNT_ID = `sender_account_id`;
   static SERIAL_NUMBER = `serial_number`;

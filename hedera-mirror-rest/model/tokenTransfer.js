@@ -28,6 +28,7 @@ class TokenTransfer {
     this.accountId = tokenTransfer.account_id;
     this.amount = tokenTransfer.amount;
     this.consensusTimestamp = tokenTransfer.consensus_timestamp;
+    this.isApproval = tokenTransfer.is_approval;
     this.tokenId = tokenTransfer.token_id;
   }
 
@@ -37,6 +38,7 @@ class TokenTransfer {
   static ACCOUNT_ID = 'account_id';
   static AMOUNT = 'amount';
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
+  static IS_APPROVAL = `is_approval`;
   static TOKEN_ID = 'token_id';
 
   /**

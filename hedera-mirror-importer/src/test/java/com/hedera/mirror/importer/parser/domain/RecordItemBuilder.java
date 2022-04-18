@@ -49,7 +49,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ContractStateChange;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoAdjustAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -192,51 +191,6 @@ public class RecordItemBuilder {
 
         return new Builder<>(TransactionType.CONTRACTUPDATEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId));
-    }
-
-    public Builder<CryptoAdjustAllowanceTransactionBody.Builder> cryptoAdjustAllowance() {
-        var cryptoAllowance = CryptoAllowance.newBuilder()
-                .setAmount(-10L)
-                .setOwner(accountId())
-                .setSpender(accountId());
-        var nftAllowance1 = NftAllowance.newBuilder()
-                .setOwner(accountId())
-                .setSpender(accountId())
-                .setTokenId(tokenId())
-                .addSerialNumbers(1L)
-                .addSerialNumbers(2L);
-        var nftAllowance2 = NftAllowance.newBuilder()
-                .setApprovedForAll(BoolValue.of(true))
-                .setOwner(accountId())
-                .setSpender(accountId())
-                .setTokenId(tokenId());
-        var nftAllowance3 = NftAllowance.newBuilder()
-                .setApprovedForAll(BoolValue.of(false))
-                .setOwner(accountId())
-                .setSpender(accountId())
-                .setTokenId(tokenId());
-        var nftAllowance4 = NftAllowance.newBuilder()
-                .setApprovedForAll(BoolValue.of(true))
-                .setOwner(accountId())
-                .addSerialNumbers(3L)
-                .addSerialNumbers(4L)
-                .setSpender(accountId())
-                .setTokenId(tokenId());
-        var tokenAllowance = TokenAllowance.newBuilder()
-                .setAmount(-10L)
-                .setOwner(accountId())
-                .setSpender(accountId())
-                .setTokenId(tokenId());
-        var builder = CryptoAdjustAllowanceTransactionBody.newBuilder()
-                .addCryptoAllowances(cryptoAllowance)
-                .addNftAllowances(nftAllowance1)
-                .addNftAllowances(nftAllowance2)
-                .addNftAllowances(nftAllowance3)
-                .addNftAllowances(nftAllowance4)
-                .addTokenAllowances(tokenAllowance);
-        return new Builder<>(TransactionType.CRYPTOADJUSTALLOWANCE, builder)
-                .record(r -> r.addCryptoAdjustments(cryptoAllowance.setAmount(5L))
-                        .addTokenAdjustments(tokenAllowance.setAmount(5L)));
     }
 
     public Builder<CryptoApproveAllowanceTransactionBody.Builder> cryptoApproveAllowance() {

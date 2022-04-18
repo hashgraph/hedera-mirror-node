@@ -184,9 +184,7 @@ class PubSubMessageTest {
                 "  \"tokenTransferLists\":[]," +
                 "  \"assessedCustomFees\":[]," +
                 "  \"automaticTokenAssociations\":[]," +
-                "  \"alias\":\"\"," +
-                "  \"cryptoAdjustments\":[]," +
-                "  \"tokenAdjustments\":[]" +
+                "  \"alias\":\"\"" +
                 "}";
     }
 

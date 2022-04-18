@@ -301,6 +301,7 @@ describe('token formatNftHistoryRow', () => {
     sender_account_id: '3000',
     type: 14,
     valid_start_ns: '123450000111222',
+    is_approval: true,
   };
   const expected = {
     consensus_timestamp: '123456.000987654',
@@ -309,6 +310,7 @@ describe('token formatNftHistoryRow', () => {
     sender_account_id: '0.0.3000',
     transaction_id: '0.0.500-123450-000111222',
     type: 'CRYPTOTRANSFER',
+    is_approval: true,
   };
 
   const testSpecs = [
@@ -1255,7 +1257,8 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
         consensus_timestamp,
         receiver_account_id,
         sender_account_id,
-        token_id
+        token_id,
+        is_approval
       from nft_transfer nft_tr
       where nft_tr.token_id = $1 and nft_tr.serial_number = $2
         ${(transferTimestampCondition && ' and ' + transferTimestampCondition) || ''}
@@ -1266,6 +1269,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
         nft_tr.consensus_timestamp,
         nft_tr.receiver_account_id,
         nft_tr.sender_account_id,
+        nft_tr.is_approval,
         t.nonce,
         t.payer_account_id,
         t.type,
@@ -1293,6 +1297,7 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
       consensus_timestamp,
       null as receiver_account_id,
       null as sender_account_id,
+      null as is_approval,
       nonce,
       payer_account_id,
       type,

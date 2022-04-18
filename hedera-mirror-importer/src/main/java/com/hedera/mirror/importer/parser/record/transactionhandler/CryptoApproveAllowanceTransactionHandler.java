@@ -20,23 +20,29 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import java.util.List;
+import com.hederahashgraph.api.proto.java.AccountID;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 
-import com.hederahashgraph.api.proto.java.CryptoAllowance;
-import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.TokenAllowance;
+import com.hedera.mirror.common.domain.entity.CryptoAllowance;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-class CryptoApproveAllowanceTransactionHandler extends AbstractAllowanceTransactionHandler {
+@RequiredArgsConstructor
+class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
-    public CryptoApproveAllowanceTransactionHandler(EntityListener entityListener) {
-        super(entityListener);
+    private final EntityListener entityListener;
+
+    @Override
+    public EntityId getEntity(RecordItem recordItem) {
+        return null;
     }
 
     @Override
@@ -46,27 +52,79 @@ class CryptoApproveAllowanceTransactionHandler extends AbstractAllowanceTransact
 
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (recordItem.isSuccessful()) {
-            super.updateTransaction(transaction, recordItem);
+        if (!recordItem.isSuccessful()) {
+            return;
+        }
+
+        long consensusTimestamp = transaction.getConsensusTimestamp();
+        var payerAccountId = recordItem.getPayerAccountId();
+
+        var transactionBody = recordItem.getTransactionBody().getCryptoApproveAllowance();
+
+        for (var cryptoApproval : transactionBody.getCryptoAllowancesList()) {
+            CryptoAllowance cryptoAllowance = new CryptoAllowance();
+            EntityId ownerAccountId = getOwnerAccountId(cryptoApproval.getOwner(), payerAccountId);
+            cryptoAllowance.setAmount(cryptoApproval.getAmount());
+            cryptoAllowance.setOwner(ownerAccountId.getId());
+            cryptoAllowance.setPayerAccountId(payerAccountId);
+            cryptoAllowance.setSpender(EntityId.of(cryptoApproval.getSpender()).getId());
+            cryptoAllowance.setTimestampLower(consensusTimestamp);
+            entityListener.onCryptoAllowance(cryptoAllowance);
+        }
+
+        for (var nftApproval : transactionBody.getNftAllowancesList()) {
+            EntityId ownerAccountId = getOwnerAccountId(nftApproval.getOwner(), payerAccountId);
+            EntityId spender = EntityId.of(nftApproval.getSpender());
+            EntityId tokenId = EntityId.of(nftApproval.getTokenId());
+
+            if (nftApproval.hasApprovedForAll()) {
+                var approvedForAll = nftApproval.getApprovedForAll().getValue();
+                NftAllowance nftAllowance = new NftAllowance();
+                nftAllowance.setApprovedForAll(approvedForAll);
+                nftAllowance.setOwner(ownerAccountId.getId());
+                nftAllowance.setPayerAccountId(payerAccountId);
+                nftAllowance.setSpender(spender.getId());
+                nftAllowance.setTokenId(tokenId.getId());
+                nftAllowance.setTimestampLower(consensusTimestamp);
+                entityListener.onNftAllowance(nftAllowance);
+            }
+
+            EntityId delegatingSpender = EntityId.of(nftApproval.getDelegatingSpender());
+            for (var serialNumber : nftApproval.getSerialNumbersList()) {
+                // nft instance allowance update doesn't set nft modifiedTimestamp
+                // services allows the same serial number of a nft token appears in multiple nft allowances to
+                // different spenders. The last spender will be granted such allowance.
+                Nft nft = new Nft(serialNumber, tokenId);
+                nft.setAccountId(ownerAccountId);
+                nft.setSpender(spender);
+                nft.setAllowanceGrantedTimestamp(consensusTimestamp);
+                nft.setDelegatingSpender(delegatingSpender);
+                entityListener.onNft(nft);
+            }
+        }
+
+        for (var tokenApproval : transactionBody.getTokenAllowancesList()) {
+            TokenAllowance tokenAllowance = new TokenAllowance();
+            EntityId ownerAccountId = getOwnerAccountId(tokenApproval.getOwner(), payerAccountId);
+            tokenAllowance.setAmount(tokenApproval.getAmount());
+            tokenAllowance.setOwner(ownerAccountId.getId());
+            tokenAllowance.setPayerAccountId(payerAccountId);
+            tokenAllowance.setSpender(EntityId.of(tokenApproval.getSpender()).getId());
+            tokenAllowance.setTokenId(EntityId.of(tokenApproval.getTokenId()).getId());
+            tokenAllowance.setTimestampLower(consensusTimestamp);
+            entityListener.onTokenAllowance(tokenAllowance);
         }
     }
 
-    @Override
-    protected List<CryptoAllowance> getCryptoAllowances(RecordItem recordItem) {
-        return getTransactionBody(recordItem).getCryptoAllowancesList();
-    }
-
-    @Override
-    protected List<NftAllowance> getNftAllowances(RecordItem recordItem) {
-        return getTransactionBody(recordItem).getNftAllowancesList();
-    }
-
-    @Override
-    protected List<TokenAllowance> getTokenAllowances(RecordItem recordItem) {
-        return getTransactionBody(recordItem).getTokenAllowancesList();
-    }
-
-    private CryptoApproveAllowanceTransactionBody getTransactionBody(RecordItem recordItem) {
-        return recordItem.getTransactionBody().getCryptoApproveAllowance();
+    /**
+     * Gets the owner of the allowance. An empty owner in the *Allowance protobuf message implies the transaction payer
+     * is the owner of the resource the spender is granted allowance of.
+     *
+     * @param owner          The owner in the *Allowance protobuf message
+     * @param payerAccountId The transaction payer
+     * @return The effective owner account id
+     */
+    private EntityId getOwnerAccountId(AccountID owner, EntityId payerAccountId) {
+        return owner == AccountID.getDefaultInstance() ? payerAccountId : EntityId.of(owner);
     }
 }
