@@ -74,6 +74,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         for (var cryptoApproval : transactionBody.getCryptoAllowancesList()) {
             EntityId ownerAccountId = getOwnerAccountId(cryptoApproval.getOwner(), payerAccountId);
             if (ownerAccountId == EntityId.EMPTY) {
+                // ownerAccountId will be EMPTY only when getOwnerAccountId fails to resolve the owner in the alias form
+                // and the partialDataAction is SKIP
                 continue;
             }
 
@@ -89,6 +91,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         for (var nftApproval : transactionBody.getNftAllowancesList()) {
             EntityId ownerAccountId = getOwnerAccountId(nftApproval.getOwner(), payerAccountId);
             if (ownerAccountId == EntityId.EMPTY) {
+                // ownerAccountId will be EMPTY only when getOwnerAccountId fails to resolve the owner in the alias form
+                // and the partialDataAction is SKIP
                 continue;
             }
 
@@ -124,6 +128,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         for (var tokenApproval : transactionBody.getTokenAllowancesList()) {
             EntityId ownerAccountId = getOwnerAccountId(tokenApproval.getOwner(), payerAccountId);
             if (ownerAccountId == EntityId.EMPTY) {
+                // ownerAccountId will be EMPTY only when getOwnerAccountId fails to resolve the owner in the alias form
+                // and the partialDataAction is SKIP
                 continue;
             }
 
