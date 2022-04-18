@@ -1111,10 +1111,12 @@ const addNft = async (nft) => {
   nft = {
     account_id: '0.0.0',
     created_timestamp: 0,
+    delegating_spender: null,
     deleted: false,
     metadata: '\\x',
     modified_timestamp: 0,
     serial_number: 0,
+    spender: null,
     token_id: '0.0.0',
     ...nft,
   };
@@ -1124,15 +1126,17 @@ const addNft = async (nft) => {
   }
 
   await sqlConnection.query(
-    `INSERT INTO nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7);`,
+    `INSERT INTO nft (account_id, created_timestamp, delegating_spender, deleted, modified_timestamp, metadata, serial_number, spender, token_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
     [
       EntityId.parse(nft.account_id, '', true).getEncodedId(),
       nft.created_timestamp,
+      EntityId.parse(nft.delegating_spender, '', true).getEncodedId(),
       nft.deleted,
       nft.modified_timestamp,
       nft.metadata,
       nft.serial_number,
+      EntityId.parse(nft.spender, '', true).getEncodedId(),
       EntityId.parse(nft.token_id).getEncodedId(),
     ]
   );
