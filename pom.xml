@@ -58,25 +58,23 @@
         <dependency-check.version>7.0.4</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.39.1</docker-maven-plugin.version>
-        <docker.base.image>eclipse-temurin:11.0.14.1_1-jre-focal</docker.base.image>
+        <docker.architecture>amd64</docker.architecture>
+        <docker.os>linux</docker.os>
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.1.7</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.1.8</embedded.testcontainers.version>
         <flyway.version>7.15.0</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.45.1</grpc.version>
         <guava.version>31.1-jre</guava.version>
         <hedera-protobuf.version>0.25.1</hedera-protobuf.version>
-        <hibernate-types.version>2.15.2</hibernate-types.version>
+        <hibernate-types.version>2.16.1</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>11</java.version>
         <javax.version>1</javax.version>
-        <jib.version>3.2.1</jib.version>
-        <log4j2.version>2.17.1</log4j2.version> <!-- Temporarily added to address a vulnerability -->
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
-        <micrometer.version>1.8.3</micrometer.version> <!-- Temporarily added for postgresql metrics bug fix -->
         <msgpack.version>0.9.1</msgpack.version>
         <protobuf.version>3.20.0</protobuf.version>
         <release.version>0.55.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
@@ -249,42 +247,6 @@
                     </executions>
                 </plugin>
                 <plugin>
-                    <groupId>com.google.cloud.tools</groupId>
-                    <artifactId>jib-maven-plugin</artifactId>
-                    <version>${jib.version}</version>
-                    <configuration>
-                        <container>
-                            <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
-                            <jvmFlags>
-                                <jvmFlag>-XX:MaxRAMPercentage=80</jvmFlag>
-                            </jvmFlags>
-                            <user>1000:1000</user>
-                        </container>
-                        <from>
-                            <image>${docker.base.image}</image>
-                        </from>
-                        <to>
-                            <image>${docker.push.repository}/${project.artifactId}:${docker.tag.version}</image>
-                        </to>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>dockerBuild</id>
-                            <phase>install</phase>
-                            <goals>
-                                <goal>dockerBuild</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>dockerPush</id>
-                            <phase>deploy</phase>
-                            <goals>
-                                <goal>build</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-deploy-plugin</artifactId>
                     <configuration>
@@ -366,13 +328,17 @@
                     <configuration>
                         <images>
                             <image>
-                                <external>
-                                    <type>properties</type>
-                                    <prefix>docker</prefix>
-                                    <mode>override</mode>
-                                </external>
                                 <build>
+                                    <args>
+                                        <VERSION>${release.version}</VERSION>
+                                    </args>
+                                    <buildOptions>
+                                        <platform>${docker.os}/${docker.architecture}</platform>
+                                    </buildOptions>
                                     <contextDir>${project.basedir}</contextDir>
+                                    <createImageOptions>
+                                        <platform>${docker.os}/${docker.architecture}</platform>
+                                    </createImageOptions>
                                 </build>
                                 <name>${docker.push.repository}/${project.artifactId}:${docker.tag.version}</name>
                             </image>

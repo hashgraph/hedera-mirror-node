@@ -52,6 +52,7 @@ postgresql:
     replicaCount: 2
   postgresql:
     priorityClassName: critical
+    upgradeRepmgrExtension: false
     replicaCount: 2
 
 redis:

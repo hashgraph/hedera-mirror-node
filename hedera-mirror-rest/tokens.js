@@ -873,6 +873,7 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
       ${Transaction.CONSENSUS_TIMESTAMP},
       null as ${NftTransfer.RECEIVER_ACCOUNT_ID},
       null as ${NftTransfer.SENDER_ACCOUNT_ID},
+      null as ${NftTransfer.IS_APPROVAL},
       ${Transaction.NONCE},
       ${Transaction.PAYER_ACCOUNT_ID},
       ${Transaction.TYPE},
@@ -894,6 +895,7 @@ const nftTransferHistorySelectFields = [
   NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP),
   NftTransfer.getFullName(NftTransfer.RECEIVER_ACCOUNT_ID),
   NftTransfer.getFullName(NftTransfer.SENDER_ACCOUNT_ID),
+  NftTransfer.getFullName(NftTransfer.IS_APPROVAL),
   Transaction.getFullName(Transaction.NONCE),
   Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID),
   Transaction.getFullName(Transaction.TYPE),
@@ -905,6 +907,7 @@ const nftTransferHistoryCteSelectFields = [
   NftTransfer.RECEIVER_ACCOUNT_ID,
   NftTransfer.SENDER_ACCOUNT_ID,
   NftTransfer.TOKEN_ID,
+  NftTransfer.IS_APPROVAL,
 ];
 
 /**

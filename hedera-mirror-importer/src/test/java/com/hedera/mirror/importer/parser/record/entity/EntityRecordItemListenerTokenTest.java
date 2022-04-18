@@ -70,6 +70,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -1179,6 +1180,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 List.of(SERIAL_NUMBER_1));
 
         insertAndParseTransaction(mintTimestamp1, mintTransaction1, builder -> {
+
             builder.getReceiptBuilder()
                     .setNewTotalSupply(1L)
                     .addSerialNumbers(SERIAL_NUMBER_1);
@@ -1259,6 +1261,104 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
     }
 
+    @ParameterizedTest
+    @MethodSource("nftTransfersHaveCorrectIsApprovalValueArgumentProvider")
+    void nftTransfersHaveCorrectIsApprovalValue(boolean isApproval1, boolean isApproval2) {
+        createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+                PAYER2, false, false, false, 0);
+
+        // mint transfer / transaction 1
+        long mintTimestamp1 = 20L;
+        TokenTransferList mintTransfer1 = nftTransfer(TOKEN_ID, RECEIVER, DEFAULT_ACCOUNT_ID, List.of(SERIAL_NUMBER_1));
+        Transaction mintTransaction1 = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0,
+                List.of(SERIAL_NUMBER_1));
+
+        insertAndParseTransaction(mintTimestamp1, mintTransaction1, builder -> {
+            builder.getReceiptBuilder()
+                    .setNewTotalSupply(1L)
+                    .addSerialNumbers(SERIAL_NUMBER_1);
+            builder.addTokenTransferLists(mintTransfer1);
+        });
+
+        // mint transfer / transaction 2
+        long mintTimestamp2 = 30L;
+        TokenTransferList mintTransfer2 = nftTransfer(TOKEN_ID, RECEIVER, DEFAULT_ACCOUNT_ID, List.of(SERIAL_NUMBER_2));
+        Transaction mintTransaction2 = tokenSupplyTransaction(TOKEN_ID, NON_FUNGIBLE_UNIQUE, true, 0,
+                List.of(SERIAL_NUMBER_2));
+
+        insertAndParseTransaction(mintTimestamp2, mintTransaction2, builder -> {
+            builder.getReceiptBuilder()
+                    .setNewTotalSupply(2L)
+                    .addSerialNumbers(SERIAL_NUMBER_2);
+            builder.addTokenTransferLists(mintTransfer2);
+        });
+
+        // token transfer
+        Transaction transaction = buildTransaction(builder -> {
+            //NFT transfer list 1
+            TokenTransferList transferList1 = TokenTransferList.newBuilder()
+                    .setToken(TOKEN_ID)
+                    .addNftTransfers(NftTransfer.newBuilder()
+                            .setReceiverAccountID(RECEIVER)
+                            .setSenderAccountID(PAYER)
+                            .setSerialNumber(SERIAL_NUMBER_1)
+                            .setIsApproval(isApproval1)
+                            .build())
+                    .build();
+
+            //NFT transfer list 2
+            TokenTransferList transferList2 = TokenTransferList.newBuilder()
+                    .setToken(TOKEN_ID)
+                    .addNftTransfers(NftTransfer.newBuilder()
+                            .setReceiverAccountID(RECEIVER)
+                            .setSenderAccountID(PAYER)
+                            .setSerialNumber(SERIAL_NUMBER_2)
+                            .setIsApproval(isApproval2)
+                            .build())
+                    .build();
+
+            builder
+                    .getCryptoTransferBuilder()
+                    .addTokenTransfers(transferList1)
+                    .addTokenTransfers(transferList2);
+        });
+
+        long transferTimestamp = 40L;
+        insertAndParseTransaction(transferTimestamp, transaction, builder -> {
+            //NFT transfer list 1
+            TokenTransferList transferList1 = TokenTransferList.newBuilder()
+                    .setToken(TOKEN_ID)
+                    .addNftTransfers(NftTransfer.newBuilder()
+                            .setReceiverAccountID(RECEIVER)
+                            .setSenderAccountID(PAYER)
+                            .setSerialNumber(SERIAL_NUMBER_1)
+                            .build())
+                    .build();
+
+            //NFT transfer list 2
+            TokenTransferList transferList2 = TokenTransferList.newBuilder()
+                    .setToken(TOKEN_ID)
+                    .addNftTransfers(NftTransfer.newBuilder()
+                            .setReceiverAccountID(RECEIVER)
+                            .setSenderAccountID(PAYER)
+                            .setSerialNumber(SERIAL_NUMBER_2)
+                            .build())
+                    .build();
+
+            builder.addAllTokenTransferLists(List.of(transferList1, transferList2));
+        });
+
+        assertThat(nftTransferRepository.count()).isEqualTo(4L);
+        assertNftTransferInRepository(mintTimestamp1, SERIAL_NUMBER_1, TOKEN_ID, RECEIVER, null);
+        assertNftTransferInRepository(mintTimestamp2, SERIAL_NUMBER_2, TOKEN_ID, RECEIVER, null);
+        assertNftTransferInRepository(transferTimestamp, 1L, TOKEN_ID, RECEIVER, PAYER, isApproval1);
+        assertNftTransferInRepository(transferTimestamp, 2L, TOKEN_ID, RECEIVER, PAYER, isApproval2);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, true, mintTimestamp1, transferTimestamp, METADATA
+                .getBytes(), EntityId.of(RECEIVER), false);
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, mintTimestamp2, transferTimestamp, METADATA
+                .getBytes(), EntityId.of(RECEIVER), false);
+    }
+
     @Test
     void nftTransferMissingNft() {
         createAndAssociateToken(TOKEN_ID, NON_FUNGIBLE_UNIQUE, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
@@ -1294,6 +1394,60 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .getBytes(), EntityId.of(RECEIVER), false);
         assertNftInRepository(tokenID2, SERIAL_NUMBER_2, false, transferTimestamp, transferTimestamp, METADATA
                 .getBytes(), EntityId.of(RECEIVER), false);
+    }
+
+    @Test
+    void tokenTransfersMustHaveCorrectIsApprovalValue(){
+        //given
+        createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
+                PAYER2, false, false, false, INITIAL_SUPPLY);
+        TokenID tokenId2 = TokenID.newBuilder().setTokenNum(7).build();
+        createTokenEntity(tokenId2, FUNGIBLE_COMMON, "MIRROR", 10L, false, false, false);
+
+        AccountID accountId = AccountID.newBuilder().setAccountNum(1).build();
+        TokenTransferList transferList1 = TokenTransferList.newBuilder()
+                .setToken(TOKEN_ID)
+                .addTransfers(AccountAmount.newBuilder().setAccountID(PAYER).setAmount(-1000).build())
+                .addTransfers(AccountAmount.newBuilder().setAccountID(PAYER2).setAmount(-100).build())
+                .addTransfers(AccountAmount.newBuilder().setAccountID(accountId).setAmount(1000).build())
+                .build();
+        TokenTransferList transferList2 = TokenTransferList.newBuilder()
+                .setToken(tokenId2)
+                .addTransfers(AccountAmount.newBuilder().setAccountID(PAYER).setAmount(333).build())
+                .addTransfers(AccountAmount.newBuilder().setAccountID(accountId).setAmount(-333).build())
+                .build();
+        List<TokenTransferList> transferLists = List.of(transferList1, transferList2);
+
+        //when
+        Transaction transaction = buildTransaction(builder -> {
+            TokenTransferList bodyTransferList1 = TokenTransferList.newBuilder()
+                    .setToken(TOKEN_ID)
+                    .addTransfers(AccountAmount.newBuilder()
+                            .setAccountID(PAYER)
+                            .setAmount(-600)
+                            .setIsApproval(true)
+                            .build())
+                    .addTransfers(AccountAmount.newBuilder()
+                            .setAccountID(PAYER2)
+                            .setAmount(-100)
+                            .setIsApproval(true)
+                            .build())
+                    .addTransfers(AccountAmount.newBuilder().setAccountID(accountId).setAmount(-333).build())
+                    .build();
+            builder
+                    .getCryptoTransferBuilder()
+                    .addTokenTransfers(bodyTransferList1);
+        });
+        insertAndParseTransaction(TRANSFER_TIMESTAMP, transaction, builder -> {
+            builder.addAllTokenTransferLists(transferLists);
+        });
+
+        // then
+        assertTokenTransferInRepository(TOKEN_ID, PAYER, TRANSFER_TIMESTAMP, -1000, true);
+        assertTokenTransferInRepository(TOKEN_ID, PAYER2, TRANSFER_TIMESTAMP, -100, true);
+        assertTokenTransferInRepository(TOKEN_ID, accountId, TRANSFER_TIMESTAMP, 1000);
+        assertTokenTransferInRepository(tokenId2, PAYER, TRANSFER_TIMESTAMP, 333);
+        assertTokenTransferInRepository(tokenId2, accountId, TRANSFER_TIMESTAMP, -333);
     }
 
     @Test
@@ -1454,6 +1608,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(tokenTransferRepository.count()).isEqualTo(2L);
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, wipeTimestamp, transferAmount);
+    }
+
+    private static Stream<Arguments> nftTransfersHaveCorrectIsApprovalValueArgumentProvider() {
+        return Stream.of(
+                Arguments.of(true, true),
+                Arguments.of(true, false),
+                Arguments.of(false, true),
+                Arguments.of(false, false)
+        );
     }
 
     void tokenCreate(List<CustomFee> customFees, boolean freezeDefault, boolean freezeKey, boolean kycKey,
@@ -1728,6 +1891,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             transaction = buildTransaction(builder -> {
                 builder.getTokenMintBuilder()
                         .setToken(tokenID);
+
                 if (tokenType == FUNGIBLE_COMMON) {
                     builder.getTokenMintBuilder().setAmount(amount);
                 } else {
@@ -1855,11 +2019,16 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void assertTokenTransferInRepository(TokenID tokenID, AccountID accountID, long consensusTimestamp,
-                                                 long amount) {
+            long amount){
+        assertTokenTransferInRepository(tokenID, accountID, consensusTimestamp, amount, false);
+    }
+
+    private void assertTokenTransferInRepository(TokenID tokenID, AccountID accountID, long consensusTimestamp,
+                                                 long amount, boolean isApproval) {
         var expected = domainBuilder.tokenTransfer().customize(t -> t
                 .amount(amount)
                 .id(new TokenTransfer.Id(consensusTimestamp, EntityId.of(tokenID), EntityId.of(accountID)))
-                .isApproval(false)
+                .isApproval(isApproval)
                 .payerAccountId(PAYER_ACCOUNT_ID)
                 .tokenDissociate(false)).get();
         assertThat(tokenTransferRepository.findById(expected.getId()))
@@ -1880,7 +2049,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void assertNftTransferInRepository(long consensusTimestamp, long serialNumber, TokenID tokenID,
-                                               AccountID receiverId, AccountID senderId) {
+            AccountID receiverId, AccountID senderId){
+        assertNftTransferInRepository(consensusTimestamp, serialNumber, tokenID, receiverId, senderId, false);
+    }
+
+    private void assertNftTransferInRepository(long consensusTimestamp, long serialNumber, TokenID tokenID,
+                                               AccountID receiverId, AccountID senderId, Boolean isApproval) {
         EntityId receiver = receiverId != null ? EntityId.of(receiverId) : null;
         EntityId sender = senderId != null ? EntityId.of(senderId) : null;
 
@@ -1888,7 +2062,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(nftTransferRepository.findById(id))
                 .get()
                 .returns(receiver, from(com.hedera.mirror.common.domain.token.NftTransfer::getReceiverAccountId))
-                .returns(sender, from(com.hedera.mirror.common.domain.token.NftTransfer::getSenderAccountId));
+                .returns(sender, from(com.hedera.mirror.common.domain.token.NftTransfer::getSenderAccountId))
+                .returns(isApproval, from(com.hedera.mirror.common.domain.token.NftTransfer::getIsApproval));
     }
 
     private void assertContractResult(long timestamp, ContractFunctionResult contractFunctionResult) {

@@ -29,7 +29,7 @@ jobs:
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
       - name: Build and push images
-        run: ./mvnw deploy -DskipTests -Ddocker.tag.version=main
+        run: ./mvnw deploy -DskipTests -Dmvn.golang.skip=true -Dskip.npm -Ddocker.tag.version=main
 
   deploy:
     needs: publish

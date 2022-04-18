@@ -723,6 +723,49 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     @Test
+    void cryptoTransferHasCorrectIsApprovalValue(){
+        final long[] accountNums = {PAYER.getAccountNum(),PAYER2.getAccountNum(),PAYER3.getAccountNum()};
+        final long[] amounts = {210,-300,15};
+        final boolean[] isApprovals = {false, true, false};
+        Transaction transaction = buildTransaction(r -> {
+            for (int i = 0; i < accountNums.length; i++){
+                var accountAmount = accountAmount(accountNums[i], amounts[i]).setIsApproval(isApprovals[i]).build();
+                r.getCryptoTransferBuilder()
+                        .getTransfersBuilder()
+                        .addAccountAmounts(accountAmount);
+            }
+        });
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord record = buildTransactionRecordWithNoTransactions(builder -> {
+            for (int i = 0; i < accountNums.length; i++){
+                var accountAmount = accountAmount(accountNums[i], amounts[i]).setIsApproval(false).build();
+                builder.getTransferListBuilder()
+                        .addAccountAmounts(accountAmount);
+            }
+        }, transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
+
+        var recordItem = new RecordItem(transaction, record);
+        parseRecordItemAndCommit(recordItem);
+
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(amounts.length, cryptoTransferRepository.count()),
+                () -> {
+                    for (var cryptoTransfer : cryptoTransferRepository.findAll()){
+                        for (int i = 0; i < isApprovals.length; i++) {
+                            if (cryptoTransfer.getEntityId() != accountNums[i]) {
+                                continue;
+                            }
+                            assertThat(cryptoTransfer)
+                                    .extracting(CryptoTransfer::getIsApproval)
+                                    .isEqualTo(isApprovals[i]);
+                        }
+                    }
+                }
+        );
+    }
+
+    @Test
     void cryptoTransferWithAlias() {
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         entityProperties.getPersist().setNonFeeTransfers(true);

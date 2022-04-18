@@ -48,7 +48,9 @@ management:
         liveness:
           include: ping
         readiness:
-          include: db, migration, ping, redis
+          include: db, ping, redis
+        startup:
+          include: migration
 server:
   shutdown: graceful
 spring:

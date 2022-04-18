@@ -61,16 +61,17 @@ jobs:
       - name: Set GIT_REF
         run: |
           GIT_REF=${GITHUB_HEAD_REF:-$GITHUB_REF}
-          GIT_REF=${GIT_REF#refs/*/}
-          echo "GIT_REF=${GIT_REF}" >> $GITHUB_ENV
+          echo "GIT_REF=${GIT_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Build Mirror Node All-in-One Docker Image and Export
         uses: docker/build-push-action@v2
         with:
           build-args: GIT_REF=${{ env.GIT_REF }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           context: ./hedera-mirror-rosetta/build
-          tags: ${{ env.MODULE }}:latest
           outputs: type=docker,dest=/tmp/${{ env.MODULE }}.tar
+          tags: ${{ env.MODULE }}:latest
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v2

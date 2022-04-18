@@ -49,7 +49,8 @@
             "receiver_account_id": "0.0.1001",
             "sender_account_id": null,
             "serial_number": 2,
-            "token_id": "0.0.1500"
+            "token_id": "0.0.1500",
+            "is_approval": true
           }
         ],
         "entity_id": "0.0.1500"
@@ -68,7 +69,8 @@
             "receiver_account_id": "0.0.2001",
             "sender_account_id": "0.0.1001",
             "serial_number": 2,
-            "token_id": "0.0.1500"
+            "token_id": "0.0.1500",
+            "is_approval": true
           }
         ]
       },
@@ -86,7 +88,8 @@
             "receiver_account_id": "0.0.3001",
             "sender_account_id": "0.0.2001",
             "serial_number": 2,
-            "token_id": "0.0.1500"
+            "token_id": "0.0.1500",
+            "is_approval": true
           }
         ]
       },
@@ -104,7 +107,8 @@
             "receiver_account_id": "0.0.4001",
             "sender_account_id": "0.0.3001",
             "serial_number": 2,
-            "token_id": "0.0.1500"
+            "token_id": "0.0.1500",
+            "is_approval": false
           }
         ]
       },
@@ -122,7 +126,8 @@
             "receiver_account_id": null,
             "sender_account_id": "0.0.4001",
             "serial_number": 2,
-            "token_id": "0.0.1500"
+            "token_id": "0.0.1500",
+            "is_approval": true
           }
         ],
         "entity_id": "0.0.1500"
@@ -179,7 +184,8 @@
         "transaction_id": "0.0.98-1234567890-000000010",
         "receiver_account_id": null,
         "sender_account_id": null,
-        "type": "TOKENDELETION"
+        "type": "TOKENDELETION",
+        "is_approval": false
       },
       {
         "consensus_timestamp": "1234567890.000000009",
@@ -187,7 +193,8 @@
         "transaction_id": "0.0.8-1234567890-000000009",
         "receiver_account_id": null,
         "sender_account_id": "0.0.4001",
-        "type": "TOKENWIPE"
+        "type": "TOKENWIPE",
+        "is_approval": true
       },
       {
         "consensus_timestamp": "1234567890.000000008",
@@ -195,7 +202,8 @@
         "transaction_id": "0.0.8-1234567890-000000008",
         "receiver_account_id": "0.0.4001",
         "sender_account_id": "0.0.3001",
-        "type": "CRYPTOTRANSFER"
+        "type": "CRYPTOTRANSFER",
+        "is_approval": false
       },
       {
         "consensus_timestamp": "1234567890.000000007",
@@ -203,7 +211,8 @@
         "transaction_id": "0.0.8-1234567890-000000007",
         "receiver_account_id": "0.0.3001",
         "sender_account_id": "0.0.2001",
-        "type": "CRYPTOTRANSFER"
+        "type": "CRYPTOTRANSFER",
+        "is_approval": true
       },
       {
         "consensus_timestamp": "1234567890.000000006",
@@ -211,7 +220,8 @@
         "transaction_id": "0.0.8-1234567890-000000006",
         "receiver_account_id": "0.0.2001",
         "sender_account_id": "0.0.1001",
-        "type": "CRYPTOTRANSFER"
+        "type": "CRYPTOTRANSFER",
+        "is_approval": true
       },
       {
         "consensus_timestamp": "1234567890.000000005",
@@ -219,7 +229,8 @@
         "transaction_id": "0.0.8-1234567890-000000005",
         "receiver_account_id": "0.0.1001",
         "sender_account_id": null,
-        "type": "TOKENMINT"
+        "type": "TOKENMINT",
+        "is_approval": true
       }
     ],
     "links": {

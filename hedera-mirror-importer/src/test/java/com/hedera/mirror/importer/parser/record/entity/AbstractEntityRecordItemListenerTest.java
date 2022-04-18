@@ -90,6 +90,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
     protected static final AccountID PAYER = AccountID.newBuilder().setAccountNum(2002).build();
     protected static final AccountID PAYER2 = AccountID.newBuilder().setAccountNum(2003).build();
+    protected static final AccountID PAYER3 = AccountID.newBuilder().setAccountNum(2006).build();
     protected static final AccountID RECEIVER = AccountID.newBuilder().setAccountNum(2004).build();
     protected static final AccountID SPENDER = AccountID.newBuilder().setAccountNum(2005).build();
     protected static final AccountID DEFAULT_ACCOUNT_ID = AccountID.getDefaultInstance();
@@ -290,6 +291,22 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     protected com.hederahashgraph.api.proto.java.Transaction buildTransaction(Consumer<Builder> customBuilder) {
         return buildTransaction(customBuilder, DEFAULT_SIG_MAP);
+    }
+
+    protected TransactionRecord buildTransactionRecordWithNoTransactions(
+            Consumer<TransactionRecord.Builder> customBuilder, TransactionBody transactionBody, int status
+    ){
+        TransactionRecord.Builder recordBuilder = TransactionRecord.newBuilder();
+        recordBuilder.setConsensusTimestamp(Utility.instantToTimestamp(Instant.now()));
+        recordBuilder.setMemoBytes(ByteString.copyFromUtf8(transactionBody.getMemo()));
+        recordBuilder.setTransactionFee(transactionBody.getTransactionFee());
+        recordBuilder.setTransactionHash(ByteString.copyFromUtf8("TransactionHash"));
+        recordBuilder.setTransactionID(transactionBody.getTransactionID());
+        recordBuilder.getReceiptBuilder().setStatusValue(status);
+
+        customBuilder.accept(recordBuilder);
+
+        return recordBuilder.build();
     }
 
     protected TransactionRecord buildTransactionRecord(

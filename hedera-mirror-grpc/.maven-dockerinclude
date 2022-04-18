@@ -1,0 +1,2 @@
+target/container/**
+target/*.jar

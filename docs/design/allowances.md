@@ -309,9 +309,239 @@ Optional Filters
 
 #### Transactions APIs
 
-Update all APIs that show transfers to return `is_approval` in its response. Including `/api/v1/accounts/:id` and all
-the transactions REST APIs.
+Update all APIs that show transfers to return `is_approval` in its response.
 
+### Accounts Endpoint
+Update `/api/v1/accounts/{accountId}` to return `is_approval` for all transfers.
+
+```json
+{
+  "account": "0.1.2",
+  "auto_renew_period": "string",
+  "balance": {
+    "balance": 80,
+    "timestamp": "0.000002345",
+    "tokens": [
+      {
+        "token_id": "0.0.200001",
+        "balance": 8
+      }
+    ]
+  },
+  "deleted": true,
+  "expiry_timestamp": "1586567700.453054000",
+  "key": {
+    "_type": "ProtobufEncoded",
+    "key": "7b2231222c2231222c2231227d"
+  },
+  "links": {
+    "next": null
+  },
+  "max_automatic_token_associations": 0,
+  "memo": "string",
+  "receiver_sig_required": true,
+  "transactions": [
+    {
+      "consensus_timestamp": "1234567890.000000007",
+      "transaction_hash": "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW",
+      "valid_start_timestamp": "1234567890.000000006",
+      "charged_tx_fee": 7,
+      "memo_base64": null,
+      "bytes": null,
+      "result": "SUCCESS",
+      "entity_id": "0.0.2281979",
+      "name": "CRYPTOTRANSFER",
+      "nft_transfers": [
+        {
+          "is_approval": true,
+          "receiver_account_id": "0.0.121",
+          "sender_account_id": "0.0.122",
+          "serial_number": 1,
+          "token_id": "0.0.123"
+        },
+        {
+          "is_approval": true,
+          "receiver_account_id": "0.0.321",
+          "sender_account_id": "0.0.422",
+          "serial_number": 2,
+          "token_id": "0.0.123"
+        }
+      ],
+      "max_fee": 33,
+      "valid_duration_seconds": 11,
+      "node": "0.0.3",
+      "transaction_id": "0.0.8-1234567890-000000006",
+      "scheduled": false,
+      "transfers": [
+        {
+          "account": "0.0.3",
+          "amount": 2,
+          "is_approval": false
+        },
+        {
+          "account": "0.0.8",
+          "amount": -3,
+          "is_approval": false
+        },
+        {
+          "account": "0.0.98",
+          "amount": 1,
+          "is_approval": true
+        }
+      ],
+      "token_transfers": [
+        {
+          "account": "0.0.9",
+          "amount": 1200,
+          "is_approval": true,
+          "token_id": "0.0.90000"
+        },
+        {
+          "account": "0.0.8",
+          "amount": -1200,
+          "is_approval": false,
+          "token_id": "0.0.90000"
+        }
+      ],
+      "assessed_custom_fees": [
+        {
+          "amount": 150,
+          "collector_account_id": "0.0.87501",
+          "effective_payer_account_ids": [
+            "0.0.87501"
+          ],
+          "token_id": null
+        },
+        {
+          "amount": 10,
+          "collector_account_id": "0.0.87502",
+          "effective_payer_account_ids": [
+            "0.0.10"
+          ],
+          "token_id": "0.0.90000"
+        }
+      ]
+    }
+  ]
+}
+```
+### Transactions Endpoint
+
+Update `/api/v1/transactions/{id}` to include `is_approval` for all transfers.
+
+```json
+{
+  "transactions": [
+    {
+      "consensus_timestamp": "1234567890.000000007",
+      "transaction_hash": "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW",
+      "valid_start_timestamp": "1234567890.000000006",
+      "charged_tx_fee": 7,
+      "memo_base64": null,
+      "bytes": null,
+      "result": "SUCCESS",
+      "entity_id": "0.0.2281979",
+      "name": "CRYPTOTRANSFER",
+      "nft_transfers": [
+        {
+          "is_approval": true,
+          "receiver_account_id": "0.0.121",
+          "sender_account_id": "0.0.122",
+          "serial_number": 1,
+          "token_id": "0.0.123"
+        },
+        {
+          "is_approval": false,
+          "receiver_account_id": "0.0.321",
+          "sender_account_id": "0.0.422",
+          "serial_number": 2,
+          "token_id": "0.0.123"
+        }
+      ],
+      "max_fee": 33,
+      "valid_duration_seconds": 11,
+      "node": "0.0.3",
+      "transaction_id": "0.0.8-1234567890-000000006",
+      "scheduled": false,
+      "transfers": [
+        {
+          "account": "0.0.3",
+          "amount": 2,
+          "is_approval": true
+        },
+        {
+          "account": "0.0.8",
+          "amount": -3,
+          "is_approval": false
+        },
+        {
+          "account": "0.0.98",
+          "amount": 1,
+          "is_approval": false
+        }
+      ],
+      "token_transfers": [
+        {
+          "account": "0.0.9",
+          "amount": 1200,
+          "is_approval": false,
+          "token_id": "0.0.90000"
+        },
+        {
+          "account": "0.0.8",
+          "amount": -1200,
+          "is_approval": true,
+          "token_id": "0.0.90000"
+        }
+      ],
+      "assessed_custom_fees": [
+        {
+          "amount": 150,
+          "collector_account_id": "0.0.87501",
+          "effective_payer_account_ids": [
+            "0.0.87501"
+          ],
+          "token_id": null
+        },
+        {
+          "amount": 10,
+          "collector_account_id": "0.0.87502",
+          "effective_payer_account_ids": [
+            "0.0.10"
+          ],
+          "token_id": "0.0.90000"
+        }
+      ]
+    }
+  ]
+}
+```
+### NFT Transaction History Endpoint
+Update `/api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions` to include `is_approval` for all transfers.
+```json
+{
+  "transactions": [
+    {
+      "consensus_timestamp": "1234567890.000000007",
+      "is_approval": false,
+      "nonce": 0,
+      "transaction_id": "0.0.8-1234567890-000000007",
+      "receiver_account_id": "0.0.3001",
+      "sender_account_id": "0.0.2001",
+      "type": "CRYPTOTRANSFER"
+    },
+    {
+      "consensus_timestamp": "1234567890.000000006",
+      "is_approval": false,
+      "nonce": 1,
+      "transaction_id": "0.0.8-1234567890-000000006",
+      "receiver_account_id": "0.0.2001",
+      "sender_account_id": "0.0.1001",
+      "type": "CRYPTOTRANSFER"
+    }
+  ]
+}
+```
 ## Non-Functional Requirements
 
 * Ingest new transaction types at the same rate as consensus nodes
