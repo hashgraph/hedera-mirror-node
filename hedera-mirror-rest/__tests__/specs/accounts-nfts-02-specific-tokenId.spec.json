@@ -67,7 +67,7 @@
       }
     ]
   },
-  "urls": ["/api/v1/accounts/0.0.1001/nfts?token.id=gte:2500"],
+  "urls": ["/api/v1/accounts/0.0.1001/nfts?token.id=2500", "/api/v1/accounts/0.0.1001/nfts?token.id=gte:2500"],
   "responseStatus": 200,
   "responseJson": {
     "nfts": [
