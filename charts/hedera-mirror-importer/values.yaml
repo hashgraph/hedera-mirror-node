@@ -469,9 +469,9 @@ serviceAccount:
   name:
 
 startupProbe:
-  failureThreshold: 360
+  failureThreshold: 8640
   httpGet:
-    path: /actuator/health/readiness
+    path: /actuator/health/startup
     port: http
   initialDelaySeconds: 60
   periodSeconds: 10
