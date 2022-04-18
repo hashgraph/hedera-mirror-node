@@ -45,5 +45,5 @@ jobs:
 
       - name: Install chart
         run: |
-          yq -i '(.global.image.registry="registry:5000") | (.global.image.tag="foo")' charts/hedera-mirror/ci/*.yaml
+          yq -i '(.global.image.registry="registry:5000") | (.global.image.tag="${{ env.IMAGE_TAG }}")' charts/hedera-mirror/ci/*.yaml
           ct install --config .github/ct.yaml --charts=charts/hedera-mirror
