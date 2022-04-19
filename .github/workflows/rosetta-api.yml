@@ -39,14 +39,6 @@ jobs:
         if: always()
         run: bash <(curl -s https://codecov.io/bash)
 
-      - name: Upload artifact
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: actions/upload-artifact@v2
-        with:
-          name: ${{ env.MODULE }}
-          path: ./**/*.tgz
-          if-no-files-found: error
-
   image:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
