@@ -48,6 +48,8 @@ public class Schedule {
 
     private Long executedTimestamp;
 
+    private Long expirationTime;
+
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
@@ -56,6 +58,8 @@ public class Schedule {
 
     @ToString.Exclude
     private byte[] transactionBody;
+
+    private boolean waitForExpiry;
 
     public void setScheduleId(EntityId scheduleId) {
         this.scheduleId = scheduleId != null ? scheduleId.getId() : null;

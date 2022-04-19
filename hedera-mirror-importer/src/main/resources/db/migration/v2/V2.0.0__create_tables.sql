@@ -352,9 +352,11 @@ create table if not exists schedule
     consensus_timestamp bigint not null,
     creator_account_id  bigint not null,
     executed_timestamp  bigint null,
+    expiration_time     bigint null,
     payer_account_id    bigint not null,
     schedule_id         bigint not null,
-    transaction_body    bytea  not null
+    transaction_body    bytea  not null,
+    wait_for_expiry     bool   not null default false
 );
 comment on table schedule is 'Schedule entity entries';
 
