@@ -1,0 +1,5 @@
+insert into $finalTable ($insertColumns)
+select $tempColumns
+from $tempTable t
+where $notNullableColumn is not null
+on conflict ($conflictColumns) do nothing

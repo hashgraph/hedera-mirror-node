@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,12 @@ import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 @Log4j2
 @RequiredArgsConstructor
 public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
+
+    private static final String INSERT_TEMPLATE = "/db/template/insert.vm";
+
+    private static final String UPDATE_TEMPLATE = "/db/template/update.vm";
+
+    private static final String UPSERT_TEMPLATE = "/db/template/upsert.vm";
 
     private final UpsertEntity upsertEntity;
 
@@ -62,12 +68,8 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
      */
     @Override
     public String getInsertQuery() {
-        VelocityEngine velocityEngine = new VelocityEngine();
-        velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, RuntimeConstants.RESOURCE_LOADER_CLASS);
-        velocityEngine.setProperty("resource.loader.class.class", ClasspathResourceLoader.class.getName());
-        velocityEngine.init();
-
-        Template template = velocityEngine.getTemplate("/db/template/upsert.vm");
+        String templatePath = upsertEntity.getUpsertable().history() ? UPSERT_TEMPLATE : INSERT_TEMPLATE;
+        Template template = loadTemplate(templatePath);
 
         VelocityContext velocityContext = new VelocityContext();
         velocityContext.put("finalTable", getFinalTableName());
@@ -81,6 +83,8 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
         velocityContext.put("idColumns", upsertEntity.columns(UpsertColumn::isId, "e.{0}"));
         velocityContext.put("idJoin", upsertEntity.columns(UpsertColumn::isId, "e.{0} = t.{0}", " and "));
         velocityContext.put("insertColumns", upsertEntity.columns("{0}"));
+        velocityContext.put("notNullableColumn", upsertEntity.column(c -> !c.isNullable() && !c.isId(), "t.{0}"));
+        velocityContext.put("tempColumns", upsertEntity.columns("t.{0}"));
         velocityContext.put("updateColumns", upsertEntity.columns(UpsertColumn::isUpdatable, "{0} = excluded.{0}"));
 
         StringWriter writer = new StringWriter();
@@ -95,11 +99,36 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
 
     @Override
     public String getUpdateQuery() {
-        return "";
+        if (upsertEntity.getUpsertable().history()) {
+            return "";
+        }
+
+        Template template = loadTemplate(UPDATE_TEMPLATE);
+
+        VelocityContext velocityContext = new VelocityContext();
+        velocityContext.put("finalTable", getFinalTableName());
+        velocityContext.put("tempTable", getTemporaryTableName());
+
+        velocityContext.put("idJoin", upsertEntity.columns(UpsertColumn::isId, "e.{0} = t.{0}", " and "));
+        velocityContext.put("notNullableColumn", upsertEntity.column(c -> !c.isNullable() && !c.isId(), "t.{0}"));
+        velocityContext.put("updateColumns",
+                upsertEntity.columns(UpsertColumn::isUpdatable, "{0} = coalesce(t.{0}, e.{0})"));
+
+        StringWriter writer = new StringWriter();
+        template.merge(velocityContext, writer);
+        return writer.toString();
     }
 
     private String closeRange(String input) {
         return input.replace("e.timestamp_range",
                 "int8range(min(lower(e.timestamp_range)), min(lower(t.timestamp_range))) as timestamp_range");
+    }
+
+    private Template loadTemplate(String templatePath) {
+        VelocityEngine velocityEngine = new VelocityEngine();
+        velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, RuntimeConstants.RESOURCE_LOADER_CLASS);
+        velocityEngine.setProperty("resource.loader.class.class", ClasspathResourceLoader.class.getName());
+        velocityEngine.init();
+        return velocityEngine.getTemplate(templatePath);
     }
 }

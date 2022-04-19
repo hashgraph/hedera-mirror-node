@@ -32,7 +32,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
-import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.importer.IntegrationTest;
 
 class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
@@ -41,7 +41,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
     private UpsertQueryGeneratorFactory factory;
 
     @Resource
-    private ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator;
+    private NftUpsertQueryGenerator nftUpsertQueryGenerator;
 
     @Test
     void unsupportedClass() {
@@ -52,7 +52,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
 
     @Test
     void getExistingGenerator() {
-        assertThat(factory.get(Schedule.class)).isEqualTo(scheduleUpsertQueryGenerator);
+        assertThat(factory.get(Nft.class)).isEqualTo(nftUpsertQueryGenerator);
     }
 
     @Test

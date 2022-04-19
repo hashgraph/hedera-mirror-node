@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -96,14 +96,14 @@ public class UpsertQueryGeneratorFactory {
 
         for (Attribute<?, ?> attribute : entityType.getAttributes()) {
             boolean id = idAttributes.contains(attribute.getName());
-            upsertColumns.add(createUpsertColumn(schema, attribute, id));
+            upsertColumns.add(createUpsertColumn(schema, attribute, upsertable.history(), id));
         }
 
         return new UpsertEntity(tableName, upsertable, upsertColumns);
     }
 
     private UpsertColumn createUpsertColumn(Map<String, InformationSchemaColumns> schema,
-                                            Attribute<?, ?> attribute, boolean id) {
+                                            Attribute<?, ?> attribute, boolean historyTable, boolean id) {
         String name = attribute.getName();
         Field field = (Field) attribute.getJavaMember();
         Column column = field.getAnnotation(Column.class);
@@ -112,14 +112,20 @@ public class UpsertQueryGeneratorFactory {
                 toSnakeCase(name);
 
         boolean history = Range.class == attribute.getJavaType();
-        boolean updatable = !id && (column == null || column.updatable());
+        boolean nullable = !id && (column == null || column.nullable());
+        boolean updatable = false;
+        if (!id) {
+            // for non-id columns, if the table has history, by default it's updatable or set by the Column annotation;
+            // if the table doesn't have history,  it's updatable if set so by the Column annotation.
+            updatable = historyTable ? (column == null || column.updatable()) : (column != null && column.updatable());
+        }
         InformationSchemaColumns columnSchema = schema.get(columnName);
 
         if (columnSchema == null) {
             throw new IllegalStateException("Missing information schema for " + columnName);
         }
 
-        return new UpsertColumn(columnSchema.getColumnDefault(), history, id, columnName, updatable);
+        return new UpsertColumn(columnSchema.getColumnDefault(), history, id, columnName, nullable, updatable);
     }
 
     /*

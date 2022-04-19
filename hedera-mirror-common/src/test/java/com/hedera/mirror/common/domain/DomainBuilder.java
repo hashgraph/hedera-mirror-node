@@ -28,6 +28,9 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
@@ -48,9 +51,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionOperations;
 
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
@@ -363,9 +363,11 @@ public class DomainBuilder {
         var builder = Schedule.builder()
                 .consensusTimestamp(timestamp())
                 .creatorAccountId(entityId(ACCOUNT))
+                .expirationTime(timestamp())
                 .payerAccountId(entityId(ACCOUNT))
                 .scheduleId(entityId(SCHEDULE).getId())
-                .transactionBody(bytes(64));
+                .transactionBody(bytes(64))
+                .waitForExpiry(true);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

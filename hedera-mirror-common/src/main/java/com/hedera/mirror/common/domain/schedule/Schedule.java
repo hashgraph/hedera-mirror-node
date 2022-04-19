@@ -20,6 +20,7 @@ package com.hedera.mirror.common.domain.schedule;
  * ‍
  */
 
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -41,11 +42,14 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 @NoArgsConstructor
 @Upsertable
 public class Schedule {
+
+    @Column(nullable = false, updatable = false)
     private Long consensusTimestamp;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId creatorAccountId;
 
+    @Column
     private Long executedTimestamp;
 
     private Long expirationTime;

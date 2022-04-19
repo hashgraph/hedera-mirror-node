@@ -108,7 +108,7 @@ public class BatchUpserter extends BatchInserter {
             log.debug("Inserted {} and updated {} from a total of {} rows to {}",
                     insertCount, updateCount, items.size(), finalTableName);
         } catch (Exception e) {
-            throw new ParserException(String.format("Error copying %d items to table %s", items.size(), tableName), e);
+            throw new ParserException(String.format("Error copying %d items to table %s", items.size(), finalTableName), e);
         }
     }
 
