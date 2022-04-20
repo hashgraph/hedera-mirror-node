@@ -18,6 +18,6 @@ exports[`extractNftMultiUnionQuery throws token.id eq repeated 1`] = `"Multiple 
 
 exports[`extractNftMultiUnionQuery throws token.id ne 1`] = `"Not equals (ne) comparison operator is not supported"`;
 
-exports[`validateSingleFilterKeyOccurence throw serialnumber multiple occurence 1`] = `"Multiple range params not allowed for serialnumber"`;
+exports[`validateSingleFilterKeyOccurrence throw serialnumber multiple occurrence 1`] = `"Multiple range params not allowed for serialnumber"`;
 
-exports[`validateSingleFilterKeyOccurence throw token.id multiple occurence 1`] = `"Multiple range params not allowed for token.id"`;
+exports[`validateSingleFilterKeyOccurrence throw token.id multiple occurrence 1`] = `"Multiple range params not allowed for token.id"`;
