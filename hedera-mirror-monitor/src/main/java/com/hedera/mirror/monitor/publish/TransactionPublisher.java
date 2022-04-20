@@ -120,7 +120,6 @@ public class TransactionPublisher implements AutoCloseable {
 
     private Mono<TransactionResponse> getTransactionResponse(PublishRequest request, Client client) {
         Transaction<?> transaction = request.getTransaction();
-        transaction.setTransactionMemo(request.getScenario().getMemo());
 
         // set transaction node where applicable
         if (transaction.getNodeAccountIds() == null) {

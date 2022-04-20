@@ -297,6 +297,31 @@ class TransactionPublisherTest {
 
     @Test
     @Timeout(3)
+    void publishRetrySameRequest() {
+        ResponseCodeEnum errorResponseCode = ResponseCodeEnum.PLATFORM_NOT_ACTIVE;
+        cryptoServiceStub.addTransactions(Mono.just(response(errorResponseCode)),
+                Mono.just(response(errorResponseCode)));
+
+        var request = request().build();
+        transactionPublisher.publish(request)
+                .as(StepVerifier::create)
+                .expectErrorSatisfies(t -> assertThat(t)
+                        .isInstanceOf(PublishException.class)
+                        .hasMessageContaining("exceeded maximum attempts for request with last exception being")
+                        .getRootCause()
+                        .hasMessageContaining(errorResponseCode.toString()))
+                .verify(Duration.ofSeconds(2L));
+
+        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        transactionPublisher.publish(request)
+                .as(StepVerifier::create)
+                .expectNextCount(1L)
+                .expectComplete()
+                .verify(Duration.ofSeconds(1L));
+    }
+
+    @Test
+    @Timeout(3)
     void publishTimeout() {
         publishScenarioProperties.setTimeout(Duration.ofMillis(100L));
         cryptoServiceStub.addTransactions(Mono.delay(Duration.ofMillis(500L)).thenReturn(response(OK)));

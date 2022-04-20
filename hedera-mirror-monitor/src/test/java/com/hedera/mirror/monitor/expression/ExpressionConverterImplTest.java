@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.expression;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,9 +28,6 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.Map;
-
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -53,6 +50,7 @@ import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class ExpressionConverterImplTest {
@@ -118,11 +116,10 @@ class ExpressionConverterImplTest {
     }
 
     @Test
-    void errorPublishing() throws InvalidProtocolBufferException {
-        TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
-        when(transactionPublisher.publish(any())).thenReturn(Mono.error(new RuntimeException()))
-                .thenReturn(response(type, 100));
-        assertThat(expressionConverter.convert("${topic.foo}")).isEqualTo("0.0.100");
+    void errorPublishing() {
+        RuntimeException error = new RuntimeException("error");
+        when(transactionPublisher.publish(any())).thenReturn(Mono.error(error));
+        assertThatThrownBy(() -> expressionConverter.convert("${topic.foo}")).hasRootCause(error);
     }
 
     @Test
