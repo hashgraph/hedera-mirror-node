@@ -1,7 +1,12 @@
+with existing as (
+  select e.*
+  from $tempTable t
+  join $finalTable e on $idJoin
+)
 insert into $finalTable ($insertColumns)
 select $coalesceColumns
 from $tempTable t
-left join $finalTable e on $idJoin
+left join existing e on $idJoin
 where $notNullableColumn is not null
 on conflict ($conflictColumns)
 do update set $updateColumns

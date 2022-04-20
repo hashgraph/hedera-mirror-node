@@ -39,7 +39,13 @@ class ScheduleUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest 
 
     @Override
     protected String getInsertQuery() {
-        return "insert into schedule (" +
+        return "with existing as (" +
+                "  select e.*" +
+                "  from schedule_temp t" +
+                "  join schedule e on e.schedule_id = t.schedule_id" +
+                ")" +
+                "insert into" +
+                "  schedule (" +
                 "    consensus_timestamp," +
                 "    creator_account_id," +
                 "    executed_timestamp," +
@@ -59,10 +65,10 @@ class ScheduleUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest 
                 "  coalesce(t.transaction_body, e.transaction_body, null)," +
                 "  coalesce(t.wait_for_expiry, e.wait_for_expiry, false) " +
                 "from schedule_temp t " +
-                "left join schedule e on e.schedule_id = t.schedule_id " +
+                "left join existing e on e.schedule_id = t.schedule_id " +
                 "where coalesce(t.consensus_timestamp, e.consensus_timestamp) is not null " +
-                "on conflict (schedule_id) do update " +
-                "    set executed_timestamp = excluded.executed_timestamp";
+                "on conflict (schedule_id) do update" +
+                "  set executed_timestamp = excluded.executed_timestamp";
     }
 
     @Override
