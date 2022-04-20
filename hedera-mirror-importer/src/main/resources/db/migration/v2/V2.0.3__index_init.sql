@@ -106,6 +106,11 @@ alter table if exists entity_history
 create index if not exists entity_history__alias on entity_history (alias) where alias is not null;
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
 
+-- ethereum_transaction
+alter table ethereum_transaction
+    add constraint ethereum_transaction__pk primary key (consensus_timestamp);
+create index if not exists ethereum_transaction__hash on ethereum_transaction (hash);
+
 -- event_file
 alter table event_file
     add constraint event_file__pk primary key (consensus_end, node_account_id);

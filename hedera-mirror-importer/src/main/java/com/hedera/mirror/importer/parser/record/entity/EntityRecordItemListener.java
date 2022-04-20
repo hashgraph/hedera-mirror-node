@@ -101,6 +101,7 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -111,6 +112,7 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 public class EntityRecordItemListener implements RecordItemListener {
     private final AddressBookService addressBookService;
     private final ContractResultService contractResultService;
+    private final EthereumTransactionParser ethereumTransactionParser;
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
@@ -128,9 +130,11 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     TransactionHandlerFactory transactionHandlerFactory,
                                     FileDataRepository fileDataRepository,
                                     RecordParserProperties parserProperties,
-                                    ContractResultService contractResultService) {
+                                    ContractResultService contractResultService,
+                                    EthereumTransactionParser ethereumTransactionParser) {
         this.addressBookService = addressBookService;
         this.contractResultService = contractResultService;
+        this.ethereumTransactionParser = ethereumTransactionParser;
         this.entityIdService = entityIdService;
         this.entityListener = entityListener;
         this.entityProperties = entityProperties;
@@ -231,6 +235,8 @@ public class EntityRecordItemListener implements RecordItemListener {
                 insertTokenUpdate(recordItem);
             } else if (body.hasTokenWipe()) {
                 insertTokenAccountWipe(recordItem);
+            } else if (body.hasEthereumTransaction()) {
+                insertEthereumTransaction(recordItem);
             }
 
             // Record token transfers can be populated for multiple transaction types
@@ -1108,6 +1114,20 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         return autoAssociatedAccounts;
+    }
+
+    private void insertEthereumTransaction(RecordItem recordItem) {
+        if (entityProperties.getPersist().isEthereumTransactions()) {
+            var ethereumTransaction = ethereumTransactionParser.parse(recordItem.getTransactionBody()
+                    .getEthereumTransaction());
+            if (ethereumTransaction == ethereumTransaction) {
+                return;
+            }
+
+            var transactionRecord = recordItem.getRecord();
+            ethereumTransaction.setHash(DomainUtils.toBytes(transactionRecord.getEthereumHash()));
+            entityListener.onEthereumTransaction(ethereumTransaction);
+        }
     }
 
     /**

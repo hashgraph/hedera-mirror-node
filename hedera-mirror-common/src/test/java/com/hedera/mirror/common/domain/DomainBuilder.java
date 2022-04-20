@@ -78,6 +78,7 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -298,6 +299,33 @@ public class DomainBuilder {
                 .timestampRange(Range.atLeast(timestamp))
                 .type(ACCOUNT);
 
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<EthereumTransaction, EthereumTransaction.EthereumTransactionBuilder> ethereumTransaction() {
+        var builder = EthereumTransaction.builder()
+                .accessList(bytes(100))
+                .callData(bytes(100))
+                .callDataId(1L)
+                .chainId(bytes(100))
+                .consensusTimestamp(timestamp())
+                .data(bytes(100))
+                .fromAddress(bytes(100))
+                .gasLimit(1000L)
+                .gasPrice(bytes(32))
+                .hash(bytes(100))
+                .maxGasAllowance(10000L)
+                .maxFeePerGas(bytes(100))
+                .maxPriorityFeePerGas(bytes(100))
+                .nonce(1234L)
+                .payerAccountId(entityId(ACCOUNT))
+                .recoveryId(3)
+                .signatureR(bytes(100))
+                .signatureS(bytes(100))
+                .signatureV(bytes(100))
+                .toAddress(bytes(100))
+                .type(TransactionType.ETHEREUMTRANSACTION.getProtoId())
+                .value(bytes(100));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

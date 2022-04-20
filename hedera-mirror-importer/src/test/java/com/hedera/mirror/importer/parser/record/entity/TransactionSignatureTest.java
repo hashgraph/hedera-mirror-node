@@ -68,6 +68,7 @@ import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -91,6 +92,9 @@ class TransactionSignatureTest {
 
     @Mock
     private EntityIdService entityIdService;
+
+    @Mock
+    private EthereumTransactionParser ethereumTransactionParser;
 
     @Mock
     private NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy;
@@ -128,7 +132,8 @@ class TransactionSignatureTest {
         RecordParserProperties parserProperties = new RecordParserProperties();
         entityRecordItemListener = new EntityRecordItemListener(commonParserProperties, entityProperties,
                 addressBookService, nonFeeTransferExtractionStrategy, entityIdService, entityListener,
-                transactionHandlerFactory, fileDataRepository, parserProperties, contractResultService);
+                transactionHandlerFactory, fileDataRepository, parserProperties, contractResultService,
+                ethereumTransactionParser);
         defaultSignatureMap = getDefaultSignatureMap();
         defaultTransactionSignatures = defaultSignatureMap.getSigPairList()
                 .stream()

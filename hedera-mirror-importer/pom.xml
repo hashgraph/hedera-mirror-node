@@ -254,6 +254,11 @@
             <version>${testcontainers.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.esaulpaugh</groupId>
+            <artifactId>headlong</artifactId>
+            <version>6.1.1</version>
+        </dependency>
     </dependencies>
 
     <profiles>
