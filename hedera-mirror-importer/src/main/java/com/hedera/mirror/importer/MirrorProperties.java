@@ -60,6 +60,8 @@ public class MirrorProperties {
 
     private Instant startDate;
 
+    private Long startBlockNumber;
+
     private Long topicRunningHashV2AddedTimestamp;
 
     @NotNull

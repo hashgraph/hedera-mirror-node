@@ -491,11 +491,13 @@ public abstract class Downloader<T extends StreamFile> {
      * @param streamFile the stream file object
      */
     private void setStreamFileIndex(StreamFile streamFile) {
-        long index = lastStreamFile.get()
-                .map(StreamFile::getIndex)
-                .map(v -> v + 1)
-                .orElse(0L);
-        streamFile.setIndex(index);
+        Long startBlockNumber = mirrorProperties.getStartBlockNumber();
+        if (startBlockNumber == null) {
+            streamFile.setIndex(0L);
+        }
+        else{
+            streamFile.setIndex(startBlockNumber);
+        }
     }
 
     /**
