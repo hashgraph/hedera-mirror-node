@@ -60,10 +60,6 @@ public class MirrorProperties {
 
     private Instant startDate;
 
-    @DurationMin(seconds = 0L)
-    @NotNull
-    private Duration startDateAdjustment = Duration.ofSeconds(30L);
-
     private Long topicRunningHashV2AddedTimestamp;
 
     @NotNull

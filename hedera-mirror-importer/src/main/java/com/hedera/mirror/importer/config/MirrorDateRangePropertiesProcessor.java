@@ -128,13 +128,11 @@ public class MirrorDateRangePropertiesProcessor {
         Instant lastFileInstant = streamFile.map(StreamFile::getConsensusStart)
                 .map(nanos -> Instant.ofEpochSecond(0, nanos))
                 .orElse(null);
-        Duration adjustment = mirrorProperties.getStartDateAdjustment();
-        Instant effectiveStartDate = STARTUP_TIME.minus(adjustment);
+
+        Instant effectiveStartDate = STARTUP_TIME;
         boolean hasStreamFile = lastFileInstant != null;
 
-        if (startDate != null) {
-            effectiveStartDate = max(startDate.minus(adjustment), hasStreamFile ? lastFileInstant : Instant.EPOCH);
-        } else if (hasStreamFile) {
+        if (hasStreamFile) {
             effectiveStartDate = lastFileInstant;
         } else if (mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.DEMO) {
             effectiveStartDate = Instant.EPOCH; // Demo network contains only data in the past, so don't default to now
