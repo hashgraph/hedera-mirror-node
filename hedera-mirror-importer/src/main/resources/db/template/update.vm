@@ -1,4 +1,0 @@
-update $finalTable e
-set $updateColumns
-from $tempTable t
-where $notNullableColumn is null and $idJoin
