@@ -34,6 +34,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
+import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenType;
@@ -119,18 +121,19 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             publishScenarioProperties.setType(type.getTransactionType());
             PublishScenario scenario = new PublishScenario(publishScenarioProperties);
 
-            var transaction = transactionSupplier.get()
-                    .setMaxAttempts(Integer.MAX_VALUE)
-                    .setTransactionMemo(scenario.getMemo());
+            Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofMillis(500L))
+                    .maxBackoff(Duration.ofSeconds(8L))
+                    .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
+                            r.totalRetries() + 1, r.failure().getMessage()));
 
-            PublishRequest request = PublishRequest.builder()
-                    .receipt(true)
-                    .scenario(scenario)
-                    .timestamp(Instant.now())
-                    .transaction(transaction)
-                    .build();
-
-            String createdId = transactionPublisher.publish(request)
+            String createdId = Mono.defer(() -> transactionPublisher.publish(PublishRequest.builder()
+                            .receipt(true)
+                            .scenario(scenario)
+                            .timestamp(Instant.now())
+                            .transaction(transactionSupplier.get().setTransactionMemo(scenario.getMemo()))
+                            .build()
+                    ))
+                    .retryWhen(retrySpec)
                     .map(PublishResponse::getReceipt)
                     .map(type.getIdExtractor()::apply)
                     .toFuture()

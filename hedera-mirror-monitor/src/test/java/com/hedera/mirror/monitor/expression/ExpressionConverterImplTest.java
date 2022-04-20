@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -116,10 +117,11 @@ class ExpressionConverterImplTest {
     }
 
     @Test
-    void errorPublishing() {
-        RuntimeException error = new RuntimeException("error");
-        when(transactionPublisher.publish(any())).thenReturn(Mono.error(error));
-        assertThatThrownBy(() -> expressionConverter.convert("${topic.foo}")).hasRootCause(error);
+    void errorPublishing() throws InvalidProtocolBufferException {
+        TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
+        when(transactionPublisher.publish(any())).thenReturn(Mono.error(new TimeoutException()))
+                .thenReturn(response(type, 100));
+        assertThat(expressionConverter.convert("${topic.foo}")).isEqualTo("0.0.100");
     }
 
     @Test
