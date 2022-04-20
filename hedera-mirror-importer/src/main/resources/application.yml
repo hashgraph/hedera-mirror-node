@@ -13,6 +13,10 @@ hedera:
         restUsername: mirror_api
         schema: public
         username: mirror_node
+      blocks:
+        correctConsensusEnd: 1570801010552116001
+        correctBlockNumber: 420
+
 logging:
   level:
     root: warn
