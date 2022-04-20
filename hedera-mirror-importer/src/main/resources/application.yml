@@ -14,6 +14,7 @@ hedera:
         schema: public
         username: mirror_node
       blocks:
+        enabled: true
         correctConsensusEnd: 1570801010552116001
         correctBlockNumber: 420
 

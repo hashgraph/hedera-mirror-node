@@ -7,6 +7,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties("hedera.mirror.importer.blocks")
 public class BlockNumberMigrationProperties {
 
+    private boolean enabled;
+
     private long correctConsensusEnd;
 
     private long correctBlockNumber;

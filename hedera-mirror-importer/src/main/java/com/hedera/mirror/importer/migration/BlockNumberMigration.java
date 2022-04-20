@@ -21,12 +21,10 @@ package com.hedera.mirror.importer.migration;
  */
 
 import lombok.RequiredArgsConstructor;
-import org.checkerframework.checker.units.qual.A;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import javax.inject.Named;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Named
@@ -39,6 +37,9 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected void doMigrate() {
+        if(!migrationProperties.isEnabled()){
+            return ;
+        }
         Long recordFileBlockNumber = getRecordFileByConsensusEnd(migrationProperties.getCorrectConsensusEnd());
         if(recordFileBlockNumber == null){
             return ;
