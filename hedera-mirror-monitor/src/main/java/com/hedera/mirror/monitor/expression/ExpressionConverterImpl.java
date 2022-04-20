@@ -110,6 +110,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                 scheduleCreateTransactionSupplier.setNodeAccountId(singleNodeProperty.getAccountId());
                 scheduleCreateTransactionSupplier
                         .setOperatorAccountId(monitorProperties.getOperator().getAccountId());
+                scheduleCreateTransactionSupplier.setSignatoryCount(0);
             }
 
             PublishScenarioProperties publishScenarioProperties = new PublishScenarioProperties();

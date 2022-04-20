@@ -33,12 +33,11 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
-import java.util.regex.Pattern;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.AfterEach;
@@ -126,9 +125,6 @@ class TransactionPublisherTest {
                 })
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
-
-        assertThat(request.getTransaction().getTransactionMemo())
-                .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+"));
     }
 
     @Test
@@ -414,8 +410,8 @@ class TransactionPublisherTest {
     @Data
     private class CryptoServiceStub extends CryptoServiceGrpc.CryptoServiceImplBase {
 
-        private Queue<Mono<TransactionResponse>> transactions = new LinkedList<>();
-        private Queue<Mono<Response>> queries = new LinkedList<>();
+        private Queue<Mono<TransactionResponse>> transactions = new ConcurrentLinkedQueue<>();
+        private Queue<Mono<Response>> queries = new ConcurrentLinkedQueue<>();
 
         void addQueries(Mono<Response>... query) {
             queries.addAll(Arrays.asList(query));
