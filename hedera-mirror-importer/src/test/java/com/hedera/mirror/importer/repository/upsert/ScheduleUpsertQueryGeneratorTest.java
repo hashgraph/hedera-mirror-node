@@ -39,21 +39,35 @@ class ScheduleUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest 
 
     @Override
     protected String getInsertQuery() {
-        return "insert into schedule (consensus_timestamp, creator_account_id, executed_timestamp, " +
-                "expiration_time, payer_account_id, schedule_id, transaction_body, wait_for_expiry) " +
+        return "insert into schedule (" +
+                "    consensus_timestamp," +
+                "    creator_account_id," +
+                "    executed_timestamp," +
+                "    expiration_time," +
+                "    payer_account_id," +
+                "    schedule_id," +
+                "    transaction_body," +
+                "    wait_for_expiry" +
+                "  ) " +
                 "select" +
-                "  t.consensus_timestamp, t.creator_account_id," +
-                "  t.executed_timestamp, t.expiration_time, t.payer_account_id," +
-                "  t.schedule_id, t.transaction_body, t.wait_for_expiry from schedule_temp t " +
-                "where t.consensus_timestamp is not null on conflict (schedule_id) do nothing";
+                "  coalesce(t.consensus_timestamp, e.consensus_timestamp, null)," +
+                "  coalesce(t.creator_account_id, e.creator_account_id, null)," +
+                "  coalesce(t.executed_timestamp, e.executed_timestamp, null)," +
+                "  coalesce(t.expiration_time, e.expiration_time, null)," +
+                "  coalesce(t.payer_account_id, e.payer_account_id, null)," +
+                "  coalesce(t.schedule_id, e.schedule_id, null)," +
+                "  coalesce(t.transaction_body, e.transaction_body, null)," +
+                "  coalesce(t.wait_for_expiry, e.wait_for_expiry, false) " +
+                "from schedule_temp t " +
+                "left join schedule e on e.schedule_id = t.schedule_id " +
+                "where coalesce(t.consensus_timestamp, e.consensus_timestamp) is not null " +
+                "on conflict (schedule_id) do update " +
+                "    set executed_timestamp = excluded.executed_timestamp";
     }
 
     @Override
     protected String getUpdateQuery() {
-        return "update schedule e " +
-                "set executed_timestamp = coalesce(t.executed_timestamp, e.executed_timestamp) " +
-                "from schedule_temp t " +
-                "where t.consensus_timestamp is null and e.schedule_id = t.schedule_id";
+        return "";
     }
 
     @Test
