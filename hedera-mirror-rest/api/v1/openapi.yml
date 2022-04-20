@@ -2563,7 +2563,7 @@ components:
     limitQueryParam:
       name: limit
       in: query
-      description: The maximimum number of items to return
+      description: The maximum number of items to return
       example: 2
       schema:
         type: integer
