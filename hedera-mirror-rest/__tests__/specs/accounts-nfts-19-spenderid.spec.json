@@ -1,5 +1,5 @@
 {
-  "description": "Account NFT api call for all tokens with no match",
+  "description": "Account NFT api call for a specific spender id",
   "setup": {
     "entities": [
       {
@@ -7,9 +7,6 @@
       },
       {
         "num": 2001
-      },
-      {
-        "num": 3001
       },
       {
         "num": 1500,
@@ -48,36 +45,39 @@
       {
         "account_id": "0.0.2001",
         "created_timestamp": "1234567890000000006",
+        "delegating_spender": "0.0.5",
         "metadata": "m2",
         "serial_number": 2,
+        "spender": "0.0.1000",
         "token_id": "0.0.1500"
       },
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890000000007",
+        "delegating_spender": "0.0.5",
         "metadata": "s1",
         "serial_number": 1,
+        "spender": "0.0.2000",
         "token_id": "0.0.2500"
-      },
-      {
-        "account_id": "0.0.1001",
-        "created_timestamp": "1234567890000000008",
-        "metadata": "m3",
-        "serial_number": 3,
-        "spender_id": "0.0.2000",
-        "token_id": "0.0.1500"
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/0.0.3001/nfts",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=1",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=5",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=3&spender.id=2001"
-  ],
+  "urls": ["/api/v1/accounts/0.0.1001/nfts?spender.id=gte:2000"],
   "responseStatus": 200,
   "responseJson": {
-    "nfts": [],
+    "nfts": [
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000007",
+        "delegating_spender": "0.0.5",
+        "deleted": false,
+        "metadata": "czE=",
+        "modified_timestamp": "1234567890.000000007",
+        "serial_number": 1,
+        "spender": "0.0.2000",
+        "token_id": "0.0.2500"
+      }
+    ],
     "links": {
       "next": null
     }

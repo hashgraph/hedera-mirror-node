@@ -45,8 +45,10 @@
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890000000006",
+        "delegating_spender": "0.0.2001",
         "metadata": "m2",
         "serial_number": 2,
+        "spender": "0.0.2004",
         "token_id": "0.0.1500"
       },
       {
@@ -55,24 +57,33 @@
         "delegating_spender": "0.0.2001",
         "metadata": "m3",
         "serial_number": 3,
-        "spender": "0.0.2002",
+        "spender": "0.0.2004",
+        "token_id": "0.0.1500"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000009",
+        "delegating_spender": "0.0.2001",
+        "metadata": "m4",
+        "serial_number": 4,
+        "spender": "0.0.2005",
         "token_id": "0.0.1500"
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gte:1500&serialnumber=gte:2&order=asc&limit=2",
+  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gte:1500&serialnumber=gte:2&spender.id=gte:2004&order=asc&limit=2",
   "responseStatus": 200,
   "responseJson": {
     "nfts": [
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890.000000006",
-        "delegating_spender": null,
+        "delegating_spender": "0.0.2001",
         "deleted": false,
         "metadata": "bTI=",
         "modified_timestamp": "1234567890.000000006",
         "serial_number": 2,
-        "spender": null,
+        "spender": "0.0.2004",
         "token_id": "0.0.1500"
       },
       {
@@ -83,12 +94,12 @@
         "metadata": "bTM=",
         "modified_timestamp": "1234567890.000000008",
         "serial_number": 3,
-        "spender": "0.0.2002",
+        "spender": "0.0.2004",
         "token_id": "0.0.1500"
       }
     ],
     "links": {
-      "next": "/api/v1/accounts/0.0.1001/nfts?order=asc&limit=2&token.id=gte:0.0.1500&serialnumber=gt:3"
+      "next": "/api/v1/accounts/0.0.1001/nfts?order=asc&limit=2&token.id=gte:0.0.1500&serialnumber=gt:3&spender.id=gte:0.0.2004"
     }
   }
 }
