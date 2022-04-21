@@ -90,6 +90,7 @@ create table if not exists contract
     expiration_timestamp bigint                         null,
     file_id              bigint                         null,
     id                   bigint                         not null,
+    initcode             bytea                          null,
     key                  bytea                          null,
     memo                 text        default ''         not null,
     num                  bigint                         not null,

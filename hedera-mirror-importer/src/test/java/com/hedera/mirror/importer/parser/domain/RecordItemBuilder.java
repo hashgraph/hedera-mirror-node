@@ -275,7 +275,7 @@ public class RecordItemBuilder {
         return AccountID.newBuilder().setAccountNum(id()).build();
     }
 
-    private ByteString bytes(int length) {
+    public ByteString bytes(int length) {
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return ByteString.copyFrom(bytes);
@@ -287,6 +287,10 @@ public class RecordItemBuilder {
 
     private Duration duration(int seconds) {
         return Duration.newBuilder().setSeconds(seconds).build();
+    }
+
+    public BytesValue evmAddress() {
+        return BytesValue.of(bytes(20));
     }
 
     private FileID fileId() {
