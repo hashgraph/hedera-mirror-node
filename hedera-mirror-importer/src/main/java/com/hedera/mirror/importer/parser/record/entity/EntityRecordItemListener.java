@@ -20,9 +20,18 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
+import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recover;
+import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recoverable_signature_parse_compact;
+
+import com.esaulpaugh.headlong.rlp.RLPEncoder;
+import com.esaulpaugh.headlong.util.Integers;
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
 import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -62,7 +71,10 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
+import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
+import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
@@ -82,6 +94,7 @@ import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -1117,16 +1130,124 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertEthereumTransaction(RecordItem recordItem) {
-        if (entityProperties.getPersist().isEthereumTransactions()) {
-            var ethereumTransaction = ethereumTransactionParser.parse(recordItem.getTransactionBody()
-                    .getEthereumTransaction());
-            if (ethereumTransaction == ethereumTransaction) {
-                return;
-            }
+        if (!entityProperties.getPersist().isEthereumTransactions()) {
+            return;
+        }
 
-            var transactionRecord = recordItem.getRecord();
-            ethereumTransaction.setHash(DomainUtils.toBytes(transactionRecord.getEthereumHash()));
-            entityListener.onEthereumTransaction(ethereumTransaction);
+        var body = recordItem.getTransactionBody().getEthereumTransaction();
+        var ethereumTransaction = ethereumTransactionParser.parse(
+                DomainUtils.toBytes(body.getEthereumData()));
+        if (ethereumTransaction == null) {
+            return;
+        }
+
+        // update ethereumTransaction with body values
+        var file = body.getCallData() == FileID.getDefaultInstance() ? null : EntityId.of(body.getCallData());
+        ethereumTransaction.setCallDataId(file);
+        ethereumTransaction.setMaxGasAllowance(body.getMaxGasAllowance());
+
+        // update ethereumTransaction with record values
+        var record = recordItem.getRecord();
+        ethereumTransaction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
+        ethereumTransaction.setData(DomainUtils.toBytes(record.getEthereumHash()));
+        ethereumTransaction.setHash(DomainUtils.toBytes(record.getEthereumHash()));
+        ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
+
+        // set fromAddress from processed ethereum transaction
+        var message = calculateSignableMessage(ethereumTransaction);
+        var publicKey = extractSig(ethereumTransaction.getRecoveryId(), ethereumTransaction.getSignatureR(),
+                ethereumTransaction.getSignatureS(), message);
+        ethereumTransaction.setFromAddress(publicKey);
+
+        // if ToAddress is null create Contract
+        if (ethereumTransaction.getToAddress() == null) {
+            var signerIdEntityId = entityIdService.lookup(AccountID.newBuilder().setAlias(
+                    DomainUtils.fromBytes(publicKey)).build());
+            var funcResult = record.hasContractCreateResult() ? record.getContractCreateResult() :
+                    record.getContractCallResult();
+            var toEntityId = entityIdService.lookup(funcResult.getContractID());
+            var contract = Contract.builder()
+//                    .autoRenewPeriod(1800L)
+                    .createdTimestamp(recordItem.getConsensusTimestamp())
+                    .deleted(false)
+//                    .expirationTimestamp(timestamp + 30_000_000L)
+                    .fileId(ethereumTransaction.getCallDataId())
+                    .id(toEntityId.getId())
+                    .key(publicKey)
+//                    .memo(text(16))
+                    .obtainerId(signerIdEntityId)
+//                    .proxyAccountId(entityId(ACCOUNT))
+                    .num(toEntityId.getEntityNum())
+                    .realm(toEntityId.getRealmNum())
+                    .shard(toEntityId.getShardNum())
+                    .timestampRange(Range.atLeast(recordItem.getConsensusTimestamp()))
+                    .type(CONTRACT)
+                    .build();
+            entityListener.onContract(contract);
+        }
+
+        entityListener.onEthereumTransaction(ethereumTransaction);
+    }
+
+    private byte[] calculateSignableMessage(EthereumTransaction ethTx) {
+        switch (ethTx.getType()) {
+            case 0:
+                return (ethTx.getChainId() != null && ethTx.getChainId().length > 0)
+                        ? RLPEncoder.encodeAsList(
+                        Integers.toBytes(ethTx.getNonce()),
+                        ethTx.getGasPrice(),
+                        Integers.toBytes(ethTx.getGasLimit()),
+                        ethTx.getToAddress(),
+                        ethTx.getValue(),
+                        ethTx.getCallData(),
+                        ethTx.getChainId(),
+                        Integers.toBytes(0),
+                        Integers.toBytes(0))
+                        : RLPEncoder.encodeAsList(
+                        Integers.toBytes(ethTx.getNonce()),
+                        ethTx.getGasPrice(),
+                        Integers.toBytes(ethTx.getGasLimit()),
+                        ethTx.getToAddress(),
+                        ethTx.getValue(),
+                        ethTx.getCallData());
+            case 2:
+                return RLPEncoder.encodeSequentially(
+                        Integers.toBytes(2),
+                        new Object[] {
+                                ethTx.getChainId(),
+                                Integers.toBytes(ethTx.getNonce()),
+                                ethTx.getMaxPriorityFeePerGas(),
+                                ethTx.getMaxFeePerGas(),
+                                Integers.toBytes(ethTx.getGasLimit()),
+                                ethTx.getToAddress(),
+                                ethTx.getValue(),
+                                ethTx.getCallData(),
+                                new Object[0]
+                        });
+            case 1:
+                throw new IllegalArgumentException("Unsupported transaction type " + ethTx.getType());
+        }
+        return new byte[0];
+    }
+
+    private byte[] extractSig(int recId, byte[] r, byte[] s, byte[] message) {
+        byte[] dataHash = new Keccak.Digest256().digest(message);
+
+        byte[] signature = new byte[64];
+        System.arraycopy(r, 0, signature, 0, r.length);
+        System.arraycopy(s, 0, signature, 32, s.length);
+
+        LibSecp256k1.secp256k1_ecdsa_recoverable_signature parsedSignature =
+                new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
+
+        if (secp256k1_ecdsa_recoverable_signature_parse_compact(CONTEXT, parsedSignature, signature, recId) == 0) {
+            throw new IllegalArgumentException("Could not parse signature");
+        }
+        LibSecp256k1.secp256k1_pubkey newPubKey = new LibSecp256k1.secp256k1_pubkey();
+        if (secp256k1_ecdsa_recover(CONTEXT, newPubKey, parsedSignature, dataHash) == 0) {
+            throw new IllegalArgumentException("Could not recover signature");
+        } else {
+            return newPubKey.data;
         }
     }
 

@@ -77,7 +77,7 @@ public class ContractResult implements Persistable<Long> {
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
-    @Convert(converter = ContractIdConverter.class)
+    @Convert(converter = AccountIdConverter.class)
     private EntityId senderId;
 
     @JsonIgnore

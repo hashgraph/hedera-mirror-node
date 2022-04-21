@@ -21,19 +21,17 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  */
 
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
-import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import java.math.BigInteger;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.common.util.DomainUtils;
 
 @Named
 public class LegacyEthereumTransactionParser implements EthereumTransactionParser {
     @Override
-    public EthereumTransaction parse(EthereumTransactionBody body) {
+    public EthereumTransaction parse(byte[] transactionBytes) {
         var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(
-                DomainUtils.toBytes(body.getEthereumData()));
+                transactionBytes);
         var legacyRlpItem = decoder.next();
         var rlpItems = legacyRlpItem.asRLPList().elements();
         if (rlpItems.size() != 9) {
@@ -47,8 +45,7 @@ public class LegacyEthereumTransactionParser implements EthereumTransactionParse
                 .toAddress(rlpItems.get(3).data())
                 .value(rlpItems.get(4).asBigInt().toByteArray())
                 .callData(rlpItems.get(5).data())
-                .type(1)
-                .maxGasAllowance(body.getMaxGasAllowance());
+                .type(0);
 
         var v = rlpItems.get(6).asBytes();
         BigInteger vBi = new BigInteger(1, v);

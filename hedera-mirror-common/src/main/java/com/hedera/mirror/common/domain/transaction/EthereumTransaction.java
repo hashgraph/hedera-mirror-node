@@ -22,6 +22,7 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -50,7 +51,9 @@ public class EthereumTransaction implements Persistable<Long> {
     @ToString.Exclude
     private byte[] callData;
 
-    private Long callDataId;
+    @Convert(converter = AccountIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
+    private EntityId callDataId;
 
     @ToString.Exclude
     private byte[] chainId;
@@ -85,12 +88,15 @@ public class EthereumTransaction implements Persistable<Long> {
 
     private Integer recoveryId;
 
+    @Column(name = "signature_r")
     @ToString.Exclude
     private byte[] signatureR;
 
+    @Column(name = "signature_s")
     @ToString.Exclude
     private byte[] signatureS;
 
+    @Column(name = "signature_v")
     @ToString.Exclude
     private byte[] signatureV;
 

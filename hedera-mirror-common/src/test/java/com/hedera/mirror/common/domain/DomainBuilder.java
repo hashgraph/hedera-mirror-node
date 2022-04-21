@@ -240,7 +240,8 @@ public class DomainBuilder {
                 .functionResult(bytes(128))
                 .gasLimit(200L)
                 .gasUsed(100L)
-                .payerAccountId(entityId(ACCOUNT));
+                .payerAccountId(entityId(ACCOUNT))
+                .senderId(entityId(ACCOUNT));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -306,7 +307,7 @@ public class DomainBuilder {
         var builder = EthereumTransaction.builder()
                 .accessList(bytes(100))
                 .callData(bytes(100))
-                .callDataId(1L)
+                .callDataId(entityId(FILE))
                 .chainId(bytes(100))
                 .consensusTimestamp(timestamp())
                 .data(bytes(100))

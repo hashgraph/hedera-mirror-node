@@ -21,18 +21,16 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  */
 
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
-import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.common.util.DomainUtils;
 
 @Named
 public class Eip1559EthereumTransactionParser implements EthereumTransactionParser {
     @Override
-    public EthereumTransaction parse(EthereumTransactionBody body) {
+    public EthereumTransaction parse(byte[] transactionBytes) {
         var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(
-                DomainUtils.toBytes(body.getEthereumData()));
+                transactionBytes);
         var legacyRlpItem = decoder.next();
         var legacyTypeByte = legacyRlpItem.asByte();
         if (legacyTypeByte != 2) {

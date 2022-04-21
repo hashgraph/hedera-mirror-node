@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  */
 
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
-import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -38,14 +37,19 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
     private final Eip1559EthereumTransactionParser eip1559EthereumTransactionParser;
 
     @Override
-    public EthereumTransaction parse(EthereumTransactionBody body) {
-        var ethereumTransactionParser = getEthereumTransactionParser(body.getEthereumData().toByteArray());
-        return ethereumTransactionParser.parse(body);
+    public EthereumTransaction parse(byte[] transactionBytes) {
+        var ethereumTransactionParser = getEthereumTransactionParser(transactionBytes);
+        return ethereumTransactionParser.parse(transactionBytes);
     }
 
-    private EthereumTransactionParser getEthereumTransactionParser(byte[] data) {
-        var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(data);
+    private EthereumTransactionParser getEthereumTransactionParser(byte[] transactionBytes) {
+        // in case of ethereumData in body being empty we should be pulling from the record
+        var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(transactionBytes);
         var rlpItem = decoder.next();
         return rlpItem.isList() ? legacyEthereumTransactionParser : eip1559EthereumTransactionParser;
+    }
+
+    private void setFromAddress(EthereumTransaction ethereumTransaction, byte[] ethTx) {
+
     }
 }

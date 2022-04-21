@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.ethereum;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -22,27 +22,21 @@ package com.hedera.mirror.importer.parser.record.ethereum;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.assertj.core.api.Assertions;
+import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 
-abstract class AbstractEthereumTransactionParserTest {
-    protected static EthereumTransactionParser ethereumTransactionParser;
+class EthereumTransactionRepositoryTest extends AbstractRepositoryTest {
 
-    protected abstract byte[] getTransactionBytes();
-
-    protected abstract void validateEthereumTransaction(EthereumTransaction ethereumTransaction);
+    @Resource
+    private EthereumTransactionRepository ethereumTransactionRepository;
 
     @Test
-    public void parse() {
-        var ethereumTransaction = ethereumTransactionParser.parse(getTransactionBytes());
-        Assertions.assertThat(ethereumTransaction).isNotNull();
-
-        assertThat(ethereumTransaction)
-                .isNotNull()
-                .satisfies(t -> assertThat(t.getChainId()).isNotEmpty());
-
-        validateEthereumTransaction(ethereumTransaction);
+    void save() {
+        EthereumTransaction ethereumTransaction = domainBuilder.ethereumTransaction().persist();
+        assertThat(ethereumTransactionRepository.findById(ethereumTransaction.getId()))
+                .get()
+                .isEqualTo(ethereumTransaction);
     }
 }

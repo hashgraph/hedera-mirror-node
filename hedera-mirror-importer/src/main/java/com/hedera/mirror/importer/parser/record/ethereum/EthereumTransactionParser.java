@@ -20,10 +20,8 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
-
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 
 public interface EthereumTransactionParser {
-    EthereumTransaction parse(EthereumTransactionBody body);
+    EthereumTransaction parse(byte[] transactionBytes);
 }
