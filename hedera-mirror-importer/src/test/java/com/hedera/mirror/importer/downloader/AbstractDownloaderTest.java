@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.downloader;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -241,6 +241,7 @@ public abstract class AbstractDownloaderTest {
     private void initProperties() {
         mirrorProperties = new MirrorProperties();
         mirrorProperties.setDataPath(dataPath);
+        mirrorProperties.setStartBlockNumber(101L);
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
 
         commonDownloaderProperties = new CommonDownloaderProperties(mirrorProperties);
@@ -279,6 +280,8 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("Download and verify files")
     void download() throws Exception {
+        mirrorProperties.setStartBlockNumber(null);
+
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
@@ -290,6 +293,8 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("Non-unanimous consensus reached")
     void partialConsensus() throws Exception {
+        mirrorProperties.setStartBlockNumber(null);
+
         fileCopier.filterDirectories("*0.0.3").filterDirectories("*0.0.4").filterDirectories("*0.0.5").copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
@@ -303,6 +308,8 @@ public abstract class AbstractDownloaderTest {
         List<AddressBookEntry> entries = addressBook.getEntries().stream().limit(3).collect(Collectors.toList());
         AddressBook addressBookWith3Nodes = addressBook.toBuilder().entries(entries).nodeCount(entries.size()).build();
         doReturn(addressBookWith3Nodes).when(addressBookService).getCurrent();
+
+        mirrorProperties.setStartBlockNumber(null);
 
         String nodeAccountId = entries.get(0).getNodeAccountId().toString();
         log.info("Only copy node {}'s stream files and signature files for a 3-node network", nodeAccountId);
@@ -400,6 +407,7 @@ public abstract class AbstractDownloaderTest {
     @DisplayName("overwrite on download")
     void overwriteOnDownload() throws Exception {
         downloaderProperties.setWriteSignatures(true);
+        mirrorProperties.setStartBlockNumber(null);
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
@@ -448,6 +456,8 @@ public abstract class AbstractDownloaderTest {
     @Test
     @DisplayName("Download and verify two group of files in the same bucket")
     void downloadValidFilesInSameBucket() throws Exception {
+        mirrorProperties.setStartBlockNumber(null);
+
         // last valid downloaded file's timestamp is set to file1's timestamp - (I/2 + 1ns), so both file1 and file2
         // will be in the bucket [lastTimestamp + I/2, lastTimestamp + 3*I/2). Note the interval I is set to twice of
         // the difference between file1 and file2.
@@ -503,6 +513,7 @@ public abstract class AbstractDownloaderTest {
     })
     void endDate(long seconds, String fileChoice) {
         mirrorProperties.setEndDate(chooseFileInstant(fileChoice).plusSeconds(seconds));
+        mirrorProperties.setStartBlockNumber(null);
         downloaderProperties.setBatchSize(1);
         List<String> expectedFiles = instantFilenamePairs
                 .stream()
@@ -523,6 +534,7 @@ public abstract class AbstractDownloaderTest {
     @MethodSource("provideAllNodeAccountIds")
     void singleNodeSigFileCorrupted(EntityId nodeAccountId) throws Exception {
         corruptedNodeAccountId = nodeAccountId;
+        mirrorProperties.setStartBlockNumber(null);
         fileCopier.copy();
         Files.walk(s3Path).filter(this::isSigFile)
                 .filter(p -> p.toString().contains(nodeAccountId.entityIdToString()))
@@ -536,6 +548,7 @@ public abstract class AbstractDownloaderTest {
     @MethodSource("provideAllNodeAccountIds")
     void singleNodeStreamFileCorrupted(EntityId nodeAccountId) throws Exception {
         corruptedNodeAccountId = nodeAccountId;
+        mirrorProperties.setStartBlockNumber(null);
         fileCopier.copy();
         Files.walk(s3Path).filter(Predicate.not(this::isSigFile))
                 .filter(p -> p.toString().contains(nodeAccountId.entityIdToString()))
@@ -549,6 +562,7 @@ public abstract class AbstractDownloaderTest {
     @DisplayName("Max download items reached")
     void maxDownloadItemsReached() throws Exception {
         downloaderProperties.setBatchSize(1);
+        mirrorProperties.setStartBlockNumber(null);
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
 
@@ -586,6 +600,7 @@ public abstract class AbstractDownloaderTest {
     @Test
     void persistBytes() throws Exception {
         downloaderProperties.setPersistBytes(true);
+        mirrorProperties.setStartBlockNumber(null);
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
@@ -595,6 +610,8 @@ public abstract class AbstractDownloaderTest {
     }
 
     private void differentFilenames(Duration offset) throws Exception {
+        mirrorProperties.setStartBlockNumber(null);
+
         // Copy all files and modify only node 0.0.3's files to have a different timestamp
         fileCopier.filterFiles(file2 + "*").copy();
         Path basePath = fileCopier.getTo().resolve(streamType.getNodePrefix() + "0.0.3");
@@ -638,7 +655,8 @@ public abstract class AbstractDownloaderTest {
     protected void verifyStreamFiles(List<String> files) {
         ArgumentCaptor<StreamFile> captor = ArgumentCaptor.forClass(StreamFile.class);
         AtomicLong index = new AtomicLong(firstIndex);
-        verify(streamFileNotifier, times(files.size())).verified(captor.capture());
+        verify(streamFileNotifier, times(files.size()))
+                .verified(captor.capture());
         assertThat(captor.getAllValues()).allMatch(s -> files.contains(s.getName()))
                 .allMatch(s -> s.getIndex() == null || s.getIndex() == index.getAndIncrement())
                 .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null));
