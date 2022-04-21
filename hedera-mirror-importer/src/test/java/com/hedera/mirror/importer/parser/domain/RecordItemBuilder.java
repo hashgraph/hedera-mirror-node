@@ -280,9 +280,11 @@ public class RecordItemBuilder {
         var digestedHash = ByteString.copyFrom(new Keccak.Digest256().digest(transactionBytes));
         if (create) {
             transactionBody.setCallData(fileId());
+            // set senderId w alias as publicKey
+            var accountId = AccountID.newBuilder().setAlias(bytes(32)).build();
             return new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
                     .record(r -> r
-                            .setContractCreateResult(contractFunctionResult(contractId))
+                            .setContractCreateResult(contractFunctionResult(contractId).setSenderId(accountId))
                             .setEthereumHash(digestedHash));
         } else {
             return new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
@@ -296,37 +298,43 @@ public class RecordItemBuilder {
         return chainIDList ?
                 RLPEncoder.encodeAsList(
                         Integers.toBytes(10L), // nonce
-                        bytes(3), // gasPrice
+                        randomBytes(3), // gasPrice
                         Integers.toBytes(6), // gasLimit
-                        newContract ? null : bytes(5), // to
+                        newContract ? new byte[0] : randomBytes(5), // to
                         Integers.toBytesUnsigned(BigInteger.valueOf(100)), // value
-                        bytes(50), // callData
-                        bytes(1), // chainId
-                        Integers.toBytes(0),
-                        Integers.toBytes(0))
+                        randomBytes(50), // callData
+                        randomBytes(1), // chainId
+                        Integers.toBytes(0), // r
+                        Integers.toBytes(0)) // s
                 :
                 RLPEncoder.encodeAsList(
                         Integers.toBytes(10L), // nonce
-                        bytes(3), // gasPrice
+                        randomBytes(3), // gasPrice
                         Integers.toBytes(1000), // gasLimit
-                        newContract ? null : bytes(5), // to
+                        newContract ? new byte[0] : randomBytes(5), // to
                         Integers.toBytesUnsigned(BigInteger.valueOf(100)), // value
-                        bytes(50)); // callData
+                        randomBytes(50), // callData
+                        new byte[0], // chainId
+                        new byte[0], // r
+                        new byte[0]); // s
     }
 
     public byte[] getEip1559EthTransactionBytes(boolean newContract) {
         return RLPEncoder.encodeSequentially(
                 Integers.toBytes(2),
                 new Object[] {
-                        bytes(1), //  chainId
+                        randomBytes(1), //  chainId
                         Integers.toBytes(10L), // nonce
-                        bytes(4), // maxPriorityGas
-                        bytes(4), // maxGas
+                        randomBytes(4), // maxPriorityGas
+                        randomBytes(4), // maxGas
                         Integers.toBytes(6), // gasLimit
-                        newContract ? null : bytes(5), // to
+                        newContract ? new byte[0] : randomBytes(5), // to
                         Integers.toBytesUnsigned(BigInteger.valueOf(100)), // value
-                        bytes(100), // callData
-                        new Object[0]
+                        randomBytes(100), // callData
+                        new Object[0], // accessList
+                        new byte[0], // recId
+                        randomBytes(100), // r
+                        randomBytes(100) // s
                 });
     }
 
@@ -373,10 +381,15 @@ public class RecordItemBuilder {
         return AccountID.newBuilder().setAccountNum(id()).build();
     }
 
-    public ByteString bytes(int length) {
+    private ByteString bytes(int length) {
+        byte[] bytes = randomBytes(length);
+        return ByteString.copyFrom(bytes);
+    }
+
+    private byte[] randomBytes(int length) {
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
-        return ByteString.copyFrom(bytes);
+        return bytes;
     }
 
     private CryptoTransferTransactionBody.Builder cryptoTransferTransactionBody() {

@@ -1163,7 +1163,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         ethereumTransaction.setFromAddress(fromPublicKeyBytes);
 
         // if ToAddress is null persist newly created Contract
-        if (ethereumTransaction.getToAddress() == null) {
+        if (ethereumTransaction.getToAddress() == null || ethereumTransaction.getToAddress().length == 0) {
             var signerIdEntityId = entityIdService.lookup(funcResult.getSenderId());
             var toEntityId = entityIdService.lookup(funcResult.getContractID());
             var contract = Contract.builder()
