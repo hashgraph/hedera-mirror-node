@@ -63,7 +63,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
     @Test
     void contract() {
         String allColumns = "auto_renew_period,created_timestamp,deleted,evm_address,expiration_timestamp,file_id," +
-                "id,key,memo,num,obtainer_id,proxy_account_id,public_key,realm,shard,timestamp_range,type";
+                "id,initcode,key,memo,num,obtainer_id,proxy_account_id,public_key,realm,shard,timestamp_range,type";
 
         String updatableColumns = "auto_renew_period,deleted,expiration_timestamp,key,memo,obtainer_id," +
                 "proxy_account_id,public_key,timestamp_range";
@@ -77,7 +77,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
                 .returns(allColumns, e -> e.columns("{0}"))
                 .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
                 .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(17);
+                .hasSize(18);
     }
 
     @Test
