@@ -176,7 +176,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // given
         Contract contract1 = domainBuilder.contract().get();
         Contract contract2 = domainBuilder.contract()
-                .customize(c -> c.evmAddress(null).initcode(domainBuilder.bytes(1024)))
+                .customize(c -> c.evmAddress(null).fileId(null).initcode(domainBuilder.bytes(1024)))
                 .get();
 
         // when
