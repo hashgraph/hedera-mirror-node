@@ -7,6 +7,6 @@ insert into $finalTable ($insertColumns)
 select $coalesceColumns
 from $tempTable t
 left join existing e on $idJoin
-where $notNullableColumn is not null
+where $notNullableColumn
 on conflict ($conflictColumns)
 do update set $updateColumns

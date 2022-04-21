@@ -96,14 +96,14 @@ public class UpsertQueryGeneratorFactory {
 
         for (Attribute<?, ?> attribute : entityType.getAttributes()) {
             boolean id = idAttributes.contains(attribute.getName());
-            upsertColumns.add(createUpsertColumn(schema, attribute, upsertable.history(), id));
+            upsertColumns.add(createUpsertColumn(schema, attribute, id));
         }
 
         return new UpsertEntity(tableName, upsertable, upsertColumns);
     }
 
     private UpsertColumn createUpsertColumn(Map<String, InformationSchemaColumns> schema,
-                                            Attribute<?, ?> attribute, boolean historyTable, boolean id) {
+                                            Attribute<?, ?> attribute, boolean id) {
         String name = attribute.getName();
         Field field = (Field) attribute.getJavaMember();
         Column column = field.getAnnotation(Column.class);
@@ -112,28 +112,23 @@ public class UpsertQueryGeneratorFactory {
                 toSnakeCase(name);
 
         boolean history = Range.class == attribute.getJavaType();
-        boolean nullable = !id && (column == null || column.nullable());
-        boolean updatable = false;
-        if (!id) {
-            // for non-id columns, if the table has history, by default it's updatable or set by the Column annotation;
-            // if the table doesn't have history,  it's updatable if set so by the Column annotation.
-            updatable = historyTable ? (column == null || column.updatable()) : (column != null && column.updatable());
-        }
+        boolean updatable = !id && (column == null || column.updatable());
         InformationSchemaColumns columnSchema = schema.get(columnName);
 
         if (columnSchema == null) {
             throw new IllegalStateException("Missing information schema for " + columnName);
         }
 
-        return new UpsertColumn(columnSchema.getColumnDefault(), history, id, columnName, nullable, updatable);
+        return new UpsertColumn(columnSchema.getColumnDefault(), history, id, columnName,
+                columnSchema.isNullable(), updatable);
     }
 
     /*
      * Looks up column defaults in the information_schema.columns table.
      */
     private Map<String, InformationSchemaColumns> getColumnSchema(String tableName) {
-        String sql = "select column_name, regexp_replace(column_default, '::.*', '') as column_default" +
-                " from information_schema.columns where table_name = ?";
+        String sql = "select column_name, regexp_replace(column_default, '::.*', '') as column_default, " +
+                "is_nullable = 'YES' as nullable from information_schema.columns where table_name = ?";
 
         Query query = entityManager.createNativeQuery(sql, InformationSchemaColumns.class);
         query.setParameter(1, tableName);
@@ -175,5 +170,6 @@ public class UpsertQueryGeneratorFactory {
         @Id
         private String columnName;
         private String columnDefault;
+        private boolean nullable;
     }
 }

@@ -87,7 +87,7 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
         velocityContext.put("idJoin", upsertEntity.columns(UpsertColumn::isId, "e.{0} = t.{0}", " and "));
         velocityContext.put("insertColumns", upsertEntity.columns("{0}"));
         velocityContext.put("notNullableColumn",
-                upsertEntity.column(c -> !c.isNullable() && !c.isId(), "coalesce(t.{0}, e.{0})"));
+                upsertEntity.column(c -> !c.isNullable() && !c.isId(), "coalesce(t.{0}, e.{0}) is not null"));
         velocityContext.put("updateColumns", upsertEntity.columns(UpsertColumn::isUpdatable, "{0} = excluded.{0}"));
 
         StringWriter writer = new StringWriter();

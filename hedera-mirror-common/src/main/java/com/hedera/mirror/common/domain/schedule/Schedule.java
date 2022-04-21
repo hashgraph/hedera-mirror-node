@@ -43,26 +43,30 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 @Upsertable
 public class Schedule {
 
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private Long consensusTimestamp;
 
+    @Column(updatable = false)
     @Convert(converter = AccountIdConverter.class)
     private EntityId creatorAccountId;
 
-    @Column
     private Long executedTimestamp;
 
+    @Column(updatable = false)
     private Long expirationTime;
 
+    @Column(updatable = false)
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
     @Id
     private Long scheduleId;
 
+    @Column(updatable = false)
     @ToString.Exclude
     private byte[] transactionBody;
 
+    @Column(updatable = false)
     private boolean waitForExpiry;
 
     public void setScheduleId(EntityId scheduleId) {
