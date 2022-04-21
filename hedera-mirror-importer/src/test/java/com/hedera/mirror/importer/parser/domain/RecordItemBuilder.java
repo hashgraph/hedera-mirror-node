@@ -24,6 +24,8 @@ import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ECDSA;
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ED25519;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
+import com.esaulpaugh.headlong.rlp.RLPEncoder;
+import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
@@ -70,6 +72,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
@@ -265,11 +268,16 @@ public class RecordItemBuilder {
     }
 
     public Builder<EthereumTransactionBody.Builder> ethereumTransaction(boolean create, ContractID contractId) {
+        return ethereumTransaction(create, contractId, Hex.decode(LONDON_RAW_TX));
+    }
+
+    public Builder<EthereumTransactionBody.Builder> ethereumTransaction(boolean create, ContractID contractId,
+                                                                        byte[] transactionBytes) {
         EthereumTransactionBody.Builder transactionBody = EthereumTransactionBody.newBuilder()
-                .setEthereumData(ByteString.copyFrom(Hex.decode(LONDON_RAW_TX)))
+                .setEthereumData(ByteString.copyFrom(transactionBytes))
                 .setMaxGasAllowance(10_000L);
 
-        var digestedHash = ByteString.copyFrom(new Keccak.Digest256().digest(Hex.decode(LONDON_RAW_TX)));
+        var digestedHash = ByteString.copyFrom(new Keccak.Digest256().digest(transactionBytes));
         if (create) {
             transactionBody.setCallData(fileId());
             return new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
@@ -282,6 +290,44 @@ public class RecordItemBuilder {
                             .setContractCallResult(contractFunctionResult(contractId))
                             .setEthereumHash(digestedHash));
         }
+    }
+
+    public byte[] getLegacyEthTransactionBytes(boolean chainIDList, boolean newContract) {
+        return chainIDList ?
+                RLPEncoder.encodeAsList(
+                        Integers.toBytes(10L), // nonce
+                        bytes(3), // gasPrice
+                        Integers.toBytes(6), // gasLimit
+                        newContract ? null : bytes(5), // to
+                        Integers.toBytesUnsigned(BigInteger.valueOf(100)), // value
+                        bytes(50), // callData
+                        bytes(1), // chainId
+                        Integers.toBytes(0),
+                        Integers.toBytes(0))
+                :
+                RLPEncoder.encodeAsList(
+                        Integers.toBytes(10L), // nonce
+                        bytes(3), // gasPrice
+                        Integers.toBytes(1000), // gasLimit
+                        newContract ? null : bytes(5), // to
+                        Integers.toBytesUnsigned(BigInteger.valueOf(100)), // value
+                        bytes(50)); // callData
+    }
+
+    public byte[] getEip1559EthTransactionBytes(boolean newContract) {
+        return RLPEncoder.encodeSequentially(
+                Integers.toBytes(2),
+                new Object[] {
+                        bytes(1), //  chainId
+                        Integers.toBytes(10L), // nonce
+                        bytes(4), // maxPriorityGas
+                        bytes(4), // maxGas
+                        Integers.toBytes(6), // gasLimit
+                        newContract ? null : bytes(5), // to
+                        Integers.toBytesUnsigned(BigInteger.valueOf(100)), // value
+                        bytes(100), // callData
+                        new Object[0]
+                });
     }
 
     private StorageChange.Builder storageChange() {

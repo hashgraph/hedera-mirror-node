@@ -54,32 +54,4 @@ class EthereumTransactionHandler implements TransactionHandler {
     public TransactionType getType() {
         return TransactionType.ETHEREUMTRANSACTION;
     }
-
-//    @Override
-//    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-//        if (!entityProperties.getPersist().isEthereumTransactions()) {
-//            return;
-//        }
-//
-//        var body = recordItem.getTransactionBody().getEthereumTransaction();
-//
-//        // FIX: In some cases initCode is located in FileID and needs to be extracted from record
-//
-//        var ethereumTransaction = ethereumTransactionParser.parse(body);
-//        if (ethereumTransaction == null) {
-//            return;
-//        }
-//
-//        // if to is null create Contract
-//        if (ethereumTransaction.getToAddress() == null) {
-//
-//        }
-//
-//        // update ethereumTransaction with record values
-//        ethereumTransaction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-//        ethereumTransaction.setHash(DomainUtils.toBytes(recordItem.getRecord().getEthereumHash()));
-//        ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
-////            ethereumTransaction.setFromAddress(); // full from signature
-//        entityListener.onEthereumTransaction(ethereumTransaction);
-//    }
 }

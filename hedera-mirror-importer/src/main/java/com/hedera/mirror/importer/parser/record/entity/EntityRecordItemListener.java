@@ -31,7 +31,6 @@ import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
 import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -1135,8 +1134,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         var body = recordItem.getTransactionBody().getEthereumTransaction();
-        var ethereumTransaction = ethereumTransactionParser.parse(
-                DomainUtils.toBytes(body.getEthereumData()));
+        var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
+        var ethereumTransaction = ethereumTransactionParser.parse(ethereumDataBytes);
         if (ethereumTransaction == null) {
             return;
         }
@@ -1149,22 +1148,23 @@ public class EntityRecordItemListener implements RecordItemListener {
         // update ethereumTransaction with record values
         var record = recordItem.getRecord();
         ethereumTransaction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-        ethereumTransaction.setData(DomainUtils.toBytes(record.getEthereumHash()));
+        ethereumTransaction.setData(ethereumDataBytes);
         ethereumTransaction.setHash(DomainUtils.toBytes(record.getEthereumHash()));
         ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
 
         // set fromAddress from processed ethereum transaction
-        var message = calculateSignableMessage(ethereumTransaction);
-        var publicKey = extractSig(ethereumTransaction.getRecoveryId(), ethereumTransaction.getSignatureR(),
-                ethereumTransaction.getSignatureS(), message);
-        ethereumTransaction.setFromAddress(publicKey);
+//        var message = calculateSignableMessage(ethereumTransaction);
+//        var publicKey = extractSig(ethereumTransaction.getRecoveryId(), ethereumTransaction.getSignatureR(),
+//                ethereumTransaction.getSignatureS(), message);
 
-        // if ToAddress is null create Contract
+        var funcResult = record.hasContractCreateResult() ? record.getContractCreateResult() :
+                record.getContractCallResult();
+        var fromPublicKeyBytes = DomainUtils.toBytes(funcResult.getSenderId().getAlias());
+        ethereumTransaction.setFromAddress(fromPublicKeyBytes);
+
+        // if ToAddress is null persist newly created Contract
         if (ethereumTransaction.getToAddress() == null) {
-            var signerIdEntityId = entityIdService.lookup(AccountID.newBuilder().setAlias(
-                    DomainUtils.fromBytes(publicKey)).build());
-            var funcResult = record.hasContractCreateResult() ? record.getContractCreateResult() :
-                    record.getContractCallResult();
+            var signerIdEntityId = entityIdService.lookup(funcResult.getSenderId());
             var toEntityId = entityIdService.lookup(funcResult.getContractID());
             var contract = Contract.builder()
 //                    .autoRenewPeriod(1800L)
@@ -1173,8 +1173,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 //                    .expirationTimestamp(timestamp + 30_000_000L)
                     .fileId(ethereumTransaction.getCallDataId())
                     .id(toEntityId.getId())
-                    .key(publicKey)
-//                    .memo(text(16))
+                    .key(fromPublicKeyBytes)
+                    .memo("") // missing memo
                     .obtainerId(signerIdEntityId)
 //                    .proxyAccountId(entityId(ACCOUNT))
                     .num(toEntityId.getEntityNum())

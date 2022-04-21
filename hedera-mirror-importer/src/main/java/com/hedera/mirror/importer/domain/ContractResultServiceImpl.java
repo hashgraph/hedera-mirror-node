@@ -125,7 +125,8 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractResult.setGasUsed(functionResult.getGasUsed());
 
             if (functionResult.hasSenderId()) {
-                contractResult.setSenderId(EntityId.of(functionResult.getSenderId()));
+                // if alias and Ethereum type we may have a parsing problem since we won't have the entity to lookup
+                contractResult.setSenderId(entityIdService.lookup(functionResult.getSenderId()));
             }
 
             processContractLogs(functionResult, contractResult);
@@ -190,6 +191,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 createdContractIds.add(contractId.getId());
                 // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
                 if (persist && !contractId.equals(parentEntityContractId)) {
+                    // pre 0.23 protobuf didn't expose child transactions so we have to duplicate ContractCreateHandler logic
                     processCreatedContractEntity(recordItem, contractId);
                 }
             }
