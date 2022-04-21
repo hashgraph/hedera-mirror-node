@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.persistence.EntityManager;
+import com.google.protobuf.UnsafeByteOperations;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -460,6 +461,10 @@ public class DomainBuilder {
 
     public byte[] create2EvmAddress() {
         return bytes(20);
+    }
+
+    public ByteString create2EvmAddressByteString() {
+        return UnsafeByteOperations.unsafeWrap(create2EvmAddress());
     }
 
     public EntityId entityId(EntityType type) {
