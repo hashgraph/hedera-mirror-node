@@ -140,6 +140,14 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>besu</id>
+            <name>Hyperledger Besu</name>
+            <url>https://hyperledger.jfrog.io/artifactory/besu-maven</url>
+        </repository>
     </repositories>
 
     <dependencies>
