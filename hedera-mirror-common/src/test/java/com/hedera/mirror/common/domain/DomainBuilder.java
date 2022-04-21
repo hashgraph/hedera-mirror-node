@@ -28,6 +28,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.UnsafeByteOperations;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
@@ -38,7 +39,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.persistence.EntityManager;
-import com.google.protobuf.UnsafeByteOperations;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
