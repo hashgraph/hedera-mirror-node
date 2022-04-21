@@ -259,14 +259,10 @@ public class RecordItemBuilder {
     }
 
     public Builder<ScheduleCreateTransactionBody.Builder> scheduleCreate() {
-        var cryptoTransferTransaction = CryptoTransferTransactionBody.newBuilder()
-                .setTransfers(TransferList.newBuilder()
-                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId()).setAmount(-100))
-                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId()).setAmount(100)));
         var scheduledTransaction = SchedulableTransactionBody.newBuilder()
                 .setTransactionFee(1_00_000_000)
                 .setMemo(text(16))
-                .setCryptoTransfer(cryptoTransferTransaction);
+                .setCryptoTransfer(cryptoTransferTransactionBody());
         var builder = ScheduleCreateTransactionBody.newBuilder()
                 .setScheduledTransactionBody(scheduledTransaction)
                 .setMemo(text(16))
@@ -302,6 +298,13 @@ public class RecordItemBuilder {
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return ByteString.copyFrom(bytes);
+    }
+
+    private CryptoTransferTransactionBody.Builder cryptoTransferTransactionBody() {
+        return CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(TransferList.newBuilder()
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId()).setAmount(-100))
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId()).setAmount(100)));
     }
 
     private ContractID contractId() {
