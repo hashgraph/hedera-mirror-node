@@ -145,7 +145,8 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         .returns(null, Contract::getObtainerId)
                         .returns(contractId.getRealmNum(), Contract::getRealm)
                         .returns(contractId.getShardNum(), Contract::getShard)
-                        .returns(Range.atLeast(timestamp), Contract::getTimestampRange),
+                        .returns(Range.atLeast(timestamp), Contract::getTimestampRange)
+                        .returns(CONTRACT, Contract::getType),
                 () -> extraAssert.accept(t)
         )));
     }
