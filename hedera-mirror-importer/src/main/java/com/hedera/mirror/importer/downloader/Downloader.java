@@ -493,8 +493,8 @@ public abstract class Downloader<T extends StreamFile> {
     private void setStreamFileIndex(StreamFile streamFile) {
         long index = lastStreamFile.get()
                 .map(StreamFile::getIndex)
-                .or(() -> Optional.ofNullable(mirrorProperties.getStartBlockNumber()))
                 .map(v -> v + 1)
+                .or(() -> Optional.ofNullable(mirrorProperties.getStartBlockNumber()))
                 .orElse(0L);
         streamFile.setIndex(index);
     }
