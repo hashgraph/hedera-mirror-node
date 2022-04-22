@@ -88,6 +88,7 @@ import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
@@ -117,6 +118,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
     private final DomainBuilder domainBuilder;
     private final EntityRepository entityRepository;
+    private final EthereumTransactionRepository ethereumTransactionRepository;
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
     private final NftRepository nftRepository;
@@ -1349,6 +1351,18 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         schedule.setExecutedTimestamp(5L);
         assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrder(schedule);
+    }
+
+    @Test
+    void onEthereumTransaction() {
+        var ethereumTransaction = domainBuilder.ethereumTransaction().get();
+        sqlEntityListener.onEthereumTransaction(ethereumTransaction);
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(ethereumTransactionRepository.findAll()).contains(ethereumTransaction);
     }
 
     private void completeFileAndCommit() {
