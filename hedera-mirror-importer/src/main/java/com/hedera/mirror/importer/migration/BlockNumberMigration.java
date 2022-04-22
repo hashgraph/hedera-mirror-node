@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
+import com.hedera.mirror.importer.MirrorProperties;
+
+import com.sun.jdi.Mirror;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
@@ -35,8 +38,14 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
     private final BlockNumberMigrationProperties migrationProperties;
 
+    private final MirrorProperties mirrorProperties;
+
     @Override
     protected void doMigrate() {
+        if (shouldNotMigrateOnCurrentNetwork()) {
+            return ;
+        }
+
         if (!migrationProperties.isEnabled()) {
             return ;
         }
@@ -50,6 +59,12 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
         }
 
         updateRecordFilesBlockNumber(migrationProperties.getCorrectBlockNumber(), recordFileBlockNumber);
+    }
+
+    private boolean shouldNotMigrateOnCurrentNetwork() {
+        MirrorProperties.HederaNetwork currentNetwork = mirrorProperties.getNetwork();
+        return !currentNetwork.equals(MirrorProperties.HederaNetwork.TESTNET) &&
+                !currentNetwork.equals(MirrorProperties.HederaNetwork.MAINNET);
     }
 
     private void updateRecordFilesBlockNumber(long correctBlockNumber, long incorrectBlockNumber) {
