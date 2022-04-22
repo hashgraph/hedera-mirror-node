@@ -60,6 +60,7 @@
         "evm_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
         "expiration_timestamp": null,
         "file_id": "0.0.5001",
+        "max_automatic_token_associations": 0,
         "memo": "contract memo",
         "obtainer_id": null,
         "proxy_account_id": null,

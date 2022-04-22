@@ -1221,6 +1221,10 @@ components:
           $ref: '#/components/schemas/TimestampNullable'
         file_id:
           $ref: '#/components/schemas/EntityId'
+        max_automatic_token_associations:
+          type: integer
+          format: int32
+          nullable: true
         memo:
           example: contract memo
           type: string
