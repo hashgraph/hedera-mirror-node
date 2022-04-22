@@ -56,7 +56,6 @@
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890000000002",
-        "delegating_spender": "0.0.5",
         "metadata": "m2",
         "serial_number": 2,
         "spender": "0.0.2001",
@@ -177,7 +176,7 @@
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890.000000002",
-        "delegating_spender": "0.0.5",
+        "delegating_spender": null,
         "deleted": false,
         "metadata": "bTI=",
         "modified_timestamp": "1234567890.000000002",
