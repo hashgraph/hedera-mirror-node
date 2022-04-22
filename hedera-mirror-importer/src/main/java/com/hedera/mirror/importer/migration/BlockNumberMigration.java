@@ -73,6 +73,11 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
     }
 
     @Override
+    public Integer getChecksum() {
+        return 1;
+    }
+
+    @Override
     public String getDescription() {
         return "Updates the incorrect index from the record file table when necessary.";
     }
