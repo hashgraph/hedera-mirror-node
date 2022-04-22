@@ -254,8 +254,8 @@ create table if not exists ethereum_transaction
     payer_account_id         bigint   not null,
     recovery_id              smallint null,
     signature_r              bytea    null,
-    signature_s              bytea    null,
-    signature_v              bytea    null,
+    signature_s              bytea    not null,
+    signature_v              bytea    not null,
     to_address               bytea    null,
     type                     smallint not null,
     value                    bytea    null

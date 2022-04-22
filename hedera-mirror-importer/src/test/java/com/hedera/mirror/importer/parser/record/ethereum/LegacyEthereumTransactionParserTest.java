@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigInteger;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -45,10 +44,8 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
 
     @SneakyThrows
     @Test
-    public void eip155Parse() {
+    void eip155Parse() {
         var ethereumTransaction = ethereumTransactionParser.parse(Hex.decodeHex(EIP155_RAW_TX));
-
-        Assertions.assertThat(ethereumTransaction).isNotNull();
 
         assertThat(ethereumTransaction)
                 .isNotNull()
@@ -62,9 +59,9 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getToAddress())).isEqualTo(
                         "3535353535353535353535353535353535353535"))
                 .satisfies(t -> assertThat(t.getValue()).isEqualTo(new BigInteger("0de0b6b3a7640000", 16).toByteArray()))
-                .satisfies(t -> assertThat(t.getCallData().length).isEqualTo(0))
+                .satisfies(t -> assertThat(t.getCallData().length).isZero())
                 .satisfies(t -> assertThat(t.getAccessList()).isNull())
-                .satisfies(t -> assertThat(t.getRecoveryId()).isEqualTo(0))
+                .satisfies(t -> assertThat(t.getRecoveryId()).isZero())
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureV())).isEqualTo("25"))
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureR())).isEqualTo(
                         "28ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276"))
@@ -99,7 +96,7 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
                 .satisfies(t -> assertThat(t.getValue()).isEqualTo(BigInteger.ZERO.toByteArray()))
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getCallData())).isEqualTo("7653"))
                 .satisfies(t -> assertThat(t.getAccessList()).isNull())
-                .satisfies(t -> assertThat(t.getRecoveryId()).isEqualTo(0))
+                .satisfies(t -> assertThat(t.getRecoveryId()).isZero())
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureV())).isEqualTo("0277"))
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureR())).isEqualTo(
                         "f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2f"))

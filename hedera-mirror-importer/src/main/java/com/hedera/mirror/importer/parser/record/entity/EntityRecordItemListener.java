@@ -34,6 +34,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -1138,21 +1139,23 @@ public class EntityRecordItemListener implements RecordItemListener {
         ethereumTransaction.setMaxGasAllowance(body.getMaxGasAllowance());
 
         // update ethereumTransaction with record values
-        var record = recordItem.getRecord();
+        var transactionRecord = recordItem.getRecord();
         ethereumTransaction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         ethereumTransaction.setData(ethereumDataBytes);
-        ethereumTransaction.setHash(DomainUtils.toBytes(record.getEthereumHash()));
+        ethereumTransaction.setHash(DomainUtils.toBytes(transactionRecord.getEthereumHash()));
         ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
 
-        var funcResult = record.hasContractCreateResult() ? record.getContractCreateResult() :
-                record.getContractCallResult();
+        var funcResult = transactionRecord.hasContractCreateResult() ? transactionRecord.getContractCreateResult() :
+                transactionRecord.getContractCallResult();
         var senderId = EntityId.of(funcResult.getSenderId());
         ethereumTransaction.setFromAddress(DomainUtils.toEvmAddress(senderId));
 
         // persist newly created Contract since no ContractCreate is exposed
-        if (record.hasContractCreateResult()) {
+        if (transactionRecord.hasContractCreateResult()) {
             var toEntityId = entityIdService.lookup(funcResult.getContractID());
             var publicKey = ethereumTransactionParser.retrievePublicKey(ethereumTransaction);
+            var publicKeyBytes = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(publicKey)).build()
+                    .toByteArray();
 
             var contract = Contract.builder()
 //                    .autoRenewPeriod(1800L)
@@ -1161,7 +1164,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 //                    .expirationTimestamp(timestamp + 30_000_000L)
                     .fileId(ethereumTransaction.getCallDataId())
                     .id(toEntityId.getId())
-                    .key(publicKey)
+                    .key(publicKeyBytes)
                     .memo("") // missing memo, is hex data from transaction submission available?
                     .obtainerId(senderId)
 //                    .proxyAccountId(entityId(ACCOUNT))

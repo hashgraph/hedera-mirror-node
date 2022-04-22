@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.ethereum;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
@@ -37,8 +36,6 @@ abstract class AbstractEthereumTransactionParserTest {
     @Test
     public void parse() {
         var ethereumTransaction = ethereumTransactionParser.parse(getTransactionBytes());
-        Assertions.assertThat(ethereumTransaction).isNotNull();
-
         assertThat(ethereumTransaction)
                 .isNotNull()
                 .satisfies(t -> assertThat(t.getChainId()).isNotEmpty());

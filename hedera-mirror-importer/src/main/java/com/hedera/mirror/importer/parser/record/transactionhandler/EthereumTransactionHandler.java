@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -44,9 +45,14 @@ class EthereumTransactionHandler implements TransactionHandler {
         var transactionRecord = recordItem.getRecord();
 
         // pull entity from ContractResult
-        var contractID = transactionRecord.hasContractCreateResult() ?
-                transactionRecord.getContractCreateResult().getContractID() :
-                transactionRecord.getContractCallResult().getContractID();
+        var contractFunctionResult = transactionRecord.hasContractCreateResult() ?
+                transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
+
+        if (contractFunctionResult.equals(ContractFunctionResult.getDefaultInstance())) {
+            return null;
+        }
+
+        var contractID = contractFunctionResult.getContractID();
         return entityIdService.lookup(contractID);
     }
 
