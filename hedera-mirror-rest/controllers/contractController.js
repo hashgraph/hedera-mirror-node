@@ -61,6 +61,7 @@ const contractSelectFields = [
   Contract.PROXY_ACCOUNT_ID,
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
+const contractWithInitcodeSelectFields = [...contractSelectFields, Contract.getFullName(Contract.INITCODE)];
 
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 
@@ -224,12 +225,12 @@ const formatContractRow = (row) => {
 /**
  * Gets the query by contract id for the specified table, optionally with timestamp conditions
  * @param table
- * @param timestampConditions
+ * @param conditions
  * @return {string}
  */
 const getContractByIdOrAddressQueryForTable = (table, conditions) => {
   return [
-    `select ${contractSelectFields}`,
+    `select ${contractWithInitcodeSelectFields}`,
     `from ${table} ${Contract.tableAlias}`,
     `where ${conditions.join(' and ')}`,
   ].join('\n');
@@ -238,7 +239,7 @@ const getContractByIdOrAddressQueryForTable = (table, conditions) => {
 /**
  * Gets the sql query for a specific contract, optionally with timestamp condition
  * @param timestampConditions
- * @return {string}
+ * @return {query: string, params: any[]}
  */
 const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, contractIdParam}) => {
   const conditions = [...timestampConditions];
@@ -277,12 +278,12 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
     ${fileDataQuery}
   )`;
 
+  const selectFields = [
+    ...contractSelectFields,
+    `coalesce(encode(${Contract.getFullName(Contract.INITCODE)}, 'hex')::bytea, cf.bytecode) as bytecode`,
+  ];
   return {
-    query: [
-      cte,
-      `select ${[...contractSelectFields, 'cf.bytecode']}`,
-      `from contract ${Contract.tableAlias}, contract_file cf`,
-    ].join('\n'),
+    query: [cte, `select ${selectFields}`, `from contract ${Contract.tableAlias}, contract_file cf`].join('\n'),
     params,
   };
 };

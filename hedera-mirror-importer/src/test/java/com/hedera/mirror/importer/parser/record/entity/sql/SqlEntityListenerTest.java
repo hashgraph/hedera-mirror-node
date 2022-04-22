@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
@@ -38,6 +40,8 @@ import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -172,7 +176,9 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onContract() {
         // given
         Contract contract1 = domainBuilder.contract().get();
-        Contract contract2 = domainBuilder.contract().customize(c -> c.evmAddress(null)).get();
+        Contract contract2 = domainBuilder.contract()
+                .customize(c -> c.evmAddress(null).fileId(null).initcode(domainBuilder.bytes(1024)))
+                .get();
 
         // when
         sqlEntityListener.onContract(contract1);
@@ -185,11 +191,14 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(findHistory(Contract.class)).isEmpty();
     }
 
-    @ValueSource(ints = {1, 2, 3})
-    @ParameterizedTest
-    void onContractHistory(int commitIndex) {
+    @ParameterizedTest(name = "{2} record files with {0}")
+    @MethodSource("provideParamsContractHistory")
+    void onContractHistory(String bytecodeSource, Consumer<Contract.ContractBuilder> customizer, int commitIndex) {
         // given
-        Contract contractCreate = domainBuilder.contract().customize(c -> c.obtainerId(null)).get();
+        Contract contractCreate = domainBuilder.contract()
+                .customize(c -> c.obtainerId(null))
+                .customize(customizer)
+                .get();
 
         Contract contractUpdate = contractCreate.toEntityId().toEntity();
         contractUpdate.setAutoRenewPeriod(30L);
@@ -1467,5 +1476,18 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
         tokenTransfer.setPayerAccountId(TRANSACTION_PAYER);
         return tokenTransfer;
+    }
+
+    private static Stream<Arguments> provideParamsContractHistory() {
+        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {};
+        Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[]{1, 2 ,3, 4});
+        return Stream.of(
+                Arguments.of("fileId", emptyCustomizer, 1),
+                Arguments.of("fileId", emptyCustomizer, 2),
+                Arguments.of("fileId", emptyCustomizer, 3),
+                Arguments.of("initcode", initcodeCustomizer, 1),
+                Arguments.of("initcode", initcodeCustomizer, 2),
+                Arguments.of("initcode", initcodeCustomizer, 3)
+        );
     }
 }

@@ -61,6 +61,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -69,6 +70,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
@@ -100,9 +102,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         entityProperties.getPersist().setCryptoTransferAmounts(true);
     }
 
-    @Test
-    void contractCreate() {
-        RecordItem recordItem = recordItemBuilder.contractCreate().build();
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void contractCreate(boolean bytecodeSourceFileId) {
+        var builder = recordItemBuilder.contractCreate();
+        if (!bytecodeSourceFileId) {
+            builder.transactionBody(b -> b.clearFileID().setInitcode(recordItemBuilder.bytes(1024)));
+        }
+        var recordItem = builder.build();
         var record = recordItem.getRecord();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
@@ -130,6 +137,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .addCreatedContractIDs(CONTRACT_ID)
                         .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(evmAddress)))
                 ))
+                .hapiVersion(RecordFile.HAPI_VERSION_0_23_0)
                 .build();
         var record = recordItem.getRecord();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
@@ -762,6 +770,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()) : null;
         EntityId entityId = transaction.getEntityId();
         Contract contract = getEntity(entityId);
+        EntityId expectedFileId = transactionBody.hasFileID() ? EntityId.of(transactionBody.getFileID()) : null;
+        byte[] expectedInitcode = transactionBody.getInitcode() != ByteString.EMPTY ?
+                DomainUtils.toBytes(transactionBody.getInitcode()) : null;
 
         assertThat(transaction)
                 .isNotNull()
@@ -774,8 +785,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(false, Contract::getDeleted)
                 .returns(evmAddress, Contract::getEvmAddress)
                 .returns(null, Contract::getExpirationTimestamp)
+                .returns(expectedFileId, Contract::getFileId)
                 .returns(entityId.getId(), Contract::getId)
-                .returns(EntityId.of(transactionBody.getFileID()), Contract::getFileId)
+                .returns(expectedInitcode, Contract::getInitcode)
                 .returns(adminKey, Contract::getKey)
                 .returns(transactionBody.getMemo(), Contract::getMemo)
                 .returns(createdTimestamp, Contract::getTimestampLower)

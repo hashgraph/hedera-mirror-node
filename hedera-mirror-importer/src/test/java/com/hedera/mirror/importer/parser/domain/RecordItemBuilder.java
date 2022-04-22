@@ -315,6 +315,10 @@ public class RecordItemBuilder {
         return Duration.newBuilder().setSeconds(seconds).build();
     }
 
+    public BytesValue evmAddress() {
+        return BytesValue.of(bytes(20));
+    }
+
     private FileID fileId() {
         return FileID.newBuilder().setFileNum(id()).build();
     }
