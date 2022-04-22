@@ -23,7 +23,8 @@ package com.hedera.mirror.importer.parser.record.ethereum;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigInteger;
-import org.bouncycastle.util.encoders.Hex;
+import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeAll;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
@@ -38,9 +39,10 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
         ethereumTransactionParser = new Eip1559EthereumTransactionParser();
     }
 
+    @SneakyThrows
     @Override
     public byte[] getTransactionBytes() {
-        return Hex.decode(LONDON_RAW_TX);
+        return Hex.decodeHex(LONDON_RAW_TX);
     }
 
     @Override
@@ -48,27 +50,27 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
         assertThat(ethereumTransaction)
                 .isNotNull()
                 .satisfies(t -> assertThat(t.getType()).isEqualTo(2))
-                .satisfies(t -> assertThat(Hex.toHexString(t.getChainId())).isEqualTo("012a"))
+                .satisfies(t -> assertThat(Hex.encodeHexString(t.getChainId())).isEqualTo("012a"))
                 .satisfies(t -> assertThat(t.getNonce()).isEqualTo(2))
                 .satisfies(t -> assertThat(t.getGasPrice()).isNull())
-                .satisfies(t -> assertThat(Hex.toHexString(t.getMaxPriorityFeePerGas())).isEqualTo("2f"))
-                .satisfies(t -> assertThat(Hex.toHexString(t.getMaxFeePerGas())).isEqualTo("2f"))
+                .satisfies(t -> assertThat(Hex.encodeHexString(t.getMaxPriorityFeePerGas())).isEqualTo("2f"))
+                .satisfies(t -> assertThat(Hex.encodeHexString(t.getMaxFeePerGas())).isEqualTo("2f"))
                 .satisfies(t -> assertThat(t.getGasLimit()).isEqualTo(98_304L))
-                .satisfies(t -> assertThat(Hex.toHexString(t.getToAddress())).isEqualTo(
+                .satisfies(t -> assertThat(Hex.encodeHexString(t.getToAddress())).isEqualTo(
                         "7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181"))
                 .satisfies(t -> assertThat(t.getValue()).isEqualTo(new BigInteger("0de0b6b3a7640000", 16).toByteArray()))
-                .satisfies(t -> assertThat(Hex.toHexString(t.getCallData())).isEqualTo("123456"))
-                .satisfies(t -> assertThat(Hex.toHexString(t.getAccessList())).isEmpty())
+                .satisfies(t -> assertThat(Hex.encodeHexString(t.getCallData())).isEqualTo("123456"))
+                .satisfies(t -> assertThat(Hex.encodeHexString(t.getAccessList())).isEmpty())
                 .satisfies(t -> assertThat(t.getRecoveryId()).isEqualTo(1))
                 .satisfies(t -> assertThat(t.getSignatureV()).isNull())
-                .satisfies(t -> assertThat(Hex.toHexString(t.getSignatureR())).isEqualTo(
+                .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureR())).isEqualTo(
                         "df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479"))
-                .satisfies(t -> assertThat(Hex.toHexString(t.getSignatureS())).isEqualTo(
+                .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureS())).isEqualTo(
                         "1aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66"));
 
         // verify publicKey extraction
         var publicKey = ethereumTransactionParser.retrievePublicKey(ethereumTransaction);
-        assertThat(Hex.toHexString(publicKey)).isEqualTo(
+        assertThat(Hex.encodeHexString(publicKey)).isEqualTo(
                 "033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     }
 }

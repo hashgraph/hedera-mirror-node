@@ -124,9 +124,14 @@ public class EthereumTransaction implements Persistable<Long> {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
 
+    /**
+     * RLP Encode ethereum transaction. Logic differs per Eip155, between Eip155 and Eip1559 and after Eip1559
+     *
+     * @return encoded message
+     */
     @JsonIgnore
     @Transient
-    public byte[] getSignableMessage() {
+    public byte[] getRLPEncodedMessage() {
         switch (getType()) {
             case 0:
                 return (getChainId() != null && getChainId().length > 0)

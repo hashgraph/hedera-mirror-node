@@ -20,52 +20,40 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  * ‍
  */
 
-import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
-import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recover;
-import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recoverable_signature_parse_compact;
-
-import com.sun.jna.ptr.LongByReference;
-import java.nio.ByteBuffer;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
-import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
+import java.math.BigInteger;
+import org.apache.commons.codec.binary.Hex;
+import org.web3j.crypto.ECDSASignature;
+import org.web3j.crypto.Hash;
+import org.web3j.crypto.Sign;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 public abstract class AbstractEthereumTransactionParser implements EthereumTransactionParser {
-
-    static final int SECP256K1_FLAGS_TYPE_COMPRESSION = 1 << 1;
-    static final int SECP256K1_FLAGS_BIT_COMPRESSION = 1 << 8;
-    static final int SECP256K1_EC_COMPRESSED = (SECP256K1_FLAGS_TYPE_COMPRESSION | SECP256K1_FLAGS_BIT_COMPRESSION);
-
     @Override
     public byte[] retrievePublicKey(EthereumTransaction ethereumTransaction) {
-        return extractSig(ethereumTransaction.getRecoveryId(), ethereumTransaction.getSignatureR(),
-                ethereumTransaction.getSignatureS(), ethereumTransaction.getSignableMessage());
+        return recoverPublicKeyECDSASignature(ethereumTransaction.getRecoveryId(), ethereumTransaction.getSignatureR(),
+                ethereumTransaction.getSignatureS(), ethereumTransaction.getRLPEncodedMessage());
     }
 
-    private byte[] extractSig(int recId, byte[] r, byte[] s, byte[] message) {
-        byte[] dataHash = new Keccak.Digest256().digest(message);
+    private byte[] recoverPublicKeyECDSASignature(int recId, byte[] r, byte[] s, byte[] message) {
+        try {
+            var publicKey = Sign.recoverFromSignature(
+                    (byte) recId,
+                    new ECDSASignature(
+                            new BigInteger(1, r),
+                            new BigInteger(1, s)),
+                    Hash.sha3(message));
 
-        byte[] signature = new byte[64];
-        System.arraycopy(r, 0, signature, 0, r.length);
-        System.arraycopy(s, 0, signature, 32, s.length);
+            // compress
+            String publicKeyYPrefix = publicKey.testBit(0) ? "03" : "02";
+            String publicKeyHex = publicKey.toString(16);
+            String publicKeyX = publicKeyHex.substring(0, 64);
+            var compressedKey = publicKeyYPrefix + publicKeyX;
 
-        LibSecp256k1.secp256k1_ecdsa_recoverable_signature parsedSignature =
-                new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
-
-        if (secp256k1_ecdsa_recoverable_signature_parse_compact(CONTEXT, parsedSignature, signature, recId) == 0) {
-            throw new IllegalArgumentException("Could not parse signature");
+            return Hex.decodeHex(compressedKey);
+        } catch (Exception ex) {
+            throw new InvalidDatasetException("Unable to extract publicKey");
         }
-        LibSecp256k1.secp256k1_pubkey newPubKey = new LibSecp256k1.secp256k1_pubkey();
-        if (secp256k1_ecdsa_recover(CONTEXT, newPubKey, parsedSignature, dataHash) == 0) {
-            throw new IllegalArgumentException("Could not recover signature");
-        }
-
-        // compress key
-        ByteBuffer recoveredFullKey = ByteBuffer.allocate(33);
-        LongByReference fullKeySize = new LongByReference(recoveredFullKey.limit());
-        LibSecp256k1.secp256k1_ec_pubkey_serialize(
-                CONTEXT, recoveredFullKey, fullKeySize, newPubKey, SECP256K1_EC_COMPRESSED);
-        return recoveredFullKey.array();
     }
 }

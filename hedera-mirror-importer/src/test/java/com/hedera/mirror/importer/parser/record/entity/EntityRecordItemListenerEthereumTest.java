@@ -24,7 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import javax.annotation.Resource;
-import org.bouncycastle.util.encoders.Hex;
+import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -46,9 +47,10 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
         entityProperties.getPersist().setEthereumTransactions(true);
     }
 
+    @SneakyThrows
     @Test
     void ethereumTransactionCallLondon() {
-        var transactionBytes = Hex.decode(Eip1559EthereumTransactionParserTest.LONDON_RAW_TX);
+        var transactionBytes = Hex.decodeHex(Eip1559EthereumTransactionParserTest.LONDON_RAW_TX);
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(false, CONTRACT_ID, transactionBytes).build();
 
         parseRecordItemAndCommit(recordItem);
@@ -64,9 +66,10 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
         );
     }
 
+    @SneakyThrows
     @Test
     void ethereumTransactionCallLegacy() {
-        var transactionBytes = Hex.decode(LegacyEthereumTransactionParserTest.LEGACY_RAW_TX);
+        var transactionBytes = Hex.decodeHex(LegacyEthereumTransactionParserTest.LEGACY_RAW_TX);
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(false, CONTRACT_ID, transactionBytes).build();
 
         parseRecordItemAndCommit(recordItem);
@@ -82,9 +85,10 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
         );
     }
 
+    @SneakyThrows
     @Test
     void ethereumTransactionCallEIP155() {
-        var transactionBytes = Hex.decode(LegacyEthereumTransactionParserTest.EIP155_RAW_TX);
+        var transactionBytes = Hex.decodeHex(LegacyEthereumTransactionParserTest.EIP155_RAW_TX);
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(false, CONTRACT_ID, transactionBytes).build();
 
         parseRecordItemAndCommit(recordItem);
@@ -100,9 +104,10 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
         );
     }
 
+    @SneakyThrows
     @Test
     void ethereumEip1559TransactionCreate() {
-        var transactionBytes = Hex.decode(Eip1559EthereumTransactionParserTest.LONDON_RAW_TX);
+        var transactionBytes = Hex.decodeHex(Eip1559EthereumTransactionParserTest.LONDON_RAW_TX);
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(true, CONTRACT_ID, transactionBytes).build();
 
         parseRecordItemAndCommit(recordItem);
@@ -118,9 +123,10 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
         );
     }
 
+    @SneakyThrows
     @Test
     void ethereumLegacyTransactionCreate() {
-        var transactionBytes = Hex.decode(LegacyEthereumTransactionParserTest.LEGACY_RAW_TX);
+        var transactionBytes = Hex.decodeHex(LegacyEthereumTransactionParserTest.LEGACY_RAW_TX);
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(true, CONTRACT_ID, transactionBytes).build();
 
         parseRecordItemAndCommit(recordItem);
@@ -138,9 +144,10 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
         );
     }
 
+    @SneakyThrows
     @Test
     void ethereumLegacyChainListTransactionCreate() {
-        var transactionBytes = Hex.decode(LegacyEthereumTransactionParserTest.EIP155_RAW_TX);
+        var transactionBytes = Hex.decodeHex(LegacyEthereumTransactionParserTest.EIP155_RAW_TX);
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(true, CONTRACT_ID, transactionBytes).build();
 
         parseRecordItemAndCommit(recordItem);

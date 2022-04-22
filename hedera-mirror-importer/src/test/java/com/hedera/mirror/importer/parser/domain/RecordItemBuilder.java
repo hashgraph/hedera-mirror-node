@@ -24,8 +24,6 @@ import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ECDSA;
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ED25519;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
-import com.esaulpaugh.headlong.rlp.RLPEncoder;
-import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
@@ -72,18 +70,18 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import javax.inject.Named;
+import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
-import org.bouncycastle.util.encoders.Hex;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Version;
+import org.web3j.crypto.Hash;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -267,8 +265,9 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.CRYPTODELETEALLOWANCE, builder);
     }
 
+    @SneakyThrows
     public Builder<EthereumTransactionBody.Builder> ethereumTransaction(boolean create, ContractID contractId) {
-        return ethereumTransaction(create, contractId, Hex.decode(LONDON_RAW_TX));
+        return ethereumTransaction(create, contractId, Hex.decodeHex(LONDON_RAW_TX));
     }
 
     public Builder<EthereumTransactionBody.Builder> ethereumTransaction(boolean create, ContractID contractId,
@@ -277,7 +276,7 @@ public class RecordItemBuilder {
                 .setEthereumData(ByteString.copyFrom(transactionBytes))
                 .setMaxGasAllowance(10_000L);
 
-        var digestedHash = ByteString.copyFrom(new Keccak.Digest256().digest(transactionBytes));
+        var digestedHash = ByteString.copyFrom(Hash.sha3(transactionBytes));
         if (create) {
             transactionBody.setCallData(fileId());
             return new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
@@ -290,38 +289,6 @@ public class RecordItemBuilder {
                             .setContractCallResult(contractFunctionResult(contractId))
                             .setEthereumHash(digestedHash));
         }
-    }
-
-    public byte[] getLegacyEthTransactionBytes() {
-        return RLPEncoder.encodeAsList(
-                Integers.toBytes(10L), // nonce
-                Integers.toBytes(500000000), // gasPrice
-                Integers.toBytes(1000), // gasLimit
-                randomBytes(20), // to
-                Integers.toBytesUnsigned(BigInteger.valueOf(100)), // value
-                randomBytes(50), // callData
-                randomBytes(1), // chainId
-                randomBytes(32), // r
-                randomBytes(32)); // s
-    }
-
-    public byte[] getEip1559EthTransactionBytes() {
-        return RLPEncoder.encodeSequentially(
-                Integers.toBytes(2),
-                new Object[] {
-                        randomBytes(2), //  chainId
-                        Integers.toBytes(1L), // nonce
-                        randomBytes(1), // maxPriorityGas
-                        randomBytes(1), // maxGas
-                        Integers.toBytes(3), // gasLimit
-                        randomBytes(20), // to
-                        Integers.toBytesUnsigned(BigInteger.valueOf(100)), // value
-                        randomBytes(3), // callData
-                        new Object[0], // accessList
-                        Integers.toBytes(2), // recId
-                        randomBytes(32), // r
-                        randomBytes(32) // s
-                });
     }
 
     private StorageChange.Builder storageChange() {
