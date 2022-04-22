@@ -20,6 +20,7 @@ package com.hedera.mirror.common.domain.schedule;
  * ‍
  */
 
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -41,21 +42,32 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 @NoArgsConstructor
 @Upsertable
 public class Schedule {
+
+    @Column(updatable = false)
     private Long consensusTimestamp;
 
+    @Column(updatable = false)
     @Convert(converter = AccountIdConverter.class)
     private EntityId creatorAccountId;
 
     private Long executedTimestamp;
 
+    @Column(updatable = false)
+    private Long expirationTime;
+
+    @Column(updatable = false)
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
     @Id
     private Long scheduleId;
 
+    @Column(updatable = false)
     @ToString.Exclude
     private byte[] transactionBody;
+
+    @Column(updatable = false)
+    private boolean waitForExpiry;
 
     public void setScheduleId(EntityId scheduleId) {
         this.scheduleId = scheduleId != null ? scheduleId.getId() : null;

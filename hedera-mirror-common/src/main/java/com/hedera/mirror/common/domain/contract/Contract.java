@@ -39,10 +39,10 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 @Entity
 @NoArgsConstructor
 @SuperBuilder
-@ToString(exclude = {"evmAddress", "initcode"})
 public class Contract extends AbstractEntity implements Aliasable {
 
     @Column(updatable = false)
+    @ToString.Exclude
     private byte[] evmAddress;
 
     @Column(updatable = false)
@@ -50,6 +50,7 @@ public class Contract extends AbstractEntity implements Aliasable {
     private EntityId fileId;
 
     @Column(updatable = false)
+    @ToString.Exclude
     private byte[] initcode;
 
     @Convert(converter = UnknownIdConverter.class)
