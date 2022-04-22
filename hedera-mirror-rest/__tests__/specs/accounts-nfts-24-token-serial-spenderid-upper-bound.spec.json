@@ -97,17 +97,6 @@
     "nfts": [
       {
         "account_id": "0.0.1001",
-        "created_timestamp": "1234567890.000000003",
-        "delegating_spender": "0.0.20",
-        "deleted": false,
-        "metadata": "bTE=",
-        "modified_timestamp": "1234567890.000000003",
-        "serial_number": 1,
-        "spender": "0.0.3008",
-        "token_id": "0.0.101"
-      },
-      {
-        "account_id": "0.0.1001",
         "created_timestamp": "1234567890.000000001",
         "delegating_spender": "0.0.20",
         "deleted": false,

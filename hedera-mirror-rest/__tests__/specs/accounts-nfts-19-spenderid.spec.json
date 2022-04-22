@@ -62,7 +62,14 @@
       }
     ]
   },
-  "urls": ["/api/v1/accounts/0.0.1001/nfts?spender.id=gte:2000"],
+  "urls": [
+    "/api/v1/accounts/0.0.1001/nfts?spender.id=gte:2000",
+    "/api/v1/accounts/0.0.1001/nfts?spender.id=2000",
+    "/api/v1/accounts/0.0.1001/nfts?spender.id=eq:2000",
+    "/api/v1/accounts/0.0.1001/nfts?spender.id=lte:2000",
+    "/api/v1/accounts/0.0.1001/nfts?spender.id=lt:2001",
+    "/api/v1/accounts/0.0.1001/nfts?spender.id=gt:1999"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "nfts": [

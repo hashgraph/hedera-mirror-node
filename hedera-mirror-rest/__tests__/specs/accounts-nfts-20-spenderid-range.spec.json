@@ -137,20 +137,20 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gte:1000&token.id=lte:2500&serialnumber=gt:3&serialnumber=lt:5&spender.id=gte:2000&spender.id=lte:2004",
+  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gte:1000&token.id=lte:2500&serialnumber=gt:3&serialnumber=lt:5&spender.id=gte:2000&spender.id=lte:2003",
   "responseStatus": 200,
   "responseJson": {
     "nfts": [
       {
         "account_id": "0.0.1001",
-        "created_timestamp": "1234567890.000000007",
+        "created_timestamp": "1234567890.000000011",
         "delegating_spender": "0.0.5",
         "deleted": false,
-        "metadata": "czM=",
-        "modified_timestamp": "1234567890.000000007",
+        "metadata": "czc=",
+        "modified_timestamp": "1234567890.000000011",
         "serial_number": 4,
-        "spender": "0.0.2004",
-        "token_id": "0.0.2500"
+        "spender": "0.0.1999",
+        "token_id": "0.0.2000"
       },
       {
         "account_id": "0.0.1001",

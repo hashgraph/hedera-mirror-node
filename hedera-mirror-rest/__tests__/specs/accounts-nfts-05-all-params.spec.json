@@ -99,7 +99,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/accounts/0.0.1001/nfts?order=asc&limit=2&token.id=gte:0.0.1500&serialnumber=gt:3&spender.id=gte:0.0.2004"
+      "next": "/api/v1/accounts/0.0.1001/nfts?spender.id=gte:2004&order=asc&limit=2&token.id=gte:0.0.1500&serialnumber=gt:3"
     }
   }
 }

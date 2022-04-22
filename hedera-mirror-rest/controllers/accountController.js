@@ -131,9 +131,9 @@ const validateSerialNumberTokenFilterCombo = (serialNumberBound, tokenIdBound, m
   }
 };
 
-const retrieveNftComponentQuery = (boundaries, orderFilter, limitFilter, accountId, paramCount) => {
+const retrieveNftComponentQuery = (boundaries, spenderFilter, orderFilter, limitFilter, accountId, paramCount) => {
   return boundaries.some((b) => !_.isEmpty(b))
-    ? extractNftsQuery([...boundaries, orderFilter, limitFilter], accountId, paramCount)
+    ? extractNftsQuery([...boundaries, spenderFilter, orderFilter, limitFilter], accountId, paramCount)
     : null;
 };
 
@@ -146,14 +146,11 @@ const retrieveNftComponentQuery = (boundaries, orderFilter, limitFilter, account
 const extractNftMultiUnionQuery = (filters, accountId) => {
   const lowerTokenIdBound = {};
   const lowerSerialNumberBound = {};
-  const lowerSpenderIdBound = {};
   const upperTokenIdBound = {};
   const upperSerialNumberBound = {};
-  const upperSpenderIdBound = {};
   const inclusiveLowerTokenIdBound = {};
   const inclusiveUpperTokenIdBound = {};
-  const inclusiveLowerSpenderIdBound = {};
-  const inclusiveUpperSpenderIdBound = {};
+  let spenderIdFilter = null;
   let orderFilter = null;
   let limitFilter = null;
   let noFilterQuery = true;
@@ -204,21 +201,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
         hasTokenNumber = true;
         break;
       case constants.filterKeys.SPENDER_ID:
-        if (utils.isRegexMatch(constants.queryParamOperatorPatterns.ltorlte, filter.operator)) {
-          if (utils.opsMap.lte === filter.operator) {
-            cacheAndUpdateFilter(upperSpenderIdBound, filter, utils.opsMap.eq);
-          }
-
-          cacheAndUpdateFilter(inclusiveUpperSpenderIdBound, filter, utils.opsMap.lt);
-          noFilterQuery = false;
-        } else if (utils.isRegexMatch(constants.queryParamOperatorPatterns.gtorgte, filter.operator)) {
-          if (utils.opsMap.gte === filter.operator) {
-            cacheAndUpdateFilter(lowerSpenderIdBound, filter, utils.opsMap.eq);
-          }
-
-          cacheAndUpdateFilter(inclusiveLowerSpenderIdBound, filter, utils.opsMap.gt);
-          noFilterQuery = false;
-        }
+        spenderIdFilter = filter;
         break;
       case constants.filterKeys.LIMIT:
         limitFilter = filter;
@@ -250,7 +233,8 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
     lower = extractNftsQuery(filters, accountId);
   } else {
     lower = retrieveNftComponentQuery(
-      [lowerTokenIdBound, lowerSerialNumberBound, lowerSpenderIdBound],
+      [lowerTokenIdBound, lowerSerialNumberBound],
+      spenderIdFilter,
       orderFilter,
       limitFilter,
       accountId
@@ -259,12 +243,8 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
     // account for non zero based psql index and limit param index position to be injected
     paramCount = _.isNil(lower) ? 1 : lower.params.length + 2;
     inner = retrieveNftComponentQuery(
-      [
-        inclusiveLowerTokenIdBound,
-        inclusiveUpperTokenIdBound,
-        inclusiveUpperSpenderIdBound,
-        inclusiveLowerSpenderIdBound,
-      ],
+      [inclusiveLowerTokenIdBound, inclusiveUpperTokenIdBound],
+      spenderIdFilter,
       orderFilter,
       limitFilter,
       accountId,
@@ -274,7 +254,8 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
     // account for limit param index position to be injected
     paramCount = _.isNil(inner) ? paramCount : paramCount + inner.params.length + 1;
     upper = retrieveNftComponentQuery(
-      [upperTokenIdBound, upperSerialNumberBound, upperSpenderIdBound],
+      [upperTokenIdBound, upperSerialNumberBound],
+      spenderIdFilter,
       orderFilter,
       limitFilter,
       accountId,
@@ -351,12 +332,6 @@ const getNftsByAccountId = async (req, res) => {
         value: lastRow.serial_number,
       },
     };
-    if (!_.isNil(lastRow.spender)) {
-      lastValues[constants.filterKeys.SPENDER_ID] = {
-        value: lastRow.spender,
-        inclusive: true,
-      };
-    }
     response.links.next = utils.getPaginationLink(req, response.nfts.length !== limit, lastValues, order);
   }
 
