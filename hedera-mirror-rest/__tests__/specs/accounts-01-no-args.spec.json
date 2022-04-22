@@ -129,7 +129,8 @@
     ],
     "contracts": [
       {
-        "num": 7
+        "num": 7,
+        "max_automatic_token_associations": 20
       },
       {
         "num": 8
@@ -295,7 +296,7 @@
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
-        "max_automatic_token_associations": null,
+        "max_automatic_token_associations": 20,
         "memo": "contract memo",
         "receiver_sig_required": null
       },
@@ -311,7 +312,7 @@
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
-        "max_automatic_token_associations": null,
+        "max_automatic_token_associations": 0,
         "memo": "contract memo",
         "receiver_sig_required": null
       },

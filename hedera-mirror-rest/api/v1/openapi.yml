@@ -1072,7 +1072,6 @@ components:
         max_automatic_token_associations:
           type: integer
           format: int32
-          nullable: true
         memo:
           type: string
           nullable: true
