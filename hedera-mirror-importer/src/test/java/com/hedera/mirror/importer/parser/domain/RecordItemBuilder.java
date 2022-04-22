@@ -367,7 +367,7 @@ public class RecordItemBuilder {
         return AccountID.newBuilder().setAccountNum(id()).build();
     }
 
-    private ByteString bytes(int length) {
+    public ByteString bytes(int length) {
         byte[] bytes = randomBytes(length);
         return ByteString.copyFrom(bytes);
     }
