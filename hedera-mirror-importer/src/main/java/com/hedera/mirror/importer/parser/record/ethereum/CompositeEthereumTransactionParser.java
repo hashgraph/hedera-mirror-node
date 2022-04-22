@@ -50,7 +50,6 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
     }
 
     private EthereumTransactionParser getEthereumTransactionParser(byte[] transactionBytes) {
-        // in case of ethereumData in body being empty we should be pulling from the record
         var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(transactionBytes);
         var rlpItem = decoder.next();
         return rlpItem.isList() ? legacyEthereumTransactionParser : eip1559EthereumTransactionParser;
