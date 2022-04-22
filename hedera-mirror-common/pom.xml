@@ -89,12 +89,6 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.hedera.hashgraph</groupId>
-            <artifactId>hedera-protobuf-java-api</artifactId>
-            <version>0.26.0-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>com.esaulpaugh</groupId>
             <artifactId>headlong</artifactId>
             <version>6.1.1</version>
@@ -119,14 +113,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>11</source>
-                    <target>11</target>
-                </configuration>
             </plugin>
         </plugins>
     </build>

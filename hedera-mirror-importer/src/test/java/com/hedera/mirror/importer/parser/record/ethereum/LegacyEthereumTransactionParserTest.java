@@ -68,6 +68,11 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
                         "28ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276"))
                 .satisfies(t -> assertThat(Hex.toHexString(t.getSignatureS())).isEqualTo(
                         "67cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83"));
+
+        // verify publicKey extraction
+        var publicKey = ethereumTransactionParser.retrievePublicKey(ethereumTransaction);
+        assertThat(Hex.toHexString(publicKey)).isEqualTo(
+                "024bc2a31265153f07e70e0bab08724e6b85e217f8cd628ceb62974247bb493382");
     }
 
     @Override
@@ -97,5 +102,10 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
                         "f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2f"))
                 .satisfies(t -> assertThat(Hex.toHexString(t.getSignatureS())).isEqualTo(
                         "0c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792"));
+
+        // verify publicKey extraction
+        var publicKey = ethereumTransactionParser.retrievePublicKey(ethereumTransaction);
+        assertThat(Hex.toHexString(publicKey)).isEqualTo(
+                "033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     }
 }
