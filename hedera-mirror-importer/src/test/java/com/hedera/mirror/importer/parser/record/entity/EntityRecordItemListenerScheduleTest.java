@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -56,10 +56,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.schedule.Schedule;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.common.domain.transaction.TransactionSignature;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
@@ -107,19 +108,69 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleCreateTransaction(CREATE_TIMESTAMP, payer, SCHEDULE_ID);
 
         // verify entity count
-        Entity expected = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null, null,
+        Entity expectedEntity = createEntity(EntityId.of(SCHEDULE_ID), SCHEDULE_REF_KEY, null, null,
                 false, null, SCHEDULE_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
 
+        Schedule expectedSchedule = Schedule.builder()
+                .consensusTimestamp(CREATE_TIMESTAMP)
+                .creatorAccountId(EntityId.of(PAYER))
+                .payerAccountId(EntityId.of(expectedPayer))
+                .scheduleId(EntityId.of(SCHEDULE_ID).getId())
+                .transactionBody(SCHEDULED_TRANSACTION_BODY.toByteArray())
+                .build();
+
         assertEquals(1, entityRepository.count());
-        assertEntity(expected);
+        assertEntity(expectedEntity);
 
         // verify schedule and signatures
-        assertScheduleInRepository(SCHEDULE_ID, CREATE_TIMESTAMP, expectedPayer, null);
+        assertThat(scheduleRepository.findAll()).containsOnly(expectedSchedule);
 
         assertTransactionSignatureInRepository(defaultSignatureList);
 
         // verify transaction
         assertTransactionInRepository(CREATE_TIMESTAMP, false, SUCCESS);
+    }
+
+    @Test
+    void scheduleCreateLongTermScheduledTransaction() {
+        var expirationTime = recordItemBuilder.timestamp();
+        var pubKeyPrefix = recordItemBuilder.bytes(16);
+        var signature = recordItemBuilder.bytes(32);
+        var recordItem = recordItemBuilder.scheduleCreate()
+                .receipt(r -> r.setScheduleID(SCHEDULE_ID))
+                .signatureMap(s -> s.clear().addSigPair(SignaturePair.newBuilder()
+                        .setPubKeyPrefix(pubKeyPrefix).setEd25519(signature)))
+                .transactionBody(b -> b.setExpirationTime(expirationTime).setWaitForExpiry(true))
+                .build();
+        var scheduleCreate = recordItem.getTransactionBody().getScheduleCreate();
+        var timestamp = recordItem.getConsensusTimestamp();
+        var expectedEntity = createEntity(EntityId.of(SCHEDULE_ID), scheduleCreate.getAdminKey(), null, null, false,
+                null, scheduleCreate.getMemo(),  null, timestamp, timestamp);
+        var expectedSchedule = Schedule.builder()
+                .consensusTimestamp(recordItem.getConsensusTimestamp())
+                .creatorAccountId(recordItem.getPayerAccountId())
+                .expirationTime(DomainUtils.timestampInNanosMax(expirationTime))
+                .payerAccountId(EntityId.of(scheduleCreate.getPayerAccountID()))
+                .scheduleId(SCHEDULE_ID.getScheduleNum())
+                .transactionBody(scheduleCreate.getScheduledTransactionBody().toByteArray())
+                .waitForExpiry(true)
+                .build();
+        var expectedTransactionSignature = TransactionSignature.builder()
+                .consensusTimestamp(timestamp)
+                .entityId(EntityId.of(SCHEDULE_ID))
+                .publicKeyPrefix(DomainUtils.toBytes(pubKeyPrefix))
+                .signature(DomainUtils.toBytes(signature))
+                .type(SignaturePair.ED25519_FIELD_NUMBER)
+                .build();
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        assertThat(entityRepository.findAll()).containsOnly(expectedEntity);
+        assertThat(scheduleRepository.findAll()).containsOnly(expectedSchedule);
+        assertThat(transactionSignatureRepository.findAll()).containsOnly(expectedTransactionSignature);
+        assertTransactionInRepository(timestamp, false, SUCCESS);
     }
 
     @Test

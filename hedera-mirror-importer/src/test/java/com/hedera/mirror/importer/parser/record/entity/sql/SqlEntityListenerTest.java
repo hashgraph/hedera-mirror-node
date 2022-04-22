@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -1235,18 +1236,37 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2, tokenTransfer3);
     }
 
-    @Test
-    void onSchedule() {
-        Schedule schedule1 = domainBuilder.schedule().get();
-        Schedule schedule2 = domainBuilder.schedule().get();
+    @ValueSource(ints = {1, 2})
+    @ParameterizedTest
+    void onSchedule(int commitIndex) {
+        var schedule = domainBuilder.schedule().get();
+        var expected = TestUtils.clone(schedule);
 
-        // when
-        sqlEntityListener.onSchedule(schedule1);
-        sqlEntityListener.onSchedule(schedule2);
+        sqlEntityListener.onSchedule(schedule);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(scheduleRepository.findAll()).containsOnly(expected);
+        }
+
+        var scheduleUpdate = new Schedule();
+        scheduleUpdate.setExecutedTimestamp(domainBuilder.timestamp());
+        scheduleUpdate.setScheduleId(schedule.getScheduleId());
+        expected.setExecutedTimestamp(scheduleUpdate.getExecutedTimestamp());
+
+        sqlEntityListener.onSchedule(scheduleUpdate);
         completeFileAndCommit();
 
-        // then
-        assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrder(schedule1, schedule2);
+        assertThat(scheduleRepository.findAll()).containsOnly(expected);
+    }
+
+    @Test
+    void onScheduleExecutedWithoutScheduleCreate() {
+        // For partial mirrornode which can miss a schedulecreate tx for an executed scheduled tx
+        var schedule = new Schedule();
+        schedule.setExecutedTimestamp(domainBuilder.timestamp());
+        schedule.setScheduleId(domainBuilder.entityId(SCHEDULE).getId());
+        sqlEntityListener.onSchedule(schedule);
+        assertThat(scheduleRepository.findAll()).isEmpty();
     }
 
     @Test

@@ -42,6 +42,7 @@ import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
@@ -49,6 +50,9 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -254,6 +258,21 @@ public class RecordItemBuilder {
                 .setValueWritten(BytesValue.of(bytes(32)));
     }
 
+    public Builder<ScheduleCreateTransactionBody.Builder> scheduleCreate() {
+        var scheduledTransaction = SchedulableTransactionBody.newBuilder()
+                .setTransactionFee(1_00_000_000)
+                .setMemo(text(16))
+                .setCryptoTransfer(cryptoTransferTransactionBody());
+        var builder = ScheduleCreateTransactionBody.newBuilder()
+                .setScheduledTransactionBody(scheduledTransaction)
+                .setMemo(text(16))
+                .setAdminKey(key())
+                .setPayerAccountID(accountId())
+                .setExpirationTime(timestamp())
+                .setWaitForExpiry(true);
+        return new Builder<>(TransactionType.SCHEDULECREATE, builder);
+    }
+
     public Builder<TokenMintTransactionBody.Builder> tokenMint(TokenType tokenType) {
         TokenMintTransactionBody.Builder transactionBody = TokenMintTransactionBody.newBuilder().setToken(tokenId());
 
@@ -275,10 +294,17 @@ public class RecordItemBuilder {
         return AccountID.newBuilder().setAccountNum(id()).build();
     }
 
-    private ByteString bytes(int length) {
+    public ByteString bytes(int length) {
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
         return ByteString.copyFrom(bytes);
+    }
+
+    private CryptoTransferTransactionBody.Builder cryptoTransferTransactionBody() {
+        return CryptoTransferTransactionBody.newBuilder()
+                .setTransfers(TransferList.newBuilder()
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId()).setAmount(-100))
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId()).setAmount(100)));
     }
 
     private ContractID contractId() {
@@ -305,6 +331,10 @@ public class RecordItemBuilder {
         }
     }
 
+    public ScheduleID scheduleId() {
+        return ScheduleID.newBuilder().setScheduleNum(id()).build();
+    }
+
     public String text(int characters) {
         return RandomStringUtils.randomAlphanumeric(characters);
     }
@@ -320,6 +350,7 @@ public class RecordItemBuilder {
     public class Builder<T extends GeneratedMessageV3.Builder> {
         private final TransactionType type;
         private final T transactionBody;
+        private final SignatureMap.Builder signatureMap;
         private final TransactionBody.Builder transactionBodyWrapper;
         private final TransactionRecord.Builder transactionRecord;
         private final AccountID payerAccountId;
@@ -329,6 +360,7 @@ public class RecordItemBuilder {
             payerAccountId = accountId();
             this.type = type;
             this.transactionBody = transactionBody;
+            signatureMap = defaultSignatureMap();
             transactionBodyWrapper = defaultTransactionBody();
             transactionRecord = defaultTransactionRecord();
         }
@@ -359,6 +391,11 @@ public class RecordItemBuilder {
 
         public Builder<T> status(ResponseCodeEnum status) {
             transactionRecord.getReceiptBuilder().setStatus(status);
+            return this;
+        }
+
+        public Builder<T> signatureMap(Consumer<SignatureMap.Builder> consumer) {
+            consumer.accept(signatureMap);
             return this;
         }
 
@@ -408,7 +445,7 @@ public class RecordItemBuilder {
             return Transaction.newBuilder()
                     .setSignedTransactionBytes(SignedTransaction.newBuilder()
                             .setBodyBytes(transactionBodyWrapper.build().toByteString())
-                            .setSigMap(defaultSignatureMap())
+                            .setSigMap(signatureMap)
                             .build()
                             .toByteString()
                     );
