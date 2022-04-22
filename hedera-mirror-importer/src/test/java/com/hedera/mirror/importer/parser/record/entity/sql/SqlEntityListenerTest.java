@@ -204,6 +204,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         contractUpdate.setAutoRenewPeriod(30L);
         contractUpdate.setExpirationTimestamp(500L);
         contractUpdate.setKey(domainBuilder.key());
+        contractUpdate.setMaxAutomaticTokenAssociations(100);
         contractUpdate.setMemo("updated");
         contractUpdate.setTimestampLower(contractCreate.getTimestampLower() + 1);
         contractUpdate.setProxyAccountId(EntityId.of(100L, ACCOUNT));

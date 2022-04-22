@@ -28,6 +28,7 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.GeneratedMessageV3;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -127,6 +128,7 @@ public class RecordItemBuilder {
                 .setFileID(fileId())
                 .setGas(10_000L)
                 .setInitialBalance(20_000L)
+                .setMaxAutomaticTokenAssociations(5)
                 .setMemo(text(16))
                 .setNewRealmAdminKey(key())
                 .setProxyAccountID(accountId())
@@ -192,6 +194,7 @@ public class RecordItemBuilder {
                 .setAutoRenewPeriod(duration(30))
                 .setContractID(contractId)
                 .setExpirationTime(timestamp())
+                .setMaxAutomaticTokenAssociations(Int32Value.of(10))
                 .setMemoWrapper(StringValue.of(text(16)))
                 .setProxyAccountID(accountId());
 

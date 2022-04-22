@@ -196,6 +196,7 @@ public class DomainBuilder {
                 .fileId(entityId(FILE))
                 .id(id)
                 .key(key())
+                .maxAutomaticTokenAssociations(2)
                 .memo(text(16))
                 .obtainerId(entityId(CONTRACT))
                 .proxyAccountId(entityId(ACCOUNT))

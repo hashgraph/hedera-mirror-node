@@ -75,6 +75,10 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
             contract.setKey(transactionBody.getAdminKey().toByteArray());
         }
 
+        if (transactionBody.hasMaxAutomaticTokenAssociations()) {
+            contract.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations().getValue());
+        }
+
         switch (transactionBody.getMemoFieldCase()) {
             case MEMOWRAPPER:
                 contract.setMemo(transactionBody.getMemoWrapper().getValue());
