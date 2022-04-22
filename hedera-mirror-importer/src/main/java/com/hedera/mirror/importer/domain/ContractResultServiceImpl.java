@@ -198,6 +198,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         Contract contract = contractEntityId.toEntity();
         contract.setCreatedTimestamp(recordItem.getConsensusTimestamp());
         contract.setDeleted(false);
+        contract.setMaxAutomaticTokenAssociations(0);
         contract.setTimestampLower(recordItem.getConsensusTimestamp());
 
         if (recordItem.getTransactionBody().hasContractCreateInstance()) {

@@ -412,13 +412,10 @@ abstract class AbstractTransactionHandlerTest {
         );
 
         if (maxAutomaticTokenAssociationsField != null) {
-            // only crypto update has max_automatic_token_associations
             expected = getExpectedUpdatedEntity();
+            expected.setMaxAutomaticTokenAssociations(500);
             if (expected instanceof Entity) {
-                expected.setMaxAutomaticTokenAssociations(500);
                 ((Entity) expected).setReceiverSigRequired(true);
-            } else if (expected instanceof Contract) {
-                expected.setMaxAutomaticTokenAssociations(500);
             }
 
             Message updatedInnerBody = innerBody.toBuilder()

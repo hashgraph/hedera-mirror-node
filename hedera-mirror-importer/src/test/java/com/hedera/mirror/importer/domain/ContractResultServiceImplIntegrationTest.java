@@ -51,7 +51,6 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
@@ -59,7 +58,6 @@ import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private static final ContractID CONTRACT_ID = ContractID.newBuilder().setContractNum(901).build();
-    private final EntityProperties entityProperties;
     private final ContractLogRepository contractLogRepository;
     private final ContractResultRepository contractResultRepository;
     private final ContractResultService contractResultService;
