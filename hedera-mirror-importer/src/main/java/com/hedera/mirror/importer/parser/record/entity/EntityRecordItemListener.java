@@ -21,12 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
-import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recover;
-import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.secp256k1_ecdsa_recoverable_signature_parse_compact;
 
-import com.esaulpaugh.headlong.rlp.RLPEncoder;
-import com.esaulpaugh.headlong.util.Integers;
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
@@ -70,8 +65,6 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
-import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -93,7 +86,6 @@ import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -1152,20 +1144,16 @@ public class EntityRecordItemListener implements RecordItemListener {
         ethereumTransaction.setHash(DomainUtils.toBytes(record.getEthereumHash()));
         ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
 
-        // set fromAddress from processed ethereum transaction
-//        var message = calculateSignableMessage(ethereumTransaction);
-//        var publicKey = extractSig(ethereumTransaction.getRecoveryId(), ethereumTransaction.getSignatureR(),
-//                ethereumTransaction.getSignatureS(), message);
-
         var funcResult = record.hasContractCreateResult() ? record.getContractCreateResult() :
                 record.getContractCallResult();
-        var fromPublicKeyBytes = DomainUtils.toBytes(funcResult.getSenderId().getAlias());
-        ethereumTransaction.setFromAddress(fromPublicKeyBytes);
+        var senderId = EntityId.of(funcResult.getSenderId());
+        ethereumTransaction.setFromAddress(DomainUtils.toEvmAddress(senderId));
 
-        // if ToAddress is null persist newly created Contract
-        if (ethereumTransaction.getToAddress() == null || ethereumTransaction.getToAddress().length == 0) {
-            var signerIdEntityId = entityIdService.lookup(funcResult.getSenderId());
+        // persist newly created Contract since no ContractCreate is exposed
+        if (record.hasContractCreateResult()) {
             var toEntityId = entityIdService.lookup(funcResult.getContractID());
+            var publicKey = ethereumTransactionParser.retrievePublicKey(ethereumTransaction);
+
             var contract = Contract.builder()
 //                    .autoRenewPeriod(1800L)
                     .createdTimestamp(recordItem.getConsensusTimestamp())
@@ -1173,9 +1161,9 @@ public class EntityRecordItemListener implements RecordItemListener {
 //                    .expirationTimestamp(timestamp + 30_000_000L)
                     .fileId(ethereumTransaction.getCallDataId())
                     .id(toEntityId.getId())
-                    .key(fromPublicKeyBytes)
-                    .memo("") // missing memo
-                    .obtainerId(signerIdEntityId)
+                    .key(publicKey)
+                    .memo("") // missing memo, is hex data from transaction submission available?
+                    .obtainerId(senderId)
 //                    .proxyAccountId(entityId(ACCOUNT))
                     .num(toEntityId.getEntityNum())
                     .realm(toEntityId.getRealmNum())
@@ -1187,68 +1175,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         entityListener.onEthereumTransaction(ethereumTransaction);
-    }
-
-    private byte[] calculateSignableMessage(EthereumTransaction ethTx) {
-        switch (ethTx.getType()) {
-            case 0:
-                return (ethTx.getChainId() != null && ethTx.getChainId().length > 0)
-                        ? RLPEncoder.encodeAsList(
-                        Integers.toBytes(ethTx.getNonce()),
-                        ethTx.getGasPrice(),
-                        Integers.toBytes(ethTx.getGasLimit()),
-                        ethTx.getToAddress(),
-                        ethTx.getValue(),
-                        ethTx.getCallData(),
-                        ethTx.getChainId(),
-                        Integers.toBytes(0),
-                        Integers.toBytes(0))
-                        : RLPEncoder.encodeAsList(
-                        Integers.toBytes(ethTx.getNonce()),
-                        ethTx.getGasPrice(),
-                        Integers.toBytes(ethTx.getGasLimit()),
-                        ethTx.getToAddress(),
-                        ethTx.getValue(),
-                        ethTx.getCallData());
-            case 2:
-                return RLPEncoder.encodeSequentially(
-                        Integers.toBytes(2),
-                        new Object[] {
-                                ethTx.getChainId(),
-                                Integers.toBytes(ethTx.getNonce()),
-                                ethTx.getMaxPriorityFeePerGas(),
-                                ethTx.getMaxFeePerGas(),
-                                Integers.toBytes(ethTx.getGasLimit()),
-                                ethTx.getToAddress(),
-                                ethTx.getValue(),
-                                ethTx.getCallData(),
-                                new Object[0]
-                        });
-            case 1:
-                throw new IllegalArgumentException("Unsupported transaction type " + ethTx.getType());
-        }
-        return new byte[0];
-    }
-
-    private byte[] extractSig(int recId, byte[] r, byte[] s, byte[] message) {
-        byte[] dataHash = new Keccak.Digest256().digest(message);
-
-        byte[] signature = new byte[64];
-        System.arraycopy(r, 0, signature, 0, r.length);
-        System.arraycopy(s, 0, signature, 32, s.length);
-
-        LibSecp256k1.secp256k1_ecdsa_recoverable_signature parsedSignature =
-                new LibSecp256k1.secp256k1_ecdsa_recoverable_signature();
-
-        if (secp256k1_ecdsa_recoverable_signature_parse_compact(CONTEXT, parsedSignature, signature, recId) == 0) {
-            throw new IllegalArgumentException("Could not parse signature");
-        }
-        LibSecp256k1.secp256k1_pubkey newPubKey = new LibSecp256k1.secp256k1_pubkey();
-        if (secp256k1_ecdsa_recover(CONTEXT, newPubKey, parsedSignature, dataHash) == 0) {
-            throw new IllegalArgumentException("Could not recover signature");
-        } else {
-            return newPubKey.data;
-        }
     }
 
     /**

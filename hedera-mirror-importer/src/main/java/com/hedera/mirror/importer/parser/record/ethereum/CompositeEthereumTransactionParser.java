@@ -42,14 +42,17 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
         return ethereumTransactionParser.parse(transactionBytes);
     }
 
+    @Override
+    public byte[] retrievePublicKey(EthereumTransaction ethereumTransaction) {
+        return ethereumTransaction.getType() == 0 ?
+                legacyEthereumTransactionParser.retrievePublicKey(ethereumTransaction) :
+                eip1559EthereumTransactionParser.retrievePublicKey(ethereumTransaction);
+    }
+
     private EthereumTransactionParser getEthereumTransactionParser(byte[] transactionBytes) {
         // in case of ethereumData in body being empty we should be pulling from the record
         var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(transactionBytes);
         var rlpItem = decoder.next();
         return rlpItem.isList() ? legacyEthereumTransactionParser : eip1559EthereumTransactionParser;
-    }
-
-    private void setFromAddress(EthereumTransaction ethereumTransaction, byte[] ethTx) {
-
     }
 }

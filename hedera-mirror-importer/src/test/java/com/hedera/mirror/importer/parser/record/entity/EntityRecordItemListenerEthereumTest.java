@@ -67,7 +67,7 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
     @Test
     void ethereumTransactionCallLegacy() {
         var transactionBytes = Hex.decode(LegacyEthereumTransactionParserTest.LEGACY_RAW_TX);
-        RecordItem recordItem = recordItemBuilder.ethereumTransaction(true, CONTRACT_ID, transactionBytes).build();
+        RecordItem recordItem = recordItemBuilder.ethereumTransaction(false, CONTRACT_ID, transactionBytes).build();
 
         parseRecordItemAndCommit(recordItem);
 
@@ -85,7 +85,7 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
     @Test
     void ethereumTransactionCallEIP155() {
         var transactionBytes = Hex.decode(LegacyEthereumTransactionParserTest.EIP155_RAW_TX);
-        RecordItem recordItem = recordItemBuilder.ethereumTransaction(true, CONTRACT_ID, transactionBytes).build();
+        RecordItem recordItem = recordItemBuilder.ethereumTransaction(false, CONTRACT_ID, transactionBytes).build();
 
         parseRecordItemAndCommit(recordItem);
 
@@ -102,7 +102,7 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
 
     @Test
     void ethereumEip1559TransactionCreate() {
-        var transactionBytes = recordItemBuilder.getEip1559EthTransactionBytes(true);
+        var transactionBytes = Hex.decode(Eip1559EthereumTransactionParserTest.LONDON_RAW_TX);
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(true, CONTRACT_ID, transactionBytes).build();
 
         parseRecordItemAndCommit(recordItem);
@@ -120,7 +120,7 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
 
     @Test
     void ethereumLegacyTransactionCreate() {
-        var transactionBytes = recordItemBuilder.getLegacyEthTransactionBytes(false, true);
+        var transactionBytes = Hex.decode(LegacyEthereumTransactionParserTest.LEGACY_RAW_TX);
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(true, CONTRACT_ID, transactionBytes).build();
 
         parseRecordItemAndCommit(recordItem);
@@ -140,7 +140,7 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
 
     @Test
     void ethereumLegacyChainListTransactionCreate() {
-        var transactionBytes = recordItemBuilder.getLegacyEthTransactionBytes(true, true);
+        var transactionBytes = Hex.decode(LegacyEthereumTransactionParserTest.EIP155_RAW_TX);
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(true, CONTRACT_ID, transactionBytes).build();
 
         parseRecordItemAndCommit(recordItem);

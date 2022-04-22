@@ -280,11 +280,9 @@ public class RecordItemBuilder {
         var digestedHash = ByteString.copyFrom(new Keccak.Digest256().digest(transactionBytes));
         if (create) {
             transactionBody.setCallData(fileId());
-            // set senderId w alias as publicKey
-            var accountId = AccountID.newBuilder().setAlias(bytes(32)).build();
             return new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
                     .record(r -> r
-                            .setContractCreateResult(contractFunctionResult(contractId).setSenderId(accountId))
+                            .setContractCreateResult(contractFunctionResult(contractId))
                             .setEthereumHash(digestedHash));
         } else {
             return new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
@@ -294,47 +292,35 @@ public class RecordItemBuilder {
         }
     }
 
-    public byte[] getLegacyEthTransactionBytes(boolean chainIDList, boolean newContract) {
-        return chainIDList ?
-                RLPEncoder.encodeAsList(
-                        Integers.toBytes(10L), // nonce
-                        randomBytes(3), // gasPrice
-                        Integers.toBytes(6), // gasLimit
-                        newContract ? new byte[0] : randomBytes(5), // to
-                        Integers.toBytesUnsigned(BigInteger.valueOf(100)), // value
-                        randomBytes(50), // callData
-                        randomBytes(1), // chainId
-                        Integers.toBytes(0), // r
-                        Integers.toBytes(0)) // s
-                :
-                RLPEncoder.encodeAsList(
-                        Integers.toBytes(10L), // nonce
-                        randomBytes(3), // gasPrice
-                        Integers.toBytes(1000), // gasLimit
-                        newContract ? new byte[0] : randomBytes(5), // to
-                        Integers.toBytesUnsigned(BigInteger.valueOf(100)), // value
-                        randomBytes(50), // callData
-                        new byte[0], // chainId
-                        new byte[0], // r
-                        new byte[0]); // s
+    public byte[] getLegacyEthTransactionBytes() {
+        return RLPEncoder.encodeAsList(
+                Integers.toBytes(10L), // nonce
+                Integers.toBytes(500000000), // gasPrice
+                Integers.toBytes(1000), // gasLimit
+                randomBytes(20), // to
+                Integers.toBytesUnsigned(BigInteger.valueOf(100)), // value
+                randomBytes(50), // callData
+                randomBytes(1), // chainId
+                randomBytes(32), // r
+                randomBytes(32)); // s
     }
 
-    public byte[] getEip1559EthTransactionBytes(boolean newContract) {
+    public byte[] getEip1559EthTransactionBytes() {
         return RLPEncoder.encodeSequentially(
                 Integers.toBytes(2),
                 new Object[] {
-                        randomBytes(1), //  chainId
-                        Integers.toBytes(10L), // nonce
-                        randomBytes(4), // maxPriorityGas
-                        randomBytes(4), // maxGas
-                        Integers.toBytes(6), // gasLimit
-                        newContract ? new byte[0] : randomBytes(5), // to
+                        randomBytes(2), //  chainId
+                        Integers.toBytes(1L), // nonce
+                        randomBytes(1), // maxPriorityGas
+                        randomBytes(1), // maxGas
+                        Integers.toBytes(3), // gasLimit
+                        randomBytes(20), // to
                         Integers.toBytesUnsigned(BigInteger.valueOf(100)), // value
-                        randomBytes(100), // callData
+                        randomBytes(3), // callData
                         new Object[0], // accessList
-                        new byte[0], // recId
-                        randomBytes(100), // r
-                        randomBytes(100) // s
+                        Integers.toBytes(2), // recId
+                        randomBytes(32), // r
+                        randomBytes(32) // s
                 });
     }
 

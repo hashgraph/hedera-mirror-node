@@ -24,4 +24,6 @@ import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 
 public interface EthereumTransactionParser {
     EthereumTransaction parse(byte[] transactionBytes);
+
+    byte[] retrievePublicKey(EthereumTransaction ethereumTransaction);
 }

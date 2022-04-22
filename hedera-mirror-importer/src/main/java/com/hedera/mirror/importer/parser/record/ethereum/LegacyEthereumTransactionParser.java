@@ -27,7 +27,7 @@ import javax.inject.Named;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 
 @Named
-public class LegacyEthereumTransactionParser implements EthereumTransactionParser {
+public class LegacyEthereumTransactionParser extends AbstractEthereumTransactionParser {
     @Override
     public EthereumTransaction parse(byte[] transactionBytes) {
         var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(
