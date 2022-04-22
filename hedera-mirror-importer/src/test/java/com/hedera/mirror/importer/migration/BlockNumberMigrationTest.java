@@ -4,14 +4,15 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 
 import com.hedera.mirror.importer.IntegrationTest;
 
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.testcontainers.shaded.com.fasterxml.jackson.core.type.TypeReference;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
-import javax.annotation.Resource;
+
 import java.io.File;
 import java.io.IOException;
 import java.sql.PreparedStatement;
@@ -19,17 +20,15 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 public class BlockNumberMigrationTest extends IntegrationTest {
 
-    @Resource
-    private JdbcOperations jdbcOperations;
+    private final JdbcOperations jdbcOperations;
 
-    @Resource
-    private BlockNumberMigrationProperties blockNumberMigrationProperties;
+    private final BlockNumberMigrationProperties blockNumberMigrationProperties;
 
-    @Resource
-    private BlockNumberMigration blockNumberMigration;
+    private final BlockNumberMigration blockNumberMigration;
 
     @Test
     public void theCorrectOffsetMustBeAddedToTheBlockNumbers() throws IOException, IllegalAccessException {
