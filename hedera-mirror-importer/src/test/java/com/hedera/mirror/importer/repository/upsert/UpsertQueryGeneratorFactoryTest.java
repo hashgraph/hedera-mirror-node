@@ -66,7 +66,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
                 "id,initcode,key,max_automatic_token_associations,memo,num,obtainer_id,proxy_account_id,public_key," +
                 "realm,shard,timestamp_range,type";
         String nullableColumns = "auto_renew_period,created_timestamp,deleted,evm_address,expiration_timestamp," +
-                "file_id,initcode,key,obtainer_id,proxy_account_id,public_key";
+                "file_id,initcode,key,max_automatic_token_associations,obtainer_id,proxy_account_id,public_key";
         String updatableColumns = "auto_renew_period,deleted,expiration_timestamp,key,max_automatic_token_associations," +
                 "memo,obtainer_id,proxy_account_id,public_key,timestamp_range";
 

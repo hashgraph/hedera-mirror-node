@@ -92,7 +92,7 @@ create table if not exists contract
     id                               bigint                         not null,
     initcode                         bytea                          null,
     key                              bytea                          null,
-    max_automatic_token_associations integer                        not null,
+    max_automatic_token_associations integer                        null,
     memo                             text        default ''         not null,
     num                              bigint                         not null,
     obtainer_id                      bigint                         null,
