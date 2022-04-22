@@ -40,7 +40,7 @@ public class BlockNumberMigrationTest extends IntegrationTest {
         long offset = 412;
         List<RecordFile> migratedRecordFiles = getAllRecordFiles();
         assertEquals(defaultRecordFiles.size(), migratedRecordFiles.size());
-        for(int i = 0; i < defaultRecordFiles.size(); i++) {
+        for (int i = 0; i < defaultRecordFiles.size(); i++) {
             assertEquals(defaultRecordFiles.get(i).getIndex() + offset, migratedRecordFiles.get(i).getIndex());
         }
     }
@@ -58,7 +58,7 @@ public class BlockNumberMigrationTest extends IntegrationTest {
 
         List<RecordFile> migratedRecordFiles = getAllRecordFiles();
         assertEquals(defaultRecordFiles.size(), migratedRecordFiles.size());
-        for(int i = 0; i < defaultRecordFiles.size(); i++) {
+        for (int i = 0; i < defaultRecordFiles.size(); i++) {
             assertEquals(defaultRecordFiles.get(i).getIndex(), migratedRecordFiles.get(i).getIndex());
         }
     }
@@ -76,7 +76,7 @@ public class BlockNumberMigrationTest extends IntegrationTest {
 
         List<RecordFile> migratedRecordFiles = getAllRecordFiles();
         assertEquals(defaultRecordFiles.size(), migratedRecordFiles.size());
-        for(int i = 0; i < defaultRecordFiles.size(); i++) {
+        for (int i = 0; i < defaultRecordFiles.size(); i++) {
             assertEquals(defaultRecordFiles.get(i).getIndex(), migratedRecordFiles.get(i).getIndex());
         }
     }

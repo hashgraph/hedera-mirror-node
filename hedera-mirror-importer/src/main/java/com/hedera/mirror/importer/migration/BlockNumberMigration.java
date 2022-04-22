@@ -37,11 +37,11 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected void doMigrate() {
-        if(!migrationProperties.isEnabled()){
+        if (!migrationProperties.isEnabled()) {
             return ;
         }
         Long recordFileBlockNumber = getRecordFileByConsensusEnd(migrationProperties.getCorrectConsensusEnd());
-        if(recordFileBlockNumber == null){
+        if (recordFileBlockNumber == null) {
             return ;
         }
 
