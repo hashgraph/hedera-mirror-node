@@ -49,7 +49,7 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
 
         assertThat(ethereumTransaction)
                 .isNotNull()
-                .satisfies(t -> assertThat(t.getType()).isEqualTo(0))
+                .satisfies(t -> assertThat(t.getType()).isZero())
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getChainId())).isEqualTo("01"))
                 .satisfies(t -> assertThat(t.getNonce()).isEqualTo(9))
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getGasPrice())).isEqualTo("04a817c800"))
@@ -59,7 +59,7 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getToAddress())).isEqualTo(
                         "3535353535353535353535353535353535353535"))
                 .satisfies(t -> assertThat(t.getValue()).isEqualTo(new BigInteger("0de0b6b3a7640000", 16).toByteArray()))
-                .satisfies(t -> assertThat(t.getCallData().length).isZero())
+                .satisfies(t -> assertThat(t.getCallData()).isEmpty())
                 .satisfies(t -> assertThat(t.getAccessList()).isNull())
                 .satisfies(t -> assertThat(t.getRecoveryId()).isZero())
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureV())).isEqualTo("25"))
@@ -84,7 +84,7 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
     public void validateEthereumTransaction(EthereumTransaction ethereumTransaction) {
         assertThat(ethereumTransaction)
                 .isNotNull()
-                .satisfies(t -> assertThat(t.getType()).isEqualTo(0))
+                .satisfies(t -> assertThat(t.getType()).isZero())
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getChainId())).isEqualTo("012a"))
                 .satisfies(t -> assertThat(t.getNonce()).isEqualTo(1))
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getGasPrice())).isEqualTo("2f"))

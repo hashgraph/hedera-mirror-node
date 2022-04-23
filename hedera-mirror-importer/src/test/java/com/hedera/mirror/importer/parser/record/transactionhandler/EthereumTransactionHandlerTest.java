@@ -27,7 +27,9 @@ import static org.mockito.Mockito.when;
 
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -52,6 +54,14 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder().setEthereumTransaction(EthereumTransactionBody.newBuilder().build());
+    }
+
+    @Override
+    protected TransactionRecord.Builder getDefaultTransactionRecord() {
+        return TransactionRecord.newBuilder()
+                .setConsensusTimestamp(MODIFIED_TIMESTAMP)
+                .setReceipt(getTransactionReceipt(ResponseCodeEnum.SUCCESS))
+                .setContractCallResult(recordItemBuilder.contractFunctionResult(contractId));
     }
 
     @Override

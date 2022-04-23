@@ -69,8 +69,9 @@ class EthereumTransactionHandler implements TransactionHandler {
         if (!contractFunctionResult.equals(ContractFunctionResult.getDefaultInstance())) {
             contractId = entityIdService.lookup(contractFunctionResult.getContractID());
             senderId = EntityId.of(contractFunctionResult.getSenderId());
-            ethereumTransaction = insertEthereumTransaction(recordItem, senderId);
         }
+
+        ethereumTransaction = insertEthereumTransaction(recordItem, senderId);
 
         if (transactionRecord.hasContractCreateResult()) {
             insertContract(contractId, senderId, ethereumTransaction, recordItem.getConsensusTimestamp());
