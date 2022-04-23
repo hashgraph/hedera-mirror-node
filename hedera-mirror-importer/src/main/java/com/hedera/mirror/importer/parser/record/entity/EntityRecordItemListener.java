@@ -20,9 +20,6 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-
-import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -34,7 +31,6 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
-import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.SignaturePair;
@@ -67,7 +63,6 @@ import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
@@ -106,7 +101,6 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -117,7 +111,6 @@ import com.hedera.mirror.importer.repository.FileDataRepository;
 public class EntityRecordItemListener implements RecordItemListener {
     private final AddressBookService addressBookService;
     private final ContractResultService contractResultService;
-    private final EthereumTransactionParser ethereumTransactionParser;
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
@@ -135,11 +128,9 @@ public class EntityRecordItemListener implements RecordItemListener {
                                     TransactionHandlerFactory transactionHandlerFactory,
                                     FileDataRepository fileDataRepository,
                                     RecordParserProperties parserProperties,
-                                    ContractResultService contractResultService,
-                                    EthereumTransactionParser ethereumTransactionParser) {
+                                    ContractResultService contractResultService) {
         this.addressBookService = addressBookService;
         this.contractResultService = contractResultService;
-        this.ethereumTransactionParser = ethereumTransactionParser;
         this.entityIdService = entityIdService;
         this.entityListener = entityListener;
         this.entityProperties = entityProperties;
@@ -240,8 +231,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 insertTokenUpdate(recordItem);
             } else if (body.hasTokenWipe()) {
                 insertTokenAccountWipe(recordItem);
-            } else if (body.hasEthereumTransaction()) {
-                insertEthereumTransaction(recordItem);
             }
 
             // Record token transfers can be populated for multiple transaction types
@@ -1119,65 +1108,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         return autoAssociatedAccounts;
-    }
-
-    private void insertEthereumTransaction(RecordItem recordItem) {
-        if (!entityProperties.getPersist().isEthereumTransactions()) {
-            return;
-        }
-
-        var body = recordItem.getTransactionBody().getEthereumTransaction();
-        var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
-        var ethereumTransaction = ethereumTransactionParser.parse(ethereumDataBytes);
-        if (ethereumTransaction == null) {
-            return;
-        }
-
-        // update ethereumTransaction with body values
-        var file = body.getCallData() == FileID.getDefaultInstance() ? null : EntityId.of(body.getCallData());
-        ethereumTransaction.setCallDataId(file);
-        ethereumTransaction.setMaxGasAllowance(body.getMaxGasAllowance());
-
-        // update ethereumTransaction with record values
-        var transactionRecord = recordItem.getRecord();
-        ethereumTransaction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-        ethereumTransaction.setData(ethereumDataBytes);
-        ethereumTransaction.setHash(DomainUtils.toBytes(transactionRecord.getEthereumHash()));
-        ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
-
-        var funcResult = transactionRecord.hasContractCreateResult() ? transactionRecord.getContractCreateResult() :
-                transactionRecord.getContractCallResult();
-        var senderId = EntityId.of(funcResult.getSenderId());
-        ethereumTransaction.setFromAddress(DomainUtils.toEvmAddress(senderId));
-
-        // persist newly created Contract since no ContractCreate is exposed
-        if (transactionRecord.hasContractCreateResult()) {
-            var toEntityId = entityIdService.lookup(funcResult.getContractID());
-            var publicKey = ethereumTransactionParser.retrievePublicKey(ethereumTransaction);
-            var publicKeyBytes = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(publicKey)).build()
-                    .toByteArray();
-
-            var contract = Contract.builder()
-//                    .autoRenewPeriod(1800L)
-                    .createdTimestamp(recordItem.getConsensusTimestamp())
-                    .deleted(false)
-//                    .expirationTimestamp(timestamp + 30_000_000L)
-                    .fileId(ethereumTransaction.getCallDataId())
-                    .id(toEntityId.getId())
-                    .key(publicKeyBytes)
-                    .memo("") // missing memo, is hex data from transaction submission available?
-                    .obtainerId(senderId)
-//                    .proxyAccountId(entityId(ACCOUNT))
-                    .num(toEntityId.getEntityNum())
-                    .realm(toEntityId.getRealmNum())
-                    .shard(toEntityId.getShardNum())
-                    .timestampRange(Range.atLeast(recordItem.getConsensusTimestamp()))
-                    .type(CONTRACT)
-                    .build();
-            entityListener.onContract(contract);
-        }
-
-        entityListener.onEthereumTransaction(ethereumTransaction);
     }
 
     /**

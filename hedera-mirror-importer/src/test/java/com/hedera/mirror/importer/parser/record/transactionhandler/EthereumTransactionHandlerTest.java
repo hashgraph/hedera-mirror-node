@@ -21,21 +21,32 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 
 class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
+    @Mock(lenient = true)
+    protected EthereumTransactionParser ethereumTransactionParser;
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new EthereumTransactionHandler(entityIdService);
+        doReturn(domainBuilder.ethereumTransaction().get()).when(ethereumTransactionParser).parse(any());
+        doReturn(recordItemBuilder.bytes(32).toByteArray()).when(ethereumTransactionParser).retrievePublicKey(any());
+        return new EthereumTransactionHandler(entityIdService, new EntityProperties(), entityListener,
+                ethereumTransactionParser);
     }
 
     @Override
