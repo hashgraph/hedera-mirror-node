@@ -160,7 +160,8 @@ class MirrorDateRangePropertiesProcessorTest {
 
     @Test
     void startDateSetAndDatabaseEmpty() {
-        mirrorProperties.setStartDate(STARTUP_TIME);
+        var startDate = STARTUP_TIME.plusSeconds(10L);
+        mirrorProperties.setStartDate(startDate);
         DateRangeFilter expectedFilter = new DateRangeFilter(mirrorProperties.getStartDate(), null);
         Instant expectedDate = mirrorProperties.getStartDate();
         for (var downloaderProperties : downloaderPropertiesList) {
@@ -169,7 +170,7 @@ class MirrorDateRangePropertiesProcessorTest {
                     .isEqualTo(streamFile(streamType, expectedDate));
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType)).isEqualTo(expectedFilter);
         }
-        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(STARTUP_TIME);
+        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(startDate);
     }
 
     @ParameterizedTest(name = "startDate {0}ns before application status, endDate")
