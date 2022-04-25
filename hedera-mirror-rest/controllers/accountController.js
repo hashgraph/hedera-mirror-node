@@ -65,6 +65,7 @@ const extractNftsQuery = (filters, accountId, startPosition = 1) => {
   let order = constants.orderFilterValues.DESC;
   const conditions = [`${Nft.ACCOUNT_ID} = $${startPosition}`];
   const params = [accountId];
+  const equalSpenderFilters = [];
 
   for (const filter of filters) {
     if (_.isEmpty(filter)) {
@@ -91,7 +92,17 @@ const extractNftsQuery = (filters, accountId, startPosition = 1) => {
         );
         break;
       case constants.filterKeys.SPENDER_ID:
-        updateConditionsAndParamsWithValues(filter, params, conditions, Nft.SPENDER, startPosition + conditions.length);
+        if (filter.operator === utils.opsMap.eq) {
+          equalSpenderFilters.push(filter);
+        } else {
+          updateConditionsAndParamsWithValues(
+            filter,
+            params,
+            conditions,
+            Nft.SPENDER,
+            startPosition + conditions.length
+          );
+        }
         break;
       case constants.filterKeys.LIMIT:
         limit = filter.value;
@@ -101,6 +112,21 @@ const extractNftsQuery = (filters, accountId, startPosition = 1) => {
         break;
       default:
         break;
+    }
+  }
+
+  if (!_.isEmpty(equalSpenderFilters)) {
+    if (equalSpenderFilters.length === 1) {
+      updateConditionsAndParamsWithValues(
+        equalSpenderFilters.pop(),
+        params,
+        conditions,
+        Nft.SPENDER,
+        startPosition + conditions.length
+      );
+    } else {
+      const equalValues = equalSpenderFilters.map((f) => f.value).join(',');
+      conditions.push(`${Nft.SPENDER} in (${equalValues})`);
     }
   }
 
@@ -131,9 +157,9 @@ const validateSerialNumberTokenFilterCombo = (serialNumberBound, tokenIdBound, m
   }
 };
 
-const retrieveNftComponentQuery = (boundaries, spenderFilter, orderFilter, limitFilter, accountId, paramCount) => {
+const retrieveNftComponentQuery = (boundaries, spenderFilters, orderFilter, limitFilter, accountId, paramCount) => {
   return boundaries.some((b) => !_.isEmpty(b))
-    ? extractNftsQuery([...boundaries, spenderFilter, orderFilter, limitFilter], accountId, paramCount)
+    ? extractNftsQuery([...boundaries, ...spenderFilters, orderFilter, limitFilter], accountId, paramCount)
     : null;
 };
 
@@ -150,7 +176,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
   const upperSerialNumberBound = {};
   const inclusiveLowerTokenIdBound = {};
   const inclusiveUpperTokenIdBound = {};
-  let spenderIdFilter = null;
+  let spenderIdFilters = [];
   let orderFilter = null;
   let limitFilter = null;
   let noFilterQuery = true;
@@ -201,7 +227,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
         hasTokenNumber = true;
         break;
       case constants.filterKeys.SPENDER_ID:
-        spenderIdFilter = filter;
+        spenderIdFilters.push(filter);
         break;
       case constants.filterKeys.LIMIT:
         limitFilter = filter;
@@ -234,7 +260,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
   } else {
     lower = retrieveNftComponentQuery(
       [lowerTokenIdBound, lowerSerialNumberBound],
-      spenderIdFilter,
+      spenderIdFilters,
       orderFilter,
       limitFilter,
       accountId
@@ -244,7 +270,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
     paramCount = _.isNil(lower) ? 1 : lower.params.length + 2;
     inner = retrieveNftComponentQuery(
       [inclusiveLowerTokenIdBound, inclusiveUpperTokenIdBound],
-      spenderIdFilter,
+      spenderIdFilters,
       orderFilter,
       limitFilter,
       accountId,
@@ -255,7 +281,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
     paramCount = _.isNil(inner) ? paramCount : paramCount + inner.params.length + 1;
     upper = retrieveNftComponentQuery(
       [upperTokenIdBound, upperSerialNumberBound],
-      spenderIdFilter,
+      spenderIdFilters,
       orderFilter,
       limitFilter,
       accountId,
@@ -292,6 +318,10 @@ const getFilterKeyOpString = (filter, mergeOrEqualComparisons = true) => {
  * @param {String} filter Current filter
  */
 const validateSingleFilterKeyOccurrence = (filterMap, filter) => {
+  if (constants.filterKeys.SPENDER_ID === filter.key && utils.opsMap.eq === filter.operator) {
+    // Allow multiple spender id equal filters
+    return;
+  }
   if (filterMap[getFilterKeyOpString(filter)]) {
     throw new InvalidArgumentError(`Multiple range params not allowed for ${filter.key}`);
   }
