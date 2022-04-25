@@ -16,7 +16,7 @@
     </parent>
 
     <properties>
-        <cucumber.version>7.2.3</cucumber.version>
+        <cucumber.version>7.3.2</cucumber.version>
         <cucumber-reporting.version>7.2.0</cucumber-reporting.version>
         <skipTests>true</skipTests>
     </properties>
