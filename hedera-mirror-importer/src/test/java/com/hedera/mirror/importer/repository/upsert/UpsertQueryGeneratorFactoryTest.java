@@ -32,7 +32,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
-import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.importer.IntegrationTest;
 
 class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
@@ -41,7 +41,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
     private UpsertQueryGeneratorFactory factory;
 
     @Resource
-    private ScheduleUpsertQueryGenerator scheduleUpsertQueryGenerator;
+    private NftUpsertQueryGenerator nftUpsertQueryGenerator;
 
     @Test
     void unsupportedClass() {
@@ -52,7 +52,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
 
     @Test
     void getExistingGenerator() {
-        assertThat(factory.get(Schedule.class)).isEqualTo(scheduleUpsertQueryGenerator);
+        assertThat(factory.get(Nft.class)).isEqualTo(nftUpsertQueryGenerator);
     }
 
     @Test
@@ -63,8 +63,9 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
     @Test
     void contract() {
         String allColumns = "auto_renew_period,created_timestamp,deleted,evm_address,expiration_timestamp,file_id," +
-                "id,key,memo,num,obtainer_id,proxy_account_id,public_key,realm,shard,timestamp_range,type";
-
+                "id,initcode,key,memo,num,obtainer_id,proxy_account_id,public_key,realm,shard,timestamp_range,type";
+        String nullableColumns = "auto_renew_period,created_timestamp,deleted,evm_address,expiration_timestamp," +
+                "file_id,initcode,key,obtainer_id,proxy_account_id,public_key";
         String updatableColumns = "auto_renew_period,deleted,expiration_timestamp,key,memo,obtainer_id," +
                 "proxy_account_id,public_key,timestamp_range";
 
@@ -75,9 +76,10 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
                 .returns("id", e -> e.columns(UpsertColumn::isId, "{0}"))
                 .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
                 .returns(allColumns, e -> e.columns("{0}"))
+                .returns(nullableColumns, e -> e.columns(UpsertColumn::isNullable, "{0}"))
                 .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
                 .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(17);
+                .hasSize(18);
     }
 
     @Test
@@ -85,7 +87,9 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
         String allColumns = "alias,auto_renew_account_id,auto_renew_period,created_timestamp,deleted," +
                 "expiration_timestamp,id,key,max_automatic_token_associations,memo,num,proxy_account_id,public_key," +
                 "realm,receiver_sig_required,shard,submit_key,timestamp_range,type";
-
+        String nullableColumns = "alias,auto_renew_account_id,auto_renew_period,created_timestamp,deleted," +
+                "expiration_timestamp,key,max_automatic_token_associations,proxy_account_id,public_key," +
+                "receiver_sig_required,submit_key";
         String updatableColumns = "auto_renew_account_id,auto_renew_period,deleted,expiration_timestamp,key," +
                 "max_automatic_token_associations,memo,proxy_account_id,public_key,receiver_sig_required,submit_key," +
                 "timestamp_range";
@@ -97,6 +101,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
                 .returns("id", e -> e.columns(UpsertColumn::isId, "{0}"))
                 .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
                 .returns(allColumns, e -> e.columns("{0}"))
+                .returns(nullableColumns, e -> e.columns(UpsertColumn::isNullable, "{0}"))
                 .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
                 .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
                 .hasSize(19);
@@ -114,6 +119,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
                 .returns("owner,spender", e -> e.columns(UpsertColumn::isId, "{0}"))
                 .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
                 .returns(allColumns, e -> e.columns("{0}"))
+                .returns("", e -> e.columns(UpsertColumn::isNullable, "{0}"))
                 .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
                 .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
                 .hasSize(allColumns.split(",").length);
@@ -131,6 +137,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
                 .returns("owner,spender,token_id", e -> e.columns(UpsertColumn::isId, "{0}"))
                 .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
                 .returns(allColumns, e -> e.columns("{0}"))
+                .returns("", e -> e.columns(UpsertColumn::isNullable, "{0}"))
                 .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
                 .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
                 .hasSize(allColumns.split(",").length);
@@ -148,6 +155,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
                 .returns("owner,spender,token_id", e -> e.columns(UpsertColumn::isId, "{0}"))
                 .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
                 .returns(allColumns, e -> e.columns("{0}"))
+                .returns("", e -> e.columns(UpsertColumn::isNullable, "{0}"))
                 .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
                 .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
                 .hasSize(allColumns.split(",").length);

@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,14 @@ class UpsertEntity {
     private final String tableName;
     private final Upsertable upsertable;
     private final Set<UpsertColumn> columns;
+
+    public String column(Predicate<UpsertColumn> filter, String pattern) {
+        return columns.stream()
+                .filter(filter)
+                .findFirst()
+                .map(c -> MessageFormat.format(pattern, c.getName(), c.getDefaultValue()))
+                .orElse("");
+    }
 
     public String columns(String pattern) {
         return columns(c -> true, pattern, ",");

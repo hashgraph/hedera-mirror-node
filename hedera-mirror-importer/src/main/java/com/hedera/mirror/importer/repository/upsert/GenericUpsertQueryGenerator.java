@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,10 @@ import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 @Log4j2
 @RequiredArgsConstructor
 public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
+
+    private static final String UPSERT_TEMPLATE = "/db/template/upsert.vm";
+
+    private static final String UPSERT_HISTORY_TEMPLATE = "/db/template/upsert_history.vm";
 
     private final UpsertEntity upsertEntity;
 
@@ -67,7 +71,8 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
         velocityEngine.setProperty("resource.loader.class.class", ClasspathResourceLoader.class.getName());
         velocityEngine.init();
 
-        Template template = velocityEngine.getTemplate("/db/template/upsert.vm");
+        String templatePath = upsertEntity.getUpsertable().history() ? UPSERT_HISTORY_TEMPLATE : UPSERT_TEMPLATE;
+        Template template = velocityEngine.getTemplate(templatePath);
 
         VelocityContext velocityContext = new VelocityContext();
         velocityContext.put("finalTable", getFinalTableName());
@@ -81,6 +86,8 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
         velocityContext.put("idColumns", upsertEntity.columns(UpsertColumn::isId, "e.{0}"));
         velocityContext.put("idJoin", upsertEntity.columns(UpsertColumn::isId, "e.{0} = t.{0}", " and "));
         velocityContext.put("insertColumns", upsertEntity.columns("{0}"));
+        velocityContext.put("notNullableColumn",
+                upsertEntity.column(c -> !c.isNullable() && !c.isId(), "coalesce(t.{0}, e.{0}) is not null"));
         velocityContext.put("updateColumns", upsertEntity.columns(UpsertColumn::isUpdatable, "{0} = excluded.{0}"));
 
         StringWriter writer = new StringWriter();

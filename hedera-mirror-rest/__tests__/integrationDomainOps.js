@@ -698,6 +698,7 @@ const addContract = async (contract) => {
     'expiration_timestamp',
     'file_id',
     'id',
+    'initcode',
     'key',
     'memo',
     'num',
@@ -714,6 +715,7 @@ const addContract = async (contract) => {
     deleted: false,
     evm_address: null,
     expiration_timestamp: null,
+    initcode: null,
     key: null,
     memo: 'contract memo',
     public_key: null,
@@ -725,6 +727,7 @@ const addContract = async (contract) => {
   };
   contract.evm_address = contract.evm_address != null ? Buffer.from(contract.evm_address, 'hex') : null;
   contract.id = EntityId.of(BigInt(contract.shard), BigInt(contract.realm), BigInt(contract.num)).getEncodedId();
+  contract.initcode = contract.initcode != null ? Buffer.from(contract.initcode) : null;
   contract.key = contract.key != null ? Buffer.from(contract.key) : null;
 
   const table = getTableName('contract', contract);

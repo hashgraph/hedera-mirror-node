@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,6 +31,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
@@ -37,6 +40,8 @@ import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -171,7 +176,9 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onContract() {
         // given
         Contract contract1 = domainBuilder.contract().get();
-        Contract contract2 = domainBuilder.contract().customize(c -> c.evmAddress(null)).get();
+        Contract contract2 = domainBuilder.contract()
+                .customize(c -> c.evmAddress(null).fileId(null).initcode(domainBuilder.bytes(1024)))
+                .get();
 
         // when
         sqlEntityListener.onContract(contract1);
@@ -184,11 +191,14 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(findHistory(Contract.class)).isEmpty();
     }
 
-    @ValueSource(ints = {1, 2, 3})
-    @ParameterizedTest
-    void onContractHistory(int commitIndex) {
+    @ParameterizedTest(name = "{2} record files with {0}")
+    @MethodSource("provideParamsContractHistory")
+    void onContractHistory(String bytecodeSource, Consumer<Contract.ContractBuilder> customizer, int commitIndex) {
         // given
-        Contract contractCreate = domainBuilder.contract().customize(c -> c.obtainerId(null)).get();
+        Contract contractCreate = domainBuilder.contract()
+                .customize(c -> c.obtainerId(null))
+                .customize(customizer)
+                .get();
 
         Contract contractUpdate = contractCreate.toEntityId().toEntity();
         contractUpdate.setAutoRenewPeriod(30L);
@@ -1235,18 +1245,37 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2, tokenTransfer3);
     }
 
-    @Test
-    void onSchedule() {
-        Schedule schedule1 = domainBuilder.schedule().get();
-        Schedule schedule2 = domainBuilder.schedule().get();
+    @ValueSource(ints = {1, 2})
+    @ParameterizedTest
+    void onSchedule(int commitIndex) {
+        var schedule = domainBuilder.schedule().get();
+        var expected = TestUtils.clone(schedule);
 
-        // when
-        sqlEntityListener.onSchedule(schedule1);
-        sqlEntityListener.onSchedule(schedule2);
+        sqlEntityListener.onSchedule(schedule);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(scheduleRepository.findAll()).containsOnly(expected);
+        }
+
+        var scheduleUpdate = new Schedule();
+        scheduleUpdate.setExecutedTimestamp(domainBuilder.timestamp());
+        scheduleUpdate.setScheduleId(schedule.getScheduleId());
+        expected.setExecutedTimestamp(scheduleUpdate.getExecutedTimestamp());
+
+        sqlEntityListener.onSchedule(scheduleUpdate);
         completeFileAndCommit();
 
-        // then
-        assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrder(schedule1, schedule2);
+        assertThat(scheduleRepository.findAll()).containsOnly(expected);
+    }
+
+    @Test
+    void onScheduleExecutedWithoutScheduleCreate() {
+        // For partial mirrornode which can miss a schedulecreate tx for an executed scheduled tx
+        var schedule = new Schedule();
+        schedule.setExecutedTimestamp(domainBuilder.timestamp());
+        schedule.setScheduleId(domainBuilder.entityId(SCHEDULE).getId());
+        sqlEntityListener.onSchedule(schedule);
+        assertThat(scheduleRepository.findAll()).isEmpty();
     }
 
     @Test
@@ -1447,5 +1476,18 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
         tokenTransfer.setPayerAccountId(TRANSACTION_PAYER);
         return tokenTransfer;
+    }
+
+    private static Stream<Arguments> provideParamsContractHistory() {
+        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {};
+        Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[]{1, 2 ,3, 4});
+        return Stream.of(
+                Arguments.of("fileId", emptyCustomizer, 1),
+                Arguments.of("fileId", emptyCustomizer, 2),
+                Arguments.of("fileId", emptyCustomizer, 3),
+                Arguments.of("initcode", initcodeCustomizer, 1),
+                Arguments.of("initcode", initcodeCustomizer, 2),
+                Arguments.of("initcode", initcodeCustomizer, 3)
+        );
     }
 }

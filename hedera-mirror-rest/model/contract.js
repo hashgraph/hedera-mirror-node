@@ -44,6 +44,7 @@ class Contract {
   static EXPIRATION_TIMESTAMP = 'expiration_timestamp';
   static FILE_ID = 'file_id';
   static ID = 'id';
+  static INITCODE = 'initcode';
   static KEY = 'key';
   static MEMO = 'memo';
   static NUM = 'num';

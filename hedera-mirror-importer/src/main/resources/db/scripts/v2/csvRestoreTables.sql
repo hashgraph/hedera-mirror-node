@@ -14,9 +14,9 @@
 
 \copy assessed_custom_fee (amount, collector_account_id, consensus_timestamp, token_id) from assessed_custom_fee.csv csv;
 
-\copy contract (auto_renew_period, created_timestamp, deleted, expiration_timestamp, file_id, id, key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type, evm_address) from contract.csv csv;
+\copy contract (auto_renew_period, created_timestamp, deleted, expiration_timestamp, file_id, id, key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type, evm_address, initcode) from contract.csv csv;
 
-\copy contract_history (auto_renew_period, created_timestamp, deleted, expiration_timestamp, file_id, id, key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type, evm_address) from contract_history.csv csv;
+\copy contract_history (auto_renew_period, created_timestamp, deleted, expiration_timestamp, file_id, id, key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type, evm_address, initcode) from contract_history.csv csv;
 
 \copy contract_log (bloom, consensus_timestamp, contract_id, data, index, topic0, topic1, topic2, topic3, root_contract_id) from contract_log.csv csv;
 
@@ -54,7 +54,7 @@
 
 \copy record_file (name, load_start, load_end, hash, prev_hash, consensus_start, consensus_end, node_account_id, count, digest_algorithm, hapi_version_major, hapi_version_minor, hapi_version_patch, version, file_hash, bytes, index) from record_file.csv csv;
 
-\copy schedule (consensus_timestamp, creator_account_id, executed_timestamp, payer_account_id, schedule_id, transaction_body) from schedule.csv csv;
+\copy schedule (consensus_timestamp, creator_account_id, executed_timestamp, payer_account_id, schedule_id, transaction_body, expiration_time, wait_for_expiry) from schedule.csv csv;
 
 \copy token (token_id, created_timestamp, decimals, fee_schedule_key, freeze_default, freeze_key, initial_supply, kyc_key, max_supply, modified_timestamp, name, supply_key, supply_type, symbol, total_supply, treasury_account_id, type, wipe_key, pause_key, pause_status) from token.csv csv;
 
