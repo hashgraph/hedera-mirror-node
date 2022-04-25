@@ -76,7 +76,7 @@ public enum TransactionType {
     TOKENUNPAUSE(47, EntityOperation.NONE),
     CRYPTOAPPROVEALLOWANCE(48, EntityOperation.NONE),
     CRYPTODELETEALLOWANCE(49, EntityOperation.NONE),
-    ETHEREUMTRANSACTION(51, EntityOperation.NONE);
+    ETHEREUMTRANSACTION(50, EntityOperation.NONE);
 
     private static final Map<Integer, TransactionType> idMap = Arrays.stream(values())
             .collect(Collectors.toMap(TransactionType::getProtoId, Function.identity()));

@@ -77,7 +77,7 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
     }
 
     @Test
-    public void parseIncorrectRlpItemListSize() {
+    void parseIncorrectRlpItemListSize() {
         var ethereumTransactionBytes = RLPEncoder.encodeAsList(Integers.toBytes(1));
 
         var ethereumTransaction = ethereumTransactionParser.parse(ethereumTransactionBytes);
@@ -93,7 +93,7 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
     }
 
     @Override
-    public void validateEthereumTransaction(EthereumTransaction ethereumTransaction) {
+    protected void validateEthereumTransaction(EthereumTransaction ethereumTransaction) {
         assertThat(ethereumTransaction)
                 .isNotNull()
                 .satisfies(t -> assertThat(t.getType()).isZero())

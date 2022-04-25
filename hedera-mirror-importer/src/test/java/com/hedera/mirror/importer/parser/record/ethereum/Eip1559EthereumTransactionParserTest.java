@@ -49,7 +49,7 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
     }
 
     @Test
-    public void parseLegacyType() {
+    void parseLegacyType() {
         var ethereumTransactionBytes = RLPEncoder.encodeSequentially(
                 Integers.toBytes(1),
                 new Object[] {});
@@ -61,7 +61,7 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
     }
 
     @Test
-    public void parseNonListRlpItem() {
+    void parseNonListRlpItem() {
         var ethereumTransactionBytes = RLPEncoder.encodeSequentially(
                 Integers.toBytes(2),
                 Integers.toBytes(1));
@@ -73,7 +73,7 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
     }
 
     @Test
-    public void parseIncorrectRlpItemListSize() {
+    void parseIncorrectRlpItemListSize() {
         var ethereumTransactionBytes = RLPEncoder.encodeSequentially(
                 Integers.toBytes(2),
                 new Object[] {});
@@ -85,7 +85,7 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
     }
 
     @Override
-    public void validateEthereumTransaction(EthereumTransaction ethereumTransaction) {
+    protected void validateEthereumTransaction(EthereumTransaction ethereumTransaction) {
         assertThat(ethereumTransaction)
                 .isNotNull()
                 .satisfies(t -> assertThat(t.getType()).isEqualTo(2))
