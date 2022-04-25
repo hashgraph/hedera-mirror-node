@@ -94,7 +94,7 @@
     "eslint-plugin-jest": "^26.1.4",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.0.0",
-    "eslint-plugin-security": "^1.4.0",
+    "eslint-plugin-security": "^1.5.0",
     "husky": "^7.0.4",
     "jest": "^27.5.1",
     "jest-circus": "^27.4.6",
