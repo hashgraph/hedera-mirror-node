@@ -22,11 +22,8 @@ hedera:
               enabled: false
       network: TESTNET
       startDate: 1970-01-01T00:00:00Z
-      startBlockNumber: null
       blocks:
         enabled: true
-        correctConsensusEnd: 1570801010552116001
-        correctBlockNumber: 420
 
 spring:
   flyway:

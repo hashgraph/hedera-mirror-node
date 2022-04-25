@@ -13,12 +13,14 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.groups.Tuple;
+import org.jclouds.openstack.keystone.v3.domain.User;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +36,10 @@ public class BlockNumberMigrationTest extends IntegrationTest {
     private final DomainBuilder domainBuilder;
 
     private final RecordFileRepository recordFileRepository;
+
+    private static final long CORRECT_CONSENSUS_END = 1570801010552116001L;
+
+    private static final long CORRECT_BLOCK_NUMBER = 420L;
 
     @Test
     public void theCorrectOffsetMustBeAddedToTheBlockNumbers() throws IllegalAccessException {
@@ -51,17 +57,11 @@ public class BlockNumberMigrationTest extends IntegrationTest {
     }
 
     @Test
-    public void ifCorrectConsensusEndNotFoundDoNothing() throws IllegalAccessException {
-        List<Tuple> expectedBlockNumbersAndConsensusEnd = insertDefaultRecordFiles()
+    public void ifCorrectConsensusEndNotFoundDoNothing() {
+        List<Tuple> expectedBlockNumbersAndConsensusEnd = insertDefaultRecordFiles(Set.of(1570801010552116001L))
                 .stream()
                 .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))
                 .collect(Collectors.toList());
-
-        FieldUtils.writeField(
-                blockNumberMigration,
-                "migrationProperties",
-                copyPropertiesOverwriteConsensusEnd(blockNumberMigrationProperties, -1),
-                true);
 
         blockNumberMigration.doMigrate();
 
@@ -69,17 +69,19 @@ public class BlockNumberMigrationTest extends IntegrationTest {
     }
 
     @Test
-    public void ifBlockNumberIsAlreadyCorrectDoNothing() throws IllegalAccessException {
-        List<Tuple> expectedBlockNumbersAndConsensusEnd = insertDefaultRecordFiles()
+    public void ifBlockNumberIsAlreadyCorrectDoNothing() {
+        List<Tuple> expectedBlockNumbersAndConsensusEnd = insertDefaultRecordFiles(Set.of(CORRECT_CONSENSUS_END))
                 .stream()
                 .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))
                 .collect(Collectors.toList());
 
-        FieldUtils.writeField(
-                blockNumberMigration,
-                "migrationProperties",
-                copyPropertiesOverwriteBlockNumber(blockNumberMigrationProperties, 8),
-                true);
+        final RecordFile targetRecordFile = domainBuilder.recordFile()
+                .customize(builder -> builder
+                        .consensusEnd(CORRECT_CONSENSUS_END)
+                        .index(CORRECT_BLOCK_NUMBER)
+                )
+                .persist();
+        expectedBlockNumbersAndConsensusEnd.add(Tuple.tuple(targetRecordFile.getConsensusEnd(), targetRecordFile.getIndex()));
 
         blockNumberMigration.doMigrate();
 
@@ -94,75 +96,29 @@ public class BlockNumberMigrationTest extends IntegrationTest {
                 .containsExactlyInAnyOrder(expectedBlockNumbersAndConsensusEnd.toArray(Tuple[]::new));
     }
 
-    private BlockNumberMigrationProperties copyPropertiesOverwriteConsensusEnd(BlockNumberMigrationProperties src, long consensusEnd){
-        var newProps = new BlockNumberMigrationProperties();
-        newProps.setCorrectBlockNumber(src.getCorrectBlockNumber());
-        newProps.setCorrectConsensusEnd(consensusEnd);
-        return newProps;
-    }
-
-    private BlockNumberMigrationProperties copyPropertiesOverwriteBlockNumber(BlockNumberMigrationProperties src, long blockNumber){
-        var newProps = new BlockNumberMigrationProperties();
-        newProps.setCorrectBlockNumber(blockNumber);
-        newProps.setCorrectConsensusEnd(src.getCorrectConsensusEnd());
-        return newProps;
-    }
-
     private List<RecordFile> insertDefaultRecordFiles() {
-        var recordFiles = new ArrayList<RecordFile>(3);
-        var recordFile = domainBuilder.recordFile()
-                .customize(recordFileBuilder ->
-                    recordFileBuilder.name("2019-10-11T13_32_41.443132Z.rcd")
-                        .loadStart(1650382134L)
-                        .loadEnd(1650382134L)
-                        .hash("495dc50d6323d4d5263d34dbefe7c20a0657a2fa5fe0d8c011a01f4a27757a259987dad210fb9596bc5a8cc7fbdbba33")
-                        .previousHash("000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
-                        .consensusEnd(1570800761443132000L)
-                        .consensusStart(1570800761443132000L)
-                        .count(1L)
-                        .digestAlgorithm(DigestAlgorithm.SHA384)
-                        .version(2)
-                        .fileHash("495dc50d6323d4d5263d34dbefe7c20a0657a2fa5fe0d8c011a01f4a27757a259987dad210fb9596bc5a8cc7fbdbba33")
-                        .index(0L)
-                )
-                .persist();
-        recordFiles.add(recordFile);
+        return insertDefaultRecordFiles(Set.of());
+    }
 
-        recordFile = domainBuilder.recordFile()
-                .customize(recordFileBuilder ->
-                        recordFileBuilder.name("2019-10-11T13_36_50.108392Z.rcd")
-                                .loadStart(1650382135L)
-                                .loadEnd(1650382136L)
-                                .hash("acb6960c300df4948f72a47074a6fdfecba8755dad561af5f8f16a0183478dddb682135a6b90df4747fb366f80a034f7")
-                                .previousHash("1b0dfd6c1deb4e808c98e390dadc15152906bf61965612dd89bbcc12aca480a37a562bcc59888eb8f614df54d244973c")
-                                .consensusEnd(1570801010552116001L)
-                                .consensusStart(1570801010108392000L)
-                                .count(3L)
-                                .digestAlgorithm(DigestAlgorithm.SHA384)
-                                .version(2)
-                                .fileHash("acb6960c300df4948f72a47074a6fdfecba8755dad561af5f8f16a0183478dddb682135a6b90df4747fb366f80a034f7")
-                                .index(8L)
-                )
-                .persist();
-        recordFiles.add(recordFile);
+    private List<RecordFile> insertDefaultRecordFiles(Set<Long> skipRecordFileWithConsensusEnd) {
+        long[] consensusEnd = {1570800761443132000L,CORRECT_CONSENSUS_END,1570801906238879002L};
+        long[] blockNumber = {0L,8L,9L};
+        var recordFiles = new ArrayList<RecordFile>(consensusEnd.length);
 
-        recordFile = domainBuilder.recordFile()
-                .customize(recordFileBuilder ->
-                        recordFileBuilder.name("2019-10-11T13_51_46.238879002Z.rcd")
-                                .loadStart(1650382136L)
-                                .loadEnd(1650382136L)
-                                .hash("d1b751c6190a3e2c923e3feeae9865bc7aa384c92e27ef2fd841c668098f771eefebd1564b2c3886765e0e0336de6d02")
-                                .previousHash("acb6960c300df4948f72a47074a6fdfecba8755dad561af5f8f16a0183478dddb682135a6b90df4747fb366f80a034f7")
-                                .consensusEnd(1570801906238879002L)
-                                .consensusStart(1570801908102556000L)
-                                .count(2L)
-                                .digestAlgorithm(DigestAlgorithm.SHA384)
-                                .version(2)
-                                .fileHash("d1b751c6190a3e2c923e3feeae9865bc7aa384c92e27ef2fd841c668098f771eefebd1564b2c3886765e0e0336de6d02")
-                                .index(9L)
-                )
-                .persist();
-        recordFiles.add(recordFile);
+        for (int i = 0; i < consensusEnd.length; i++) {
+            if(skipRecordFileWithConsensusEnd.contains(consensusEnd[i])){
+                continue;
+            }
+            final long currConsensusEnd = consensusEnd[i];
+            final long currBlockNumber = blockNumber[i];
+            RecordFile recordFile = domainBuilder.recordFile()
+                    .customize(builder -> builder
+                            .consensusEnd(currConsensusEnd)
+                            .index(currBlockNumber)
+                    )
+                    .persist();
+            recordFiles.add(recordFile);
+        }
 
         return recordFiles;
     }

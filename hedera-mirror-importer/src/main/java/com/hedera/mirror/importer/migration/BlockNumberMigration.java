@@ -22,12 +22,12 @@ package com.hedera.mirror.importer.migration;
 
 import com.hedera.mirror.importer.MirrorProperties;
 
-import com.sun.jdi.Mirror;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import javax.inject.Named;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Named
@@ -40,6 +40,10 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
     private final MirrorProperties mirrorProperties;
 
+    private static final long CORRECT_CONSENSUS_END = 1570801010552116001L;
+
+    private static final long CORRECT_BLOCK_NUMBER = 420L;
+
     @Override
     protected void doMigrate() {
         if (shouldNotMigrateOnCurrentNetwork()) {
@@ -49,16 +53,16 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
         if (!migrationProperties.isEnabled()) {
             return ;
         }
-        Long recordFileBlockNumber = getRecordFileByConsensusEnd(migrationProperties.getCorrectConsensusEnd());
+        Long recordFileBlockNumber = getRecordFileByConsensusEnd(CORRECT_CONSENSUS_END);
         if (recordFileBlockNumber == null) {
             return ;
         }
 
-        if (migrationProperties.getCorrectBlockNumber() == recordFileBlockNumber) {
+        if (CORRECT_BLOCK_NUMBER == recordFileBlockNumber) {
             return ;
         }
 
-        updateRecordFilesBlockNumber(migrationProperties.getCorrectBlockNumber(), recordFileBlockNumber);
+        updateRecordFilesBlockNumber(CORRECT_BLOCK_NUMBER, recordFileBlockNumber);
     }
 
     private boolean shouldNotMigrateOnCurrentNetwork() {

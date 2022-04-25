@@ -13,11 +13,9 @@ hedera:
         restUsername: mirror_api
         schema: public
         username: mirror_node
-      startBlockNumber: null
+        
       blocks:
         enabled: true
-        correctConsensusEnd: 1570801010552116001
-        correctBlockNumber: 420
 
 logging:
   level:
