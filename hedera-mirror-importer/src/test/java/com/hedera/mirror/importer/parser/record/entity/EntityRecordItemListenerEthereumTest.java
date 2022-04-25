@@ -23,13 +23,17 @@ package com.hedera.mirror.importer.parser.record.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hederahashgraph.api.proto.java.FileID;
 import javax.annotation.Resource;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.ethereum.Eip1559EthereumTransactionParserTest;
 import com.hedera.mirror.importer.parser.record.ethereum.LegacyEthereumTransactionParserTest;
 import com.hedera.mirror.importer.repository.ContractRepository;
@@ -62,7 +66,8 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
-                () -> assertThat(contractResultRepository.findAll()).hasSize(1)
+                () -> assertThat(contractResultRepository.findAll()).hasSize(1),
+                () -> assertEthereumTransaction(recordItem)
         );
     }
 
@@ -81,7 +86,8 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
-                () -> assertThat(contractResultRepository.findAll()).hasSize(1)
+                () -> assertThat(contractResultRepository.findAll()).hasSize(1),
+                () -> assertEthereumTransaction(recordItem)
         );
     }
 
@@ -100,7 +106,8 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
-                () -> assertThat(contractResultRepository.findAll()).hasSize(1)
+                () -> assertThat(contractResultRepository.findAll()).hasSize(1),
+                () -> assertEthereumTransaction(recordItem)
         );
     }
 
@@ -119,7 +126,8 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
-                () -> assertThat(contractResultRepository.findAll()).hasSize(1)
+                () -> assertThat(contractResultRepository.findAll()).hasSize(1),
+                () -> assertEthereumTransaction(recordItem)
         );
     }
 
@@ -138,9 +146,8 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
-//                () -> assertContractEntity(recordItem),
-                () -> assertThat(contractResultRepository.findAll()).hasSize(1)
-//                () -> assertContractCreateResult(transactionBody, record)
+                () -> assertThat(contractResultRepository.findAll()).hasSize(1),
+                () -> assertEthereumTransaction(recordItem)
         );
     }
 
@@ -159,9 +166,23 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
-//                () -> assertContractEntity(recordItem),
-                () -> assertThat(contractResultRepository.findAll()).hasSize(1)
-//                () -> assertContractCreateResult(transactionBody, record)
+                () -> assertThat(contractResultRepository.findAll()).hasSize(1),
+                () -> assertEthereumTransaction(recordItem)
         );
+    }
+
+    private void assertEthereumTransaction(RecordItem recordItem) {
+        long createdTimestamp = recordItem.getConsensusTimestamp();
+        var ethTransaction = ethereumTransactionRepository.findById(createdTimestamp).get();
+        var transactionBody = recordItem.getTransactionBody().getEthereumTransaction();
+
+        var fileId = transactionBody.getCallData() == FileID.getDefaultInstance() ? null :
+                EntityId.of(transactionBody.getCallData());
+        assertThat(ethTransaction)
+                .isNotNull()
+                .returns(fileId, EthereumTransaction::getCallDataId)
+                .returns(DomainUtils.toBytes(transactionBody.getEthereumData()), EthereumTransaction::getData)
+                .returns(transactionBody.getMaxGasAllowance(), EthereumTransaction::getMaxGasAllowance)
+                .returns(DomainUtils.toBytes(recordItem.getRecord().getEthereumHash()), EthereumTransaction::getHash);
     }
 }

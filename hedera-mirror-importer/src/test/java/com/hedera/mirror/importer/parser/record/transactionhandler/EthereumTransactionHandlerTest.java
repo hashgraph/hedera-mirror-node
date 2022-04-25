@@ -22,9 +22,14 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.esaulpaugh.headlong.rlp.RLPEncoder;
+import com.esaulpaugh.headlong.util.Integers;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -78,6 +83,9 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         when(entityIdService.lookup(contractId)).thenReturn(expectedEntityId);
         EntityId entityId = transactionHandler.getEntity(recordItem);
         assertThat(entityId).isEqualTo(expectedEntityId);
+
+        verify(entityListener, atLeastOnce()).onEthereumTransaction(any());
+        verify(entityListener, atLeastOnce()).onContract(any());
     }
 
     @Test
@@ -89,5 +97,28 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         when(entityIdService.lookup(contractId)).thenReturn(expectedEntityId);
         EntityId entityId = transactionHandler.getEntity(recordItem);
         assertThat(entityId).isEqualTo(expectedEntityId);
+
+        verify(entityListener, atLeastOnce()).onEthereumTransaction(any());
+        verify(entityListener, never()).onContract(any());
+    }
+
+    @Test
+    void testGetEntityIdNullEthereumTransaction() {
+        var recordItem = recordItemBuilder.ethereumTransaction(true, contractId,
+                RLPEncoder.encodeSequentially(
+                        Integers.toBytes(2),
+                        new Object[] {})).build();
+        ContractID contractId = recordItem.getRecord().getContractCreateResult().getContractID();
+        EntityId expectedEntityId = EntityId.of(contractId);
+
+        when(entityIdService.lookup(contractId)).thenReturn(expectedEntityId);
+
+        doReturn(null).when(ethereumTransactionParser).parse(any());
+
+        transactionHandler.getEntity(recordItem);
+
+        // verify entityListener.onEthereumTransaction never called
+        verify(entityListener, never()).onEthereumTransaction(any());
+        verify(entityListener, never()).onContract(any());
     }
 }

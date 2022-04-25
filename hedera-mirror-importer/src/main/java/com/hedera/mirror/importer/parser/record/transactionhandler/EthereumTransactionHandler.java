@@ -69,9 +69,10 @@ class EthereumTransactionHandler implements TransactionHandler {
         if (!contractFunctionResult.equals(ContractFunctionResult.getDefaultInstance())) {
             contractId = entityIdService.lookup(contractFunctionResult.getContractID());
             senderId = EntityId.of(contractFunctionResult.getSenderId());
-        }
 
-        ethereumTransaction = insertEthereumTransaction(recordItem, senderId);
+            // no contractResult signifies a non executed transaction
+            ethereumTransaction = insertEthereumTransaction(recordItem, senderId);
+        }
 
         if (transactionRecord.hasContractCreateResult()) {
             insertContract(contractId, senderId, ethereumTransaction, recordItem.getConsensusTimestamp());
@@ -118,6 +119,10 @@ class EthereumTransactionHandler implements TransactionHandler {
     private void insertContract(EntityId contractId, EntityId senderId, EthereumTransaction ethereumTransaction,
                                 long consensusTimestamp) {
         if (!entityProperties.getPersist().isContracts()) {
+            return;
+        }
+
+        if (ethereumTransaction == null) {
             return;
         }
 

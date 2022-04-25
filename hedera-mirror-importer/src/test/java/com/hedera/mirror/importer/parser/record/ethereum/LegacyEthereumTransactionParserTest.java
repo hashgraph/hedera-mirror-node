@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.parser.record.ethereum;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.esaulpaugh.headlong.rlp.RLPEncoder;
+import com.esaulpaugh.headlong.util.Integers;
 import java.math.BigInteger;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
@@ -72,6 +74,16 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
         var publicKey = ethereumTransactionParser.retrievePublicKey(ethereumTransaction);
         assertThat(Hex.encodeHexString(publicKey)).isEqualTo(
                 "024bc2a31265153f07e70e0bab08724e6b85e217f8cd628ceb62974247bb493382");
+    }
+
+    @Test
+    public void parseIncorrectRlpItemListSize() {
+        var ethereumTransactionBytes = RLPEncoder.encodeAsList(Integers.toBytes(1));
+
+        var ethereumTransaction = ethereumTransactionParser.parse(ethereumTransactionBytes);
+
+        assertThat(ethereumTransaction)
+                .isNull();
     }
 
     @SneakyThrows

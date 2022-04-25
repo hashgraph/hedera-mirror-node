@@ -22,10 +22,13 @@ package com.hedera.mirror.importer.parser.record.ethereum;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.esaulpaugh.headlong.rlp.RLPEncoder;
+import com.esaulpaugh.headlong.util.Integers;
 import java.math.BigInteger;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 
@@ -43,6 +46,42 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
     @Override
     public byte[] getTransactionBytes() {
         return Hex.decodeHex(LONDON_RAW_TX);
+    }
+
+    @Test
+    public void parseLegacyType() {
+        var ethereumTransactionBytes = RLPEncoder.encodeSequentially(
+                Integers.toBytes(1),
+                new Object[] {});
+
+        var ethereumTransaction = ethereumTransactionParser.parse(ethereumTransactionBytes);
+
+        assertThat(ethereumTransaction)
+                .isNull();
+    }
+
+    @Test
+    public void parseNonListRlpItem() {
+        var ethereumTransactionBytes = RLPEncoder.encodeSequentially(
+                Integers.toBytes(2),
+                Integers.toBytes(1));
+
+        var ethereumTransaction = ethereumTransactionParser.parse(ethereumTransactionBytes);
+
+        assertThat(ethereumTransaction)
+                .isNull();
+    }
+
+    @Test
+    public void parseIncorrectRlpItemListSize() {
+        var ethereumTransactionBytes = RLPEncoder.encodeSequentially(
+                Integers.toBytes(2),
+                new Object[] {});
+
+        var ethereumTransaction = ethereumTransactionParser.parse(ethereumTransactionBytes);
+
+        assertThat(ethereumTransaction)
+                .isNull();
     }
 
     @Override
