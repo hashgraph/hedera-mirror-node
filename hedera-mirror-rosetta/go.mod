@@ -11,7 +11,7 @@ require (
 	github.com/hellofresh/health-go/v4 v4.5.0
 	github.com/jackc/pgtype v1.11.0
 	github.com/lib/pq v1.10.5
-	github.com/mitchellh/mapstructure v1.4.3
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/onrik/gorm-logrus v0.3.0
 	github.com/ory/dockertest/v3 v3.8.1
 	github.com/pkg/errors v0.9.1
