@@ -212,8 +212,6 @@ class MirrorDateRangePropertiesProcessorTest {
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
                     .isEqualTo(expectedFilter);
         }
-
-        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(mirrorProperties.getVerifyHashAfter());
     }
 
     @ParameterizedTest(name = "startDate {0} endDate {1} database {2} violates (effective) start date <= " +
