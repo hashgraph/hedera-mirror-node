@@ -465,6 +465,7 @@ create table if not exists transaction
     consensus_timestamp        bigint      not null,
     entity_id                  bigint,
     errata                     errata_type null,
+    index                      integer,
     initial_balance            bigint               default 0,
     max_fee                    bigint,
     memo                       bytea,

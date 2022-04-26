@@ -37,6 +37,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -96,6 +97,7 @@ public class DomainBuilder {
     private final EntityManager entityManager;
     private final TransactionOperations transactionOperations;
     private final AtomicLong id = new AtomicLong(0L);
+    private final AtomicInteger transactionIndex = new AtomicInteger(0);
     private final Instant now = Instant.now();
     private final SecureRandom random = new SecureRandom();
 
@@ -343,6 +345,9 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<RecordFile, RecordFile.RecordFileBuilder> recordFile() {
+        // reset transaction index
+        transactionIndex.set(0);
+
         long timestamp = timestamp();
         var builder = RecordFile.builder()
                 .consensusStart(timestamp)
@@ -427,6 +432,7 @@ public class DomainBuilder {
                 .chargedTxFee(10000000L)
                 .consensusTimestamp(timestamp())
                 .entityId(entityId(ACCOUNT))
+                .index(transactionIndex())
                 .initialBalance(10000000L)
                 .maxFee(100000000L)
                 .memo(bytes(10))
@@ -471,6 +477,10 @@ public class DomainBuilder {
 
     public long id() {
         return id.incrementAndGet();
+    }
+
+    public int transactionIndex() {
+        return transactionIndex.incrementAndGet();
     }
 
     public byte[] key() {

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.BeanCreationNotAllowedException;
@@ -124,6 +125,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // during batch upsert, the merged state at time T is again merged with the initial state before the batch to
     // get the full state at time T
     private final Map<TokenAccountKey, TokenAccount> tokenAccountState;
+
+    // transaction block index
+    private final AtomicInteger transactionIndex = new AtomicInteger(0);
 
     public SqlEntityListener(BatchPersister batchPersister,
                              EntityIdService entityIdService,
@@ -224,6 +228,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             tokens.clear();
             tokenDissociateTransfers.clear();
             tokenTransfers.clear();
+            transactionIndex.set(0); // reset block transaction index
             transactions.clear();
             transactionSignatures.clear();
             eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
@@ -410,6 +415,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTransaction(Transaction transaction) throws ImporterException {
+        transaction.setIndex(transactionIndex.incrementAndGet());
         transactions.add(transaction);
         if (transactions.size() == sqlProperties.getBatchSize()) {
             executeBatches();
