@@ -28,7 +28,6 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.UnsafeByteOperations;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignaturePair;
