@@ -22,8 +22,6 @@ hedera:
               enabled: false
       network: TESTNET
       startDate: 1970-01-01T00:00:00Z
-      blocks:
-        enabled: true
 
 spring:
   flyway:

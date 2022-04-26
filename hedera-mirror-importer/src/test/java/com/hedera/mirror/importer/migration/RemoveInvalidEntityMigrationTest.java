@@ -52,12 +52,7 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @EnabledIfV1
 @Tag("migration")
-@TestPropertySource(
-        properties = {
-                "spring.flyway.target=1.31.1",
-                "hedera.mirror.importer.blocks.enabled=false"
-        }
-)
+@TestPropertySource(properties = "spring.flyway.target=1.31.1")
 class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
     @Resource

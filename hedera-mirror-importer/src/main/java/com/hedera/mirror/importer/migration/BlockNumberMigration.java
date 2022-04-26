@@ -27,12 +27,13 @@ import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import javax.inject.Named;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class BlockNumberMigration extends MirrorBaseJavaMigration {
+
+    private static final MigrationVersion MINIMUM_REQUIRED_VERSION = MigrationVersion.fromVersion("1.57.0");
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -89,6 +90,11 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
     @Override
     public MigrationVersion getVersion() {
         return null;
+    }
+
+    @Override
+    protected MigrationVersion getMinimumVersion() {
+        return MINIMUM_REQUIRED_VERSION;
     }
 
     @Override

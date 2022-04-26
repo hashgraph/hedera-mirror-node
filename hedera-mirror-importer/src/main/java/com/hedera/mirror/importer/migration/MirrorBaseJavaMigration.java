@@ -41,6 +41,10 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
         return false;
     }
 
+    protected MigrationVersion getMinimumVersion() {
+        return null;
+    }
+
     @Override
     public void migrate(Context context) throws IOException {
         Configuration configuration = context.getConfiguration();
@@ -65,6 +69,10 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
      * @return whether it should be skipped or not
      */
     protected boolean skipMigration(Configuration configuration) {
+        if (!hasMinimumRequiredVersion(configuration)) {
+            return true;
+        }
+
         MigrationVersion current = getVersion();
         MigrationVersion baselineVersion = configuration.getBaselineVersion();
 
@@ -78,9 +86,41 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
             return true;
         }
 
+
         // Skip when current version is newer than target
         MigrationVersion targetVersion = configuration.getTarget();
         return targetVersion != null && current.isNewerThan(targetVersion.getVersion());
+    }
+
+    private boolean hasMinimumRequiredVersion(Configuration configuration) {
+        MigrationVersion minimumRequiredVersion = getMinimumVersion();
+        if (minimumRequiredVersion == null) {
+            return true;
+        }
+
+        MigrationVersion highestVersion = getHighestVersionFromNonRepeatableMigrations(configuration.getJavaMigrations());
+        if (highestVersion == null) {
+            return false;
+        }
+
+        // if the highest version from a non repeatable migration
+        // is lower than the minimum required version, the migration is skipped.
+        return highestVersion.isNewerThan(minimumRequiredVersion.getVersion());
+    }
+
+    private MigrationVersion getHighestVersionFromNonRepeatableMigrations(JavaMigration[] javaMigrations) {
+        MigrationVersion highestVersion = null;
+        for (int i = 0; i < javaMigrations.length; i++) {
+            final MigrationVersion version = javaMigrations[i].getVersion();
+            if (version == null) {
+                continue ;
+            }
+
+            if (highestVersion == null || highestVersion.isNewerThan(version.getVersion())) {
+                highestVersion = version;
+            }
+        }
+        return highestVersion;
     }
 
     @Override

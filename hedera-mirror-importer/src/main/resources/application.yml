@@ -13,9 +13,6 @@ hedera:
         restUsername: mirror_api
         schema: public
         username: mirror_node
-        
-      blocks:
-        enabled: true
 
 logging:
   level:
