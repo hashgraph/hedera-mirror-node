@@ -38,6 +38,7 @@
         "timestamp_range": "[987654222123456,)"
       },
       {
+        "_description": "Data from a partial mirrornode which only ingests the contract delete transaction",
         "deleted": true,
         "max_automatic_token_associations": null,
         "memo": "",
