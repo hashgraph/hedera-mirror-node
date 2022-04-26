@@ -139,6 +139,20 @@ class SqlEntityListenerTest extends IntegrationTest {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
     }
 
+    private static Stream<Arguments> provideParamsContractHistory() {
+        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {
+        };
+        Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[] {1, 2, 3, 4});
+        return Stream.of(
+                Arguments.of("fileId", emptyCustomizer, 1),
+                Arguments.of("fileId", emptyCustomizer, 2),
+                Arguments.of("fileId", emptyCustomizer, 3),
+                Arguments.of("initcode", initcodeCustomizer, 1),
+                Arguments.of("initcode", initcodeCustomizer, 2),
+                Arguments.of("initcode", initcodeCustomizer, 3)
+        );
+    }
+
     @BeforeEach
     final void beforeEach() {
         sqlProperties.setBatchSize(20_000);
@@ -503,14 +517,21 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onTransaction() {
         // given
-        var expectedTransaction = makeTransaction();
+        var firstTransaction = domainBuilder.transaction().get();
+        var secondTransaction = domainBuilder.transaction().get();
+        var thirdTransaction = domainBuilder.transaction().get();
 
         // when
-        sqlEntityListener.onTransaction(expectedTransaction);
+        sqlEntityListener.onTransaction(firstTransaction);
+        sqlEntityListener.onTransaction(secondTransaction);
+        sqlEntityListener.onTransaction(thirdTransaction);
         completeFileAndCommit();
 
         // then
-        assertThat(transactionRepository.findAll()).containsExactlyInAnyOrder(expectedTransaction);
+        assertThat(transactionRepository.findAll())
+                .containsExactlyInAnyOrder(firstTransaction, secondTransaction, thirdTransaction)
+                .extracting(Transaction::getIndex)
+                .containsExactly(1, 2, 3);
     }
 
     @Test
@@ -611,7 +632,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // given
         final String idColumns = "payer_account_id, spender, token_id";
         var builder = domainBuilder.nftAllowance();
-        NftAllowance nftAllowanceCreate = builder.customize(c -> c.approvedForAll(true)).get();;
+        NftAllowance nftAllowanceCreate = builder.customize(c -> c.approvedForAll(true)).get();
 
         NftAllowance nftAllowanceUpdate1 = builder.get();
         nftAllowanceUpdate1.setTimestampLower(nftAllowanceCreate.getTimestampLower() + 1);
@@ -1356,28 +1377,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         return entity;
     }
 
-    private Transaction makeTransaction() {
-        EntityId entityId = EntityId.of(10, 10, 10, ACCOUNT);
-        Transaction transaction = new Transaction();
-        transaction.setConsensusTimestamp(101L);
-        transaction.setEntityId(entityId);
-        transaction.setNodeAccountId(entityId);
-        transaction.setMemo("memo".getBytes());
-        transaction.setNonce(0);
-        transaction.setType(14);
-        transaction.setResult(22);
-        transaction.setTransactionHash("transaction hash".getBytes());
-        transaction.setTransactionBytes("transaction bytes".getBytes());
-        transaction.setPayerAccountId(entityId);
-        transaction.setValidStartNs(1L);
-        transaction.setValidDurationSeconds(1L);
-        transaction.setMaxFee(1L);
-        transaction.setChargedTxFee(1L);
-        transaction.setInitialBalance(0L);
-        transaction.setScheduled(true);
-        return transaction;
-    }
-
     private TopicMessage getTopicMessage() {
         TopicMessage topicMessage = new TopicMessage();
         topicMessage.setChunkNum(1);
@@ -1477,18 +1476,5 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
         tokenTransfer.setPayerAccountId(TRANSACTION_PAYER);
         return tokenTransfer;
-    }
-
-    private static Stream<Arguments> provideParamsContractHistory() {
-        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {};
-        Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[]{1, 2 ,3, 4});
-        return Stream.of(
-                Arguments.of("fileId", emptyCustomizer, 1),
-                Arguments.of("fileId", emptyCustomizer, 2),
-                Arguments.of("fileId", emptyCustomizer, 3),
-                Arguments.of("initcode", initcodeCustomizer, 1),
-                Arguments.of("initcode", initcodeCustomizer, 2),
-                Arguments.of("initcode", initcodeCustomizer, 3)
-        );
     }
 }
