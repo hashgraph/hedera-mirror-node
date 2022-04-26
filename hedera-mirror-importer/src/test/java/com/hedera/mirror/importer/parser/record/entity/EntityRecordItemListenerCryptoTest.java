@@ -99,7 +99,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
             "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff");
 
     @Resource
-    protected ContractRepository contractRepository;
+    private ContractRepository contractRepository;
 
     @Resource
     private CryptoAllowanceRepository cryptoAllowanceRepository;
