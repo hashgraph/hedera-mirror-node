@@ -203,12 +203,15 @@ class MirrorDateRangePropertiesProcessorTest {
 
         Instant startDate = lastFileInstant.plusNanos(diffNanos);
         mirrorProperties.setStartDate(startDate);
+        Instant effectiveStartDate = max(startDate, lastFileInstant);
 
         DateRangeFilter expectedFilter = new DateRangeFilter(startDate, null);
         for (var downloaderProperties : downloaderPropertiesList) {
             StreamType streamType = downloaderProperties.getStreamType();
-            Optional<StreamFile> streamFile = streamFile(streamType, lastFileInstant);
+
+            Optional<StreamFile> streamFile = streamFile(streamType, effectiveStartDate);
             assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).isEqualTo(streamFile);
+
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
                     .isEqualTo(expectedFilter);
         }

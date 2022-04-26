@@ -9,11 +9,9 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.reflect.FieldUtils;
 import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.groups.Tuple;
-import org.jclouds.openstack.keystone.v3.domain.User;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 public class BlockNumberMigrationTest extends IntegrationTest {
-
-    private final BlockNumberMigrationProperties blockNumberMigrationProperties;
 
     private final BlockNumberMigration blockNumberMigration;
 
@@ -49,7 +45,7 @@ public class BlockNumberMigrationTest extends IntegrationTest {
                 .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex() + offset))
                 .collect(Collectors.toList());
 
-        FieldUtils.writeField(blockNumberMigration,"migrationProperties",blockNumberMigrationProperties,true);
+        //FieldUtils.writeField(blockNumberMigration,"migrationProperties",blockNumberMigrationProperties,true);
 
         blockNumberMigration.doMigrate();
 

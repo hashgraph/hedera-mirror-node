@@ -37,8 +37,6 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
     private final JdbcTemplate jdbcTemplate;
 
-    private final BlockNumberMigrationProperties migrationProperties;
-
     private final MirrorProperties mirrorProperties;
 
     private static final long CORRECT_CONSENSUS_END = 1570801010552116001L;
@@ -51,9 +49,6 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
             return ;
         }
 
-        if (!migrationProperties.isEnabled()) {
-            return ;
-        }
         Long recordFileBlockNumber = getRecordFileByConsensusEnd(CORRECT_CONSENSUS_END);
         if (recordFileBlockNumber == null) {
             return ;
