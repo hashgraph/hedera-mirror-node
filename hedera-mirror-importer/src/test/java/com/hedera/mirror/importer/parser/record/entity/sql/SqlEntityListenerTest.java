@@ -531,7 +531,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(transactionRepository.findAll())
                 .containsExactlyInAnyOrder(firstTransaction, secondTransaction, thirdTransaction)
                 .extracting(Transaction::getIndex)
-                .containsExactly(1, 2, 3);
+                .containsExactlyInAnyOrder(1, 2, 3);
     }
 
     @Test
