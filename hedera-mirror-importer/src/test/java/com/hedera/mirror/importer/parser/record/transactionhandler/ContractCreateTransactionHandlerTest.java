@@ -75,6 +75,13 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Override
+    protected AbstractEntity getExpectedUpdatedEntity() {
+        AbstractEntity entity = super.getExpectedUpdatedEntity();
+        entity.setMaxAutomaticTokenAssociations(0);
+        return entity;
+    }
+
+    @Override
     protected TransactionReceipt.Builder getTransactionReceipt(ResponseCodeEnum responseCodeEnum) {
         return TransactionReceipt.newBuilder().setStatus(responseCodeEnum).setContractID(contractId);
     }
@@ -198,6 +205,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         .returns(null, Contract::getExpirationTimestamp)
                         .returns(contractId.getId(), Contract::getId)
                         .satisfies(c -> assertThat(c.getKey()).isNotEmpty())
+                        .satisfies(c -> assertThat(c.getMaxAutomaticTokenAssociations()).isPositive())
                         .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
                         .returns(contractId.getEntityNum(), Contract::getNum)
                         .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive())

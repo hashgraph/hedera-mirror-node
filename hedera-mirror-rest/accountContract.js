@@ -29,6 +29,7 @@ const commonFields = [
   'expiration_timestamp',
   'id',
   'key',
+  'max_automatic_token_associations',
   'memo',
   'num',
   'public_key',
@@ -38,7 +39,7 @@ const commonFields = [
   'timestamp_range',
   'type',
 ];
-const accountOnlyFields = ['alias', 'max_automatic_token_associations', 'receiver_sig_required'];
+const accountOnlyFields = ['alias', 'receiver_sig_required'];
 const accountFields = commonFields.concat(accountOnlyFields);
 const contractFields = commonFields.concat(accountOnlyFields.map((f) => `null as ${f}`));
 

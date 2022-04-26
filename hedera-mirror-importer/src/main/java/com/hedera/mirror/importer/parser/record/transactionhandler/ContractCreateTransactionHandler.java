@@ -93,6 +93,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 break;
         }
 
+        contract.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
+
         if (transactionBody.hasProxyAccountID()) {
             contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }

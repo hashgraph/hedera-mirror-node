@@ -42,6 +42,7 @@ const contractFields = [
   Contract.FILE_ID,
   Contract.ID,
   Contract.KEY,
+  Contract.MAX_AUTOMATIC_TOKEN_ASSOCIATIONS,
   Contract.MEMO,
   Contract.OBTAINER_ID,
   Contract.PROXY_ACCOUNT_ID,

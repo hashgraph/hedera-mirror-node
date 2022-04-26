@@ -21,6 +21,7 @@
         "deleted": true,
         "file_id": "5001",
         "key": [2, 2, 2],
+        "max_automatic_token_associations": 10,
         "num": "8002",
         "timestamp_range": "[987654111123456,)"
       },
@@ -35,6 +36,14 @@
         "obtainer_id": "7001",
         "proxy_account_id": "7005",
         "timestamp_range": "[987654222123456,)"
+      },
+      {
+        "_description": "Data from a partial mirrornode which only ingests the contract delete transaction",
+        "deleted": true,
+        "max_automatic_token_associations": null,
+        "memo": "",
+        "num": "8004",
+        "timestamp_range": "[987654222123457,)"
       }
     ]
   },
@@ -42,6 +51,24 @@
   "responseStatus": 200,
   "responseJson": {
     "contracts": [
+      {
+        "admin_key": null,
+        "auto_renew_period": null,
+        "contract_id": "0.0.8004",
+        "created_timestamp": null,
+        "deleted": true,
+        "evm_address": "0x0000000000000000000000000000000000001f44",
+        "expiration_timestamp": null,
+        "file_id": null,
+        "max_automatic_token_associations": null,
+        "memo": "",
+        "obtainer_id": null,
+        "proxy_account_id": null,
+        "timestamp": {
+          "from": "987654.222123457",
+          "to": null
+        }
+      },
       {
         "admin_key": {
           "_type": "ProtobufEncoded",
@@ -54,6 +81,7 @@
         "evm_address": "0x60f3f640a8508fc6a86d45df051962668e1e8ac7",
         "expiration_timestamp": "1236987654.000000123",
         "file_id": "0.0.5001",
+        "max_automatic_token_associations": 0,
         "memo": "contract memo",
         "obtainer_id": "0.0.7001",
         "proxy_account_id": "0.0.7005",
@@ -74,6 +102,7 @@
         "evm_address": "0x0000000000000000000000000000000000001f42",
         "expiration_timestamp": null,
         "file_id": "0.0.5001",
+        "max_automatic_token_associations": 10,
         "memo": "contract memo",
         "obtainer_id": null,
         "proxy_account_id": null,
@@ -94,6 +123,7 @@
         "evm_address": "0x0000000000000000000000000000000000001f41",
         "expiration_timestamp": null,
         "file_id": "0.0.5001",
+        "max_automatic_token_associations": 0,
         "memo": "contract memo",
         "obtainer_id": null,
         "proxy_account_id": null,

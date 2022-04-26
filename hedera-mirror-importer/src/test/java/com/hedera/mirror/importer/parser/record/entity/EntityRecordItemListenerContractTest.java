@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -789,6 +790,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(entityId.getId(), Contract::getId)
                 .returns(expectedInitcode, Contract::getInitcode)
                 .returns(adminKey, Contract::getKey)
+                .returns(transactionBody.getMaxAutomaticTokenAssociations(), Contract::getMaxAutomaticTokenAssociations)
                 .returns(transactionBody.getMemo(), Contract::getMemo)
                 .returns(createdTimestamp, Contract::getTimestampLower)
                 .returns(null, Contract::getObtainerId)
@@ -823,6 +825,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         Contract contract = getTransactionEntity(consensusTimestamp);
         long updatedTimestamp = DomainUtils.timeStampInNanos(consensusTimestamp);
         var adminKey = expected.getAdminKey().toByteArray();
+        var expectedMaxAutomaticTokenAssociations = expected.hasMaxAutomaticTokenAssociations() ?
+                expected.getMaxAutomaticTokenAssociations().getValue() : null;
 
         return assertThat(contract)
                 .isNotNull()
@@ -830,6 +834,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(false, Contract::getDeleted)
                 .returns(DomainUtils.timeStampInNanos(expected.getExpirationTime()), Contract::getExpirationTimestamp)
                 .returns(adminKey, Contract::getKey)
+                .returns(expectedMaxAutomaticTokenAssociations, Contract::getMaxAutomaticTokenAssociations)
                 .returns(getMemoFromContractUpdateTransactionBody(expected), Contract::getMemo)
                 .returns(updatedTimestamp, Contract::getTimestampLower)
                 .returns(null, Contract::getObtainerId)
@@ -1012,20 +1017,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     private Transaction contractUpdateAllTransaction(boolean setMemoWrapperOrMemo) {
-        return buildTransaction(builder -> {
-            ContractUpdateTransactionBody.Builder contractUpdate = builder.getContractUpdateInstanceBuilder();
-            contractUpdate.setAdminKey(keyFromString(KEY));
-            contractUpdate.setAutoRenewPeriod(Duration.newBuilder().setSeconds(400).build());
-            contractUpdate.setContractID(CONTRACT_ID);
-            contractUpdate.setExpirationTime(Timestamp.newBuilder().setSeconds(8000).setNanos(10).build());
-            contractUpdate.setFileID(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(2000).build());
-            if (setMemoWrapperOrMemo) {
-                contractUpdate.setMemoWrapper(StringValue.of("contract update memo"));
-            } else {
-                contractUpdate.setMemo("contract update memo");
-            }
-            contractUpdate.setProxyAccountID(PROXY_UPDATE);
-        });
+        return contractUpdateAllTransaction(CONTRACT_ID, setMemoWrapperOrMemo);
     }
 
     private Transaction contractUpdateAllTransaction(ContractID contractId, boolean setMemoWrapperOrMemo) {
@@ -1036,6 +1028,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             contractUpdate.setContractID(contractId);
             contractUpdate.setExpirationTime(Timestamp.newBuilder().setSeconds(8000).setNanos(10).build());
             contractUpdate.setFileID(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(2000).build());
+            contractUpdate.setMaxAutomaticTokenAssociations(Int32Value.of(100));
             if (setMemoWrapperOrMemo) {
                 contractUpdate.setMemoWrapper(StringValue.of("contract update memo"));
             } else {

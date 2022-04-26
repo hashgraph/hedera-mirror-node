@@ -63,11 +63,12 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
     @Test
     void contract() {
         String allColumns = "auto_renew_period,created_timestamp,deleted,evm_address,expiration_timestamp,file_id," +
-                "id,initcode,key,memo,num,obtainer_id,proxy_account_id,public_key,realm,shard,timestamp_range,type";
+                "id,initcode,key,max_automatic_token_associations,memo,num,obtainer_id,proxy_account_id,public_key," +
+                "realm,shard,timestamp_range,type";
         String nullableColumns = "auto_renew_period,created_timestamp,deleted,evm_address,expiration_timestamp," +
-                "file_id,initcode,key,obtainer_id,proxy_account_id,public_key";
-        String updatableColumns = "auto_renew_period,deleted,expiration_timestamp,key,memo,obtainer_id," +
-                "proxy_account_id,public_key,timestamp_range";
+                "file_id,initcode,key,max_automatic_token_associations,obtainer_id,proxy_account_id,public_key";
+        String updatableColumns = "auto_renew_period,deleted,expiration_timestamp,key,max_automatic_token_associations," +
+                "memo,obtainer_id,proxy_account_id,public_key,timestamp_range";
 
         assertThat(factory.createEntity(Contract.class))
                 .isNotNull()
@@ -79,7 +80,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
                 .returns(nullableColumns, e -> e.columns(UpsertColumn::isNullable, "{0}"))
                 .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
                 .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(18);
+                .hasSize(19);
     }
 
     @Test

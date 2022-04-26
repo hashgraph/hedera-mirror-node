@@ -46,6 +46,7 @@ class Contract {
   static ID = 'id';
   static INITCODE = 'initcode';
   static KEY = 'key';
+  static MAX_AUTOMATIC_TOKEN_ASSOCIATIONS = 'max_automatic_token_associations';
   static MEMO = 'memo';
   static NUM = 'num';
   static OBTAINER_ID = 'obtainer_id';
