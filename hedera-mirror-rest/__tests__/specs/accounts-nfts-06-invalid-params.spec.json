@@ -12,7 +12,7 @@
     "cryptotransfers": [],
     "nfts": []
   },
-  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=x&serialnumber=y&order=12&limit=a",
+  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=x&serialnumber=y&spender.id=z&order=12&limit=a",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -22,6 +22,9 @@
         },
         {
           "message": "Invalid parameter: serialnumber"
+        },
+        {
+          "message": "Invalid parameter: spender.id"
         },
         {
           "message": "Invalid parameter: order"
