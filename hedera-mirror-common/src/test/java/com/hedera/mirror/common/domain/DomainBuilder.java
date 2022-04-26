@@ -465,10 +465,6 @@ public class DomainBuilder {
         return bytes(20);
     }
 
-    public ByteString create2EvmAddressByteString() {
-        return UnsafeByteOperations.unsafeWrap(create2EvmAddress());
-    }
-
     public EntityId entityId(EntityType type) {
         return EntityId.of(0L, 0L, id(), type);
     }

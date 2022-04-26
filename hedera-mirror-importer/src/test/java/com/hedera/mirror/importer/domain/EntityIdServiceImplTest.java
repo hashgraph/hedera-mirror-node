@@ -261,10 +261,9 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void lookupCreate2EvmAddress() {
+    void lookupAccountWithEvmAddress() {
         AccountID accountId = AccountID.newBuilder()
-                .setAlias(domainBuilder.create2EvmAddressByteString())
-                .setAccountNum(100)
+                .setAlias(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS))
                 .build();
         assertThat(entityIdService.lookup(accountId)).isEqualTo(EntityId.of(100, CONTRACT));
     }

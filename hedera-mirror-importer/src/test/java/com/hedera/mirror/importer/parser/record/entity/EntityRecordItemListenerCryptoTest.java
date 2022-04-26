@@ -98,9 +98,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private static final ByteString ALIAS_KEY = ByteString.copyFromUtf8(
             "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff");
 
-    private static final ByteString EVM_ADDRESS = ByteString.copyFromUtf8(
-            "001d3f1ef827552ae111");
-
     @Resource
     protected ContractRepository contractRepository;
 
@@ -819,44 +816,30 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     @Test
     void cryptoTransferWithEvmAddressAlias() {
-        Contract contract = domainBuilder.contract().customize(c -> c.evmAddress(EVM_ADDRESS.toByteArray())).persist();
-        assertThat(contractRepository.findByEvmAddress(EVM_ADDRESS.toByteArray())).isPresent();
+        Contract contract = domainBuilder.contract().persist();
+        assertThat(contractRepository.findByEvmAddress(contract.getEvmAddress())).isPresent();
 
-        entityProperties.getPersist().setCryptoTransferAmounts(true);
         entityProperties.getPersist().setNonFeeTransfers(true);
-        assertThat(entityRepository.findByAlias(EVM_ADDRESS.toByteArray())).isNotPresent();
 
-        Transaction accountCreateTransaction = cryptoCreateTransaction();
-        TransactionBody accountCreateTransactionBody = getTransactionBody(accountCreateTransaction);
-        TransactionRecord recordCreate = buildTransactionRecord(
-                recordBuilder -> recordBuilder.setAlias(EVM_ADDRESS).getReceiptBuilder().setAccountID(accountId1),
-                accountCreateTransactionBody,
-                ResponseCodeEnum.SUCCESS.getNumber());
-
-        var transfer1 = accountAliasAmount(EVM_ADDRESS, 1003).build();
-        var transfer2 = accountAliasAmount(ByteString.copyFrom(contract.getEvmAddress()), 1004).build();
+        long transferAmount = 123;
+        var transfer1 = accountAliasAmount(DomainUtils.fromBytes(contract.getEvmAddress()), transferAmount).build();
         Transaction transaction = buildTransaction(builder -> builder.getCryptoTransferBuilder().getTransfersBuilder()
-                .addAccountAmounts(transfer1)
-                .addAccountAmounts(transfer2));
+                .addAccountAmounts(transfer1));
         TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord recordTransfer = transactionRecordSuccess(transactionBody,
-                builder -> groupCryptoTransfersByAccountId(builder, List.of()));
-
-        parseRecordItemsAndCommit(List.of(new RecordItem(accountCreateTransaction, recordCreate),
-                new RecordItem(transaction, recordTransfer)));
+        TransactionRecord transactionRecord = transactionRecordSuccess(transactionBody);
+        RecordItem recordItem = new RecordItem(transaction, transactionRecord);
+        parseRecordItemAndCommit(recordItem);
 
         assertAll(
-                () -> assertEquals(2, transactionRepository.count()),
-                () -> assertEntities(EntityId.of(accountId1), contract.toEntityId()),
-                () -> assertCryptoTransfers(6)
-                        .areAtMost(1, isAccountAmountReceiverAccountAmount(transfer1))
-                        .areAtMost(1, isAccountAmountReceiverAccountAmount(transfer2)),
-                () -> assertEquals(additionalTransfers.length * 2 + 2, nonFeeTransferRepository.count()),
-                () -> assertTransactionAndRecord(transactionBody, recordTransfer),
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(1, nonFeeTransferRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, transactionRecord),
                 () -> assertThat(findNonFeeTransfers())
-                        .extracting(NonFeeTransfer::getEntityId)
-                        .extracting(EntityId::getEntityNum)
-                        .contains(accountId1.getAccountNum(), contract.getNum())
+                        .allSatisfy(nonFeeTransfer -> {
+                            assertThat(nonFeeTransfer.getEntityId()).isEqualTo(contract.toEntityId());
+                            assertThat(nonFeeTransfer.getAmount()).isEqualTo(transferAmount);
+                            assertThat(nonFeeTransfer.getPayerAccountId()).isEqualTo(recordItem.getPayerAccountId());
+                        })
         );
     }
 
