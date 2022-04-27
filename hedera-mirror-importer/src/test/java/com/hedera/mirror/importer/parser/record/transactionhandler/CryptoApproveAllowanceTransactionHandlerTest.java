@@ -205,7 +205,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                         () -> assertThat(n.getTimestampRange()).isEqualTo(Range.atLeast(timestamp))
                 ))
                 .extracting("approvedForAll")
-                .containsExactlyInAnyOrder(false, true, true);
+                .containsExactly(false, true, false);
 
         verify(entityListener, times(4)).onNft(assertArg(t -> assertThat(t)
                 .isNotNull()
