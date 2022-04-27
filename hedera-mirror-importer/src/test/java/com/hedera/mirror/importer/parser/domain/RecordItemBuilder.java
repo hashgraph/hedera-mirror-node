@@ -229,6 +229,11 @@ public class RecordItemBuilder {
                         .setOwner(accountId())
                         .setSpender(accountId())
                         .setTokenId(tokenId()));
+        // duplicate allowances
+        builder.addCryptoAllowances(builder.getCryptoAllowances(0))
+                .addTokenAllowances(builder.getTokenAllowances(0))
+                .addNftAllowances(builder.getNftAllowances(0))
+                .addNftAllowances(builder.getNftAllowances(2).toBuilder().setApprovedForAll(BoolValue.of(false)));
         return new Builder<>(TransactionType.CRYPTOAPPROVEALLOWANCE, builder);
     }
 
