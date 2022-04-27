@@ -77,6 +77,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
     private void parseCryptoAllowances(List<com.hederahashgraph.api.proto.java.CryptoAllowance> cryptoAllowances,
                                        RecordItem recordItem) {
+        var consensusTimestamp = recordItem.getConsensusTimestamp();
         var cryptoAllowanceState = new HashMap<CryptoAllowance.Id, CryptoAllowance>();
         var payerAccountId = recordItem.getPayerAccountId();
 
@@ -96,7 +97,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             cryptoAllowance.setOwner(ownerAccountId.getId());
             cryptoAllowance.setPayerAccountId(payerAccountId);
             cryptoAllowance.setSpender(EntityId.of(cryptoApproval.getSpender()).getId());
-            cryptoAllowance.setTimestampLower(recordItem.getConsensusTimestamp());
+            cryptoAllowance.setTimestampLower(consensusTimestamp);
 
             if (cryptoAllowanceState.putIfAbsent(cryptoAllowance.getId(), cryptoAllowance) == null) {
                 entityListener.onCryptoAllowance(cryptoAllowance);
@@ -137,15 +138,13 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                 nftAllowance.setTokenId(tokenId.getId());
                 nftAllowance.setTimestampLower(consensusTimestamp);
 
-                if (!nftAllowanceState.containsKey(nftAllowance.getId())) {
+                if (nftAllowanceState.putIfAbsent(nftAllowance.getId(), nftAllowance) == null) {
                     entityListener.onNftAllowance(nftAllowance);
-                    nftAllowanceState.put(nftAllowance.getId(), nftAllowance);
                 }
             }
 
             EntityId delegatingSpender = EntityId.of(nftApproval.getDelegatingSpender());
             for (var serialNumber : nftApproval.getSerialNumbersList()) {
-                // nft instance allowance update doesn't set nft modifiedTimestamp
                 // services allows the same serial number of a nft token appears in multiple nft allowances to
                 // different spenders. The last spender will be granted such allowance.
                 Nft nft = new Nft(serialNumber, tokenId);
@@ -163,6 +162,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
     private void parseTokenAllowances(List<com.hederahashgraph.api.proto.java.TokenAllowance> tokenAllowances,
                                       RecordItem recordItem) {
+        var consensusTimestamp = recordItem.getConsensusTimestamp();
         var payerAccountId = recordItem.getPayerAccountId();
         var tokenAllowanceState = new HashMap<TokenAllowance.Id, TokenAllowance>();
 
@@ -184,7 +184,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             tokenAllowance.setPayerAccountId(payerAccountId);
             tokenAllowance.setSpender(EntityId.of(tokenApproval.getSpender()).getId());
             tokenAllowance.setTokenId(EntityId.of(tokenApproval.getTokenId()).getId());
-            tokenAllowance.setTimestampLower(recordItem.getConsensusTimestamp());
+            tokenAllowance.setTimestampLower(consensusTimestamp);
 
             if (tokenAllowanceState.putIfAbsent(tokenAllowance.getId(), tokenAllowance) == null) {
                 entityListener.onTokenAllowance(tokenAllowance);
