@@ -25,7 +25,7 @@ const {GenericContainer} = require('testcontainers');
 const {isDockerInstalled} = require('./integrationUtils');
 
 const localstackImageName = 'localstack/localstack';
-const localstackImageTag = '0.12.19.1';
+const localstackImageTag = '0.14.2';
 const defaultS3Port = 4566;
 
 class S3Ops {
