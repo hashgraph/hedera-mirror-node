@@ -77,11 +77,11 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
     private void parseCryptoAllowances(List<com.hederahashgraph.api.proto.java.CryptoAllowance> cryptoAllowances,
                                        RecordItem recordItem) {
-        var iterator = cryptoAllowances.listIterator(cryptoAllowances.size());
-        var payerAccountId = recordItem.getPayerAccountId();
         var cryptoAllowanceState = new HashMap<CryptoAllowance.Id, CryptoAllowance>();
+        var payerAccountId = recordItem.getPayerAccountId();
 
         // iterate the crypto allowance list in reverse order and honor the last allowance for the same owner and spender
+        var iterator = cryptoAllowances.listIterator(cryptoAllowances.size());
         while (iterator.hasPrevious()) {
             var cryptoApproval = iterator.previous();
             EntityId ownerAccountId = getOwnerAccountId(cryptoApproval.getOwner(), payerAccountId);
@@ -107,7 +107,6 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
     private void parseNftAllowances(List<com.hederahashgraph.api.proto.java.NftAllowance> nftAllowances,
                                       RecordItem recordItem) {
-        var iterator = nftAllowances.listIterator(nftAllowances.size());
         var payerAccountId = recordItem.getPayerAccountId();
         var nftAllowanceState = new HashMap<NftAllowance.Id, NftAllowance>();
         var nftSerialAllowanceState = new HashMap<NftId, Nft>();
@@ -115,6 +114,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         // iterate the nft allowance list in reverse order and honor the last allowance for either
         // the same owner, spender, and token for approved for all allowances, or the last serial allowance for
         // the same owner, spender, token, and serial
+        var iterator = nftAllowances.listIterator(nftAllowances.size());
         while (iterator.hasPrevious()) {
             var nftApproval = iterator.previous();
             EntityId ownerAccountId = getOwnerAccountId(nftApproval.getOwner(), payerAccountId);
@@ -164,12 +164,12 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
     private void parseTokenAllowances(List<com.hederahashgraph.api.proto.java.TokenAllowance> tokenAllowances,
                                        RecordItem recordItem) {
-        var iterator = tokenAllowances.listIterator(tokenAllowances.size());
         var payerAccountId = recordItem.getPayerAccountId();
         var tokenAllowanceState = new HashMap<TokenAllowance.Id, TokenAllowance>();
 
         // iterate the token allowance list in reverse order and honor the last allowance for the same owner, spender,
         // and token
+        var iterator = tokenAllowances.listIterator(tokenAllowances.size());
         while (iterator.hasPrevious()) {
             var tokenApproval = iterator.previous();
             EntityId ownerAccountId = getOwnerAccountId(tokenApproval.getOwner(), payerAccountId);
