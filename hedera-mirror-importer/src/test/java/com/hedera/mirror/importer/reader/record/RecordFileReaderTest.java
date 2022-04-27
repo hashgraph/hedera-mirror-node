@@ -86,12 +86,12 @@ abstract class RecordFileReaderTest {
                     assertThat(timestamps).last().isEqualTo(recordFile.getConsensusEnd());
                     assertThat(timestamps).doesNotHaveDuplicates().isSorted();
 
-                    List<Integer> transactionBlockIndexs = actual.getItems()
+                    List<Integer> transactionBlockIndexes = actual.getItems()
                             .map(RecordItem::getTransactionBlockIndex)
                             .collectList()
                             .block();
-                    assertThat(transactionBlockIndexs).first().isEqualTo(0);
-                    assertThat(transactionBlockIndexs).last().isEqualTo(recordFile.getCount().intValue() - 1);
+                    assertThat(transactionBlockIndexes).first().isEqualTo(0);
+                    assertThat(transactionBlockIndexes).last().isEqualTo(recordFile.getCount().intValue() - 1);
                     assertThat(timestamps).doesNotHaveDuplicates().isSorted();
                 });
     }

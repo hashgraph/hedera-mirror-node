@@ -150,7 +150,6 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
         recordStreamFileListener.onStart();
         var dateRangeFilter = new DateRangeFilter(mirrorProperties.getStartDate(), mirrorProperties.getEndDate());
 
-        int count = 0;
         for (Resource resource : resources) {
             String name = resource.getFilename();
             log.info("Loading file: {}", name);
@@ -160,7 +159,6 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
                 byte[] transactionBytes = in.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction");
                 var transactionRecord = TransactionRecord.parseFrom(recordBytes);
                 var transaction = Transaction.parseFrom(transactionBytes);
-                // default transactionBlockIndex case. transactionBlockIndex and recordFile count should be recalculated
                 var recordItem = new RecordItem(transaction, transactionRecord);
                 long timestamp = recordItem.getConsensusTimestamp();
 
