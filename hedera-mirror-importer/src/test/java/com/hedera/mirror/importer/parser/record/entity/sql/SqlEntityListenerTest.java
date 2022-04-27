@@ -516,10 +516,10 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onTransaction() {
-        // given
-        var firstTransaction = domainBuilder.transaction().get();
-        var secondTransaction = domainBuilder.transaction().get();
-        var thirdTransaction = domainBuilder.transaction().get();
+        // given transactions with cleared index
+        var firstTransaction = domainBuilder.transaction().customize(x -> x.index(-1)).get();
+        var secondTransaction = domainBuilder.transaction().customize(x -> x.index(-1)).get();
+        var thirdTransaction = domainBuilder.transaction().customize(x -> x.index(-1)).get();
 
         // when
         sqlEntityListener.onTransaction(firstTransaction);
