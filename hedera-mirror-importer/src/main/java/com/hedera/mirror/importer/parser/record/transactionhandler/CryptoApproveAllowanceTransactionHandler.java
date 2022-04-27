@@ -98,15 +98,15 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             cryptoAllowance.setSpender(EntityId.of(cryptoApproval.getSpender()).getId());
             cryptoAllowance.setTimestampLower(recordItem.getConsensusTimestamp());
 
-            if (!cryptoAllowanceState.containsKey(cryptoAllowance.getId())) {
+            if (cryptoAllowanceState.putIfAbsent(cryptoAllowance.getId(), cryptoAllowance) == null) {
                 entityListener.onCryptoAllowance(cryptoAllowance);
-                cryptoAllowanceState.put(cryptoAllowance.getId(), cryptoAllowance);
             }
         }
     }
 
     private void parseNftAllowances(List<com.hederahashgraph.api.proto.java.NftAllowance> nftAllowances,
                                     RecordItem recordItem) {
+        var consensusTimestamp = recordItem.getConsensusTimestamp();
         var payerAccountId = recordItem.getPayerAccountId();
         var nftAllowanceState = new HashMap<NftAllowance.Id, NftAllowance>();
         var nftSerialAllowanceState = new HashMap<NftId, Nft>();
@@ -135,7 +135,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                 nftAllowance.setPayerAccountId(payerAccountId);
                 nftAllowance.setSpender(spender.getId());
                 nftAllowance.setTokenId(tokenId.getId());
-                nftAllowance.setTimestampLower(recordItem.getConsensusTimestamp());
+                nftAllowance.setTimestampLower(consensusTimestamp);
 
                 if (!nftAllowanceState.containsKey(nftAllowance.getId())) {
                     entityListener.onNftAllowance(nftAllowance);
@@ -151,12 +151,11 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                 Nft nft = new Nft(serialNumber, tokenId);
                 nft.setAccountId(ownerAccountId);
                 nft.setDelegatingSpender(delegatingSpender);
-                nft.setModifiedTimestamp(recordItem.getConsensusTimestamp());
+                nft.setModifiedTimestamp(consensusTimestamp);
                 nft.setSpender(spender);
 
-                if (!nftSerialAllowanceState.containsKey(nft.getId())) {
+                if (nftSerialAllowanceState.putIfAbsent(nft.getId(), nft) == null) {
                     entityListener.onNft(nft);
-                    nftSerialAllowanceState.put(nft.getId(), nft);
                 }
             }
         }
@@ -187,9 +186,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             tokenAllowance.setTokenId(EntityId.of(tokenApproval.getTokenId()).getId());
             tokenAllowance.setTimestampLower(recordItem.getConsensusTimestamp());
 
-            if (!tokenAllowanceState.containsKey(tokenAllowance.getId())) {
+            if (tokenAllowanceState.putIfAbsent(tokenAllowance.getId(), tokenAllowance) == null) {
                 entityListener.onTokenAllowance(tokenAllowance);
-                tokenAllowanceState.put(tokenAllowance.getId(), tokenAllowance);
             }
         }
     }
