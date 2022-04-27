@@ -31,6 +31,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.common.converter.LongWeiBarToStringSerializer;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
@@ -199,7 +200,8 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
                 .isNotNull()
                 .returns(fileId, EthereumTransaction::getCallDataId)
                 .returns(DomainUtils.toBytes(transactionBody.getEthereumData()), EthereumTransaction::getData)
-                .returns(transactionBody.getMaxGasAllowance(), EthereumTransaction::getMaxGasAllowance)
+                .returns(transactionBody.getMaxGasAllowance() / LongWeiBarToStringSerializer.WEIBARS_TO_TINYBARS,
+                        EthereumTransaction::getMaxGasAllowance)
                 .returns(DomainUtils.toBytes(recordItem.getRecord().getEthereumHash()), EthereumTransaction::getHash);
     }
 

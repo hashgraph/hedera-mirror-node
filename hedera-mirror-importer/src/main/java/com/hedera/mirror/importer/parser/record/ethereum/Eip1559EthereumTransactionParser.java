@@ -25,20 +25,20 @@ import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.util.Integers;
 import java.math.BigInteger;
 import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 
-@Log4j2
 @Named
 public class Eip1559EthereumTransactionParser implements EthereumTransactionParser {
+    private static final int EIP1559_TYPE_BYTE = 2;
+    private static final int EIP1559_TYPE_RLP_ITEM_COUNT = 12;
+
     @Override
     public EthereumTransaction decode(byte[] transactionBytes) {
         var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(
                 transactionBytes);
         var legacyRlpItem = decoder.next();
-        var legacyTypeByte = legacyRlpItem.asByte();
-        if (legacyTypeByte != 2) {
+        if (legacyRlpItem.asByte() != EIP1559_TYPE_BYTE) {
             return null;
         }
 
@@ -48,7 +48,7 @@ public class Eip1559EthereumTransactionParser implements EthereumTransactionPars
         }
 
         var rlpItems = eip1559RlpItem.asRLPList().elements();
-        if (rlpItems.size() != 12) {
+        if (rlpItems.size() != EIP1559_TYPE_RLP_ITEM_COUNT) {
             return null;
         }
 
@@ -65,7 +65,7 @@ public class Eip1559EthereumTransactionParser implements EthereumTransactionPars
                 .recoveryId((int) rlpItems.get(9).asByte())
                 .signatureR(rlpItems.get(10).data())
                 .signatureS(rlpItems.get(11).data())
-                .type(2);
+                .type(EIP1559_TYPE_BYTE);
 
         return ethereumTransaction.build();
     }

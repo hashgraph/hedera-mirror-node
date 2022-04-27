@@ -35,7 +35,11 @@ import lombok.ToString;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.converter.ByteArrayWeiBarConverter;
+import com.hedera.mirror.common.converter.ByteArrayWeiBarToStringSerializer;
 import com.hedera.mirror.common.converter.EntityIdSerializer;
+import com.hedera.mirror.common.converter.LongWeiBarConverter;
+import com.hedera.mirror.common.converter.LongWeiBarToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For builder
@@ -67,17 +71,32 @@ public class EthereumTransaction implements Persistable<Long> {
     @ToString.Exclude
     private byte[] fromAddress;
 
+    // set in weibar, persisted in tinybar
+    @Convert(converter = LongWeiBarConverter.class)
+    @JsonSerialize(using = LongWeiBarToStringSerializer.class)
     private Long gasLimit;
 
+    // set in weibar, persisted in tinybar
+    @Convert(converter = ByteArrayWeiBarConverter.class)
+    @JsonSerialize(using = ByteArrayWeiBarToStringSerializer.class)
     private byte[] gasPrice;
 
     @ToString.Exclude
     private byte[] hash;
 
+    // set in weibar, persisted in tinybar
+    @Convert(converter = ByteArrayWeiBarConverter.class)
+    @JsonSerialize(using = ByteArrayWeiBarToStringSerializer.class)
     private byte[] maxFeePerGas;
 
+    // set in weibar, persisted in tinybar
+    @Convert(converter = LongWeiBarConverter.class)
+    @JsonSerialize(using = LongWeiBarToStringSerializer.class)
     private Long maxGasAllowance;
 
+    // set in weibar, persisted in tinybar
+    @Convert(converter = ByteArrayWeiBarConverter.class)
+    @JsonSerialize(using = ByteArrayWeiBarToStringSerializer.class)
     private byte[] maxPriorityFeePerGas;
 
     private Long nonce;

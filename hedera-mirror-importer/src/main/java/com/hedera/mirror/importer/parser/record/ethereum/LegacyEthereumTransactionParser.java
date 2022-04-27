@@ -30,13 +30,16 @@ import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 
 @Named
 public class LegacyEthereumTransactionParser implements EthereumTransactionParser {
+    private static final int LEGACY_TYPE_BYTE = 0;
+    private static final int LEGACY_TYPE_RLP_ITEM_COUNT = 9;
+
     @Override
     public EthereumTransaction decode(byte[] transactionBytes) {
         var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(
                 transactionBytes);
         var legacyRlpItem = decoder.next();
         var rlpItems = legacyRlpItem.asRLPList().elements();
-        if (rlpItems.size() != 9) {
+        if (rlpItems.size() != LEGACY_TYPE_RLP_ITEM_COUNT) {
             return null;
         }
 
@@ -47,7 +50,7 @@ public class LegacyEthereumTransactionParser implements EthereumTransactionParse
                 .toAddress(rlpItems.get(3).data())
                 .value(rlpItems.get(4).asBigInt().toByteArray())
                 .callData(rlpItems.get(5).data())
-                .type(0);
+                .type(LEGACY_TYPE_BYTE);
 
         var v = rlpItems.get(6).asBytes();
         BigInteger vBi = new BigInteger(1, v);

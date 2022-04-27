@@ -25,7 +25,6 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import java.math.BigInteger;
 import javax.inject.Named;
@@ -79,11 +78,11 @@ class EthereumTransactionHandler implements TransactionHandler {
             senderId = EntityId.of(contractFunctionResult.getSenderId());
 
             // no contractResult signifies a non executed transaction
-            ethereumTransaction = insertEthereumTransaction(recordItem, senderId);
+            ethereumTransaction = parseEthereumTransaction(recordItem, senderId);
         }
 
         if (transactionRecord.hasContractCreateResult()) {
-            insertContract(contractId, senderId, ethereumTransaction, recordItem.getConsensusTimestamp());
+            parseContract(contractId, senderId, ethereumTransaction, recordItem.getConsensusTimestamp());
         }
 
         return contractId;
@@ -94,7 +93,7 @@ class EthereumTransactionHandler implements TransactionHandler {
         return TransactionType.ETHEREUMTRANSACTION;
     }
 
-    private EthereumTransaction insertEthereumTransaction(RecordItem recordItem, EntityId senderId) {
+    private EthereumTransaction parseEthereumTransaction(RecordItem recordItem, EntityId senderId) {
         if (!entityProperties.getPersist().isEthereumTransactions()) {
             return null;
         }
@@ -102,13 +101,11 @@ class EthereumTransactionHandler implements TransactionHandler {
         var body = recordItem.getTransactionBody().getEthereumTransaction();
         var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
         var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
-        if (ethereumTransaction == null) {
-            return null;
-        }
 
         // update ethereumTransaction with body values
-        var file = body.getCallData() == FileID.getDefaultInstance() ? null : EntityId.of(body.getCallData());
-        ethereumTransaction.setCallDataId(file);
+        if (body.hasCallData()) {
+            ethereumTransaction.setCallDataId(EntityId.of(body.getCallData()));
+        }
         ethereumTransaction.setMaxGasAllowance(body.getMaxGasAllowance());
 
         // update ethereumTransaction with record values
@@ -124,40 +121,38 @@ class EthereumTransactionHandler implements TransactionHandler {
         return ethereumTransaction;
     }
 
-    private void insertContract(EntityId contractId, EntityId senderId, EthereumTransaction ethereumTransaction,
-                                long consensusTimestamp) {
+    private void parseContract(EntityId contractId, EntityId senderId, EthereumTransaction ethereumTransaction,
+                               long consensusTimestamp) {
         if (!entityProperties.getPersist().isContracts()) {
             return;
         }
 
-        if (ethereumTransaction == null) {
+        if (ethereumTransaction == null || contractId == null) {
             return;
         }
 
         // persist newly created Contract since no ContractCreate is exposed
-        if (contractId != null) {
-            var publicKey = retrievePublicKey(ethereumTransaction);
-            var publicKeyBytes = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(publicKey)).build()
-                    .toByteArray();
+        var publicKey = retrievePublicKey(ethereumTransaction);
+        var publicKeyBytes = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(publicKey)).build()
+                .toByteArray();
 
-            var contract = Contract.builder()
+        var contract = Contract.builder()
 //                    .autoRenewPeriod(1800L)
-                    .createdTimestamp(consensusTimestamp)
-                    .deleted(false)
-                    .fileId(ethereumTransaction.getCallDataId())
-                    .id(contractId.getId())
-                    .key(publicKeyBytes)
-                    .memo("") // missing memo, is hex data from transaction submission available?
-                    .obtainerId(senderId)
+                .createdTimestamp(consensusTimestamp)
+                .deleted(false)
+                .fileId(ethereumTransaction.getCallDataId())
+                .id(contractId.getId())
+                .key(publicKeyBytes)
+                .memo("") // missing memo, is hex data from transaction submission available?
+                .obtainerId(senderId)
 //                    .proxyAccountId(entityId(ACCOUNT))
-                    .num(contractId.getEntityNum())
-                    .realm(contractId.getRealmNum())
-                    .shard(contractId.getShardNum())
-                    .timestampRange(Range.atLeast(consensusTimestamp))
-                    .type(CONTRACT)
-                    .build();
-            entityListener.onContract(contract);
-        }
+                .num(contractId.getEntityNum())
+                .realm(contractId.getRealmNum())
+                .shard(contractId.getShardNum())
+                .timestampRange(Range.atLeast(consensusTimestamp))
+                .type(CONTRACT)
+                .build();
+        entityListener.onContract(contract);
     }
 
     private byte[] retrievePublicKey(EthereumTransaction ethereumTransaction) {

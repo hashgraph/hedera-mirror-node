@@ -25,6 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.common.converter.ByteArrayWeiBarConverter;
+import com.hedera.mirror.common.converter.LongWeiBarConverter;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 
 class EthereumTransactionRepositoryTest extends AbstractRepositoryTest {
@@ -37,6 +39,17 @@ class EthereumTransactionRepositoryTest extends AbstractRepositoryTest {
         EthereumTransaction ethereumTransaction = domainBuilder.ethereumTransaction().persist();
         assertThat(ethereumTransactionRepository.findById(ethereumTransaction.getId()))
                 .get()
+                .isNotNull()
+                .satisfies(t -> assertThat(t.getCallDataId().getId()).isEqualTo(ethereumTransaction.getCallDataId()
+                        .getId()))
+                .satisfies(t -> assertThat(t.getGasLimit()).isEqualTo(LongWeiBarConverter.INSTANCE.convertToDatabaseColumn(ethereumTransaction.getGasLimit())))
+                .satisfies(t -> assertThat(t.getGasPrice()).isEqualTo(ByteArrayWeiBarConverter.INSTANCE.convertToDatabaseColumn(ethereumTransaction.getGasPrice())))
+                .satisfies(t -> assertThat(t.getMaxFeePerGas()).isEqualTo(ByteArrayWeiBarConverter.INSTANCE.convertToDatabaseColumn(ethereumTransaction.getMaxFeePerGas())))
+                .satisfies(t -> assertThat(t.getMaxGasAllowance()).isEqualTo(LongWeiBarConverter.INSTANCE.convertToDatabaseColumn(ethereumTransaction.getMaxGasAllowance())))
+                .satisfies(t -> assertThat(t.getMaxPriorityFeePerGas()).isEqualTo(ByteArrayWeiBarConverter.INSTANCE.convertToDatabaseColumn(ethereumTransaction.getMaxPriorityFeePerGas())))
+                .usingRecursiveComparison()
+                .ignoringFields("callDataId", "gasLimit", "gasPrice", "maxFeePerGas", "maxGasAllowance",
+                        "maxPriorityFeePerGas")
                 .isEqualTo(ethereumTransaction);
     }
 }

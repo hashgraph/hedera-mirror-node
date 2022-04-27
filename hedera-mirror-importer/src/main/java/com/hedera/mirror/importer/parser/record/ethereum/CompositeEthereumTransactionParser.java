@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Named
 @Primary
@@ -37,7 +38,12 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
     @Override
     public EthereumTransaction decode(byte[] transactionBytes) {
         var ethereumTransactionParser = getEthereumTransactionParser(transactionBytes);
-        return ethereumTransactionParser.decode(transactionBytes);
+        var ethereumTransaction = ethereumTransactionParser.decode(transactionBytes);
+        if (ethereumTransaction == null) {
+            throw new InvalidDatasetException("Unable to decode ethereum transaction bytes");
+        }
+
+        return ethereumTransaction;
     }
 
     @Override

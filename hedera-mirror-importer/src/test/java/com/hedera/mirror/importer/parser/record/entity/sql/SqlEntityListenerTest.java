@@ -46,6 +46,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.hedera.mirror.common.converter.ByteArrayWeiBarConverter;
+import com.hedera.mirror.common.converter.LongWeiBarConverter;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
@@ -1362,7 +1364,21 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        assertThat(ethereumTransactionRepository.findAll()).contains(ethereumTransaction);
+
+        assertThat(ethereumTransactionRepository.findAll())
+                .first()
+                .isNotNull()
+                .satisfies(t -> assertThat(t.getCallDataId().getId()).isEqualTo(ethereumTransaction.getCallDataId()
+                        .getId()))
+                .satisfies(t -> assertThat(t.getGasLimit()).isEqualTo(LongWeiBarConverter.INSTANCE.convertToDatabaseColumn(ethereumTransaction.getGasLimit())))
+                .satisfies(t -> assertThat(t.getGasPrice()).isEqualTo(ByteArrayWeiBarConverter.INSTANCE.convertToDatabaseColumn(ethereumTransaction.getGasPrice())))
+                .satisfies(t -> assertThat(t.getMaxFeePerGas()).isEqualTo(ByteArrayWeiBarConverter.INSTANCE.convertToDatabaseColumn(ethereumTransaction.getMaxFeePerGas())))
+                .satisfies(t -> assertThat(t.getMaxGasAllowance()).isEqualTo(LongWeiBarConverter.INSTANCE.convertToDatabaseColumn(ethereumTransaction.getMaxGasAllowance())))
+                .satisfies(t -> assertThat(t.getMaxPriorityFeePerGas()).isEqualTo(ByteArrayWeiBarConverter.INSTANCE.convertToDatabaseColumn(ethereumTransaction.getMaxPriorityFeePerGas())))
+                .usingRecursiveComparison()
+                .ignoringFields("callDataId", "gasLimit", "gasPrice", "maxFeePerGas", "maxGasAllowance",
+                        "maxPriorityFeePerGas")
+                .isEqualTo(ethereumTransaction);
     }
 
     private void completeFileAndCommit() {

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.converter;
+package com.hedera.mirror.common.converter;
 
 /*-
  * ‌
@@ -24,19 +24,23 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
-import javax.inject.Named;
+import java.math.BigInteger;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.ArrayUtils;
 
-@Named
-public class ByteArrayToHexSerializer extends JsonSerializer<byte[]> {
-
-    public static final ByteArrayToHexSerializer INSTANCE = new ByteArrayToHexSerializer();
+public class ByteArrayWeiBarToStringSerializer extends JsonSerializer<byte[]> {
+    static final ByteArrayWeiBarToStringSerializer INSTANCE = new ByteArrayWeiBarToStringSerializer();
+    static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
     static final String PREFIX = "\\x";
 
     @Override
-    public void serialize(byte[] value, JsonGenerator jsonGenerator, SerializerProvider serializers) throws IOException {
-        if (value != null) {
-            jsonGenerator.writeString(PREFIX + Hex.encodeHexString(value));
+    public void serialize(byte[] weibar, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        if (!ArrayUtils.isEmpty(weibar)) {
+            // convert weibar to tinybar
+            gen.writeNumber(PREFIX +
+                    Hex.encodeHexString(new BigInteger(weibar).divide(WEIBARS_TO_TINYBARS).toByteArray()));
+        } else {
+            gen.writeNull();
         }
     }
 }
