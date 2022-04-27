@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  * ‍
  */
 
-import com.esaulpaugh.headlong.rlp.RLPDecoder;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Primary;
@@ -54,8 +53,7 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
     }
 
     private EthereumTransactionParser getEthereumTransactionParser(byte[] transactionBytes) {
-        var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(transactionBytes);
-        var rlpItem = decoder.next();
-        return rlpItem.isList() ? legacyEthereumTransactionParser : eip1559EthereumTransactionParser;
+        var eip1559StartingBytesMatch = transactionBytes[0] == (byte) 2 && transactionBytes[1] == (byte) -8;
+        return eip1559StartingBytesMatch ? eip1559EthereumTransactionParser : legacyEthereumTransactionParser;
     }
 }

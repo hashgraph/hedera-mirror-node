@@ -39,6 +39,8 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
             "f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83";
     public static String LEGACY_PK = "033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d";
 
+    public static String EIP155_PK = "024bc2a31265153f07e70e0bab08724e6b85e217f8cd628ceb62974247bb493382";
+
     @BeforeAll
     static void beforeAll() {
         ethereumTransactionParser = new LegacyEthereumTransactionParser();

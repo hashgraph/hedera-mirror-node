@@ -182,6 +182,11 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>sts</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.esaulpaugh</groupId>
+            <artifactId>headlong</artifactId>
+            <version>${headlong.version}</version>
+        </dependency>
         <!-- Test -->
         <dependency>
             <groupId>com.github.vertical-blank</groupId>
@@ -253,11 +258,6 @@
             <artifactId>junit-jupiter</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.esaulpaugh</groupId>
-            <artifactId>headlong</artifactId>
-            <version>6.1.1</version>
         </dependency>
         <dependency>
             <groupId>org.web3j</groupId>

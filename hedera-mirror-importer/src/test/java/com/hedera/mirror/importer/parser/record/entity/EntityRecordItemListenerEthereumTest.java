@@ -23,13 +23,17 @@ package com.hedera.mirror.importer.parser.record.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esaulpaugh.headlong.rlp.RLPEncoder;
+import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.FileID;
 import javax.annotation.Resource;
 import lombok.SneakyThrows;
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.web3j.crypto.Hash;
 
 import com.hedera.mirror.common.converter.LongWeiBarToStringSerializer;
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -37,6 +41,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.record.ethereum.Eip1559EthereumTransactionParserTest;
 import com.hedera.mirror.importer.parser.record.ethereum.LegacyEthereumTransactionParserTest;
 import com.hedera.mirror.importer.repository.ContractRepository;
@@ -57,9 +62,7 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
     @SneakyThrows
     @Test
     void ethereumTransactionCallLondon() {
-        var transactionBytes = Hex.decodeHex(Eip1559EthereumTransactionParserTest.LONDON_RAW_TX);
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(false)
-                .record(x -> x.setEthereumHash(ByteString.copyFrom(transactionBytes)))
                 .build();
 
         parseRecordItemAndCommit(recordItem);
@@ -79,10 +82,8 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
     @SneakyThrows
     @Test
     void ethereumTransactionCallLegacy() {
-        var transactionBytes = Hex.decodeHex(LegacyEthereumTransactionParserTest.LEGACY_RAW_TX);
-        RecordItem recordItem = recordItemBuilder.ethereumTransaction(false)
-                .record(x -> x.setEthereumHash(ByteString.copyFrom(transactionBytes)))
-                .build();
+        RecordItem recordItem = getEthereumTransactionRecordItem(false,
+                LegacyEthereumTransactionParserTest.LEGACY_RAW_TX);
 
         parseRecordItemAndCommit(recordItem);
 
@@ -101,10 +102,8 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
     @SneakyThrows
     @Test
     void ethereumTransactionCallEIP155() {
-        var transactionBytes = Hex.decodeHex(LegacyEthereumTransactionParserTest.EIP155_RAW_TX);
-        RecordItem recordItem = recordItemBuilder.ethereumTransaction(false)
-                .record(x -> x.setEthereumHash(ByteString.copyFrom(transactionBytes)))
-                .build();
+        RecordItem recordItem = getEthereumTransactionRecordItem(false,
+                LegacyEthereumTransactionParserTest.EIP155_RAW_TX);
 
         parseRecordItemAndCommit(recordItem);
 
@@ -123,10 +122,8 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
     @SneakyThrows
     @Test
     void ethereumEip1559TransactionCreate() {
-        var transactionBytes = Hex.decodeHex(Eip1559EthereumTransactionParserTest.LONDON_RAW_TX);
-        RecordItem recordItem = recordItemBuilder.ethereumTransaction(true)
-                .record(x -> x.setEthereumHash(ByteString.copyFrom(transactionBytes)))
-                .build();
+        RecordItem recordItem = getEthereumTransactionRecordItem(true,
+                Eip1559EthereumTransactionParserTest.LONDON_RAW_TX);
 
         parseRecordItemAndCommit(recordItem);
 
@@ -146,10 +143,8 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
     @SneakyThrows
     @Test
     void ethereumLegacyTransactionCreate() {
-        var transactionBytes = Hex.decodeHex(LegacyEthereumTransactionParserTest.LEGACY_RAW_TX);
-        RecordItem recordItem = recordItemBuilder.ethereumTransaction(true)
-                .record(x -> x.setEthereumHash(ByteString.copyFrom(transactionBytes)))
-                .build();
+        RecordItem recordItem = getEthereumTransactionRecordItem(true,
+                LegacyEthereumTransactionParserTest.LEGACY_RAW_TX);
 
         parseRecordItemAndCommit(recordItem);
 
@@ -169,10 +164,8 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
     @SneakyThrows
     @Test
     void ethereumLegacyChainListTransactionCreate() {
-        var transactionBytes = Hex.decodeHex(LegacyEthereumTransactionParserTest.EIP155_RAW_TX);
-        RecordItem recordItem = recordItemBuilder.ethereumTransaction(true)
-                .record(x -> x.setEthereumHash(ByteString.copyFrom(transactionBytes)))
-                .build();
+        RecordItem recordItem = getEthereumTransactionRecordItem(true,
+                LegacyEthereumTransactionParserTest.EIP155_RAW_TX);
 
         parseRecordItemAndCommit(recordItem);
 
@@ -185,8 +178,30 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
                 () -> assertEthereumTransaction(recordItem),
-                () -> assertContract(recordItem, LegacyEthereumTransactionParserTest.LEGACY_PK)
+                () -> assertContract(recordItem, LegacyEthereumTransactionParserTest.EIP155_PK)
         );
+    }
+
+    @SneakyThrows
+    @Test
+    void ethereumTransactionLegacyBadBytes() {
+        var transactionBytes = RLPEncoder.encodeAsList(
+                Integers.toBytes(1),
+                Integers.toBytes(2),
+                Integers.toBytes(3));
+        RecordItem recordItem = recordItemBuilder.ethereumTransaction(true)
+                .transactionBody(x -> x.setEthereumData(ByteString.copyFrom(transactionBytes)))
+                .build();
+
+        assertThrows(InvalidDatasetException.class, () -> parseRecordItemAndCommit(recordItem));
+    }
+
+    private RecordItem getEthereumTransactionRecordItem(boolean create, String transactionBytesString) throws DecoderException {
+        var transactionBytes = Hex.decodeHex(transactionBytesString);
+        return recordItemBuilder.ethereumTransaction(create)
+                .transactionBody(x -> x.setEthereumData(ByteString.copyFrom(transactionBytes)))
+                .record(x -> x.setEthereumHash(ByteString.copyFrom(Hash.sha3(transactionBytes))))
+                .build();
     }
 
     private void assertEthereumTransaction(RecordItem recordItem) {
