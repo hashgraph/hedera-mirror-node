@@ -1,6 +1,5 @@
 package com.hedera.mirror.importer.migration;
 
-import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 
@@ -33,19 +32,17 @@ public class BlockNumberMigrationTest extends IntegrationTest {
 
     private final RecordFileRepository recordFileRepository;
 
-    private static final long CORRECT_CONSENSUS_END = 1570801010552116001L;
+    private static final long CORRECT_CONSENSUS_END = 1570811971290027001L;
 
-    private static final long CORRECT_BLOCK_NUMBER = 420L;
+    private static final long CORRECT_BLOCK_NUMBER = 1029L;
 
     @Test
-    public void theCorrectOffsetMustBeAddedToTheBlockNumbers() throws IllegalAccessException {
+    public void theCorrectOffsetMustBeAddedToTheBlockNumbers() {
         List<RecordFile> defaultRecordFiles = insertDefaultRecordFiles();
-        long offset = 412;
+        long offset = 1021L;
         List<Tuple> expectedBlockNumbersAndConsensusEnd = defaultRecordFiles.stream()
                 .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex() + offset))
                 .collect(Collectors.toList());
-
-        //FieldUtils.writeField(blockNumberMigration,"migrationProperties",blockNumberMigrationProperties,true);
 
         blockNumberMigration.doMigrate();
 
@@ -54,7 +51,7 @@ public class BlockNumberMigrationTest extends IntegrationTest {
 
     @Test
     public void ifCorrectConsensusEndNotFoundDoNothing() {
-        List<Tuple> expectedBlockNumbersAndConsensusEnd = insertDefaultRecordFiles(Set.of(1570801010552116001L))
+        List<Tuple> expectedBlockNumbersAndConsensusEnd = insertDefaultRecordFiles(Set.of(CORRECT_CONSENSUS_END))
                 .stream()
                 .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex()))
                 .collect(Collectors.toList());

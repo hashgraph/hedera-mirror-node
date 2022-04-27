@@ -26,11 +26,15 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.tuple.Pair;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import javax.inject.Named;
 
+import java.util.Map;
+
+import static com.hedera.mirror.importer.MirrorProperties.*;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
 
@@ -44,9 +48,8 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
     private final MirrorProperties mirrorProperties;
 
-    private static final long CORRECT_CONSENSUS_END = 1570801010552116001L;
-
-    private static final long CORRECT_BLOCK_NUMBER = 420L;
+    private static final Map<HederaNetwork, Pair<Long, Long>> CONSENSUS_END_BLOCK_NUMBER_PER_NET =
+            Map.of(TESTNET, Pair.of(1570811971290027001L, 1029L));
 
     private final RecordFileRepository recordFileRepository;
 
@@ -56,19 +59,22 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
             return ;
         }
 
-        recordFileRepository.findById(CORRECT_CONSENSUS_END)
+        var consensusEndAndBlockNumber = CONSENSUS_END_BLOCK_NUMBER_PER_NET.get(mirrorProperties.getNetwork());
+        long correctConsensusNumber = consensusEndAndBlockNumber.getKey();
+        long correctBlockNumber = consensusEndAndBlockNumber.getValue();
+        recordFileRepository.findById(correctConsensusNumber)
                 .map(RecordFile::getIndex)
-                .filter(blockNumber -> blockNumber != CORRECT_BLOCK_NUMBER)
-                .ifPresent(this::updateRecordFilesBlockNumber);
+                .filter(blockNumber -> blockNumber != correctBlockNumber)
+                .ifPresent(blockNumber -> updateRecordFilesBlockNumber(correctBlockNumber, blockNumber));
     }
 
     private boolean shouldNotMigrateOnCurrentNetwork() {
-        MirrorProperties.HederaNetwork currentNetwork = mirrorProperties.getNetwork();
+        HederaNetwork currentNetwork = mirrorProperties.getNetwork();
         return currentNetwork != TESTNET && currentNetwork != MAINNET;
     }
 
-    private void updateRecordFilesBlockNumber(long incorrectBlockNumber) {
-        long offset = CORRECT_BLOCK_NUMBER - incorrectBlockNumber;
+    private void updateRecordFilesBlockNumber(long correctBlockNumber, long incorrectBlockNumber) {
+        long offset = correctBlockNumber - incorrectBlockNumber;
         jdbcTemplate.update("update record_file set index = index + ?", offset);
     }
 
