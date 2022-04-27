@@ -95,7 +95,7 @@ class RecordItemTest {
                 .setBody(TRANSACTION_BODY)
                 .setSigMap(SIGNATURE_MAP)
                 .build();
-        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD, 0);
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
         assertRecordItem(transaction, recordItem);
     }
 
@@ -110,8 +110,11 @@ class RecordItemTest {
                 .setSigMap(SIGNATURE_MAP)
                 .build();
 
-        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transactionFromProto,
-                TRANSACTION_RECORD.toByteArray(), 0);
+        RecordItem recordItem = RecordItem.builder()
+                .hapiVersion(DEFAULT_HAPI_VERSION)
+                .transactionBytes(transactionFromProto)
+                .recordBytes(TRANSACTION_RECORD.toByteArray())
+                .build();
         assertRecordItem(expectedTransaction, recordItem);
     }
 
@@ -121,7 +124,7 @@ class RecordItemTest {
                 .setBodyBytes(TRANSACTION_BODY.toByteString())
                 .setSigMap(SIGNATURE_MAP)
                 .build();
-        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD, 0);
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
         assertRecordItem(transaction, recordItem);
     }
 
@@ -130,7 +133,7 @@ class RecordItemTest {
         Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
                 .build();
-        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD, 0);
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
         assertRecordItem(transaction, recordItem);
     }
 
@@ -152,7 +155,11 @@ class RecordItemTest {
     }
 
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {
-        assertThatThrownBy(() -> new RecordItem(DEFAULT_HAPI_VERSION, transactionBytes, recordBytes, 0))
+        assertThatThrownBy(() -> RecordItem.builder()
+                .hapiVersion(DEFAULT_HAPI_VERSION)
+                .transactionBytes(transactionBytes)
+                .recordBytes(recordBytes)
+                .build())
                 .isInstanceOf(ProtobufException.class)
                 .hasMessage(expectedMessage);
     }

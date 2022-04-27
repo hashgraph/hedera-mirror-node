@@ -30,6 +30,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Objects;
 import java.util.Set;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -40,6 +43,8 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 @Log4j2
 @Value
 public class RecordItem implements StreamItem {
@@ -64,12 +69,12 @@ public class RecordItem implements StreamItem {
     @Getter(lazy = true)
     private EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
 
-    private final Integer transactionBlockIndex;
+    private final Integer transactionIndex;
 
     /**
      * Constructs RecordItem from serialized transactionBytes and recordBytes.
      */
-    public RecordItem(Version hapiVersion, byte[] transactionBytes, byte[] recordBytes, Integer transactionBlockIndex) {
+    public RecordItem(Version hapiVersion, byte[] transactionBytes, byte[] recordBytes, Integer transactionIndex) {
         try {
             transaction = Transaction.parseFrom(transactionBytes);
         } catch (InvalidProtocolBufferException e) {
@@ -86,14 +91,13 @@ public class RecordItem implements StreamItem {
         this.hapiVersion = hapiVersion;
         this.transactionBytes = transactionBytes;
         this.recordBytes = recordBytes;
-        this.transactionBlockIndex = transactionBlockIndex;
+        this.transactionIndex = transactionIndex;
     }
 
     // Used only in tests
     // There are many brittle RecordItemParser*Tests which rely on bytes being null. Those tests need to be fixed,
     // then this function can be removed.
-    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord record,
-                      Integer transactionBlockIndex) {
+    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord record) {
         Objects.requireNonNull(transaction, "transaction is required");
         Objects.requireNonNull(record, "record is required");
 
@@ -104,12 +108,12 @@ public class RecordItem implements StreamItem {
         this.record = record;
         transactionBytes = transaction.toByteArray();
         recordBytes = record.toByteArray();
-        this.transactionBlockIndex = transactionBlockIndex;
+        transactionIndex = null;
     }
 
     // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET
     public RecordItem(Transaction transaction, TransactionRecord record) {
-        this(RecordFile.HAPI_VERSION_NOT_SET, transaction, record, null);
+        this(RecordFile.HAPI_VERSION_NOT_SET, transaction, record);
     }
 
     private static TransactionBodyAndSignatureMap parseTransactionBodyAndSignatureMap(Transaction transaction) {

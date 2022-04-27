@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -87,12 +88,13 @@ abstract class RecordFileReaderTest {
                     assertThat(timestamps).doesNotHaveDuplicates().isSorted();
 
                     List<Integer> transactionBlockIndexes = actual.getItems()
-                            .map(RecordItem::getTransactionBlockIndex)
+                            .map(RecordItem::getTransactionIndex)
                             .collectList()
                             .block();
                     assertThat(transactionBlockIndexes).first().isEqualTo(0);
-                    assertThat(transactionBlockIndexes).last().isEqualTo(recordFile.getCount().intValue() - 1);
-                    assertThat(timestamps).doesNotHaveDuplicates().isSorted();
+                    assertThat(transactionBlockIndexes).isEqualTo(IntStream.range(0, recordFile.getCount()
+                            .intValue()).boxed().collect(Collectors.toList()));
+                    assertThat(transactionBlockIndexes).doesNotHaveDuplicates().isSorted();
                 });
     }
 
