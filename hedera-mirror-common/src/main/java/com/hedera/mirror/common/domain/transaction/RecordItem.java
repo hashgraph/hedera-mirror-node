@@ -43,8 +43,8 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
 @Value
 public class RecordItem implements StreamItem {
@@ -177,5 +177,31 @@ public class RecordItem implements StreamItem {
     private static class TransactionBodyAndSignatureMap {
         private TransactionBody transactionBody;
         private SignatureMap signatureMap;
+    }
+
+    // Necessary since Lombok doesn't use our setters for builders
+    public static class RecordItemBuilder<C, B extends RecordItem.RecordItemBuilder> {
+        public B transactionBytes(byte[] transactionBytes) {
+            try {
+                transaction = Transaction.parseFrom(transactionBytes);
+            } catch (InvalidProtocolBufferException e) {
+                throw new ProtobufException(BAD_TRANSACTION_BYTES_MESSAGE, e);
+            }
+            transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
+            transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());
+            this.transactionBytes = transactionBytes;
+            return (B) this;
+        }
+
+        public B recordBytes(byte[] recordBytes) {
+            try {
+                record = TransactionRecord.parseFrom(recordBytes);
+            } catch (InvalidProtocolBufferException e) {
+                throw new ProtobufException(BAD_RECORD_BYTES_MESSAGE, e);
+            }
+
+            this.recordBytes = recordBytes;
+            return (B) this;
+        }
     }
 }
