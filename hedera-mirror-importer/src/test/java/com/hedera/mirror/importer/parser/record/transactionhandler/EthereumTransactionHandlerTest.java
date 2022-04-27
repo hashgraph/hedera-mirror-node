@@ -21,9 +21,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -41,6 +43,7 @@ import org.mockito.Mock;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 
@@ -140,9 +143,9 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         when(entityIdService.lookup(contractId)).thenReturn(expectedEntityId);
 
-        doReturn(null).when(ethereumTransactionParser).decode(any());
+        doThrow(InvalidDatasetException.class).when(ethereumTransactionParser).decode(any());
 
-        transactionHandler.getEntity(recordItem);
+        assertThatThrownBy(() -> transactionHandler.getEntity(recordItem)).isInstanceOf(InvalidDatasetException.class);
 
         // verify entityListener.onEthereumTransaction never called
         verify(entityListener, never()).onEthereumTransaction(any());
