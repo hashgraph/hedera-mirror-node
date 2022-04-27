@@ -529,9 +529,25 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(transactionRepository.findAll())
-                .containsExactly(firstTransaction, secondTransaction, thirdTransaction)
+                .containsExactlyInAnyOrder(firstTransaction, secondTransaction, thirdTransaction);
+
+        assertThat(transactionRepository.findById(firstTransaction.getConsensusTimestamp()))
+                .get()
+                .isNotNull()
                 .extracting(Transaction::getIndex)
-                .containsExactly(0, 1, 2);
+                .isEqualTo(0);
+
+        assertThat(transactionRepository.findById(secondTransaction.getConsensusTimestamp()))
+                .get()
+                .isNotNull()
+                .extracting(Transaction::getIndex)
+                .isEqualTo(1);
+
+        assertThat(transactionRepository.findById(thirdTransaction.getConsensusTimestamp()))
+                .get()
+                .isNotNull()
+                .extracting(Transaction::getIndex)
+                .isEqualTo(2);
     }
 
     @Test
