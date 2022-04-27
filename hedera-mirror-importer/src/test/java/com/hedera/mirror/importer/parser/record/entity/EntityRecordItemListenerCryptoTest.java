@@ -1087,6 +1087,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .setSpender(spender2)
                 .setTokenId(tokenId)
                 .build());
+
+        // duplicate nft allowance
+        nftAllowances.add(nftAllowances.get(nftAllowances.size() - 1));
+
         // serial number 2's allowance is granted twice, the allowance should be granted to spender2 since it appears
         // after the nft allowance to spender1
         expectedNfts.add(nft2.toBuilder().modifiedTimestamp(timestamp).spender(EntityId.of(spender2)).build());

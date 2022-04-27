@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -29,20 +28,19 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -50,10 +48,12 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
@@ -61,14 +61,57 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
 
     private Map<ByteString, EntityId> aliasMap;
 
-    @Captor
-    private ArgumentCaptor<NftAllowance> nftAllowanceCaptor;
+    private long consensusTimestamp;
+
+    private CryptoAllowance expectedCryptoAllowance;
+
+    private Nft expectedNft;
+
+    private NftAllowance expectedNftAllowance;
+
+    private TokenAllowance expectedTokenAllowance;
 
     private RecordParserProperties recordParserProperties;
+
+    private EntityId payerAccountId;
 
     @BeforeEach
     void beforeEach() {
         aliasMap = new HashMap<>();
+
+        consensusTimestamp = DomainUtils.timestampInNanosMax(recordItemBuilder.timestamp());
+        payerAccountId = EntityId.of(recordItemBuilder.accountId());
+        expectedCryptoAllowance = CryptoAllowance.builder()
+                .owner(recordItemBuilder.accountId().getAccountNum())
+                .payerAccountId(payerAccountId)
+                .spender(recordItemBuilder.accountId().getAccountNum()).amount(100L)
+                .timestampRange(Range.atLeast(consensusTimestamp))
+                .build();
+        var nftTokenId = recordItemBuilder.tokenId().getTokenNum();
+        expectedNft = Nft.builder()
+                .id(new NftId(1L, EntityId.of(nftTokenId, EntityType.TOKEN)))
+                .accountId(EntityId.of(recordItemBuilder.accountId()))
+                .delegatingSpender(EntityId.EMPTY)
+                .modifiedTimestamp(consensusTimestamp)
+                .spender(EntityId.of(recordItemBuilder.accountId()))
+                .build();
+        expectedNftAllowance = NftAllowance.builder()
+                .approvedForAll(true)
+                .owner(expectedNft.getAccountId().getId())
+                .payerAccountId(payerAccountId)
+                .spender(expectedNft.getSpender().getId())
+                .timestampRange(Range.atLeast(consensusTimestamp))
+                .tokenId(nftTokenId)
+                .build();
+        expectedTokenAllowance = TokenAllowance.builder()
+                .amount(200L)
+                .owner(recordItemBuilder.accountId().getAccountNum())
+                .payerAccountId(payerAccountId)
+                .spender(recordItemBuilder.accountId().getAccountNum())
+                .timestampRange(Range.atLeast(consensusTimestamp))
+                .tokenId(recordItemBuilder.tokenId().getTokenNum())
+                .build();
+
         when(entityIdService.lookup(any(AccountID.class))).thenAnswer(invocation -> {
             var accountId = invocation.getArgument(0, AccountID.class);
             if (accountId == AccountID.getDefaultInstance()) {
@@ -118,25 +161,34 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
 
     @Test
     void updateTransactionSuccessful() {
-        var recordItem = recordItemBuilder.cryptoApproveAllowance().build();
-        var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
+        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+                .transactionBody(this::customizeTransactionBody)
+                .transactionBodyWrapper(this::setTransactionPayer)
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
+                .build();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(consensusTimestamp)).get();
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertAllowances(recordItem, owner -> assertThat(owner).isPositive());
+        assertAllowances(null);
     }
 
     @Test
     void updateTransactionSuccessfulWithImplicitOwner() {
-        var recordItem = recordItemBuilder.cryptoApproveAllowance().transactionBody(b -> {
-            b.getCryptoAllowancesBuilderList().forEach(builder -> builder.clearOwner());
-            b.getNftAllowancesBuilderList().forEach(builder -> builder.clearOwner());
-            b.getTokenAllowancesBuilderList().forEach(builder -> builder.clearOwner());
-        }).build();
+        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+                .transactionBody(this::customizeTransactionBody)
+                .transactionBody(b -> {
+                    b.getCryptoAllowancesBuilderList().forEach(builder -> builder.clearOwner());
+                    b.getNftAllowancesBuilderList().forEach(builder -> builder.clearOwner());
+                    b.getTokenAllowancesBuilderList().forEach(builder -> builder.clearOwner());
+                })
+                .transactionBodyWrapper(this::setTransactionPayer)
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
+                .build();
         var effectiveOwner = recordItem.getPayerAccountId().getId();
-        var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(consensusTimestamp)).get();
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertAllowances(recordItem, owner -> assertThat(owner).isEqualTo(effectiveOwner));
+        assertAllowances(effectiveOwner);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -175,54 +227,94 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var ownerEntityId = EntityId.of(recordItemBuilder.accountId());
         aliasMap.put(alias, ownerEntityId);
-        var recordItem = recordItemBuilder.cryptoApproveAllowance().transactionBody(b -> {
-            b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-            b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-            b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-        }).build();
+        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+                .transactionBody(this::customizeTransactionBody)
+                .transactionBody(b -> {
+                    b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                })
+                .transactionBodyWrapper(this::setTransactionPayer)
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
+                .build();
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertAllowances(recordItem, owner -> assertThat(owner).isEqualTo(ownerEntityId.getId()));
+        assertAllowances(ownerEntityId.getId());
     }
 
-    private void assertAllowances(RecordItem recordItem, Consumer<Long> assertOwner) {
-        var timestamp = recordItem.getConsensusTimestamp();
-        verify(entityListener).onCryptoAllowance(assertArg(t -> assertThat(t)
-                .isNotNull()
-                .satisfies(a -> assertThat(a.getAmount()).isPositive())
-                .satisfies(a -> assertOwner.accept(a.getOwner()))
-                .returns(recordItem.getPayerAccountId(), CryptoAllowance::getPayerAccountId)
-                .returns(timestamp, CryptoAllowance::getTimestampLower)));
+    private void assertAllowances(Long effectiveOwner) {
+        if (effectiveOwner != null) {
+            expectedCryptoAllowance.setOwner(effectiveOwner);
+            expectedNft.setAccountId(EntityId.of(effectiveOwner, EntityType.ACCOUNT));
+            expectedNftAllowance.setOwner(effectiveOwner);
+            expectedTokenAllowance.setOwner(effectiveOwner);
+        }
 
-        verify(entityListener, times(3)).onNftAllowance(nftAllowanceCaptor.capture());
-        assertThat(nftAllowanceCaptor.getAllValues())
-                .allSatisfy(n -> assertAll(
-                        () -> assertOwner.accept(n.getOwner()),
-                        () -> assertThat(n.getSpender()).isPositive(),
-                        () -> assertThat(n.getTokenId()).isPositive(),
-                        () -> assertThat(n.getPayerAccountId()).isEqualTo(recordItem.getPayerAccountId()),
-                        () -> assertThat(n.getTimestampRange()).isEqualTo(Range.atLeast(timestamp))
-                ))
-                .extracting("approvedForAll")
-                .containsExactlyInAnyOrder(false, true, true);
+        verify(entityListener, times(1)).onCryptoAllowance(assertArg(t -> assertEquals(expectedCryptoAllowance, t)));
+        verify(entityListener, times(1)).onNft(assertArg(t -> assertEquals(expectedNft, t)));
+        verify(entityListener, times(1)).onNftAllowance(assertArg(t -> assertEquals(expectedNftAllowance, t)));
+        verify(entityListener, times(1)).onTokenAllowance(assertArg(t -> assertEquals(expectedTokenAllowance, t)));
+    }
 
-        verify(entityListener, times(4)).onNft(assertArg(t -> assertThat(t)
-                .isNotNull()
-                .satisfies(a -> assertOwner.accept(a.getAccountId().getId()))
-                .satisfies(a -> assertThat(a.getDelegatingSpender()).isEqualTo(EntityId.EMPTY))
-                .returns(timestamp, Nft::getModifiedTimestamp)
-                .satisfies(a -> assertThat(a.getId().getSerialNumber()).isPositive())
-                .satisfies(a -> assertThat(a.getId().getTokenId()).isNotNull())
-                .satisfies(a -> assertThat(a.getSpender()).isNotNull())));
+    private void customizeTransactionBody(CryptoApproveAllowanceTransactionBody.Builder builder) {
+        builder.clear();
 
-        verify(entityListener).onTokenAllowance(assertArg(t -> assertThat(t)
-                .isNotNull()
-                .satisfies(a -> assertThat(a.getAmount()).isPositive())
-                .satisfies(a -> assertOwner.accept(a.getOwner()))
-                .satisfies(a -> assertThat(a.getSpender()).isNotNull())
-                .satisfies(a -> assertThat(a.getTokenId()).isPositive())
-                .returns(recordItem.getPayerAccountId(), TokenAllowance::getPayerAccountId)
-                .returns(timestamp, TokenAllowance::getTimestampLower)));
+        // duplicate with different amount
+        builder.addCryptoAllowances(com.hederahashgraph.api.proto.java.CryptoAllowance.newBuilder()
+                .setAmount(expectedCryptoAllowance.getAmount() - 10)
+                .setOwner(AccountID.newBuilder().setAccountNum(expectedCryptoAllowance.getOwner()))
+                .setSpender(AccountID.newBuilder().setAccountNum(expectedCryptoAllowance.getSpender()))
+        );
+        // the last one is honored
+        builder.addCryptoAllowances(com.hederahashgraph.api.proto.java.CryptoAllowance.newBuilder()
+                .setAmount(expectedCryptoAllowance.getAmount())
+                .setOwner(AccountID.newBuilder().setAccountNum(expectedCryptoAllowance.getOwner()))
+                .setSpender(AccountID.newBuilder().setAccountNum(expectedCryptoAllowance.getSpender()))
+        );
+
+        // duplicate nft allowance by serial
+        builder.addNftAllowances(com.hederahashgraph.api.proto.java.NftAllowance.newBuilder()
+                .setOwner(AccountID.newBuilder().setAccountNum(expectedNft.getAccountId().getEntityNum()))
+                .addSerialNumbers(expectedNft.getId().getSerialNumber())
+                .setSpender(AccountID.newBuilder().setAccountNum(expectedNft.getSpender().getEntityNum() + 1))
+                .setTokenId(TokenID.newBuilder().setTokenNum(expectedNft.getId().getTokenId().getEntityNum()))
+        );
+        // duplicate nft approved for all allowance, approved for all flag is flipped from the last one
+        builder.addNftAllowances(com.hederahashgraph.api.proto.java.NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(!expectedNftAllowance.isApprovedForAll()))
+                .setOwner(AccountID.newBuilder().setAccountNum(expectedNft.getAccountId().getEntityNum()))
+                .addSerialNumbers(expectedNft.getId().getSerialNumber())
+                .setSpender(AccountID.newBuilder().setAccountNum(expectedNft.getSpender().getEntityNum()))
+                .setTokenId(TokenID.newBuilder().setTokenNum(expectedNft.getId().getTokenId().getEntityNum()))
+        );
+        // the last one is honored
+        builder.addNftAllowances(com.hederahashgraph.api.proto.java.NftAllowance.newBuilder()
+                .setApprovedForAll(BoolValue.of(expectedNftAllowance.isApprovedForAll()))
+                .setOwner(AccountID.newBuilder().setAccountNum(expectedNft.getAccountId().getEntityNum()))
+                .addSerialNumbers(expectedNft.getId().getSerialNumber())
+                .setSpender(AccountID.newBuilder().setAccountNum(expectedNft.getSpender().getEntityNum()))
+                .setTokenId(TokenID.newBuilder().setTokenNum(expectedNft.getId().getTokenId().getEntityNum()))
+        );
+
+        // duplicate token allowance
+        builder.addTokenAllowances(com.hederahashgraph.api.proto.java.TokenAllowance.newBuilder()
+                .setAmount(expectedTokenAllowance.getAmount() - 10)
+                .setOwner(AccountID.newBuilder().setAccountNum(expectedTokenAllowance.getOwner()))
+                .setSpender(AccountID.newBuilder().setAccountNum(expectedTokenAllowance.getSpender()))
+                .setTokenId(TokenID.newBuilder().setTokenNum(expectedTokenAllowance.getTokenId()))
+        );
+        // the last one is honored
+        builder.addTokenAllowances(com.hederahashgraph.api.proto.java.TokenAllowance.newBuilder()
+                .setAmount(expectedTokenAllowance.getAmount())
+                .setOwner(AccountID.newBuilder().setAccountNum(expectedTokenAllowance.getOwner()))
+                .setSpender(AccountID.newBuilder().setAccountNum(expectedTokenAllowance.getSpender()))
+                .setTokenId(TokenID.newBuilder().setTokenNum(expectedTokenAllowance.getTokenId()))
+        );
+    }
+
+    private void setTransactionPayer(TransactionBody.Builder builder) {
+        builder.getTransactionIDBuilder()
+                .setAccountID(AccountID.newBuilder().setAccountNum(payerAccountId.getEntityNum()));
     }
 }
