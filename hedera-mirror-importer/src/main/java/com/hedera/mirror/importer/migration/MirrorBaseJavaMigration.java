@@ -69,11 +69,12 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
      * @return whether it should be skipped or not
      */
     protected boolean skipMigration(Configuration configuration) {
-        if (!hasMinimumRequiredVersion(configuration)) {
+        MigrationVersion current = getVersion();
+
+        if (current == null && !hasMinimumRequiredVersion(configuration)) {
             return true;
         }
 
-        MigrationVersion current = getVersion();
         MigrationVersion baselineVersion = configuration.getBaselineVersion();
 
         // Don't skip repeatable migration
@@ -98,29 +99,12 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
             return true;
         }
 
-        MigrationVersion highestVersion = getHighestVersionFromNonRepeatableMigrations(configuration.getJavaMigrations());
-        if (highestVersion == null) {
+        MigrationVersion targetVersion = configuration.getTarget();
+        if (targetVersion == null) {
             return false;
         }
 
-        // if the highest version from a non repeatable migration
-        // is lower than the minimum required version, the migration is skipped.
-        return highestVersion.isNewerThan(minimumRequiredVersion.getVersion());
-    }
-
-    private MigrationVersion getHighestVersionFromNonRepeatableMigrations(JavaMigration[] javaMigrations) {
-        MigrationVersion highestVersion = null;
-        for (int i = 0; i < javaMigrations.length; i++) {
-            final MigrationVersion version = javaMigrations[i].getVersion();
-            if (version == null) {
-                continue ;
-            }
-
-            if (highestVersion == null || highestVersion.isNewerThan(version.getVersion())) {
-                highestVersion = version;
-            }
-        }
-        return highestVersion;
+        return minimumRequiredVersion.compareTo(targetVersion) <= 0;
     }
 
     @Override
