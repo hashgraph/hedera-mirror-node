@@ -20,14 +20,16 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.MirrorProperties;
+
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import javax.inject.Named;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
@@ -46,22 +48,18 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
     private static final long CORRECT_BLOCK_NUMBER = 420L;
 
+    private final RecordFileRepository recordFileRepository;
+
     @Override
     protected void doMigrate() {
         if (shouldNotMigrateOnCurrentNetwork()) {
             return ;
         }
 
-        Long recordFileBlockNumber = getRecordFileByConsensusEnd(CORRECT_CONSENSUS_END);
-        if (recordFileBlockNumber == null) {
-            return ;
-        }
-
-        if (CORRECT_BLOCK_NUMBER == recordFileBlockNumber) {
-            return ;
-        }
-
-        updateRecordFilesBlockNumber(CORRECT_BLOCK_NUMBER, recordFileBlockNumber);
+        recordFileRepository.findById(CORRECT_CONSENSUS_END)
+                .map(RecordFile::getIndex)
+                .filter(blockNumber -> blockNumber != CORRECT_BLOCK_NUMBER)
+                .ifPresent(this::updateRecordFilesBlockNumber);
     }
 
     private boolean shouldNotMigrateOnCurrentNetwork() {
@@ -69,19 +67,9 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
         return currentNetwork != TESTNET && currentNetwork != MAINNET;
     }
 
-    private void updateRecordFilesBlockNumber(long correctBlockNumber, long incorrectBlockNumber) {
-        jdbcTemplate.execute("drop index record_file__index");
-        long offset = correctBlockNumber - incorrectBlockNumber;
+    private void updateRecordFilesBlockNumber(long incorrectBlockNumber) {
+        long offset = CORRECT_BLOCK_NUMBER - incorrectBlockNumber;
         jdbcTemplate.update("update record_file set index = index + ?", offset);
-        jdbcTemplate.execute("create unique index record_file__index on record_file(index)");
-    }
-
-    private Long getRecordFileByConsensusEnd(long consensusEnd) {
-        AtomicReference<Long> atomicReference = new AtomicReference<>();
-        jdbcTemplate.query("select index from record_file where consensus_end = ?",rse -> {
-            atomicReference.set(rse.getLong(1));
-        },consensusEnd);
-        return atomicReference.get();
     }
 
     @Override
