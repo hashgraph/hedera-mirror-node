@@ -64,10 +64,12 @@ public class RecordItem implements StreamItem {
     @Getter(lazy = true)
     private EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
 
+    private final Integer transactionBlockIndex;
+
     /**
      * Constructs RecordItem from serialized transactionBytes and recordBytes.
      */
-    public RecordItem(Version hapiVersion, byte[] transactionBytes, byte[] recordBytes) {
+    public RecordItem(Version hapiVersion, byte[] transactionBytes, byte[] recordBytes, Integer transactionBlockIndex) {
         try {
             transaction = Transaction.parseFrom(transactionBytes);
         } catch (InvalidProtocolBufferException e) {
@@ -84,12 +86,14 @@ public class RecordItem implements StreamItem {
         this.hapiVersion = hapiVersion;
         this.transactionBytes = transactionBytes;
         this.recordBytes = recordBytes;
+        this.transactionBlockIndex = transactionBlockIndex;
     }
 
     // Used only in tests
     // There are many brittle RecordItemParser*Tests which rely on bytes being null. Those tests need to be fixed,
     // then this function can be removed.
-    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord record) {
+    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord record,
+                      Integer transactionBlockIndex) {
         Objects.requireNonNull(transaction, "transaction is required");
         Objects.requireNonNull(record, "record is required");
 
@@ -100,11 +104,12 @@ public class RecordItem implements StreamItem {
         this.record = record;
         transactionBytes = transaction.toByteArray();
         recordBytes = record.toByteArray();
+        this.transactionBlockIndex = transactionBlockIndex;
     }
 
     // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET
     public RecordItem(Transaction transaction, TransactionRecord record) {
-        this(RecordFile.HAPI_VERSION_NOT_SET, transaction, record);
+        this(RecordFile.HAPI_VERSION_NOT_SET, transaction, record, null);
     }
 
     private static TransactionBodyAndSignatureMap parseTransactionBodyAndSignatureMap(Transaction transaction) {

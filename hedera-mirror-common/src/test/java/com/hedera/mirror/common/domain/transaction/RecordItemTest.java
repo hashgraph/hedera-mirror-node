@@ -95,7 +95,7 @@ class RecordItemTest {
                 .setBody(TRANSACTION_BODY)
                 .setSigMap(SIGNATURE_MAP)
                 .build();
-        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD, 0);
         assertRecordItem(transaction, recordItem);
     }
 
@@ -111,7 +111,7 @@ class RecordItemTest {
                 .build();
 
         RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transactionFromProto,
-                TRANSACTION_RECORD.toByteArray());
+                TRANSACTION_RECORD.toByteArray(), 0);
         assertRecordItem(expectedTransaction, recordItem);
     }
 
@@ -121,7 +121,7 @@ class RecordItemTest {
                 .setBodyBytes(TRANSACTION_BODY.toByteString())
                 .setSigMap(SIGNATURE_MAP)
                 .build();
-        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD, 0);
         assertRecordItem(transaction, recordItem);
     }
 
@@ -130,7 +130,7 @@ class RecordItemTest {
         Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
                 .build();
-        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD);
+        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction, TRANSACTION_RECORD, 0);
         assertRecordItem(transaction, recordItem);
     }
 
@@ -152,7 +152,7 @@ class RecordItemTest {
     }
 
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {
-        assertThatThrownBy(() -> new RecordItem(DEFAULT_HAPI_VERSION, transactionBytes, recordBytes))
+        assertThatThrownBy(() -> new RecordItem(DEFAULT_HAPI_VERSION, transactionBytes, recordBytes, 0))
                 .isInstanceOf(ProtobufException.class)
                 .hasMessage(expectedMessage);
     }
