@@ -21,27 +21,25 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 abstract class AbstractEthereumTransactionParserTest {
     protected static EthereumTransactionParser ethereumTransactionParser;
     @Resource
-    private final DomainBuilder domainBuilder = new DomainBuilder();
+    protected final DomainBuilder domainBuilder = new DomainBuilder();
 
     protected abstract byte[] getTransactionBytes();
 
     protected abstract void validateEthereumTransaction(EthereumTransaction ethereumTransaction);
 
     @Test
-    public void parse() {
-        var ethereumTransaction = ethereumTransactionParser.parse(getTransactionBytes());
+    public void decode() {
+        var ethereumTransaction = ethereumTransactionParser.decode(getTransactionBytes());
         assertThat(ethereumTransaction)
                 .isNotNull()
                 .satisfies(t -> assertThat(t.getChainId()).isNotEmpty());
@@ -50,12 +48,11 @@ abstract class AbstractEthereumTransactionParserTest {
     }
 
     @Test
-    public void parseInvalidBytes() {
+    public void encode() {
         var ethereumTransaction = domainBuilder.ethereumTransaction()
                 .get();
-        ethereumTransaction.setSignatureR(new byte[0]);
 
-        assertThrows(InvalidDatasetException.class,
-                () -> ethereumTransactionParser.retrievePublicKey(ethereumTransaction));
+        assertThat(ethereumTransactionParser.encode(ethereumTransaction))
+                .isNotEmpty();
     }
 }

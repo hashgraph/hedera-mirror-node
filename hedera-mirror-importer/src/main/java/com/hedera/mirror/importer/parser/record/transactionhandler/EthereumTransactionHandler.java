@@ -27,8 +27,14 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
+import java.math.BigInteger;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
+import org.web3j.crypto.ECDSASignature;
+import org.web3j.crypto.Hash;
+import org.web3j.crypto.Sign;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -37,10 +43,12 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 
+@Log4j2
 @Named
 @RequiredArgsConstructor
 class EthereumTransactionHandler implements TransactionHandler {
@@ -93,7 +101,7 @@ class EthereumTransactionHandler implements TransactionHandler {
 
         var body = recordItem.getTransactionBody().getEthereumTransaction();
         var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
-        var ethereumTransaction = ethereumTransactionParser.parse(ethereumDataBytes);
+        var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
         if (ethereumTransaction == null) {
             return null;
         }
@@ -128,7 +136,7 @@ class EthereumTransactionHandler implements TransactionHandler {
 
         // persist newly created Contract since no ContractCreate is exposed
         if (contractId != null) {
-            var publicKey = ethereumTransactionParser.retrievePublicKey(ethereumTransaction);
+            var publicKey = retrievePublicKey(ethereumTransaction);
             var publicKeyBytes = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(publicKey)).build()
                     .toByteArray();
 
@@ -136,7 +144,6 @@ class EthereumTransactionHandler implements TransactionHandler {
 //                    .autoRenewPeriod(1800L)
                     .createdTimestamp(consensusTimestamp)
                     .deleted(false)
-//                    .expirationTimestamp(timestamp + 30_000_000L)
                     .fileId(ethereumTransaction.getCallDataId())
                     .id(contractId.getId())
                     .key(publicKeyBytes)
@@ -150,6 +157,27 @@ class EthereumTransactionHandler implements TransactionHandler {
                     .type(CONTRACT)
                     .build();
             entityListener.onContract(contract);
+        }
+    }
+
+    private byte[] retrievePublicKey(EthereumTransaction ethereumTransaction) {
+        try {
+            var publicKey = Sign.recoverFromSignature(
+                    ethereumTransaction.getRecoveryId().byteValue(),
+                    new ECDSASignature(
+                            new BigInteger(1, ethereumTransaction.getSignatureR()),
+                            new BigInteger(1, ethereumTransaction.getSignatureS())),
+                    Hash.sha3(ethereumTransactionParser.encode(ethereumTransaction)));
+
+            // compress
+            String publicKeyYPrefix = publicKey.testBit(0) ? "03" : "02";
+            String publicKeyHex = publicKey.toString(16);
+            String publicKeyX = publicKeyHex.substring(0, 64);
+            var compressedKey = publicKeyYPrefix + publicKeyX;
+
+            return Hex.decodeHex(compressedKey);
+        } catch (Exception ex) {
+            throw new InvalidDatasetException("Unable to extract publicKey");
         }
     }
 }

@@ -20,16 +20,12 @@ package com.hedera.mirror.common.domain.transaction;
  * ‍
  */
 
-import com.esaulpaugh.headlong.rlp.RLPEncoder;
-import com.esaulpaugh.headlong.util.Integers;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.math.BigInteger;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.Transient;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -122,53 +118,5 @@ public class EthereumTransaction implements Persistable<Long> {
     @Override
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
-    }
-
-    /**
-     * RLP Encode ethereum transaction. Logic differs per Eip155, between Eip155 and Eip1559 and after Eip1559
-     *
-     * @return encoded message
-     */
-    @JsonIgnore
-    @Transient
-    public byte[] getRLPEncodedMessage() {
-        switch (getType()) {
-            case 0:
-                return (getChainId() != null && getChainId().length > 0)
-                        ? RLPEncoder.encodeAsList(
-                        Integers.toBytes(getNonce()),
-                        getGasPrice(),
-                        Integers.toBytes(getGasLimit()),
-                        getToAddress(),
-                        Integers.toBytesUnsigned(new BigInteger(getValue())),
-                        getCallData(),
-                        getChainId(),
-                        Integers.toBytes(0),
-                        Integers.toBytes(0))
-                        : RLPEncoder.encodeAsList(
-                        Integers.toBytes(getNonce()),
-                        getGasPrice(),
-                        Integers.toBytes(getGasLimit()),
-                        getToAddress(),
-                        Integers.toBytesUnsigned(new BigInteger(getValue())),
-                        getCallData());
-            case 2:
-                return RLPEncoder.encodeSequentially(
-                        Integers.toBytes(2),
-                        new Object[] {
-                                getChainId(),
-                                Integers.toBytes(getNonce()),
-                                getMaxPriorityFeePerGas(),
-                                getMaxFeePerGas(),
-                                Integers.toBytes(getGasLimit()),
-                                getToAddress(),
-                                Integers.toBytesUnsigned(new BigInteger(getValue())),
-                                getCallData(),
-                                new Object[0]
-                        });
-            case 1:
-                throw new IllegalArgumentException("Unsupported transaction type " + getType());
-        }
-        return new byte[0];
     }
 }

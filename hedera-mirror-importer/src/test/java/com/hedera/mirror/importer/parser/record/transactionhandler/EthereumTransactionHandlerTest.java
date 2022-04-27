@@ -28,13 +28,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.esaulpaugh.headlong.rlp.RLPEncoder;
-import com.esaulpaugh.headlong.util.Integers;
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import lombok.SneakyThrows;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
@@ -45,13 +46,16 @@ import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionPars
 
 class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
+    static final String LONDON_RAW_TX =
+            "02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
+
     @Mock(lenient = true)
     protected EthereumTransactionParser ethereumTransactionParser;
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        doReturn(domainBuilder.ethereumTransaction().get()).when(ethereumTransactionParser).parse(any());
-        doReturn(recordItemBuilder.bytes(32).toByteArray()).when(ethereumTransactionParser).retrievePublicKey(any());
+        doReturn(domainBuilder.ethereumTransaction().get()).when(ethereumTransactionParser).decode(any());
+        doReturn(recordItemBuilder.bytes(32).toByteArray()).when(ethereumTransactionParser).encode(any());
         return new EthereumTransactionHandler(entityIdService, new EntityProperties(), entityListener,
                 ethereumTransactionParser);
     }
@@ -74,9 +78,32 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         return null;
     }
 
+    @SneakyThrows
     @Test
     void testGetEntityIdOnCreate() {
-        var recordItem = recordItemBuilder.ethereumTransaction(true, contractId).build();
+        // given LONDON_RAW_TX matching components
+        doReturn(Hex.decode(
+                "02ed82012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c0")).when(ethereumTransactionParser)
+                .encode(any());
+
+        doReturn(domainBuilder.ethereumTransaction()
+                .customize(x -> x
+                        .callData(Hex.decode("123456"))
+                        .chainId(Hex.decode("012a"))
+                        .gasLimit(98304L)
+                        .maxFeePerGas(Hex.decode("2f"))
+                        .maxPriorityFeePerGas(Hex.decode("2f"))
+                        .nonce(2L)
+                        .recoveryId(1)
+                        .signatureR(Hex.decode("df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479"))
+                        .signatureS(Hex.decode("1aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66"))
+                        .toAddress(Hex.decode("7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181"))
+                        .value(Hex.decode("0de0b6b3a7640000")))
+                .get()).when(ethereumTransactionParser).decode(any());
+
+        var recordItem = recordItemBuilder.ethereumTransaction(true)
+                .record(x -> x.setEthereumHash(ByteString.copyFrom(Hex.decode(LONDON_RAW_TX))))
+                .build();
         ContractID contractId = recordItem.getRecord().getContractCreateResult().getContractID();
         EntityId expectedEntityId = EntityId.of(contractId);
 
@@ -90,7 +117,9 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Test
     void testGetEntityIdOnCall() {
-        var recordItem = recordItemBuilder.ethereumTransaction(false, contractId).build();
+        var recordItem = recordItemBuilder.ethereumTransaction(false)
+                .record(x -> x.setEthereumHash(ByteString.copyFrom(Hex.decode(LONDON_RAW_TX))))
+                .build();
         ContractID contractId = recordItem.getRecord().getContractCallResult().getContractID();
         EntityId expectedEntityId = EntityId.of(contractId);
 
@@ -104,16 +133,14 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Test
     void testGetEntityIdNullEthereumTransaction() {
-        var recordItem = recordItemBuilder.ethereumTransaction(true, contractId,
-                RLPEncoder.encodeSequentially(
-                        Integers.toBytes(2),
-                        new Object[] {})).build();
+        var recordItem = recordItemBuilder.ethereumTransaction(true)
+                .build();
         ContractID contractId = recordItem.getRecord().getContractCreateResult().getContractID();
         EntityId expectedEntityId = EntityId.of(contractId);
 
         when(entityIdService.lookup(contractId)).thenReturn(expectedEntityId);
 
-        doReturn(null).when(ethereumTransactionParser).parse(any());
+        doReturn(null).when(ethereumTransactionParser).decode(any());
 
         transactionHandler.getEntity(recordItem);
 

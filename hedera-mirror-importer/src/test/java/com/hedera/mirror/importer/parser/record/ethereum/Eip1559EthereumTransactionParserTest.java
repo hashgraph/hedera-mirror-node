@@ -37,6 +37,8 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
     public static final String LONDON_RAW_TX =
             "02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
 
+    public static final String LONDON_PK = "033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d";
+
     @BeforeAll
     static void beforeAll() {
         ethereumTransactionParser = new Eip1559EthereumTransactionParser();
@@ -49,36 +51,36 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
     }
 
     @Test
-    void parseLegacyType() {
+    void decodeLegacyType() {
         var ethereumTransactionBytes = RLPEncoder.encodeSequentially(
                 Integers.toBytes(1),
                 new Object[] {});
 
-        var ethereumTransaction = ethereumTransactionParser.parse(ethereumTransactionBytes);
+        var ethereumTransaction = ethereumTransactionParser.decode(ethereumTransactionBytes);
 
         assertThat(ethereumTransaction)
                 .isNull();
     }
 
     @Test
-    void parseNonListRlpItem() {
+    void decodeNonListRlpItem() {
         var ethereumTransactionBytes = RLPEncoder.encodeSequentially(
                 Integers.toBytes(2),
                 Integers.toBytes(1));
 
-        var ethereumTransaction = ethereumTransactionParser.parse(ethereumTransactionBytes);
+        var ethereumTransaction = ethereumTransactionParser.decode(ethereumTransactionBytes);
 
         assertThat(ethereumTransaction)
                 .isNull();
     }
 
     @Test
-    void parseIncorrectRlpItemListSize() {
+    void decodeIncorrectRlpItemListSize() {
         var ethereumTransactionBytes = RLPEncoder.encodeSequentially(
                 Integers.toBytes(2),
                 new Object[] {});
 
-        var ethereumTransaction = ethereumTransactionParser.parse(ethereumTransactionBytes);
+        var ethereumTransaction = ethereumTransactionParser.decode(ethereumTransactionBytes);
 
         assertThat(ethereumTransaction)
                 .isNull();
@@ -106,10 +108,5 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
                         "df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479"))
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureS())).isEqualTo(
                         "1aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66"));
-
-        // verify publicKey extraction
-        var publicKey = ethereumTransactionParser.retrievePublicKey(ethereumTransaction);
-        assertThat(Hex.encodeHexString(publicKey)).isEqualTo(
-                "033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     }
 }

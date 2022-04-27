@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.parser.record.ethereum;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 
 public interface EthereumTransactionParser {
-    EthereumTransaction parse(byte[] transactionBytes);
+    EthereumTransaction decode(byte[] transactionBytes);
 
-    byte[] retrievePublicKey(EthereumTransaction ethereumTransaction);
+    byte[] encode(EthereumTransaction ethereumTransaction);
 }

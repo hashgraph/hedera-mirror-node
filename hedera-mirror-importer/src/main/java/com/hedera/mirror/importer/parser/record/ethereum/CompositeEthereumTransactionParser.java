@@ -23,12 +23,10 @@ package com.hedera.mirror.importer.parser.record.ethereum;
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 
-@Log4j2
 @Named
 @Primary
 @RequiredArgsConstructor
@@ -37,16 +35,16 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
     private final Eip1559EthereumTransactionParser eip1559EthereumTransactionParser;
 
     @Override
-    public EthereumTransaction parse(byte[] transactionBytes) {
+    public EthereumTransaction decode(byte[] transactionBytes) {
         var ethereumTransactionParser = getEthereumTransactionParser(transactionBytes);
-        return ethereumTransactionParser.parse(transactionBytes);
+        return ethereumTransactionParser.decode(transactionBytes);
     }
 
     @Override
-    public byte[] retrievePublicKey(EthereumTransaction ethereumTransaction) {
+    public byte[] encode(EthereumTransaction ethereumTransaction) {
         return ethereumTransaction.getType() == 0 ?
-                legacyEthereumTransactionParser.retrievePublicKey(ethereumTransaction) :
-                eip1559EthereumTransactionParser.retrievePublicKey(ethereumTransaction);
+                legacyEthereumTransactionParser.encode(ethereumTransaction) :
+                eip1559EthereumTransactionParser.encode(ethereumTransaction);
     }
 
     private EthereumTransactionParser getEthereumTransactionParser(byte[] transactionBytes) {

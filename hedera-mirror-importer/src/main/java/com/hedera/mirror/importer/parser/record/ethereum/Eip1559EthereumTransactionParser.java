@@ -21,14 +21,19 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  */
 
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
+import com.esaulpaugh.headlong.rlp.RLPEncoder;
+import com.esaulpaugh.headlong.util.Integers;
+import java.math.BigInteger;
 import javax.inject.Named;
+import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 
+@Log4j2
 @Named
-public class Eip1559EthereumTransactionParser extends AbstractEthereumTransactionParser {
+public class Eip1559EthereumTransactionParser implements EthereumTransactionParser {
     @Override
-    public EthereumTransaction parse(byte[] transactionBytes) {
+    public EthereumTransaction decode(byte[] transactionBytes) {
         var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(
                 transactionBytes);
         var legacyRlpItem = decoder.next();
@@ -63,5 +68,22 @@ public class Eip1559EthereumTransactionParser extends AbstractEthereumTransactio
                 .type(2);
 
         return ethereumTransaction.build();
+    }
+
+    @Override
+    public byte[] encode(EthereumTransaction ethereumTransaction) {
+        return RLPEncoder.encodeSequentially(
+                Integers.toBytes(2),
+                new Object[] {
+                        ethereumTransaction.getChainId(),
+                        Integers.toBytes(ethereumTransaction.getNonce()),
+                        ethereumTransaction.getMaxPriorityFeePerGas(),
+                        ethereumTransaction.getMaxFeePerGas(),
+                        Integers.toBytes(ethereumTransaction.getGasLimit()),
+                        ethereumTransaction.getToAddress(),
+                        Integers.toBytesUnsigned(new BigInteger(ethereumTransaction.getValue())),
+                        ethereumTransaction.getCallData(),
+                        new Object[0]
+                });
     }
 }

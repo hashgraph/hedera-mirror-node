@@ -35,9 +35,9 @@ import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransactionParserTest {
     public static final String LEGACY_RAW_TX =
             "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792";
-
     public static final String EIP155_RAW_TX =
             "f86c098504a817c800825208943535353535353535353535353535353535353535880de0b6b3a76400008025a028ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276a067cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83";
+    public static String LEGACY_PK = "033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d";
 
     @BeforeAll
     static void beforeAll() {
@@ -46,8 +46,8 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
 
     @SneakyThrows
     @Test
-    void eip155Parse() {
-        var ethereumTransaction = ethereumTransactionParser.parse(Hex.decodeHex(EIP155_RAW_TX));
+    void eip155Decode() {
+        var ethereumTransaction = ethereumTransactionParser.decode(Hex.decodeHex(EIP155_RAW_TX));
 
         assertThat(ethereumTransaction)
                 .isNotNull()
@@ -69,18 +69,13 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
                         "28ef61340bd939bc2195fe537567866003e1a15d3c71ff63e1590620aa636276"))
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureS())).isEqualTo(
                         "67cbe9d8997f761aecb703304b3800ccf555c9f3dc64214b297fb1966a3b6d83"));
-
-        // verify publicKey extraction
-        var publicKey = ethereumTransactionParser.retrievePublicKey(ethereumTransaction);
-        assertThat(Hex.encodeHexString(publicKey)).isEqualTo(
-                "024bc2a31265153f07e70e0bab08724e6b85e217f8cd628ceb62974247bb493382");
     }
 
     @Test
-    void parseIncorrectRlpItemListSize() {
+    void decodeIncorrectRlpItemListSize() {
         var ethereumTransactionBytes = RLPEncoder.encodeAsList(Integers.toBytes(1));
 
-        var ethereumTransaction = ethereumTransactionParser.parse(ethereumTransactionBytes);
+        var ethereumTransaction = ethereumTransactionParser.decode(ethereumTransactionBytes);
 
         assertThat(ethereumTransaction)
                 .isNull();
@@ -114,10 +109,5 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
                         "f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2f"))
                 .satisfies(t -> assertThat(Hex.encodeHexString(t.getSignatureS())).isEqualTo(
                         "0c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792"));
-
-        // verify publicKey extraction
-        var publicKey = ethereumTransactionParser.retrievePublicKey(ethereumTransaction);
-        assertThat(Hex.encodeHexString(publicKey)).isEqualTo(
-                "033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
     }
 }

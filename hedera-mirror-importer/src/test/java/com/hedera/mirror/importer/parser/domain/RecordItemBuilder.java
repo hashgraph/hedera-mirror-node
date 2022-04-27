@@ -266,16 +266,13 @@ public class RecordItemBuilder {
     }
 
     @SneakyThrows
-    public Builder<EthereumTransactionBody.Builder> ethereumTransaction(boolean create, ContractID contractId) {
-        return ethereumTransaction(create, contractId, Hex.decodeHex(LONDON_RAW_TX));
-    }
-
-    public Builder<EthereumTransactionBody.Builder> ethereumTransaction(boolean create, ContractID contractId,
-                                                                        byte[] transactionBytes) {
+    public Builder<EthereumTransactionBody.Builder> ethereumTransaction(boolean create) {
+        var transactionBytes = Hex.decodeHex(LONDON_RAW_TX);
         EthereumTransactionBody.Builder transactionBody = EthereumTransactionBody.newBuilder()
                 .setEthereumData(ByteString.copyFrom(transactionBytes))
                 .setMaxGasAllowance(10_000L);
 
+        var contractId = contractId();
         var digestedHash = ByteString.copyFrom(Hash.sha3(transactionBytes));
         if (create) {
             transactionBody.setCallData(fileId());
