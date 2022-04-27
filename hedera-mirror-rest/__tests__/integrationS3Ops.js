@@ -25,7 +25,7 @@ const {GenericContainer} = require('testcontainers');
 const {isDockerInstalled} = require('./integrationUtils');
 
 const localstackImageName = 'localstack/localstack';
-const localstackImageTag = '0.13.0-arm64';
+const localstackImageTag = 'latest';
 const defaultS3Port = 4566;
 
 class S3Ops {
@@ -39,6 +39,7 @@ class S3Ops {
     logger.info(`Starting localstack docker container with image ${image}`);
     const container = await new GenericContainer(image)
       .withEnv('SERVICES', 's3')
+      .withEnv('EAGER_SERVICE_LOADING', 1)
       .withExposedPorts(defaultS3Port)
       .start();
     logger.info('Started dockerized localstack');
