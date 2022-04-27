@@ -415,7 +415,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTransaction(Transaction transaction) throws ImporterException {
-        transaction.setIndex(transactionIndex.incrementAndGet());
+        transaction.setIndex(transactionIndex.getAndIncrement());
         transactions.add(transaction);
         if (transactions.size() == sqlProperties.getBatchSize()) {
             executeBatches();

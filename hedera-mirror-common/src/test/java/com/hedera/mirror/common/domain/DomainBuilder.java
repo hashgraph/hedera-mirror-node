@@ -479,10 +479,6 @@ public class DomainBuilder {
         return id.incrementAndGet();
     }
 
-    public int transactionIndex() {
-        return transactionIndex.incrementAndGet();
-    }
-
     public byte[] key() {
         if (id.get() % 2 == 0) {
             ByteString bytes = ByteString.copyFrom(bytes(KEY_LENGTH_ECDSA));
@@ -499,6 +495,10 @@ public class DomainBuilder {
 
     public long timestamp() {
         return DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id();
+    }
+
+    private int transactionIndex() {
+        return transactionIndex.getAndIncrement();
     }
 
     @Value
