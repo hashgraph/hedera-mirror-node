@@ -106,7 +106,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
     }
 
     private void parseNftAllowances(List<com.hederahashgraph.api.proto.java.NftAllowance> nftAllowances,
-                                      RecordItem recordItem) {
+                                    RecordItem recordItem) {
         var payerAccountId = recordItem.getPayerAccountId();
         var nftAllowanceState = new HashMap<NftAllowance.Id, NftAllowance>();
         var nftSerialAllowanceState = new HashMap<NftId, Nft>();
@@ -163,7 +163,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
     }
 
     private void parseTokenAllowances(List<com.hederahashgraph.api.proto.java.TokenAllowance> tokenAllowances,
-                                       RecordItem recordItem) {
+                                      RecordItem recordItem) {
         var payerAccountId = recordItem.getPayerAccountId();
         var tokenAllowanceState = new HashMap<TokenAllowance.Id, TokenAllowance>();
 
