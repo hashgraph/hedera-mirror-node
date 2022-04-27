@@ -29,6 +29,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import javax.inject.Named;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
+import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
+
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class BlockNumberMigration extends MirrorBaseJavaMigration {
@@ -63,8 +66,7 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
     private boolean shouldNotMigrateOnCurrentNetwork() {
         MirrorProperties.HederaNetwork currentNetwork = mirrorProperties.getNetwork();
-        return !currentNetwork.equals(MirrorProperties.HederaNetwork.TESTNET) &&
-                !currentNetwork.equals(MirrorProperties.HederaNetwork.MAINNET);
+        return currentNetwork != TESTNET && currentNetwork != MAINNET;
     }
 
     private void updateRecordFilesBlockNumber(long correctBlockNumber, long incorrectBlockNumber) {
