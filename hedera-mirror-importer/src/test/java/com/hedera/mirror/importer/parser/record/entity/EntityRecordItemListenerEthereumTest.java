@@ -35,7 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.web3j.crypto.Hash;
 
-import com.hedera.mirror.common.converter.LongWeiBarToStringSerializer;
+import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
@@ -129,14 +129,13 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(2, contractRepository.count()), // contract created by transaction
+                () -> assertEquals(1, contractRepository.count()),
                 () -> assertEquals(0, entityRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem),
-                () -> assertContract(recordItem, Eip1559EthereumTransactionParserTest.LONDON_PK)
+                () -> assertEthereumTransaction(recordItem)
         );
     }
 
@@ -150,14 +149,13 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(2, contractRepository.count()), // contract created by transaction
+                () -> assertEquals(1, contractRepository.count()),
                 () -> assertEquals(0, entityRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem),
-                () -> assertContract(recordItem, LegacyEthereumTransactionParserTest.LEGACY_PK)
+                () -> assertEthereumTransaction(recordItem)
         );
     }
 
@@ -171,14 +169,13 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(2, contractRepository.count()), // contract created by transaction
+                () -> assertEquals(1, contractRepository.count()),
                 () -> assertEquals(0, entityRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem),
-                () -> assertContract(recordItem, LegacyEthereumTransactionParserTest.EIP155_PK)
+                () -> assertEthereumTransaction(recordItem)
         );
     }
 
@@ -215,7 +212,7 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
                 .isNotNull()
                 .returns(fileId, EthereumTransaction::getCallDataId)
                 .returns(DomainUtils.toBytes(transactionBody.getEthereumData()), EthereumTransaction::getData)
-                .returns(transactionBody.getMaxGasAllowance() / LongWeiBarToStringSerializer.WEIBARS_TO_TINYBARS,
+                .returns(WeiBarTinyBarConverter.INSTANCE.weiBarToTinyBar(transactionBody.getMaxGasAllowance()),
                         EthereumTransaction::getMaxGasAllowance)
                 .returns(DomainUtils.toBytes(recordItem.getRecord().getEthereumHash()), EthereumTransaction::getHash);
     }

@@ -46,13 +46,4 @@ abstract class AbstractEthereumTransactionParserTest {
 
         validateEthereumTransaction(ethereumTransaction);
     }
-
-    @Test
-    public void encode() {
-        var ethereumTransaction = domainBuilder.ethereumTransaction()
-                .get();
-
-        assertThat(ethereumTransactionParser.encode(ethereumTransaction))
-                .isNotEmpty();
-    }
 }

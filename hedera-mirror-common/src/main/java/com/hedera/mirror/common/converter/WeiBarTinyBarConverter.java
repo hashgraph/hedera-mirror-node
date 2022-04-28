@@ -21,21 +21,19 @@ package com.hedera.mirror.common.converter;
  */
 
 import java.math.BigInteger;
-import javax.persistence.AttributeConverter;
 import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
 @ConfigurationPropertiesBinding
-public class ByteArrayWeiBarConverter implements AttributeConverter<byte[], byte[]> {
-    public static final ByteArrayWeiBarConverter INSTANCE = new ByteArrayWeiBarConverter();
-    static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
+public class WeiBarTinyBarConverter {
+    public static final WeiBarTinyBarConverter INSTANCE = new WeiBarTinyBarConverter();
+    public static final Long WEIBARS_TO_TINYBARS = 10_000_000_000L;
+    static final BigInteger WEIBARS_TO_TINYBARS_BIGINT = BigInteger.valueOf(WEIBARS_TO_TINYBARS);
 
-    @Override
-    public byte[] convertToDatabaseColumn(byte[] weibar) {
-        return weibar == null ? null : new BigInteger(weibar).divide(WEIBARS_TO_TINYBARS).toByteArray();
+    public byte[] weiBarToTinyBar(byte[] weibar) {
+        return weibar == null ? null : new BigInteger(weibar).divide(WEIBARS_TO_TINYBARS_BIGINT).toByteArray();
     }
 
-    @Override
-    public byte[] convertToEntityAttribute(byte[] tinyBar) {
-        return tinyBar;
+    public Long weiBarToTinyBar(Long weibar) {
+        return weibar == null ? null : weibar / WEIBARS_TO_TINYBARS;
     }
 }

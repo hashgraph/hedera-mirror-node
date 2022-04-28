@@ -25,23 +25,22 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigInteger;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-class ByteArrayWeiBarConverterTest {
-    private static final ByteArrayWeiBarConverter converter = ByteArrayWeiBarConverter.INSTANCE;
-    private static final byte[] defaultGas = BigInteger.valueOf(1234567890123L).toByteArray();
+class WeiBarTinyBarConverterTest {
+    private static final WeiBarTinyBarConverter converter = WeiBarTinyBarConverter.INSTANCE;
+    private static final Long defaultGas = 1234567890123L;
+    private static final byte[] defaultGasBytes = BigInteger.valueOf(defaultGas).toByteArray();
 
     @Test
-    void testToDatabaseColumn() {
-        Assertions.assertThat(converter.convertToDatabaseColumn(null)).isNull();
-        Assertions.assertThat(converter.convertToDatabaseColumn(defaultGas))
+    void byteArrayWeiBarToTinyBar() {
+        Assertions.assertThat(converter.weiBarToTinyBar((byte[]) null)).isNull();
+        Assertions.assertThat(converter.weiBarToTinyBar(defaultGasBytes))
                 .isEqualTo(BigInteger.valueOf(123).toByteArray());
     }
 
     @Test
-    void testToEntityAttribute() {
-        assertThat(converter.convertToEntityAttribute(null)).isNull();
-        assertThat(converter.convertToEntityAttribute(defaultGas))
-                .isEqualTo(defaultGas);
+    void longWeiBarToTinyBar() {
+        Assertions.assertThat(converter.weiBarToTinyBar((Long) null)).isNull();
+        Assertions.assertThat(converter.weiBarToTinyBar(defaultGas))
+                .isEqualTo(123L);
     }
 }

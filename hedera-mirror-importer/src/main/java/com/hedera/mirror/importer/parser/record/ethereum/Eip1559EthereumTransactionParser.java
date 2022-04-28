@@ -21,9 +21,6 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  */
 
 import com.esaulpaugh.headlong.rlp.RLPDecoder;
-import com.esaulpaugh.headlong.rlp.RLPEncoder;
-import com.esaulpaugh.headlong.util.Integers;
-import java.math.BigInteger;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
@@ -68,22 +65,5 @@ public class Eip1559EthereumTransactionParser implements EthereumTransactionPars
                 .type(EIP1559_TYPE_BYTE);
 
         return ethereumTransaction.build();
-    }
-
-    @Override
-    public byte[] encode(EthereumTransaction ethereumTransaction) {
-        return RLPEncoder.encodeSequentially(
-                Integers.toBytes(2),
-                new Object[] {
-                        ethereumTransaction.getChainId(),
-                        Integers.toBytes(ethereumTransaction.getNonce()),
-                        ethereumTransaction.getMaxPriorityFeePerGas(),
-                        ethereumTransaction.getMaxFeePerGas(),
-                        Integers.toBytes(ethereumTransaction.getGasLimit()),
-                        ethereumTransaction.getToAddress(),
-                        Integers.toBytesUnsigned(new BigInteger(ethereumTransaction.getValue())),
-                        ethereumTransaction.getCallData(),
-                        new Object[0]
-                });
     }
 }

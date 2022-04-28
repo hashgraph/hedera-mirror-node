@@ -45,13 +45,6 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
         return ethereumTransaction;
     }
 
-    @Override
-    public byte[] encode(EthereumTransaction ethereumTransaction) {
-        return ethereumTransaction.getType() == 0 ?
-                legacyEthereumTransactionParser.encode(ethereumTransaction) :
-                eip1559EthereumTransactionParser.encode(ethereumTransaction);
-    }
-
     private EthereumTransactionParser getEthereumTransactionParser(byte[] transactionBytes) {
         var eip1559StartingBytesMatch = transactionBytes[0] == (byte) 2 && transactionBytes[1] == (byte) -8;
         return eip1559StartingBytesMatch ? eip1559EthereumTransactionParser : legacyEthereumTransactionParser;
