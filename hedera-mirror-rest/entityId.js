@@ -98,7 +98,7 @@ const isValidEvmAddress = (address, evmAddressType = EvmAddressType.ANY) => {
   if (typeof address !== 'string') {
     return false;
   }
-  logger.info(address + ' finished ]]]]]]]  ' + evmAddressType);
+
   if (evmAddressType === EvmAddressType.ANY) {
     return evmAddressRegex.test(address) || evmAddressShardRealmRegex.test(address);
   }
@@ -114,7 +114,7 @@ const isValidEntityId = (entityId) => {
 };
 
 const isCreate2EvmAddress = (evmAddress) => {
-  if (isValidEvmAddress(evmAddress)) {
+  if (!isValidEvmAddress(evmAddress)) {
     return false;
   }
   const idPartsFromEvmAddress = parseFromEvmAddress(evmAddress);
