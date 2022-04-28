@@ -402,7 +402,8 @@ const validateContractIdParam = (contractId) => {
 const getAndValidateContractIdRequestPathParam = (req) => {
   const contractIdValue = req.params.contractId;
   validateContractIdParam(contractIdValue);
-  return contractIdValue;
+  // if it is a valid contract id and has the substring 0x, the substring 0x can only be a prefix.
+  return contractIdValue.replace('0x', '');
 };
 
 /**
