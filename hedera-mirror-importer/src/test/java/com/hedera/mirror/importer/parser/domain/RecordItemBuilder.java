@@ -383,7 +383,7 @@ public class RecordItemBuilder {
 
             Transaction transaction = transaction().build();
             TransactionRecord record = transactionRecord.build();
-            return new RecordItem(hapiVersion, transaction.toByteArray(), record.toByteArray());
+            return new RecordItem(hapiVersion, transaction.toByteArray(), record.toByteArray(), null);
         }
 
         public Builder<T> hapiVersion(Version hapiVersion) {
