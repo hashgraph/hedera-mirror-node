@@ -49,7 +49,9 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
     private final MirrorProperties mirrorProperties;
 
     private static final Map<HederaNetwork, Pair<Long, Long>> CONSENSUS_END_BLOCK_NUMBER_PER_NET =
-            Map.of(TESTNET, Pair.of(1570811971290027001L, 1029L));
+            Map.of(
+                    TESTNET, Pair.of(1570811971290027001L, 1029L),
+                    MAINNET, Pair.of( 1651100355949621933L, 31638961L));
 
     private final RecordFileRepository recordFileRepository;
 
@@ -60,6 +62,12 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
         }
 
         var consensusEndAndBlockNumber = CONSENSUS_END_BLOCK_NUMBER_PER_NET.get(mirrorProperties.getNetwork());
+
+        if (consensusEndAndBlockNumber == null) {
+            throw new RuntimeException("There is no consensus block number and consensus end for the network: "
+                    + mirrorProperties.getNetwork());
+        }
+
         long correctConsensusNumber = consensusEndAndBlockNumber.getKey();
         long correctBlockNumber = consensusEndAndBlockNumber.getValue();
         recordFileRepository.findById(correctConsensusNumber)
