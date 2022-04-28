@@ -179,7 +179,7 @@ const parseFromEncodedId = (id, error) => {
  */
 const parseFromEvmAddress = (evmAddress) => {
   // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
-  const hexDigits = evmAddress.replace('0x', '');
+  const hexDigits = evmAddress.replace('0x', '').replace('0.0.', '');
   return [
     BigInt('0x' + hexDigits.slice(0, 8)), // shard
     BigInt('0x' + hexDigits.slice(8, 24)), // realm
