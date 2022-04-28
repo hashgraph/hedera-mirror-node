@@ -38,9 +38,7 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
     @Override
     public EthereumTransaction decode(byte[] transactionBytes) {
         var ethereumTransactionParser = getEthereumTransactionParser(transactionBytes);
-        var ethereumTransaction = ethereumTransactionParser.decode(transactionBytes);
-
-        return ethereumTransaction;
+        return ethereumTransactionParser.decode(transactionBytes);
     }
 
     private EthereumTransactionParser getEthereumTransactionParser(byte[] transactionBytes) {
