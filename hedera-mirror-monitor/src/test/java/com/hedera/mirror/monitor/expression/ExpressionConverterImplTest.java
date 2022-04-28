@@ -119,7 +119,7 @@ class ExpressionConverterImplTest {
     @Test
     void errorPublishing() throws InvalidProtocolBufferException {
         TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
-        when(transactionPublisher.publish(any())).thenReturn(Mono.error(new TimeoutException()))
+        when(transactionPublisher.publish(any())).thenReturn(Mono.error(new TimeoutException("timeout")))
                 .thenReturn(response(type, 100));
         assertThat(expressionConverter.convert("${topic.foo}")).isEqualTo("0.0.100");
     }

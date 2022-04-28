@@ -20,7 +20,6 @@ package com.hedera.mirror.monitor.expression;
  * ‍
  */
 
-import com.google.common.collect.Iterables;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -41,7 +40,6 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.monitor.MonitorProperties;
-import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.publish.PublishScenario;
@@ -106,13 +104,9 @@ public class ExpressionConverterImpl implements ExpressionConverter {
 
             // if ScheduleCreate set the properties to the inner scheduledTransactionProperties
             if (transactionSupplier instanceof ScheduleCreateTransactionSupplier) {
-                ScheduleCreateTransactionSupplier scheduleCreateTransactionSupplier =
-                        (ScheduleCreateTransactionSupplier) transactionSupplier;
-                NodeProperties singleNodeProperty = Iterables.get(monitorProperties.getNodes(), 0);
-                scheduleCreateTransactionSupplier.setNodeAccountId(singleNodeProperty.getAccountId());
-                scheduleCreateTransactionSupplier
-                        .setOperatorAccountId(monitorProperties.getOperator().getAccountId());
-                scheduleCreateTransactionSupplier.setSignatoryCount(0);
+                var scheduleCreateTransactionSupplier = (ScheduleCreateTransactionSupplier) transactionSupplier;
+                scheduleCreateTransactionSupplier.setOperatorAccountId(monitorProperties.getOperator().getAccountId());
+                scheduleCreateTransactionSupplier.setPayerAccount(monitorProperties.getOperator().getAccountId());
             }
 
             PublishScenarioProperties publishScenarioProperties = new PublishScenarioProperties();
@@ -121,25 +115,28 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             publishScenarioProperties.setType(type.getTransactionType());
             PublishScenario scenario = new PublishScenario(publishScenarioProperties);
 
-            Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofMillis(500L))
+            // We use explicit retry instead of the SDK retry since we need to regenerate the transaction to
+            // avoid transaction expired errors
+            Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(1L))
                     .maxBackoff(Duration.ofSeconds(8L))
                     .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
                             r.totalRetries() + 1, r.failure().getMessage()));
 
-            String createdId = Mono.defer(() -> transactionPublisher.publish(PublishRequest.builder()
+            return Mono.defer(() -> transactionPublisher.publish(PublishRequest.builder()
                             .receipt(true)
                             .scenario(scenario)
                             .timestamp(Instant.now())
-                            .transaction(transactionSupplier.get().setTransactionMemo(scenario.getMemo()))
+                            .transaction(transactionSupplier.get()
+                                    .setMaxAttempts(1)
+                                    .setTransactionMemo(scenario.getMemo()))
                             .build()
                     ))
                     .retryWhen(retrySpec)
                     .map(PublishResponse::getReceipt)
                     .map(type.getIdExtractor()::apply)
+                    .doOnSuccess(id -> log.info("Created {} entity {}", type, id))
                     .toFuture()
                     .join();
-            log.info("Created {} entity {}", type, createdId);
-            return createdId;
         } catch (Exception e) {
             log.error("Error converting expression {}:", expression, e);
             throw new RuntimeException(e);
