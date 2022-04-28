@@ -7,6 +7,7 @@ spec:
   chart:
     spec:
       chart: charts/hedera-mirror
+      reconcileStrategy: Revision
       sourceRef:
         kind: GitRepository
         name: hedera-mirror-node
@@ -35,8 +36,6 @@ spec:
     global:
       image:
         pullPolicy: Always
-      podAnnotations:
-        git.commit: d945d02ba0554228270b163b2cd6364f3a4c2887
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
