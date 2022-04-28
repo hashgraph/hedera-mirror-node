@@ -50,6 +50,7 @@ class EthereumTransactionHandler implements TransactionHandler {
      * @param recordItem to check
      * @return The contract ID associated with this ethereum transaction call
      */
+    @SuppressWarnings("deprecation")
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         var transactionRecord = recordItem.getRecord();

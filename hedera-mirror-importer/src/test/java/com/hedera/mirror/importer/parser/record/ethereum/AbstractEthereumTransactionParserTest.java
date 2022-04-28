@@ -38,7 +38,7 @@ abstract class AbstractEthereumTransactionParserTest {
     protected abstract void validateEthereumTransaction(EthereumTransaction ethereumTransaction);
 
     @Test
-    public void decode() {
+    void decode() {
         var ethereumTransaction = ethereumTransactionParser.decode(getTransactionBytes());
         assertThat(ethereumTransaction)
                 .isNotNull()
