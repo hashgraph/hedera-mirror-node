@@ -94,6 +94,7 @@
         <sonar.issue.ignore.multicriteria.e3.ruleKey>java:S2187</sonar.issue.ignore.multicriteria.e3.ruleKey>
         <sonar.issue.ignore.multicriteria.e4.resourceKey>**/*.js</sonar.issue.ignore.multicriteria.e4.resourceKey>
         <sonar.issue.ignore.multicriteria.e4.ruleKey>javascript:S3758</sonar.issue.ignore.multicriteria.e4.ruleKey>
+        <web3j.version>4.8.7</web3j.version>
     </properties>
 
     <scm>

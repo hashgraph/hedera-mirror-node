@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.util.Integers;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransactionParserTest {
     public static final String LEGACY_RAW_TX =
@@ -77,10 +79,10 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
     void decodeIncorrectRlpItemListSize() {
         var ethereumTransactionBytes = RLPEncoder.encodeAsList(Integers.toBytes(1));
 
-        var ethereumTransaction = ethereumTransactionParser.decode(ethereumTransactionBytes);
-
-        assertThat(ethereumTransaction)
-                .isNull();
+        assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
+                .isInstanceOf(InvalidDatasetException.class)
+                .hasMessage("Unable to decode legacy ethereum transaction bytes, RLPItem list size was 1 but should " +
+                        "be 9");
     }
 
     @SneakyThrows

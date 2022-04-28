@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.ethereum;
 
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.context.annotation.Primary;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
@@ -38,14 +39,15 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
     public EthereumTransaction decode(byte[] transactionBytes) {
         var ethereumTransactionParser = getEthereumTransactionParser(transactionBytes);
         var ethereumTransaction = ethereumTransactionParser.decode(transactionBytes);
-        if (ethereumTransaction == null) {
-            throw new InvalidDatasetException("Unable to decode ethereum transaction bytes");
-        }
 
         return ethereumTransaction;
     }
 
     private EthereumTransactionParser getEthereumTransactionParser(byte[] transactionBytes) {
+        if (ArrayUtils.isEmpty(transactionBytes) || transactionBytes.length < 2) {
+            throw new InvalidDatasetException("Ethereum transaction bytes length is less than 2 bytes in length");
+        }
+
         var eip1559StartingBytesMatch = transactionBytes[0] == (byte) 2 && transactionBytes[1] == (byte) -8;
         return eip1559StartingBytesMatch ? eip1559EthereumTransactionParser : legacyEthereumTransactionParser;
     }

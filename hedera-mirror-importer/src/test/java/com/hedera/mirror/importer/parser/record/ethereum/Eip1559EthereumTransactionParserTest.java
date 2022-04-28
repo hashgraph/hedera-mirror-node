@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.util.Integers;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransactionParserTest {
 
@@ -56,10 +58,9 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
                 Integers.toBytes(1),
                 new Object[] {});
 
-        var ethereumTransaction = ethereumTransactionParser.decode(ethereumTransactionBytes);
-
-        assertThat(ethereumTransaction)
-                .isNull();
+        assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
+                .isInstanceOf(InvalidDatasetException.class)
+                .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, 1st byte was 1 but should be 2");
     }
 
     @Test
@@ -68,10 +69,9 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
                 Integers.toBytes(2),
                 Integers.toBytes(1));
 
-        var ethereumTransaction = ethereumTransactionParser.decode(ethereumTransactionBytes);
-
-        assertThat(ethereumTransaction)
-                .isNull();
+        assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
+                .isInstanceOf(InvalidDatasetException.class)
+                .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, 2nd RLPItem was not a list");
     }
 
     @Test
@@ -80,10 +80,10 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
                 Integers.toBytes(2),
                 new Object[] {});
 
-        var ethereumTransaction = ethereumTransactionParser.decode(ethereumTransactionBytes);
-
-        assertThat(ethereumTransaction)
-                .isNull();
+        assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
+                .isInstanceOf(InvalidDatasetException.class)
+                .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, 2nd RLPItem list size was 0 but " +
+                        "should be 12");
     }
 
     @Override

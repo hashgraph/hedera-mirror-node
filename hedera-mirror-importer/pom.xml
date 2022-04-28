@@ -187,6 +187,11 @@
             <artifactId>headlong</artifactId>
             <version>${headlong.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.web3j</groupId>
+            <artifactId>core</artifactId>
+            <version>${web3j.version}</version>
+        </dependency>
         <!-- Test -->
         <dependency>
             <groupId>com.github.vertical-blank</groupId>
@@ -258,11 +263,6 @@
             <artifactId>junit-jupiter</artifactId>
             <version>${testcontainers.version}</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.web3j</groupId>
-            <artifactId>core</artifactId>
-            <version>4.8.7</version>
         </dependency>
     </dependencies>
 
