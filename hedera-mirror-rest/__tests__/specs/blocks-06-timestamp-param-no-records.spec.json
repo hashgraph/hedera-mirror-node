@@ -1,5 +1,5 @@
 {
-  "description": "Get blocks with no arguments",
+  "description": "Get blocks with timestamp param that returns empty array",
   "setup": {
     "recordFiles": [
       {

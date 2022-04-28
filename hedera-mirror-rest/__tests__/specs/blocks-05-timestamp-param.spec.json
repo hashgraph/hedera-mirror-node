@@ -1,5 +1,5 @@
 {
-  "description": "Get blocks with no arguments",
+  "description": "Get blocks with timestamp param",
   "setup": {
     "recordFiles": [
       {

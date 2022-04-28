@@ -1,5 +1,5 @@
 {
-  "description": "Get blocks with no arguments",
+  "description": "Get blocks with limit and order asc params",
   "setup": {
     "recordFiles": [
       {
