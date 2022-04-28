@@ -69,8 +69,6 @@ postgresql:
     replicaCount: 0
   postgresql:
     upgradeRepmgrExtension: true  # Upgrade repmgr version to 5.2 or else container spinup fails
-  postgresqlImage:
-    tag: 14.2.0-debian-10-r57
 
 redis:
   enabled: false
