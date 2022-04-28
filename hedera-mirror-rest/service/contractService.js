@@ -24,6 +24,7 @@ const _ = require('lodash');
 
 const constants = require('../constants');
 const Contract = require('../model/contract');
+const Transaction = require('../model/transaction');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
   response: {
@@ -46,7 +47,12 @@ class ContractService extends BaseService {
   }
 
   static detailedContractResultsQuery = `select *
-  from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
+  from ${ContractResult.tableName} ${ContractResult.tableAlias}
+  join ${Transaction.tableName} ${Transaction.tableAlias}
+  on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
+    Transaction.CONSENSUS_TIMESTAMP
+  )}
+  `;
 
   static contractResultsQuery = `select
     ${ContractResult.AMOUNT},

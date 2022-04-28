@@ -35,7 +35,15 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
-const {Contract, ContractLog, ContractResult, FileData, TransactionResult, RecordFile} = require('../model');
+const {
+  Contract,
+  ContractLog,
+  ContractResult,
+  FileData,
+  TransactionResult,
+  RecordFile,
+  Transaction,
+} = require('../model');
 const {ContractService, RecordFileService, TransactionService} = require('../service');
 const TransactionId = require('../transactionId');
 const utils = require('../utils');
@@ -501,6 +509,15 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
   const contractResultTimestampFullName = ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP);
   const contractResultTimestampInValues = [];
 
+  // Add default value for INTERNAL filter
+  if (!filters.find((f) => f.key === constants.filterKeys.INTERNAL)) {
+    filters.push({
+      key: constants.filterKeys.INTERNAL,
+      operator: '=',
+      value: 'false',
+    });
+  }
+
   for (const filter of filters) {
     if (_.isNil(paramSupportMap[filter.key])) {
       // param not supported for current endpoint
@@ -559,7 +576,17 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
         // TODO
         break;
       case constants.filterKeys.INTERNAL:
-        // TODO
+        // If internal is `false` child transactions should be excluded
+        // If it is `true` the filter does not need to be applied
+        if (!utils.parseBooleanValue(filter.value)) {
+          updateConditionsAndParamsWithInValues(
+            {key: constants.filterKeys.INTERNAL, operator: '=', value: 0},
+            [],
+            params,
+            conditions,
+            Transaction.getFullName(Transaction.NONCE)
+          );
+        }
         break;
       case constants.filterKeys.TRANSACTION_INDEX:
         // TODO
