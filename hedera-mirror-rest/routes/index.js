@@ -24,4 +24,5 @@ module.exports = {
   AccountRoutes: require('./accountRoute'),
   ContractRoutes: require('./contractRoute'),
   NetworkRoutes: require('./networkRoute'),
+  BlockRoutes: require('./blockRoute'),
 };

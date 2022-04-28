@@ -38,4 +38,5 @@ module.exports = {
   TokenAllowanceViewModel: require('./tokenAllowanceViewModel'),
   TopicMessageViewModel: require('./topicMessageViewModel'),
   TransactionIdViewModel: require('./transactionIdViewModel'),
+  BlockViewModel: require('./blockViewModel'),
 };

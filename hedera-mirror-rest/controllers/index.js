@@ -26,4 +26,5 @@ module.exports = {
   CryptoAllowanceController: require('./cryptoAllowanceController'),
   NetworkController: require('./networkController'),
   TokenAllowanceController: require('./tokenAllowanceController'),
+  BlockController: require('./blockController'),
 };
