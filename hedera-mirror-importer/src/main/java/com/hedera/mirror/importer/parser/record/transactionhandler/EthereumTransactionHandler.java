@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -59,17 +58,9 @@ class EthereumTransactionHandler implements TransactionHandler {
         var contractFunctionResult = transactionRecord.hasContractCreateResult() ?
                 transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
 
-        EntityId contractId = null;
-        EntityId senderId = null;
-        EthereumTransaction ethereumTransaction = null;
-        if (!contractFunctionResult.equals(ContractFunctionResult.getDefaultInstance())) {
-            contractId = entityIdService.lookup(contractFunctionResult.getContractID());
-            senderId = EntityId.of(contractFunctionResult.getSenderId());
-        }
+        parseEthereumTransaction(recordItem, EntityId.of(contractFunctionResult.getSenderId()));
 
-        parseEthereumTransaction(recordItem, senderId);
-
-        return contractId;
+        return EntityId.of(contractFunctionResult.getContractID());
     }
 
     @Override
@@ -91,6 +82,9 @@ class EthereumTransactionHandler implements TransactionHandler {
             ethereumTransaction.setCallDataId(EntityId.of(body.getCallData()));
         }
 
+        // EVM logic uses weibar for gas values, convert transaction body gas values to tinybars
+        convertGasWeiToTinyBars(ethereumTransaction);
+
         // update ethereumTransaction with record values
         var transactionRecord = recordItem.getRecord();
         ethereumTransaction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
@@ -100,9 +94,6 @@ class EthereumTransactionHandler implements TransactionHandler {
         ethereumTransaction.setMaxGasAllowance(body.getMaxGasAllowance());
         ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
 
-        // EVM logic uses weibar for gas values, convert to tinybars
-        convertGasWeiToTinyBars(ethereumTransaction);
-
         entityListener.onEthereumTransaction(ethereumTransaction);
     }
 
@@ -110,7 +101,6 @@ class EthereumTransactionHandler implements TransactionHandler {
         ethereumTransaction.setGasLimit(WeiBarTinyBarConverter.INSTANCE.weiBarToTinyBar(ethereumTransaction.getGasLimit()));
         ethereumTransaction.setGasPrice(WeiBarTinyBarConverter.INSTANCE.weiBarToTinyBar(ethereumTransaction.getGasPrice()));
         ethereumTransaction.setMaxFeePerGas(WeiBarTinyBarConverter.INSTANCE.weiBarToTinyBar(ethereumTransaction.getMaxFeePerGas()));
-        ethereumTransaction.setMaxGasAllowance(WeiBarTinyBarConverter.INSTANCE.weiBarToTinyBar(ethereumTransaction.getMaxGasAllowance()));
         ethereumTransaction.setMaxPriorityFeePerGas(WeiBarTinyBarConverter.INSTANCE.weiBarToTinyBar(ethereumTransaction.getMaxPriorityFeePerGas()));
     }
 }

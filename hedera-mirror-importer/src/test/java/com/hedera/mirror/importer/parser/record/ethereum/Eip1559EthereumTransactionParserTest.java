@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.exception.InvalidEthereumBytesException;
 
 public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransactionParserTest {
 
@@ -59,7 +59,7 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
                 new Object[] {});
 
         assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
-                .isInstanceOf(InvalidDatasetException.class)
+                .isInstanceOf(InvalidEthereumBytesException.class)
                 .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, 1st byte was 1 but should be 2");
     }
 
@@ -70,7 +70,7 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
                 Integers.toBytes(1));
 
         assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
-                .isInstanceOf(InvalidDatasetException.class)
+                .isInstanceOf(InvalidEthereumBytesException.class)
                 .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, 2nd RLPItem was not a list");
     }
 
@@ -81,7 +81,7 @@ public class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransa
                 new Object[] {});
 
         assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
-                .isInstanceOf(InvalidDatasetException.class)
+                .isInstanceOf(InvalidEthereumBytesException.class)
                 .hasMessage("Unable to decode EIP1559 ethereum transaction bytes, 2nd RLPItem list size was 0 but " +
                         "should be 12");
     }

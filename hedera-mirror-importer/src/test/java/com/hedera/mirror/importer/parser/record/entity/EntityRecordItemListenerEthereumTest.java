@@ -35,8 +35,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.web3j.crypto.Hash;
 
-import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -212,25 +210,7 @@ public class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordIt
                 .isNotNull()
                 .returns(fileId, EthereumTransaction::getCallDataId)
                 .returns(DomainUtils.toBytes(transactionBody.getEthereumData()), EthereumTransaction::getData)
-                .returns(WeiBarTinyBarConverter.INSTANCE.weiBarToTinyBar(transactionBody.getMaxGasAllowance()),
-                        EthereumTransaction::getMaxGasAllowance)
+                .returns(transactionBody.getMaxGasAllowance(), EthereumTransaction::getMaxGasAllowance)
                 .returns(DomainUtils.toBytes(recordItem.getRecord().getEthereumHash()), EthereumTransaction::getHash);
-    }
-
-    private void assertContract(RecordItem recordItem, String expectedPublicKey) {
-        var contractID = recordItem.getRecord().hasContractCreateResult() ?
-                recordItem.getRecord().getContractCreateResult().getContractID() :
-                recordItem.getRecord().getContractCallResult().getContractID();
-        var contractId = EntityId.of(contractID).getId();
-        var contract = contractRepository.findById(contractId).get();
-        var transactionBody = recordItem.getTransactionBody().getEthereumTransaction();
-
-        var fileId = transactionBody.getCallData() == FileID.getDefaultInstance() ? null :
-                EntityId.of(transactionBody.getCallData());
-        assertThat(contract)
-                .isNotNull()
-                .returns(fileId, Contract::getFileId)
-                .returns(contractId, Contract::getId)
-                .returns(expectedPublicKey, Contract::getPublicKey);
     }
 }

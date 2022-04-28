@@ -25,14 +25,13 @@ import java.math.BigInteger;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.exception.InvalidEthereumBytesException;
 
 @Named
 public class LegacyEthereumTransactionParser implements EthereumTransactionParser {
     private static final int LEGACY_TYPE_BYTE = 0;
     private static final int LEGACY_TYPE_RLP_ITEM_COUNT = 9;
-
-    private static final String DECODE_ERROR_PREFIX_MESSAGE = "Unable to decode legacy ethereum transaction bytes,";
+    private static final String TRANSACTION_TYPE_NAME = "Legacy";
 
     @Override
     public EthereumTransaction decode(byte[] transactionBytes) {
@@ -41,8 +40,9 @@ public class LegacyEthereumTransactionParser implements EthereumTransactionParse
         var legacyRlpItem = decoder.next();
         var rlpItems = legacyRlpItem.asRLPList().elements();
         if (rlpItems.size() != LEGACY_TYPE_RLP_ITEM_COUNT) {
-            throw new InvalidDatasetException(String.format("%s RLPItem list size was %s but should be %s",
-                    DECODE_ERROR_PREFIX_MESSAGE, rlpItems.size(), LEGACY_TYPE_RLP_ITEM_COUNT));
+            throw new InvalidEthereumBytesException(TRANSACTION_TYPE_NAME, String.format("RLPItem list size was %s " +
+                            "but should be %s",
+                    rlpItems.size(), LEGACY_TYPE_RLP_ITEM_COUNT));
         }
 
         var ethereumTransaction = EthereumTransaction.builder()

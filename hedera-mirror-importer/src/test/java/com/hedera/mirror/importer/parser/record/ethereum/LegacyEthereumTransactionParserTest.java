@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.exception.InvalidEthereumBytesException;
 
 public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransactionParserTest {
     public static final String LEGACY_RAW_TX =
@@ -80,8 +80,8 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
         var ethereumTransactionBytes = RLPEncoder.encodeAsList(Integers.toBytes(1));
 
         assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
-                .isInstanceOf(InvalidDatasetException.class)
-                .hasMessage("Unable to decode legacy ethereum transaction bytes, RLPItem list size was 1 but should " +
+                .isInstanceOf(InvalidEthereumBytesException.class)
+                .hasMessage("Unable to decode Legacy ethereum transaction bytes, RLPItem list size was 1 but should " +
                         "be 9");
     }
 

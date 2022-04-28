@@ -55,10 +55,13 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Mock(lenient = true)
     protected EthereumTransactionParser ethereumTransactionParser;
 
+    private EntityProperties entityProperties;
+
     @Override
     protected TransactionHandler getTransactionHandler() {
         doReturn(domainBuilder.ethereumTransaction().get()).when(ethereumTransactionParser).decode(any());
-        return new EthereumTransactionHandler(entityIdService, new EntityProperties(), entityListener,
+        entityProperties = new EntityProperties();
+        return new EthereumTransactionHandler(entityIdService, entityProperties, entityListener,
                 ethereumTransactionParser);
     }
 
@@ -77,7 +80,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected EntityType getExpectedEntityIdType() {
-        return null;
+        return EntityType.CONTRACT;
     }
 
     @SneakyThrows
@@ -125,7 +128,6 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertThat(entityId).isEqualTo(expectedEntityId);
 
         verify(entityListener, atLeastOnce()).onEthereumTransaction(any());
-        verify(entityListener, never()).onContract(any());
     }
 
     @Test
@@ -143,6 +145,18 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // verify entityListener.onEthereumTransaction never called
         verify(entityListener, never()).onEthereumTransaction(any());
-        verify(entityListener, never()).onContract(any());
+    }
+
+    @Test
+    void testDisabledEthereumTransaction() {
+        entityProperties.getPersist().setEthereumTransactions(false);
+        var recordItem = recordItemBuilder.ethereumTransaction(true)
+                .build();
+
+        transactionHandler.getEntity(recordItem);
+
+        // verify parse and listener are never called
+        verify(entityListener, never()).onEthereumTransaction(any());
+        verify(ethereumTransactionParser, never()).decode(any());
     }
 }

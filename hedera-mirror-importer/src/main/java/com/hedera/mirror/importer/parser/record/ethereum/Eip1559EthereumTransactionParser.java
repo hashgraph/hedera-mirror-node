@@ -24,14 +24,14 @@ import com.esaulpaugh.headlong.rlp.RLPDecoder;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.exception.InvalidEthereumBytesException;
 
 @Named
 public class Eip1559EthereumTransactionParser implements EthereumTransactionParser {
     private static final int EIP1559_TYPE_BYTE = 2;
     private static final int EIP1559_TYPE_RLP_ITEM_COUNT = 12;
 
-    private static final String DECODE_ERROR_PREFIX_MESSAGE = "Unable to decode EIP1559 ethereum transaction bytes,";
+    private static final String TRANSACTION_TYPE_NAME = "EIP1559";
 
     @Override
     public EthereumTransaction decode(byte[] transactionBytes) {
@@ -40,20 +40,20 @@ public class Eip1559EthereumTransactionParser implements EthereumTransactionPars
         var legacyRlpItem = decoder.next();
         var legacyRlpItemByte = legacyRlpItem.asByte();
         if (legacyRlpItemByte != EIP1559_TYPE_BYTE) {
-            throw new InvalidDatasetException(String.format("%s 1st byte was %s but should be %s",
-                    DECODE_ERROR_PREFIX_MESSAGE, legacyRlpItemByte, EIP1559_TYPE_BYTE));
+            throw new InvalidEthereumBytesException(TRANSACTION_TYPE_NAME, String.format("1st byte was %s but should " +
+                            "be %s",
+                    legacyRlpItemByte, EIP1559_TYPE_BYTE));
         }
 
         var eip1559RlpItem = decoder.next();
         if (!eip1559RlpItem.isList()) {
-            throw new InvalidDatasetException(String.format("%s 2nd RLPItem was not a list",
-                    DECODE_ERROR_PREFIX_MESSAGE));
+            throw new InvalidEthereumBytesException(TRANSACTION_TYPE_NAME, "2nd RLPItem was not a list");
         }
 
         var rlpItems = eip1559RlpItem.asRLPList().elements();
         if (rlpItems.size() != EIP1559_TYPE_RLP_ITEM_COUNT) {
-            throw new InvalidDatasetException(String.format("%s 2nd RLPItem list size was %s but should be %s",
-                    DECODE_ERROR_PREFIX_MESSAGE, rlpItems.size(), EIP1559_TYPE_RLP_ITEM_COUNT));
+            throw new InvalidEthereumBytesException(TRANSACTION_TYPE_NAME, String.format("2nd RLPItem list size was " +
+                    "%s but should be %s", rlpItems.size(), EIP1559_TYPE_RLP_ITEM_COUNT));
         }
 
         var ethereumTransaction = EthereumTransaction.builder()
