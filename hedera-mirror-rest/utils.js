@@ -279,8 +279,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidBooleanOpAndValue(op, val);
       break;
     case constants.filterKeys.TRANSACTION_INDEX:
-      // TODO
-      ret = true;
+      ret = isNumeric(val) && val >= 0;
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.

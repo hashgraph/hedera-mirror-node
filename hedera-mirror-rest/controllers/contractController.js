@@ -509,6 +509,9 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
   const contractResultTimestampFullName = ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP);
   const contractResultTimestampInValues = [];
 
+  const transactionIndexFullName = Transaction.getFullName(Transaction.INDEX);
+  const transactionIndexInValues = [];
+
   // Add default value for INTERNAL filter
   if (!filters.find((f) => f.key === constants.filterKeys.INTERNAL)) {
     filters.push({
@@ -589,7 +592,13 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
         }
         break;
       case constants.filterKeys.TRANSACTION_INDEX:
-        // TODO
+        updateConditionsAndParamsWithInValues(
+          filter,
+          transactionIndexInValues,
+          params,
+          conditions,
+          transactionIndexFullName
+        );
         break;
       default:
         break;
@@ -599,6 +608,7 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
   // update query with repeated values
   updateQueryFiltersWithInValues(params, conditions, contractResultFromInValues, contractResultFromFullName);
   updateQueryFiltersWithInValues(params, conditions, contractResultTimestampInValues, contractResultTimestampFullName);
+  updateQueryFiltersWithInValues(params, conditions, transactionIndexInValues, transactionIndexFullName);
 
   return {
     conditions: conditions,
