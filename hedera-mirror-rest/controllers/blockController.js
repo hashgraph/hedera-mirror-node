@@ -50,7 +50,7 @@ const extractLimitFromFilters = (filters, defaultLimit) => {
   return defaultLimit;
 };
 
-const extractSqlFromBlockFilters = async (filters) => {
+const extractSqlFromBlockFilters = (filters) => {
   const filterQuery = {
     order: extractOrderFromFilters(filters, constants.orderFilterValues.DESC),
     limit: extractLimitFromFilters(filters, 25),
@@ -102,7 +102,7 @@ const generateNextLink = (req, blocks, filters) => {
 class BlockController extends BaseController {
   getBlocks = async (req, res) => {
     utils.validateReq(req);
-    const filters = await extractSqlFromBlockFilters(req.query);
+    const filters = extractSqlFromBlockFilters(req.query);
     const blocks = await BlockService.getBlocks(filters);
 
     res.send({
