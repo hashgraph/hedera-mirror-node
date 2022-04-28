@@ -268,6 +268,20 @@ const filterValidityChecks = (param, op, val) => {
       // Accepted forms: valid transaction type string
       ret = TransactionType.isValid(val);
       break;
+    case constants.filterKeys.BLOCK_NUMBER:
+      ret = isNumeric(val) && val >= 0;
+      break;
+    case constants.filterKeys.BLOCK_HASH:
+      // TODO
+      ret = true;
+      break;
+    case constants.filterKeys.INTERNAL:
+      ret = isValidBooleanOpAndValue(op, val);
+      break;
+    case constants.filterKeys.TRANSACTION_INDEX:
+      // TODO
+      ret = true;
+      break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
       ret = false;
@@ -1168,6 +1182,24 @@ const isRegexMatch = (regex, value) => {
   return regex.test(value.trim());
 };
 
+/**
+ * Intended to be used when it is possible for different API routes to have conflicting paths
+ * and only one of them needs to be executed. E.g:
+ * /contracts/results
+ * /contracts/:contractId
+ *
+ * @param req
+ * @param paramName
+ * @param possibleConflicts
+ * @returns {boolean}
+ */
+const conflictingPathParam = (req, paramName, possibleConflicts = []) => {
+  if (!Array.isArray(possibleConflicts)) {
+    possibleConflicts = [possibleConflicts];
+  }
+  return req.params[paramName] && possibleConflicts.indexOf(req.params[paramName]) !== -1;
+};
+
 module.exports = {
   addHexPrefix,
   buildAndValidateFilters,
@@ -1220,6 +1252,7 @@ module.exports = {
   secNsToSeconds,
   toHexString,
   validateReq,
+  conflictingPathParam,
 };
 
 if (isTestEnv()) {

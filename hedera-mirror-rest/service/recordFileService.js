@@ -33,10 +33,17 @@ class RecordFileService extends BaseService {
     super();
   }
 
-  static recordFileBlockDetailsFromTimestampQuery = `select 
+  static recordFileBlockDetailsFromTimestampQuery = `select
     ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
-    from ${RecordFile.tableName} 
+    from ${RecordFile.tableName}
     where  ${RecordFile.CONSENSUS_END} >= $1
+    order by ${RecordFile.CONSENSUS_END} asc
+    limit 1`;
+
+  static recordFileBlockDetailsFromIndexQuery = `select
+    ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
+    from ${RecordFile.tableName}
+    where  ${RecordFile.INDEX} = $1
     order by ${RecordFile.CONSENSUS_END} asc
     limit 1`;
 
@@ -51,6 +58,25 @@ class RecordFileService extends BaseService {
       RecordFileService.recordFileBlockDetailsFromTimestampQuery,
       [timestamp],
       'getRecordFileBlockDetailsFromTimestamp'
+    );
+    if (_.isEmpty(rows) || rows.length > 1) {
+      return null;
+    }
+
+    return new RecordFile(rows[0]);
+  }
+
+  /**
+   * Retrieves the recordFile with the given index
+   *
+   * @param {number} index Int8
+   * @return {Promise<RecordFile>} recordFile subset
+   */
+  async getRecordFileBlockDetailsFromIndex(index) {
+    const rows = await super.getRows(
+      RecordFileService.recordFileBlockDetailsFromIndexQuery,
+      [index],
+      'getRecordFileBlockDetailsFromIndex'
     );
     if (_.isEmpty(rows) || rows.length > 1) {
       return null;

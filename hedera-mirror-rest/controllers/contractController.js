@@ -35,7 +35,7 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
-const {Contract, ContractLog, ContractResult, FileData, TransactionResult} = require('../model');
+const {Contract, ContractLog, ContractResult, FileData, TransactionResult, RecordFile} = require('../model');
 const {ContractService, RecordFileService, TransactionService} = require('../service');
 const TransactionId = require('../transactionId');
 const utils = require('../utils');
@@ -313,6 +313,8 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
  * @returns {Promise<void>}
  */
 const getContractById = async (req, res) => {
+  if (utils.conflictingPathParam(req, 'contractId', 'results')) return;
+
   const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req);
 
   const {conditions: timestampConditions, params: timestampParams} =
@@ -381,6 +383,10 @@ const defaultParamSupportMap = {
 const contractResultsByIdParamSupportMap = {
   [constants.filterKeys.FROM]: true,
   [constants.filterKeys.TIMESTAMP]: true,
+  [constants.filterKeys.BLOCK_NUMBER]: true,
+  [constants.filterKeys.BLOCK_HASH]: true,
+  [constants.filterKeys.TRANSACTION_INDEX]: true,
+  [constants.filterKeys.INTERNAL]: true,
   ...defaultParamSupportMap,
 };
 
@@ -479,11 +485,15 @@ const getContractLogs = async (req, res) => {
  * @param {string} contractId encoded contract ID
  * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
  */
-const extractContractResultsByIdQuery = (filters, contractId, paramSupportMap = defaultParamSupportMap) => {
+const extractContractResultsByIdQuery = async (filters, contractId, paramSupportMap = defaultParamSupportMap) => {
   let limit = defaultLimit;
   let order = constants.orderFilterValues.DESC;
-  const conditions = [`${ContractResult.getFullName(ContractResult.CONTRACT_ID)} = $1`];
-  const params = [contractId];
+  const conditions = [];
+  const params = [];
+  if (contractId !== '') {
+    conditions.push(`${ContractResult.getFullName(ContractResult.CONTRACT_ID)} = $1`);
+    params.push(contractId);
+  }
 
   const contractResultFromFullName = ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID);
   const contractResultFromInValues = [];
@@ -524,6 +534,36 @@ const extractContractResultsByIdQuery = (filters, contractId, paramSupportMap = 
           contractResultTimestampFullName
         );
         break;
+      case constants.filterKeys.BLOCK_NUMBER:
+        const blockData = await RecordFileService.getRecordFileBlockDetailsFromIndex(filter.value);
+        const conStartColName = _.camelCase(RecordFile.CONSENSUS_START);
+        const conEndColName = _.camelCase(RecordFile.CONSENSUS_END);
+
+        updateConditionsAndParamsWithInValues(
+          {key: constants.filterKeys.TIMESTAMP, operator: '>=', value: blockData[conStartColName]},
+          contractResultTimestampInValues,
+          params,
+          conditions,
+          contractResultTimestampFullName
+        );
+        updateConditionsAndParamsWithInValues(
+          {key: constants.filterKeys.TIMESTAMP, operator: '<=', value: blockData[conEndColName]},
+          contractResultTimestampInValues,
+          params,
+          conditions,
+          contractResultTimestampFullName
+        );
+
+        break;
+      case constants.filterKeys.BLOCK_HASH:
+        // TODO
+        break;
+      case constants.filterKeys.INTERNAL:
+        // TODO
+        break;
+      case constants.filterKeys.TRANSACTION_INDEX:
+        // TODO
+        break;
       default:
         break;
     }
@@ -552,7 +592,7 @@ const getContractResultsById = async (req, res) => {
 
   const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
-  const {conditions, params, order, limit} = extractContractResultsByIdQuery(
+  const {conditions, params, order, limit} = await extractContractResultsByIdQuery(
     filters,
     contractId,
     contractResultsByIdParamSupportMap
@@ -637,6 +677,45 @@ const getLastNonceParamValue = (query) => {
   }
 
   return nonce;
+};
+
+/**
+ * Handler function for /contracts/results API
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns {Promise<void>}
+ */
+const getContractResults = async (req, res) => {
+  utils.validateReq(req);
+  const filters = utils.buildAndValidateFilters(req.query);
+  const {conditions, params, order, limit} = await extractContractResultsByIdQuery(
+    filters,
+    '',
+    contractResultsByIdParamSupportMap
+  );
+
+  const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
+  const response = {
+    results: rows.map((row) => new ContractResultViewModel(row)),
+    links: {
+      next: null,
+    },
+  };
+
+  if (!_.isEmpty(response.results)) {
+    const lastRow = _.last(response.results);
+    const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
+    response.links.next = utils.getPaginationLink(
+      req,
+      response.results.length !== limit,
+      {
+        [constants.filterKeys.TIMESTAMP]: lastContractResultTimestamp,
+      },
+      order
+    );
+  }
+
+  res.locals[constants.responseDataLabel] = response;
 };
 
 /**
@@ -836,6 +915,7 @@ module.exports = {
   getContractById,
   getContracts,
   getContractLogs,
+  getContractResults,
   getContractResultsById,
   getContractResultsByTimestamp,
   getContractResultsByTransactionId,
