@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.publish.generator;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,10 +32,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import javax.validation.ConstraintViolationException;
-
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,6 +42,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
 class ConfigurableTransactionGeneratorTest {
 
@@ -204,13 +203,17 @@ class ConfigurableTransactionGeneratorTest {
     }
 
     private void assertRequests(List<PublishRequest> publishRequests, int size) {
-        assertThat(publishRequests).hasSize(size).allSatisfy(publishRequest -> assertThat(publishRequest)
-                .isNotNull()
-                .hasNoNullFieldsOrProperties()
-                .hasFieldOrPropertyWithValue("receipt", true)
-                .hasFieldOrPropertyWithValue("record", true)
-                .hasFieldOrPropertyWithValue("transaction.topicId", TopicId.fromString(TOPIC_ID))
-        );
+        assertThat(publishRequests)
+                .hasSize(size)
+                .allSatisfy(publishRequest -> assertThat(publishRequest)
+                        .isNotNull()
+                        .hasNoNullFieldsOrProperties()
+                        .hasFieldOrPropertyWithValue("receipt", true)
+                        .hasFieldOrPropertyWithValue("record", true)
+                        .hasFieldOrPropertyWithValue("transaction.topicId", TopicId.fromString(TOPIC_ID))
+                        .satisfies(r -> assertThat(r.getTransaction().getTransactionMemo())
+                                .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+")))
+                );
     }
 
     private void assertRequests(List<PublishRequest> publishRequests) {
