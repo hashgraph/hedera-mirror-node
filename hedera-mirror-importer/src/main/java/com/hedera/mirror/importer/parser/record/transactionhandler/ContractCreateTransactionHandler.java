@@ -149,10 +149,14 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 .getContractCreateInstance();
         switch (transactionBody.getInitcodeSourceCase()) {
             case FILEID:
-                contract.setFileId(EntityId.of(transactionBody.getFileID()));
+                if (contract.getFileId() == null) {
+                    contract.setFileId(EntityId.of(transactionBody.getFileID()));
+                }
                 break;
             case INITCODE:
-                contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+                if (contract.getInitcode() == null) {
+                    contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+                }
                 break;
             default:
                 // should we throw in this case?
@@ -165,10 +169,12 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
         var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
 
-        if (ethereumTransaction.getCallData() != null) {
-            contract.setInitcode(ethereumTransaction.getCallData());
-        } else {
+        if (contract.getFileId() == null) {
             contract.setFileId(ethereumTransaction.getCallDataId());
+        }
+
+        if (contract.getInitcode() == null) {
+            contract.setInitcode(ethereumTransaction.getCallData());
         }
     }
 }
