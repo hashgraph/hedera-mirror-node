@@ -78,6 +78,40 @@ beforeEach(async () => {
   await integrationDbOps.cleanUp(dbConfig.sqlConnection);
 });
 
+const expectToEqualId16 = (block) => {
+  expect(block.index).toEqual('16');
+  expect(block.count).toEqual('3');
+  expect(block.name).toEqual('2022-04-27T12_09_24.499938763Z.rcd');
+  expect(block.hash).toEqual(
+    'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c'
+  );
+  expect(block.prevHash).toEqual(
+    '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+  );
+  expect(block.hapiVersionMajor).toEqual(0);
+  expect(block.hapiVersionMinor).toEqual(22);
+  expect(block.hapiVersionPatch).toEqual(3);
+  expect(block.consensusStart).toEqual('1676540001234390000');
+  expect(block.consensusEnd).toEqual('1676540001234490000');
+};
+
+const expectToEqualId17 = (block) => {
+  expect(block.index).toEqual('17');
+  expect(block.count).toEqual('5');
+  expect(block.name).toEqual('2022-04-27T12_24_30.768994443Z.rcd');
+  expect(block.hash).toEqual(
+    'b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216'
+  );
+  expect(block.prevHash).toEqual(
+    'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c'
+  );
+  expect(block.hapiVersionMajor).toEqual(0);
+  expect(block.hapiVersionMinor).toEqual(22);
+  expect(block.hapiVersionPatch).toEqual(3);
+  expect(block.consensusStart).toEqual('1676540001234500000');
+  expect(block.consensusEnd).toEqual('1676540001234600000');
+};
+
 describe('BlockService tests', () => {
   test('Verify buildWhereSqlStatement with no params', async () => {
     const {where, params} = BlockService.buildWhereSqlStatement([]);
@@ -113,35 +147,8 @@ describe('BlockService tests', () => {
 
     expect(blocks.length).toEqual(2);
 
-    expect(blocks[0].index).toEqual('16');
-    expect(blocks[0].count).toEqual('3');
-    expect(blocks[0].name).toEqual('2022-04-27T12_09_24.499938763Z.rcd');
-    expect(blocks[0].hash).toEqual(
-      'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c'
-    );
-    expect(blocks[0].prevHash).toEqual(
-      '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-    );
-    expect(blocks[0].hapiVersionMajor).toEqual(0);
-    expect(blocks[0].hapiVersionMinor).toEqual(22);
-    expect(blocks[0].hapiVersionPatch).toEqual(3);
-    expect(blocks[0].consensusStart).toEqual('1676540001234390000');
-    expect(blocks[0].consensusEnd).toEqual('1676540001234490000');
-
-    expect(blocks[1].index).toEqual('17');
-    expect(blocks[1].count).toEqual('5');
-    expect(blocks[1].name).toEqual('2022-04-27T12_24_30.768994443Z.rcd');
-    expect(blocks[1].hash).toEqual(
-      'b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216'
-    );
-    expect(blocks[1].prevHash).toEqual(
-      'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c'
-    );
-    expect(blocks[1].hapiVersionMajor).toEqual(0);
-    expect(blocks[1].hapiVersionMinor).toEqual(22);
-    expect(blocks[1].hapiVersionPatch).toEqual(3);
-    expect(blocks[1].consensusStart).toEqual('1676540001234500000');
-    expect(blocks[1].consensusEnd).toEqual('1676540001234600000');
+    expectToEqualId16(blocks[0]);
+    expectToEqualId17(blocks[1]);
   });
 
   test('Verify getBlocks with block.number filter and order desc', async () => {
@@ -154,21 +161,7 @@ describe('BlockService tests', () => {
     });
 
     expect(blocks.length).toEqual(1);
-
-    expect(blocks[0].index).toEqual('16');
-    expect(blocks[0].count).toEqual('3');
-    expect(blocks[0].name).toEqual('2022-04-27T12_09_24.499938763Z.rcd');
-    expect(blocks[0].hash).toEqual(
-      'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c'
-    );
-    expect(blocks[0].prevHash).toEqual(
-      '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
-    );
-    expect(blocks[0].hapiVersionMajor).toEqual(0);
-    expect(blocks[0].hapiVersionMinor).toEqual(22);
-    expect(blocks[0].hapiVersionPatch).toEqual(3);
-    expect(blocks[0].consensusStart).toEqual('1676540001234390000');
-    expect(blocks[0].consensusEnd).toEqual('1676540001234490000');
+    expectToEqualId16(blocks[0]);
   });
 
   test('Verify getBlocks with limit 1 and order desc', async () => {
@@ -181,20 +174,6 @@ describe('BlockService tests', () => {
     });
 
     expect(blocks.length).toEqual(1);
-
-    expect(blocks[0].index).toEqual('17');
-    expect(blocks[0].count).toEqual('5');
-    expect(blocks[0].name).toEqual('2022-04-27T12_24_30.768994443Z.rcd');
-    expect(blocks[0].hash).toEqual(
-      'b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216'
-    );
-    expect(blocks[0].prevHash).toEqual(
-      'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c'
-    );
-    expect(blocks[0].hapiVersionMajor).toEqual(0);
-    expect(blocks[0].hapiVersionMinor).toEqual(22);
-    expect(blocks[0].hapiVersionPatch).toEqual(3);
-    expect(blocks[0].consensusStart).toEqual('1676540001234500000');
-    expect(blocks[0].consensusEnd).toEqual('1676540001234600000');
+    expectToEqualId17(blocks[0]);
   });
 });

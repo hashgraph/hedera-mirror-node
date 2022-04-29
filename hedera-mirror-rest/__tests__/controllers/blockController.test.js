@@ -25,22 +25,22 @@ const {BlockController} = require('../../controllers');
 
 describe('Block Controller', () => {
   test('Verify extractOrderFromFilters', async () => {
-    const order = await BlockController.extractOrderFromFilters({}, constants.orderFilterValues.DESC);
+    const order = BlockController.extractOrderFromFilters({}, constants.orderFilterValues.DESC);
     expect(order).toEqual('desc');
   });
 
   test('Verify extractOrderFromFilters with param asc', async () => {
-    const order = await BlockController.extractOrderFromFilters({order: 'asc'}, constants.orderFilterValues.DESC);
+    const order = BlockController.extractOrderFromFilters({order: 'asc'}, constants.orderFilterValues.DESC);
     expect(order).toEqual('asc');
   });
 
   test('Verify extractLimitFromFilters', async () => {
-    const limit = await BlockController.extractLimitFromFilters({}, 25);
+    const limit = BlockController.extractLimitFromFilters({}, 25);
     expect(limit).toEqual(25);
   });
 
   test('Verify extractLimitFromFilters with param', async () => {
-    const limit = await BlockController.extractLimitFromFilters({limit: 50}, 25);
+    const limit = BlockController.extractLimitFromFilters({limit: 50}, 25);
     expect(limit).toEqual(50);
   });
 
@@ -56,12 +56,12 @@ describe('Block Controller', () => {
   });
 
   test('Verify extractSqlFromBlockFilters', async () => {
-    const queryObj = await BlockController.extractSqlFromBlockFilters({});
+    const queryObj = BlockController.extractSqlFromBlockFilters({});
     expect(queryObj).toEqual({order: 'desc', limit: 25, whereQuery: []});
   });
 
   test('Verify extractSqlFromBlockFilters with block.number, order and limit params', async () => {
-    const queryObj = await BlockController.extractSqlFromBlockFilters({
+    const queryObj = BlockController.extractSqlFromBlockFilters({
       'block.number': 'gt:10',
       order: 'asc',
       limit: '10',
@@ -74,7 +74,7 @@ describe('Block Controller', () => {
   });
 
   test('Verify extractSqlFromBlockFilters with block.number, timestamp, order and limit params', async () => {
-    const queryObj = await BlockController.extractSqlFromBlockFilters({
+    const queryObj = BlockController.extractSqlFromBlockFilters({
       'block.number': 'gte:10',
       timestamp: 'lt:1676540001.234810000',
       order: 'asc',
