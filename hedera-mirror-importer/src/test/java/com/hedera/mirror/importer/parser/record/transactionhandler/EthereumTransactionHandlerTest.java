@@ -61,7 +61,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     protected TransactionHandler getTransactionHandler() {
         doReturn(domainBuilder.ethereumTransaction().get()).when(ethereumTransactionParser).decode(any());
         entityProperties = new EntityProperties();
-        return new EthereumTransactionHandler(entityIdService, entityProperties, entityListener,
+        return new EthereumTransactionHandler(entityProperties, entityListener,
                 ethereumTransactionParser);
     }
 

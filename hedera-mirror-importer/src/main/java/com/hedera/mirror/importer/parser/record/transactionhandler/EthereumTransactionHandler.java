@@ -30,7 +30,6 @@ import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
@@ -39,7 +38,6 @@ import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionPars
 @Named
 @RequiredArgsConstructor
 class EthereumTransactionHandler implements TransactionHandler {
-    private final EntityIdService entityIdService;
     private final EntityProperties entityProperties;
     private final EntityListener entityListener;
     private final EthereumTransactionParser ethereumTransactionParser;
