@@ -52,6 +52,7 @@ const contractWithInitcodeFields = [...contractFields, Contract.getFullName(Cont
 
 const emptyFilterString = 'empty filters';
 const primaryContractFilter = 'cr.contract_id = $1';
+const defaultInternalFilter = 't.nonce=$2';
 
 describe('extractSqlFromContractFilters', () => {
   const defaultExpected = {
@@ -407,9 +408,10 @@ describe('getLastNonceParamValue', () => {
 
 describe('extractContractResultsByIdQuery', () => {
   const defaultContractId = 1;
+  const defaultNonce = 0;
   const defaultExpected = {
-    conditions: [primaryContractFilter],
-    params: [defaultContractId],
+    conditions: [primaryContractFilter, defaultInternalFilter],
+    params: [defaultContractId, defaultNonce],
     order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
   };
@@ -478,8 +480,8 @@ describe('extractContractResultsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [primaryContractFilter, 'cr.payer_account_id > $2', 'cr.payer_account_id in ($3,$4)'],
-        params: [defaultContractId, '1000', '1001', '1002'],
+        conditions: [primaryContractFilter, 'cr.payer_account_id > $2', 't.nonce=$3', 'cr.payer_account_id in ($4,$5)'],
+        params: [defaultContractId, '1000', defaultNonce, '1001', '1002'],
       },
     },
     {
@@ -506,16 +508,21 @@ describe('extractContractResultsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [primaryContractFilter, 'cr.consensus_timestamp > $2', 'cr.consensus_timestamp in ($3,$4)'],
-        params: [defaultContractId, '1000', '1001', '1002'],
+        conditions: [
+          primaryContractFilter,
+          'cr.consensus_timestamp > $2',
+          't.nonce=$3',
+          'cr.consensus_timestamp in ($4,$5)',
+        ],
+        params: [defaultContractId, '1000', defaultNonce, '1001', '1002'],
       },
     },
   ];
 
   specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
+    test(`${spec.name}`, async () => {
       expect(
-        contracts.extractContractResultsByIdQuery(
+        await contracts.extractContractResultsByIdQuery(
           spec.input.filter,
           spec.input.contractId,
           contracts.contractResultsByIdParamSupportMap

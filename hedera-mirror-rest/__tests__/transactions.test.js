@@ -758,7 +758,8 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
         t.transaction_hash,
         t.type,
         t.valid_duration_seconds,
-        t.valid_start_ns
+        t.valid_start_ns,
+        t.index
       from transaction t
       join timestampFilter tf
         on t.consensus_timestamp = tf.consensus_timestamp
@@ -841,7 +842,8 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
         t.transaction_hash,
         t.type,
         t.valid_duration_seconds,
-        t.valid_start_ns
+        t.valid_start_ns,
+        t.index
       from tlist t
       full outer join c_list ctrl
         on t.consensus_timestamp = ctrl.consensus_timestamp
@@ -869,6 +871,7 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
       t.type,
       t.valid_duration_seconds,
       t.valid_start_ns,
+      t.index,
       t.ctr_list as crypto_transfer_list,
       t.ttr_list as token_transfer_list,
       t.ntr_list as nft_transfer_list,

@@ -65,6 +65,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
     );
     const expected = `select *
       from contract_result cr
+      join transaction t on cr.consensus_timestamp = t.consensus_timestamp
       where cr.contract_id = $1
       order by cr.consensus_timestamp asc
       limit $2`;
@@ -82,6 +83,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
     );
     const expected = `select *
       from contract_result cr
+      join transaction t on cr.consensus_timestamp = t.consensus_timestamp
       where cr.contract_id = $1
         and cr.consensus_timestamp > $2
         and cr.payer_account_id = $3
@@ -304,7 +306,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
     ];
 
     const response = await ContractService.getContractResultsByIdAndFilters(
-      ['contract_id = $1', 'consensus_timestamp > $2', 'payer_account_id = $3'],
+      ['cr.contract_id = $1', 'cr.consensus_timestamp > $2', 'cr.payer_account_id = $3'],
       [3, 2, 124],
       'asc',
       2

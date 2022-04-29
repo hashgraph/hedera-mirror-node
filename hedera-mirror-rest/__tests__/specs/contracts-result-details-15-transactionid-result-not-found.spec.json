@@ -6,7 +6,8 @@
         "amount": 30,
         "consensus_timestamp": "167654000123457",
         "contract_id": 5001,
-        "payer_account_id": 8001
+        "payer_account_id": 8001,
+        "skipTransaction": true
       }
     ],
     "recordFiles": [

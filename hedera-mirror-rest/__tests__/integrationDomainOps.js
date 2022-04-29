@@ -738,6 +738,10 @@ const addContract = async (contract) => {
 };
 
 const addContractResult = async (contractResultInput) => {
+  const skipTransaction = contractResultInput.skipTransaction;
+  const transactionIndex = contractResultInput.transactionIndex || 1;
+  const transactionNonce = contractResultInput.transactionNonce || 0;
+
   const insertFields = [
     'amount',
     'bloom',
@@ -783,6 +787,30 @@ const addContractResult = async (contractResultInput) => {
       : contractResult.function_result;
 
   await insertDomainObject('contract_result', insertFields, contractResult);
+
+  if (!skipTransaction) {
+    await addTransaction({
+      consensus_timestamp: contractResult.consensus_timestamp,
+      type: 11,
+      result: 22,
+      valid_start_ns: contractResult.consensus_timestamp,
+      valid_duration_seconds: 5,
+      node_account_id: 3,
+      entity_id: contractResult.contract_id,
+      initial_balance: 0,
+      max_fee: 0,
+      charged_tx_fee: 0,
+      memo: null,
+      transaction_hash: 'hash1',
+      transaction_bytes: null,
+      scheduled: false,
+      nonce: transactionNonce,
+      parent_consensus_timestamp: null,
+      errata: null,
+      payerAccountId: contractResult.payer_account_id,
+      index: transactionIndex,
+    });
+  }
 };
 
 const addContractLog = async (contractLogInput) => {
