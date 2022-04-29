@@ -62,12 +62,6 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
         }
 
         var consensusEndAndBlockNumber = CONSENSUS_END_BLOCK_NUMBER_PER_NET.get(mirrorProperties.getNetwork());
-
-        if (consensusEndAndBlockNumber == null) {
-            throw new RuntimeException("There is no consensus block number and consensus end for the network: "
-                    + mirrorProperties.getNetwork());
-        }
-
         long correctConsensusNumber = consensusEndAndBlockNumber.getKey();
         long correctBlockNumber = consensusEndAndBlockNumber.getValue();
         recordFileRepository.findById(correctConsensusNumber)
