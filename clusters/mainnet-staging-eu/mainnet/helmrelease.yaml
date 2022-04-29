@@ -53,6 +53,7 @@ spec:
       enabled: false
     rest:
       ingress:
+        annotations: {}
         middleware:
           enabled: false
     rosetta:
