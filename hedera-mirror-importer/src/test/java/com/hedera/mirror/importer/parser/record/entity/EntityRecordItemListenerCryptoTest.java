@@ -29,6 +29,9 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+
+import com.hedera.mirror.importer.util.UtilityTest;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -95,8 +98,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private static final AccountID accountId1 = AccountID.newBuilder().setAccountNum(1001).build();
     private static final long[] additionalTransfers = {5000};
     private static final long[] additionalTransferAmounts = {1001, 1002};
-    private static final ByteString ALIAS_KEY = ByteString.copyFromUtf8(
-            "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff");
+    private static final ByteString ALIAS_KEY = DomainUtils.fromBytes(UtilityTest.ALIAS_ECDSA_SECP256K1);
 
     @Resource
     private ContractRepository contractRepository;
