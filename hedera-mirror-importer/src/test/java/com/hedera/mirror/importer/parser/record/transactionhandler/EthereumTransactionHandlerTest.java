@@ -27,6 +27,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -112,7 +113,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         EntityId entityId = transactionHandler.getEntity(recordItem);
         assertThat(entityId).isEqualTo(expectedEntityId);
 
-        verify(entityListener, atLeastOnce()).onEthereumTransaction(any());
+        verify(entityListener, times(1)).onEthereumTransaction(any());
     }
 
     @Test

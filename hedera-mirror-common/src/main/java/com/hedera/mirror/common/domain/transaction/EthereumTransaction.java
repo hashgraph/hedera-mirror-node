@@ -21,7 +21,6 @@ package com.hedera.mirror.common.domain.transaction;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -35,7 +34,6 @@ import lombok.ToString;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.EntityIdSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For builder
@@ -52,7 +50,6 @@ public class EthereumTransaction implements Persistable<Long> {
     private byte[] callData;
 
     @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId callDataId;
 
     @ToString.Exclude
@@ -88,7 +85,6 @@ public class EthereumTransaction implements Persistable<Long> {
     private Long nonce;
 
     @Convert(converter = AccountIdConverter.class)
-    @JsonSerialize(using = EntityIdSerializer.class)
     private EntityId payerAccountId;
 
     private Integer recoveryId;

@@ -29,7 +29,6 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.FileID;
 import javax.annotation.Resource;
 import lombok.SneakyThrows;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,7 +58,6 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
         entityProperties.getPersist().setEthereumTransactions(true);
     }
 
-    @SneakyThrows
     @Test
     void ethereumTransactionCallLondon() {
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(false)
@@ -79,7 +77,6 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
         );
     }
 
-    @SneakyThrows
     @Test
     void ethereumTransactionCallLegacy() {
         RecordItem recordItem = getEthereumTransactionRecordItem(false,
@@ -99,7 +96,6 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
         );
     }
 
-    @SneakyThrows
     @Test
     void ethereumTransactionCallEIP155() {
         RecordItem recordItem = getEthereumTransactionRecordItem(false,
@@ -119,7 +115,6 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
         );
     }
 
-    @SneakyThrows
     @Test
     void ethereumEip1559TransactionCreate() {
         RecordItem recordItem = getEthereumTransactionRecordItem(true,
@@ -139,7 +134,6 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
         );
     }
 
-    @SneakyThrows
     @Test
     void ethereumLegacyTransactionCreate() {
         RecordItem recordItem = getEthereumTransactionRecordItem(true,
@@ -159,7 +153,6 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
         );
     }
 
-    @SneakyThrows
     @Test
     void ethereumLegacyChainListTransactionCreate() {
         RecordItem recordItem = getEthereumTransactionRecordItem(true,
@@ -179,7 +172,6 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
         );
     }
 
-    @SneakyThrows
     @Test
     void ethereumTransactionLegacyBadBytes() {
         var transactionBytes = RLPEncoder.encodeAsList(
@@ -193,7 +185,8 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
         assertThrows(InvalidDatasetException.class, () -> parseRecordItemAndCommit(recordItem));
     }
 
-    private RecordItem getEthereumTransactionRecordItem(boolean create, String transactionBytesString) throws DecoderException {
+    @SneakyThrows
+    private RecordItem getEthereumTransactionRecordItem(boolean create, String transactionBytesString) {
         var transactionBytes = Hex.decodeHex(transactionBytesString);
         return recordItemBuilder.ethereumTransaction(create)
                 .transactionBody(x -> x.setEthereumData(ByteString.copyFrom(transactionBytes)))

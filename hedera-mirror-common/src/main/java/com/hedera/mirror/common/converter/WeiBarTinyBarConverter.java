@@ -21,9 +21,7 @@ package com.hedera.mirror.common.converter;
  */
 
 import java.math.BigInteger;
-import org.springframework.boot.context.properties.ConfigurationPropertiesBinding;
 
-@ConfigurationPropertiesBinding
 public class WeiBarTinyBarConverter {
     public static final WeiBarTinyBarConverter INSTANCE = new WeiBarTinyBarConverter();
     public static final Long WEIBARS_TO_TINYBARS = 10_000_000_000L;

@@ -1363,8 +1363,8 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(ethereumTransactionRepository.findAll())
+                .hasSize(1)
                 .first()
-                .isNotNull()
                 .satisfies(t -> assertThat(t.getCallDataId().getId()).isEqualTo(ethereumTransaction.getCallDataId()
                         .getId()))
                 .usingRecursiveComparison()

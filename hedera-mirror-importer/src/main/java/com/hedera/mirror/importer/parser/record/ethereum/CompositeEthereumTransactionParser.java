@@ -32,6 +32,7 @@ import com.hedera.mirror.importer.exception.InvalidDatasetException;
 @Primary
 @RequiredArgsConstructor
 public class CompositeEthereumTransactionParser implements EthereumTransactionParser {
+    private static final byte[] EIP1559_BYTES_PREFIX = new byte[] {2, -8};
     private final LegacyEthereumTransactionParser legacyEthereumTransactionParser;
     private final Eip1559EthereumTransactionParser eip1559EthereumTransactionParser;
 
@@ -46,7 +47,8 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
             throw new InvalidDatasetException("Ethereum transaction bytes length is less than 2 bytes in length");
         }
 
-        var eip1559StartingBytesMatch = transactionBytes[0] == (byte) 2 && transactionBytes[1] == (byte) -8;
+        var eip1559StartingBytesMatch = transactionBytes[0] == EIP1559_BYTES_PREFIX[0] &&
+                transactionBytes[1] == EIP1559_BYTES_PREFIX[1];
         return eip1559StartingBytesMatch ? eip1559EthereumTransactionParser : legacyEthereumTransactionParser;
     }
 }
