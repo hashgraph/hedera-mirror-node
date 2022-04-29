@@ -29,86 +29,86 @@ const utils = require('../utils');
 const constants = require('../constants');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
-const extractOrderFromFilters = (filters, defaultOrder) => {
-  if (filters.hasOwnProperty('order')) {
-    return constants.orderFilterValues[filters.order.toUpperCase()];
-  }
-
-  return defaultOrder;
-};
-
-const extractLimitFromFilters = (filters, defaultLimit) => {
-  if (filters.hasOwnProperty('limit')) {
-    const limit = parseInt(filters.limit);
-    if (limit > 100) {
-      throw new InvalidArgumentError(`Invalid limit param value, must be between 1 and 100`);
+class BlockController extends BaseController {
+  extractOrderFromFilters = (filters, defaultOrder) => {
+    if (filters.hasOwnProperty('order')) {
+      return constants.orderFilterValues[filters.order.toUpperCase()];
     }
 
-    return limit;
-  }
-
-  return defaultLimit;
-};
-
-const extractSqlFromBlockFilters = (filters) => {
-  const filterQuery = {
-    order: extractOrderFromFilters(filters, constants.orderFilterValues.DESC),
-    limit: extractLimitFromFilters(filters, 25),
-    whereQuery: [],
+    return defaultOrder;
   };
 
-  if (filters && filters.length === 0) {
+  extractLimitFromFilters = (filters, defaultLimit) => {
+    if (filters.hasOwnProperty('limit')) {
+      const limit = parseInt(filters.limit);
+      if (limit > 100) {
+        throw new InvalidArgumentError(`Invalid limit param value, must be between 1 and 100`);
+      }
+
+      return limit;
+    }
+
+    return defaultLimit;
+  };
+
+  extractSqlFromBlockFilters = (filters) => {
+    const filterQuery = {
+      order: this.extractOrderFromFilters(filters, constants.orderFilterValues.DESC),
+      limit: this.extractLimitFromFilters(filters, 25),
+      whereQuery: [],
+    };
+
+    if (filters && filters.length === 0) {
+      return filterQuery;
+    }
+
+    if (filters.hasOwnProperty('block.number')) {
+      filterQuery.whereQuery.push(
+        utils.parseParams(
+          filters['block.number'],
+          (value) => value,
+          (op, value) => [`index ${op} ?`, [value]],
+          false
+        )
+      );
+    }
+
+    if (filters.hasOwnProperty('timestamp')) {
+      filterQuery.whereQuery.push(
+        utils.parseParams(
+          filters['timestamp'],
+          (value) => utils.parseTimestampParam(value),
+          (op, value) => [`consensus_end ${op} ?`, [value]],
+          false
+        )
+      );
+    }
+
     return filterQuery;
-  }
+  };
 
-  if (filters.hasOwnProperty('block.number')) {
-    filterQuery.whereQuery.push(
-      utils.parseParams(
-        filters['block.number'],
-        (value) => value,
-        (op, value) => [`index ${op} ?`, [value]],
-        false
-      )
-    );
-  }
+  generateNextLink = (req, blocks, filters) => {
+    return blocks.length
+      ? utils.getPaginationLink(
+          req,
+          blocks.length !== filters.limit,
+          {
+            [constants.filterKeys.BLOCK_NUMBER]: blocks[0].index,
+          },
+          filters.order
+        )
+      : null;
+  };
 
-  if (filters.hasOwnProperty('timestamp')) {
-    filterQuery.whereQuery.push(
-      utils.parseParams(
-        filters['timestamp'],
-        (value) => utils.parseTimestampParam(value),
-        (op, value) => [`consensus_end ${op} ?`, [value]],
-        false
-      )
-    );
-  }
-
-  return filterQuery;
-};
-
-const generateNextLink = (req, blocks, filters) => {
-  return blocks.length
-    ? utils.getPaginationLink(
-        req,
-        blocks.length !== filters.limit,
-        {
-          [constants.filterKeys.BLOCK_NUMBER]: blocks[0].index,
-        },
-        filters.order
-      )
-    : null;
-};
-
-class BlockController extends BaseController {
   getBlocks = async (req, res) => {
     utils.validateReq(req);
-    const filters = extractSqlFromBlockFilters(req.query);
+    const filters = this.extractSqlFromBlockFilters(req.query);
     const blocks = await BlockService.getBlocks(filters);
 
     res.send({
       blocks: blocks.map((model) => new BlockViewModel(model)),
       links: {
-        next: generateNextLink(req, blocks, filters),
+        next: this.generateNextLink(req, blocks, filters),
       },
     });
   };
