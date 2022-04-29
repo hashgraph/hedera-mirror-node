@@ -150,8 +150,7 @@ public class TransactionPublisher implements AutoCloseable {
             // TransactionId.getRecord() is inefficient doing a get receipt, a cost query, then the get record
             TransactionRecordQuery transactionRecordQuery = new TransactionRecordQuery()
                     .setQueryPayment(Hbar.from(1, HbarUnit.HBAR))
-                    .setTransactionId(transactionId)
-                    .setMaxAttempts(10);
+                    .setTransactionId(transactionId);
             return execute(client, transactionRecordQuery)
                     .map(r -> builder.record(r).receipt(r.receipt));
         } else if (request.isReceipt()) {
@@ -245,7 +244,7 @@ public class TransactionPublisher implements AutoCloseable {
         PrivateKey operatorPrivateKey = PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
 
         Client client = Client.forNetwork(nodes);
-        client.setNodeMaxBackoff(Duration.ofMinutes(1L));
+        client.setNodeMaxBackoff(publishProperties.getNodeMaxBackoff());
         client.setOperator(operatorId, operatorPrivateKey);
         return client;
     }
