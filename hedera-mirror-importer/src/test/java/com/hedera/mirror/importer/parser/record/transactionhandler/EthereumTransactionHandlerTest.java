@@ -60,7 +60,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        doReturn(domainBuilder.ethereumTransaction().get()).when(ethereumTransactionParser).decode(any());
+        doReturn(domainBuilder.ethereumTransaction(true).get()).when(ethereumTransactionParser).decode(any());
         entityProperties = new EntityProperties();
         return new EthereumTransactionHandler(entityProperties, entityListener,
                 ethereumTransactionParser);
@@ -88,7 +88,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Test
     void testGetEntityIdOnCreate() {
         // given LONDON_RAW_TX matching components
-        doReturn(domainBuilder.ethereumTransaction()
+        doReturn(domainBuilder.ethereumTransaction(true)
                 .customize(x -> x
                         .callData(Hex.decode("123456"))
                         .chainId(Hex.decode("012a"))

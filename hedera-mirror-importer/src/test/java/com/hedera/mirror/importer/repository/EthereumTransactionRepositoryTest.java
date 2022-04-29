@@ -33,8 +33,18 @@ class EthereumTransactionRepositoryTest extends AbstractRepositoryTest {
     private EthereumTransactionRepository ethereumTransactionRepository;
 
     @Test
-    void save() {
-        EthereumTransaction ethereumTransaction = domainBuilder.ethereumTransaction().persist();
+    void saveInitCode() {
+        EthereumTransaction ethereumTransaction = domainBuilder.ethereumTransaction(true).persist();
+        assertThat(ethereumTransactionRepository.findById(ethereumTransaction.getId()))
+                .get()
+                .usingRecursiveComparison()
+                .ignoringFields("callDataId.type")
+                .isEqualTo(ethereumTransaction);
+    }
+
+    @Test
+    void saveFileId() {
+        EthereumTransaction ethereumTransaction = domainBuilder.ethereumTransaction(false).persist();
         assertThat(ethereumTransactionRepository.findById(ethereumTransaction.getId()))
                 .get()
                 .usingRecursiveComparison()

@@ -303,11 +303,10 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<EthereumTransaction, EthereumTransaction.EthereumTransactionBuilder> ethereumTransaction() {
+    public DomainWrapper<EthereumTransaction, EthereumTransaction.EthereumTransactionBuilder> ethereumTransaction(
+            boolean hasInitCode) {
         var builder = EthereumTransaction.builder()
                 .accessList(bytes(100))
-                .callData(bytes(100))
-                .callDataId(entityId(FILE))
                 .chainId(bytes(1))
                 .consensusTimestamp(timestamp())
                 .data(bytes(100))
@@ -327,6 +326,13 @@ public class DomainBuilder {
                 .toAddress(bytes(20))
                 .type(2)
                 .value(bytes(32));
+
+        if (hasInitCode) {
+            builder.callData(bytes(100));
+        } else {
+            builder.callDataId(entityId(FILE));
+        }
+
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

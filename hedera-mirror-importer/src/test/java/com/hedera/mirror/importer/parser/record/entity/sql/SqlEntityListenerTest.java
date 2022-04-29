@@ -1354,8 +1354,24 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onEthereumTransaction() {
-        var ethereumTransaction = domainBuilder.ethereumTransaction().get();
+    void onEthereumTransactionWInitCode() {
+        var ethereumTransaction = domainBuilder.ethereumTransaction(true).get();
+        sqlEntityListener.onEthereumTransaction(ethereumTransaction);
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(ethereumTransactionRepository.findAll())
+                .hasSize(1)
+                .first()
+                .usingRecursiveComparison()
+                .isEqualTo(ethereumTransaction);
+    }
+
+    @Test
+    void onEthereumTransactionWFileId() {
+        var ethereumTransaction = domainBuilder.ethereumTransaction(false).get();
         sqlEntityListener.onEthereumTransaction(ethereumTransaction);
 
         // when
@@ -1368,7 +1384,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .satisfies(t -> assertThat(t.getCallDataId().getId()).isEqualTo(ethereumTransaction.getCallDataId()
                         .getId()))
                 .usingRecursiveComparison()
-                .ignoringFields("callDataId")
+                .ignoringFields("callDataId.type")
                 .isEqualTo(ethereumTransaction);
     }
 
