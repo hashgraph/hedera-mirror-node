@@ -51,6 +51,10 @@ spec:
       enabled: false
     redis:
       enabled: false
+    rest:
+      ingress:
+        middleware:
+          enabled: false
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
