@@ -1,0 +1,64 @@
+{
+  "description": "Contract logs api calls with multiple topic0 and timestamp param",
+  "setup": {
+    "contractlogs": [
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 0,
+        "topic0": [
+          151, 193, 252, 10, 110, 213, 85, 27, 200, 49, 87, 19, 37, 233, 189, 179, 101, 208, 104, 3, 16, 13, 194, 6, 72,
+          100, 11, 162, 76, 230, 151, 80
+        ]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 1,
+        "topic0": [
+          152, 193, 252, 10, 110, 213, 85, 27, 200, 49, 87, 19, 37, 233, 189, 179, 101, 208, 104, 3, 16, 13, 194, 6, 72,
+          100, 11, 162, 76, 230, 151, 80
+        ]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 2,
+        "topic0": null
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 3,
+        "topic0": null,
+        "topic1": [
+          151, 193, 252, 10, 110, 213, 85, 27, 200, 49, 87, 19, 37, 233, 189, 179, 101, 208, 104, 3, 16, 13, 194, 6, 72,
+          100, 11, 162, 76, 230, 151, 80
+        ]
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/0.0.1000/results/logs?topic0=0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750&topic0=0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67&timestamp=1639010141.000000000"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "logs": [
+      {
+        "address": "0x00000000000000000000000000000000000003e8",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1000",
+        "data": "0x0123",
+        "index": 0,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      }
+    ]
+  }
+}
