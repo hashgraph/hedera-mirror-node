@@ -55,6 +55,7 @@ const transactionFields = [
   Transaction.TYPE,
   Transaction.VALID_DURATION_SECONDS,
   Transaction.VALID_START_NS,
+  Transaction.INDEX,
 ];
 const transactionFullFields = transactionFields.map((f) => Transaction.getFullName(f));
 // consensus_timestamp in transfer_list is a coalesce of multiple consensus timestamp columns

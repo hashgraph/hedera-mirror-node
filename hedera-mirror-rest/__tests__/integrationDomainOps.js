@@ -555,6 +555,7 @@ const addTransaction = async (transaction) => {
     type: 14,
     valid_duration_seconds: 11,
     valid_start_ns: null,
+    index: 1,
   };
   const insertFields = Object.keys(defaults);
 

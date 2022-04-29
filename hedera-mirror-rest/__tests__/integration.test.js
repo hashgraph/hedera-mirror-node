@@ -455,7 +455,7 @@ describe('DB integration test - spec based', () => {
   const specPath = path.join(__dirname, 'specs');
   // process applicable .spec.json files
   fs.readdirSync(specPath)
-    .filter((f) => f.endsWith('.spec.json'))
+    .filter((f) => f.endsWith('contracts-results-list-09-transaction-index.spec.json'))
     .forEach((file) => {
       const p = path.join(specPath, file);
       const specText = fs.readFileSync(p, 'utf8');
