@@ -25,7 +25,6 @@ import javax.inject.Named;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -141,7 +140,6 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 updateChildFromEthereumTransactionParent(contract, parentRecordItem);
                 break;
             default:
-                // should we throw in this case?
                 break;
         }
     }
@@ -165,8 +163,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     private void updateChildFromEthereumTransactionParent(Contract contract, RecordItem recordItem) {
         var body = recordItem.getTransactionBody().getEthereumTransaction();
         var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
-        // is it okay to call a transaction handler in another transaction handler?
-        EthereumTransaction ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
+        var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
 
         if (ethereumTransaction.getCallData() != null) {
             contract.setInitcode(ethereumTransaction.getCallData());
