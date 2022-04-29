@@ -45,6 +45,7 @@ import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
+import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -74,10 +75,13 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import javax.inject.Named;
+import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Version;
+import org.web3j.crypto.Hash;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -91,11 +95,12 @@ import com.hedera.mirror.importer.util.Utility;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RecordItemBuilder {
 
+    static final String LONDON_RAW_TX =
+            "02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
     private static final AccountID NODE = AccountID.newBuilder().setAccountNum(3).build();
     private static final RealmID REALM_ID = RealmID.getDefaultInstance();
     private static final ShardID SHARD_ID = ShardID.getDefaultInstance();
     private static final AccountID TREASURY = AccountID.newBuilder().setAccountNum(98).build();
-
     private final AtomicLong id = new AtomicLong(1000L);
     private final Instant now = Instant.now();
     private final SecureRandom random = new SecureRandom();
@@ -180,6 +185,7 @@ public class RecordItemBuilder {
                         .addTopic(bytes(32))
                         .addTopic(bytes(32))
                         .build())
+                .setSenderId(accountId())
                 .addStateChanges(ContractStateChange.newBuilder()
                         .setContractID(contractId)
                         .addStorageChanges(storageChange())
@@ -259,6 +265,29 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.CRYPTODELETEALLOWANCE, builder);
     }
 
+    @SneakyThrows
+    public Builder<EthereumTransactionBody.Builder> ethereumTransaction(boolean create) {
+        var transactionBytes = Hex.decodeHex(LONDON_RAW_TX);
+        EthereumTransactionBody.Builder transactionBody = EthereumTransactionBody.newBuilder()
+                .setEthereumData(ByteString.copyFrom(transactionBytes))
+                .setMaxGasAllowance(10_000L);
+
+        var contractId = contractId();
+        var digestedHash = ByteString.copyFrom(Hash.sha3(transactionBytes));
+        if (create) {
+            transactionBody.setCallData(fileId());
+            return new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
+                    .record(r -> r
+                            .setContractCreateResult(contractFunctionResult(contractId))
+                            .setEthereumHash(digestedHash));
+        } else {
+            return new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
+                    .record(r -> r
+                            .setContractCallResult(contractFunctionResult(contractId))
+                            .setEthereumHash(digestedHash));
+        }
+    }
+
     private StorageChange.Builder storageChange() {
         return StorageChange.newBuilder()
                 .setSlot(bytes(32))
@@ -303,9 +332,14 @@ public class RecordItemBuilder {
     }
 
     public ByteString bytes(int length) {
+        byte[] bytes = randomBytes(length);
+        return ByteString.copyFrom(bytes);
+    }
+
+    private byte[] randomBytes(int length) {
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
-        return ByteString.copyFrom(bytes);
+        return bytes;
     }
 
     private CryptoTransferTransactionBody.Builder cryptoTransferTransactionBody() {

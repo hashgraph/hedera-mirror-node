@@ -46,6 +46,7 @@ import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -111,6 +112,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onEntity(Entity entity) throws ImporterException {
         onEach(EntityListener::onEntity, entity);
+    }
+
+    @Override
+    public void onEthereumTransaction(EthereumTransaction ethereumTransaction) {
+        onEach(EntityListener::onEthereumTransaction, ethereumTransaction);
     }
 
     @Override

@@ -78,6 +78,7 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -239,7 +240,8 @@ public class DomainBuilder {
                 .functionResult(bytes(128))
                 .gasLimit(200L)
                 .gasUsed(100L)
-                .payerAccountId(entityId(ACCOUNT));
+                .payerAccountId(entityId(ACCOUNT))
+                .senderId(entityId(ACCOUNT));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -297,6 +299,39 @@ public class DomainBuilder {
                 .submitKey(key())
                 .timestampRange(Range.atLeast(timestamp))
                 .type(ACCOUNT);
+
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<EthereumTransaction, EthereumTransaction.EthereumTransactionBuilder> ethereumTransaction(
+            boolean hasInitCode) {
+        var builder = EthereumTransaction.builder()
+                .accessList(bytes(100))
+                .chainId(bytes(1))
+                .consensusTimestamp(timestamp())
+                .data(bytes(100))
+                .fromAddress(bytes(20))
+                .gasLimit(Long.MAX_VALUE)
+                .gasPrice(bytes(32))
+                .hash(bytes(32))
+                .maxGasAllowance(Long.MAX_VALUE)
+                .maxFeePerGas(bytes(32))
+                .maxPriorityFeePerGas(bytes(32))
+                .nonce(1234L)
+                .payerAccountId(entityId(ACCOUNT))
+                .recoveryId(3)
+                .signatureR(bytes(32))
+                .signatureS(bytes(32))
+                .signatureV(bytes(1))
+                .toAddress(bytes(20))
+                .type(2)
+                .value(bytes(32));
+
+        if (hasInitCode) {
+            builder.callData(bytes(100));
+        } else {
+            builder.callDataId(entityId(FILE));
+        }
 
         return new DomainWrapperImpl<>(builder, builder::build);
     }

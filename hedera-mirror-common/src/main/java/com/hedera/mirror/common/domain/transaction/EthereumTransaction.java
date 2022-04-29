@@ -1,4 +1,4 @@
-package com.hedera.mirror.common.domain.contract;
+package com.hedera.mirror.common.domain.transaction;
 
 /*-
  * ‌
@@ -21,64 +21,93 @@ package com.hedera.mirror.common.domain.contract;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.util.Collections;
-import java.util.List;
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import lombok.experimental.SuperBuilder;
-import org.hibernate.annotations.Type;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.ContractIdConverter;
-import com.hedera.mirror.common.converter.LongListToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For builder
+@Builder
 @Data
 @Entity
 @NoArgsConstructor
-@SuperBuilder
-public class ContractResult implements Persistable<Long> {
-
-    private Long amount;
+public class EthereumTransaction implements Persistable<Long> {
 
     @ToString.Exclude
-    private byte[] bloom;
+    private byte[] accessList;
 
     @ToString.Exclude
-    private byte[] callResult;
+    private byte[] callData;
+
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId callDataId;
+
+    @ToString.Exclude
+    private byte[] chainId;
 
     @Id
     private Long consensusTimestamp;
 
-    @Convert(converter = ContractIdConverter.class)
-    private EntityId contractId;
-
-    @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
-    @JsonSerialize(using = LongListToStringSerializer.class)
-    private List<Long> createdContractIds = Collections.emptyList();
-
-    private String errorMessage;
+    @ToString.Exclude
+    private byte[] data;
 
     @ToString.Exclude
-    private byte[] functionParameters;
+    private byte[] fromAddress;
 
-    private byte[] functionResult; // Temporary field until we can confirm the migration captured everything
-
+    // persisted in tinybar
     private Long gasLimit;
 
-    private Long gasUsed;
+    // persisted in tinybar
+    private byte[] gasPrice;
+
+    @ToString.Exclude
+    private byte[] hash;
+
+    // persisted in tinybar
+    private byte[] maxFeePerGas;
+
+    // persisted in tinybar
+    private Long maxGasAllowance;
+
+    // persisted in tinybar
+    private byte[] maxPriorityFeePerGas;
+
+    private Long nonce;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
-    @Convert(converter = AccountIdConverter.class)
-    private EntityId senderId;
+    private Integer recoveryId;
+
+    @Column(name = "signature_r")
+    @ToString.Exclude
+    private byte[] signatureR;
+
+    @Column(name = "signature_s")
+    @ToString.Exclude
+    private byte[] signatureS;
+
+    @Column(name = "signature_v")
+    @ToString.Exclude
+    private byte[] signatureV;
+
+    @ToString.Exclude
+    private byte[] toAddress;
+
+    private Integer type;
+
+    @ToString.Exclude
+    private byte[] value;
 
     @JsonIgnore
     @Override
