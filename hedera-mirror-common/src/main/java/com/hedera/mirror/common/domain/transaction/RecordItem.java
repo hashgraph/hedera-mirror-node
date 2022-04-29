@@ -35,6 +35,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.util.Version;
 
@@ -70,6 +71,9 @@ public class RecordItem implements StreamItem {
     private EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
 
     private final Integer transactionIndex;
+
+    @NonFinal
+    private RecordItem parentRecordItem = null;
 
     /**
      * Constructs RecordItem from serialized transactionBytes and recordBytes.
@@ -161,6 +165,10 @@ public class RecordItem implements StreamItem {
         return dataCase.getNumber();
     }
 
+    public void setParentRecordItem(RecordItem recordItem) {
+        parentRecordItem = recordItem;
+    }
+
     public TransactionBody getTransactionBody() {
         return transactionBodyAndSignatureMap.getTransactionBody();
     }
@@ -171,6 +179,10 @@ public class RecordItem implements StreamItem {
 
     public boolean isSuccessful() {
         return record.getReceipt().getStatus() == ResponseCodeEnum.SUCCESS;
+    }
+
+    public boolean isChild() {
+        return record.hasParentConsensusTimestamp();
     }
 
     @Value

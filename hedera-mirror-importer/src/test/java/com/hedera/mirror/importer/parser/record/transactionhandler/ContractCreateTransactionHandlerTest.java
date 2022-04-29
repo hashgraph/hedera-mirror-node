@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -53,10 +54,14 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 
 class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private final EntityProperties entityProperties = new EntityProperties();
+
+    @Mock(lenient = true)
+    protected EthereumTransactionParser ethereumTransactionParser;
 
     @BeforeEach
     void beforeEach() {
@@ -65,7 +70,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractCreateTransactionHandler(entityIdService, entityListener, entityProperties);
+        return new ContractCreateTransactionHandler(entityIdService, entityListener, entityProperties,
+                ethereumTransactionParser);
     }
 
     @Override

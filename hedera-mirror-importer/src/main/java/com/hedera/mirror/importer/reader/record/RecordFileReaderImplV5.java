@@ -40,6 +40,7 @@ import reactor.core.publisher.Flux;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
@@ -107,12 +108,26 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         long consensusStart = 0;
         RecordStreamObject lastRecordStreamObject = null;
         List<RecordItem> items = new ArrayList<>();
+        RecordItem lastRecordItem = null;
 
         // read record stream objects
         while (!isHashObject(vdis, hashObjectClassId)) {
             RecordStreamObject recordStreamObject = new RecordStreamObject(vdis, recordFile.getHapiVersion(),
                     count);
-            items.add(recordStreamObject.getRecordItem());
+            var recordItem = recordStreamObject.getRecordItem();
+
+            // check if current item is a child
+            if (recordItem.isChild()) {
+                if (lastRecordItem != null &&
+                        DomainUtils.timestampInNanosMax(recordItem.getRecord().getParentConsensusTimestamp())
+                                .longValue() ==
+                                DomainUtils.timestampInNanosMax(lastRecordItem.getRecord().getConsensusTimestamp())
+                                        .longValue()) {
+                    recordItem.setParentRecordItem(lastRecordItem);
+                }
+            }
+
+            items.add(recordItem);
 
             if (count == 0) {
                 consensusStart = recordStreamObject.getRecordItem().getConsensusTimestamp();
@@ -120,6 +135,12 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
             lastRecordStreamObject = recordStreamObject;
             count++;
+
+            if (!recordItem.isChild()) {
+                // update last recordItem reference for next item. Preserve parent until all children have been
+                // processed since they are assured to exist in sequential order of [Parent, Child1,...,ChildN]
+                lastRecordItem = recordItem;
+            }
         }
 
         if (count == 0) {

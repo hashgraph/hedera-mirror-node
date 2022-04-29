@@ -25,6 +25,7 @@ import javax.inject.Named;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -32,17 +33,21 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
     private final EntityProperties entityProperties;
     private final EntityIdService entityIdService;
+    private final EthereumTransactionParser ethereumTransactionParser;
 
     ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                     EntityProperties entityProperties) {
+                                     EntityProperties entityProperties,
+                                     EthereumTransactionParser ethereumTransactionParser) {
         super(entityListener, TransactionType.CONTRACTCREATEINSTANCE);
         this.entityProperties = entityProperties;
         this.entityIdService = entityIdService;
+        this.ethereumTransactionParser = ethereumTransactionParser;
     }
 
     @Override
@@ -104,6 +109,10 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         contract.setMemo(transactionBody.getMemo());
+
+        // for child transactions initCode and FileID are located in parent ContractCreate/EthereumTransaction types
+        updateChildFromParent(contract, recordItem);
+
         entityListener.onContract(contract);
     }
 
@@ -114,6 +123,55 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             contractResult.setAmount(transactionBody.getInitialBalance());
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
+        }
+    }
+
+    public void updateChildFromParent(Contract contract, RecordItem recordItem) {
+        if (!entityProperties.getPersist().isContracts() || !recordItem.isChild()) {
+            return;
+        }
+
+        // parents may be ContractCreate or EthereumTransaction
+        var parentRecordItem = recordItem.getParentRecordItem();
+        switch (TransactionType.of(parentRecordItem.getTransactionType())) {
+            case CONTRACTCREATEINSTANCE:
+                updateChildFromContractCreateParent(contract, parentRecordItem);
+                break;
+            case ETHEREUMTRANSACTION:
+                updateChildFromEthereumTransactionParent(contract, parentRecordItem);
+                break;
+            default:
+                // should we throw in this case?
+                break;
+        }
+    }
+
+    private void updateChildFromContractCreateParent(Contract contract, RecordItem recordItem) {
+        var transactionBody = recordItem.getParentRecordItem().getTransactionBody()
+                .getContractCreateInstance();
+        switch (transactionBody.getInitcodeSourceCase()) {
+            case FILEID:
+                contract.setFileId(EntityId.of(transactionBody.getFileID()));
+                break;
+            case INITCODE:
+                contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+                break;
+            default:
+                // should we throw in this case?
+                break;
+        }
+    }
+
+    private void updateChildFromEthereumTransactionParent(Contract contract, RecordItem recordItem) {
+        var body = recordItem.getTransactionBody().getEthereumTransaction();
+        var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
+        // is it okay to call a transaction handler in another transaction handler?
+        EthereumTransaction ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
+
+        if (ethereumTransaction.getCallData() != null) {
+            contract.setInitcode(ethereumTransaction.getCallData());
+        } else {
+            contract.setFileId(ethereumTransaction.getCallDataId());
         }
     }
 }
