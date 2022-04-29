@@ -26,31 +26,8 @@ const {assertSqlQueryEqual} = require('../testutils');
 const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
 
-jest.setTimeout(40000);
-
-let dbConfig;
-
-// set timeout for beforeAll to 2 minutes as downloading docker image if not exists can take quite some time
-const defaultBeforeAllTimeoutMillis = 240 * 1000;
-
-beforeAll(async () => {
-  dbConfig = await integrationDbOps.instantiateDatabase();
-  await integrationDomainOps.setUp({}, dbConfig.sqlConnection);
-  global.pool = dbConfig.sqlConnection;
-}, defaultBeforeAllTimeoutMillis);
-
-afterAll(async () => {
-  await integrationDbOps.closeConnection(dbConfig);
-});
-
-beforeEach(async () => {
-  if (!dbConfig.sqlConnection) {
-    logger.warn(`sqlConnection undefined, acquire new connection`);
-    dbConfig.sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
-  }
-
-  await integrationDbOps.cleanUp(dbConfig.sqlConnection);
-});
+const {defaultMochaStatements} = require('./defaultMochaStatements');
+defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 const defaultNodeFilter = 'abe.node_id = $2';
 describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
@@ -118,7 +95,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       ) as service_endpoints
       from address_book_entry abe
       join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
-      where abe.node_id = $2 
+      where abe.node_id = $2
       order by abe.node_id asc
       limit $3`;
     assertSqlQueryEqual(query, expected);

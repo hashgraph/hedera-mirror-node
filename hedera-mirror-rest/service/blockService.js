@@ -33,8 +33,8 @@ class BlockService extends BaseService {
 
   buildWhereSqlStatement(whereQuery) {
     let where = 'where true=true';
-    let params = [];
-    for (let i in whereQuery) {
+    const params = [];
+    for (const i in whereQuery) {
       const paramIndex = parseInt(i) + 1;
       where += ` and ${whereQuery[i][0].replace('?', '$' + paramIndex)} `;
       params.push(whereQuery[i][1][0]);

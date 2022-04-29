@@ -25,13 +25,6 @@ const {BlockService} = require('../../service');
 const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
 
-jest.setTimeout(40000);
-
-let dbConfig;
-
-// set timeout for beforeAll to 2 minutes as downloading docker image if not exists can take quite some time
-const defaultBeforeAllTimeoutMillis = 240 * 1000;
-
 const recordFiles = [
   {
     index: 16,
@@ -59,24 +52,8 @@ const recordFiles = [
   },
 ];
 
-beforeAll(async () => {
-  dbConfig = await integrationDbOps.instantiateDatabase();
-  await integrationDomainOps.setUp({}, dbConfig.sqlConnection);
-  global.pool = dbConfig.sqlConnection;
-}, defaultBeforeAllTimeoutMillis);
-
-afterAll(async () => {
-  await integrationDbOps.closeConnection(dbConfig);
-});
-
-beforeEach(async () => {
-  if (!dbConfig.sqlConnection) {
-    logger.warn(`sqlConnection undefined, acquire new connection`);
-    dbConfig.sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
-  }
-
-  await integrationDbOps.cleanUp(dbConfig.sqlConnection);
-});
+const {defaultMochaStatements} = require('./defaultMochaStatements');
+defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 const expectToEqualId16 = (block) => {
   expect(block.index).toEqual('16');
