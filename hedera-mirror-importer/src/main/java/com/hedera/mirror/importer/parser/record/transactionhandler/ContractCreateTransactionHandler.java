@@ -82,12 +82,21 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             contract.setKey(transactionBody.getAdminKey().toByteArray());
         }
 
-        if (transactionBody.hasProxyAccountID()) {
-            contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
+        switch (transactionBody.getInitcodeSourceCase()) {
+            case FILEID:
+                contract.setFileId(EntityId.of(transactionBody.getFileID()));
+                break;
+            case INITCODE:
+                contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+                break;
+            default:
+                break;
         }
 
-        if (transactionBody.hasFileID()) {
-            contract.setFileId(EntityId.of(transactionBody.getFileID()));
+        contract.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
+
+        if (transactionBody.hasProxyAccountID()) {
+            contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
         if (contractCreateResult.hasEvmAddress()) {

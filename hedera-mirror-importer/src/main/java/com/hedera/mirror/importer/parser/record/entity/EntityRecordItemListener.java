@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -34,7 +33,6 @@ import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
-import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenAssociation;
@@ -233,8 +231,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 insertTokenUpdate(recordItem);
             } else if (body.hasTokenWipe()) {
                 insertTokenAccountWipe(recordItem);
-            } else if (body.hasScheduleCreate()) {
-                insertScheduleCreate(recordItem);
             }
 
             // Record token transfers can be populated for multiple transaction types
@@ -263,6 +259,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(txRecord.getTransactionFee());
         transaction.setConsensusTimestamp(consensusTimestamp);
+        transaction.setIndex(recordItem.getTransactionIndex());
         transaction.setInitialBalance(0L);
         transaction.setMaxFee(body.getTransactionFee());
         transaction.setMemo(DomainUtils.toBytes(body.getMemoBytes()));
@@ -644,11 +641,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         return null;
     }
 
-    private AccountAmount findAccountAmount(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId, TransactionBody body){
+    private AccountAmount findAccountAmount(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId,
+                                            TransactionBody body) {
         if (!body.hasCryptoTransfer()) {
             return null;
         }
-        final List<TokenTransferList> tokenTransfersLists = body.getCryptoTransfer().getTokenTransfersList();
+        List<TokenTransferList> tokenTransfersLists = body.getCryptoTransfer().getTokenTransfersList();
         for (TokenTransferList transferList : tokenTransfersLists) {
             if (!transferList.getToken().equals(tokenId)) {
                 continue;
@@ -687,7 +685,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertFungibleTokenTransfers(
             long consensusTimestamp, TransactionBody body, boolean isTokenDissociate,
-            TokenID tokenId, EntityId entityTokenId, EntityId payerAccountId, List<AccountAmount> tokenTransfers){
+            TokenID tokenId, EntityId entityTokenId, EntityId payerAccountId, List<AccountAmount> tokenTransfers) {
         for (AccountAmount accountAmount : tokenTransfers) {
             EntityId accountId = EntityId.of(accountAmount.getAccountID());
             long amount = accountAmount.getAmount();
@@ -712,13 +710,12 @@ public class EntityRecordItemListener implements RecordItemListener {
                     // Is there any account amount inside the body's transfer list for the given tokenId
                     // with the same accountId as the accountAmount from the record?
                     AccountAmount accountAmountWithSameIdInsideBody = findAccountAmount(
-                                    aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
-                                    tokenId, body);
+                            aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
+                            tokenId, body);
                     if (accountAmountWithSameIdInsideBody != null) {
                         tokenTransfer.setIsApproval(true);
                     }
-                }
-                else {
+                } else {
                     tokenTransfer.setIsApproval(accountAmountInsideTransferList.getIsApproval());
                 }
             }
@@ -763,7 +760,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertNonFungibleTokenTransfers(
             long consensusTimestamp, TransactionBody body, TokenID tokenId,
-            EntityId entityTokenId, EntityId payerAccountId, List<com.hederahashgraph.api.proto.java.NftTransfer> nftTransfersList) {
+            EntityId entityTokenId, EntityId payerAccountId,
+            List<com.hederahashgraph.api.proto.java.NftTransfer> nftTransfersList) {
         for (NftTransfer nftTransfer : nftTransfersList) {
             long serialNumber = nftTransfer.getSerialNumber();
             if (serialNumber == NftTransferId.WILDCARD_SERIAL_NUMBER) {
@@ -951,28 +949,6 @@ public class EntityRecordItemListener implements RecordItemListener {
         Token token = Token.of(tokenId);
         token.setTotalSupply(newTotalSupply);
         updateToken(token, modifiedTimestamp);
-    }
-
-    private void insertScheduleCreate(RecordItem recordItem) {
-        if (entityProperties.getPersist().isSchedules()) {
-            ScheduleCreateTransactionBody scheduleCreateTransactionBody = recordItem.getTransactionBody()
-                    .getScheduleCreate();
-            long consensusTimestamp = recordItem.getConsensusTimestamp();
-            var scheduleId = EntityId.of(recordItem.getRecord().getReceipt().getScheduleID());
-            var creatorAccount = recordItem.getPayerAccountId();
-            var payerAccount = creatorAccount;
-            if (scheduleCreateTransactionBody.hasPayerAccountID()) {
-                payerAccount = EntityId.of(scheduleCreateTransactionBody.getPayerAccountID());
-            }
-
-            Schedule schedule = new Schedule();
-            schedule.setConsensusTimestamp(consensusTimestamp);
-            schedule.setCreatorAccountId(creatorAccount);
-            schedule.setPayerAccountId(payerAccount);
-            schedule.setScheduleId(scheduleId);
-            schedule.setTransactionBody(scheduleCreateTransactionBody.getScheduledTransactionBody().toByteArray());
-            entityListener.onSchedule(schedule);
-        }
     }
 
     private void insertTransactionSignatures(EntityId entityId, long consensusTimestamp,

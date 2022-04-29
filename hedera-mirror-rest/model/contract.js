@@ -44,7 +44,9 @@ class Contract {
   static EXPIRATION_TIMESTAMP = 'expiration_timestamp';
   static FILE_ID = 'file_id';
   static ID = 'id';
+  static INITCODE = 'initcode';
   static KEY = 'key';
+  static MAX_AUTOMATIC_TOKEN_ASSOCIATIONS = 'max_automatic_token_associations';
   static MEMO = 'memo';
   static NUM = 'num';
   static OBTAINER_ID = 'obtainer_id';

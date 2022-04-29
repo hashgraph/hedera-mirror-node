@@ -65,9 +65,10 @@ const extractNftsQuery = (filters, accountId, startPosition = 1) => {
   let order = constants.orderFilterValues.DESC;
   const conditions = [`${Nft.ACCOUNT_ID} = $${startPosition}`];
   const params = [accountId];
+  const equalSpenderFilters = [];
 
   for (const filter of filters) {
-    if (_.isNil(filter)) {
+    if (_.isEmpty(filter)) {
       continue;
     }
 
@@ -90,6 +91,19 @@ const extractNftsQuery = (filters, accountId, startPosition = 1) => {
           startPosition + conditions.length
         );
         break;
+      case constants.filterKeys.SPENDER_ID:
+        if (filter.operator === utils.opsMap.eq) {
+          equalSpenderFilters.push(filter);
+        } else {
+          updateConditionsAndParamsWithValues(
+            filter,
+            params,
+            conditions,
+            Nft.SPENDER,
+            startPosition + conditions.length
+          );
+        }
+        break;
       case constants.filterKeys.LIMIT:
         limit = filter.value;
         break;
@@ -98,6 +112,21 @@ const extractNftsQuery = (filters, accountId, startPosition = 1) => {
         break;
       default:
         break;
+    }
+  }
+
+  if (!_.isEmpty(equalSpenderFilters)) {
+    if (equalSpenderFilters.length === 1) {
+      updateConditionsAndParamsWithValues(
+        equalSpenderFilters.pop(),
+        params,
+        conditions,
+        Nft.SPENDER,
+        startPosition + conditions.length
+      );
+    } else {
+      const equalValues = equalSpenderFilters.map((f) => f.value).join(',');
+      conditions.push(`${Nft.SPENDER} in (${equalValues})`);
     }
   }
 
@@ -128,9 +157,9 @@ const validateSerialNumberTokenFilterCombo = (serialNumberBound, tokenIdBound, m
   }
 };
 
-const retrieveNftComponentQuery = (firstBoundary, secondBoundary, orderFilter, limitFilter, accountId, paramCount) => {
-  return !_.isEmpty(firstBoundary) || !_.isEmpty(secondBoundary)
-    ? extractNftsQuery([firstBoundary, secondBoundary, orderFilter, limitFilter], accountId, paramCount)
+const retrieveNftComponentQuery = (boundaries, spenderFilters, orderFilter, limitFilter, accountId, paramCount) => {
+  return boundaries.some((b) => !_.isEmpty(b))
+    ? extractNftsQuery([...boundaries, ...spenderFilters, orderFilter, limitFilter], accountId, paramCount)
     : null;
 };
 
@@ -147,6 +176,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
   const upperSerialNumberBound = {};
   const inclusiveLowerTokenIdBound = {};
   const inclusiveUpperTokenIdBound = {};
+  let spenderIdFilters = [];
   let orderFilter = null;
   let limitFilter = null;
   let noFilterQuery = true;
@@ -159,8 +189,8 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
   for (const filter of filters) {
     validateSupportedOperator(filter.operator);
 
-    // limit all query filters eq|lt(e)|gt(e) filters to one occurence
-    validateSingleFilterKeyOccurence(oneOperatorValues, filter);
+    // limit all query filters eq|lt(e)|gt(e) filters to one occurrence
+    validateSingleFilterKeyOccurrence(oneOperatorValues, filter);
     oneOperatorValues[getFilterKeyOpString(filter)] = true;
 
     switch (filter.key) {
@@ -186,7 +216,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
           noFilterQuery = false;
         } else if (utils.isRegexMatch(constants.queryParamOperatorPatterns.gtorgte, filter.operator)) {
           if (utils.opsMap.gte === filter.operator) {
-            // cache filter as an lower token bound for equality case
+            // cache filter as a lower token bound for equality case
             cacheAndUpdateFilter(lowerTokenIdBound, filter, utils.opsMap.eq);
           }
 
@@ -195,6 +225,9 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
           noFilterQuery = false;
         }
         hasTokenNumber = true;
+        break;
+      case constants.filterKeys.SPENDER_ID:
+        spenderIdFilters.push(filter);
         break;
       case constants.filterKeys.LIMIT:
         limitFilter = filter;
@@ -209,7 +242,7 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
     }
   }
 
-  // validate filter combination occurences
+  // validate filter combination occurrences
   if (hasSerialNumber && !hasTokenNumber) {
     throw new InvalidArgumentError(`Cannot search NFTs with serialnumber without a tokenId parameter filter`);
   }
@@ -225,13 +258,19 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
   if (noFilterQuery) {
     lower = extractNftsQuery(filters, accountId);
   } else {
-    lower = retrieveNftComponentQuery(lowerTokenIdBound, lowerSerialNumberBound, orderFilter, limitFilter, accountId);
+    lower = retrieveNftComponentQuery(
+      [lowerTokenIdBound, lowerSerialNumberBound],
+      spenderIdFilters,
+      orderFilter,
+      limitFilter,
+      accountId
+    );
 
     // account for non zero based psql index and limit param index position to be injected
     paramCount = _.isNil(lower) ? 1 : lower.params.length + 2;
     inner = retrieveNftComponentQuery(
-      inclusiveLowerTokenIdBound,
-      inclusiveUpperTokenIdBound,
+      [inclusiveLowerTokenIdBound, inclusiveUpperTokenIdBound],
+      spenderIdFilters,
       orderFilter,
       limitFilter,
       accountId,
@@ -241,8 +280,8 @@ const extractNftMultiUnionQuery = (filters, accountId) => {
     // account for limit param index position to be injected
     paramCount = _.isNil(inner) ? paramCount : paramCount + inner.params.length + 1;
     upper = retrieveNftComponentQuery(
-      upperTokenIdBound,
-      upperSerialNumberBound,
+      [upperTokenIdBound, upperSerialNumberBound],
+      spenderIdFilters,
       orderFilter,
       limitFilter,
       accountId,
@@ -274,11 +313,15 @@ const getFilterKeyOpString = (filter, mergeOrEqualComparisons = true) => {
 };
 
 /**
- * Verify there's only a single occurence of a given non-eq filter in the map using its unique string identifier
+ * Verify there's only a single occurrence of a given non-eq filter in the map using its unique string identifier
  * @param {Object} filterMap Map of observer filters
  * @param {String} filter Current filter
  */
-const validateSingleFilterKeyOccurence = (filterMap, filter) => {
+const validateSingleFilterKeyOccurrence = (filterMap, filter) => {
+  if (constants.filterKeys.SPENDER_ID === filter.key && utils.opsMap.eq === filter.operator) {
+    // Allow multiple spender id equal filters
+    return;
+  }
   if (filterMap[getFilterKeyOpString(filter)]) {
     throw new InvalidArgumentError(`Multiple range params not allowed for ${filter.key}`);
   }
@@ -334,6 +377,6 @@ if (utils.isTestEnv()) {
     extractNftsQuery,
     extractNftMultiUnionQuery,
     getFilterKeyOpString,
-    validateSingleFilterKeyOccurence,
+    validateSingleFilterKeyOccurrence,
   });
 }

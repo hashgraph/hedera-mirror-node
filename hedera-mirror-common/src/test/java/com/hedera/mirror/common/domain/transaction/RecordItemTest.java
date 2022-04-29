@@ -110,8 +110,11 @@ class RecordItemTest {
                 .setSigMap(SIGNATURE_MAP)
                 .build();
 
-        RecordItem recordItem = new RecordItem(DEFAULT_HAPI_VERSION, transactionFromProto,
-                TRANSACTION_RECORD.toByteArray());
+        RecordItem recordItem = RecordItem.builder()
+                .hapiVersion(DEFAULT_HAPI_VERSION)
+                .transactionBytes(transactionFromProto)
+                .recordBytes(TRANSACTION_RECORD.toByteArray())
+                .build();
         assertRecordItem(expectedTransaction, recordItem);
     }
 
@@ -152,7 +155,7 @@ class RecordItemTest {
     }
 
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {
-        assertThatThrownBy(() -> new RecordItem(DEFAULT_HAPI_VERSION, transactionBytes, recordBytes))
+        assertThatThrownBy(() -> new RecordItem(DEFAULT_HAPI_VERSION, transactionBytes, recordBytes, null))
                 .isInstanceOf(ProtobufException.class)
                 .hasMessage(expectedMessage);
     }

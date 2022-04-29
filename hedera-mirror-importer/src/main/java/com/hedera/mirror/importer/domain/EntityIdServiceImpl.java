@@ -151,9 +151,11 @@ public class EntityIdServiceImpl implements EntityIdService {
                 return EntityId.of(accountId);
             case ALIAS:
                 byte[] alias = DomainUtils.toBytes(accountId.getAlias());
-                return entityRepository.findByAlias(alias)
-                        .map(id -> EntityId.of(id, ACCOUNT))
-                        .orElse(null);
+                return alias.length == DomainUtils.EVM_ADDRESS_LENGTH ?
+                        findByEvmAddress(alias, accountId.getShardNum(), accountId.getRealmNum()) :
+                        entityRepository.findByAlias(alias)
+                                .map(id -> EntityId.of(id, ACCOUNT))
+                                .orElse(null);
             default:
                 throw new InvalidDatasetException("Invalid AccountID: " + accountId);
         }
@@ -165,17 +167,17 @@ public class EntityIdServiceImpl implements EntityIdService {
             case CONTRACTNUM:
                 return EntityId.of(contractId);
             case EVM_ADDRESS:
-                return findByEvmAddress(contractId);
+                byte[] evmAddress = DomainUtils.toBytes(contractId.getEvmAddress());
+                return findByEvmAddress(evmAddress, contractId.getShardNum(), contractId.getRealmNum());
             default:
                 throw new InvalidDatasetException("Invalid ContractID: " + contractId);
         }
     }
 
-    private EntityId findByEvmAddress(ContractID contractId) {
-        byte[] evmAddress = DomainUtils.toBytes(contractId.getEvmAddress());
+    private EntityId findByEvmAddress(byte[] evmAddress, long shardNum, long realmNum) {
         return Optional.ofNullable(DomainUtils.fromEvmAddress(evmAddress))
                 // Verify shard and realm match when assuming evmAddress is in the 'shard.realm.num' form
-                .filter(e -> e.getShardNum() == contractId.getShardNum() && e.getRealmNum() == contractId.getRealmNum())
+                .filter(e -> e.getShardNum() == shardNum && e.getRealmNum() == realmNum)
                 .or(() -> contractRepository.findByEvmAddress(evmAddress).map(id -> EntityId.of(id, CONTRACT)))
                 .orElse(null);
     }

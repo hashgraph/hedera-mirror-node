@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -103,14 +103,15 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         metadataDigestInputStream.on(false); // metadata hash is not calculated on record stream objects
         long hashObjectClassId = startHashObject.getClassId();
 
-        long count = 0;
+        int count = 0;
         long consensusStart = 0;
         RecordStreamObject lastRecordStreamObject = null;
         List<RecordItem> items = new ArrayList<>();
 
         // read record stream objects
         while (!isHashObject(vdis, hashObjectClassId)) {
-            RecordStreamObject recordStreamObject = new RecordStreamObject(vdis, recordFile.getHapiVersion());
+            RecordStreamObject recordStreamObject = new RecordStreamObject(vdis, recordFile.getHapiVersion(),
+                    count);
             items.add(recordStreamObject.getRecordItem());
 
             if (count == 0) {
@@ -134,7 +135,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             throw new InvalidStreamFileException("Extra data discovered in record file " + filename);
         }
 
-        recordFile.setCount(count);
+        recordFile.setCount((long) count);
         recordFile.setConsensusEnd(consensusEnd);
         recordFile.setConsensusStart(consensusStart);
         recordFile.setHash(Hex.encodeHexString(endHashObject.getHash()));
@@ -167,11 +168,13 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         private final Version hapiVersion;
         private final byte[] recordBytes;
         private final byte[] transactionBytes;
+        private final int transactionBlockIndex;
         private RecordItem recordItem;
 
-        RecordStreamObject(ValidatedDataInputStream vdis, Version hapiVersion) {
+        RecordStreamObject(ValidatedDataInputStream vdis, Version hapiVersion, int transactionBlockIndex) {
             super(vdis);
             this.hapiVersion = hapiVersion;
+            this.transactionBlockIndex = transactionBlockIndex;
 
             try {
                 recordBytes = vdis.readLengthAndBytes(1, MAX_RECORD_LENGTH, false, "record bytes");
@@ -187,7 +190,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             }
 
             if (recordItem == null) {
-                recordItem = new RecordItem(hapiVersion, transactionBytes, recordBytes);
+                recordItem = new RecordItem(hapiVersion, transactionBytes, recordBytes, transactionBlockIndex);
             }
 
             return recordItem;

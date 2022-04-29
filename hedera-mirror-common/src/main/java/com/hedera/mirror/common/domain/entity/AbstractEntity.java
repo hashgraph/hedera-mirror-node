@@ -75,6 +75,8 @@ public abstract class AbstractEntity implements History {
     @ToString.Exclude
     private byte[] key;
 
+    private Integer maxAutomaticTokenAssociations;
+
     private String memo;
 
     @Column(updatable = false)

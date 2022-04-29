@@ -42,11 +42,13 @@ const contractFields = [
   Contract.FILE_ID,
   Contract.ID,
   Contract.KEY,
+  Contract.MAX_AUTOMATIC_TOKEN_ASSOCIATIONS,
   Contract.MEMO,
   Contract.OBTAINER_ID,
   Contract.PROXY_ACCOUNT_ID,
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
+const contractWithInitcodeFields = [...contractFields, Contract.getFullName(Contract.INITCODE)];
 
 const emptyFilterString = 'empty filters';
 const primaryContractFilter = 'cr.contract_id = $1';
@@ -260,11 +262,14 @@ describe('formatContractRow', () => {
 });
 
 describe('getContractByIdOrAddressQuery', () => {
-  const mainQuery = `select ${[...contractFields, 'cf.bytecode']}
+  const mainQuery = `select ${[
+    ...contractFields,
+    "coalesce(encode(c.initcode, 'hex')::bytea, cf.bytecode) as bytecode",
+  ]}
     from contract c, contract_file cf`;
 
   const queryForTable = ({table, extraConditions, columnName}) => {
-    return `select ${contractFields}
+    return `select ${contractWithInitcodeFields}
       from ${table} c
       where ${(extraConditions && extraConditions.join(' and ') + ' and ') || ''} c.${columnName} = $3`;
   };

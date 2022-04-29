@@ -28,12 +28,16 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignaturePair;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -48,9 +52,6 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionOperations;
 
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
@@ -96,6 +97,7 @@ public class DomainBuilder {
     private final EntityManager entityManager;
     private final TransactionOperations transactionOperations;
     private final AtomicLong id = new AtomicLong(0L);
+    private final AtomicInteger transactionIndex = new AtomicInteger(0);
     private final Instant now = Instant.now();
     private final SecureRandom random = new SecureRandom();
 
@@ -196,6 +198,7 @@ public class DomainBuilder {
                 .fileId(entityId(FILE))
                 .id(id)
                 .key(key())
+                .maxAutomaticTokenAssociations(2)
                 .memo(text(16))
                 .obtainerId(entityId(CONTRACT))
                 .proxyAccountId(entityId(ACCOUNT))
@@ -342,6 +345,9 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<RecordFile, RecordFile.RecordFileBuilder> recordFile() {
+        // reset transaction index
+        transactionIndex.set(0);
+
         long timestamp = timestamp();
         var builder = RecordFile.builder()
                 .consensusStart(timestamp)
@@ -363,9 +369,11 @@ public class DomainBuilder {
         var builder = Schedule.builder()
                 .consensusTimestamp(timestamp())
                 .creatorAccountId(entityId(ACCOUNT))
+                .expirationTime(timestamp())
                 .payerAccountId(entityId(ACCOUNT))
                 .scheduleId(entityId(SCHEDULE).getId())
-                .transactionBody(bytes(64));
+                .transactionBody(bytes(64))
+                .waitForExpiry(true);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -424,6 +432,7 @@ public class DomainBuilder {
                 .chargedTxFee(10000000L)
                 .consensusTimestamp(timestamp())
                 .entityId(entityId(ACCOUNT))
+                .index(transactionIndex())
                 .initialBalance(10000000L)
                 .maxFee(100000000L)
                 .memo(bytes(10))
@@ -486,6 +495,10 @@ public class DomainBuilder {
 
     public long timestamp() {
         return DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id();
+    }
+
+    private int transactionIndex() {
+        return transactionIndex.getAndIncrement();
     }
 
     @Value

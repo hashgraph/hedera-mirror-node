@@ -22,8 +22,13 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Descriptors;
@@ -35,6 +40,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.List;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +49,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -65,6 +72,13 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
                 .setContractCreateInstance(ContractCreateTransactionBody.getDefaultInstance());
+    }
+
+    @Override
+    protected AbstractEntity getExpectedUpdatedEntity() {
+        AbstractEntity entity = super.getExpectedUpdatedEntity();
+        entity.setMaxAutomaticTokenAssociations(0);
+        return entity;
     }
 
     @Override
@@ -134,5 +148,74 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(null, ContractResult::getAmount)
                 .returns(null, ContractResult::getGasLimit)
                 .returns(null, ContractResult::getFunctionParameters);
+    }
+
+    @Test
+    void updateTransactionUnsuccessful() {
+        var recordItem = recordItemBuilder.contractCreate()
+                .receipt(r -> r.setStatus(ResponseCodeEnum.INSUFFICIENT_GAS))
+                .build();
+        var transaction = new Transaction();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        verifyNoInteractions(entityListener);
+    }
+
+    @Test
+    void updateTransactionSuccessful() {
+        var recordItem = recordItemBuilder.contractCreate().build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(null, Contract::getEvmAddress)
+                .satisfies(c -> assertThat(c.getFileId().getId()).isPositive())
+                .returns(null, Contract::getInitcode)
+        );
+    }
+
+    @Test
+    void updateTransactionSuccessfulWithEvmAddressAndInitcode() {
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearFileID().setInitcode(recordItemBuilder.bytes(2048)))
+                .record(r -> r.getContractCreateResultBuilder().setEvmAddress(recordItemBuilder.evmAddress()))
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .satisfies(c -> assertThat(c.getEvmAddress()).hasSize(20))
+                .returns(null, Contract::getFileId)
+                .satisfies(c -> assertThat(c.getInitcode()).hasSize(2048))
+        );
+    }
+
+    private void assertContract(EntityId contractId, long timestamp, Consumer<Contract> extraAssert) {
+        verify(entityListener, times(1)).onContract(assertArg(t -> assertAll(
+                () -> assertThat(t)
+                        .isNotNull()
+                        .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
+                        .returns(timestamp, Contract::getCreatedTimestamp)
+                        .returns(false, Contract::getDeleted)
+                        .returns(null, Contract::getExpirationTimestamp)
+                        .returns(contractId.getId(), Contract::getId)
+                        .satisfies(c -> assertThat(c.getKey()).isNotEmpty())
+                        .satisfies(c -> assertThat(c.getMaxAutomaticTokenAssociations()).isPositive())
+                        .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
+                        .returns(contractId.getEntityNum(), Contract::getNum)
+                        .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive())
+                        .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
+                        .returns(contractId.getRealmNum(), Contract::getRealm)
+                        .returns(contractId.getShardNum(), Contract::getShard)
+                        .returns(CONTRACT, Contract::getType)
+                        .returns(Range.atLeast(timestamp), Contract::getTimestampRange)
+                        .returns(null, Contract::getObtainerId),
+                () -> extraAssert.accept(t)
+        )));
     }
 }

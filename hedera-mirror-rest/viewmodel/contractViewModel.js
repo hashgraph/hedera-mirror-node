@@ -43,6 +43,7 @@ class ContractViewModel {
       contract.evmAddress !== null ? utils.toHexString(contract.evmAddress, true) : contractId.toEvmAddress();
     this.expiration_timestamp = utils.nsToSecNs(contract.expirationTimestamp);
     this.file_id = EntityId.parse(contract.fileId, true).toString();
+    this.max_automatic_token_associations = contract.maxAutomaticTokenAssociations;
     this.memo = contract.memo;
     this.obtainer_id = EntityId.parse(contract.obtainerId, true).toString();
     this.proxy_account_id = EntityId.parse(contract.proxyAccountId, true).toString();

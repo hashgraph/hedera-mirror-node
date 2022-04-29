@@ -458,6 +458,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         current.setEvmAddress(previous.getEvmAddress());
         current.setFileId(previous.getFileId());
+        current.setInitcode(previous.getInitcode());
+
+        if (current.getMaxAutomaticTokenAssociations() == null) {
+            current.setMaxAutomaticTokenAssociations(previous.getMaxAutomaticTokenAssociations());
+        }
 
         if (current.getObtainerId() == null) {
             current.setObtainerId(previous.getObtainerId());

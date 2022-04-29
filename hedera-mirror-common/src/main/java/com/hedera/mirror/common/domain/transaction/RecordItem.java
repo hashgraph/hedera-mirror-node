@@ -30,6 +30,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Objects;
 import java.util.Set;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
@@ -40,6 +43,8 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
 
+@Builder
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
 @Value
 public class RecordItem implements StreamItem {
@@ -64,10 +69,12 @@ public class RecordItem implements StreamItem {
     @Getter(lazy = true)
     private EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
 
+    private final Integer transactionIndex;
+
     /**
      * Constructs RecordItem from serialized transactionBytes and recordBytes.
      */
-    public RecordItem(Version hapiVersion, byte[] transactionBytes, byte[] recordBytes) {
+    public RecordItem(Version hapiVersion, byte[] transactionBytes, byte[] recordBytes, Integer transactionIndex) {
         try {
             transaction = Transaction.parseFrom(transactionBytes);
         } catch (InvalidProtocolBufferException e) {
@@ -84,6 +91,7 @@ public class RecordItem implements StreamItem {
         this.hapiVersion = hapiVersion;
         this.transactionBytes = transactionBytes;
         this.recordBytes = recordBytes;
+        this.transactionIndex = transactionIndex;
     }
 
     // Used only in tests
@@ -100,6 +108,7 @@ public class RecordItem implements StreamItem {
         this.record = record;
         transactionBytes = transaction.toByteArray();
         recordBytes = record.toByteArray();
+        transactionIndex = null;
     }
 
     // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET
@@ -168,5 +177,31 @@ public class RecordItem implements StreamItem {
     private static class TransactionBodyAndSignatureMap {
         private TransactionBody transactionBody;
         private SignatureMap signatureMap;
+    }
+
+    // Necessary since Lombok doesn't use our setters for builders
+    public static class RecordItemBuilder<C, B extends RecordItem.RecordItemBuilder> {
+        public B transactionBytes(byte[] transactionBytes) {
+            try {
+                transaction = Transaction.parseFrom(transactionBytes);
+            } catch (InvalidProtocolBufferException e) {
+                throw new ProtobufException(BAD_TRANSACTION_BYTES_MESSAGE, e);
+            }
+            transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
+            transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());
+            this.transactionBytes = transactionBytes;
+            return (B) this;
+        }
+
+        public B recordBytes(byte[] recordBytes) {
+            try {
+                record = TransactionRecord.parseFrom(recordBytes);
+            } catch (InvalidProtocolBufferException e) {
+                throw new ProtobufException(BAD_RECORD_BYTES_MESSAGE, e);
+            }
+
+            this.recordBytes = recordBytes;
+            return (B) this;
+        }
     }
 }

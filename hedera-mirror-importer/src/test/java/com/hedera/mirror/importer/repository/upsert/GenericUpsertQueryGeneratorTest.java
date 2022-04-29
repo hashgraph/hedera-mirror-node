@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -70,7 +70,8 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
         assertThat(format(generator.getInsertQuery())).isEqualTo(format("with existing as (" +
                 "  insert into contract_history (" +
                 "    auto_renew_period, created_timestamp, deleted, evm_address, expiration_timestamp, file_id, id," +
-                "    key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type" +
+                "    initcode, key, max_automatic_token_associations, memo, num, obtainer_id, proxy_account_id, " +
+                "    public_key, realm, shard, timestamp_range, type" +
                 "  )" +
                 "  select" +
                 "    e.auto_renew_period," +
@@ -80,7 +81,9 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    e.expiration_timestamp," +
                 "    e.file_id," +
                 "    e.id," +
+                "    e.initcode," +
                 "    e.key," +
+                "    e.max_automatic_token_associations," +
                 "    e.memo," +
                 "    e.num," +
                 "    e.obtainer_id," +
@@ -98,7 +101,8 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "history as (" +
                 "  insert into contract_history (" +
                 "    auto_renew_period, created_timestamp, deleted, evm_address, expiration_timestamp, file_id, id," +
-                "    key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type" +
+                "    initcode, key, max_automatic_token_associations, memo, num, obtainer_id, proxy_account_id, " +
+                "    public_key, realm, shard, timestamp_range, type" +
                 "  )" +
                 "  select distinct" +
                 "    coalesce(t.auto_renew_period, e.auto_renew_period, null)," +
@@ -108,7 +112,9 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    coalesce(t.expiration_timestamp, e.expiration_timestamp, null)," +
                 "    coalesce(t.file_id, e.file_id, null)," +
                 "    coalesce(t.id, e.id, null)," +
+                "    coalesce(t.initcode, e.initcode, null)," +
                 "    coalesce(t.key, e.key, null)," +
+                "    coalesce(t.max_automatic_token_associations, e.max_automatic_token_associations, null)," +
                 "    coalesce(t.memo, e.memo, '')," +
                 "    coalesce(t.num, e.num, null)," +
                 "    coalesce(t.obtainer_id, e.obtainer_id, null)," +
@@ -124,7 +130,8 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 ")" +
                 "insert into contract (" +
                 "  auto_renew_period, created_timestamp, deleted, evm_address, expiration_timestamp, file_id, id," +
-                "  key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type" +
+                "  initcode, key, max_automatic_token_associations, memo, num, obtainer_id, proxy_account_id, " +
+                "  public_key, realm, shard, timestamp_range, type" +
                 ")" +
                 "select" +
                 "  coalesce(t.auto_renew_period, e.auto_renew_period, null)," +
@@ -134,7 +141,9 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "  coalesce(t.expiration_timestamp, e.expiration_timestamp, null)," +
                 "  coalesce(t.file_id, e.file_id, null)," +
                 "  coalesce(t.id, e.id, null)," +
+                "  coalesce(t.initcode, e.initcode, null)," +
                 "  coalesce(t.key, e.key, null)," +
+                "  coalesce(t.max_automatic_token_associations, e.max_automatic_token_associations, null)," +
                 "  coalesce(t.memo, e.memo, '')," +
                 "  coalesce(t.num, e.num, null)," +
                 "  coalesce(t.obtainer_id, e.obtainer_id, null)," +
@@ -152,6 +161,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "  deleted = excluded.deleted," +
                 "  expiration_timestamp = excluded.expiration_timestamp," +
                 "  key = excluded.key," +
+                "  max_automatic_token_associations = excluded.max_automatic_token_associations," +
                 "  memo = excluded.memo," +
                 "  obtainer_id = excluded.obtainer_id," +
                 "  proxy_account_id = excluded.proxy_account_id," +
