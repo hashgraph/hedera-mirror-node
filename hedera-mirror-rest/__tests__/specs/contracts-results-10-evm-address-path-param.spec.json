@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call for a specific contract using contract id",
+  "description": "Contract results api call for a specific contract using evm addresses",
   "setup": {
     "contracts": [
       {
@@ -52,6 +52,7 @@
   },
   "urls": [
     "/api/v1/contracts/0.0.000000000000000000000000000000000186Fb1b/results",
+    "/api/v1/contracts/0.000000000000000000000000000000000186Fb1b/results",
     "/api/v1/contracts/000000000000000000000000000000000186Fb1b/results",
     "/api/v1/contracts/0x000000000000000000000000000000000186Fb1b/results"
   ],
