@@ -147,7 +147,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     private void updateChildFromContractCreateParent(Contract contract, RecordItem recordItem) {
-        var transactionBody = recordItem.getParentRecordItem().getTransactionBody()
+        var transactionBody = recordItem.getTransactionBody()
                 .getContractCreateInstance();
         switch (transactionBody.getInitcodeSourceCase()) {
             case FILEID:
