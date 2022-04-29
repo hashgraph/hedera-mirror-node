@@ -1009,6 +1009,11 @@ const formatComparator = (comparator) => {
         // db requires upper case matching for enum
         comparator.value = comparator.value.toUpperCase();
         break;
+      case constants.filterKeys.BLOCK_NUMBER:
+        if (comparator.value.startsWith('0x')) {
+          comparator.value = parseInt(comparator.value, 16);
+        }
+        break;
       // case 'type':
       //   // Acceptable words: credit or debit
       //   comparator.value = ;

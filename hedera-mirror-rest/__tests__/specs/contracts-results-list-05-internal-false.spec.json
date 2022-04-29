@@ -88,7 +88,7 @@
         "transaction_hash": "hash1",
         "transaction_bytes": null,
         "scheduled": false,
-        "nonce": 0,
+        "nonce": 1,
         "parent_consensus_timestamp": null,
         "errata": null,
         "payerAccountId": 8001,
@@ -96,29 +96,10 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/contracts/0.0.5001/results",
-    "/api/v1/contracts/0.5001/results",
-    "/api/v1/contracts/5001/results",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results"
-  ],
+  "urls": ["/api/v1/contracts/results?internal=false", "/api/v1/contracts/results"],
   "responseStatus": 200,
   "responseJson": {
     "results": [
-      {
-        "amount": 30,
-        "bloom": "0x0505",
-        "call_result": "0x0606",
-        "contract_id": "0.0.5001",
-        "created_contract_ids": ["0.0.7001"],
-        "error_message": null,
-        "from": "0x0000000000000000000000000000000000001f41",
-        "function_parameters": "0x0707",
-        "gas_limit": 987654,
-        "gas_used": 123,
-        "timestamp": "987654.000123456",
-        "to": "0x0000000000000000000000000000000000001389"
-      },
       {
         "amount": 20,
         "bloom": "0x0101",

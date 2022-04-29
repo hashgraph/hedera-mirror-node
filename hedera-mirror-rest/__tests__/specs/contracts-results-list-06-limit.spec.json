@@ -96,12 +96,7 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/contracts/0.0.5001/results",
-    "/api/v1/contracts/0.5001/results",
-    "/api/v1/contracts/5001/results",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results"
-  ],
+  "urls": ["/api/v1/contracts/results?limit=1"],
   "responseStatus": 200,
   "responseJson": {
     "results": [
@@ -118,24 +113,10 @@
         "gas_used": 123,
         "timestamp": "987654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
-      },
-      {
-        "amount": 20,
-        "bloom": "0x0101",
-        "call_result": "0x0202",
-        "contract_id": "0.0.5001",
-        "created_contract_ids": [],
-        "error_message": "Not enough gas",
-        "from": "0x0000000000000000000000000000000000001771",
-        "function_parameters": "0x0303",
-        "gas_limit": 1234556,
-        "gas_used": 987,
-        "timestamp": "187654.000123456",
-        "to": "0x0000000000000000000000000000000000001389"
       }
     ],
     "links": {
-      "next": null
+      "next": "/api/v1/contracts/results?limit=1&timestamp=lt:987654.000123456"
     }
   }
 }

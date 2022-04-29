@@ -556,23 +556,36 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
         break;
       case constants.filterKeys.BLOCK_NUMBER:
         const blockData = await RecordFileService.getRecordFileBlockDetailsFromIndex(filter.value);
-        const conStartColName = _.camelCase(RecordFile.CONSENSUS_START);
-        const conEndColName = _.camelCase(RecordFile.CONSENSUS_END);
+        if (blockData) {
+          const conStartColName = _.camelCase(RecordFile.CONSENSUS_START);
+          const conEndColName = _.camelCase(RecordFile.CONSENSUS_END);
 
-        updateConditionsAndParamsWithInValues(
-          {key: constants.filterKeys.TIMESTAMP, operator: '>=', value: blockData[conStartColName]},
-          contractResultTimestampInValues,
-          params,
-          conditions,
-          contractResultTimestampFullName
-        );
-        updateConditionsAndParamsWithInValues(
-          {key: constants.filterKeys.TIMESTAMP, operator: '<=', value: blockData[conEndColName]},
-          contractResultTimestampInValues,
-          params,
-          conditions,
-          contractResultTimestampFullName
-        );
+          updateConditionsAndParamsWithInValues(
+            {key: constants.filterKeys.TIMESTAMP, operator: '>=', value: blockData[conStartColName]},
+            contractResultTimestampInValues,
+            params,
+            conditions,
+            contractResultTimestampFullName
+          );
+          updateConditionsAndParamsWithInValues(
+            {key: constants.filterKeys.TIMESTAMP, operator: '<=', value: blockData[conEndColName]},
+            contractResultTimestampInValues,
+            params,
+            conditions,
+            contractResultTimestampFullName
+          );
+        }
+
+        // If the blockData does not exist, it should return an empty response
+        else {
+          updateConditionsAndParamsWithInValues(
+            {key: constants.filterKeys.TIMESTAMP, operator: '<', value: 0},
+            contractResultTimestampInValues,
+            params,
+            conditions,
+            contractResultTimestampFullName
+          );
+        }
 
         break;
       case constants.filterKeys.BLOCK_HASH:

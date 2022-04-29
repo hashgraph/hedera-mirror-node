@@ -24,7 +24,7 @@
         "amount": 20,
         "bloom": [1, 1],
         "call_result": [2, 2],
-        "consensus_timestamp": "187654000123456",
+        "consensus_timestamp": "1676540001234390005",
         "contract_id": 5001,
         "created_contract_ids": [],
         "error_message": "Not enough gas",
@@ -38,7 +38,7 @@
         "amount": 30,
         "bloom": [5, 5],
         "call_result": [6, 6],
-        "consensus_timestamp": "987654000123456",
+        "consensus_timestamp": "1676540001234500005",
         "contract_id": 5001,
         "created_contract_ids": [7001],
         "error_message": "",
@@ -49,13 +49,39 @@
         "payer_account_id": 8001
       }
     ],
+    "recordFiles": [
+      {
+        "index": 10,
+        "count": 1,
+        "hapi_version_major": "0",
+        "hapi_version_minor": "22",
+        "hapi_version_patch": "3",
+        "name": "2022-04-27T12_09_24.499938763Z.rcd",
+        "prev_hash": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "consensus_start": 1676540001234390000,
+        "consensus_end": 1676540001234490000,
+        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c"
+      },
+      {
+        "index": 11,
+        "count": 1,
+        "hapi_version_major": "0",
+        "hapi_version_minor": "22",
+        "hapi_version_patch": "3",
+        "name": "2022-04-27T12_24_30.768994443Z.rcd",
+        "prev_hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
+        "consensus_start": 1676540001234500000,
+        "consensus_end": 1676540001234600000,
+        "hash": "b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216"
+      }
+    ],
     "transactions": [
       {
-        "consensus_timestamp": "187654000123456",
+        "consensus_timestamp": "1676540001234390005",
         "type": 11,
         "result": 22,
         "payer_account_id": 6001,
-        "valid_start_ns": "1651149037666173847",
+        "valid_start_ns": "1676540001234390005",
         "valid_duration_seconds": 5,
         "node_account_id": 3,
         "entity_id": 5001,
@@ -73,11 +99,11 @@
         "index": 1
       },
       {
-        "consensus_timestamp": "987654000123456",
+        "consensus_timestamp": "1676540001234500005",
         "type": 11,
         "result": 22,
         "payer_account_id": 8001,
-        "valid_start_ns": "9876540001234563847",
+        "valid_start_ns": "1676540001234500005",
         "valid_duration_seconds": 5,
         "node_account_id": 3,
         "entity_id": 5001,
@@ -85,7 +111,7 @@
         "max_fee": 0,
         "charged_tx_fee": 0,
         "memo": null,
-        "transaction_hash": "hash1",
+        "transaction_hash": "hash2",
         "transaction_bytes": null,
         "scheduled": false,
         "nonce": 0,
@@ -96,29 +122,10 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/contracts/0.0.5001/results",
-    "/api/v1/contracts/0.5001/results",
-    "/api/v1/contracts/5001/results",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results"
-  ],
+  "urls": ["/api/v1/contracts/results?block.number=10", "/api/v1/contracts/results?block.number=0xa"],
   "responseStatus": 200,
   "responseJson": {
     "results": [
-      {
-        "amount": 30,
-        "bloom": "0x0505",
-        "call_result": "0x0606",
-        "contract_id": "0.0.5001",
-        "created_contract_ids": ["0.0.7001"],
-        "error_message": null,
-        "from": "0x0000000000000000000000000000000000001f41",
-        "function_parameters": "0x0707",
-        "gas_limit": 987654,
-        "gas_used": 123,
-        "timestamp": "987654.000123456",
-        "to": "0x0000000000000000000000000000000000001389"
-      },
       {
         "amount": 20,
         "bloom": "0x0101",
@@ -130,7 +137,7 @@
         "function_parameters": "0x0303",
         "gas_limit": 1234556,
         "gas_used": 987,
-        "timestamp": "187654.000123456",
+        "timestamp": "1676540001.234390005",
         "to": "0x0000000000000000000000000000000000001389"
       }
     ],

@@ -88,7 +88,7 @@
         "transaction_hash": "hash1",
         "transaction_bytes": null,
         "scheduled": false,
-        "nonce": 0,
+        "nonce": 1,
         "parent_consensus_timestamp": null,
         "errata": null,
         "payerAccountId": 8001,
@@ -96,12 +96,7 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/contracts/0.0.5001/results",
-    "/api/v1/contracts/0.5001/results",
-    "/api/v1/contracts/5001/results",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results"
-  ],
+  "urls": ["/api/v1/contracts/results?internal=true"],
   "responseStatus": 200,
   "responseJson": {
     "results": [
