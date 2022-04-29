@@ -137,6 +137,10 @@ describe('EntityId parse from entityId string', () => {
       expected: EntityId.of(0, 0, 25623323),
     },
     {
+      entityIdStr: '0.000000000000000000000000000000000186Fb1b',
+      expected: EntityId.of(0, 0, 25623323),
+    },
+    {
       entityIdStr: '000000000000000000000000000000000186Fb1b',
       expected: EntityId.of(0, 0, 25623323),
     },
