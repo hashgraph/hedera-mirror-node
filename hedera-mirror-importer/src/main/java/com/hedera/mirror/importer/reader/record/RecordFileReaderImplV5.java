@@ -116,10 +116,12 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             var recordItem = recordStreamObject.getRecordItem();
 
             // check if current item is a child
-            if (recordItem.isChild() && parentRecordItem != null &&
-                    recordItem.getRecord().getParentConsensusTimestamp()
-                            .equals(parentRecordItem.getRecord().getConsensusTimestamp())) {
-                recordItem.setParent(parentRecordItem);
+            if (recordItem.isChild()) {
+                if (parentRecordItem != null &&
+                        recordItem.getRecord().getParentConsensusTimestamp()
+                                .equals(parentRecordItem.getRecord().getConsensusTimestamp())) {
+                    recordItem.setParent(parentRecordItem);
+                }
             } else {
                 // update last recordItem reference for next item. Preserve parent until all children have been
                 // processed since they are assured to exist in sequential order of [Parent, Child1,...,ChildN]
@@ -129,7 +131,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             items.add(recordItem);
 
             if (count == 0) {
-                consensusStart = recordStreamObject.getRecordItem().getConsensusTimestamp();
+                consensusStart = recordItem.getConsensusTimestamp();
             }
 
             lastRecordStreamObject = recordStreamObject;

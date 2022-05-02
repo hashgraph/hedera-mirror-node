@@ -126,7 +126,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     public void updateChildFromParent(Contract contract, RecordItem recordItem) {
-        if (!entityProperties.getPersist().isContracts() || !recordItem.isChild()) {
+        if (!entityProperties.getPersist().isContracts() || !recordItem.isChild() || recordItem.getParent() == null) {
             return;
         }
 
