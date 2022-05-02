@@ -144,7 +144,7 @@ const isCreate2EvmAddress = (evmAddress) => {
  * @return {EntityId}
  */
 const of = (shard, realm, num) => {
-  const toNumber = (num) => (typeof num === 'bigint' ? Number(num) : num);
+  const toNumber = (val) => (typeof val === 'bigint' ? Number(val) : val);
   return new EntityId(toNumber(shard), toNumber(realm), toNumber(num));
 };
 
