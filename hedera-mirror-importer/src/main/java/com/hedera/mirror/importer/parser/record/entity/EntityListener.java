@@ -39,6 +39,7 @@ import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -79,6 +80,9 @@ public interface EntityListener {
     }
 
     default void onEntity(Entity entity) throws ImporterException {
+    }
+
+    default void onEthereumTransaction(EthereumTransaction ethereumTransaction) {
     }
 
     default void onFileData(FileData fileData) throws ImporterException {

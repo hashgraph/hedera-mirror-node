@@ -279,6 +279,14 @@ class EntityIdServiceImplTest extends IntegrationTest {
         assertDoesNotThrow(() -> entityIdService.notify(null));
     }
 
+    @Test
+    void lookupAccountWithEvmAddress() {
+        AccountID accountId = AccountID.newBuilder()
+                .setAlias(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS))
+                .build();
+        assertThat(entityIdService.lookup(accountId)).isEqualTo(EntityId.of(100, CONTRACT));
+    }
+
     private AccountID getProtoAccountId(Entity account) {
         var accountId = AccountID.newBuilder()
                 .setShardNum(account.getShard())

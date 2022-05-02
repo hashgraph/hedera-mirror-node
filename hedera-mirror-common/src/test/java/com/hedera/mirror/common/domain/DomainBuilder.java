@@ -38,6 +38,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -78,6 +79,7 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -97,6 +99,7 @@ public class DomainBuilder {
     private final EntityManager entityManager;
     private final TransactionOperations transactionOperations;
     private final AtomicLong id = new AtomicLong(0L);
+    private final AtomicInteger transactionIndex = new AtomicInteger(0);
     private final Instant now = Instant.now();
     private final SecureRandom random = new SecureRandom();
 
@@ -239,7 +242,8 @@ public class DomainBuilder {
                 .functionResult(bytes(128))
                 .gasLimit(200L)
                 .gasUsed(100L)
-                .payerAccountId(entityId(ACCOUNT));
+                .payerAccountId(entityId(ACCOUNT))
+                .senderId(entityId(ACCOUNT));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -301,6 +305,39 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<EthereumTransaction, EthereumTransaction.EthereumTransactionBuilder> ethereumTransaction(
+            boolean hasInitCode) {
+        var builder = EthereumTransaction.builder()
+                .accessList(bytes(100))
+                .chainId(bytes(1))
+                .consensusTimestamp(timestamp())
+                .data(bytes(100))
+                .fromAddress(bytes(20))
+                .gasLimit(Long.MAX_VALUE)
+                .gasPrice(bytes(32))
+                .hash(bytes(32))
+                .maxGasAllowance(Long.MAX_VALUE)
+                .maxFeePerGas(bytes(32))
+                .maxPriorityFeePerGas(bytes(32))
+                .nonce(1234L)
+                .payerAccountId(entityId(ACCOUNT))
+                .recoveryId(3)
+                .signatureR(bytes(32))
+                .signatureS(bytes(32))
+                .signatureV(bytes(1))
+                .toAddress(bytes(20))
+                .type(2)
+                .value(bytes(32));
+
+        if (hasInitCode) {
+            builder.callData(bytes(100));
+        } else {
+            builder.callDataId(entityId(FILE));
+        }
+
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<Nft, Nft.NftBuilder> nft() {
         var createdTimestamp = timestamp();
         var builder = Nft.builder()
@@ -345,6 +382,9 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<RecordFile, RecordFile.RecordFileBuilder> recordFile() {
+        // reset transaction index
+        transactionIndex.set(0);
+
         long timestamp = timestamp();
         var builder = RecordFile.builder()
                 .consensusStart(timestamp)
@@ -437,6 +477,7 @@ public class DomainBuilder {
                 .chargedTxFee(10000000L)
                 .consensusTimestamp(timestamp())
                 .entityId(entityId(ACCOUNT))
+                .index(transactionIndex())
                 .initialBalance(10000000L)
                 .maxFee(100000000L)
                 .memo(bytes(10))
@@ -499,6 +540,10 @@ public class DomainBuilder {
 
     public long timestamp() {
         return DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id();
+    }
+
+    private int transactionIndex() {
+        return transactionIndex.getAndIncrement();
     }
 
     @Value

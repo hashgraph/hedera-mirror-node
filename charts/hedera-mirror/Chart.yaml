@@ -22,11 +22,11 @@ dependencies:
     condition: postgresql.enabled
     name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: 8.6.3
+    version: 9.0.3
   - condition: redis.enabled
     name: redis
     repository: https://charts.bitnami.com/bitnami
-    version: 16.5.4
+    version: 16.8.9
   - alias: rest
     condition: rest.enabled
     name: hedera-mirror-rest
@@ -63,7 +63,8 @@ keywords:
   - hashgraph
   - mirror
 maintainers:
-  - name: ijungmann
+  - name: ewlghedera
+  - name: matheus-dallrosa
   - name: Nana-EC
   - name: steven-sheehy
   - name: xin-hedera

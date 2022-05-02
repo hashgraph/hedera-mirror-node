@@ -106,9 +106,13 @@ const toHex = (num) => {
   return num.toString(16);
 };
 
-const isValidEvmAddress = (address, evmAddressType = EvmAddressType.NO_SHARD_REALM) => {
+const isValidEvmAddress = (address, evmAddressType = EvmAddressType.ANY) => {
   if (typeof address !== 'string') {
     return false;
+  }
+
+  if (evmAddressType === EvmAddressType.ANY) {
+    return evmAddressRegex.test(address) || evmAddressShardRealmRegex.test(address);
   }
   if (evmAddressType === EvmAddressType.NO_SHARD_REALM) {
     return evmAddressRegex.test(address);
@@ -122,10 +126,10 @@ const isValidEntityId = (entityId) => {
 };
 
 const isCreate2EvmAddress = (evmAddress) => {
-  if (!isValidEvmAddress(evmAddress, EvmAddressType.OPTIONAL_SHARD_REALM)) {
+  if (!isValidEvmAddress(evmAddress)) {
     return false;
   }
-  const idPartsFromEvmAddress = parseFromEvmAddress(_.last(evmAddress.split('.')));
+  const idPartsFromEvmAddress = parseFromEvmAddress(evmAddress);
   return (
     idPartsFromEvmAddress[0] > maxShard || idPartsFromEvmAddress[1] > maxRealm || idPartsFromEvmAddress[2] > maxNum
   );
@@ -192,7 +196,7 @@ const parseFromEncodedId = (id, error) => {
  */
 const parseFromEvmAddress = (evmAddress) => {
   // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
-  const hexDigits = evmAddress.replace('0x', '');
+  const hexDigits = _.last(evmAddress.split('.')).replace('0x', '');
   return [
     BigInt('0x' + hexDigits.slice(0, 8)), // shard
     BigInt('0x' + hexDigits.slice(8, 24)), // realm
@@ -291,7 +295,9 @@ const parse = (id, ...rest) => {
   let idType = null;
   if (paramName === filterKeys.FROM) {
     idType = EvmAddressType.NO_SHARD_REALM;
-  } else if (paramName === filterKeys.CONTRACTID || paramName === filterKeys.CONTRACT_ID) {
+  } else if (paramName === filterKeys.CONTRACTID) {
+    idType = EvmAddressType.ANY;
+  } else if (paramName === filterKeys.CONTRACT_ID) {
     idType = EvmAddressType.OPTIONAL_SHARD_REALM;
   }
   return checkNullId(id, isNullable) || parseMemoized(`${id}`, idType, error);

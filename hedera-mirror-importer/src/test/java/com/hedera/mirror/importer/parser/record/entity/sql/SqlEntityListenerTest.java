@@ -88,6 +88,7 @@ import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
@@ -117,6 +118,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
     private final DomainBuilder domainBuilder;
     private final EntityRepository entityRepository;
+    private final EthereumTransactionRepository ethereumTransactionRepository;
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
     private final NftRepository nftRepository;
@@ -137,6 +139,20 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     private static Key keyFromString(String key) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
+    }
+
+    private static Stream<Arguments> provideParamsContractHistory() {
+        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {
+        };
+        Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[] {1, 2, 3, 4});
+        return Stream.of(
+                Arguments.of("fileId", emptyCustomizer, 1),
+                Arguments.of("fileId", emptyCustomizer, 2),
+                Arguments.of("fileId", emptyCustomizer, 3),
+                Arguments.of("initcode", initcodeCustomizer, 1),
+                Arguments.of("initcode", initcodeCustomizer, 2),
+                Arguments.of("initcode", initcodeCustomizer, 3)
+        );
     }
 
     @BeforeEach
@@ -505,14 +521,37 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onTransaction() {
         // given
-        var expectedTransaction = makeTransaction();
+        var firstTransaction = domainBuilder.transaction().get();
+        var secondTransaction = domainBuilder.transaction().get();
+        var thirdTransaction = domainBuilder.transaction().get();
 
         // when
-        sqlEntityListener.onTransaction(expectedTransaction);
+        sqlEntityListener.onTransaction(firstTransaction);
+        sqlEntityListener.onTransaction(secondTransaction);
+        sqlEntityListener.onTransaction(thirdTransaction);
         completeFileAndCommit();
 
         // then
-        assertThat(transactionRepository.findAll()).containsExactlyInAnyOrder(expectedTransaction);
+        assertThat(transactionRepository.findAll())
+                .containsExactlyInAnyOrder(firstTransaction, secondTransaction, thirdTransaction);
+
+        assertThat(transactionRepository.findById(firstTransaction.getConsensusTimestamp()))
+                .get()
+                .isNotNull()
+                .extracting(Transaction::getIndex)
+                .isEqualTo(0);
+
+        assertThat(transactionRepository.findById(secondTransaction.getConsensusTimestamp()))
+                .get()
+                .isNotNull()
+                .extracting(Transaction::getIndex)
+                .isEqualTo(1);
+
+        assertThat(transactionRepository.findById(thirdTransaction.getConsensusTimestamp()))
+                .get()
+                .isNotNull()
+                .extracting(Transaction::getIndex)
+                .isEqualTo(2);
     }
 
     @Test
@@ -613,7 +652,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // given
         final String idColumns = "payer_account_id, spender, token_id";
         var builder = domainBuilder.nftAllowance();
-        NftAllowance nftAllowanceCreate = builder.customize(c -> c.approvedForAll(true)).get();;
+        NftAllowance nftAllowanceCreate = builder.customize(c -> c.approvedForAll(true)).get();
 
         NftAllowance nftAllowanceUpdate1 = builder.get();
         nftAllowanceUpdate1.setTimestampLower(nftAllowanceCreate.getTimestampLower() + 1);
@@ -1316,6 +1355,41 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrder(schedule);
     }
 
+    @Test
+    void onEthereumTransactionWInitCode() {
+        var ethereumTransaction = domainBuilder.ethereumTransaction(true).get();
+        sqlEntityListener.onEthereumTransaction(ethereumTransaction);
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(ethereumTransactionRepository.findAll())
+                .hasSize(1)
+                .first()
+                .usingRecursiveComparison()
+                .isEqualTo(ethereumTransaction);
+    }
+
+    @Test
+    void onEthereumTransactionWFileId() {
+        var ethereumTransaction = domainBuilder.ethereumTransaction(false).get();
+        sqlEntityListener.onEthereumTransaction(ethereumTransaction);
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(ethereumTransactionRepository.findAll())
+                .hasSize(1)
+                .first()
+                .satisfies(t -> assertThat(t.getCallDataId().getId()).isEqualTo(ethereumTransaction.getCallDataId()
+                        .getId()))
+                .usingRecursiveComparison()
+                .ignoringFields("callDataId.type")
+                .isEqualTo(ethereumTransaction);
+    }
+
     private void completeFileAndCommit() {
         RecordFile recordFile = domainBuilder.recordFile().persist();
         transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(recordFile));
@@ -1356,28 +1430,6 @@ class SqlEntityListenerTest extends IntegrationTest {
             entity.setMemo(memo);
         }
         return entity;
-    }
-
-    private Transaction makeTransaction() {
-        EntityId entityId = EntityId.of(10, 10, 10, ACCOUNT);
-        Transaction transaction = new Transaction();
-        transaction.setConsensusTimestamp(101L);
-        transaction.setEntityId(entityId);
-        transaction.setNodeAccountId(entityId);
-        transaction.setMemo("memo".getBytes());
-        transaction.setNonce(0);
-        transaction.setType(14);
-        transaction.setResult(22);
-        transaction.setTransactionHash("transaction hash".getBytes());
-        transaction.setTransactionBytes("transaction bytes".getBytes());
-        transaction.setPayerAccountId(entityId);
-        transaction.setValidStartNs(1L);
-        transaction.setValidDurationSeconds(1L);
-        transaction.setMaxFee(1L);
-        transaction.setChargedTxFee(1L);
-        transaction.setInitialBalance(0L);
-        transaction.setScheduled(true);
-        return transaction;
     }
 
     private TopicMessage getTopicMessage() {
@@ -1479,18 +1531,5 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
         tokenTransfer.setPayerAccountId(TRANSACTION_PAYER);
         return tokenTransfer;
-    }
-
-    private static Stream<Arguments> provideParamsContractHistory() {
-        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {};
-        Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[]{1, 2 ,3, 4});
-        return Stream.of(
-                Arguments.of("fileId", emptyCustomizer, 1),
-                Arguments.of("fileId", emptyCustomizer, 2),
-                Arguments.of("fileId", emptyCustomizer, 3),
-                Arguments.of("initcode", initcodeCustomizer, 1),
-                Arguments.of("initcode", initcodeCustomizer, 2),
-                Arguments.of("initcode", initcodeCustomizer, 3)
-        );
     }
 }
