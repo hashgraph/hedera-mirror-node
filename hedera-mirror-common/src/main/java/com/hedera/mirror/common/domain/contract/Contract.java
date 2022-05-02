@@ -56,6 +56,8 @@ public class Contract extends AbstractEntity implements Aliasable {
     @Convert(converter = UnknownIdConverter.class)
     private EntityId obtainerId;
 
+    private Boolean permanentRemoval;
+
     @JsonIgnore
     @Override
     public byte[] getAlias() {

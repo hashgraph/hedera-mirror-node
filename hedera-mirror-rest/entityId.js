@@ -53,6 +53,13 @@ const evmAddressShardRealmRegex = /^(\d{1,10}\.){0,2}[A-Fa-f0-9]{40}$/;
 const evmAddressRegex = /^(0x)?[A-Fa-f0-9]{40}$/;
 
 class EntityId {
+  /**
+   * Creates an EntityId instance
+   *
+   * @param {Number|null} shard
+   * @param {Number|null} realm
+   * @param {Number|null} num
+   */
   constructor(shard, realm, num) {
     this.shard = shard;
     this.realm = realm;
@@ -65,11 +72,16 @@ class EntityId {
   getEncodedId() {
     if (this.encodedId === undefined) {
       this.encodedId =
-        this.num === null ? null : ((this.shard << shardOffset) | (this.realm << numBits) | this.num).toString();
+        this.num === null
+          ? null
+          : ((BigInt(this.shard) << shardOffset) | (BigInt(this.realm) << numBits) | BigInt(this.num)).toString();
     }
     return this.encodedId;
   }
 
+  isAllZero() {
+    return this.shard === 0 && this.realm === 0 && this.num === 0;
+  }
   /**
    * Converts the entity id to the 20-byte EVM address in hex with '0x' prefix
    */
@@ -86,7 +98,7 @@ class EntityId {
   }
 
   toString() {
-    return this.num === null ? null : `${this.shard}.${this.realm}.${this.num}`;
+    return this.num === null || this.isAllZero() ? null : `${this.shard}.${this.realm}.${this.num}`;
   }
 }
 
@@ -122,13 +134,14 @@ const isCreate2EvmAddress = (evmAddress) => {
 /**
  * Creates EntityId from shard, realm, and num.
  *
- * @param {BigInt} shard
- * @param {BigInt} realm
- * @param {BigInt} num
+ * @param {BigInt|Number} shard
+ * @param {BigInt|Number} realm
+ * @param {BigInt|Number} num
  * @return {EntityId}
  */
 const of = (shard, realm, num) => {
-  return new EntityId(shard, realm, num);
+  const toNumber = (num) => (typeof num === 'bigint' ? Number(num) : num);
+  return new EntityId(toNumber(shard), toNumber(realm), toNumber(num));
 };
 
 const nullEntityId = of(null, null, null);

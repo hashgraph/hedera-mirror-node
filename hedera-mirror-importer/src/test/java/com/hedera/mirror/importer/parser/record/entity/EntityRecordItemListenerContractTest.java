@@ -25,13 +25,13 @@ import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -61,6 +61,7 @@ import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.util.Version;
@@ -230,7 +231,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     void contractCreateFailedWithoutResult() {
         RecordItem recordItem = recordItemBuilder.contractCreate()
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE))
-                .record(r -> r.clearContractCreateResult())
+                .record(TransactionRecord.Builder::clearContractCreateResult)
                 .build();
         var record = recordItem.getRecord();
         var transactionBody = recordItem.getTransactionBody();
@@ -267,14 +268,24 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     @ParameterizedTest
-    @EnumSource(ContractIdType.class)
-    void contractUpdateAllToExisting(ContractIdType contractIdType) {
+    @CsvSource({"PLAIN, 5005, 5005", "PARSABLE_EVM, 0, 0", "CREATE2_EVM, , 5002"})
+    void contractUpdateAllToExisting(ContractIdType contractIdType, Long newAutoRenewAccount,
+                                     Long expectedAutoRenewAccount) {
         // first create the contract
-        SetupResult setupResult = setupContract(CONTRACT_ID, contractIdType, true, true, c -> c.obtainerId(null));
+        SetupResult setupResult = setupContract(CONTRACT_ID, contractIdType, true, true, c -> {
+            c.obtainerId(null);
+            if (newAutoRenewAccount == null) {
+                c.autoRenewAccountId(expectedAutoRenewAccount);
+            }
+        });
         Contract contract = setupResult.contract;
 
         // now update
-        Transaction transaction = contractUpdateAllTransaction(setupResult.protoContractId, true);
+        Transaction transaction = contractUpdateAllTransaction(setupResult.protoContractId, true, b -> {
+            if (newAutoRenewAccount != null) {
+                b.getAutoRenewAccountIdBuilder().setAccountNum(newAutoRenewAccount);
+            }
+        });
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
@@ -288,6 +299,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContractEntity(contractUpdateTransactionBody, record.getConsensusTimestamp())
+                        .returns(expectedAutoRenewAccount, Contract::getAutoRenewAccountId)
                         .returns(contract.getCreatedTimestamp(), Contract::getCreatedTimestamp)
                         .returns(contract.getFileId(), Contract::getFileId) // FileId is ignored on updates by HAPI
         );
@@ -411,11 +423,11 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     @ParameterizedTest
-    @EnumSource(ContractIdType.class)
-    void contractDeleteToExisting(ContractIdType contractIdType) {
+    @CsvSource({"PLAIN, false", "PARSABLE_EVM,true", "CREATE2_EVM,false"})
+    void contractDeleteToExisting(ContractIdType contractIdType, boolean permanentRemoval) {
         SetupResult setupResult = setupContract(CONTRACT_ID, contractIdType, true, true);
 
-        Transaction transaction = contractDeleteTransaction(setupResult.protoContractId);
+        Transaction transaction = contractDeleteTransaction(setupResult.protoContractId, permanentRemoval);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.DELETE);
         RecordItem recordItem = new RecordItem(transaction, record);
@@ -433,10 +445,11 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertThat(dbContractEntity)
                         .isNotNull()
                         .returns(true, Contract::getDeleted)
-                        .returns(recordItem.getConsensusTimestamp(), Contract::getTimestampLower)
                         .returns(EntityId.of(PAYER), Contract::getObtainerId)
+                        .returns(permanentRemoval, Contract::getPermanentRemoval)
+                        .returns(Range.atLeast(recordItem.getConsensusTimestamp()), Contract::getTimestampRange)
                         .usingRecursiveComparison()
-                        .ignoringFields("deleted", "obtainerId", "timestampRange")
+                        .ignoringFields("deleted", "obtainerId", "permanentRemoval", "timestampRange")
                         .isEqualTo(setupResult.contract)
         );
     }
@@ -447,7 +460,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         // The contract is not in db, it should still work for PLAIN and PARSABLE_EVM
         SetupResult setupResult = setupContract(CONTRACT_ID, contractIdType, false, false);
 
-        Transaction transaction = contractDeleteTransaction(setupResult.protoContractId);
+        Transaction transaction = contractDeleteTransaction(setupResult.protoContractId, false);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.DELETE);
         RecordItem recordItem = new RecordItem(transaction, record);
@@ -478,7 +491,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     void contractDeleteToNewCreate2EvmAddress() {
         SetupResult setupResult = setupContract(CONTRACT_ID, ContractIdType.CREATE2_EVM, false, false);
 
-        Transaction transaction = contractDeleteTransaction(setupResult.protoContractId);
+        Transaction transaction = contractDeleteTransaction(setupResult.protoContractId, false);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.DELETE);
         RecordItem recordItem = new RecordItem(transaction, record);
@@ -1021,6 +1034,11 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     private Transaction contractUpdateAllTransaction(ContractID contractId, boolean setMemoWrapperOrMemo) {
+        return contractUpdateAllTransaction(contractId, setMemoWrapperOrMemo, b -> {});
+    }
+
+    private Transaction contractUpdateAllTransaction(ContractID contractId, boolean setMemoWrapperOrMemo,
+                                                     Consumer<ContractUpdateTransactionBody.Builder> customizer) {
         return buildTransaction(builder -> {
             ContractUpdateTransactionBody.Builder contractUpdate = builder.getContractUpdateInstanceBuilder();
             contractUpdate.setAdminKey(keyFromString(KEY));
@@ -1035,19 +1053,19 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 contractUpdate.setMemo("contract update memo");
             }
             contractUpdate.setProxyAccountID(PROXY_UPDATE);
+            customizer.accept(contractUpdate);
         });
     }
 
-    private Transaction contractDeleteTransaction(ContractID contractId) {
-        return buildTransaction(builder -> {
-            ContractDeleteTransactionBody.Builder contractDelete = builder.getContractDeleteInstanceBuilder();
-            contractDelete.setContractID(contractId);
-            contractDelete.setTransferAccountID(PAYER);
-        });
+    private Transaction contractDeleteTransaction(ContractID contractId, boolean permanentRemoval) {
+        return buildTransaction(builder -> builder.getContractDeleteInstanceBuilder()
+                .setContractID(contractId)
+                .setPermanentRemoval(permanentRemoval)
+                .setTransferAccountID(PAYER));
     }
 
     private Transaction contractDeleteTransaction() {
-        return contractDeleteTransaction(CONTRACT_ID);
+        return contractDeleteTransaction(CONTRACT_ID, false);
     }
 
     private Transaction contractCallTransaction() {
@@ -1064,21 +1082,21 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         });
     }
 
-    private Transaction tokenAssociateTransaction() {
-        return buildTransaction(builder -> builder.getTokenAssociateBuilder()
-                .setAccount(PAYER2)
-                .addAllTokens(List.of(TOKEN_ID)));
-    }
-
-    private Transaction tokenDissociateTransaction() {
-        return buildTransaction(builder -> builder.getTokenDissociateBuilder()
-                .setAccount(PAYER2)
-                .addAllTokens(List.of(TOKEN_ID)));
-    }
-
-    private Transaction cryptoTransferTransaction() {
-        return buildTransaction(TransactionBody.Builder::getCryptoTransferBuilder);
-    }
+//    private Transaction tokenAssociateTransaction() {
+//        return buildTransaction(builder -> builder.getTokenAssociateBuilder()
+//                .setAccount(PAYER2)
+//                .addAllTokens(List.of(TOKEN_ID)));
+//    }
+//
+//    private Transaction tokenDissociateTransaction() {
+//        return buildTransaction(builder -> builder.getTokenDissociateBuilder()
+//                .setAccount(PAYER2)
+//                .addAllTokens(List.of(TOKEN_ID)));
+//    }
+//
+//    private Transaction cryptoTransferTransaction() {
+//        return buildTransaction(TransactionBody.Builder::getCryptoTransferBuilder);
+//    }
 
     private Transaction tokenSupplyTransaction(TokenType tokenType, boolean mint) {
         var serialNumbers = List.of(1L, 2L, 3L);

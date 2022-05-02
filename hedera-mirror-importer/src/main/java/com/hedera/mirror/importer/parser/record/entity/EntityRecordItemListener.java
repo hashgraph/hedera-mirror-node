@@ -61,7 +61,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -296,16 +295,17 @@ public class EntityRecordItemListener implements RecordItemListener {
         var partialDataAction = parserProperties.getPartialDataAction();
         var transactionRecord = recordItem.getRecord();
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
+            var entityId = EntityId.EMPTY;
             if (aa.getAmount() != 0) {
-                var entityId = entityIdService.lookup(aa.getAccountID());
-                if (entityId == EntityId.EMPTY) {
+                try {
+                    entityId = entityIdService.lookup(aa.getAccountID());
+                } catch (AliasNotFoundException ex) {
                     switch (partialDataAction) {
                         case DEFAULT:
                             log.warn("Setting non-fee transfer account to default value due to partial data issue");
                             break;
                         case ERROR:
-                            var alias = Hex.encodeHexString(DomainUtils.toBytes(aa.getAccountID().getAlias()));
-                            throw new AliasNotFoundException(alias);
+                            throw ex;
                         case SKIP:
                             log.warn("Skipping non-fee transfer due to partial data issue");
                             continue;

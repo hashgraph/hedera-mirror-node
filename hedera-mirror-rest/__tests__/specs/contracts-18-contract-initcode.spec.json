@@ -34,6 +34,7 @@
       "_type": "ProtobufEncoded",
       "key": "010101"
     },
+    "auto_renew_account": null,
     "auto_renew_period": null,
     "bytecode": "0x010a0b02",
     "contract_id": "0.0.8001",
@@ -45,6 +46,7 @@
     "max_automatic_token_associations": 0,
     "memo": "contract memo",
     "obtainer_id": null,
+    "permanent_removal": null,
     "proxy_account_id": null,
     "timestamp": {
       "from": "997654.000123457",

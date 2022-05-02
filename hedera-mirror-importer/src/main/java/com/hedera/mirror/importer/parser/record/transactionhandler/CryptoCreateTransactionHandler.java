@@ -29,6 +29,8 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.EntityRepository;
 
@@ -37,8 +39,9 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
 
     private final EntityRepository entityRepository;
 
-    CryptoCreateTransactionHandler(EntityListener entityListener, EntityRepository entityRepository) {
-        super(entityListener, TransactionType.CRYPTOCREATEACCOUNT);
+    CryptoCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
+                                   EntityRepository entityRepository, RecordParserProperties recordParserProperties) {
+        super(entityIdService, entityListener, recordParserProperties, TransactionType.CRYPTOCREATEACCOUNT);
         this.entityRepository = entityRepository;
     }
 

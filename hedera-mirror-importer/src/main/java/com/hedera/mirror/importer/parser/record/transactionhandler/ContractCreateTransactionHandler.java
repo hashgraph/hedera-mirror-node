@@ -30,19 +30,19 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
+
     private final EntityProperties entityProperties;
-    private final EntityIdService entityIdService;
 
     ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                     EntityProperties entityProperties) {
-        super(entityListener, TransactionType.CONTRACTCREATEINSTANCE);
+                                     EntityProperties entityProperties, RecordParserProperties recordParserProperties) {
+        super(entityIdService, entityListener, recordParserProperties, TransactionType.CONTRACTCREATEINSTANCE);
         this.entityProperties = entityProperties;
-        this.entityIdService = entityIdService;
     }
 
     @Override

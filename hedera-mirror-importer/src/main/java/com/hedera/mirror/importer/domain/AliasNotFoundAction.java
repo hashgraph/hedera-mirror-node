@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.exception;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,17 +20,7 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityType;
-
-public class AliasNotFoundException extends ImporterException {
-
-    private static final long serialVersionUID = 262691996461413516L;
-
-    public AliasNotFoundException(String alias, EntityType type) {
-        super(getMessage(alias, type));
-    }
-
-    private static String getMessage(String alias, EntityType type) {
-        return String.format("%s entity with alias '%s' not found", type, alias);
-    }
+public enum AliasNotFoundAction {
+    ERROR,
+    FALLTHROUGH,
 }

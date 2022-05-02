@@ -31,7 +31,6 @@ import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.cache.Cache;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -39,6 +38,8 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.exception.AliasNotFoundException;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.ContractRepository;
 
 class EntityIdServiceImplTest extends IntegrationTest {
@@ -80,7 +81,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
 
         // cache miss
         reset();
-        assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.EMPTY);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoContractId(contract)));
     }
 
     @Test
@@ -98,13 +99,13 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void lookupAccountAliasNoMatch() {
         Entity account = domainBuilder.entity().get();
-        assertThat(entityIdService.lookup(getProtoAccountId(account))).isEqualTo(EntityId.EMPTY);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoAccountId(account)));
     }
 
     @Test
     void lookupAccountAliasDeleted() {
         Entity account = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
-        assertThat(entityIdService.lookup(getProtoAccountId(account))).isEqualTo(EntityId.EMPTY);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoAccountId(account)));
     }
 
     @Test
@@ -120,16 +121,17 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void lookupAccountThrows() {
         AccountID accountId = AccountID.newBuilder().setRealmNum(1).build();
-        assertThrows(Cache.ValueRetrievalException.class, () -> entityIdService.lookup(accountId));
+        assertThrows(InvalidDatasetException.class, () -> entityIdService.lookup(accountId));
     }
 
     @Test
     void lookupAccounts() {
+        AccountID nullAccountId = null;
         AccountID accountId = AccountID.newBuilder().setAccountNum(100).build();
         AccountID accountIdInvalid = AccountID.newBuilder().setRealmNum(1).build();
         Entity accountDeleted = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
 
-        EntityId entityId = entityIdService.lookup(null,
+        EntityId entityId = entityIdService.lookup(nullAccountId,
                 AccountID.getDefaultInstance(),
                 getProtoAccountId(accountDeleted),
                 accountIdInvalid,
@@ -147,6 +149,14 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    void lookupAccountsAliasNotFoundActionError() {
+        Entity account1 = domainBuilder.entity().get();
+        Entity account2 = domainBuilder.entity().customize(e -> e.alias(null)).get();
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(AliasNotFoundAction.ERROR,
+                getProtoAccountId(account1), getProtoAccountId(account2)));
+    }
+
+    @Test
     void lookupContractNum() {
         ContractID contractId = ContractID.newBuilder().setContractNum(100).build();
         assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.of(100, CONTRACT));
@@ -161,13 +171,13 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void lookupContractCreate2EvmAddressNoMatch() {
         Contract contract = domainBuilder.contract().get();
-        assertThat(entityIdService.lookup(getProtoContractId(contract))).isEqualTo(EntityId.EMPTY);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoContractId(contract)));
     }
 
     @Test
     void lookupContractCreate2EvmAddressDeleted() {
         Contract contract = domainBuilder.contract().customize((b) -> b.deleted(true)).persist();
-        assertThat(entityIdService.lookup(getProtoContractId(contract))).isEqualTo(EntityId.EMPTY);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoContractId(contract)));
     }
 
     @Test
@@ -193,22 +203,23 @@ class EntityIdServiceImplTest extends IntegrationTest {
                 .setRealmNum(2)
                 .setEvmAddress(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS))
                 .build();
-        assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.EMPTY);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(contractId));
     }
 
     @Test
     void lookupContractThrows() {
         ContractID contractId = ContractID.newBuilder().setRealmNum(1).build();
-        assertThrows(Cache.ValueRetrievalException.class, () -> entityIdService.lookup(contractId));
+        assertThrows(InvalidDatasetException.class, () -> entityIdService.lookup(contractId));
     }
 
     @Test
     void lookupContracts() {
+        ContractID nullContractId = null;
         ContractID contractId = ContractID.newBuilder().setContractNum(100).build();
         ContractID contractIdInvalid = ContractID.newBuilder().setRealmNum(1).build();
         Contract contractDeleted = domainBuilder.contract().customize(e -> e.deleted(true)).persist();
 
-        EntityId entityId = entityIdService.lookup(null,
+        EntityId entityId = entityIdService.lookup(nullContractId,
                 ContractID.getDefaultInstance(),
                 getProtoContractId(contractDeleted),
                 contractIdInvalid,
@@ -225,6 +236,14 @@ class EntityIdServiceImplTest extends IntegrationTest {
         assertThat(entityId).isEqualTo(EntityId.of(contractId1));
     }
 
+    @Test
+    void lookupContractsAliasNotFoundActionError() {
+        Contract contract1 = domainBuilder.contract().get();
+        Contract contract2 = domainBuilder.contract().customize(c -> c.evmAddress(null)).get();
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(AliasNotFoundAction.ERROR,
+                getProtoContractId(contract1), getProtoContractId(contract2)));
+    }
+
     @ParameterizedTest
     @CsvSource(value = {"false", ","})
     void storeAccount(Boolean deleted) {
@@ -237,7 +256,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
     void storeAccountDeleted() {
         Entity account = domainBuilder.entity().customize(e -> e.deleted(true)).get();
         entityIdService.notify(account);
-        assertThat(entityIdService.lookup(getProtoAccountId(account))).isEqualTo(EntityId.EMPTY);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoAccountId(account)));
     }
 
     @ParameterizedTest
@@ -252,7 +271,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
     void storeContractDeleted() {
         Contract contract = domainBuilder.contract().customize(c -> c.deleted(true)).get();
         entityIdService.notify(contract);
-        assertThat(entityIdService.lookup(getProtoContractId(contract))).isEqualTo(EntityId.EMPTY);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoContractId(contract)));
     }
 
     @Test

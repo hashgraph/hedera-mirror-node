@@ -29,15 +29,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.function.Consumer;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -46,48 +42,24 @@ import org.mockito.Captor;
 
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
-    private Map<ByteString, EntityId> aliasMap;
-
     @Captor
     private ArgumentCaptor<NftAllowance> nftAllowanceCaptor;
 
     private RecordParserProperties recordParserProperties;
-
-    @BeforeEach
-    void beforeEach() {
-        aliasMap = new HashMap<>();
-        when(entityIdService.lookup(any(AccountID.class))).thenAnswer(invocation -> {
-            var accountId = invocation.getArgument(0, AccountID.class);
-            if (accountId == AccountID.getDefaultInstance()) {
-                return EntityId.EMPTY;
-            }
-
-            EntityId entityId = EntityId.EMPTY;
-            switch (accountId.getAccountCase()) {
-                case ACCOUNTNUM:
-                    entityId = EntityId.of(accountId);
-                    break;
-                case ALIAS:
-                    entityId = aliasMap.getOrDefault(accountId.getAlias(), EntityId.EMPTY);
-                    break;
-            }
-
-            return entityId;
-        });
-    }
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -121,8 +93,9 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         var recordItem = recordItemBuilder.cryptoApproveAllowance().build();
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
+        when(entityIdService.lookup(any(AccountID.class))).thenReturn(EntityIdEndec.decode(10, EntityType.ACCOUNT));
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertAllowances(recordItem, owner -> assertThat(owner).isPositive());
+        assertAllowances(recordItem, owner -> assertEquals(10L, owner));
     }
 
     @Test
@@ -136,7 +109,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertAllowances(recordItem, owner -> assertThat(owner).isEqualTo(effectiveOwner));
+        assertAllowances(recordItem, owner -> assertEquals(effectiveOwner, owner));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -144,16 +117,18 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     void updateTransactionThrowsWithAliasNotFound(PartialDataAction partialDataAction) {
         // given
         recordParserProperties.setPartialDataAction(partialDataAction);
+        var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.cryptoApproveAllowance().transactionBody(b -> {
-            var alias = DomainUtils.fromBytes(domainBuilder.key());
             b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
             b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
             b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
         }).build();
         var transaction = domainBuilder.transaction().get();
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenThrow(new AliasNotFoundException("alias", EntityType.ACCOUNT));
 
         // when, then
-        assertThrows(InvalidEntityException.class, () -> transactionHandler.updateTransaction(transaction, recordItem));
+        assertThrows(AliasNotFoundException.class, () -> transactionHandler.updateTransaction(transaction, recordItem));
     }
 
     @Test
@@ -166,6 +141,8 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
             b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
         }).build();
         var transaction = domainBuilder.transaction().get();
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenThrow(new AliasNotFoundException("alias", EntityType.ACCOUNT));
         transactionHandler.updateTransaction(transaction, recordItem);
         verifyNoInteractions(entityListener);
     }
@@ -173,8 +150,6 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     @Test
     void updateTransactionWithAlias() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var ownerEntityId = EntityId.of(recordItemBuilder.accountId());
-        aliasMap.put(alias, ownerEntityId);
         var recordItem = recordItemBuilder.cryptoApproveAllowance().transactionBody(b -> {
             b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
             b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
@@ -182,8 +157,10 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         }).build();
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenReturn(EntityIdEndec.decode(10L, EntityType.ACCOUNT));
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertAllowances(recordItem, owner -> assertThat(owner).isEqualTo(ownerEntityId.getId()));
+        assertAllowances(recordItem, owner -> assertEquals(10L, owner));
     }
 
     private void assertAllowances(RecordItem recordItem, Consumer<Long> assertOwner) {

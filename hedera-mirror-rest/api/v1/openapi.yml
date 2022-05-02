@@ -1209,6 +1209,8 @@ components:
       properties:
         admin_key:
           $ref: '#/components/schemas/Key'
+        auto_renew_account:
+          $ref: '#/components/schemas/EntityId'
         auto_renew_period:
           type: number
           nullable: true
@@ -1235,6 +1237,9 @@ components:
           type: string
         obtainer_id:
           $ref: '#/components/schemas/EntityId'
+        permanent_removal:
+          type: boolean
+          nullable: true
         proxy_account_id:
           $ref: '#/components/schemas/EntityId'
         timestamp:

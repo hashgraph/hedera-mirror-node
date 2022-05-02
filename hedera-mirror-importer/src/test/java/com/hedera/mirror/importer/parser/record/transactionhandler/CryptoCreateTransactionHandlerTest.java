@@ -31,12 +31,14 @@ import java.util.List;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoCreateTransactionHandler(entityListener, entityRepository);
+        return new CryptoCreateTransactionHandler(entityIdService, entityListener, entityRepository,
+                new RecordParserProperties());
     }
 
     @Override

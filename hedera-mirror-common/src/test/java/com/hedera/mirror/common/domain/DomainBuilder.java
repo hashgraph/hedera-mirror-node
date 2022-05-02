@@ -25,6 +25,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
 import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
@@ -188,6 +189,7 @@ public class DomainBuilder {
         long timestamp = timestamp();
 
         var builder = Contract.builder()
+                .autoRenewAccountId(id())
                 .autoRenewPeriod(1800L)
                 .createdTimestamp(timestamp)
                 .deleted(false)
@@ -278,7 +280,7 @@ public class DomainBuilder {
 
         var builder = Entity.builder()
                 .alias(key())
-                .autoRenewAccountId(entityId(ACCOUNT))
+                .autoRenewAccountId(id())
                 .autoRenewPeriod(1800L)
                 .createdTimestamp(timestamp)
                 .deleted(false)
@@ -420,6 +422,14 @@ public class DomainBuilder {
                 .tokenDissociate(false);
 
         return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<Entity, Entity.EntityBuilder> topic() {
+        return entity().customize(e -> e.alias(null)
+                .receiverSigRequired(null)
+                .maxAutomaticTokenAssociations(null)
+                .proxyAccountId(null)
+                .type(TOPIC));
     }
 
     public DomainWrapper<Transaction, Transaction.TransactionBuilder> transaction() {

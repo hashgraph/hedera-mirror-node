@@ -83,6 +83,7 @@ comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactio
 -- contract
 create table if not exists contract
 (
+    auto_renew_account_id            bigint                         null,
     auto_renew_period                bigint                         null,
     created_timestamp                bigint                         null,
     deleted                          boolean                        null,
@@ -96,6 +97,7 @@ create table if not exists contract
     memo                             text        default ''         not null,
     num                              bigint                         not null,
     obtainer_id                      bigint                         null,
+    permanent_removal                boolean                        null,
     proxy_account_id                 bigint                         null,
     public_key                       character varying              null,
     realm                            bigint                         not null,

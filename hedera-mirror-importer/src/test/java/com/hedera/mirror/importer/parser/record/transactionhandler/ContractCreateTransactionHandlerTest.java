@@ -52,11 +52,14 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private final EntityProperties entityProperties = new EntityProperties();
+
+    private final RecordParserProperties recordParserProperties = new RecordParserProperties();
 
     @BeforeEach
     void beforeEach() {
@@ -65,7 +68,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractCreateTransactionHandler(entityIdService, entityListener, entityProperties);
+        return new ContractCreateTransactionHandler(entityIdService, entityListener, entityProperties,
+                recordParserProperties);
     }
 
     @Override
