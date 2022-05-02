@@ -49,11 +49,12 @@ public class UtilityTest {
     @Test
     void aliasToEvmAddress() {
         byte[] aliasEd25519 = Key.newBuilder().setEd25519(ByteString.copyFromUtf8("ab")).build().toByteArray();
+        byte[] invalidBytes = new byte[]{'a', 'b'};
         assertThat(Utility.aliasToEvmAddress(ALIAS_ECDSA_SECP256K1)).isEqualTo(EVM_ADDRESS);
         assertThat(Utility.aliasToEvmAddress(aliasEd25519)).isNull();
         assertThat(Utility.aliasToEvmAddress(null)).isNull();
         assertThat(Utility.aliasToEvmAddress(new byte[] {})).isNull();
-        assertThatThrownBy(() -> Utility.aliasToEvmAddress(Hex.decode("ab")))
+        assertThatThrownBy(() -> Utility.aliasToEvmAddress(invalidBytes))
                 .isInstanceOf(ParserException.class)
                 .hasRootCauseExactlyInstanceOf(InvalidProtocolBufferException.class);
     }
