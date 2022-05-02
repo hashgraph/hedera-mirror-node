@@ -8,7 +8,9 @@
         "call_result": [2, 2],
         "consensus_timestamp": "187654000123456",
         "contract_id": 5001,
-        "gas_used": 101
+        "gas_used": 101,
+        "transactionIndex": 1,
+        "transactionNonce": 0
       },
       {
         "amount": 30,
@@ -18,7 +20,9 @@
         "contract_id": 5001,
         "created_contract_ids": [7001],
         "payer_account_id": 8001,
-        "gas_used": 102
+        "gas_used": 102,
+        "transactionIndex": 2,
+        "transactionNonce": 0
       },
       {
         "amount": 40,
@@ -28,7 +32,9 @@
         "contract_id": 5001,
         "created_contract_ids": [7002],
         "payer_account_id": 8001,
-        "gas_used": 103
+        "gas_used": 103,
+        "transactionIndex": 3,
+        "transactionNonce": 0
       },
       {
         "amount": 50,
@@ -38,11 +44,27 @@
         "contract_id": 5001,
         "created_contract_ids": [7003],
         "payer_account_id": 8001,
-        "gas_used": 104
+        "gas_used": 104,
+        "transactionIndex": 4,
+        "transactionNonce": 1
+      }
+    ],
+    "recordFiles": [
+      {
+        "index": 10,
+        "count": 1,
+        "hapi_version_major": "0",
+        "hapi_version_minor": "22",
+        "hapi_version_patch": "3",
+        "name": "2022-04-27T12_09_24.499938763Z.rcd",
+        "prev_hash": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "consensus_start": "167654000123439",
+        "consensus_end": "987654000123456",
+        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c"
       }
     ]
   },
-  "url": "/api/v1/contracts/5001/results?from=8001&timestamp=gt:587654.000123456&limit=2&order=asc",
+  "url": "/api/v1/contracts/5001/results?from=8001&timestamp=gt:587654.000123456&limit=2&order=asc&block.number=10&internal=true&transaction.index=2",
   "responseStatus": 200,
   "responseJson": {
     "results": [
@@ -59,24 +81,10 @@
         "gas_used": 102,
         "timestamp": "787654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
-      },
-      {
-        "amount": 40,
-        "bloom": "0x0505",
-        "call_result": "0x0606",
-        "contract_id": "0.0.5001",
-        "created_contract_ids": ["0.0.7002"],
-        "error_message": null,
-        "from": "0x0000000000000000000000000000000000001f41",
-        "function_parameters": "0x010102020303",
-        "gas_limit": 1000,
-        "gas_used": 103,
-        "timestamp": "887654.000123456",
-        "to": "0x0000000000000000000000000000000000001389"
       }
     ],
     "links": {
-      "next": "/api/v1/contracts/5001/results?from=8001&limit=2&order=asc&timestamp=gt:887654.000123456"
+      "next": null
     }
   }
 }
