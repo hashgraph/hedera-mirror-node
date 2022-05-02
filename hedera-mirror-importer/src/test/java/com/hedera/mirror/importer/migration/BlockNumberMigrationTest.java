@@ -32,14 +32,14 @@ public class BlockNumberMigrationTest extends IntegrationTest {
 
     private final RecordFileRepository recordFileRepository;
 
-    private static final long CORRECT_CONSENSUS_END = 1570811971290027001L;
+    private static final long CORRECT_CONSENSUS_END = 1651523056529307198L;
 
-    private static final long CORRECT_BLOCK_NUMBER = 1029L;
+    private static final long CORRECT_BLOCK_NUMBER = 20494237L;
 
     @Test
     public void theCorrectOffsetMustBeAddedToTheBlockNumbers() {
         List<RecordFile> defaultRecordFiles = insertDefaultRecordFiles();
-        long offset = 1021L;
+        long offset = CORRECT_BLOCK_NUMBER - 8L;
         List<Tuple> expectedBlockNumbersAndConsensusEnd = defaultRecordFiles.stream()
                 .map(recordFile -> Tuple.tuple(recordFile.getConsensusEnd(), recordFile.getIndex() + offset))
                 .collect(Collectors.toList());
