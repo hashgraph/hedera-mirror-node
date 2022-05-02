@@ -42,7 +42,7 @@ import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
-    private static final MigrationVersion MINIMUM_REQUIRED_VERSION = MigrationVersion.fromVersion("1.57.1");
+    private static final MigrationVersion MINIMUM_REQUIRED_VERSION = MigrationVersion.fromVersion("1.58.5");
 
     private final JdbcTemplate jdbcTemplate;
 
