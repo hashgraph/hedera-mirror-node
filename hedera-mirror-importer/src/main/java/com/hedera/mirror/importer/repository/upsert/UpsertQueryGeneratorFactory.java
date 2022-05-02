@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -119,15 +119,16 @@ public class UpsertQueryGeneratorFactory {
             throw new IllegalStateException("Missing information schema for " + columnName);
         }
 
-        return new UpsertColumn(columnSchema.getColumnDefault(), history, id, columnName, updatable);
+        return new UpsertColumn(columnSchema.getColumnDefault(), history, id, columnName,
+                columnSchema.isNullable(), updatable);
     }
 
     /*
      * Looks up column defaults in the information_schema.columns table.
      */
     private Map<String, InformationSchemaColumns> getColumnSchema(String tableName) {
-        String sql = "select column_name, regexp_replace(column_default, '::.*', '') as column_default" +
-                " from information_schema.columns where table_name = ?";
+        String sql = "select column_name, regexp_replace(column_default, '::.*', '') as column_default, " +
+                "is_nullable = 'YES' as nullable from information_schema.columns where table_name = ?";
 
         Query query = entityManager.createNativeQuery(sql, InformationSchemaColumns.class);
         query.setParameter(1, tableName);
@@ -169,5 +170,6 @@ public class UpsertQueryGeneratorFactory {
         @Id
         private String columnName;
         private String columnDefault;
+        private boolean nullable;
     }
 }

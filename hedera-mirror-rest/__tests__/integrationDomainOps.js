@@ -698,7 +698,9 @@ const addContract = async (contract) => {
     'expiration_timestamp',
     'file_id',
     'id',
+    'initcode',
     'key',
+    'max_automatic_token_associations',
     'memo',
     'num',
     'obtainer_id',
@@ -714,7 +716,9 @@ const addContract = async (contract) => {
     deleted: false,
     evm_address: null,
     expiration_timestamp: null,
+    initcode: null,
     key: null,
+    max_automatic_token_associations: 0,
     memo: 'contract memo',
     public_key: null,
     realm: 0,
@@ -725,6 +729,7 @@ const addContract = async (contract) => {
   };
   contract.evm_address = contract.evm_address != null ? Buffer.from(contract.evm_address, 'hex') : null;
   contract.id = EntityId.of(BigInt(contract.shard), BigInt(contract.realm), BigInt(contract.num)).getEncodedId();
+  contract.initcode = contract.initcode != null ? Buffer.from(contract.initcode) : null;
   contract.key = contract.key != null ? Buffer.from(contract.key) : null;
 
   const table = getTableName('contract', contract);
@@ -1119,10 +1124,12 @@ const addNft = async (nft) => {
   nft = {
     account_id: '0.0.0',
     created_timestamp: 0,
+    delegating_spender: null,
     deleted: false,
     metadata: '\\x',
     modified_timestamp: 0,
     serial_number: 0,
+    spender: null,
     token_id: '0.0.0',
     ...nft,
   };
@@ -1132,15 +1139,17 @@ const addNft = async (nft) => {
   }
 
   await sqlConnection.query(
-    `INSERT INTO nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7);`,
+    `INSERT INTO nft (account_id, created_timestamp, delegating_spender, deleted, modified_timestamp, metadata, serial_number, spender, token_id)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
     [
       EntityId.parse(nft.account_id, '', true).getEncodedId(),
       nft.created_timestamp,
+      EntityId.parse(nft.delegating_spender, '', true).getEncodedId(),
       nft.deleted,
       nft.modified_timestamp,
       nft.metadata,
       nft.serial_number,
+      EntityId.parse(nft.spender, '', true).getEncodedId(),
       EntityId.parse(nft.token_id).getEncodedId(),
     ]
   );

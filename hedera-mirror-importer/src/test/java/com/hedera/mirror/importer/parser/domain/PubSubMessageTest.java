@@ -23,10 +23,6 @@ package com.hedera.mirror.importer.parser.domain;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
-import java.time.Instant;
-import org.junit.jupiter.api.Test;
-import org.skyscreamer.jsonassert.JSONAssert;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -41,6 +37,10 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.time.Instant;
+import org.junit.jupiter.api.Test;
+import org.skyscreamer.jsonassert.JSONAssert;
+
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -129,13 +129,14 @@ class PubSubMessageTest {
 
     private static TransactionRecord getTransactionRecord() {
         return TransactionRecord.newBuilder()
+                .setConsensusTimestamp(TIMESTAMP)
+                .setEthereumHash(BYTE_STRING)
                 .setReceipt(TransactionReceipt.newBuilder()
                         .setStatus(ResponseCodeEnum.SUCCESS)
                         .setTopicRunningHash(BYTE_STRING)
                         .setTopicSequenceNumber(INT64_VALUE)
                         .build())
                 .setTransactionHash(BYTE_STRING)
-                .setConsensusTimestamp(TIMESTAMP)
                 .setTransferList(TransferList.newBuilder()
                         .addAccountAmounts(
                                 AccountAmount.newBuilder().setAccountID(ACCOUNT_ID).setAmount(INT64_VALUE).build())
@@ -184,7 +185,8 @@ class PubSubMessageTest {
                 "  \"tokenTransferLists\":[]," +
                 "  \"assessedCustomFees\":[]," +
                 "  \"automaticTokenAssociations\":[]," +
-                "  \"alias\":\"\"" +
+                "  \"alias\":\"\"," +
+                "  \"ethereumHash\":\"YWJjZGVm\"" +
                 "}";
     }
 

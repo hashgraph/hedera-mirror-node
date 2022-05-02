@@ -26,14 +26,14 @@
     "check-state-proof": "./index.js"
   },
   "dependencies": {
-    "@hashgraph/proto": "^2.3.0",
+    "@hashgraph/proto": "^2.4.0",
     "abort-controller": "^3.0.0",
     "boxen": "^5.1.2",
     "chalk": "^4.1.2",
-    "glob": "^7.2.0",
+    "glob": "^8.0.1",
     "jest": "^27.5.1",
     "lodash": "^4.17.21",
-    "log4js": "^6.4.4",
+    "log4js": "^6.4.5",
     "node-fetch": "^2.6.7",
     "yargs": "^17.4.1"
   }

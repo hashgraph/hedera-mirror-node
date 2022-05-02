@@ -133,7 +133,8 @@ global:
 
 image:
   pullPolicy: IfNotPresent
-  repository: gcr.io/mirrornode/hedera-mirror-importer
+  registry: gcr.io
+  repository: mirrornode/hedera-mirror-importer
   tag: ""  # Defaults to the chart's app version
 
 imagePullSecrets: []
@@ -467,6 +468,15 @@ serviceAccount:
   create: true
   # The name of the service account to use. If not set and create is true, a name is generated using the fullname template
   name:
+
+startupProbe:
+  failureThreshold: 8640
+  httpGet:
+    path: /actuator/health/startup
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 2
 
 terminationGracePeriodSeconds: 30
 

@@ -1008,10 +1008,12 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
+                                  nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
+                                  nft.spender,
                                   nft.token_id
                            from nft
                                   left join entity e on e.id = nft.token_id
@@ -1047,10 +1049,12 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
+                                  nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
+                                  nft.spender,
                                   nft.token_id
                            from nft
                                   left join entity e on e.id = nft.token_id
@@ -1086,10 +1090,12 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
+                                  nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
+                                  nft.spender,
                                   nft.token_id
                            from nft
                                   left join entity e on e.id = nft.token_id
@@ -1135,10 +1141,12 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
+                                  nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
+                                  nft.spender,
                                   nft.token_id
                            from nft
                                   left join entity e on e.id = nft.token_id
@@ -1186,10 +1194,12 @@ describe('token extractSqlFromNftTokenInfoRequest tests', () => {
 
     const expectedQuery = `select nft.account_id,
                                   nft.created_timestamp,
+                                  nft.delegating_spender,
                                   nft.deleted or coalesce(e.deleted, false) as deleted,
                                   nft.metadata,
                                   nft.modified_timestamp,
                                   nft.serial_number,
+                                  nft.spender,
                                   nft.token_id
                            from nft
                            left join entity e on e.id = nft.token_id

@@ -114,8 +114,8 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>com.google.cloud.tools</groupId>
-                <artifactId>jib-maven-plugin</artifactId>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>

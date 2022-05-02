@@ -147,8 +147,6 @@ postgresql:
         cpu: 20m
         memory: 25Mi
   nameOverride: postgres
-  networkPolicy:
-    enabled: false
   persistence:
     size: 500Gi
   pgpool:
@@ -165,6 +163,8 @@ postgresql:
           secretKeyRef:
             name: mirror-passwords
             key: PGPOOL_POSTGRES_CUSTOM_USERS
+    image:
+      debug: true
     podAntiAffinityPreset: soft
     podLabels:
       role: db
@@ -177,14 +177,11 @@ postgresql:
       requests:
         cpu: 100m
         memory: 128Mi
-  pgpoolImage:
-    debug: true
-  postgresqlImage:
-    debug: true
-    tag: 13.6.0-debian-10-r37
   postgresql:
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
+    image:
+      debug: true
     initdbScriptsSecret: db-init
     password: ""  # Randomly generated if left blank
     podAntiAffinityPreset: soft
@@ -198,9 +195,8 @@ postgresql:
         cpu: 250m
         memory: 500Mi
     repmgrLogLevel: DEBUG
-    upgradeRepmgrExtension: true
   serviceAccount:
-    enabled: true
+    create: true
 
 redis:
   auth:
@@ -325,8 +321,8 @@ test:
   enabled: false
   image:
     pullPolicy: IfNotPresent
-    repository: gcr.io/mirrornode/hedera-mirror-test
-    tag: ""  # Defaults to the chart's app version
+    repository: alpine
+    tag: latest
 
 timescaledb:
   enabled: false

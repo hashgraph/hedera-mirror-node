@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
+import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -61,6 +62,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -69,6 +71,7 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
@@ -100,9 +103,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         entityProperties.getPersist().setCryptoTransferAmounts(true);
     }
 
-    @Test
-    void contractCreate() {
-        RecordItem recordItem = recordItemBuilder.contractCreate().build();
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void contractCreate(boolean bytecodeSourceFileId) {
+        var builder = recordItemBuilder.contractCreate();
+        if (!bytecodeSourceFileId) {
+            builder.transactionBody(b -> b.clearFileID().setInitcode(recordItemBuilder.bytes(1024)));
+        }
+        var recordItem = builder.build();
         var record = recordItem.getRecord();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
@@ -130,6 +138,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .addCreatedContractIDs(CONTRACT_ID)
                         .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(evmAddress)))
                 ))
+                .hapiVersion(RecordFile.HAPI_VERSION_0_23_0)
                 .build();
         var record = recordItem.getRecord();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
@@ -762,6 +771,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()) : null;
         EntityId entityId = transaction.getEntityId();
         Contract contract = getEntity(entityId);
+        EntityId expectedFileId = transactionBody.hasFileID() ? EntityId.of(transactionBody.getFileID()) : null;
+        byte[] expectedInitcode = transactionBody.getInitcode() != ByteString.EMPTY ?
+                DomainUtils.toBytes(transactionBody.getInitcode()) : null;
 
         assertThat(transaction)
                 .isNotNull()
@@ -774,9 +786,11 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(false, Contract::getDeleted)
                 .returns(evmAddress, Contract::getEvmAddress)
                 .returns(null, Contract::getExpirationTimestamp)
+                .returns(expectedFileId, Contract::getFileId)
                 .returns(entityId.getId(), Contract::getId)
-                .returns(EntityId.of(transactionBody.getFileID()), Contract::getFileId)
+                .returns(expectedInitcode, Contract::getInitcode)
                 .returns(adminKey, Contract::getKey)
+                .returns(transactionBody.getMaxAutomaticTokenAssociations(), Contract::getMaxAutomaticTokenAssociations)
                 .returns(transactionBody.getMemo(), Contract::getMemo)
                 .returns(createdTimestamp, Contract::getTimestampLower)
                 .returns(null, Contract::getObtainerId)
@@ -811,6 +825,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         Contract contract = getTransactionEntity(consensusTimestamp);
         long updatedTimestamp = DomainUtils.timeStampInNanos(consensusTimestamp);
         var adminKey = expected.getAdminKey().toByteArray();
+        var expectedMaxAutomaticTokenAssociations = expected.hasMaxAutomaticTokenAssociations() ?
+                expected.getMaxAutomaticTokenAssociations().getValue() : null;
 
         return assertThat(contract)
                 .isNotNull()
@@ -818,6 +834,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(false, Contract::getDeleted)
                 .returns(DomainUtils.timeStampInNanos(expected.getExpirationTime()), Contract::getExpirationTimestamp)
                 .returns(adminKey, Contract::getKey)
+                .returns(expectedMaxAutomaticTokenAssociations, Contract::getMaxAutomaticTokenAssociations)
                 .returns(getMemoFromContractUpdateTransactionBody(expected), Contract::getMemo)
                 .returns(updatedTimestamp, Contract::getTimestampLower)
                 .returns(null, Contract::getObtainerId)
@@ -1000,20 +1017,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     private Transaction contractUpdateAllTransaction(boolean setMemoWrapperOrMemo) {
-        return buildTransaction(builder -> {
-            ContractUpdateTransactionBody.Builder contractUpdate = builder.getContractUpdateInstanceBuilder();
-            contractUpdate.setAdminKey(keyFromString(KEY));
-            contractUpdate.setAutoRenewPeriod(Duration.newBuilder().setSeconds(400).build());
-            contractUpdate.setContractID(CONTRACT_ID);
-            contractUpdate.setExpirationTime(Timestamp.newBuilder().setSeconds(8000).setNanos(10).build());
-            contractUpdate.setFileID(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(2000).build());
-            if (setMemoWrapperOrMemo) {
-                contractUpdate.setMemoWrapper(StringValue.of("contract update memo"));
-            } else {
-                contractUpdate.setMemo("contract update memo");
-            }
-            contractUpdate.setProxyAccountID(PROXY_UPDATE);
-        });
+        return contractUpdateAllTransaction(CONTRACT_ID, setMemoWrapperOrMemo);
     }
 
     private Transaction contractUpdateAllTransaction(ContractID contractId, boolean setMemoWrapperOrMemo) {
@@ -1024,6 +1028,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             contractUpdate.setContractID(contractId);
             contractUpdate.setExpirationTime(Timestamp.newBuilder().setSeconds(8000).setNanos(10).build());
             contractUpdate.setFileID(FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(2000).build());
+            contractUpdate.setMaxAutomaticTokenAssociations(Int32Value.of(100));
             if (setMemoWrapperOrMemo) {
                 contractUpdate.setMemoWrapper(StringValue.of("contract update memo"));
             } else {

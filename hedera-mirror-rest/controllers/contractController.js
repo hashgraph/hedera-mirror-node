@@ -56,11 +56,13 @@ const contractSelectFields = [
   Contract.FILE_ID,
   Contract.ID,
   Contract.KEY,
+  Contract.MAX_AUTOMATIC_TOKEN_ASSOCIATIONS,
   Contract.MEMO,
   Contract.OBTAINER_ID,
   Contract.PROXY_ACCOUNT_ID,
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
+const contractWithInitcodeSelectFields = [...contractSelectFields, Contract.getFullName(Contract.INITCODE)];
 
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 
@@ -224,12 +226,12 @@ const formatContractRow = (row) => {
 /**
  * Gets the query by contract id for the specified table, optionally with timestamp conditions
  * @param table
- * @param timestampConditions
+ * @param conditions
  * @return {string}
  */
 const getContractByIdOrAddressQueryForTable = (table, conditions) => {
   return [
-    `select ${contractSelectFields}`,
+    `select ${contractWithInitcodeSelectFields}`,
     `from ${table} ${Contract.tableAlias}`,
     `where ${conditions.join(' and ')}`,
   ].join('\n');
@@ -238,7 +240,7 @@ const getContractByIdOrAddressQueryForTable = (table, conditions) => {
 /**
  * Gets the sql query for a specific contract, optionally with timestamp condition
  * @param timestampConditions
- * @return {string}
+ * @return {query: string, params: any[]}
  */
 const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, contractIdParam}) => {
   const conditions = [...timestampConditions];
@@ -277,12 +279,12 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
     ${fileDataQuery}
   )`;
 
+  const selectFields = [
+    ...contractSelectFields,
+    `coalesce(encode(${Contract.getFullName(Contract.INITCODE)}, 'hex')::bytea, cf.bytecode) as bytecode`,
+  ];
   return {
-    query: [
-      cte,
-      `select ${[...contractSelectFields, 'cf.bytecode']}`,
-      `from contract ${Contract.tableAlias}, contract_file cf`,
-    ].join('\n'),
+    query: [cte, `select ${selectFields}`, `from contract ${Contract.tableAlias}, contract_file cf`].join('\n'),
     params,
   };
 };
@@ -388,7 +390,7 @@ const contractResultsByIdParamSupportMap = {
  * Verify contractId meets entity id format
  */
 const validateContractIdParam = (contractId) => {
-  if (EntityId.isValidEvmAddress(contractId, constants.EvmAddressType.OPTIONAL_SHARD_REALM)) {
+  if (EntityId.isValidEvmAddress(contractId)) {
     return;
   }
 
@@ -400,7 +402,8 @@ const validateContractIdParam = (contractId) => {
 const getAndValidateContractIdRequestPathParam = (req) => {
   const contractIdValue = req.params.contractId;
   validateContractIdParam(contractIdValue);
-  return contractIdValue;
+  // if it is a valid contract id and has the substring 0x, the substring 0x can only be a prefix.
+  return contractIdValue.replace('0x', '');
 };
 
 /**
@@ -410,10 +413,7 @@ const getAndValidateContractIdRequestPathParam = (req) => {
  */
 const validateContractIdAndConsensusTimestampParam = (consensusTimestamp, contractId) => {
   const params = [];
-  if (
-    !EntityId.isValidEntityId(contractId) &&
-    !EntityId.isValidEvmAddress(contractId, constants.EvmAddressType.OPTIONAL_SHARD_REALM)
-  ) {
+  if (!EntityId.isValidEntityId(contractId) && !EntityId.isValidEvmAddress(contractId)) {
     params.push(constants.filterKeys.CONTRACTID);
   }
   if (!utils.isValidTimestampParam(consensusTimestamp)) {

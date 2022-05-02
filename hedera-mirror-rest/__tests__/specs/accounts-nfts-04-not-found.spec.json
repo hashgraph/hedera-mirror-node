@@ -64,6 +64,7 @@
         "created_timestamp": "1234567890000000008",
         "metadata": "m3",
         "serial_number": 3,
+        "spender_id": "0.0.2000",
         "token_id": "0.0.1500"
       }
     ]
@@ -71,7 +72,8 @@
   "urls": [
     "/api/v1/accounts/0.0.3001/nfts",
     "/api/v1/accounts/0.0.1001/nfts?token.id=1",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=5"
+    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=5",
+    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=3&spender.id=2001"
   ],
   "responseStatus": 200,
   "responseJson": {

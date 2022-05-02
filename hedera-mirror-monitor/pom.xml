@@ -16,9 +16,9 @@
 
     <properties>
         <commons-math3.version>3.6.1</commons-math3.version>
-        <hedera-sdk.version>2.9.0</hedera-sdk.version>
+        <hedera-sdk.version>2.12.0</hedera-sdk.version>
         <meanbean.version>3.0.0-M9</meanbean.version>
-        <springdoc.version>1.6.7</springdoc.version>
+        <springdoc.version>1.6.8</springdoc.version>
     </properties>
 
     <dependencies>
@@ -53,6 +53,14 @@
         <dependency>
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <!-- Fixes error 'Unable to load io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider' -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver-dns-native-macos</artifactId>
+            <classifier>osx-aarch_64</classifier>
+            <scope>runtime</scope>
+            <version>${netty.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
@@ -158,8 +166,8 @@
     <build>
         <plugins>
             <plugin>
-                <groupId>com.google.cloud.tools</groupId>
-                <artifactId>jib-maven-plugin</artifactId>
+                <groupId>io.fabric8</groupId>
+                <artifactId>docker-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>

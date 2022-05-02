@@ -36,6 +36,8 @@
 
 \copy entity_history to entity_history.csv delimiter ',' csv;
 
+\copy ethereum_transaction to ethereum_transaction.csv delimiter ',' csv;
+
 \copy event_file to event_file.csv delimiter ',' csv;
 
 \copy file_data to file_data.csv delimiter ',' csv;

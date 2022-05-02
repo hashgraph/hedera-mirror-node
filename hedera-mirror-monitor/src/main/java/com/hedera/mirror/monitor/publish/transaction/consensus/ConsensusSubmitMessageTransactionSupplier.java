@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.publish.transaction.consensus;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -55,12 +55,15 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     @Getter(lazy = true)
     private final TopicId consensusTopicId = TopicId.fromString(topicId);
 
+    @Getter(lazy = true)
+    private final String generatedMessage = !message.isEmpty() ? message :
+            new String(Utility.generateMessage(messageSize), StandardCharsets.US_ASCII);
+
     @Override
     public TopicMessageSubmitTransaction get() {
         return new TopicMessageSubmitTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setMessage(!message.isEmpty() ? message.getBytes(StandardCharsets.UTF_8) : Utility
-                        .generateMessage(messageSize))
+                .setMessage(getGeneratedMessage())
                 .setTopicId(getConsensusTopicId());
     }
 }

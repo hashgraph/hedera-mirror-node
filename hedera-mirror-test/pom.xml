@@ -16,8 +16,8 @@
     </parent>
 
     <properties>
-        <cucumber.version>7.2.3</cucumber.version>
-        <cucumber-reporting.version>7.2.0</cucumber-reporting.version>
+        <cucumber.version>7.3.2</cucumber.version>
+        <cucumber-reporting.version>7.3.0</cucumber-reporting.version>
         <skipTests>true</skipTests>
     </properties>
 
@@ -134,26 +134,6 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>io.fabric8</groupId>
-                <artifactId>docker-maven-plugin</artifactId>
-                <inherited>false</inherited>
-                <configuration>
-                    <images>
-                        <image>
-                            <build>
-                                <contextDir>${maven.multiModuleProjectDirectory}</contextDir>
-                                <dockerFile>${project.basedir}/src/main/resources/Dockerfile</dockerFile>
-                            </build>
-                        </image>
-                    </images>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 
     <profiles>
         <profile>

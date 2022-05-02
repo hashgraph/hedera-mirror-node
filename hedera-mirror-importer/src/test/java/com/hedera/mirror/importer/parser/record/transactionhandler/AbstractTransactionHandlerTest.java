@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -74,7 +74,6 @@ import com.hedera.mirror.common.domain.entity.EntityOperation;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
@@ -108,9 +107,6 @@ abstract class AbstractTransactionHandlerTest {
     protected final ContractID contractId = ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build();
 
     protected TransactionHandler transactionHandler;
-
-    @Mock(lenient = true)
-    protected ContractResultService contractResultService;
 
     @Mock(lenient = true)
     protected EntityIdService entityIdService;
@@ -412,12 +408,12 @@ abstract class AbstractTransactionHandlerTest {
         );
 
         if (maxAutomaticTokenAssociationsField != null) {
-            // only crypto update has max_automatic_token_associations
             expected = getExpectedUpdatedEntity();
+            expected.setMaxAutomaticTokenAssociations(500);
             if (expected instanceof Entity) {
-                ((Entity) expected).setMaxAutomaticTokenAssociations(500);
                 ((Entity) expected).setReceiverSigRequired(true);
             }
+
             Message updatedInnerBody = innerBody.toBuilder()
                     .setField(maxAutomaticTokenAssociationsField, Int32Value.of(500))
                     .build();

@@ -1,0 +1,12 @@
+**/*_test.go
+**/.*
+*.iml
+*.txt
+*.xml
+.*
+Dockerfile
+bin/
+build/
+scripts/
+target/
+test/

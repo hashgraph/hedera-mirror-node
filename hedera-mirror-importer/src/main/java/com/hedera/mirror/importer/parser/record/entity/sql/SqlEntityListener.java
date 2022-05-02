@@ -57,6 +57,7 @@ import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -96,6 +97,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
     private final Collection<Entity> entities;
+    private final Collection<EthereumTransaction> ethereumTransactions;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftAllowance> nftAllowances;
@@ -147,6 +149,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
         entities = new ArrayList<>();
+        ethereumTransactions = new ArrayList<>();
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftAllowances = new ArrayList<>();
@@ -208,6 +211,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             customFees.clear();
             entities.clear();
             entityState.clear();
+            ethereumTransactions.clear();
             fileData.clear();
             liveHashes.clear();
             nonFeeTransfers.clear();
@@ -246,6 +250,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(contractStateChanges);
             batchPersister.persist(cryptoTransfers);
             batchPersister.persist(customFees);
+            batchPersister.persist(ethereumTransactions);
             batchPersister.persist(fileData);
             batchPersister.persist(liveHashes);
             batchPersister.persist(topicMessages);
@@ -334,6 +339,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         Entity merged = entityState.merge(entity.getId(), entity, this::mergeEntity);
         entities.add(merged);
+    }
+
+    @Override
+    public void onEthereumTransaction(EthereumTransaction ethereumTransaction) throws ImporterException {
+        ethereumTransactions.add(ethereumTransaction);
     }
 
     @Override
@@ -458,6 +468,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         current.setEvmAddress(previous.getEvmAddress());
         current.setFileId(previous.getFileId());
+        current.setInitcode(previous.getInitcode());
+
+        if (current.getMaxAutomaticTokenAssociations() == null) {
+            current.setMaxAutomaticTokenAssociations(previous.getMaxAutomaticTokenAssociations());
+        }
 
         if (current.getObtainerId() == null) {
             current.setObtainerId(previous.getObtainerId());
@@ -513,7 +528,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cachedNft.setModifiedTimestamp(newNft.getModifiedTimestamp());
 
         // copy allowance related fields
-        cachedNft.setAllowanceGrantedTimestamp(newNft.getAllowanceGrantedTimestamp());
         cachedNft.setDelegatingSpender(newNft.getDelegatingSpender());
         cachedNft.setSpender(newNft.getSpender());
 

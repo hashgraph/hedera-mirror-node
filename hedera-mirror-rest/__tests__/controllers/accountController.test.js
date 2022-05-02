@@ -736,10 +736,10 @@ describe('getFilterKeyOpString', () => {
   });
 });
 
-describe('validateSingleFilterKeyOccurence not throw', () => {
+describe('validateSingleFilterKeyOccurrence not throw', () => {
   const specs = [
     {
-      name: 'token.id gt single occurence',
+      name: 'token.id gt single occurrence',
       input: {
         filterMap: {
           'token.id-<': true,
@@ -752,7 +752,7 @@ describe('validateSingleFilterKeyOccurence not throw', () => {
       },
     },
     {
-      name: 'token.id gte single occurence',
+      name: 'token.id gte single occurrence',
       input: {
         filterMap: {
           'token.id-<=': true,
@@ -765,7 +765,7 @@ describe('validateSingleFilterKeyOccurence not throw', () => {
       },
     },
     {
-      name: 'serialnumber lt single occurence',
+      name: 'serialnumber lt single occurrence',
       input: {
         filterMap: {
           'serialnumber->': true,
@@ -778,7 +778,7 @@ describe('validateSingleFilterKeyOccurence not throw', () => {
       },
     },
     {
-      name: 'serialnumber lte single occurence',
+      name: 'serialnumber lte single occurrence',
       input: {
         filterMap: {
           'serialnumber->=': true,
@@ -794,15 +794,17 @@ describe('validateSingleFilterKeyOccurence not throw', () => {
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      expect(() => accountCtrl.validateSingleFilterKeyOccurence(spec.input.filterMap, spec.input.filter)).not.toThrow();
+      expect(() =>
+        accountCtrl.validateSingleFilterKeyOccurrence(spec.input.filterMap, spec.input.filter)
+      ).not.toThrow();
     });
   });
 });
 
-describe('validateSingleFilterKeyOccurence throw', () => {
+describe('validateSingleFilterKeyOccurrence throw', () => {
   const specs = [
     {
-      name: 'token.id multiple occurence',
+      name: 'token.id multiple occurrence',
       input: {
         filterMap: {
           'token.id->': true,
@@ -815,7 +817,7 @@ describe('validateSingleFilterKeyOccurence throw', () => {
       },
     },
     {
-      name: 'serialnumber multiple occurence',
+      name: 'serialnumber multiple occurrence',
       input: {
         filterMap: {
           'serialnumber-<': true,
@@ -832,7 +834,7 @@ describe('validateSingleFilterKeyOccurence throw', () => {
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
       expect(() =>
-        accountCtrl.validateSingleFilterKeyOccurence(spec.input.filterMap, spec.input.filter)
+        accountCtrl.validateSingleFilterKeyOccurrence(spec.input.filterMap, spec.input.filter)
       ).toThrowErrorMatchingSnapshot();
     });
   });

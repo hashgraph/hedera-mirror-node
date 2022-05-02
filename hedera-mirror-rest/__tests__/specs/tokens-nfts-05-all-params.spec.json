@@ -79,19 +79,23 @@
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890.000000009",
+        "delegating_spender": null,
         "deleted": false,
         "metadata": "bTQ=",
         "modified_timestamp": "1234567890.000000009",
         "serial_number": 4,
+        "spender": null,
         "token_id": "0.0.1500"
       },
       {
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890.000000008",
+        "delegating_spender": null,
         "deleted": false,
         "metadata": "bTM=",
         "modified_timestamp": "1234567890.000000008",
         "serial_number": 3,
+        "spender": null,
         "token_id": "0.0.1500"
       }
     ],

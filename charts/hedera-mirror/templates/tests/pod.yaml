@@ -11,15 +11,18 @@ metadata:
 spec:
   containers:
     - name: acceptance-tests
-      image: "{{ .Values.test.image.repository }}:{{ .Values.global.image.tag | default .Values.test.image.tag | default .Chart.AppVersion }}"
+      image: "{{ .Values.test.image.repository }}:{{ .Values.test.image.tag}}"
       imagePullPolicy: {{ .Values.test.image.pullPolicy }}
       command:
         - 'sh'
         - '-c'
           # Copying the contents of the secret to the directory the image reads from without overwriting the existing yml.
         - |
-          cp /etc/secrets/* /usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/
-          ./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags={{ .Values.test.cucumberTags }}
+          apk add -qu git openjdk11-jre
+          git clone --branch {{ if regexMatch "^\\d+\\.\\d+\\.\\d+.*$" .Chart.AppVersion }}v{{end}}{{ .Chart.AppVersion }} --depth 1 https://github.com/hashgraph/hedera-mirror-node.git
+          cd hedera-mirror-node
+          cp /etc/secrets/* hedera-mirror-test/src/test/resources/
+          ./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="{{ .Values.test.cucumberTags }}"
       volumeMounts:
         - name: acceptance-tests
           mountPath: /etc/secrets

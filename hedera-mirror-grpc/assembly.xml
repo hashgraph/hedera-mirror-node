@@ -1,10 +1,10 @@
-<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<assembly xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
     <id>bundle</id>
     <files>
         <file>
-            <source>${project.build.directory}/${project.artifactId}-${release.version}-exec.jar</source>
+            <source>${project.build.directory}/${project.artifactId}-${release.version}.jar</source>
             <destName>${project.artifactId}-v${release.version}.jar</destName>
         </file>
     </files>

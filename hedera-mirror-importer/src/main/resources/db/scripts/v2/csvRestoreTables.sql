@@ -14,9 +14,9 @@
 
 \copy assessed_custom_fee (amount, collector_account_id, consensus_timestamp, token_id) from assessed_custom_fee.csv csv;
 
-\copy contract (auto_renew_period, created_timestamp, deleted, expiration_timestamp, file_id, id, key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type, evm_address) from contract.csv csv;
+\copy contract (auto_renew_period, created_timestamp, deleted, expiration_timestamp, file_id, id, key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type, evm_address, initcode) from contract.csv csv;
 
-\copy contract_history (auto_renew_period, created_timestamp, deleted, expiration_timestamp, file_id, id, key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type, evm_address) from contract_history.csv csv;
+\copy contract_history (auto_renew_period, created_timestamp, deleted, expiration_timestamp, file_id, id, key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type, evm_address, initcode) from contract_history.csv csv;
 
 \copy contract_log (bloom, consensus_timestamp, contract_id, data, index, topic0, topic1, topic2, topic3, root_contract_id) from contract_log.csv csv;
 
@@ -36,13 +36,15 @@
 
 \copy entity_history (alias, auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, num, public_key, proxy_account_id, realm, shard, submit_key, type, receiver_sig_required, max_automatic_token_associations, timestamp_range) from entity_history.csv csv;
 
+\copy ethereum_transaction (access_list, call_data_id, call_data, chain_id, consensus_timestamp, data, from_address, gas_limit, gas_price, hash, max_fee_per_gas, max_gas_allowance, max_priority_fee_per_gas, nonce, payer_account_id, recovery_id, signature_r, signature_s, signature_v, to_address, type, value) from ethereum_transaction.csv csv;
+
 \copy event_file (bytes, consesnsus_start, consensus_end, count, digest_algorithm, file_hash, hash, load_start, load_end, name, node_account_id, previous_hash, version) from event_file.csv csv;
 
 \copy file_data (file_data, consensus_timestamp, entity_id, transaction_type) from file_data.csv csv;
 
 \copy live_hash (livehash, consensus_timestamp) from live_hash.csv csv;
 
-\copy nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id, allowance_granted_timestamp, delegating_spender, spender) from nft.csv csv;
+\copy nft (account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id, delegating_spender, spender) from nft.csv csv;
 
 \copy nft_allowance (approved_for_all, payer_account_id, spender, timestamp_range, token_id) from nft_allowance.csv csv;
 
@@ -54,7 +56,7 @@
 
 \copy record_file (name, load_start, load_end, hash, prev_hash, consensus_start, consensus_end, node_account_id, count, digest_algorithm, hapi_version_major, hapi_version_minor, hapi_version_patch, version, file_hash, bytes, index) from record_file.csv csv;
 
-\copy schedule (consensus_timestamp, creator_account_id, executed_timestamp, payer_account_id, schedule_id, transaction_body) from schedule.csv csv;
+\copy schedule (consensus_timestamp, creator_account_id, executed_timestamp, payer_account_id, schedule_id, transaction_body, expiration_time, wait_for_expiry) from schedule.csv csv;
 
 \copy token (token_id, created_timestamp, decimals, fee_schedule_key, freeze_default, freeze_key, initial_supply, kyc_key, max_supply, modified_timestamp, name, supply_key, supply_type, symbol, total_supply, treasury_account_id, type, wipe_key, pause_key, pause_status) from token.csv csv;
 
@@ -70,6 +72,6 @@
 
 \copy topic_message (consensus_timestamp, topic_id, message, running_hash, sequence_number, running_hash_version, chunk_num, chunk_total, payer_account_id, valid_start_timestamp, initial_transaction_id) from topic_message.csv csv;
 
-\copy transaction (consensus_timestamp, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id, initial_balance, max_fee, charged_tx_fee, memo, transaction_hash, transaction_bytes, scheduled, nonce, parent_consensus_timestamp, errata) from transaction.csv csv;
+\copy transaction (consensus_timestamp, type, result, payer_account_id, valid_start_ns, valid_duration_seconds, node_account_id, entity_id, initial_balance, max_fee, charged_tx_fee, memo, transaction_hash, transaction_bytes, scheduled, nonce, parent_consensus_timestamp, errata, index) from transaction.csv csv;
 
 \copy transaction_signature (consensus_timestamp, public_key_prefix, entity_id, signature) from transaction_signature.csv csv;

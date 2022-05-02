@@ -30,10 +30,12 @@ class NftViewModel {
   constructor(nftModel) {
     this.account_id = EntityId.parse(nftModel.accountId, true).toString();
     this.created_timestamp = utils.nsToSecNs(nftModel.createdTimestamp);
+    this.delegating_spender = EntityId.parse(nftModel.delegatingSpender, true).toString();
     this.deleted = nftModel.deleted;
     this.metadata = utils.encodeBase64(nftModel.metadata);
     this.modified_timestamp = utils.nsToSecNs(nftModel.modifiedTimestamp);
     this.serial_number = Number(nftModel.serialNumber);
+    this.spender = EntityId.parse(nftModel.spender, true).toString();
     this.token_id = EntityId.parse(nftModel.tokenId).toString();
   }
 }

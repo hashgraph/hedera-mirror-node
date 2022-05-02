@@ -70,23 +70,28 @@ paths:
 
         | Query Param   | Comparison Operator | Support | Description           | Example |
         | ------------- | ------------------- | ------- | --------------------- | ------- |
-        | token.id      | eq                  | Y       | Single occurence only. | ?token.id=X |
+        | token.id      | eq                  | Y       | Single occurrence only. | ?token.id=X |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurence only. | ?token.id=lte:X |
-        |               | gt(e)               | Y       | Single occurence only. | ?token.id=gte:X |
-        | serialnumber  | eq                  | Y       | Single occurence only. Requires the presence of a **token.id** query | ?serialnumber=lt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. | ?token.id=lte:X |
+        |               | gt(e)               | Y       | Single occurrence only. | ?token.id=gte:X |
+        | serialnumber  | eq                  | Y       | Single occurrence only. Requires the presence of a **token.id** query | ?serialnumber=Y |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurence only. Requires the presence of an **lte** **token.id** query | ?token.id=lte:X&serialnumber=lt:Y |
-        |               | gt(e)               | Y       | Single occurence only. Requires the presence of an **gte** **token.id** query | ?token.id=gte:X&serialnumber=gt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** **token.id** query | ?token.id=lte:X&serialnumber=lt:Y |
+        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** **token.id** query | ?token.id=gte:X&serialnumber=gt:Y |
+        | spender.id    | eq                  | Y       | | ?spender.id=Z |
+        |               | ne                  | N       | | |
+        |               | lt(e)               | Y       | | ?spender.id=lt:Z |
+        |               | gt(e)               | Y       | | ?spender.id=gt:Z |
 
         Note: When searching across a range for individual NFTs a **serialnumber** with an additional **token.id** query filter must be provided.
-        Both filters must be a single occurence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
+        Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
 
       operationId: listNftByAccountId
       parameters:
         - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
         - $ref: '#/components/parameters/tokenIdQueryParam'
         - $ref: '#/components/parameters/serialNumberQueryParam'
+        - $ref: '#/components/parameters/spenderIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
       responses:
@@ -144,16 +149,16 @@ paths:
 
         | Query Param   | Comparison Operator | Support | Description           | Example |
         | ------------- | ------------------- | ------- | --------------------- | ------- |
-        | spender.id    | eq                  | Y       | Single occurence only. | ?spender.id=X |
+        | spender.id    | eq                  | Y       | Single occurrence only. | ?spender.id=X |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurence only. | ?spender.id=lte:X |
-        |               | gt(e)               | Y       | Single occurence only. | ?spender.id=gte:X |
-        | token.id      | eq                  | Y       | Single occurence only. Requires the presence of a **spender.id** query | ?token.id=lt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. | ?spender.id=lte:X |
+        |               | gt(e)               | Y       | Single occurrence only. | ?spender.id=gte:X |
+        | token.id      | eq                  | Y       | Single occurrence only. Requires the presence of a **spender.id** query | ?token.id=lt:Y |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurence only. Requires the presence of an **lte** **spender.id** query | ?spender.id=lte:X&token.id=lt:Y |
-        |               | gt(e)               | Y       | Single occurence only. Requires the presence of an **gte** **spender.id** query | ?spender.id=gte:X&token.id=gt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** **spender.id** query | ?spender.id=lte:X&token.id=lt:Y |
+        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** **spender.id** query | ?spender.id=gte:X&token.id=gt:Y |
 
-        Both filters must be a single occurence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
+        Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
 
       operationId: listTokenAllowancesByAccountId
       parameters:
@@ -855,7 +860,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.55.0-SNAPSHOT
+  version: 0.56.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1221,6 +1226,10 @@ components:
           $ref: '#/components/schemas/TimestampNullable'
         file_id:
           $ref: '#/components/schemas/EntityId'
+        max_automatic_token_associations:
+          type: integer
+          format: int32
+          nullable: true
         memo:
           example: contract memo
           type: string
@@ -1605,6 +1614,8 @@ components:
           $ref: '#/components/schemas/EntityId'
         created_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
+        delegating_spender:
+          $ref: '#/components/schemas/EntityId'
         deleted:
           description: whether the nft or the token it belongs to has been deleted
           type: boolean
@@ -1616,6 +1627,8 @@ components:
           $ref: '#/components/schemas/TimestampNullable'
         serial_number:
           type: number
+        spender:
+          $ref: '#/components/schemas/EntityId'
         token_id:
           $ref: '#/components/schemas/EntityId'
       example:
@@ -1947,6 +1960,7 @@ components:
         - CRYPTOAPPROVEALLOWANCE
         - CRYPTOCREATEACCOUNT
         - CRYPTODELETE
+        - CRYPTODELETEALLOWANCE
         - CRYPTODELETELIVEHASH
         - CRYPTOTRANSFER
         - CRYPTOUPDATEACCOUNT
@@ -2558,7 +2572,7 @@ components:
     limitQueryParam:
       name: limit
       in: query
-      description: The maximimum number of items to return
+      description: The maximum number of items to return
       example: 2
       schema:
         type: integer

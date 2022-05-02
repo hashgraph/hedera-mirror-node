@@ -53,7 +53,8 @@
     "/api/v1/contracts/1000/results/logs",
     "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results/logs",
     "/api/v1/contracts/0.70f2b2914a2a4b783faefb75f459a580616fcb5e/results/logs",
-    "/api/v1/contracts/0.0.70f2b2914a2a4b783faefb75f459a580616fcb5e/results/logs"
+    "/api/v1/contracts/0.0.70f2b2914a2a4b783faefb75f459a580616fcb5e/results/logs",
+    "/api/v1/contracts/0x70f2b2914a2a4b783faefb75f459a580616fcb5e/results/logs"
   ],
   "responseStatus": 200,
   "responseJson": {
