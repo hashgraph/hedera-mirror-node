@@ -333,7 +333,8 @@ create table if not exists record_file
     consensus_end      bigint                 not null,
     count              bigint                 not null,
     digest_algorithm   int                    not null,
-    file_hash          character varying(96)  not null,
+    file_hash          character varying(96)  not null
+    gas_used           bigint                 null,
     hapi_version_major int,
     hapi_version_minor int,
     hapi_version_patch int,
@@ -341,6 +342,7 @@ create table if not exists record_file
     index              bigint                 not null,
     load_start         bigint                 not null,
     load_end           bigint                 not null,
+    logs_bloom         bytea                  null,
     name               character varying(250) not null,
     node_account_id    bigint                 not null,
     prev_hash          character varying(96)  not null,

@@ -72,6 +72,8 @@ public class RecordFile implements StreamFile<RecordItem> {
     @ToString.Exclude
     private String fileHash;
 
+    private Long gasUsed;
+
     private Integer hapiVersionMajor;
 
     private Integer hapiVersionMinor;
@@ -91,6 +93,9 @@ public class RecordFile implements StreamFile<RecordItem> {
     private Long loadEnd;
 
     private Long loadStart;
+
+    @ToString.Exclude
+    private byte[] logsBloom;
 
     @ToString.Exclude
     @Transient

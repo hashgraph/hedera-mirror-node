@@ -52,7 +52,7 @@
 
 \copy non_fee_transfer (entity_id, consensus_timestamp, amount, is_approval) from non_fee_transfer.csv csv;
 
-\copy record_file (name, load_start, load_end, hash, prev_hash, consensus_start, consensus_end, node_account_id, count, digest_algorithm, hapi_version_major, hapi_version_minor, hapi_version_patch, version, file_hash, bytes, index) from record_file.csv csv;
+\copy record_file (name, load_start, load_end, hash, prev_hash, consensus_start, consensus_end, node_account_id, count, digest_algorithm, hapi_version_major, hapi_version_minor, hapi_version_patch, version, file_hash, bytes, index, gas_used, logs_bloom) from record_file.csv csv;
 
 \copy schedule (consensus_timestamp, creator_account_id, executed_timestamp, payer_account_id, schedule_id, transaction_body, expiration_time, wait_for_expiry) from schedule.csv csv;
 

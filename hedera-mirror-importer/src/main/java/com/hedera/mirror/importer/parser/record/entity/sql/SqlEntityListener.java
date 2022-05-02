@@ -97,6 +97,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<CustomFee> customFees;
     private final Collection<Entity> entities;
     private final Collection<FileData> fileData;
+    private Long gasUsed = 0l;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<NftTransfer> nftTransfers;
@@ -185,6 +186,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onEnd(RecordFile recordFile) {
         executeBatches();
         if (recordFile != null) {
+            recordFile.setGasUsed(gasUsed);
+            gasUsed = 0l;
             recordFileRepository.save(recordFile);
         }
     }
@@ -301,6 +304,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onContractResult(ContractResult contractResult) throws ImporterException {
+        gasUsed += contractResult.getGasUsed();
         contractResults.add(contractResult);
     }
 

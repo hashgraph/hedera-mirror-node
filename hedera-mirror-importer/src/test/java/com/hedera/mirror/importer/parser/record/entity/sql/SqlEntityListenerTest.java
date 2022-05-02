@@ -286,6 +286,43 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onContractResultRecordFileGasUsed() {
+        // given
+        ContractResult contractResult = domainBuilder.contractResult().get();
+        ContractResult contractResult2 = domainBuilder.contractResult().get();
+        long totalGasUsed = contractResult.getGasUsed() + contractResult2.getGasUsed();
+
+        // when
+        sqlEntityListener.onContractResult(contractResult);
+        sqlEntityListener.onContractResult(contractResult2);
+        completeFileAndCommit();
+
+        // then
+        RecordFile recordFile = recordFileRepository.findAll().iterator().next();
+        assertThat(recordFile.getGasUsed()).isEqualTo(totalGasUsed);
+    }
+
+    @Test
+    void onContractResultRecordFileGasUsedReset() {
+        // given
+        ContractResult contractResult = domainBuilder.contractResult().get();
+        ContractResult contractResult2 = domainBuilder.contractResult().get();
+
+        // when
+        sqlEntityListener.onContractResult(contractResult);
+        sqlEntityListener.onContractResult(contractResult2);
+        completeFileAndCommit();
+
+        ContractResult contractResult3 = domainBuilder.contractResult().get();
+        sqlEntityListener.onContractResult(contractResult3);
+        completeFileAndCommit();
+
+        // then
+        RecordFile recordFile = recordFileRepository.findLatest().get();
+        assertThat(recordFile.getGasUsed()).isEqualTo(contractResult3.getGasUsed());
+    }
+
+    @Test
     void onContractStateChange() {
         // given
         ContractStateChange contractStateChange = domainBuilder.contractStateChange().get();
