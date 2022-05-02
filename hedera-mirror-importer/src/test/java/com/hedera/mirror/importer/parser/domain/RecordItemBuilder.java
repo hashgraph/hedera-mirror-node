@@ -143,6 +143,7 @@ public class RecordItemBuilder {
     public Builder<ContractCreateTransactionBody.Builder> contractCreate(ContractID contractId) {
         ContractCreateTransactionBody.Builder transactionBody = ContractCreateTransactionBody.newBuilder()
                 .setAdminKey(key())
+                .setAutoRenewAccountId(accountId())
                 .setAutoRenewPeriod(duration(30))
                 .setConstructorParameters(bytes(64))
                 .setFileID(fileId())

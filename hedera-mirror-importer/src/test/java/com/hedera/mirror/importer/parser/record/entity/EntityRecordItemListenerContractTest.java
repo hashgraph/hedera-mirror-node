@@ -63,7 +63,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -105,13 +104,18 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     @ParameterizedTest
-    @ValueSource(booleans = {true, false})
-    void contractCreate(boolean bytecodeSourceFileId) {
-        var builder = recordItemBuilder.contractCreate();
-        if (!bytecodeSourceFileId) {
-            builder.transactionBody(b -> b.clearFileID().setInitcode(recordItemBuilder.bytes(1024)));
-        }
-        var recordItem = builder.build();
+    @CsvSource({"true,true", "false, false"})
+    void contractCreate(boolean bytecodeSourceFileId, boolean hasAutoRenewAccount) {
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> {
+                    if (!bytecodeSourceFileId) {
+                        b.clearFileID().setInitcode(recordItemBuilder.bytes(1024));
+                    }
+                    if (!hasAutoRenewAccount) {
+                        b.clearAutoRenewAccountId();
+                    }
+                })
+                .build();
         var record = recordItem.getRecord();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
@@ -784,6 +788,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()) : null;
         EntityId entityId = transaction.getEntityId();
         Contract contract = getEntity(entityId);
+        Long expectedAutoRenewAccountId = transactionBody.hasAutoRenewAccountId() ?
+                transactionBody.getAutoRenewAccountId().getAccountNum() : null;
         EntityId expectedFileId = transactionBody.hasFileID() ? EntityId.of(transactionBody.getFileID()) : null;
         byte[] expectedInitcode = transactionBody.getInitcode() != ByteString.EMPTY ?
                 DomainUtils.toBytes(transactionBody.getInitcode()) : null;
@@ -794,6 +800,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         assertThat(contract)
                 .isNotNull()
+                .returns(expectedAutoRenewAccountId, Contract::getAutoRenewAccountId)
                 .returns(transactionBody.getAutoRenewPeriod().getSeconds(), Contract::getAutoRenewPeriod)
                 .returns(createdTimestamp, Contract::getCreatedTimestamp)
                 .returns(false, Contract::getDeleted)

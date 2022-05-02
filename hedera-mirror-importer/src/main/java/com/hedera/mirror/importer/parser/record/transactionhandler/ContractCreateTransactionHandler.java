@@ -74,6 +74,12 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         var contractCreateResult = recordItem.getRecord().getContractCreateResult();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
+        if (transactionBody.hasAutoRenewAccountId()) {
+            getAccountId(transactionBody.getAutoRenewAccountId())
+                    .map(EntityId::getId)
+                    .ifPresent(contract::setAutoRenewAccountId);
+        }
+
         if (transactionBody.hasAutoRenewPeriod()) {
             contract.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
         }
