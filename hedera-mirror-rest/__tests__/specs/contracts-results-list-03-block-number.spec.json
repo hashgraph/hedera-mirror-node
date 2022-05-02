@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call for a specific contract using contract id",
+  "description": "Contract results api call for all contracts with a block.number filter",
   "setup": {
     "contracts": [
       {
