@@ -218,7 +218,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transactionBody(b -> b.clearFileID().clearInitcode())
                 .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
                 .build();
-        recordItem.setParentRecordItem(parentRecordItem);
+        recordItem.setParent(parentRecordItem);
         var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
@@ -244,7 +244,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transactionBody(b -> b.clearInitcode().clearFileID())
                 .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
                 .build();
-        recordItem.setParentRecordItem(parentRecordItem);
+        recordItem.setParent(parentRecordItem);
         var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
@@ -261,6 +261,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     void updateContractFromEthereumTransactionWInitCodeParent() {
         // parent item
         var parentRecordItem = recordItemBuilder.ethereumTransaction(true)
+                .transactionBody(x -> x.clearCallData())
                 .build();
 
         doReturn(domainBuilder.ethereumTransaction(true).get()).when(ethereumTransactionParser).decode(any());
@@ -270,7 +271,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transactionBody(b -> b.clearInitcode().clearFileID())
                 .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
                 .build();
-        recordItem.setParentRecordItem(parentRecordItem);
+        recordItem.setParent(parentRecordItem);
         var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
@@ -296,7 +297,33 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transactionBody(b -> b.clearFileID().clearInitcode())
                 .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
                 .build();
-        recordItem.setParentRecordItem(parentRecordItem);
+        recordItem.setParent(parentRecordItem);
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(null, Contract::getInitcode)
+                .satisfies(c -> assertThat(c.getFileId()).isNotNull())
+        );
+    }
+
+    @Test
+    void updateContractFromEthereumTransactionWCallDataFileParent() {
+        // parent item
+        var parentRecordItem = recordItemBuilder.ethereumTransaction(true)
+                .build();
+
+        doReturn(domainBuilder.ethereumTransaction(true).get()).when(ethereumTransactionParser).decode(any());
+
+        // child item
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearInitcode().clearFileID())
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
+                .build();
+        recordItem.setParent(parentRecordItem);
         var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()

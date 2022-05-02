@@ -73,7 +73,7 @@ public class RecordItem implements StreamItem {
     private final Integer transactionIndex;
 
     @NonFinal
-    private RecordItem parentRecordItem = null;
+    private RecordItem parent = null;
 
     /**
      * Constructs RecordItem from serialized transactionBytes and recordBytes.
@@ -165,8 +165,8 @@ public class RecordItem implements StreamItem {
         return dataCase.getNumber();
     }
 
-    public void setParentRecordItem(RecordItem recordItem) {
-        parentRecordItem = recordItem;
+    public void setParent(RecordItem recordItem) {
+        parent = recordItem;
     }
 
     public TransactionBody getTransactionBody() {

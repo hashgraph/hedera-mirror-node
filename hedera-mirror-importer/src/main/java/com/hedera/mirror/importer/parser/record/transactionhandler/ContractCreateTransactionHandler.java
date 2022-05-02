@@ -131,7 +131,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         // parents may be ContractCreate or EthereumTransaction
-        var parentRecordItem = recordItem.getParentRecordItem();
+        var parentRecordItem = recordItem.getParent();
         switch (TransactionType.of(parentRecordItem.getTransactionType())) {
             case CONTRACTCREATEINSTANCE:
                 updateChildFromContractCreateParent(contract, parentRecordItem);
@@ -166,6 +166,13 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
     private void updateChildFromEthereumTransactionParent(Contract contract, RecordItem recordItem) {
         var body = recordItem.getTransactionBody().getEthereumTransaction();
+
+        // use callData FileID if present
+        if (body.hasCallData()) {
+            contract.setFileId(EntityId.of(body.getCallData()));
+            return;
+        }
+
         var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
         var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
 
