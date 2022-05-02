@@ -1082,22 +1082,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         });
     }
 
-//    private Transaction tokenAssociateTransaction() {
-//        return buildTransaction(builder -> builder.getTokenAssociateBuilder()
-//                .setAccount(PAYER2)
-//                .addAllTokens(List.of(TOKEN_ID)));
-//    }
-//
-//    private Transaction tokenDissociateTransaction() {
-//        return buildTransaction(builder -> builder.getTokenDissociateBuilder()
-//                .setAccount(PAYER2)
-//                .addAllTokens(List.of(TOKEN_ID)));
-//    }
-//
-//    private Transaction cryptoTransferTransaction() {
-//        return buildTransaction(TransactionBody.Builder::getCryptoTransferBuilder);
-//    }
-
     private Transaction tokenSupplyTransaction(TokenType tokenType, boolean mint) {
         var serialNumbers = List.of(1L, 2L, 3L);
         Transaction transaction = null;
