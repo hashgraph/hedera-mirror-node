@@ -51,7 +51,7 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
     private static final Map<HederaNetwork, Pair<Long, Long>> CONSENSUS_END_BLOCK_NUMBER_PER_NET =
             Map.of(
                     TESTNET, Pair.of(1651500123344619566L, 20484961L),
-                    MAINNET, Pair.of( 1651500089855822000L, 20484947L));
+                    MAINNET, Pair.of( 1651522971766268772L, 31850269L));
 
     private final RecordFileRepository recordFileRepository;
 
