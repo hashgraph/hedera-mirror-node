@@ -72,7 +72,7 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
         MigrationVersion current = getVersion();
 
         // The only case where we should skip a repeatable migration,
-        // is when we the target migration is not greater or equal to the required one.
+        // is when the target migration is not greater or equal to the required one.
         if (current == null && !hasMinimumRequiredVersion(configuration)) {
             return true;
         }

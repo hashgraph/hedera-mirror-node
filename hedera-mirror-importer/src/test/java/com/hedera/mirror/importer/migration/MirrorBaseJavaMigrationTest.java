@@ -97,10 +97,10 @@ class MirrorBaseJavaMigrationTest {
                 // Non-repeatable migrations are skipped,
                 // if the baseline is greater than their version, or
                 // if the version is greater than the target
-                Arguments.of(new JavaMigration(MigrationVersion.fromVersion("1.58.5"), MigrationVersion.fromVersion("1.57.1")), getConfiguration("1.55.0","1.58.0"), true),
+                Arguments.of(new JavaMigration(MigrationVersion.fromVersion("1.58.4"), MigrationVersion.fromVersion("1.58.6")), getConfiguration("1.58.5","1.59.0"), true),
                 Arguments.of(new JavaMigration(MigrationVersion.fromVersion("1.58.5"), MigrationVersion.fromVersion("1.57.1")), getConfiguration("1.55.0","1.58.0"), true),
 
-                // Repeatable migrations are not skipped,
+                // Non-repeatable migrations are not skipped,
                 // if the target is null, or
                 // if the their version is lower than the target version.
                 Arguments.of(new JavaMigration(MigrationVersion.fromVersion("1.58.4"), MigrationVersion.fromVersion("1.58.3")), getConfiguration("1.55.0","1.58.5"), false),
