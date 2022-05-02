@@ -52,7 +52,7 @@ abstract class AbstractEntityCrudTransactionHandler<T extends AbstractEntity> im
 
     protected Optional<EntityId> getAccountId(AccountID accountId) {
         try {
-            return Optional.ofNullable(entityIdService.lookup(accountId));
+            return Optional.of(entityIdService.lookup(accountId));
         } catch (AliasNotFoundException ex) {
             if (recordParserProperties.getPartialDataAction() == PartialDataAction.SKIP) {
                 return Optional.empty();
