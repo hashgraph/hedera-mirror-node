@@ -42,7 +42,7 @@ import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
-    private static final MigrationVersion MINIMUM_REQUIRED_VERSION = MigrationVersion.fromVersion("1.58.0");
+    private static final MigrationVersion MINIMUM_REQUIRED_VERSION = MigrationVersion.fromVersion("1.57.1");
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -50,8 +50,8 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
     private static final Map<HederaNetwork, Pair<Long, Long>> CONSENSUS_END_BLOCK_NUMBER_PER_NET =
             Map.of(
-                    TESTNET, Pair.of(1570811971290027001L, 1029L),
-                    MAINNET, Pair.of( 1651100355949621933L, 31638961L));
+                    TESTNET, Pair.of(1651500123344619566L, 20484961L),
+                    MAINNET, Pair.of( 1651500089855822000L, 20484947L));
 
     private final RecordFileRepository recordFileRepository;
 
@@ -60,11 +60,11 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
         if (shouldNotMigrateOnCurrentNetwork()) {
             return ;
         }
-
         var consensusEndAndBlockNumber = CONSENSUS_END_BLOCK_NUMBER_PER_NET.get(mirrorProperties.getNetwork());
-        long correctConsensusNumber = consensusEndAndBlockNumber.getKey();
+        long correctConsensusEnd = consensusEndAndBlockNumber.getKey();
         long correctBlockNumber = consensusEndAndBlockNumber.getValue();
-        recordFileRepository.findById(correctConsensusNumber)
+
+        recordFileRepository.findById(correctConsensusEnd)
                 .map(RecordFile::getIndex)
                 .filter(blockNumber -> blockNumber != correctBlockNumber)
                 .ifPresent(blockNumber -> updateRecordFilesBlockNumber(correctBlockNumber, blockNumber));
