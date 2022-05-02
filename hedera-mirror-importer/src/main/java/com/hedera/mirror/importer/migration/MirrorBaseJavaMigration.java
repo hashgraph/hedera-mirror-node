@@ -101,7 +101,7 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
 
         MigrationVersion targetVersion = configuration.getTarget();
         if (targetVersion == null) {
-            return false;
+            return true;
         }
 
         return minimumRequiredVersion.compareTo(targetVersion) <= 0;

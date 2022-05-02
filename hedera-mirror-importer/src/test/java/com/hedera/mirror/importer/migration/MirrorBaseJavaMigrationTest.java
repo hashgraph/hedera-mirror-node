@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.migration;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.sql.Connection;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -32,10 +33,19 @@ import org.flywaydb.core.api.configuration.ClassicConfiguration;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.Context;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class MirrorBaseJavaMigrationTest {
+
+    @ParameterizedTest
+    @MethodSource("skipMigrationTestArgumentProvider")
+    void shouldSkipTheCorrectMigrations(JavaMigration javaMigration, Configuration configuration, boolean shouldSkip){
+        assertThat(javaMigration.skipMigration(configuration)).isEqualTo(shouldSkip);
+    }
 
     @DisplayName("Verify migration")
     @ParameterizedTest(name = "with version {0}, baseline {1} and target {2} produces {3}")
@@ -57,11 +67,45 @@ class MirrorBaseJavaMigrationTest {
         assertThat(migration.isMigrationCompleted()).isEqualTo(result);
     }
 
-    private ClassicConfiguration getConfiguration(String baseLine, String target) {
+    private static ClassicConfiguration getConfiguration(String baseLine, String target) {
         ClassicConfiguration configuration = new ClassicConfiguration();
         configuration.setBaselineVersionAsString(baseLine);
-        configuration.setTargetAsString(target);
+        if (target != null) {
+            configuration.setTargetAsString(target);
+        }
         return configuration;
+    }
+
+    private static Stream<Arguments> skipMigrationTestArgumentProvider() {
+        return Stream.of(
+                // Repeatable migration with no minimum version is never skipped
+                Arguments.of(new JavaMigration(), getConfiguration(null,null), false),
+                Arguments.of(new JavaMigration(), getConfiguration("1.57.1",null), false),
+                Arguments.of(new JavaMigration(), getConfiguration("1.57.1","1.58.5"), false),
+                Arguments.of(new JavaMigration(), getConfiguration("1.57.1","1.58.4"), false),
+                Arguments.of(new JavaMigration(), getConfiguration("1.58.4","1.57.1"), false),
+
+                // Repeatable migration with minimum version can be skipped in some cases
+                Arguments.of(new JavaMigration(null, MigrationVersion.fromVersion("1.58.5")), getConfiguration("1.57.1","1.58.4"), true),
+
+                // Repeatable migration with minimum version is not skipped,
+                // when the target is greater than the minimum required version, or
+                // when the target is null
+                Arguments.of(new JavaMigration(null, MigrationVersion.fromVersion("1.58.5")), getConfiguration("1.57.1",null), false),
+                Arguments.of(new JavaMigration(null, MigrationVersion.fromVersion("1.58.5")), getConfiguration("1.57.1","1.58.6"), false),
+
+                // Non-repeatable migrations are skipped,
+                // if the baseline is greater than their version, or
+                // if the version is greater than the target
+                Arguments.of(new JavaMigration(MigrationVersion.fromVersion("1.58.5"), MigrationVersion.fromVersion("1.57.1")), getConfiguration("1.55.0","1.58.0"), true),
+                Arguments.of(new JavaMigration(MigrationVersion.fromVersion("1.58.5"), MigrationVersion.fromVersion("1.57.1")), getConfiguration("1.55.0","1.58.0"), true),
+
+                // Repeatable migrations are not skipped,
+                // if the target is null, or
+                // if the their version is lower than the target version.
+                Arguments.of(new JavaMigration(MigrationVersion.fromVersion("1.58.4"), MigrationVersion.fromVersion("1.58.3")), getConfiguration("1.55.0","1.58.5"), false),
+                Arguments.of(new JavaMigration(MigrationVersion.fromVersion("1.58.4"), MigrationVersion.fromVersion("1.58.3")), getConfiguration("1.55.0",null), false)
+        );
     }
 
     @Data
@@ -99,6 +143,44 @@ class MirrorBaseJavaMigrationTest {
         @Override
         public Connection getConnection() {
             return null;
+        }
+    }
+
+    private static class JavaMigration extends MirrorBaseJavaMigration {
+
+        private MigrationVersion version;
+
+        private MigrationVersion minimumVersion;
+
+        public JavaMigration() {
+            this(null, null);
+        }
+
+        public JavaMigration(MigrationVersion version) {
+            this(version, null);
+        }
+
+        public JavaMigration(MigrationVersion version, MigrationVersion minimumVersion) {
+            this.version = version;
+            this.minimumVersion = minimumVersion;
+        }
+
+        @Override
+        protected void doMigrate() { }
+
+        @Override
+        public MigrationVersion getVersion() {
+            return version;
+        }
+
+        @Override
+        public MigrationVersion getMinimumVersion() {
+            return minimumVersion;
+        }
+
+        @Override
+        public String getDescription() {
+            return "Repetable java migration";
         }
     }
 }
