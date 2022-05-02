@@ -69,34 +69,13 @@
           {
             "admin_key": {
               "_type": "ProtobufEncoded",
-              "key": "030303"
-            },
-            "auto_renew_period": 1500,
-            "contract_id": "0.0.8003",
-            "created_timestamp": "987654.222123456",
-            "deleted": false,
-            "evm_address": "0x60f3f640a8508fc6a86d45df051962668e1e8ac7",
-            "expiration_timestamp": "1236987654.000000123",
-            "file_id": "0.0.5001",
-            "max_automatic_token_associations": 0,
-            "memo": "contract memo",
-            "obtainer_id": "0.0.7001",
-            "proxy_account_id": "0.0.7005",
-            "timestamp": {
-              "from": "987654.222123456",
-              "to": null
-            }
-          },
-          {
-            "admin_key": {
-              "_type": "ProtobufEncoded",
-              "key": "020202"
+              "key": "050505"
             },
             "auto_renew_period": null,
-            "contract_id": "0.0.8002",
-            "created_timestamp": "987654.111123456",
+            "contract_id": "0.0.8005",
+            "created_timestamp": "987654.000123461",
             "deleted": false,
-            "evm_address": "0x0102030405060708090a0b0c0d0e0f1011121314",
+            "evm_address": "0x0000000000000000000000000000000000001f45",
             "expiration_timestamp": null,
             "file_id": "0.0.5001",
             "max_automatic_token_associations": 0,
@@ -104,13 +83,34 @@
             "obtainer_id": null,
             "proxy_account_id": null,
             "timestamp": {
-              "from": "987654.111123456",
+              "from": "987654.000123461",
+              "to": null
+            }
+          },
+          {
+            "admin_key": {
+              "_type": "ProtobufEncoded",
+              "key": "040404"
+            },
+            "auto_renew_period": null,
+            "contract_id": "0.0.8004",
+            "created_timestamp": "987654.000123460",
+            "deleted": false,
+            "evm_address": "0x0000000000000000000000000000000000001f44",
+            "expiration_timestamp": null,
+            "file_id": "0.0.5001",
+            "max_automatic_token_associations": 0,
+            "memo": "contract memo",
+            "obtainer_id": null,
+            "proxy_account_id": null,
+            "timestamp": {
+              "from": "987654.000123460",
               "to": null
             }
           }
         ],
         "links": {
-          "next": "/api/v1/contracts?limit=2&contract.id=lt:0.0.8002"
+          "next": "/api/v1/contracts?limit=2&contract.id=lt:0.0.8004"
         }
       }
     },
