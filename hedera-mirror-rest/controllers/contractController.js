@@ -43,6 +43,7 @@ const {
   TransactionResult,
   RecordFile,
   Transaction,
+  EthereumTransaction,
 } = require('../model');
 const {ContractService, RecordFileService, TransactionService} = require('../service');
 const TransactionId = require('../transactionId');
@@ -589,7 +590,9 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
 
         break;
       case constants.filterKeys.BLOCK_HASH:
-        // TODO
+        const hashFieldFullName = EthereumTransaction.getFullName(EthereumTransaction.HASH);
+        params.push(filter.value);
+        conditions.push(`${hashFieldFullName}${filter.operator}$${params.length}`);
         break;
       case constants.filterKeys.INTERNAL:
         // If internal is `false` child transactions should be excluded

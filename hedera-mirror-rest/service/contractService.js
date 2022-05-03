@@ -25,6 +25,7 @@ const _ = require('lodash');
 const constants = require('../constants');
 const Contract = require('../model/contract');
 const Transaction = require('../model/transaction');
+const EthereumTransaction = require('../model/ethereumTransaction');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
   response: {
@@ -46,11 +47,17 @@ class ContractService extends BaseService {
     super();
   }
 
-  static detailedContractResultsQuery = `select *
+  static detailedContractResultsQuery = `select ${ContractResult.tableAlias}.*, ${
+    EthereumTransaction.tableAlias
+  }.hash as ethereum_hash
   from ${ContractResult.tableName} ${ContractResult.tableAlias}
   join ${Transaction.tableName} ${Transaction.tableAlias}
   on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
     Transaction.CONSENSUS_TIMESTAMP
+  )}
+  left join ${EthereumTransaction.tableName} ${EthereumTransaction.tableAlias}
+  on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${EthereumTransaction.getFullName(
+    EthereumTransaction.CONSENSUS_TIMESTAMP
   )}
   `;
 
