@@ -206,6 +206,56 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Test
+    void updateContractFromContractCreateParentNotAChild() {
+        // parent item
+        var parentRecordItem = recordItemBuilder.contractCreate()
+                .transactionBody(x -> x.clearFileID()
+                        .setInitcode(ByteString.copyFrom("init code", StandardCharsets.UTF_8)))
+                .build();
+
+        // child item
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearFileID().clearInitcode())
+                .parent(parentRecordItem)
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(null, Contract::getFileId)
+                .returns(null, Contract::getInitcode)
+        );
+    }
+
+    @Test
+    void updateContractFromContractCreateNoParent() {
+        // parent item
+        var parentRecordItem = recordItemBuilder.contractCreate()
+                .transactionBody(x -> x.clearFileID()
+                        .setInitcode(ByteString.copyFrom("init code", StandardCharsets.UTF_8)))
+                .build();
+
+        // child item
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearFileID().clearInitcode())
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(null, Contract::getFileId)
+                .returns(null, Contract::getInitcode)
+        );
+    }
+
+    @Test
     void updateContractFromContractCreateWInitCodeParent() {
         // parent item
         var parentRecordItem = recordItemBuilder.contractCreate()
