@@ -102,7 +102,7 @@
     "jest-junit": "^13.2.0",
     "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.7",
-    "nodemon": "^2.0.15",
+    "nodemon": "^2.0.16",
     "pg-format": "^1.0.4",
     "prettier": "^2.6.2",
     "pretty-quick": "^3.1.3",
