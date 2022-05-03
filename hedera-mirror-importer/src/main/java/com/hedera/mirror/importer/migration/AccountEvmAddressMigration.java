@@ -44,6 +44,7 @@ public class AccountEvmAddressMigration extends MirrorBaseJavaMigration {
         updateAlias(true);
     }
 
+    // We search for aliases with a length of 35 since ECDSA secp256k1 aliases are 33 bytes w/ 2 bytes for proto prefix
     private void updateAlias(boolean history) {
         String suffix = history ? "_history" : "";
         var query = String.format("select id, alias from entity%s where evm_address is null and length(alias) = 35",
