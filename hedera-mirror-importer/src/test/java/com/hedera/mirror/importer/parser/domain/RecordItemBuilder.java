@@ -400,6 +400,7 @@ public class RecordItemBuilder {
         private final TransactionBody.Builder transactionBodyWrapper;
         private final TransactionRecord.Builder transactionRecord;
         private final AccountID payerAccountId;
+        private RecordItem parent;
         private Version hapiVersion = RecordFile.HAPI_VERSION_NOT_SET;
 
         private Builder(TransactionType type, T transactionBody) {
@@ -417,11 +418,21 @@ public class RecordItemBuilder {
 
             Transaction transaction = transaction().build();
             TransactionRecord record = transactionRecord.build();
-            return new RecordItem(hapiVersion, transaction.toByteArray(), record.toByteArray(), null);
+            return RecordItem.builder()
+                    .hapiVersion(hapiVersion)
+                    .parent(parent)
+                    .recordBytes(record.toByteArray())
+                    .transactionBytes(transaction.toByteArray())
+                    .build();
         }
 
         public Builder<T> hapiVersion(Version hapiVersion) {
             this.hapiVersion = hapiVersion;
+            return this;
+        }
+
+        public Builder<T> parent(RecordItem parent) {
+            this.parent = parent;
             return this;
         }
 

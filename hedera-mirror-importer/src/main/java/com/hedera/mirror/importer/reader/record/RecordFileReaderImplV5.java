@@ -105,28 +105,20 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
         int count = 0;
         long consensusStart = 0;
-        RecordStreamObject lastRecordStreamObject = null;
         List<RecordItem> items = new ArrayList<>();
-        RecordItem parentRecordItem = null;
+        RecordItem lastRecordItem = null;
 
         // read record stream objects
         while (!isHashObject(vdis, hashObjectClassId)) {
             RecordStreamObject recordStreamObject = new RecordStreamObject(vdis, recordFile.getHapiVersion(),
                     count);
-            var recordItem = recordStreamObject.getRecordItem();
-
-            // check if current item is a child
-            if (recordItem.isChild()) {
-                if (parentRecordItem != null &&
-                        recordItem.getRecord().getParentConsensusTimestamp()
-                                .equals(parentRecordItem.getRecord().getConsensusTimestamp())) {
-                    recordItem.setParent(parentRecordItem);
-                }
-            } else {
-                // update last recordItem reference for next item. Preserve parent until all children have been
-                // processed since they are assured to exist in sequential order of [Parent, Child1,...,ChildN]
-                parentRecordItem = recordItem;
-            }
+            var recordItem = RecordItem.builder()
+                    .hapiVersion(recordFile.getHapiVersion())
+                    .previous(lastRecordItem)
+                    .recordBytes(recordStreamObject.recordBytes)
+                    .transactionIndex(count)
+                    .transactionBytes(recordStreamObject.transactionBytes)
+                    .build();
 
             items.add(recordItem);
 
@@ -134,14 +126,14 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
                 consensusStart = recordItem.getConsensusTimestamp();
             }
 
-            lastRecordStreamObject = recordStreamObject;
+            lastRecordItem = recordItem;
             count++;
         }
 
         if (count == 0) {
             throw new InvalidStreamFileException("No record stream objects in record file " + filename);
         }
-        long consensusEnd = lastRecordStreamObject.getRecordItem().getConsensusTimestamp();
+        long consensusEnd = lastRecordItem.getConsensusTimestamp();
 
         // end object running hash, metadata hash is calculated on it
         metadataDigestInputStream.on(true);
