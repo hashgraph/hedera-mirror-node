@@ -68,6 +68,6 @@ public class AccountEvmAddressMigration extends MirrorBaseJavaMigration {
 
     @Override
     public MigrationVersion getVersion() {
-        return MigrationVersion.fromVersion("1.58.6");
+        return MigrationVersion.fromVersion("1.58.7");
     }
 }

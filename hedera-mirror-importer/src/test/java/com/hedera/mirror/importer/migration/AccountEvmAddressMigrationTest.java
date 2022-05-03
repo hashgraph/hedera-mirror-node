@@ -38,7 +38,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.58.5")
+@TestPropertySource(properties = "spring.flyway.target=1.58.6")
 class AccountEvmAddressMigrationTest extends IntegrationTest {
 
     private final JdbcOperations jdbcOperations;
