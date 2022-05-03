@@ -781,36 +781,9 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   }
 
   // update query with repeated values
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    inValues[constants.filterKeys.TIMESTAMP],
-    keyFullNames[constants.filterKeys.TIMESTAMP]
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    inValues[constants.filterKeys.TOPIC0],
-    keyFullNames[constants.filterKeys.TOPIC0]
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    inValues[constants.filterKeys.TOPIC1],
-    keyFullNames[constants.filterKeys.TOPIC1]
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    inValues[constants.filterKeys.TOPIC2],
-    keyFullNames[constants.filterKeys.TOPIC2]
-  );
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    inValues[constants.filterKeys.TOPIC3],
-    keyFullNames[constants.filterKeys.TOPIC3]
-  );
+  Object.keys(keyFullNames).forEach((filterKey) => {
+    updateQueryFiltersWithInValues(params, conditions, inValues[filterKey], keyFullNames[filterKey]);
+  });
 
   return {
     conditions,
