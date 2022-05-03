@@ -201,7 +201,7 @@ public class RecordItem implements StreamItem {
                         .equals(previous.record.getConsensusTimestamp())) {
                     // check immediately preceding item
                     parent = previous;
-                } else if (record.getParentConsensusTimestamp()
+                } else if (previous.parent != null && record.getParentConsensusTimestamp()
                         .equals(previous.parent.record.getConsensusTimestamp())) {
                     // check older siblings parent, if child count is > 1 this prevents having to search to parent
                     parent = previous.parent;

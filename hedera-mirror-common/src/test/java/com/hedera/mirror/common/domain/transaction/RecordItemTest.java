@@ -139,7 +139,24 @@ class RecordItemTest {
     }
 
     @Test
-    void testWithNoParent() {
+    void testWithParentItems() {
+        var transactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(2).setNanos(4).build())
+                .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
+                .setMemo("child")
+                .build();
+        RecordItem recordItem = RecordItem.builder()
+                .hapiVersion(DEFAULT_HAPI_VERSION)
+                .transaction(DEFAULT_TRANSACTION)
+                .record(transactionRecord)
+                .build();
+
+        // verify parent
+        assertThat(recordItem.getParent()).isNull();
+    }
+
+    @Test
+    void testWithParentTimestampNoPrevious() {
         var transactionRecord = TransactionRecord.newBuilder()
                 .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(2).setNanos(4).build())
                 .setParentConsensusTimestamp(Timestamp.newBuilder().setSeconds(1).setNanos(2).build())
@@ -150,6 +167,69 @@ class RecordItemTest {
                 .hapiVersion(DEFAULT_HAPI_VERSION)
                 .transaction(DEFAULT_TRANSACTION)
                 .record(transactionRecord)
+                .build();
+
+        // verify parent
+        assertThat(recordItem.getParent()).isNull();
+    }
+
+    @Test
+    void testWithPreviousButNoParentTimestamp() {
+        Transaction transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
+                .build();
+
+        var parentTransactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(1).setNanos(2).build())
+                .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
+                .setMemo("parent")
+                .build();
+
+        RecordItem previousRecordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction,
+                parentTransactionRecord);
+
+        var transactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(2).setNanos(4).build())
+                .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
+                .setMemo("child")
+                .build();
+        RecordItem recordItem = RecordItem.builder()
+                .hapiVersion(DEFAULT_HAPI_VERSION)
+                .previous(previousRecordItem)
+                .transaction(DEFAULT_TRANSACTION)
+                .record(transactionRecord)
+                .build();
+
+        // verify parent
+        assertThat(recordItem.getParent()).isNull();
+    }
+
+    @Test
+    void testWithNonMatchingPreviousTimestamp() {
+        Transaction transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
+                .build();
+
+        var parentTransactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(1).setNanos(2).build())
+                .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
+                .setMemo("parent")
+                .build();
+
+        RecordItem previousRecordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction,
+                parentTransactionRecord);
+
+        var transactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(3).setNanos(4).build())
+                .setParentConsensusTimestamp(Timestamp.newBuilder().setSeconds(5).setNanos(6).build())
+                .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
+                .setMemo("child")
+                .build();
+        RecordItem recordItem = RecordItem.builder()
+                .hapiVersion(DEFAULT_HAPI_VERSION)
+                .transaction(DEFAULT_TRANSACTION)
+                .record(transactionRecord)
+                .previous(previousRecordItem)
                 .build();
 
         // verify parent
@@ -235,6 +315,51 @@ class RecordItemTest {
         assertThat(recordItem)
                 .returns(parentRecordItem, RecordItem::getParent)
                 .satisfies(c -> assertThat(c.getParent()).isNotNull());
+    }
+
+    @Test
+    void testWithNonMatchingParentFromSiblingReference() {
+        Transaction transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(SIGNED_TRANSACTION.toByteString())
+                .build();
+
+        var parentTransactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(1).setNanos(2).build())
+                .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
+                .setMemo("parent")
+                .build();
+
+        RecordItem parentRecordItem = new RecordItem(DEFAULT_HAPI_VERSION, transaction,
+                parentTransactionRecord);
+
+        var siblingTransactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(3).setNanos(4).build())
+                .setParentConsensusTimestamp(parentTransactionRecord.getConsensusTimestamp())
+                .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
+                .setMemo("child")
+                .build();
+        RecordItem siblingRecordItem = RecordItem.builder()
+                .hapiVersion(DEFAULT_HAPI_VERSION)
+                .transaction(DEFAULT_TRANSACTION)
+                .record(siblingTransactionRecord)
+                .parent(parentRecordItem)
+                .build();
+
+        var transactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setSeconds(5).setNanos(6).build())
+                .setParentConsensusTimestamp(Timestamp.newBuilder().setSeconds(7).setNanos(8).build())
+                .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
+                .setMemo("child")
+                .build();
+        RecordItem recordItem = RecordItem.builder()
+                .hapiVersion(DEFAULT_HAPI_VERSION)
+                .transaction(DEFAULT_TRANSACTION)
+                .record(transactionRecord)
+                .previous(siblingRecordItem)
+                .build();
+
+        // verify parent
+        assertThat(recordItem.getParent()).isNull();
     }
 
     /**
