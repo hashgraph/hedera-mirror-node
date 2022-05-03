@@ -124,6 +124,10 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractResult.setFunctionResult(functionResult.toByteArray());
             contractResult.setGasUsed(functionResult.getGasUsed());
 
+            if (functionResult.hasSenderId()) {
+                contractResult.setSenderId(EntityId.of(functionResult.getSenderId()));
+            }
+
             processContractLogs(functionResult, contractResult);
             processContractStateChanges(functionResult, contractResult);
         }

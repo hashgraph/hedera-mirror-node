@@ -981,7 +981,7 @@ const formatComparator = (comparator) => {
         comparator.value = EntityId.parse(comparator.value, contants.filterKeys.FROM).getEncodedId();
         break;
       case constants.filterKeys.LIMIT:
-        comparator.value = Number(comparator.value);
+        comparator.value = math.min(Number(comparator.value), responseLimit.max);
         break;
       case constants.filterKeys.NODE_ID:
       case constants.filterKeys.NONCE:

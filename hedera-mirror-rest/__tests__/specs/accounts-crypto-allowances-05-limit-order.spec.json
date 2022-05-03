@@ -1,6 +1,14 @@
 {
   "description": "Account api call for all crypto allowances with limit and order",
   "setup": {
+    "config": {
+      "response": {
+        "limit": {
+          "default": 2,
+          "max": 4
+        }
+      }
+    },
     "accounts": [
       {
         "num": 1001,
@@ -57,31 +65,82 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/1001/allowances/crypto?limit=2&order=asc",
-  "responseStatus": 200,
-  "responseJson": {
-    "allowances": [
-      {
-        "amount_granted": 33,
-        "owner": "0.0.1001",
-        "spender": "0.0.2001",
-        "timestamp": {
-          "from": "1234567890.000000001",
-          "to": null
-        }
-      },
-      {
-        "amount_granted": 44,
-        "owner": "0.0.1001",
-        "spender": "0.0.3001",
-        "timestamp": {
-          "from": "1234567890.000000002",
-          "to": null
+  "tests": [
+    {
+      "url": "/api/v1/accounts/1001/allowances/crypto?limit=2&order=asc",
+      "responseStatus": 200,
+      "responseJson": {
+        "allowances": [
+          {
+            "amount_granted": 33,
+            "owner": "0.0.1001",
+            "spender": "0.0.2001",
+            "timestamp": {
+              "from": "1234567890.000000001",
+              "to": null
+            }
+          },
+          {
+            "amount_granted": 44,
+            "owner": "0.0.1001",
+            "spender": "0.0.3001",
+            "timestamp": {
+              "from": "1234567890.000000002",
+              "to": null
+            }
+          }
+        ],
+        "links": {
+          "next": "/api/v1/accounts/1001/allowances/crypto?limit=2&order=asc&spender.id=gt:0.0.3001"
         }
       }
-    ],
-    "links": {
-      "next": "/api/v1/accounts/1001/allowances/crypto?limit=2&order=asc&spender.id=gt:0.0.3001"
+    },
+    {
+      "url": "/api/v1/accounts/1001/allowances/crypto?limit=5&order=asc",
+      "responseStatus": 200,
+      "responseJson": {
+        "allowances": [
+          {
+            "amount_granted": 33,
+            "owner": "0.0.1001",
+            "spender": "0.0.2001",
+            "timestamp": {
+              "from": "1234567890.000000001",
+              "to": null
+            }
+          },
+          {
+            "amount_granted": 44,
+            "owner": "0.0.1001",
+            "spender": "0.0.3001",
+            "timestamp": {
+              "from": "1234567890.000000002",
+              "to": null
+            }
+          },
+          {
+            "amount_granted": 66,
+            "owner": "0.0.1001",
+            "spender": "0.0.4001",
+            "timestamp": {
+              "from": "1234567890.000000004",
+              "to": null
+            }
+          },
+          {
+            "amount_granted": 77,
+            "owner": "0.0.1001",
+            "spender": "0.0.5001",
+            "timestamp": {
+              "from": "1234567890.000000005",
+              "to": null
+            }
+          }
+        ],
+        "links": {
+          "next": "/api/v1/accounts/1001/allowances/crypto?limit=5&order=asc&spender.id=gt:0.0.5001"
+        }
+      }
     }
-  }
+  ]
 }

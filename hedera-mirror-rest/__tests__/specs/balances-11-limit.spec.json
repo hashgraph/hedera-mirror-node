@@ -1,6 +1,14 @@
 {
   "description": "Balance api calls for a range of balances with limit",
   "setup": {
+    "config": {
+      "response": {
+        "limit": {
+          "default": 2,
+          "max": 4
+        }
+      }
+    },
     "accounts": [
       {
         "num": 17
@@ -48,24 +56,60 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/balances?account.balance=gte:300&limit=2&order=asc",
-  "responseStatus": 200,
-  "responseJson": {
-    "timestamp": "0.000002345",
-    "balances": [
-      {
-        "account": "0.0.17",
-        "balance": 700,
-        "tokens": []
-      },
-      {
-        "account": "0.0.19",
-        "balance": 900,
-        "tokens": []
+  "tests": [
+    {
+      "url": "/api/v1/balances?account.balance=gte:300&limit=2&order=asc",
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "0.000002345",
+        "balances": [
+          {
+            "account": "0.0.17",
+            "balance": 700,
+            "tokens": []
+          },
+          {
+            "account": "0.0.19",
+            "balance": 900,
+            "tokens": []
+          }
+        ],
+        "links": {
+          "next": "/api/v1/balances?account.balance=gte:300&limit=2&order=asc&account.id=gt:0.0.19"
+        }
       }
-    ],
-    "links": {
-      "next": "/api/v1/balances?account.balance=gte:300&limit=2&order=asc&account.id=gt:0.0.19"
+    },
+    {
+      "url": "/api/v1/balances?account.balance=gte:300&limit=5&order=asc",
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "0.000002345",
+        "balances": [
+          {
+            "account": "0.0.17",
+            "balance": 700,
+            "tokens": []
+          },
+          {
+            "account": "0.0.19",
+            "balance": 900,
+            "tokens": []
+          },
+          {
+            "account": "0.0.20",
+            "balance": 450,
+            "tokens": []
+          },
+          {
+            "account": "0.0.21",
+            "balance": 300,
+            "tokens": []
+          }
+        ],
+        "links": {
+          "next": "/api/v1/balances?account.balance=gte:300&limit=5&order=asc&account.id=gt:0.0.21"
+        }
+      }
     }
-  }
+  ]
 }
