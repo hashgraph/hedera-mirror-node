@@ -63,9 +63,10 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `select *
+    const expected = `select cr.*
       from contract_result cr
       join transaction t on cr.consensus_timestamp = t.consensus_timestamp
+      left join ethereum_transaction etht on cr.consensus_timestamp = etht.consensus_timestamp
       where cr.contract_id = $1
       order by cr.consensus_timestamp asc
       limit $2`;
@@ -81,9 +82,10 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `select *
+    const expected = `select cr.*
       from contract_result cr
       join transaction t on cr.consensus_timestamp = t.consensus_timestamp
+      left join ethereum_transaction etht on cr.consensus_timestamp = etht.consensus_timestamp
       where cr.contract_id = $1
         and cr.consensus_timestamp > $2
         and cr.payer_account_id = $3

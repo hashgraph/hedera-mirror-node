@@ -47,9 +47,7 @@ class ContractService extends BaseService {
     super();
   }
 
-  static detailedContractResultsQuery = `select ${ContractResult.tableAlias}.*, ${
-    EthereumTransaction.tableAlias
-  }.hash as ethereum_hash
+  static detailedContractResultsQuery = `select ${ContractResult.tableAlias}.*
   from ${ContractResult.tableName} ${ContractResult.tableAlias}
   join ${Transaction.tableName} ${Transaction.tableAlias}
   on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
