@@ -177,7 +177,6 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         private final byte[] recordBytes;
         private final byte[] transactionBytes;
         private final int transactionBlockIndex;
-        private RecordItem recordItem;
 
         RecordStreamObject(ValidatedDataInputStream vdis, Version hapiVersion, int transactionBlockIndex) {
             super(vdis);
@@ -190,18 +189,6 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             } catch (IOException e) {
                 throw new InvalidStreamFileException(e);
             }
-        }
-
-        RecordItem getRecordItem() {
-            if (recordBytes == null || transactionBytes == null) {
-                return null;
-            }
-
-            if (recordItem == null) {
-                recordItem = new RecordItem(hapiVersion, transactionBytes, recordBytes, transactionBlockIndex);
-            }
-
-            return recordItem;
         }
     }
 }

@@ -73,7 +73,7 @@ public class RecordItem implements StreamItem {
 
     private final RecordItem parent;
 
-    private RecordItem previous;
+    private final RecordItem previous;
 
     /**
      * Constructs RecordItem from serialized transactionBytes and recordBytes.

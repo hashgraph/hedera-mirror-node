@@ -112,13 +112,19 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
         long consensusEnd = 0;
         digest.startBody();
         List<RecordItem> items = new ArrayList<>();
+        RecordItem lastRecordItem = null;
 
         while (vdis.available() != 0) {
             vdis.readByte(RECORD_MARKER, "record marker");
             byte[] transactionBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction bytes");
             byte[] recordBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "record bytes");
-            RecordItem recordItem = new RecordItem(recordFile.getHapiVersion(), transactionBytes, recordBytes,
-                    count);
+            RecordItem recordItem = RecordItem.builder()
+                    .hapiVersion(recordFile.getHapiVersion())
+                    .previous(lastRecordItem)
+                    .recordBytes(recordBytes)
+                    .transactionIndex(count)
+                    .transactionBytes(transactionBytes)
+                    .build();
             items.add(recordItem);
 
             if (count == 0) {
@@ -129,6 +135,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
                 consensusEnd = recordItem.getConsensusTimestamp();
             }
 
+            lastRecordItem = recordItem;
             count++;
         }
 
