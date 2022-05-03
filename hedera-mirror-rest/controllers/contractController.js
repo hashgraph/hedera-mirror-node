@@ -709,12 +709,23 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   const conditions = [`${ContractLog.getFullName(ContractLog.CONTRACT_ID)} = $1`];
   const params = [contractId];
 
-  const inValues = {};
-  const keyFullNames = {};
   const oneOperatorValues = {};
 
-  keyFullNames[constants.filterKeys.TIMESTAMP] = ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP);
-  inValues[constants.filterKeys.TIMESTAMP] = [];
+  const keyFullNames = {
+    [constants.filterKeys.TIMESTAMP]: ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP),
+    [constants.filterKeys.TOPIC0]: ContractLog.getFullName(ContractLog.TOPIC0),
+    [constants.filterKeys.TOPIC1]: ContractLog.getFullName(ContractLog.TOPIC1),
+    [constants.filterKeys.TOPIC2]: ContractLog.getFullName(ContractLog.TOPIC2),
+    [constants.filterKeys.TOPIC3]: ContractLog.getFullName(ContractLog.TOPIC3),
+  };
+
+  const inValues = {
+    [constants.filterKeys.TIMESTAMP]: [],
+    [constants.filterKeys.TOPIC0]: [],
+    [constants.filterKeys.TOPIC1]: [],
+    [constants.filterKeys.TOPIC2]: [],
+    [constants.filterKeys.TOPIC3]: [],
+  };
 
   for (const filter of filters) {
     switch (filter.key) {
@@ -749,17 +760,18 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
       case constants.filterKeys.TOPIC1:
       case constants.filterKeys.TOPIC2:
       case constants.filterKeys.TOPIC3:
-        if (oneOperatorValues[filter.key]) {
-          throw new InvalidArgumentError(`Multiple params not allowed for ${filter.key}`);
-        }
         let topic = filter.value.replace(/^(0x)?0*/, '');
         if (topic.length % 2 !== 0) {
-          topic = `0${topic}`; //Left pad so that Buffer.from parses correctly
+          topic = `0${topic}`; // Left pad so that Buffer.from parses correctly
         }
-        topic = Buffer.from(topic, 'hex');
-        params.push(topic);
-        conditions.push(`${ContractLog.getFullName(filter.key)}${filter.operator}$${params.length}`);
-        oneOperatorValues[filter.key] = true;
+        filter.value = Buffer.from(topic, 'hex');
+        updateConditionsAndParamsWithInValues(
+          filter,
+          inValues[filter.key],
+          params,
+          conditions,
+          keyFullNames[filter.key]
+        );
         break;
       default:
         break;
@@ -767,12 +779,9 @@ const extractContractLogsByIdQuery = (filters, contractId) => {
   }
 
   // update query with repeated values
-  updateQueryFiltersWithInValues(
-    params,
-    conditions,
-    inValues[constants.filterKeys.TIMESTAMP],
-    keyFullNames[constants.filterKeys.TIMESTAMP]
-  );
+  Object.keys(keyFullNames).forEach((filterKey) => {
+    updateQueryFiltersWithInValues(params, conditions, inValues[filterKey], keyFullNames[filterKey]);
+  });
 
   return {
     conditions,
