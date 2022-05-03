@@ -66,6 +66,8 @@ import com.hedera.mirror.importer.repository.NftRepository;
 @ExtendWith(MockitoExtension.class)
 class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
+    private final static long DEFAULT_AUTO_RENEW_ACCOUNT_NUM = 2;
+
     @Mock
     private NftRepository nftRepository;
 
@@ -89,7 +91,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                         .setFreezeKey(DEFAULT_KEY)
                         .setSymbol("SYMBOL")
                         .setTreasury(AccountID.newBuilder().setAccountNum(1))
-                        .setAutoRenewAccount(AccountID.newBuilder().setAccountNum(2))
+                        .setAutoRenewAccount(AccountID.newBuilder().setAccountNum(DEFAULT_AUTO_RENEW_ACCOUNT_NUM))
                         .setAutoRenewPeriod(Duration.newBuilder().setSeconds(100))
                         .setName("token_name")
                         .setWipeKey(DEFAULT_KEY));
@@ -117,6 +119,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .build();
         TransactionRecord record = getDefaultTransactionRecord().addTokenTransferLists(tokenTransferList).build();
         RecordItem recordItem = getRecordItem(getDefaultTransactionBody().build(), record);
+        when(entityIdService.lookup(AccountID.newBuilder().setAccountNum(DEFAULT_AUTO_RENEW_ACCOUNT_NUM).build()))
+                .thenReturn(EntityIdEndec.decode(DEFAULT_AUTO_RENEW_ACCOUNT_NUM, EntityType.ACCOUNT));
 
         Transaction transaction = new Transaction();
         transaction.setEntityId(entity.toEntityId());
@@ -141,6 +145,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .build();
         TransactionRecord record = getDefaultTransactionRecord().addTokenTransferLists(tokenTransferList).build();
         RecordItem recordItem = getRecordItem(getDefaultTransactionBody().build(), record);
+        when(entityIdService.lookup(AccountID.newBuilder().setAccountNum(DEFAULT_AUTO_RENEW_ACCOUNT_NUM).build()))
+                .thenReturn(EntityIdEndec.decode(DEFAULT_AUTO_RENEW_ACCOUNT_NUM, EntityType.ACCOUNT));
 
         Transaction transaction = new Transaction();
         transaction.setEntityId(entity.toEntityId());

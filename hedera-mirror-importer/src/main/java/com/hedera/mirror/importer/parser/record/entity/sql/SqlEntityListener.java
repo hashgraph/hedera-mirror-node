@@ -482,6 +482,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             current.setObtainerId(previous.getObtainerId());
         }
 
+        if (current.getPermanentRemoval() == null) {
+            current.setPermanentRemoval(previous.getPermanentRemoval());
+        }
+
         return current;
     }
 
