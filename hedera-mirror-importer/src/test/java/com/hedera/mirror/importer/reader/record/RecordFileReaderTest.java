@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,7 +38,10 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -50,8 +54,11 @@ abstract class RecordFileReaderTest {
 
     private static final Collection<RecordFile> ALL_RECORD_FILES = TestRecordFiles.getAll().values();
 
+    private static final String ethPath = "data/recordstreams/eth-0.26.0/record0.0.3";
     protected RecordFileReader recordFileReader;
     protected Path testPath;
+    @Value("classpath:data/recordstreams/eth-0.26.0/record0.0.3/*.rcd")
+    private Resource[] ethTestFiles;
 
     @BeforeEach
     void setup() throws Exception {
@@ -95,6 +102,33 @@ abstract class RecordFileReaderTest {
                     assertThat(transactionIndexes).isEqualTo(IntStream.range(0, recordFile.getCount()
                             .intValue()).boxed().collect(Collectors.toList()));
                     assertThat(transactionIndexes).doesNotHaveDuplicates().isSorted();
+                });
+    }
+
+    @SneakyThrows
+    @TestFactory
+    Stream<DynamicTest> verifyRecordItemLinksInValidFile() {
+        String template = "read file %s containing eth transactions";
+        var resourceResolver = new PathMatchingResourcePatternResolver();
+
+        return DynamicTest.stream(
+                getFilteredFiles(false),
+                (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
+                (recordFile) -> {
+                    // given
+                    Path testFile = getTestFile(recordFile);
+                    StreamFileData streamFileData = StreamFileData.from(testFile.toFile());
+
+                    // when
+                    RecordFile actual = recordFileReader.read(streamFileData);
+
+                    // then
+                    RecordItem previousItem = null;
+                    for (var item : actual.getItems().collectList().block()) {
+                        // assert previous link points to previous item
+                        assertThat(item.getPrevious()).isEqualTo(previousItem);
+                        previousItem = item;
+                    }
                 });
     }
 

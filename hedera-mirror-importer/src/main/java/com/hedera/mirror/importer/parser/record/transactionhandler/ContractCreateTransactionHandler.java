@@ -32,17 +32,21 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
     private final EntityProperties entityProperties;
     private final EntityIdService entityIdService;
+    private final EthereumTransactionParser ethereumTransactionParser;
 
     ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                     EntityProperties entityProperties) {
+                                     EntityProperties entityProperties,
+                                     EthereumTransactionParser ethereumTransactionParser) {
         super(entityListener, TransactionType.CONTRACTCREATEINSTANCE);
         this.entityProperties = entityProperties;
         this.entityIdService = entityIdService;
+        this.ethereumTransactionParser = ethereumTransactionParser;
     }
 
     @Override
@@ -104,6 +108,10 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         contract.setMemo(transactionBody.getMemo());
+
+        // for child transactions initCode and FileID are located in parent ContractCreate/EthereumTransaction types
+        updateChildFromParent(contract, recordItem);
+
         entityListener.onContract(contract);
     }
 
@@ -114,6 +122,62 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             contractResult.setAmount(transactionBody.getInitialBalance());
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
+        }
+    }
+
+    private void updateChildFromParent(Contract contract, RecordItem recordItem) {
+        if (!recordItem.isChild() || recordItem.getParent() == null) {
+            return;
+        }
+
+        // parents may be ContractCreate or EthereumTransaction
+        var parentRecordItem = recordItem.getParent();
+        switch (TransactionType.of(parentRecordItem.getTransactionType())) {
+            case CONTRACTCREATEINSTANCE:
+                updateChildFromContractCreateParent(contract, parentRecordItem);
+                break;
+            case ETHEREUMTRANSACTION:
+                updateChildFromEthereumTransactionParent(contract, parentRecordItem);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void updateChildFromContractCreateParent(Contract contract, RecordItem recordItem) {
+        var transactionBody = recordItem.getTransactionBody()
+                .getContractCreateInstance();
+        switch (transactionBody.getInitcodeSourceCase()) {
+            case FILEID:
+                if (contract.getFileId() == null) {
+                    contract.setFileId(EntityId.of(transactionBody.getFileID()));
+                }
+                break;
+            case INITCODE:
+                if (contract.getInitcode() == null) {
+                    contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+                }
+                break;
+            default:
+                // should we throw in this case?
+                break;
+        }
+    }
+
+    private void updateChildFromEthereumTransactionParent(Contract contract, RecordItem recordItem) {
+        var body = recordItem.getTransactionBody().getEthereumTransaction();
+
+        // use callData FileID if present
+        if (body.hasCallData()) {
+            contract.setFileId(EntityId.of(body.getCallData()));
+            return;
+        }
+
+        var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
+        var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
+
+        if (contract.getInitcode() == null) {
+            contract.setInitcode(ethereumTransaction.getCallData());
         }
     }
 }

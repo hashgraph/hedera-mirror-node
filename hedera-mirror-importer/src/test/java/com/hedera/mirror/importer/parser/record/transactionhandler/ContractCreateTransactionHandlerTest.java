@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -35,14 +37,17 @@ import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -53,10 +58,14 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 
 class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private final EntityProperties entityProperties = new EntityProperties();
+
+    @Mock(lenient = true)
+    protected EthereumTransactionParser ethereumTransactionParser;
 
     @BeforeEach
     void beforeEach() {
@@ -65,7 +74,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractCreateTransactionHandler(entityIdService, entityListener, entityProperties);
+        return new ContractCreateTransactionHandler(entityIdService, entityListener, entityProperties,
+                ethereumTransactionParser);
     }
 
     @Override
@@ -192,6 +202,193 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(c -> assertThat(c.getEvmAddress()).hasSize(20))
                 .returns(null, Contract::getFileId)
                 .satisfies(c -> assertThat(c.getInitcode()).hasSize(2048))
+        );
+    }
+
+    @Test
+    void updateContractFromContractCreateParentNotAChild() {
+        // parent item
+        var parentRecordItem = recordItemBuilder.contractCreate()
+                .transactionBody(x -> x.clearFileID()
+                        .setInitcode(ByteString.copyFrom("init code", StandardCharsets.UTF_8)))
+                .build();
+
+        // child item
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearFileID().clearInitcode())
+                .parent(parentRecordItem)
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(null, Contract::getFileId)
+                .returns(null, Contract::getInitcode)
+        );
+    }
+
+    @Test
+    void updateContractFromContractCreateNoParent() {
+        // parent item
+        var parentRecordItem = recordItemBuilder.contractCreate()
+                .transactionBody(x -> x.clearFileID()
+                        .setInitcode(ByteString.copyFrom("init code", StandardCharsets.UTF_8)))
+                .build();
+
+        // child item
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearFileID().clearInitcode())
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(null, Contract::getFileId)
+                .returns(null, Contract::getInitcode)
+        );
+    }
+
+    @Test
+    void updateContractFromContractCreateWInitCodeParent() {
+        // parent item
+        var parentRecordItem = recordItemBuilder.contractCreate()
+                .transactionBody(x -> x.clearFileID()
+                        .setInitcode(ByteString.copyFrom("init code", StandardCharsets.UTF_8)))
+                .build();
+
+        // child item
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearFileID().clearInitcode())
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
+                .parent(parentRecordItem)
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(null, Contract::getFileId)
+                .satisfies(c -> assertThat(c.getInitcode()).isNotEmpty())
+        );
+    }
+
+    @Test
+    void updateContractFromContractCreateWFileIDParent() {
+        // parent item
+        var parentRecordItem = recordItemBuilder.contractCreate()
+                .transactionBody(x -> x.clearInitcode()
+                        .setFileID(FileID.newBuilder().setFileNum(DEFAULT_ENTITY_NUM).build()))
+                .build();
+
+        // child item
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearInitcode().clearFileID())
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
+                .parent(parentRecordItem)
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(null, Contract::getInitcode)
+                .satisfies(c -> assertThat(c.getFileId()).isNotNull())
+        );
+    }
+
+    @Test
+    void updateContractFromEthereumCreateWInitCodeParent() {
+        // parent item
+        var parentRecordItem = recordItemBuilder.ethereumTransaction(true)
+                .transactionBody(x -> x.clearCallData())
+                .build();
+
+        doReturn(domainBuilder.ethereumTransaction(true)
+                .customize(x -> x.callDataId(null))
+                .get()).when(ethereumTransactionParser).decode(any());
+
+        // child item
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearInitcode().clearFileID())
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
+                .parent(parentRecordItem)
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(null, Contract::getFileId)
+                .satisfies(c -> assertThat(c.getInitcode()).isNotEmpty())
+        );
+    }
+
+    @Test
+    void updateContractFromEthereumCreateWFileIDParent() {
+        // parent item
+        var parentRecordItem = recordItemBuilder.ethereumTransaction(true)
+                .build();
+
+        doReturn(domainBuilder.ethereumTransaction(false)
+                .customize(x -> x.callDataId(null))
+                .get()).when(ethereumTransactionParser).decode(any());
+
+        // child item
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearFileID().clearInitcode())
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
+                .parent(parentRecordItem)
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(null, Contract::getInitcode)
+                .satisfies(c -> assertThat(c.getFileId()).isNotNull())
+        );
+    }
+
+    @Test
+    void updateContractFromEthereumCallWCallDataFileParent() {
+        // parent item
+        var parentRecordItem = recordItemBuilder.ethereumTransaction(false)
+                .build();
+
+        doReturn(domainBuilder.ethereumTransaction(true)
+                .customize(x -> x.callDataId(null))
+                .get()).when(ethereumTransactionParser).decode(any());
+
+        // child item
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearInitcode().clearFileID())
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
+                .parent(parentRecordItem)
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(null, Contract::getFileId)
+                .satisfies(c -> assertThat(c.getInitcode()).isNotEmpty())
         );
     }
 
