@@ -136,7 +136,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     @Test
     void contractCreateWithEvmAddress() {
         // no child tx, creates a single contract with evm address set
-        byte[] evmAddress = domainBuilder.create2EvmAddress();
+        byte[] evmAddress = domainBuilder.evmAddress();
         RecordItem recordItem = recordItemBuilder.contractCreate(CONTRACT_ID)
                 .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
                         .clearCreatedContractIDs()
@@ -165,7 +165,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     @Test
     void contractCreateWithEvmAddressAndChildCreate() {
         // given contractCreate with child contractCreate
-        var parentEvmAddress = domainBuilder.create2EvmAddress();
+        var parentEvmAddress = domainBuilder.evmAddress();
         var parentRecordItem = recordItemBuilder.contractCreate()
                 .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
                         .clearStateChanges()
@@ -178,7 +178,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var childContractId = contractCreateResult.getCreatedContractIDsList().stream()
                 .filter(c -> !c.equals(contractCreateResult.getContractID()))
                 .findFirst().get();
-        var childEvmAddress = domainBuilder.create2EvmAddress();
+        var childEvmAddress = domainBuilder.evmAddress();
         var childConsensusTimestamp = TestUtils.toTimestamp(parentRecordItem.getConsensusTimestamp() + 1);
         var childTransactionId = parentRecordItem.getRecord().getTransactionID().toBuilder().setNonce(1);
         var childRecordItem = recordItemBuilder.contractCreate(childContractId)
@@ -574,7 +574,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .hapiVersion(HAPI_VERSION_0_23_0)
                 .build();
 
-        var childEvmAddress = domainBuilder.create2EvmAddress();
+        var childEvmAddress = domainBuilder.evmAddress();
         var record = parentRecordItem.getRecord();
         var childConsensusTimestamp = TestUtils.toTimestamp(parentRecordItem.getConsensusTimestamp() + 1);
         var childContractId = record.getContractCallResult().getCreatedContractIDs(0);
@@ -1147,7 +1147,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             case PARSABLE_EVM:
                 return DomainUtils.toEvmAddress(contractId);
             case CREATE2_EVM:
-                return domainBuilder.create2EvmAddress();
+                return domainBuilder.evmAddress();
             default:
                 return null;
         }

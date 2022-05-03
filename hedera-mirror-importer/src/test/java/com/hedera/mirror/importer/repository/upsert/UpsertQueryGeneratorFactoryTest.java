@@ -87,15 +87,15 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
 
     @Test
     void entity() {
-        String allColumns = "alias,auto_renew_account_id,auto_renew_period,created_timestamp,deleted," +
-                "expiration_timestamp,id,key,max_automatic_token_associations,memo,num,proxy_account_id,public_key," +
-                "realm,receiver_sig_required,shard,submit_key,timestamp_range,type";
-        String nullableColumns = "alias,auto_renew_account_id,auto_renew_period,created_timestamp,deleted," +
-                "expiration_timestamp,key,max_automatic_token_associations,proxy_account_id,public_key," +
+        String allColumns = "alias,auto_renew_account_id,auto_renew_period,created_timestamp,deleted,ethereum_nonce," +
+                "evm_address,expiration_timestamp,id,key,max_automatic_token_associations,memo,num,proxy_account_id," +
+                "public_key,realm,receiver_sig_required,shard,submit_key,timestamp_range,type";
+        String nullableColumns = "alias,auto_renew_account_id,auto_renew_period,created_timestamp,deleted,ethereum_nonce," +
+                "evm_address,expiration_timestamp,key,max_automatic_token_associations,proxy_account_id,public_key," +
                 "receiver_sig_required,submit_key";
-        String updatableColumns = "auto_renew_account_id,auto_renew_period,deleted,expiration_timestamp,key," +
-                "max_automatic_token_associations,memo,proxy_account_id,public_key,receiver_sig_required,submit_key," +
-                "timestamp_range";
+        String updatableColumns = "auto_renew_account_id,auto_renew_period,deleted,ethereum_nonce,expiration_timestamp," +
+                "key,max_automatic_token_associations,memo,proxy_account_id,public_key,receiver_sig_required," +
+                "submit_key,timestamp_range";
 
         assertThat(factory.createEntity(Entity.class))
                 .isNotNull()
@@ -107,7 +107,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
                 .returns(nullableColumns, e -> e.columns(UpsertColumn::isNullable, "{0}"))
                 .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
                 .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(19);
+                .hasSize(21);
     }
 
     @Test

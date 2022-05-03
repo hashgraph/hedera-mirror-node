@@ -32,9 +32,9 @@
 
 \copy custom_fee (amount, amount_denominator, collector_account_id, created_timestamp, denominating_token_id, maximum_amount, minimum_amount, token_id) from custom_fee.csv csv;
 
-\copy entity (alias, auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, num, public_key, proxy_account_id, realm, shard, submit_key, type, receiver_sig_required, max_automatic_token_associations, timestamp_range) from entity.csv csv;
+\copy entity (alias, auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, num, public_key, proxy_account_id, realm, shard, submit_key, type, receiver_sig_required, max_automatic_token_associations, timestamp_range, ethereum_nonce, evm_address) from entity.csv csv;
 
-\copy entity_history (alias, auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, num, public_key, proxy_account_id, realm, shard, submit_key, type, receiver_sig_required, max_automatic_token_associations, timestamp_range) from entity_history.csv csv;
+\copy entity_history (alias, auto_renew_account_id, auto_renew_period, created_timestamp, deleted, expiration_timestamp, id, key, memo, num, public_key, proxy_account_id, realm, shard, submit_key, type, receiver_sig_required, max_automatic_token_associations, timestamp_range, ethereum_nonce, evm_address) from entity_history.csv csv;
 
 \copy ethereum_transaction (access_list, call_data_id, call_data, chain_id, consensus_timestamp, data, from_address, gas_limit, gas_price, hash, max_fee_per_gas, max_gas_allowance, max_priority_fee_per_gas, nonce, payer_account_id, recovery_id, signature_r, signature_s, signature_v, to_address, type, value) from ethereum_transaction.csv csv;
 

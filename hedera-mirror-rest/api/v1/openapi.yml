@@ -775,7 +775,7 @@ paths:
         - $ref: '#/components/parameters/tokenIdPathParam'
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
       responses:
         200:
           description: OK
@@ -818,6 +818,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/tokenIdPathParam'
         - $ref: '#/components/parameters/serialNumberPathParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
       responses:
         200:
           description: OK

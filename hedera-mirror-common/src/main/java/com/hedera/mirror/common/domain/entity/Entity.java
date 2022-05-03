@@ -38,6 +38,8 @@ public class Entity extends AbstractEntity implements Aliasable  {
     @ToString.Exclude
     private byte[] alias;
 
+    private Long ethereumNonce;
+
     private Boolean receiverSigRequired;
 
     @ToString.Exclude

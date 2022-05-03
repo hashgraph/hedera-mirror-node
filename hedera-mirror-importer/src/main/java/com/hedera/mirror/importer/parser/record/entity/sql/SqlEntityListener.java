@@ -434,6 +434,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private <T extends AbstractEntity> T mergeAbstractEntity(T previous, T current) {
         // Copy non-updatable fields from previous
         current.setCreatedTimestamp(previous.getCreatedTimestamp());
+        current.setEvmAddress(previous.getEvmAddress());
 
         if (current.getAutoRenewPeriod() == null) {
             current.setAutoRenewPeriod(previous.getAutoRenewPeriod());
@@ -470,7 +471,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Contract mergeContract(Contract previous, Contract current) {
         mergeAbstractEntity(previous, current);
 
-        current.setEvmAddress(previous.getEvmAddress());
         current.setFileId(previous.getFileId());
         current.setInitcode(previous.getInitcode());
 
@@ -496,6 +496,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private Entity mergeEntity(Entity previous, Entity current) {
         mergeAbstractEntity(previous, current);
+
+        if (current.getEthereumNonce() == null) {
+            current.setEthereumNonce(previous.getEthereumNonce());
+        }
 
         if (current.getMaxAutomaticTokenAssociations() == null) {
             current.setMaxAutomaticTokenAssociations(previous.getMaxAutomaticTokenAssociations());
