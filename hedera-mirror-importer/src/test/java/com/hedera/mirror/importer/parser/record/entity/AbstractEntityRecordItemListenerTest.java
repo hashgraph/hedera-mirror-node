@@ -28,15 +28,6 @@ import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.InvalidProtocolBufferException;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Consumer;
-import javax.annotation.Resource;
-import lombok.SneakyThrows;
-import org.springframework.transaction.support.TransactionTemplate;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -54,6 +45,15 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
+import javax.annotation.Resource;
+import lombok.SneakyThrows;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamType;
@@ -386,7 +386,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         }
     }
 
-    protected Entity createEntity(EntityId entityId, Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
+    protected Entity createEntity(EntityId entityId, Key adminKey, Long autoRenewAccountId, Long autoRenewPeriod,
                                   Boolean deleted, Long expiryTimeNs, String memo, Key submitKey,
                                   Long createdTimestamp, Long modifiedTimestamp) {
         byte[] adminKeyBytes = rawBytesFromKey(adminKey);
@@ -472,7 +472,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         builder.addCreatedContractIDs(CONTRACT_ID);
         builder.addCreatedContractIDs(CREATED_CONTRACT_ID);
         builder.setErrorMessage("call error message");
-        builder.setEvmAddress(BytesValue.of(DomainUtils.fromBytes(domainBuilder.create2EvmAddress())));
+        builder.setEvmAddress(BytesValue.of(DomainUtils.fromBytes(domainBuilder.evmAddress())));
         builder.setFunctionParameters(ByteString.copyFromUtf8("function parameters"));
         builder.setGas(20);
         builder.setGasUsed(30);

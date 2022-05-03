@@ -96,6 +96,7 @@ create index if not exists entity__public_key_type
     on entity (public_key, type) where public_key is not null;
 create index if not exists entity__alias
     on entity (alias) where alias is not null;
+create index if not exists entity__evm_address on entity (evm_address) where evm_address is not null;
 
 -- entity_history
 alter table if exists entity_history
@@ -104,6 +105,7 @@ alter table if exists entity_history
     add constraint entity_history__type_check
         check (type <> 'CONTRACT');
 create index if not exists entity_history__alias on entity_history (alias) where alias is not null;
+create index if not exists entity_history__evm_address on entity_history (evm_address) where evm_address is not null;
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
 
 -- ethereum_transaction

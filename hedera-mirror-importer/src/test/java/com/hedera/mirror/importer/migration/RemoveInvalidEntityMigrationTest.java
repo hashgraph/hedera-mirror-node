@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.migration;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,15 +39,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @EnabledIfV1
@@ -316,7 +316,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         entity.setShard(entityId.getShardNum());
         entity.setType(entityId.getType());
         entity.setMemo("abc" + (char) 0);
-        entity.setAutoRenewAccountId(EntityId.of("1.2.3", EntityType.ACCOUNT));
+        entity.setAutoRenewAccountId(EntityId.of("1.2.3", EntityType.ACCOUNT).getId());
         entity.setProxyAccountId(EntityId.of("4.5.6", EntityType.ACCOUNT));
 
         jdbcOperations
@@ -324,7 +324,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                                 "entity_realm, entity_shard, ed25519_public_key_hex, exp_time_ns, fk_entity_type_id, " +
                                 "id, key, memo, proxy_account_id, submit_key) values" +
                                 " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        entity.getAutoRenewAccountId().getId(),
+                        entity.getAutoRenewAccountId(),
                         entity.getAutoRenewPeriod(),
                         entity.getDeleted(),
                         entity.getNum(),
@@ -350,8 +350,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
                 new Object[] {id},
                 (rs, rowNum) -> {
                     Entity entity = new Entity();
-                    entity.setAutoRenewAccountId(EntityIdEndec
-                            .decode(rs.getLong("auto_renew_account_id"), EntityType.ACCOUNT));
+                    entity.setAutoRenewAccountId(rs.getLong("auto_renew_account_id"));
                     entity.setAutoRenewPeriod(rs.getLong("auto_renew_period"));
                     entity.setDeleted(rs.getBoolean("deleted"));
                     entity.setExpirationTimestamp(rs.getLong("exp_time_ns"));

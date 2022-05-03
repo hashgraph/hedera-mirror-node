@@ -34,6 +34,7 @@ const utils = require('../../utils');
 const {Contract} = require('../../model');
 
 const contractFields = [
+  Contract.AUTO_RENEW_ACCOUNT_ID,
   Contract.AUTO_RENEW_PERIOD,
   Contract.CREATED_TIMESTAMP,
   Contract.DELETED,
@@ -45,6 +46,7 @@ const contractFields = [
   Contract.MAX_AUTOMATIC_TOKEN_ASSOCIATIONS,
   Contract.MEMO,
   Contract.OBTAINER_ID,
+  Contract.PERMANENT_REMOVAL,
   Contract.PROXY_ACCOUNT_ID,
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
@@ -222,6 +224,7 @@ describe('extractTimestampConditionsFromContractFilters', () => {
 
 describe('formatContractRow', () => {
   const input = {
+    auto_renew_account_id: '1005',
     auto_renew_period: '1000',
     created_timestamp: '999123456789',
     deleted: false,
@@ -230,8 +233,10 @@ describe('formatContractRow', () => {
     file_id: '2800',
     id: '3001',
     key: Buffer.from([0xaa, 0xbb, 0xcc, 0x77]),
+    max_automatic_token_associations: 0,
     memo: 'sample contract',
     obtainer_id: '2005',
+    permanent_removal: null,
     proxy_account_id: '2002',
     timestamp_range: Range('1000123456789', '2000123456789', '[)'),
   };
@@ -240,6 +245,7 @@ describe('formatContractRow', () => {
       _type: 'ProtobufEncoded',
       key: 'aabbcc77',
     },
+    auto_renew_account: '0.0.1005',
     auto_renew_period: 1000,
     contract_id: '0.0.3001',
     created_timestamp: '999.123456789',
@@ -247,8 +253,10 @@ describe('formatContractRow', () => {
     evm_address: '0x0000000000000000000000000000000000000bb9',
     expiration_timestamp: '99999999.000000000',
     file_id: '0.0.2800',
+    max_automatic_token_associations: 0,
     memo: 'sample contract',
     obtainer_id: '0.0.2005',
+    permanent_removal: null,
     proxy_account_id: '0.0.2002',
     timestamp: {
       from: '1000.123456789',
@@ -684,9 +692,8 @@ describe('extractContractLogsByIdQuery', () => {
             operator: utils.opsMap.eq,
             value: '0x0011',
           },
-
           {
-            key: constants.filterKeys.TOPIC1,
+            key: constants.filterKeys.TOPIC0,
             operator: utils.opsMap.eq,
             value: '0x000013',
           },
@@ -700,23 +707,23 @@ describe('extractContractLogsByIdQuery', () => {
             operator: utils.opsMap.eq,
             value: '0000150',
           },
+          {
+            key: constants.filterKeys.TOPIC3,
+            operator: utils.opsMap.eq,
+            value: '0000150',
+          },
         ],
         contractId: defaultContractId,
       },
       expected: {
         ...defaultExpected,
-        conditions: [
-          defaultContractLogCondition,
-          'cl.topic0 = $2',
-          'cl.topic1 = $3',
-          'cl.topic2 = $4',
-          'cl.topic3 = $5',
-        ],
+        conditions: [defaultContractLogCondition, 'cl.topic0 in ($2,$3)', 'cl.topic2 in ($4)', 'cl.topic3 in ($5,$6)'],
         params: [
           defaultContractId,
           Buffer.from('11', 'hex'),
           Buffer.from('13', 'hex'),
           Buffer.from('0140', 'hex'),
+          Buffer.from('0150', 'hex'),
           Buffer.from('0150', 'hex'),
         ],
       },
@@ -789,25 +796,6 @@ describe('extractContractLogsByIdQuery', () => {
         contractId: defaultContractId,
       },
       errorMessage: 'Not equals operator not supported for timestamp param',
-    },
-    {
-      name: 'multiple topic0',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.TOPIC0,
-            operator: utils.opsMap.eq,
-            value: '0xaaaa',
-          },
-          {
-            key: constants.filterKeys.TOPIC0,
-            operator: utils.opsMap.eq,
-            value: '0xbbbb',
-          },
-        ],
-        contractId: defaultContractId,
-      },
-      errorMessage: 'Multiple params not allowed for topic0',
     },
     {
       name: 'multiple index',

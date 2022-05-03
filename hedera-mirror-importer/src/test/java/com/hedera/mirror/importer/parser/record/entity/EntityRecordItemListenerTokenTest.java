@@ -70,7 +70,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -299,6 +298,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         );
     }
 
+    private static Stream<Arguments> provideTokenUpdateArguments() {
+        return Stream.of(
+                Arguments.of("new auto renew account", PAYER2, PAYER2.getAccountNum()),
+                Arguments.of("clear auto renew account", AccountID.newBuilder().setAccountNum(0).build(), 0L),
+                Arguments.of("keep auto renew account", null, PAYER.getAccountNum())
+        );
+    }
+
     private static Stream<Arguments> provideAssessedCustomFees() {
         // without effective payer account ids, this is prior to services 0.17.1
         // paid in HBAR
@@ -428,7 +435,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     void tokenCreateWithNfts(String name, List<CustomFee> customFees, boolean freezeDefault, boolean freezeKey,
                              boolean kycKey, boolean pauseKey, List<TokenAccount> expectedTokenAccounts) {
         // given
-        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, PAYER.getAccountNum(), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
                 .map(TokenAccount::getId)
@@ -616,7 +623,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long deleteTimeStamp = 10L;
         insertAndParseTransaction(deleteTimeStamp, deleteTransaction);
 
-        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, PAYER.getAccountNum(), AUTO_RENEW_PERIOD,
                 true, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, deleteTimeStamp);
         assertEquals(1L, entityRepository.count());
         assertEntity(expected);
@@ -632,7 +639,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         createTokenEntity(TOKEN_ID, tokenType, SYMBOL, CREATE_TIMESTAMP, false, false, false);
         // update fee schedule
         long updateTimestamp = CREATE_TIMESTAMP + 10L;
-        Entity expectedEntity = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+        Entity expectedEntity = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, PAYER.getAccountNum(), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         List<CustomFee> newCustomFees = nonEmptyCustomFees(updateTimestamp, DOMAIN_TOKEN_ID, tokenType);
         List<CustomFee> expectedCustomFees = Lists.newArrayList(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID));
@@ -648,8 +655,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertCustomFeesInDb(expectedCustomFees);
     }
 
-    @Test
-    void tokenUpdate() {
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("provideTokenUpdateArguments")
+    void tokenUpdate(String name, AccountID autoRenewAccountId, Long expectedAutoRenewAccountId) {
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, false, INITIAL_SUPPLY);
 
@@ -659,11 +667,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 newSymbol,
                 TOKEN_UPDATE_MEMO,
                 TOKEN_UPDATE_REF_KEY,
+                autoRenewAccountId,
                 PAYER2);
         long updateTimeStamp = 10L;
         insertAndParseTransaction(updateTimeStamp, transaction);
 
-        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_UPDATE_REF_KEY, EntityId.of(PAYER2),
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_UPDATE_REF_KEY, expectedAutoRenewAccountId,
                 TOKEN_UPDATE_AUTO_RENEW_PERIOD, false, EXPIRY_NS, TOKEN_UPDATE_MEMO, null, CREATE_TIMESTAMP,
                 updateTimeStamp);
         assertEquals(1L, entityRepository.count());
@@ -683,7 +692,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 newSymbol,
                 TOKEN_UPDATE_MEMO,
                 keyFromString("updated-key"),
-                AccountID.newBuilder().setAccountNum(2002).build());
+                AccountID.newBuilder().setAccountNum(2002).build(),
+                PAYER2);
         insertAndParseTransaction(10L, transaction);
 
         // verify token was not created when missing
@@ -1623,7 +1633,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                      boolean pauseKey, List<TokenAccount> expectedTokenAccounts,
                      List<EntityId> autoAssociatedAccounts) {
         // given
-        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, EntityId.of(PAYER), AUTO_RENEW_PERIOD,
+        Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, PAYER.getAccountNum(), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
 
         // when
@@ -1805,24 +1815,27 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private Transaction tokenUpdateTransaction(TokenID tokenID, String symbol, String memo, Key newKey,
-                                               AccountID accountID) {
-        return buildTransaction(builder -> builder.getTokenUpdateBuilder()
-                .setAdminKey(newKey)
-                .setAutoRenewAccount(accountID)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(TOKEN_UPDATE_AUTO_RENEW_PERIOD))
-                .setExpiry(EXPIRY_TIMESTAMP)
-                .setFeeScheduleKey(newKey)
-                .setFreezeKey(newKey)
-                .setKycKey(newKey)
-                .setMemo(StringValue.of(memo))
-                .setName(symbol + "_update_name")
-                .setPauseKey(newKey)
-                .setSupplyKey(newKey)
-                .setSymbol(symbol)
-                .setToken(tokenID)
-                .setTreasury(accountID)
-                .setWipeKey(newKey)
-        );
+                                               AccountID autoRenewAccount, AccountID treasury) {
+        return buildTransaction(builder -> {
+            builder.getTokenUpdateBuilder()
+                            .setAdminKey(newKey)
+                            .setAutoRenewPeriod(Duration.newBuilder().setSeconds(TOKEN_UPDATE_AUTO_RENEW_PERIOD))
+                            .setExpiry(EXPIRY_TIMESTAMP)
+                            .setFeeScheduleKey(newKey)
+                            .setFreezeKey(newKey)
+                            .setKycKey(newKey)
+                            .setMemo(StringValue.of(memo))
+                            .setName(symbol + "_update_name")
+                            .setPauseKey(newKey)
+                            .setSupplyKey(newKey)
+                            .setSymbol(symbol)
+                            .setToken(tokenID)
+                            .setTreasury(treasury)
+                            .setWipeKey(newKey);
+            if (autoRenewAccount != null) {
+                builder.getTokenUpdateBuilder().setAutoRenewAccount(autoRenewAccount);
+            }
+        });
     }
 
     private Transaction tokenAssociate(List<TokenID> tokenIDs, AccountID accountID) {

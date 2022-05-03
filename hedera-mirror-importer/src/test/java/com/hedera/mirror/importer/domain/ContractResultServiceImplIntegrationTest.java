@@ -58,6 +58,7 @@ import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private static final ContractID CONTRACT_ID = ContractID.newBuilder().setContractNum(901).build();
+
     private final ContractLogRepository contractLogRepository;
     private final ContractResultRepository contractResultRepository;
     private final ContractResultService contractResultService;
@@ -131,7 +132,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     @Test
     void contractResultZeroStateChanges() {
         RecordItem recordItem = recordItemBuilder.contractCreate().record(x -> x
-                .setContractCreateResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID).clearStateChanges()))
+                        .setContractCreateResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID).clearStateChanges()))
                 .receipt(r -> r.setContractID(CONTRACT_ID))
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
@@ -260,9 +261,9 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
             String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
             long consensusStart = recordItem.getConsensusTimestamp();
             RecordFile recordFile = domainBuilder.recordFile().customize(x -> x
-                    .consensusStart(consensusStart)
-                    .consensusEnd(consensusStart + 1)
-                    .name(filename))
+                            .consensusStart(consensusStart)
+                            .consensusEnd(consensusStart + 1)
+                            .name(filename))
                     .get();
 
             recordStreamFileListener.onStart();

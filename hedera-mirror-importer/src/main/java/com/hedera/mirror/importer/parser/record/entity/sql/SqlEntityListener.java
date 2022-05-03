@@ -434,9 +434,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private <T extends AbstractEntity> T mergeAbstractEntity(T previous, T current) {
         // Copy non-updatable fields from previous
         current.setCreatedTimestamp(previous.getCreatedTimestamp());
+        current.setEvmAddress(previous.getEvmAddress());
 
         if (current.getAutoRenewPeriod() == null) {
             current.setAutoRenewPeriod(previous.getAutoRenewPeriod());
+        }
+
+        if (current.getAutoRenewAccountId() == null) {
+            current.setAutoRenewAccountId(previous.getAutoRenewAccountId());
         }
 
         if (current.getDeleted() == null) {
@@ -466,7 +471,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Contract mergeContract(Contract previous, Contract current) {
         mergeAbstractEntity(previous, current);
 
-        current.setEvmAddress(previous.getEvmAddress());
         current.setFileId(previous.getFileId());
         current.setInitcode(previous.getInitcode());
 
@@ -476,6 +480,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         if (current.getObtainerId() == null) {
             current.setObtainerId(previous.getObtainerId());
+        }
+
+        if (current.getPermanentRemoval() == null) {
+            current.setPermanentRemoval(previous.getPermanentRemoval());
         }
 
         return current;
@@ -489,8 +497,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Entity mergeEntity(Entity previous, Entity current) {
         mergeAbstractEntity(previous, current);
 
-        if (current.getAutoRenewAccountId() == null) {
-            current.setAutoRenewAccountId(previous.getAutoRenewAccountId());
+        if (current.getEthereumNonce() == null) {
+            current.setEthereumNonce(previous.getEthereumNonce());
         }
 
         if (current.getMaxAutomaticTokenAssociations() == null) {
