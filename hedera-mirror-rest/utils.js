@@ -128,6 +128,15 @@ const isValidEncoding = (query) => {
   return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
 };
 
+const ethHashPattern = /^(0x)[0-9A-Fa-f]{64}$/;
+const isValidEthHash = (query) => {
+  if (query === undefined) {
+    return false;
+  }
+
+  return ethHashPattern.test(query);
+};
+
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
 
 const addressBookFileIdPattern = ['101', '0.101', '0.0.101', '102', '0.102', '0.0.102'];
@@ -272,8 +281,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isNumeric(val) && val >= 0;
       break;
     case constants.filterKeys.BLOCK_HASH:
-      // TODO
-      ret = true;
+      ret = isValidEthHash(val);
       break;
     case constants.filterKeys.INTERNAL:
       ret = isValidBooleanOpAndValue(op, val);
