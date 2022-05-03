@@ -36,13 +36,13 @@ const {
 
 class BlockController extends BaseController {
   extractOrderFromFilters = (filters) => {
-    const order = _.find(filters, {key: 'order'});
+    const order = _.find(filters, {key: constants.filterKeys.ORDER});
 
     return order ? constants.orderFilterValues[order.value.toUpperCase()] : constants.orderFilterValues.DESC;
   };
 
   extractLimitFromFilters = (filters) => {
-    const limit = _.find(filters, {key: 'limit'});
+    const limit = _.find(filters, {key: constants.filterKeys.LIMIT});
 
     return limit ? (limit.value > maxLimit ? defaultLimit : limit.value) : defaultLimit;
   };

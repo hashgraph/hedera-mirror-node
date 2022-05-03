@@ -52,7 +52,7 @@ class BlockService extends BaseService {
         ${RecordFile.INDEX}, ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}
       from ${RecordFile.tableName}
       ${where}
-      order by index ${filters.order}
+      order by ${RecordFile.INDEX} ${filters.order}
       limit ${filters.limit}
     `;
     const rows = await super.getRows(query, params, 'getBlocks');
