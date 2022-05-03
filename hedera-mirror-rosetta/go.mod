@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/coinbase/rosetta-sdk-go v0.7.9
 	github.com/cucumber/godog v0.12.5
-	github.com/go-playground/validator/v10 v10.10.1
+	github.com/go-playground/validator/v10 v10.11.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220407062851-1cb287936c27
 	github.com/hashgraph/hedera-sdk-go/v2 v2.13.1
 	github.com/hellofresh/health-go/v4 v4.5.0
