@@ -22,7 +22,6 @@
 
 const topicmessage = require('../topicmessage.js');
 const constants = require('../constants.js');
-const config = require('../config.js');
 const EntityId = require('../entityId');
 const {assertSqlQueryEqual} = require('./testutils');
 
@@ -130,7 +129,7 @@ describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
                          order by consensus_timestamp desc
                          limit $4;`;
   assertSqlQueryEqual(query, expectedQuery);
-  expect(params).toStrictEqual(['7', '2', '1234567890.000000006', '3']);
+  expect(params).toStrictEqual([7n, '2', '1234567890.000000006', '3']);
   expect(order).toStrictEqual(constants.orderFilterValues.DESC);
   expect(limit).toStrictEqual(3);
 });

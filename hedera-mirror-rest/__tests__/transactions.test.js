@@ -230,7 +230,7 @@ const singleTests = {
   },
   accountid_lowerlimit: {
     urlparam: 'account.id=gte:0.0.1111',
-    checks: [{field: 'entity_id', operator: '>=', value: '1111'}],
+    checks: [{field: 'entity_id', operator: '>=', value: 1111}],
     checkFunctions: [
       {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
       {func: validateFields, args: []},
@@ -238,7 +238,7 @@ const singleTests = {
   },
   accountid_higherlimit: {
     urlparam: 'account.id=lt:0.0.2222',
-    checks: [{field: 'entity_id', operator: '<', value: '2222'}],
+    checks: [{field: 'entity_id', operator: '<', value: 2222}],
     checkFunctions: [
       {func: validateAccNumRange, args: [0, 2222]},
       {func: validateFields, args: []},
@@ -246,14 +246,14 @@ const singleTests = {
   },
   accountid_equal: {
     urlparam: 'account.id=0.0.3333',
-    checks: [{field: 'entity_id', operator: 'in', value: '3333'}],
+    checks: [{field: 'entity_id', operator: 'in', value: 3333}],
     checkFunctions: [{func: validateAccNumInArray, args: [3333]}],
   },
   accountid_multiple: {
     urlparam: 'account.id=0.0.3333&account.id=0.0.3334',
     checks: [
-      {field: 'entity_id', operator: 'in', value: '3333'},
-      {field: 'entity_id', operator: 'in', value: '3334'},
+      {field: 'entity_id', operator: 'in', value: 3333},
+      {field: 'entity_id', operator: 'in', value: 3334},
     ],
     checkFunctions: [{func: validateAccNumInArray, args: [3333, 3334]}],
   },
@@ -608,8 +608,8 @@ describe('create transferLists', () => {
         consensus_timestamp: 1,
         entity_id: 98,
         memo: null,
-        charged_tx_fee: '5',
-        max_fee: '33',
+        charged_tx_fee: 5,
+        max_fee: 33,
         non_fee_transfers: [],
         nonce: 0,
         parent_consensus_timestamp: null,
@@ -629,8 +629,8 @@ describe('create transferLists', () => {
         consensus_timestamp: 2,
         entity_id: 100,
         memo: null,
-        charged_tx_fee: '5',
-        max_fee: '33',
+        charged_tx_fee: 5,
+        max_fee: 33,
         non_fee_transfers: [],
         nonce: 1,
         parent_consensus_timestamp: 1,
@@ -736,7 +736,7 @@ describe('create transferLists', () => {
 describe('extractSqlFromTransactionsByIdRequest', () => {
   describe('success', () => {
     const defaultTransactionIdStr = '0.0.200-123456789-987654321';
-    const defaultParams = ['200', '123456789987654321'];
+    const defaultParams = [200n, '123456789987654321'];
     const getQuery = (extraConditions) => {
       return `with timestampFilter as (
       select consensus_timestamp from transaction t

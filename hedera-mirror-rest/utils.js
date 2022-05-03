@@ -21,10 +21,11 @@
 'use strict';
 
 const _ = require('lodash');
-const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
+const crypto = require('crypto');
 const long = require('long');
 const math = require('mathjs');
+const pg = require('pg');
 const util = require('util');
 
 const constants = require('./constants');
@@ -37,6 +38,7 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
 const {TransactionResult, TransactionType} = require('./model');
 const {keyTypes} = require('./constants');
+const pgRange = require('pg-range');
 
 const responseLimit = config.response.limit;
 const resultSuccess = TransactionResult.getSuccessProtoId();
@@ -54,6 +56,17 @@ const gtGte = [opsMap.gt, opsMap.gte];
 const ltLte = [opsMap.lt, opsMap.lte];
 
 const gtLtPattern = /[gl]t[e]?:/;
+
+(function () {
+  // config pg bigint parsing
+  const pgTypes = pg.types;
+  pgTypes.setTypeParser(20, BigInt);
+  const parseBigIntArray = pgTypes.getTypeParser(1016);
+  pgTypes.setTypeParser(1016, (a) => parseBigIntArray(a).map(BigInt));
+
+  //  install pg-range
+  pgRange.install(pg);
+})();
 
 /**
  * Check if the given number is numeric
@@ -1061,7 +1074,7 @@ const ipMask = (ip) => {
  * @param {boolean} mock
  */
 const getPoolClass = (mock = false) => {
-  const Pool = mock ? require('./__tests__/mockpool') : require('pg').Pool;
+  const Pool = mock ? require('./__tests__/mockpool') : pg.Pool;
   Pool.prototype.queryQuietly = async function (query, params = [], preQueryHint = undefined) {
     let client;
     let result;
@@ -1090,15 +1103,6 @@ const getPoolClass = (mock = false) => {
   };
 
   return Pool;
-};
-
-/**
- * Loads and installs pg-range for pg
- */
-const loadPgRange = () => {
-  const pg = require('pg');
-  const pgRange = require('pg-range');
-  pgRange.install(pg);
 };
 
 /**
@@ -1195,7 +1199,6 @@ module.exports = {
   isValidOperatorQuery,
   isValidValueIgnoreCase,
   isValidTimestampParam,
-  loadPgRange,
   ltLte,
   mergeParams,
   nsToSecNs,

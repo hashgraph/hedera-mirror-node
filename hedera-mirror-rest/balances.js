@@ -20,6 +20,8 @@
 
 'use strict';
 
+const JSONBig = require('json-bigint');
+
 const {getAccountContractUnionQueryWithOrder} = require('./accountContract');
 const constants = require('./constants');
 const EntityId = require('./entityId');
@@ -131,7 +133,7 @@ const getBalances = async (req, res) => {
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
 
   if (logger.isTraceEnabled()) {
-    logger.trace(`getBalance query: ${pgSqlQuery} ${JSON.stringify(sqlParams)}`);
+    logger.trace(`getBalance query: ${pgSqlQuery} ${JSONBig.stringify(sqlParams)}`);
   }
 
   // Execute query

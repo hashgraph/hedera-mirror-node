@@ -578,7 +578,7 @@ describe('Utils parseAccountIdQueryParam tests', () => {
       name: singleParamTestName,
       parsedQueryParams: {'account.id': 'gte:0.0.3'},
       expectedClause: 'account.id >= ?',
-      expectedValues: ['3'],
+      expectedValues: [3n],
     },
     {
       name: noParamTestName,
@@ -590,7 +590,7 @@ describe('Utils parseAccountIdQueryParam tests', () => {
       name: multipleParamsTestName,
       parsedQueryParams: {'account.id': ['gte:0.0.3', 'lt:0.0.5', '2']},
       expectedClause: 'account.id >= ? and account.id < ? and account.id IN (?)',
-      expectedValues: ['3', '5', '2'],
+      expectedValues: [3n, 5n, 2n],
     },
     {
       name: extraParamTestName,
@@ -599,13 +599,13 @@ describe('Utils parseAccountIdQueryParam tests', () => {
         timestamp: '2000',
       },
       expectedClause: 'account.id IN (?)',
-      expectedValues: ['3'],
+      expectedValues: [3n],
     },
     {
       name: multipleEqualsTestName,
       parsedQueryParams: {'account.id': ['0.0.3', '4']},
       expectedClause: 'account.id IN (?, ?)',
-      expectedValues: ['3', '4'],
+      expectedValues: [3n, 4n],
     },
   ];
   parseQueryParamTest(testSpecs, (spec) => utils.parseAccountIdQueryParam(spec.parsedQueryParams, 'account.id'));

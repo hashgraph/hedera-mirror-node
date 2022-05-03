@@ -35,7 +35,7 @@ class ContractViewModel {
   constructor(contract) {
     const contractId = EntityId.parse(contract.id);
     this.admin_key = utils.encodeKey(contract.key);
-    this.auto_renew_period = contract.autoRenewPeriod && Number(contract.autoRenewPeriod);
+    this.auto_renew_period = contract.autoRenewPeriod;
     this.contract_id = contractId.toString();
     this.created_timestamp = utils.nsToSecNs(contract.createdTimestamp);
     this.deleted = contract.deleted;

@@ -69,9 +69,9 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
   ];
 
   const expectedRecordFile = {
-    consensusEnd: '3',
+    consensusEnd: 3n,
     hash: 'dee34',
-    index: '1',
+    index: 1n,
   };
 
   test('RecordFileService.getRecordFileBlockDetailsFromTimestamp - Row match w start', async () => {

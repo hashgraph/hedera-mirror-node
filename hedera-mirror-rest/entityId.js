@@ -60,12 +60,11 @@ class EntityId {
   }
 
   /**
-   * @returns {string|null} encoded id corresponding to this EntityId.
+   * @returns {BigInt|null} encoded id corresponding to this EntityId.
    */
   getEncodedId() {
     if (this.encodedId === undefined) {
-      this.encodedId =
-        this.num === null ? null : ((this.shard << shardOffset) | (this.realm << numBits) | this.num).toString();
+      this.encodedId = this.num === null ? null : (this.shard << shardOffset) | (this.realm << numBits) | this.num;
     }
     return this.encodedId;
   }

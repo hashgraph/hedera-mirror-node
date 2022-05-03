@@ -66,7 +66,7 @@ const defaultInputEntity = [
 ];
 
 const defaultExpectedEntity = {
-  id: '281483566645248',
+  id: 281483566645248n,
 };
 
 describe('EntityService.getAccountFromAlias tests', () => {

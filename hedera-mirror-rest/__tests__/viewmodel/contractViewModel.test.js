@@ -25,20 +25,20 @@ const ContractViewModel = require('../../viewmodel/contractViewModel');
 
 describe('ContractViewModel', () => {
   const defaultContract = {
-    autoRenewPeriod: '1000',
-    createdTimestamp: '999123456789',
+    autoRenewPeriod: 1000n,
+    createdTimestamp: 999123456789n,
     deleted: false,
     evmAddress: Buffer.from([
       0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f, 0x20, 0x21, 0x22,
       0x23,
     ]),
-    expirationTimestamp: '99999999000000000',
-    fileId: '2800',
-    id: '3001',
+    expirationTimestamp: 99999999000000000n,
+    fileId: 2800n,
+    id: 3001n,
     key: Buffer.from([0xaa, 0xbb, 0xcc, 0x77]),
     memo: 'sample contract',
-    obtainerId: '2005',
-    proxyAccountId: '2002',
+    obtainerId: 2005n,
+    proxyAccountId: 2002n,
     timestampRange: Range('1000123456789', '2000123456789', '[)'),
   };
   const defaultExpected = {
@@ -46,7 +46,7 @@ describe('ContractViewModel', () => {
       _type: 'ProtobufEncoded',
       key: 'aabbcc77',
     },
-    auto_renew_period: 1000,
+    auto_renew_period: 1000n,
     contract_id: '0.0.3001',
     created_timestamp: '999.123456789',
     deleted: false,

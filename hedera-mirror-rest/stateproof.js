@@ -21,6 +21,8 @@
 'use strict';
 
 const _ = require('lodash');
+const JSONBig = require('json-bigint');
+
 const config = require('./config');
 const constants = require('./constants');
 const EntityId = require('./entityId');
@@ -50,7 +52,7 @@ let getSuccessfulTransactionConsensusNs = async (transactionId, nonce, scheduled
          AND scheduled = $4
          AND result = 22`; // only the successful transaction
   if (logger.isTraceEnabled()) {
-    logger.trace(`getSuccessfulTransactionConsensusNs: ${sqlQuery}, ${JSON.stringify(sqlParams)}`);
+    logger.trace(`getSuccessfulTransactionConsensusNs: ${sqlQuery}, ${JSONBig.stringify(sqlParams)}`);
   }
 
   const {rows} = await pool.queryQuietly(sqlQuery, sqlParams);
@@ -188,7 +190,7 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
           // error may happen for a couple of reasons: 1. the node does not have the requested file, 2. s3 transient
           // error. so capture the error and return it, otherwise Promise.all will fail
           .on('error', (err) => {
-            logger.error(`Failed to download ${JSON.stringify(params)}`, err);
+            logger.error(`Failed to download ${JSONBig.stringify(params)}`, err);
             resolve({
               partialFilePath,
               err,

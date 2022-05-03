@@ -20,6 +20,8 @@
 
 'use strict';
 
+const JSONBig = require('json-bigint');
+
 const {
   response: {headers},
 } = require('../config');
@@ -39,9 +41,9 @@ const responseHandler = async (req, res, next) => {
 
     // set response json
     const code = res.locals.statusCode;
-    const data = res.locals[constants.responseDataLabel];
     res.status(code);
-    res.json(data);
+    res.set('Content-Type', 'application/json');
+    res.send(JSONBig.stringify(responseData));
 
     const startTime = res.locals[constants.requestStartTime];
     const elapsed = startTime ? Date.now() - startTime : 0;

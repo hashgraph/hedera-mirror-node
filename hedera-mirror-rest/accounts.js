@@ -20,6 +20,8 @@
 
 'use strict';
 
+const JSONBig = require('json-bigint');
+
 const AccountAlias = require('./accountAlias');
 const base32 = require('./base32');
 const {getAccountContractUnionQueryWithOrder} = require('./accountContract');
@@ -40,14 +42,14 @@ const processRow = (row) => {
     row.account_balance === undefined
       ? null
       : {
-          balance: row.account_balance === null ? null : Number(row.account_balance),
+          balance: row.account_balance,
           timestamp: utils.nsToSecNs(row.consensus_timestamp),
           tokens: utils.parseTokenBalances(row.token_balances),
         };
   return {
     account: EntityId.parse(row.id).toString(),
     alias: base32.encode(row.alias),
-    auto_renew_period: row.auto_renew_period === null ? null : Number(row.auto_renew_period),
+    auto_renew_period: row.auto_renew_period,
     balance,
     deleted: row.deleted,
     expiry_timestamp: utils.nsToSecNs(row.expiration_timestamp),
@@ -340,7 +342,7 @@ const getAccounts = async (req, res) => {
   const pgQuery = utils.convertMySqlStyleQueryToPostgres(query);
 
   if (logger.isTraceEnabled()) {
-    logger.trace(`getAccounts query: ${pgQuery} ${JSON.stringify(params)}`);
+    logger.trace(`getAccounts query: ${pgQuery} ${JSONBig.stringify(params)}`);
   }
 
   // Execute query
@@ -411,7 +413,7 @@ const getAccountIdFromAccountAlias = async (accountAlias) => {
   const {query, params} = getAccountAliasQuery(accountAlias);
 
   if (logger.isTraceEnabled()) {
-    logger.trace(`getAccountIdFromAccountAlias query: ${query} ${JSON.stringify(params)}`);
+    logger.trace(`getAccountIdFromAccountAlias query: ${query} ${JSONBig.stringify(params)}`);
   }
 
   const {rows} = await pool.queryQuietly(query, params);
@@ -467,7 +469,7 @@ const getOneAccount = async (req, res) => {
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
 
   if (logger.isTraceEnabled()) {
-    logger.trace(`getOneAccount entity query: ${pgEntityQuery} ${JSON.stringify(entityParams)}`);
+    logger.trace(`getOneAccount entity query: ${pgEntityQuery} ${JSONBig.stringify(entityParams)}`);
   }
 
   // Execute query & get a promise
@@ -493,7 +495,7 @@ const getOneAccount = async (req, res) => {
   const pgTransactionsQuery = utils.convertMySqlStyleQueryToPostgres(transactionsQuery);
 
   if (logger.isTraceEnabled()) {
-    logger.trace(`getOneAccount transactions query: ${pgTransactionsQuery} ${JSON.stringify(innerParams)}`);
+    logger.trace(`getOneAccount transactions query: ${pgTransactionsQuery} ${JSONBig.stringify(innerParams)}`);
   }
 
   // Execute query & get a promise

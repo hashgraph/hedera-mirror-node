@@ -186,7 +186,7 @@ const extractDurationAndMaxFeeFromTransactionResults = (rows) => {
 // expected transaction rows order by consensus_timestamp desc, only check fields consensus_timestamp and crypto_transfer_list
 const expectedTransactionRowsDesc = [
   {
-    consensusTimestamp: '1052',
+    consensusTimestamp: 1052n,
     cryptoTransfers: [
       {account: '0.15.8', amount: -31, is_approval: false},
       {account: '0.15.9', amount: 30, is_approval: false},
@@ -194,7 +194,7 @@ const expectedTransactionRowsDesc = [
     ],
   },
   {
-    consensusTimestamp: '1051',
+    consensusTimestamp: 1051n,
     cryptoTransfers: [
       {account: '0.15.9', amount: 20, is_approval: false},
       {account: '0.15.10', amount: -21, is_approval: false},
@@ -202,7 +202,7 @@ const expectedTransactionRowsDesc = [
     ],
   },
   {
-    consensusTimestamp: '1050',
+    consensusTimestamp: 1050n,
     cryptoTransfers: [
       {account: '0.15.9', amount: 10, is_approval: false},
       {account: '0.15.10', amount: -11, is_approval: false},
@@ -255,7 +255,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
   const expected = [
     {
-      consensusTimestamp: '2064',
+      consensusTimestamp: 2064n,
       cryptoTransfers: [
         {account: '0.15.63', amount: 20, is_approval: false},
         {account: '0.15.82', amount: -21, is_approval: false},
@@ -263,7 +263,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
       ],
     },
     {
-      consensusTimestamp: '2063',
+      consensusTimestamp: 2063n,
       cryptoTransfers: [
         {account: '0.15.63', amount: -71, is_approval: false},
         {account: '0.15.82', amount: 70, is_approval: false},
@@ -474,6 +474,7 @@ describe('DB integration test - spec based', () => {
   // process applicable .spec.json files
   fs.readdirSync(specPath)
     .filter((f) => f.endsWith('.spec.json'))
+    // .filter((f) => f.startsWith('accounts-10'))
     .forEach((file) => {
       const p = path.join(specPath, file);
       const specText = fs.readFileSync(p, 'utf8');

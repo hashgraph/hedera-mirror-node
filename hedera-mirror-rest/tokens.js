@@ -20,7 +20,7 @@
 
 'use strict';
 
-const _ = require('lodash');
+const JSONBig = require('json-bigint');
 
 const {
   response: {
@@ -231,15 +231,15 @@ const formatTokenInfoRow = (row) => {
     auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
     custom_fees: createCustomFeesObject(row.custom_fees, row.type),
-    decimals: row.decimals,
+    decimals: `${row.decimals}`,
     deleted: row.deleted,
     expiry_timestamp: row.expiration_timestamp,
     fee_schedule_key: utils.encodeKey(row.fee_schedule_key),
     freeze_default: row.freeze_default,
     freeze_key: utils.encodeKey(row.freeze_key),
-    initial_supply: row.initial_supply,
+    initial_supply: `${row.initial_supply}`,
     kyc_key: utils.encodeKey(row.kyc_key),
-    max_supply: row.max_supply,
+    max_supply: `${row.max_supply}`,
     memo: row.memo,
     modified_timestamp: utils.nsToSecNs(row.modified_timestamp),
     name: row.name,
@@ -249,7 +249,7 @@ const formatTokenInfoRow = (row) => {
     supply_type: row.supply_type,
     symbol: row.symbol,
     token_id: EntityId.parse(row.token_id).toString(),
-    total_supply: row.total_supply,
+    total_supply: `${row.total_supply}`,
     treasury_account_id: EntityId.parse(row.treasury_account_id).toString(),
     type: row.type,
     wipe_key: utils.encodeKey(row.wipe_key),
@@ -579,7 +579,7 @@ const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
 const formatTokenBalanceRow = (row) => {
   return {
     account: EntityId.parse(row.account_id).toString(),
-    balance: Number(row.balance),
+    balance: row.balance,
   };
 };
 
@@ -595,7 +595,7 @@ const getTokenBalances = async (req, res) => {
 
   const {query, params, limit, order} = extractSqlFromTokenBalancesRequest(tokenId, tokenBalancesSelectQuery, filters);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getTokenBalances query: ${query} ${JSON.stringify(params)}`);
+    logger.trace(`getTokenBalances query: ${query} ${JSONBig.stringify(params)}`);
   }
 
   const {rows} = await pool.queryQuietly(query, params);
@@ -715,7 +715,7 @@ const getNftTokensRequest = async (req, res) => {
 
   const {query, params, limit, order} = extractSqlFromNftTokensRequest(tokenId, nftSelectQuery, filters);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getNftTokens query: ${query} ${JSON.stringify(params)}`);
+    logger.trace(`getNftTokens query: ${query} ${JSONBig.stringify(params)}`);
   }
 
   const {rows} = await pool.queryQuietly(query, params);
@@ -764,7 +764,7 @@ const getNftTokenInfoRequest = async (req, res) => {
 
   const {query, params} = extractSqlFromNftTokenInfoRequest(tokenId, serialNumber, nftSelectQuery);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getNftTokenInfo query: ${query} ${JSON.stringify(params)}`);
+    logger.trace(`getNftTokenInfo query: ${query} ${JSONBig.stringify(params)}`);
   }
 
   const {rows} = await pool.queryQuietly(query, params);
@@ -926,7 +926,7 @@ const getNftTransferHistoryRequest = async (req, res) => {
 
   const {query, params, limit, order} = extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getNftTransferHistory query: ${query} ${JSON.stringify(params)}`);
+    logger.trace(`getNftTransferHistory query: ${query} ${JSONBig.stringify(params)}`);
   }
 
   const {rows} = await pool.queryQuietly(query, params);

@@ -45,20 +45,18 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
    */
   constructor(contractResult, recordFile, transaction, contractLogs, contractStateChanges) {
     super(contractResult);
-    Object.assign(this, {
-      block_hash: utils.addHexPrefix(recordFile.hash, false),
-      block_number: Number(recordFile.index),
-      hash: utils.toHexString(transaction.transactionHash, true),
-      logs: contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog)),
-      result: TransactionResult.getName(transaction.result),
-      state_changes: contractStateChanges.map(
-        (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
-      ),
-      status:
-        transaction.result === ContractResultDetailsViewModel._FAIL_PROTO_ID
-          ? ContractResultDetailsViewModel._SUCCESS_RESULT
-          : ContractResultDetailsViewModel._FAIL_RESULT,
-    });
+    this.block_hash = utils.addHexPrefix(recordFile.hash, false);
+    this.block_number = recordFile.index;
+    this.hash = utils.toHexString(transaction.transactionHash, true);
+    this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
+    this.result = TransactionResult.getName(transaction.result);
+    this.state_changes = contractStateChanges.map(
+      (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
+    );
+    this.status =
+      transaction.result === ContractResultDetailsViewModel._FAIL_PROTO_ID
+        ? ContractResultDetailsViewModel._SUCCESS_RESULT
+        : ContractResultDetailsViewModel._FAIL_RESULT;
   }
 }
 

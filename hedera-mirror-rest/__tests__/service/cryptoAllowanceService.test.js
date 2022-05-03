@@ -88,10 +88,10 @@ const defaultInputCryptoAllowance = [
 
 const defaultExpectedCryptoAllowance = [
   {
-    amount: '1000',
-    owner: '2000',
-    payerAccountId: '3000',
-    spender: '4000',
+    amount: 1000n,
+    owner: 2000n,
+    payerAccountId: 3000n,
+    spender: 4000n,
   },
 ];
 
@@ -143,16 +143,16 @@ describe('CryptoAllowanceService.getAccountCrytoAllownces tests', () => {
 
   const expectedCryptoAllowance = [
     {
-      amount: '1000',
-      owner: '2000',
-      payerAccountId: '3000',
-      spender: '4002',
+      amount: 1000n,
+      owner: 2000n,
+      payerAccountId: 3000n,
+      spender: 4002n,
     },
     {
-      amount: '1000',
-      owner: '2000',
-      payerAccountId: '3000',
-      spender: '4003',
+      amount: 1000n,
+      owner: 2000n,
+      payerAccountId: 3000n,
+      spender: 4003n,
     },
   ];
 
