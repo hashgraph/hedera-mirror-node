@@ -28,6 +28,7 @@ import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
@@ -57,14 +58,23 @@ class EthereumTransactionHandler implements TransactionHandler {
         var contractFunctionResult = transactionRecord.hasContractCreateResult() ?
                 transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
 
-        parseEthereumTransaction(recordItem, EntityId.of(contractFunctionResult.getSenderId()));
-
         return EntityId.of(contractFunctionResult.getContractID());
     }
 
     @Override
     public TransactionType getType() {
         return TransactionType.ETHEREUMTRANSACTION;
+    }
+
+    @Override
+    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+        var transactionRecord = recordItem.getRecord();
+
+        // pull entity from ContractResult
+        var contractFunctionResult = transactionRecord.hasContractCreateResult() ?
+                transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
+
+        parseEthereumTransaction(recordItem, EntityId.of(contractFunctionResult.getSenderId()));
     }
 
     private void parseEthereumTransaction(RecordItem recordItem, EntityId senderId) {

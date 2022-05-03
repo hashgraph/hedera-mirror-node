@@ -277,7 +277,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContract(contractId, timestamp, t -> assertThat(t)
                 .returns(null, Contract::getFileId)
-                .satisfies(c -> assertThat(c.getInitcode()).isNotNull())
+                .satisfies(c -> assertThat(c.getInitcode()).isNotEmpty())
         );
     }
 
@@ -308,13 +308,15 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Test
-    void updateContractFromEthereumTransactionWInitCodeParent() {
+    void updateContractFromEthereumCreateWInitCodeParent() {
         // parent item
         var parentRecordItem = recordItemBuilder.ethereumTransaction(true)
                 .transactionBody(x -> x.clearCallData())
                 .build();
 
-        doReturn(domainBuilder.ethereumTransaction(true).get()).when(ethereumTransactionParser).decode(any());
+        doReturn(domainBuilder.ethereumTransaction(true)
+                .customize(x -> x.callDataId(null))
+                .get()).when(ethereumTransactionParser).decode(any());
 
         // child item
         var recordItem = recordItemBuilder.contractCreate()
@@ -330,17 +332,19 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContract(contractId, timestamp, t -> assertThat(t)
                 .returns(null, Contract::getFileId)
-                .satisfies(c -> assertThat(c.getInitcode()).isNotNull())
+                .satisfies(c -> assertThat(c.getInitcode()).isNotEmpty())
         );
     }
 
     @Test
-    void updateContractFromEthereumTransactionWFileIDParent() {
+    void updateContractFromEthereumCreateWFileIDParent() {
         // parent item
         var parentRecordItem = recordItemBuilder.ethereumTransaction(true)
                 .build();
 
-        doReturn(domainBuilder.ethereumTransaction(false).get()).when(ethereumTransactionParser).decode(any());
+        doReturn(domainBuilder.ethereumTransaction(false)
+                .customize(x -> x.callDataId(null))
+                .get()).when(ethereumTransactionParser).decode(any());
 
         // child item
         var recordItem = recordItemBuilder.contractCreate()
@@ -361,12 +365,14 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Test
-    void updateContractFromEthereumTransactionWCallDataFileParent() {
+    void updateContractFromEthereumCallWCallDataFileParent() {
         // parent item
-        var parentRecordItem = recordItemBuilder.ethereumTransaction(true)
+        var parentRecordItem = recordItemBuilder.ethereumTransaction(false)
                 .build();
 
-        doReturn(domainBuilder.ethereumTransaction(true).get()).when(ethereumTransactionParser).decode(any());
+        doReturn(domainBuilder.ethereumTransaction(true)
+                .customize(x -> x.callDataId(null))
+                .get()).when(ethereumTransactionParser).decode(any());
 
         // child item
         var recordItem = recordItemBuilder.contractCreate()
@@ -381,8 +387,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .get();
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContract(contractId, timestamp, t -> assertThat(t)
-                .returns(null, Contract::getInitcode)
-                .satisfies(c -> assertThat(c.getFileId()).isNotNull())
+                .returns(null, Contract::getFileId)
+                .satisfies(c -> assertThat(c.getInitcode()).isNotEmpty())
         );
     }
 

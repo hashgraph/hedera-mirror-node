@@ -125,8 +125,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
     }
 
-    public void updateChildFromParent(Contract contract, RecordItem recordItem) {
-        if (!entityProperties.getPersist().isContracts() || !recordItem.isChild() || recordItem.getParent() == null) {
+    private void updateChildFromParent(Contract contract, RecordItem recordItem) {
+        if (!recordItem.isChild() || recordItem.getParent() == null) {
             return;
         }
 
@@ -175,10 +175,6 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
         var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
         var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
-
-        if (contract.getFileId() == null) {
-            contract.setFileId(ethereumTransaction.getCallDataId());
-        }
 
         if (contract.getInitcode() == null) {
             contract.setInitcode(ethereumTransaction.getCallData());
