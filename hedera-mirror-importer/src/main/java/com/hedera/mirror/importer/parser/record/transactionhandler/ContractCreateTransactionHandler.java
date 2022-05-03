@@ -30,22 +30,23 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
+
     private final EntityProperties entityProperties;
-    private final EntityIdService entityIdService;
     private final EthereumTransactionParser ethereumTransactionParser;
 
     ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                      EntityProperties entityProperties,
-                                     EthereumTransactionParser ethereumTransactionParser) {
-        super(entityListener, TransactionType.CONTRACTCREATEINSTANCE);
+                                     EthereumTransactionParser ethereumTransactionParser,
+                                     RecordParserProperties recordParserProperties) {
+        super(entityIdService, entityListener, recordParserProperties, TransactionType.CONTRACTCREATEINSTANCE);
         this.entityProperties = entityProperties;
-        this.entityIdService = entityIdService;
         this.ethereumTransactionParser = ethereumTransactionParser;
     }
 
@@ -77,6 +78,12 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
         var contractCreateResult = recordItem.getRecord().getContractCreateResult();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+
+        if (transactionBody.hasAutoRenewAccountId()) {
+            getAccountId(transactionBody.getAutoRenewAccountId())
+                    .map(EntityId::getId)
+                    .ifPresent(contract::setAutoRenewAccountId);
+        }
 
         if (transactionBody.hasAutoRenewPeriod()) {
             contract.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());

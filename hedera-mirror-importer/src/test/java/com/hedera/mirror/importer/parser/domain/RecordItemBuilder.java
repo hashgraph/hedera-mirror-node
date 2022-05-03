@@ -32,6 +32,7 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
@@ -66,6 +67,8 @@ import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -106,6 +109,18 @@ public class RecordItemBuilder {
     private final Instant now = Instant.now();
     private final SecureRandom random = new SecureRandom();
 
+    public Builder<ConsensusUpdateTopicTransactionBody.Builder> consensusUpdateTopic() {
+        var transactionBody = ConsensusUpdateTopicTransactionBody.newBuilder()
+                .setAdminKey(key())
+                .setAutoRenewAccount(accountId())
+                .setAutoRenewPeriod(duration(3600))
+                .setExpirationTime(timestamp())
+                .setMemo(StringValue.of(text(16)))
+                .setSubmitKey(key())
+                .setTopicID(topicId());
+        return new Builder<>(TransactionType.CONSENSUSUPDATETOPIC, transactionBody);
+    }
+
     public Builder<ContractCallTransactionBody.Builder> contractCall() {
         return contractCall(contractId());
     }
@@ -129,6 +144,7 @@ public class RecordItemBuilder {
     public Builder<ContractCreateTransactionBody.Builder> contractCreate(ContractID contractId) {
         ContractCreateTransactionBody.Builder transactionBody = ContractCreateTransactionBody.newBuilder()
                 .setAdminKey(key())
+                .setAutoRenewAccountId(accountId())
                 .setAutoRenewPeriod(duration(30))
                 .setConstructorParameters(bytes(64))
                 .setFileID(fileId())
@@ -198,6 +214,7 @@ public class RecordItemBuilder {
         var contractId = contractId();
         ContractUpdateTransactionBody.Builder transactionBody = ContractUpdateTransactionBody.newBuilder()
                 .setAdminKey(key())
+                .setAutoRenewAccountId(accountId())
                 .setAutoRenewPeriod(duration(30))
                 .setContractID(contractId)
                 .setExpirationTime(timestamp())
@@ -326,7 +343,7 @@ public class RecordItemBuilder {
     }
 
     public Builder<TokenMintTransactionBody.Builder> tokenMint(TokenType tokenType) {
-        TokenMintTransactionBody.Builder transactionBody = TokenMintTransactionBody.newBuilder().setToken(tokenId());
+        var transactionBody = TokenMintTransactionBody.newBuilder().setToken(tokenId());
 
         if (tokenType == FUNGIBLE_COMMON) {
             transactionBody.setAmount(1000L);
@@ -335,6 +352,26 @@ public class RecordItemBuilder {
         }
 
         return new Builder<>(TransactionType.TOKENMINT, transactionBody);
+    }
+
+    public Builder<TokenUpdateTransactionBody.Builder> tokenUpdate() {
+        var transactionBody = TokenUpdateTransactionBody.newBuilder()
+                .setAdminKey(key())
+                .setAutoRenewAccount(accountId())
+                .setAutoRenewPeriod(duration(3600))
+                .setExpiry(timestamp())
+                .setFeeScheduleKey(key())
+                .setFreezeKey(key())
+                .setKycKey(key())
+                .setMemo(StringValue.of(text(16)))
+                .setName(text(4))
+                .setPauseKey(key())
+                .setSupplyKey(key())
+                .setSymbol(text(4))
+                .setToken(tokenId())
+                .setTreasury(accountId())
+                .setWipeKey(key());
+        return new Builder<>(TransactionType.TOKENUPDATE, transactionBody);
     }
 
     // Helper methods
@@ -406,6 +443,10 @@ public class RecordItemBuilder {
 
     public TokenID tokenId() {
         return TokenID.newBuilder().setTokenNum(id()).build();
+    }
+
+    private TopicID topicId() {
+        return TopicID.newBuilder().setTopicNum(id()).build();
     }
 
     public class Builder<T extends GeneratedMessageV3.Builder> {

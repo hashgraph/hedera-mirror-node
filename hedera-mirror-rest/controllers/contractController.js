@@ -48,6 +48,7 @@ const {
 const {httpStatusCodes} = require('../constants');
 
 const contractSelectFields = [
+  Contract.AUTO_RENEW_ACCOUNT_ID,
   Contract.AUTO_RENEW_PERIOD,
   Contract.CREATED_TIMESTAMP,
   Contract.DELETED,
@@ -59,6 +60,7 @@ const contractSelectFields = [
   Contract.MAX_AUTOMATIC_TOKEN_ASSOCIATIONS,
   Contract.MEMO,
   Contract.OBTAINER_ID,
+  Contract.PERMANENT_REMOVAL,
   Contract.PROXY_ACCOUNT_ID,
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));

@@ -25,6 +25,7 @@ const ContractViewModel = require('../../viewmodel/contractViewModel');
 
 describe('ContractViewModel', () => {
   const defaultContract = {
+    autoRenewAccountId: '2009',
     autoRenewPeriod: '1000',
     createdTimestamp: '999123456789',
     deleted: false,
@@ -46,6 +47,7 @@ describe('ContractViewModel', () => {
       _type: 'ProtobufEncoded',
       key: 'aabbcc77',
     },
+    auto_renew_account: '0.0.2009',
     auto_renew_period: 1000,
     contract_id: '0.0.3001',
     created_timestamp: '999.123456789',
@@ -62,8 +64,32 @@ describe('ContractViewModel', () => {
     },
   };
 
-  test('no bytecode', () => {
+  test('default', () => {
     expect(new ContractViewModel(defaultContract)).toEqual(defaultExpected);
+  });
+
+  test('null auto renew account', () => {
+    expect(
+      new ContractViewModel({
+        ...defaultContract,
+        autoRenewAccountId: null,
+      })
+    ).toEqual({
+      ...defaultExpected,
+      auto_renew_account: null,
+    });
+  });
+
+  test('0 auto renew account', () => {
+    expect(
+      new ContractViewModel({
+        ...defaultContract,
+        autoRenewAccountId: 0,
+      })
+    ).toEqual({
+      ...defaultExpected,
+      auto_renew_account: null,
+    });
   });
 
   test('bytecode', () => {

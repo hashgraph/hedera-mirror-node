@@ -1,4 +1,4 @@
-package com.hedera.mirror.common.domain.entity;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,28 +20,7 @@ package com.hedera.mirror.common.domain.entity;
  * ‍
  */
 
-import javax.persistence.Column;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
-
-import com.hedera.mirror.common.domain.Aliasable;
-
-@Data
-@javax.persistence.Entity
-@NoArgsConstructor
-@SuperBuilder
-public class Entity extends AbstractEntity implements Aliasable  {
-
-    @Column(updatable = false)
-    @ToString.Exclude
-    private byte[] alias;
-
-    private Long ethereumNonce;
-
-    private Boolean receiverSigRequired;
-
-    @ToString.Exclude
-    private byte[] submitKey;
+public enum AliasNotFoundAction {
+    ERROR,
+    FALLTHROUGH,
 }

@@ -193,7 +193,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         // given
         Contract contract1 = domainBuilder.contract().get();
         Contract contract2 = domainBuilder.contract()
-                .customize(c -> c.fileId(null).initcode(domainBuilder.bytes(1024)).evmAddress(null))
+                .customize(c -> c.fileId(null).initcode(domainBuilder.bytes(1024))
+                        .autoRenewAccountId(null).evmAddress(null))
                 .get();
 
         // when
@@ -217,6 +218,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .get();
 
         Contract contractUpdate = contractCreate.toEntityId().toEntity();
+        contractUpdate.setAutoRenewAccountId(110L);
         contractUpdate.setAutoRenewPeriod(30L);
         contractUpdate.setExpirationTimestamp(500L);
         contractUpdate.setKey(domainBuilder.key());
@@ -227,6 +229,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         Contract contractDelete = contractCreate.toEntityId().toEntity();
         contractDelete.setDeleted(true);
+        contractDelete.setPermanentRemoval(true);
         contractDelete.setTimestampLower(contractCreate.getTimestampLower() + 2);
         contractDelete.setObtainerId(EntityId.of(999L, EntityType.CONTRACT));
 
@@ -407,7 +410,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         Entity entityUpdate = entityCreate.toEntityId().toEntity();
         entityUpdate.setAlias(entityCreate.getAlias());
-        entityUpdate.setAutoRenewAccountId(EntityId.of(101L, ACCOUNT));
+        entityUpdate.setAutoRenewAccountId(101L);
         entityUpdate.setAutoRenewPeriod(30L);
         entityUpdate.setExpirationTimestamp(500L);
         entityUpdate.setKey(domainBuilder.key());
@@ -559,7 +562,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onEntity(entity);
 
         Entity entityAutoUpdated = getEntity(1, 5L);
-        EntityId autoRenewAccountId = EntityId.of("0.0.10", ACCOUNT);
+        Long autoRenewAccountId = 10L;
         entityAutoUpdated.setAutoRenewAccountId(autoRenewAccountId);
         entityAutoUpdated.setAutoRenewPeriod(360L);
         sqlEntityListener.onEntity(entityAutoUpdated);
@@ -1405,7 +1408,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo,
-                             Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
+                             Key adminKey, Long autoRenewAccountId, Long autoRenewPeriod,
                              Boolean deleted, Long expiryTimeNs, Integer maxAutomaticTokenAssociations,
                              Boolean receiverSigRequired, Key submitKey) {
         Entity entity = new Entity();

@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,13 +27,16 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    TokenCreateTransactionHandler(EntityListener entityListener) {
-        super(entityListener, TransactionType.TOKENCREATION);
+    TokenCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
+                                  RecordParserProperties recordParserProperties) {
+        super(entityIdService, entityListener, recordParserProperties, TransactionType.TOKENCREATION);
     }
 
     @Override
@@ -50,7 +53,8 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         if (transactionBody.hasAutoRenewAccount()) {
-            entity.setAutoRenewAccountId(EntityId.of(transactionBody.getAutoRenewAccount()));
+            getAccountId(transactionBody.getAutoRenewAccount())
+                    .map(EntityId::getId).ifPresent(entity::setAutoRenewAccountId);
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {

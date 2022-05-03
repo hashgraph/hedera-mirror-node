@@ -28,16 +28,15 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
 
-    private final EntityIdService entityIdService;
-
-    ContractDeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
-        super(entityListener, TransactionType.CONTRACTDELETEINSTANCE);
-        this.entityIdService = entityIdService;
+    ContractDeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
+                                     RecordParserProperties recordParserProperties) {
+        super(entityIdService, entityListener, recordParserProperties, TransactionType.CONTRACTDELETEINSTANCE);
     }
 
     /**
@@ -68,6 +67,8 @@ class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         contract.setObtainerId(obtainerId);
+        contract.setPermanentRemoval(transactionBody.getPermanentRemoval());
+
         entityListener.onContract(contract);
     }
 }

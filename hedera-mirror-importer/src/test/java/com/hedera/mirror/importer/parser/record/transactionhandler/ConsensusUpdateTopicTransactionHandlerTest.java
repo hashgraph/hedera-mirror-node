@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,16 +20,46 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityType;
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+import com.google.common.collect.Range;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.function.Consumer;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.exception.AliasNotFoundException;
+import com.hedera.mirror.importer.parser.PartialDataAction;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
+    private RecordParserProperties recordParserProperties;
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ConsensusUpdateTopicTransactionHandler(entityListener);
+        recordParserProperties = new RecordParserProperties();
+        return new ConsensusUpdateTopicTransactionHandler(entityIdService, entityListener, recordParserProperties);
     }
 
     @Override
@@ -42,5 +72,109 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
     @Override
     protected EntityType getExpectedEntityIdType() {
         return EntityType.TOPIC;
+    }
+
+    @Test
+    void updateTransactionUnsuccessful() {
+        var recordItem = recordItemBuilder.consensusUpdateTopic()
+                .receipt(r -> r.setStatus(ResponseCodeEnum.INSUFFICIENT_TX_FEE)).build();
+        var transaction = new Transaction();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        verifyNoInteractions(entityListener);
+    }
+
+    @Test
+    void updateTransactionSuccessful() {
+        var recordItem = recordItemBuilder.consensusUpdateTopic().build();
+        var topicId = EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction().
+                customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
+        when(entityIdService.lookup(any(AccountID.class))).thenReturn(EntityIdEndec.decode(10L, ACCOUNT));
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(10L, id));
+    }
+
+    @Test
+    void updateTransactionSuccessfulAutoRenewAccountAlias() {
+        var alias = DomainUtils.fromBytes(domainBuilder.key());
+        var recordItem = recordItemBuilder.consensusUpdateTopic()
+                .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
+                .build();
+        var topicId = EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction().
+                customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenReturn(EntityIdEndec.decode(10L, ACCOUNT));
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(10L, id));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "ERROR"})
+    void updateTransactionThrowsWithAliasNotFound(PartialDataAction partialDataAction) {
+        // given
+        recordParserProperties.setPartialDataAction(partialDataAction);
+        var alias = DomainUtils.fromBytes(domainBuilder.key());
+        var recordItem = recordItemBuilder.consensusUpdateTopic()
+                .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
+                .build();
+        var topicId = EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction().
+                customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenThrow(new AliasNotFoundException("alias", ACCOUNT));
+
+        // when, then
+        assertThrows(AliasNotFoundException.class, () -> transactionHandler.updateTransaction(transaction, recordItem));
+    }
+
+    @Test
+    void updateTransactionWithAliasNotFoundAndPartialDataActionSkip() {
+        recordParserProperties.setPartialDataAction(PartialDataAction.SKIP);
+        var alias = DomainUtils.fromBytes(domainBuilder.key());
+        var recordItem = recordItemBuilder.consensusUpdateTopic()
+                .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
+                .build();
+        var topicId = EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction().
+                customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenThrow(new AliasNotFoundException("alias", ACCOUNT));
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertConsensusTopicUpdate(timestamp, topicId, Assertions::assertNull);
+    }
+
+    @Test
+    void updateTransactionSuccessfulClearAutoRenewAccountId() {
+        var recordItem = recordItemBuilder.consensusUpdateTopic()
+                .transactionBody(b -> b.getAutoRenewAccountBuilder().setAccountNum(0))
+                .build();
+        var topicId = EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction().
+                customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(0L, id));
+    }
+
+    private void assertConsensusTopicUpdate(long timestamp, EntityId topicId, Consumer<Long> assertAutoRenewAccountId) {
+        verify(entityListener, times(1)).onEntity(assertArg(t -> assertThat(t)
+                .isNotNull()
+                .satisfies(e -> assertAutoRenewAccountId.accept(e.getAutoRenewAccountId()))
+                .satisfies(e -> assertThat(e.getAutoRenewPeriod()).isPositive())
+                .returns(null, Entity::getCreatedTimestamp)
+                .returns(false, Entity::getDeleted)
+                .satisfies(e -> assertThat(e.getExpirationTimestamp()).isPositive())
+                .returns(topicId.getId(), Entity::getId)
+                .returns(topicId.getEntityNum(), Entity::getNum)
+                .returns(topicId.getRealmNum(), Entity::getRealm)
+                .returns(topicId.getShardNum(), Entity::getShard)
+                .returns(Range.atLeast(timestamp), Entity::getTimestampRange)
+                .returns(TOPIC, Entity::getType)
+        ));
     }
 }
