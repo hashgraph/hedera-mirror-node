@@ -29,17 +29,18 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    private final EntityRepository entityRepository;
+    private final EntityIdService entityIdService;
 
-    CryptoCreateTransactionHandler(EntityListener entityListener, EntityRepository entityRepository) {
+    CryptoCreateTransactionHandler(EntityListener entityListener, EntityIdService entityIdService) {
         super(entityListener, TransactionType.CRYPTOCREATEACCOUNT);
-        this.entityRepository = entityRepository;
+        this.entityIdService = entityIdService;
     }
 
     @Override
@@ -59,7 +60,8 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
         if (recordItem.getRecord().getAlias() != ByteString.EMPTY) {
             var alias = DomainUtils.toBytes(recordItem.getRecord().getAlias());
             entity.setAlias(alias);
-            entityRepository.storeAlias(alias, entity.getId());
+            entity.setEvmAddress(Utility.aliasToEvmAddress(alias));
+            entityIdService.notify(entity);
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {

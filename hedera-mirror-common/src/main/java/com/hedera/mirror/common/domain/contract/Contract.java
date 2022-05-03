@@ -42,10 +42,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 public class Contract extends AbstractEntity implements Aliasable {
 
     @Column(updatable = false)
-    @ToString.Exclude
-    private byte[] evmAddress;
-
-    @Column(updatable = false)
     @Convert(converter = FileIdConverter.class)
     private EntityId fileId;
 
@@ -59,6 +55,6 @@ public class Contract extends AbstractEntity implements Aliasable {
     @JsonIgnore
     @Override
     public byte[] getAlias() {
-        return evmAddress;
+        return getEvmAddress();
     }
 }
