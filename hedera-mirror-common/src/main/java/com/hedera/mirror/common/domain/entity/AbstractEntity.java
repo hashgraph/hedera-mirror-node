@@ -67,6 +67,10 @@ public abstract class AbstractEntity implements History {
 
     private Boolean deleted;
 
+    @Column(updatable = false)
+    @ToString.Exclude
+    private byte[] evmAddress;
+
     private Long expirationTimestamp;
 
     @Id

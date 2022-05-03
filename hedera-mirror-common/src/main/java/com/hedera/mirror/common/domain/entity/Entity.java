@@ -43,6 +43,8 @@ public class Entity extends AbstractEntity implements Aliasable  {
     @Convert(converter = AccountIdConverter.class)
     private EntityId autoRenewAccountId;
 
+    private Long ethereumNonce;
+
     private Boolean receiverSigRequired;
 
     @ToString.Exclude

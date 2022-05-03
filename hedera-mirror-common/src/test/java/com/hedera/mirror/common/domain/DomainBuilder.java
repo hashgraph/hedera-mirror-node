@@ -194,7 +194,7 @@ public class DomainBuilder {
                 .autoRenewPeriod(1800L)
                 .createdTimestamp(timestamp)
                 .deleted(false)
-                .evmAddress(create2EvmAddress())
+                .evmAddress(evmAddress())
                 .expirationTimestamp(timestamp + 30_000_000L)
                 .fileId(entityId(FILE))
                 .id(id)
@@ -286,6 +286,8 @@ public class DomainBuilder {
                 .autoRenewPeriod(1800L)
                 .createdTimestamp(timestamp)
                 .deleted(false)
+                .ethereumNonce(1L)
+                .evmAddress(evmAddress())
                 .expirationTimestamp(timestamp + 30_000_000L)
                 .id(id)
                 .key(key())
@@ -502,7 +504,7 @@ public class DomainBuilder {
         return bytes;
     }
 
-    public byte[] create2EvmAddress() {
+    public byte[] evmAddress() {
         return bytes(20);
     }
 

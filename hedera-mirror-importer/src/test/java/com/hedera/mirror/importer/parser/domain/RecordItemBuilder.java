@@ -42,6 +42,7 @@ import com.hederahashgraph.api.proto.java.ContractStateChange;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -248,6 +249,20 @@ public class RecordItemBuilder {
                 .addNftAllowances(builder.getNftAllowances(0))
                 .addNftAllowances(builder.getNftAllowances(2).toBuilder().setApprovedForAll(BoolValue.of(false)));
         return new Builder<>(TransactionType.CRYPTOAPPROVEALLOWANCE, builder);
+    }
+
+    public Builder<CryptoCreateTransactionBody.Builder> cryptoCreate() {
+        var builder = CryptoCreateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(duration(30))
+                .setInitialBalance(1000L)
+                .setKey(key())
+                .setMaxAutomaticTokenAssociations(2)
+                .setMemo(text(16))
+                .setProxyAccountID(accountId())
+                .setRealmID(REALM_ID)
+                .setReceiverSigRequired(false)
+                .setShardID(SHARD_ID);
+        return new Builder<>(TransactionType.CRYPTOCREATEACCOUNT, builder);
     }
 
     public Builder<CryptoDeleteAllowanceTransactionBody.Builder> cryptoDeleteAllowance() {

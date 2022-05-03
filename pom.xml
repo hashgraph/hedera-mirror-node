@@ -70,7 +70,7 @@
         <grpc.version>1.46.0</grpc.version>
         <guava.version>31.1-jre</guava.version>
         <headlong.version>6.2.0</headlong.version>
-        <hedera-protobuf.version>0.26.0-SNAPSHOT</hedera-protobuf.version>
+        <hedera-protobuf.version>0.26.0-alpha.1</hedera-protobuf.version>
         <hibernate-types.version>2.16.1</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>11</java.version>
@@ -141,6 +141,14 @@
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
+        </repository>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>proto-staging</id>
+            <name>0.26.0-alpha.1 protobufs</name>
+            <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1443</url>
         </repository>
     </repositories>
 
