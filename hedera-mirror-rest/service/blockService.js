@@ -34,10 +34,9 @@ class BlockService extends BaseService {
   buildWhereSqlStatement(whereQuery) {
     let where = 'where true=true';
     const params = [];
-    for (const i in whereQuery) {
-      const paramIndex = parseInt(i) + 1;
-      where += ` and ${whereQuery[i][0].replace('?', '$' + paramIndex)} `;
-      params.push(whereQuery[i][1][0]);
+    for (let i = 1; i <= whereQuery.length; i++) {
+      where += ` and ${whereQuery[i - 1].query} $${i} `;
+      params.push(whereQuery[i - 1].param);
     }
 
     return {where, params};
@@ -47,12 +46,17 @@ class BlockService extends BaseService {
     const {where, params} = this.buildWhereSqlStatement(filters.whereQuery);
 
     const query = `
-      select * from ${RecordFile.tableName}
+      select
+        ${RecordFile.COUNT}, ${RecordFile.HASH}, ${RecordFile.NAME}, ${RecordFile.PREV_HASH}, ${RecordFile.BYTES},
+        ${RecordFile.HAPI_VERSION_MAJOR}, ${RecordFile.HAPI_VERSION_MINOR}, ${RecordFile.HAPI_VERSION_PATCH},
+        ${RecordFile.INDEX}, ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}
+      from ${RecordFile.tableName}
       ${where}
       order by index ${filters.order}
       limit ${filters.limit}
     `;
     const rows = await super.getRows(query, params, 'getBlocks');
+    console.log(rows);
 
     return rows.map((recordFile) => new RecordFile(recordFile));
   }

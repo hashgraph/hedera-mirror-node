@@ -1,5 +1,5 @@
 {
-  "description": "Get blocks with timestamp param",
+  "description": "Get blocks with timestamp eq",
   "setup": {
     "recordFiles": [
       {
@@ -52,23 +52,10 @@
       }
     ]
   },
-  "urls": ["/api/v1/blocks?timestamp=lt:1676540001.234700000&order=asc"],
+  "urls": ["/api/v1/blocks?timestamp=1676540001.234600000"],
   "responseStatus": 200,
   "responseJson": {
     "blocks": [
-      {
-        "count": 3,
-        "hapi_version": "0.22.3",
-        "hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
-        "name": "2022-04-27T12_09_24.499938763Z.rcd",
-        "number": 16,
-        "previous_hash": "0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-        "size": 6,
-        "timestamp": {
-          "from": "1676540001.234390000",
-          "to": "1676540001.234490000"
-        }
-      },
       {
         "count": 5,
         "hapi_version": "0.22.3",

@@ -22,39 +22,35 @@
 
 const _ = require('lodash');
 
+const RecordFile = require('../model/recordFile');
 const BaseController = require('./baseController');
 const {BlockService} = require('../service');
 const {BlockViewModel} = require('../viewmodel');
 const utils = require('../utils');
 const constants = require('../constants');
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+const {
+  response: {
+    limit: {default: defaultLimit, max: maxLimit},
+  },
+} = require('../config');
 
 class BlockController extends BaseController {
-  extractOrderFromFilters = (filters, defaultOrder) => {
-    if (filters.hasOwnProperty('order')) {
-      return constants.orderFilterValues[filters.order.toUpperCase()];
-    }
+  extractOrderFromFilters = (filters) => {
+    const order = _.find(filters, {key: 'order'});
 
-    return defaultOrder;
+    return order ? constants.orderFilterValues[order.value.toUpperCase()] : constants.orderFilterValues.DESC;
   };
 
-  extractLimitFromFilters = (filters, defaultLimit) => {
-    if (filters.hasOwnProperty('limit')) {
-      const limit = parseInt(filters.limit);
-      if (limit > 100) {
-        throw new InvalidArgumentError(`Invalid limit param value, must be between 1 and 100`);
-      }
+  extractLimitFromFilters = (filters) => {
+    const limit = _.find(filters, {key: 'limit'});
 
-      return limit;
-    }
-
-    return defaultLimit;
+    return limit ? (limit.value > maxLimit ? defaultLimit : limit.value) : defaultLimit;
   };
 
   extractSqlFromBlockFilters = (filters) => {
     const filterQuery = {
-      order: this.extractOrderFromFilters(filters, constants.orderFilterValues.DESC),
-      limit: this.extractLimitFromFilters(filters, 25),
+      order: this.extractOrderFromFilters(filters),
+      limit: this.extractLimitFromFilters(filters),
       whereQuery: [],
     };
 
@@ -62,27 +58,23 @@ class BlockController extends BaseController {
       return filterQuery;
     }
 
-    if (filters.hasOwnProperty('block.number')) {
-      filterQuery.whereQuery.push(
-        utils.parseParams(
-          filters['block.number'],
-          (value) => value,
-          (op, value) => [`index ${op} ?`, [value]],
-          false
-        )
-      );
-    }
+    filterQuery.whereQuery = filters
+      .filter((f) => [constants.filterKeys.BLOCK_NUMBER, constants.filterKeys.TIMESTAMP].includes(f.key))
+      .map((f) => {
+        switch (f.key) {
+          case constants.filterKeys.BLOCK_NUMBER:
+            return {
+              query: `${RecordFile.INDEX} ${f.operator}`,
+              param: f.value,
+            };
 
-    if (filters.hasOwnProperty('timestamp')) {
-      filterQuery.whereQuery.push(
-        utils.parseParams(
-          filters['timestamp'],
-          (value) => utils.parseTimestampParam(value),
-          (op, value) => [`consensus_end ${op} ?`, [value]],
-          false
-        )
-      );
-    }
+          case constants.filterKeys.TIMESTAMP:
+            return {
+              query: `${RecordFile.CONSENSUS_END} ${f.operator}`,
+              param: f.value,
+            };
+        }
+      });
 
     return filterQuery;
   };
@@ -101,14 +93,14 @@ class BlockController extends BaseController {
   };
 
   getBlocks = async (req, res) => {
-    utils.validateReq(req);
-    const filters = this.extractSqlFromBlockFilters(req.query);
-    const blocks = await BlockService.getBlocks(filters);
+    const filters = utils.buildAndValidateFilters(req.query);
+    const formattedFilters = this.extractSqlFromBlockFilters(filters);
+    const blocks = await BlockService.getBlocks(formattedFilters);
 
     res.send({
       blocks: blocks.map((model) => new BlockViewModel(model)),
       links: {
-        next: this.generateNextLink(req, blocks, filters),
+        next: this.generateNextLink(req, blocks, formattedFilters),
       },
     });
   };

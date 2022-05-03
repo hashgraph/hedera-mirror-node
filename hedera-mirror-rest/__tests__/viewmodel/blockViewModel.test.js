@@ -27,13 +27,13 @@ describe('BlockViewModel', () => {
   const defaultRecordFile = new RecordFile({
     index: 16,
     count: 3,
-    hapi_version_major: '0',
-    hapi_version_minor: '22',
-    hapi_version_patch: '3',
+    hapi_version_major: 0,
+    hapi_version_minor: 22,
+    hapi_version_patch: 3,
     name: '2022-04-27T12_09_24.499938763Z.rcd',
     prev_hash: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-    consensus_start: 1676540001234390000,
-    consensus_end: 1676540001234490000,
+    consensus_start: '1676540001234390000',
+    consensus_end: '1676540001234490000',
     hash: 'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c',
     bytes: '10101100',
   });
@@ -49,8 +49,6 @@ describe('BlockViewModel', () => {
       from: '1676540001.234390000',
       to: '1676540001.234490000',
     },
-    gas_used: 50000000,
-    logs_bloom: '0x549358c4c2e573e02410ef7b5a5ffa5f36dd7398',
   };
 
   test('default', () => {

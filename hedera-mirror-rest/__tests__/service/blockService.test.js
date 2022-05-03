@@ -29,25 +29,25 @@ const recordFiles = [
   {
     index: 16,
     count: 3,
-    hapi_version_major: '0',
-    hapi_version_minor: '22',
-    hapi_version_patch: '3',
+    hapi_version_major: 0,
+    hapi_version_minor: 22,
+    hapi_version_patch: 3,
     name: '2022-04-27T12_09_24.499938763Z.rcd',
     prev_hash: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
-    consensus_start: 1676540001234390000,
-    consensus_end: 1676540001234490000,
+    consensus_start: '1676540001234390000',
+    consensus_end: '1676540001234490000',
     hash: 'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c',
   },
   {
     index: 17,
     count: 5,
-    hapi_version_major: '0',
-    hapi_version_minor: '22',
-    hapi_version_patch: '3',
+    hapi_version_major: 0,
+    hapi_version_minor: 22,
+    hapi_version_patch: 3,
     name: '2022-04-27T12_24_30.768994443Z.rcd',
     prev_hash: 'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c',
-    consensus_start: 1676540001234500000,
-    consensus_end: 1676540001234600000,
+    consensus_start: '1676540001234500000',
+    consensus_end: '1676540001234600000',
     hash: 'b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216',
   },
 ];
@@ -97,7 +97,7 @@ describe('BlockService tests', () => {
   });
 
   test('Verify buildWhereSqlStatement with 1 query', async () => {
-    const {where, params} = BlockService.buildWhereSqlStatement([['index > ?', ['15']]]);
+    const {where, params} = BlockService.buildWhereSqlStatement([{query: 'index >', param: '15'}]);
 
     expect(where).toEqual('where true=true and index > $1 ');
     expect(params).toEqual(['15']);
@@ -105,8 +105,8 @@ describe('BlockService tests', () => {
 
   test('Verify buildWhereSqlStatement with 2 queries', async () => {
     const {where, params} = BlockService.buildWhereSqlStatement([
-      ['index < ?', ['10']],
-      ['timestamp > ?', ['1651064877.265800774']],
+      {query: 'index <', param: '10'},
+      {query: 'timestamp >', param: '1651064877.265800774'},
     ]);
 
     expect(where).toEqual('where true=true and index < $1  and timestamp > $2 ');
@@ -132,7 +132,7 @@ describe('BlockService tests', () => {
     await integrationDomainOps.loadRecordFiles(recordFiles);
 
     const blocks = await BlockService.getBlocks({
-      whereQuery: [['index < ?', ['17']]],
+      whereQuery: [{query: 'index <', param: '17'}],
       order: 'asc',
       limit: 25,
     });
