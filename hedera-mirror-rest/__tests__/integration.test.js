@@ -452,6 +452,24 @@ describe('DB integration test - spec based', () => {
     restoreConfig();
   });
 
+  const getTests = (spec) => {
+    const tests = spec.tests || [
+      {
+        url: spec.url,
+        urls: spec.urls,
+        responseJson: spec.responseJson,
+        responseStatus: spec.responseStatus,
+      },
+    ];
+    return _.flatten(
+      tests.map((test) => {
+        const urls = test.urls || [test.url];
+        const {responseJson, responseStatus} = test;
+        return urls.map((url) => ({url, responseJson, responseStatus}));
+      })
+    );
+  };
+
   const specPath = path.join(__dirname, 'specs');
   // process applicable .spec.json files
   fs.readdirSync(specPath)
@@ -460,12 +478,7 @@ describe('DB integration test - spec based', () => {
       const p = path.join(specPath, file);
       const specText = fs.readFileSync(p, 'utf8');
       const spec = JSON.parse(specText);
-      let {tests} = spec;
-      if (tests === undefined) {
-        const urls = spec.urls || [spec.url];
-        const {responseJson, responseStatus} = spec;
-        tests = urls.map((url) => ({url, responseJson, responseStatus}));
-      }
+      const tests = getTests(spec);
 
       tests.forEach((tt) =>
         test(`DB integration test - ${file} - ${tt.url}`, async () => {

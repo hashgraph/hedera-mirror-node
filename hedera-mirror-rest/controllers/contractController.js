@@ -390,7 +390,7 @@ const contractResultsByIdParamSupportMap = {
  * Verify contractId meets entity id format
  */
 const validateContractIdParam = (contractId) => {
-  if (EntityId.isValidEvmAddress(contractId, constants.EvmAddressType.OPTIONAL_SHARD_REALM)) {
+  if (EntityId.isValidEvmAddress(contractId)) {
     return;
   }
 
@@ -402,7 +402,8 @@ const validateContractIdParam = (contractId) => {
 const getAndValidateContractIdRequestPathParam = (req) => {
   const contractIdValue = req.params.contractId;
   validateContractIdParam(contractIdValue);
-  return contractIdValue;
+  // if it is a valid contract id and has the substring 0x, the substring 0x can only be a prefix.
+  return contractIdValue.replace('0x', '');
 };
 
 /**
@@ -412,10 +413,7 @@ const getAndValidateContractIdRequestPathParam = (req) => {
  */
 const validateContractIdAndConsensusTimestampParam = (consensusTimestamp, contractId) => {
   const params = [];
-  if (
-    !EntityId.isValidEntityId(contractId) &&
-    !EntityId.isValidEvmAddress(contractId, constants.EvmAddressType.OPTIONAL_SHARD_REALM)
-  ) {
+  if (!EntityId.isValidEntityId(contractId) && !EntityId.isValidEvmAddress(contractId)) {
     params.push(constants.filterKeys.CONTRACTID);
   }
   if (!utils.isValidTimestampParam(consensusTimestamp)) {

@@ -29,7 +29,7 @@ const constants = require('../constants.js');
 describe('utils buildAndValidateFilters test', () => {
   const query = {
     [constants.filterKeys.ACCOUNT_ID]: '6560',
-    [constants.filterKeys.LIMIT]: '1560',
+    [constants.filterKeys.LIMIT]: ['80', '1560'],
     [constants.filterKeys.TIMESTAMP]: '12345.001',
   };
 
@@ -44,7 +44,12 @@ describe('utils buildAndValidateFilters test', () => {
       {
         key: constants.filterKeys.LIMIT,
         operator: utils.opsMap.eq,
-        value: 1560,
+        value: 80,
+      },
+      {
+        key: constants.filterKeys.LIMIT,
+        operator: utils.opsMap.eq,
+        value: 100,
       },
       {
         key: constants.filterKeys.TIMESTAMP,
@@ -54,14 +59,14 @@ describe('utils buildAndValidateFilters test', () => {
     ];
 
     expect(utils.buildAndValidateFilters(query, fakeValidator)).toStrictEqual(expected);
-    expect(fakeValidator.callCount).toEqual(3);
+    expect(fakeValidator.callCount).toEqual(4);
   });
 
   test('validator fails', () => {
     const fakeValidator = sinon.fake.returns(false);
 
     expect(() => utils.buildAndValidateFilters(query, fakeValidator)).toThrowErrorMatchingSnapshot();
-    expect(fakeValidator.callCount).toEqual(3);
+    expect(fakeValidator.callCount).toEqual(4);
   });
 });
 

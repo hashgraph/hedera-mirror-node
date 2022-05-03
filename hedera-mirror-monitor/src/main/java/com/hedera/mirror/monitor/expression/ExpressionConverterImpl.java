@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.expression;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ package com.hedera.mirror.monitor.expression;
  * ‍
  */
 
-import com.google.common.collect.Iterables;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -29,14 +28,6 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Named;
-
-import com.hedera.mirror.monitor.publish.transaction.AdminKeyable;
-import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
-
-import com.hedera.mirror.monitor.publish.transaction.schedule.ScheduleCreateTransactionSupplier;
-import com.hedera.mirror.monitor.publish.transaction.token.TokenCreateTransactionSupplier;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -49,12 +40,16 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.monitor.MonitorProperties;
-import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.publish.PublishScenario;
 import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
 import com.hedera.mirror.monitor.publish.TransactionPublisher;
+import com.hedera.mirror.monitor.publish.transaction.AdminKeyable;
+import com.hedera.mirror.monitor.publish.transaction.TransactionSupplier;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+import com.hedera.mirror.monitor.publish.transaction.schedule.ScheduleCreateTransactionSupplier;
+import com.hedera.mirror.monitor.publish.transaction.token.TokenCreateTransactionSupplier;
 
 @Log4j2
 @Named
@@ -109,12 +104,9 @@ public class ExpressionConverterImpl implements ExpressionConverter {
 
             // if ScheduleCreate set the properties to the inner scheduledTransactionProperties
             if (transactionSupplier instanceof ScheduleCreateTransactionSupplier) {
-                ScheduleCreateTransactionSupplier scheduleCreateTransactionSupplier =
-                        (ScheduleCreateTransactionSupplier) transactionSupplier;
-                NodeProperties singleNodeProperty = Iterables.get(monitorProperties.getNodes(), 0);
-                scheduleCreateTransactionSupplier.setNodeAccountId(singleNodeProperty.getAccountId());
-                scheduleCreateTransactionSupplier
-                        .setOperatorAccountId(monitorProperties.getOperator().getAccountId());
+                var scheduleCreateTransactionSupplier = (ScheduleCreateTransactionSupplier) transactionSupplier;
+                scheduleCreateTransactionSupplier.setOperatorAccountId(monitorProperties.getOperator().getAccountId());
+                scheduleCreateTransactionSupplier.setPayerAccount(monitorProperties.getOperator().getAccountId());
             }
 
             PublishScenarioProperties publishScenarioProperties = new PublishScenarioProperties();
@@ -122,26 +114,29 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             publishScenarioProperties.setTimeout(Duration.ofSeconds(30L));
             publishScenarioProperties.setType(type.getTransactionType());
             PublishScenario scenario = new PublishScenario(publishScenarioProperties);
-            PublishRequest request = PublishRequest.builder()
-                    .receipt(true)
-                    .scenario(scenario)
-                    .timestamp(Instant.now())
-                    .transaction(transactionSupplier.get())
-                    .build();
 
-            Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofMillis(500L))
+            // We use explicit retry instead of the SDK retry since we need to regenerate the transaction to
+            // avoid transaction expired errors
+            Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(1L))
                     .maxBackoff(Duration.ofSeconds(8L))
                     .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
                             r.totalRetries() + 1, r.failure().getMessage()));
 
-            String createdId = Mono.defer(() -> transactionPublisher.publish(request))
+            return Mono.defer(() -> transactionPublisher.publish(PublishRequest.builder()
+                            .receipt(true)
+                            .scenario(scenario)
+                            .timestamp(Instant.now())
+                            .transaction(transactionSupplier.get()
+                                    .setMaxAttempts(1)
+                                    .setTransactionMemo(scenario.getMemo()))
+                            .build()
+                    ))
                     .retryWhen(retrySpec)
                     .map(PublishResponse::getReceipt)
                     .map(type.getIdExtractor()::apply)
+                    .doOnSuccess(id -> log.info("Created {} entity {}", type, id))
                     .toFuture()
                     .join();
-            log.info("Created {} entity {}", type, createdId);
-            return createdId;
         } catch (Exception e) {
             log.error("Error converting expression {}:", expression, e);
             throw new RuntimeException(e);

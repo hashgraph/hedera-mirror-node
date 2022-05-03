@@ -147,7 +147,8 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.topicRunningHashV2AddedTimestamp`            | Network-based  | Unix timestamp (in nanos) of first topic message with v2 as running hash version. Use this config to override the default network based value                                                                                                                      |
 | `hedera.mirror.importer.shard`                                       | 0                       | The default shard number that the component participates in                                                                                                                                                                                                        |
 | `hedera.mirror.importer.startDate`                                   |                         | The start date (inclusive) of the data to import. It takes effect 1) if it's set and the date is after the last downloaded file or the database is empty; 2) if it's not set and the database is empty, it defaults to now. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
-| `hedera.mirror.importer.verifyHashAfter`                             | 1970-01-01T00:00:00Z  | Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ                                                                                                                  |
+| `hedera.mirror.importer.startBlockNumber`                            | null                  | The block number that will be set as the downloaded stream files starting index. |
+| `hedera.mirror.importer.verifyHashAfter`                             | 1970-01-01T00:00:00Z  | Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ |
 
 #### Export transactions to PubSub
 
@@ -261,9 +262,11 @@ Name                                                            | Default | Desc
 `hedera.mirror.monitor.nodeValidation.requestTimeout`           | 15s     | The amount of time to wait for a validation request before timing out
 `hedera.mirror.monitor.operator.accountId`                      | ""      | Operator account ID used to pay for transactions
 `hedera.mirror.monitor.operator.privateKey`                     | ""      | Operator ED25519 private key used to sign transactions in hex encoded DER format
+`hedera.mirror.monitor.publish.async`                           | true    | Whether to use the SDK's asynchronous execution or synchronous. Synchronous requires more monitor responseThreads.
 `hedera.mirror.monitor.publish.batchDivisor`                    | 100     | The divisor used to calculate batch size when generating transactions
 `hedera.mirror.monitor.publish.clients`                         | 4       | How many total SDK clients to publish transactions. Clients will be used in a round-robin fashion
 `hedera.mirror.monitor.publish.enabled`                         | true    | Whether to enable transaction publishing
+`hedera.mirror.monitor.publish.nodeMaxBackoff`                  | 1m      | The maximum backoff time for any node in the network
 `hedera.mirror.monitor.publish.responseThreads`                 | 40      | How many threads to use to resolve the asynchronous responses
 `hedera.mirror.monitor.publish.scenarios`                       |         | A map of scenario name to publish scenarios. The name is used as a unique identifier in logs, metrics, and the REST API
 `hedera.mirror.monitor.publish.scenarios.<name>.duration`       |         | How long this scenario should publish transactions. Leave empty for infinite

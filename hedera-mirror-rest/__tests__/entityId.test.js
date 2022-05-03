@@ -133,6 +133,23 @@ describe('EntityId parse from entityId string', () => {
       paramName: constants.filterKeys.FROM,
     },
     {
+      entityIdStr: '0.0.000000000000000000000000000000000186Fb1b',
+      expected: EntityId.of(0, 0, 25623323),
+    },
+    {
+      entityIdStr: '0.000000000000000000000000000000000186Fb1b',
+      expected: EntityId.of(0, 0, 25623323),
+    },
+    {
+      entityIdStr: '000000000000000000000000000000000186Fb1b',
+      expected: EntityId.of(0, 0, 25623323),
+    },
+    {
+      entityIdStr: '0x000000000000000000000000000000000186Fb1b',
+      expected: EntityId.of(0, 0, 25623323),
+      paramName: constants.filterKeys.FROM,
+    },
+    {
       entityIdStr: null,
       isNullable: true,
       expected: EntityId.of(null, null, null),
