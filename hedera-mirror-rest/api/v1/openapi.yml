@@ -1950,8 +1950,10 @@ components:
         custom_fees:
           $ref: '#/components/schemas/CustomFees'
     LogTopicQueryParam:
-      type: string
-      pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
+      type: array
+      items:
+        type: string
+        pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
     TransactionTypes:
       type: string
       enum:
@@ -2876,29 +2878,26 @@ components:
     logTopic0QueryParam:
       name: topic0
       in: query
+      explode: true
       description: The first topic associated with a contract log. Requires a timestamp range also be populated.
-      example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         $ref: '#/components/schemas/LogTopicQueryParam'
     logTopic1QueryParam:
       name: topic1
       in: query
       description: The second topic associated with a contract log. Requires a timestamp range also be populated.
-      example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         $ref: '#/components/schemas/LogTopicQueryParam'
     logTopic2QueryParam:
       name: topic2
       in: query
       description: The third topic associated with a contract log. Requires a timestamp range also be populated.
-      example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         $ref: '#/components/schemas/LogTopicQueryParam'
     logTopic3QueryParam:
       name: topic3
       in: query
       description: The fourth topic associated with a contract log. Requires a timestamp range also be populated.
-      example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         $ref: '#/components/schemas/LogTopicQueryParam'
     spenderIdQueryParam:

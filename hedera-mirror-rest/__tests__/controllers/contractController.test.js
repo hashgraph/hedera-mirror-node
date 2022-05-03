@@ -692,9 +692,8 @@ describe('extractContractLogsByIdQuery', () => {
             operator: utils.opsMap.eq,
             value: '0x0011',
           },
-
           {
-            key: constants.filterKeys.TOPIC1,
+            key: constants.filterKeys.TOPIC0,
             operator: utils.opsMap.eq,
             value: '0x000013',
           },
@@ -708,23 +707,23 @@ describe('extractContractLogsByIdQuery', () => {
             operator: utils.opsMap.eq,
             value: '0000150',
           },
+          {
+            key: constants.filterKeys.TOPIC3,
+            operator: utils.opsMap.eq,
+            value: '0000150',
+          },
         ],
         contractId: defaultContractId,
       },
       expected: {
         ...defaultExpected,
-        conditions: [
-          defaultContractLogCondition,
-          'cl.topic0 = $2',
-          'cl.topic1 = $3',
-          'cl.topic2 = $4',
-          'cl.topic3 = $5',
-        ],
+        conditions: [defaultContractLogCondition, 'cl.topic0 in ($2,$3)', 'cl.topic2 in ($4)', 'cl.topic3 in ($5,$6)'],
         params: [
           defaultContractId,
           Buffer.from('11', 'hex'),
           Buffer.from('13', 'hex'),
           Buffer.from('0140', 'hex'),
+          Buffer.from('0150', 'hex'),
           Buffer.from('0150', 'hex'),
         ],
       },
@@ -797,25 +796,6 @@ describe('extractContractLogsByIdQuery', () => {
         contractId: defaultContractId,
       },
       errorMessage: 'Not equals operator not supported for timestamp param',
-    },
-    {
-      name: 'multiple topic0',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.TOPIC0,
-            operator: utils.opsMap.eq,
-            value: '0xaaaa',
-          },
-          {
-            key: constants.filterKeys.TOPIC0,
-            operator: utils.opsMap.eq,
-            value: '0xbbbb',
-          },
-        ],
-        contractId: defaultContractId,
-      },
-      errorMessage: 'Multiple params not allowed for topic0',
     },
     {
       name: 'multiple index',

@@ -43,7 +43,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
 
-@Builder
+@Builder(buildMethodName = "buildInternal")
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
 @Value
@@ -71,6 +71,10 @@ public class RecordItem implements StreamItem {
 
     private final Integer transactionIndex;
 
+    private final RecordItem parent;
+
+    private final RecordItem previous;
+
     /**
      * Constructs RecordItem from serialized transactionBytes and recordBytes.
      */
@@ -92,6 +96,8 @@ public class RecordItem implements StreamItem {
         this.transactionBytes = transactionBytes;
         this.recordBytes = recordBytes;
         this.transactionIndex = transactionIndex;
+        parent = null;
+        previous = null;
     }
 
     // Used only in tests
@@ -109,6 +115,8 @@ public class RecordItem implements StreamItem {
         transactionBytes = transaction.toByteArray();
         recordBytes = record.toByteArray();
         transactionIndex = null;
+        parent = null;
+        previous = null;
     }
 
     // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET
@@ -173,6 +181,10 @@ public class RecordItem implements StreamItem {
         return record.getReceipt().getStatus() == ResponseCodeEnum.SUCCESS;
     }
 
+    public boolean isChild() {
+        return record.hasParentConsensusTimestamp();
+    }
+
     @Value
     private static class TransactionBodyAndSignatureMap {
         private TransactionBody transactionBody;
@@ -181,6 +193,24 @@ public class RecordItem implements StreamItem {
 
     // Necessary since Lombok doesn't use our setters for builders
     public static class RecordItemBuilder<C, B extends RecordItem.RecordItemBuilder> {
+
+        public RecordItem build() {
+            // set parent, parent-child items are assured to exist in sequential order of [Parent, Child1,..., ChildN]
+            if (record.hasParentConsensusTimestamp() && previous != null) {
+                if (record.getParentConsensusTimestamp()
+                        .equals(previous.record.getConsensusTimestamp())) {
+                    // check immediately preceding item
+                    parent = previous;
+                } else if (previous.parent != null && record.getParentConsensusTimestamp()
+                        .equals(previous.parent.record.getConsensusTimestamp())) {
+                    // check older siblings parent, if child count is > 1 this prevents having to search to parent
+                    parent = previous.parent;
+                }
+            }
+
+            return buildInternal();
+        }
+
         public B transactionBytes(byte[] transactionBytes) {
             try {
                 transaction = Transaction.parseFrom(transactionBytes);
