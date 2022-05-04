@@ -23,6 +23,7 @@
 const _ = require('lodash');
 const anonymize = require('ip-anonymize');
 const crypto = require('crypto');
+const JSONBig = require('json-bigint')({useNativeBigInt: true});
 const long = require('long');
 const math = require('mathjs');
 const pg = require('pg');
@@ -60,9 +61,12 @@ const gtLtPattern = /[gl]t[e]?:/;
 (function () {
   // config pg bigint parsing
   const pgTypes = pg.types;
-  pgTypes.setTypeParser(20, BigInt);
-  const parseBigIntArray = pgTypes.getTypeParser(1016);
+  pgTypes.setTypeParser(20, BigInt); // int8
+  const parseBigIntArray = pgTypes.getTypeParser(1016); // int8[]
   pgTypes.setTypeParser(1016, (a) => parseBigIntArray(a).map(BigInt));
+
+  pgTypes.setTypeParser(114, JSONBig.parse); // json
+  pgTypes.setTypeParser(3802, JSONBig.parse); // jsonb
 
   //  install pg-range
   pgRange.install(pg);
@@ -1199,6 +1203,8 @@ module.exports = {
   isValidOperatorQuery,
   isValidValueIgnoreCase,
   isValidTimestampParam,
+  JSONParse: JSONBig.parse,
+  JSONStringify: JSONBig.stringify,
   ltLte,
   mergeParams,
   nsToSecNs,

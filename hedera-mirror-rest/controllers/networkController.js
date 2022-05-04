@@ -21,7 +21,6 @@
 'use strict';
 
 const _ = require('lodash');
-const JSONBig = require('json-bigint');
 
 const {
   network: {unreleasedSupplyAccounts: defaultUnreleasedSupplyAccounts},
@@ -73,7 +72,7 @@ class NetworkController extends BaseController {
     const query = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
 
     if (logger.isTraceEnabled()) {
-      logger.trace(`getSupply query: ${query} ${JSONBig.stringify(tsParams)}`);
+      logger.trace(`getSupply query: ${query} ${utils.JSONStringify(tsParams)}`);
     }
 
     return pool.queryQuietly(query, tsParams).then((result) => {

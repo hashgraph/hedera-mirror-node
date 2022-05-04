@@ -20,8 +20,6 @@
 
 'use strict';
 
-const JSONBig = require('json-bigint');
-
 const {
   response: {
     limit: {default: defaultLimit},
@@ -595,7 +593,7 @@ const getTokenBalances = async (req, res) => {
 
   const {query, params, limit, order} = extractSqlFromTokenBalancesRequest(tokenId, tokenBalancesSelectQuery, filters);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getTokenBalances query: ${query} ${JSONBig.stringify(params)}`);
+    logger.trace(`getTokenBalances query: ${query} ${utils.JSONStringify(params)}`);
   }
 
   const {rows} = await pool.queryQuietly(query, params);
@@ -715,7 +713,7 @@ const getNftTokensRequest = async (req, res) => {
 
   const {query, params, limit, order} = extractSqlFromNftTokensRequest(tokenId, nftSelectQuery, filters);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getNftTokens query: ${query} ${JSONBig.stringify(params)}`);
+    logger.trace(`getNftTokens query: ${query} ${utils.JSONStringify(params)}`);
   }
 
   const {rows} = await pool.queryQuietly(query, params);
@@ -764,7 +762,7 @@ const getNftTokenInfoRequest = async (req, res) => {
 
   const {query, params} = extractSqlFromNftTokenInfoRequest(tokenId, serialNumber, nftSelectQuery);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getNftTokenInfo query: ${query} ${JSONBig.stringify(params)}`);
+    logger.trace(`getNftTokenInfo query: ${query} ${utils.JSONStringify(params)}`);
   }
 
   const {rows} = await pool.queryQuietly(query, params);
@@ -926,7 +924,7 @@ const getNftTransferHistoryRequest = async (req, res) => {
 
   const {query, params, limit, order} = extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getNftTransferHistory query: ${query} ${JSONBig.stringify(params)}`);
+    logger.trace(`getNftTransferHistory query: ${query} ${utils.JSONStringify(params)}`);
   }
 
   const {rows} = await pool.queryQuietly(query, params);

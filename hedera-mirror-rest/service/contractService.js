@@ -21,7 +21,6 @@
 'use strict';
 
 const _ = require('lodash');
-const JSONBig = require('json-bigint');
 
 const constants = require('../constants');
 const Contract = require('../model/contract');
@@ -35,6 +34,7 @@ const EntityId = require('../entityId');
 const {NotFoundError} = require('../errors/notFoundError');
 const {orderFilterValues} = require('../constants');
 const {OrderSpec} = require('../sql');
+const {JSONStringify} = require('../utils');
 
 const BaseService = require('./baseService');
 
@@ -258,13 +258,13 @@ class ContractService extends BaseService {
     const rows = await super.getRows(query, params, 'getContractIdByEvmAddress');
     if (rows.length === 0) {
       throw new NotFoundError(
-        `No contract with the given evm address: ${JSONBig.stringify(evmAddressFilter)} has been found.`
+        `No contract with the given evm address: ${JSONStringify(evmAddressFilter)} has been found.`
       );
     }
     //since evm_address is not an unique index, it is important to make this check.
     if (rows.length > 1) {
       throw new Error(
-        `More than one contract with the evm address ${JSONBig.stringify(evmAddressFilter)} have been found.`
+        `More than one contract with the evm address ${JSONStringify(evmAddressFilter)} have been found.`
       );
     }
     const contractId = rows[0];

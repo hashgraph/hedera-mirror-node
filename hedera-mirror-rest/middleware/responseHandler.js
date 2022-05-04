@@ -20,13 +20,12 @@
 
 'use strict';
 
-const JSONBig = require('json-bigint');
-
 const {
   response: {headers},
 } = require('../config');
 const constants = require('../constants');
 const {NotFoundError} = require('../errors/notFoundError');
+const {JSONStringify} = require('../utils');
 
 // response middleware that pulls response data passed through request and sets in json response
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
@@ -43,7 +42,7 @@ const responseHandler = async (req, res, next) => {
     const code = res.locals.statusCode;
     res.status(code);
     res.set('Content-Type', 'application/json');
-    res.send(JSONBig.stringify(responseData));
+    res.send(JSONStringify(responseData));
 
     const startTime = res.locals[constants.requestStartTime];
     const elapsed = startTime ? Date.now() - startTime : 0;

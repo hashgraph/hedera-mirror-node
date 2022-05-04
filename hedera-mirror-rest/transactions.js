@@ -21,7 +21,6 @@
 'use strict';
 
 const _ = require('lodash');
-const JSONBig = require('json-bigint');
 
 const utils = require('./utils');
 const constants = require('./constants');
@@ -575,7 +574,7 @@ const getTransactions = async (req, res) => {
 
   const query = reqToSql(req);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getTransactions query: ${query.query} ${JSONBig.stringify(query.params)}`);
+    logger.trace(`getTransactions query: ${query.query} ${utils.JSONStringify(query.params)}`);
   }
 
   // Execute query
@@ -670,7 +669,7 @@ const getTransactionsById = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query);
   const {query, params} = extractSqlFromTransactionsByIdRequest(req.params.transactionId, filters);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getTransactionsById query: ${query} ${JSONBig.stringify(params)}`);
+    logger.trace(`getTransactionsById query: ${query} ${utils.JSONStringify(params)}`);
   }
 
   // Execute query
