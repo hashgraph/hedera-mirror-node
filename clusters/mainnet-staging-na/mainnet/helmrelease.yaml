@@ -53,7 +53,8 @@ spec:
       enabled: false
     rest:
       ingress:
-        annotations: {}
+        annotations:
+          traefik.ingress.kubernetes.io/router.middlewares: ""
         middleware:
           enabled: false
     rosetta:
