@@ -10,8 +10,6 @@ exports[`checkTimestampsForTopics topic2 param one timestamp lt 1`] = `"Cannot s
 
 exports[`extractContractLogsByIdQuery error - multiple index 1`] = `"Multiple params not allowed for index"`;
 
-exports[`extractContractLogsByIdQuery error - multiple topic0 1`] = `"Multiple params not allowed for topic0"`;
-
 exports[`extractContractLogsByIdQuery error - timestamp not equal operator 1`] = `"Not equals operator not supported for timestamp param"`;
 
 exports[`validateContractIdAndConsensusTimestampParam invalid case - {"contractId":"1","consensusTimestamp":"y"} 1`] = `

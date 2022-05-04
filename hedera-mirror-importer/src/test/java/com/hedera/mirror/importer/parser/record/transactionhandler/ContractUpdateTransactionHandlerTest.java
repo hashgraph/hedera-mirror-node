@@ -20,15 +20,18 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -36,13 +39,22 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.exception.AliasNotFoundException;
+import com.hedera.mirror.importer.parser.PartialDataAction;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
+    private RecordParserProperties recordParserProperties;
 
     @BeforeEach
     void beforeEach() {
@@ -52,7 +64,8 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractUpdateTransactionHandler(entityIdService, entityListener);
+        recordParserProperties = new RecordParserProperties();
+        return new ContractUpdateTransactionHandler(entityIdService, entityListener, recordParserProperties);
     }
 
     @Override
@@ -95,8 +108,103 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
+        when(entityIdService.lookup(any(AccountID.class))).thenReturn(EntityIdEndec.decode(10L, ACCOUNT));
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContractUpdate(timestamp, contractId, t -> assertThat(t)
+                .returns(10L, Contract::getAutoRenewAccountId)
+                .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
+                .satisfies(c -> assertThat(c.getExpirationTimestamp()).isPositive())
+                .satisfies(c -> assertThat(c.getKey()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getMaxAutomaticTokenAssociations()).isPositive())
+                .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive())
+        );
+    }
+
+    @Test
+    void updateTransactionSuccessfulAutoRenewAccountAlias() {
+        var alias = DomainUtils.fromBytes(domainBuilder.key());
+        var recordItem = recordItemBuilder.contractUpdate()
+                .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction().
+                customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenReturn(EntityIdEndec.decode(10L, ACCOUNT));
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContractUpdate(timestamp, contractId, t -> assertThat(t)
+                .returns(10L, Contract::getAutoRenewAccountId)
+                .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
+                .satisfies(c -> assertThat(c.getExpirationTimestamp()).isPositive())
+                .satisfies(c -> assertThat(c.getKey()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getMaxAutomaticTokenAssociations()).isPositive())
+                .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive())
+        );
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "ERROR"})
+    void updateTransactionThrowsWithAliasNotFound(PartialDataAction partialDataAction) {
+        // given
+        recordParserProperties.setPartialDataAction(partialDataAction);
+        var alias = DomainUtils.fromBytes(domainBuilder.key());
+        var recordItem = recordItemBuilder.contractUpdate()
+                .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction().
+                customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenThrow(new AliasNotFoundException("alias", ACCOUNT));
+
+        // when, then
+        assertThrows(AliasNotFoundException.class, () -> transactionHandler.updateTransaction(transaction, recordItem));
+    }
+
+    @Test
+    void updateTransactionWithAliasNotFoundAndPartialDataActionSkip() {
+        recordParserProperties.setPartialDataAction(PartialDataAction.SKIP);
+        var alias = DomainUtils.fromBytes(domainBuilder.key());
+        var recordItem = recordItemBuilder.contractUpdate()
+                .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction().
+                customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenThrow(new AliasNotFoundException("alias", ACCOUNT));
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContractUpdate(timestamp, contractId, t -> assertThat(t)
+                .returns(null, Contract::getAutoRenewAccountId)
+                .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
+                .satisfies(c -> assertThat(c.getExpirationTimestamp()).isPositive())
+                .satisfies(c -> assertThat(c.getKey()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getMaxAutomaticTokenAssociations()).isPositive())
+                .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive())
+        );
+    }
+
+    @Test
+    void updateTransactionSuccessfulClearAutoRenewAccountId() {
+        var recordItem = recordItemBuilder.contractUpdate()
+                .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAccountNum(0))
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction().
+                customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContractUpdate(timestamp, contractId, t -> assertThat(t)
+                .returns(0L, Contract::getAutoRenewAccountId)
                 .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
                 .satisfies(c -> assertThat(c.getExpirationTimestamp()).isPositive())
                 .satisfies(c -> assertThat(c.getKey()).isNotEmpty())

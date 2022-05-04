@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
-SCRIPTS_DIR="$(realpath "${0%/*}")"
+SCRIPTS_DIR="$(readlink -f "${0%/*}")"
 EXPORT_DIR="${SCRIPTS_DIR}/export"
 MIGRATIONS_DIR="${SCRIPTS_DIR}/../../migration/v2"
 source "${SCRIPTS_DIR}/migration.config"
@@ -56,16 +56,6 @@ if [[ -z "${NEW_DB_PASSWORD}" ]]; then
     exit 1
 fi
 
-if [[ -z "${CHUNK_INTERVAL_TIME}" ]]; then
-    echo "New db chunk interval time is not set. Please configure CHUNK_INTERVAL_TIME in migration.config file and rerun the migration"
-    exit 1
-fi
-
-if [[ -z "${CHUNK_INTERVAL_ID}" ]]; then
-    echo "New db chunk interval id is not set. Please configure CHUNK_INTERVAL_ID in migration.config file and rerun the migration"
-    exit 1
-fi
-
 OLD_DB_HAS_DATA=$(PGPASSWORD="${OLD_DB_PASSWORD}" psql -X -t -h "${OLD_DB_HOST}" -d "${OLD_DB_NAME}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -c "select exists (select from information_schema.tables where table_name = 'flyway_schema_history');" | xargs)
 if [[ "${OLD_DB_HAS_DATA}" != "t" ]]; then
   echo "Unable to verify the state of the old database. Either the connection information is wrong or the mirror node data is missing"
@@ -80,38 +70,37 @@ fi
 
 start_time="$(date -u +%s)"
 
+export PGPASSWORD="${OLD_DB_PASSWORD}"
+rm -f "${SCRIPTS_DIR}/restore.sql" "${SCRIPTS_DIR}/backup.sql"
 rm -rf "${EXPORT_DIR}"
 mkdir -p "${EXPORT_DIR}"
 cd "${EXPORT_DIR}"
+SECONDS=0
 
-echo "Migrating Mirror Node Data from PostgreSQL ${OLD_DB_HOST}:${OLD_DB_PORT} to TimescaleDB ${NEW_DB_HOST}:${NEW_DB_PORT}..."
+echo "Migrating mirror node data from PostgreSQL ${OLD_DB_HOST}:${OLD_DB_PORT} to CitusDB ${NEW_DB_HOST}:${NEW_DB_PORT}"
 
-echo "1. Backing up flyway table schema from PostgreSQL ${OLD_DB_HOST}:${OLD_DB_PORT}..."
-PGPASSWORD="${OLD_DB_PASSWORD}" pg_dump -h "${OLD_DB_HOST}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" --table public.flyway_schema_history -f flyway_schema_history.sql mirror_node
+echo "1. Generating backup and restore SQL"
+TABLES=$(psql -q -t --csv -h "${OLD_DB_HOST}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -c "select distinct table_name from information_schema.tables where table_schema = 'public' order by table_name asc;")
 
-echo "2. Restoring flyway_schema_history to TimescaleDB ${NEW_DB_HOST}:${NEW_DB_PORT}..."
-PGPASSWORD="${NEW_DB_PASSWORD}" psql -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" <flyway_schema_history.sql
+for table in ${TABLES}; do
+  COLUMNS=$(psql -q -t -h "${OLD_DB_HOST}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -c "select string_agg(column_name, ', ' order by ordinal_position) from information_schema.columns where table_schema = 'public' and table_name = '${table}';")
+  COLUMNS="${COLUMNS#"${COLUMNS%%[![:space:]]*}"}" # Trim leading whitespace
+  echo "\copy ${table} ($COLUMNS) from ${table}.csv csv;" >> "${SCRIPTS_DIR}/restore.sql"
+  echo "\copy ${table} to ${table}.csv delimiter ',' csv;" >> "${SCRIPTS_DIR}/backup.sql"
+done
 
-echo "3. Create v2 table schemas in TimescaleDB ${NEW_DB_HOST}:${NEW_DB_PORT}..."
-PGPASSWORD="${NEW_DB_PASSWORD}" psql -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" <"${MIGRATIONS_DIR}/V2.0.0__time_scale_init.sql"
+echo "2. Backing up tables from source database"
+psql -h "${OLD_DB_HOST}" -d "${OLD_DB_NAME}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -f "${SCRIPTS_DIR}/backup.sql"
 
-echo "4. Creating new hypertables on TimescaleDB ${NEW_DB_HOST}:${NEW_DB_PORT}..."
-sed -e 's/${chunkTimeInterval}/'"${CHUNK_INTERVAL_TIME}"'/g' -e 's/${chunkIdInterval}/'"${CHUNK_INTERVAL_ID}"'/g' "${MIGRATIONS_DIR}/V2.0.1__hyper_tables.sql" >"${SCRIPTS_DIR}/createHyperTables.sql"
-PGPASSWORD=${NEW_DB_PASSWORD} psql -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" -f "${SCRIPTS_DIR}/createHyperTables.sql"
+echo "3. Creating v2 schema on target database"
+export PGPASSWORD="${NEW_DB_PASSWORD}"
+psql -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" <"${MIGRATIONS_DIR}/V2.0.0__create_tables.sql"
 
-echo "5. Backing up tables from from PostgreSQL ${OLD_DB_HOST}:${OLD_DB_PORT}"
-PGPASSWORD="${OLD_DB_PASSWORD}" psql -h "${OLD_DB_HOST}" -d "${OLD_DB_NAME}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -f "${SCRIPTS_DIR}/csvBackupTables.sql"
+echo "4. Creating new distributed tables on target database"
+psql -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" -f "${SCRIPTS_DIR}/V2.0.1__distribution.sql"
 
-## Optionally use https://github.com/timescale/timescaledb-parallel-copy as it's mulithreaded
-echo "6. Restoring database dump to TimescaleDB ${NEW_DB_HOST}:${NEW_DB_PORT}..."
-PGPASSWORD="${NEW_DB_PASSWORD}" psql -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" -f "${SCRIPTS_DIR}/csvRestoreTables.sql"
+echo "5. Restoring database dump to target database"
+psql -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" -f "${SCRIPTS_DIR}/restore.sql"
 
-echo "7. Alter schema on TimescaleDB ${NEW_DB_HOST}:${NEW_DB_PORT} to support improved format..."
-PGPASSWORD="${NEW_DB_PASSWORD}" psql -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" -f "${SCRIPTS_DIR}/alterSchema.sql"
-
-# leave index creation and policy sets to migration 2.0
-end_time="$(date -u +%s)"
-
-elapsed="$((end_time - start_time))"
-echo "Migration from PostgreSQL to TimescaleDB took a total of $elapsed seconds"
+echo "Migration completed in $SECONDS seconds"
 exit 0

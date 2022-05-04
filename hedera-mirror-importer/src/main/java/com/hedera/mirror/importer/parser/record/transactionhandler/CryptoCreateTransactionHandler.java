@@ -30,17 +30,16 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
-    private final EntityIdService entityIdService;
-
-    CryptoCreateTransactionHandler(EntityListener entityListener, EntityIdService entityIdService) {
-        super(entityListener, TransactionType.CRYPTOCREATEACCOUNT);
-        this.entityIdService = entityIdService;
+    CryptoCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
+                                   RecordParserProperties recordParserProperties) {
+        super(entityIdService, entityListener, recordParserProperties, TransactionType.CRYPTOCREATEACCOUNT);
     }
 
     @Override

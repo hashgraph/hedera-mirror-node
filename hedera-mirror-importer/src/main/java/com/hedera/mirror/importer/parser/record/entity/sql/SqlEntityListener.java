@@ -440,6 +440,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             current.setAutoRenewPeriod(previous.getAutoRenewPeriod());
         }
 
+        if (current.getAutoRenewAccountId() == null) {
+            current.setAutoRenewAccountId(previous.getAutoRenewAccountId());
+        }
+
         if (current.getDeleted() == null) {
             current.setDeleted(previous.getDeleted());
         }
@@ -478,6 +482,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             current.setObtainerId(previous.getObtainerId());
         }
 
+        if (current.getPermanentRemoval() == null) {
+            current.setPermanentRemoval(previous.getPermanentRemoval());
+        }
+
         return current;
     }
 
@@ -488,10 +496,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private Entity mergeEntity(Entity previous, Entity current) {
         mergeAbstractEntity(previous, current);
-
-        if (current.getAutoRenewAccountId() == null) {
-            current.setAutoRenewAccountId(previous.getAutoRenewAccountId());
-        }
 
         if (current.getEthereumNonce() == null) {
             current.setEthereumNonce(previous.getEthereumNonce());
