@@ -57,20 +57,26 @@ public class LogsBloomFilter {
         return logsBloom.isZero() ? new byte[0] : logsBloom.toArray();
     }
 
+    /**
+     * If true the filter could contain the bloom. If false the filter definitely does not contain the bloom.
+     *
+     * @param bloom that may be contained within this filter.
+     * @returns {boolean} if the bloom filter may contain the bloom.
+     */
     public boolean couldContain(final byte[] bloom) {
         if (bloom == null) {
             return true;
         }
 
-        final var logsBloom = getBloom();
+        final var thisBloomBytes = getBloom();
         final var subsetBytes = new LogsBloomFilter().insertBytes(bloom).getBloom();
-        if (subsetBytes.length != logsBloom.length) {
+        if (subsetBytes.length != thisBloomBytes.length) {
             return false;
         }
 
-        for (int i = 0; i < logsBloom.length; i++) {
+        for (int i = 0; i < thisBloomBytes.length; i++) {
             final byte subsetValue = subsetBytes[i];
-            if ((logsBloom[i] & subsetValue) != subsetValue) {
+            if ((thisBloomBytes[i] & subsetValue) != subsetValue) {
                 return false;
             }
         }
@@ -97,7 +103,9 @@ public class LogsBloomFilter {
     private void setBit(final int index) {
         final var byteIndex = BYTE_SIZE - 1 - index / 8;
         final var bitIndex = index % 8;
-        logsBloom.set(byteIndex, (byte) (logsBloom.get(byteIndex) | (1 << bitIndex)));
+        // "& 0xff" to prevent bit promotion: https://jira.sonarsource.com/browse/RSPEC-3034
+        final byte setBit = (byte) (logsBloom.get(byteIndex) & 0xff | (1 << bitIndex));
+        logsBloom.set(byteIndex, setBit);
     }
 
     private Bytes32 keccak256(final Bytes input) {
