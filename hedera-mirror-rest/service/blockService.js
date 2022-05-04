@@ -56,7 +56,6 @@ class BlockService extends BaseService {
       limit ${filters.limit}
     `;
     const rows = await super.getRows(query, params, 'getBlocks');
-    console.log(rows);
 
     return rows.map((recordFile) => new RecordFile(recordFile));
   }
