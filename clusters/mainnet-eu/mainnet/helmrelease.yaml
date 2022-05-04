@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.41.0'
+      version: '0.42.1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -51,6 +51,12 @@ spec:
       enabled: false
     redis:
       enabled: false
+    rest:
+      ingress:
+        annotations:
+          traefik.ingress.kubernetes.io/router.middlewares: ""
+        middleware:
+          enabled: false
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
