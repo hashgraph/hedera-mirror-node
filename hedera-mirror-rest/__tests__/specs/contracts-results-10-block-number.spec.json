@@ -26,9 +26,7 @@
         "call_result": [2, 2],
         "consensus_timestamp": "1676540001234390005",
         "contract_id": 5001,
-        "gas_used": 100,
-        "transactionIndex": 1,
-        "transactionNonce": 0
+        "gas_used": 100
       },
       {
         "amount": 30,
@@ -37,9 +35,7 @@
         "consensus_timestamp": "1676540001234500005",
         "contract_id": 5001,
         "created_contract_ids": [7001],
-        "gas_used": 10,
-        "transactionIndex": 2,
-        "transactionNonce": 0
+        "gas_used": 10
       }
     ],
     "transactions": [
@@ -69,7 +65,7 @@
         "transaction_hash": "hash2",
         "nonce": 0,
         "payerAccountId": 9001,
-        "index": 1
+        "index": 2
       }
     ],
     "recordFiles": [
