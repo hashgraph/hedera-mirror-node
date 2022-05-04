@@ -54,16 +54,13 @@ class RecordFileService extends BaseService {
    * @return {Promise<RecordFile>} recordFile subset
    */
   async getRecordFileBlockDetailsFromTimestamp(timestamp) {
-    const rows = await super.getRows(
+    const row = await super.getSingleRow(
       RecordFileService.recordFileBlockDetailsFromTimestampQuery,
       [timestamp],
       'getRecordFileBlockDetailsFromTimestamp'
     );
-    if (_.isEmpty(rows) || rows.length > 1) {
-      return null;
-    }
 
-    return new RecordFile(rows[0]);
+    return _.isNull(row) ? null : new RecordFile(row);
   }
 
   /**
@@ -73,16 +70,13 @@ class RecordFileService extends BaseService {
    * @return {Promise<RecordFile>} recordFile subset
    */
   async getRecordFileBlockDetailsFromIndex(index) {
-    const rows = await super.getRows(
+    const row = await super.getSingleRow(
       RecordFileService.recordFileBlockDetailsFromIndexQuery,
       [index],
       'getRecordFileBlockDetailsFromIndex'
     );
-    if (_.isEmpty(rows) || rows.length > 1) {
-      return null;
-    }
 
-    return new RecordFile(rows[0]);
+    return _.isNull(row) ? null : new RecordFile(row);
   }
 }
 

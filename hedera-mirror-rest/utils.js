@@ -78,6 +78,21 @@ const isPositiveLong = (num, allowZero = false) => {
   return positiveLongRegex.test(num) && long.fromValue(num).greaterThanOrEqual(min);
 };
 
+/**
+ * Validates that hex encoded num is a positive long.
+ * @param num
+ * @param allowZero
+ * @returns {boolean}
+ */
+const isHexPositiveLong = (num, allowZero = false) => {
+  if (num.startsWith('0x')) {
+    num = parseInt(num, 16);
+    return isPositiveLong(num, allowZero);
+  }
+
+  return false;
+};
+
 const nonNegativeInt32Regex = /^\d{1,10}$/;
 
 /**
@@ -278,7 +293,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = TransactionType.isValid(val);
       break;
     case constants.filterKeys.BLOCK_NUMBER:
-      ret = isNumeric(val) && val >= 0;
+      ret = isPositiveLong(val, true) || isHexPositiveLong(val, true);
       break;
     case constants.filterKeys.BLOCK_HASH:
       ret = isValidEthHash(val);
@@ -287,7 +302,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidBooleanOpAndValue(op, val);
       break;
     case constants.filterKeys.TRANSACTION_INDEX:
-      ret = isNumeric(val) && val >= 0;
+      ret = isPositiveLong(val, true);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
