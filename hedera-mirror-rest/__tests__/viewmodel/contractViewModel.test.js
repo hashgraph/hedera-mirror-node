@@ -25,6 +25,7 @@ const ContractViewModel = require('../../viewmodel/contractViewModel');
 
 describe('ContractViewModel', () => {
   const defaultContract = {
+    autoRenewAccountId: 2009n,
     autoRenewPeriod: 1000n,
     createdTimestamp: 999123456789n,
     deleted: false,
@@ -38,6 +39,7 @@ describe('ContractViewModel', () => {
     key: Buffer.from([0xaa, 0xbb, 0xcc, 0x77]),
     memo: 'sample contract',
     obtainerId: 2005n,
+    permanentRemoval: null,
     proxyAccountId: 2002n,
     timestampRange: Range('1000123456789', '2000123456789', '[)'),
   };
@@ -46,6 +48,7 @@ describe('ContractViewModel', () => {
       _type: 'ProtobufEncoded',
       key: 'aabbcc77',
     },
+    auto_renew_account: '0.0.2009',
     auto_renew_period: 1000n,
     contract_id: '0.0.3001',
     created_timestamp: '999.123456789',
@@ -55,6 +58,7 @@ describe('ContractViewModel', () => {
     file_id: '0.0.2800',
     memo: 'sample contract',
     obtainer_id: '0.0.2005',
+    permanent_removal: null,
     proxy_account_id: '0.0.2002',
     timestamp: {
       from: '1000.123456789',
@@ -62,8 +66,32 @@ describe('ContractViewModel', () => {
     },
   };
 
-  test('no bytecode', () => {
+  test('default', () => {
     expect(new ContractViewModel(defaultContract)).toEqual(defaultExpected);
+  });
+
+  test('null auto renew account', () => {
+    expect(
+      new ContractViewModel({
+        ...defaultContract,
+        autoRenewAccountId: null,
+      })
+    ).toEqual({
+      ...defaultExpected,
+      auto_renew_account: null,
+    });
+  });
+
+  test('0 auto renew account', () => {
+    expect(
+      new ContractViewModel({
+        ...defaultContract,
+        autoRenewAccountId: 0,
+      })
+    ).toEqual({
+      ...defaultExpected,
+      auto_renew_account: null,
+    });
   });
 
   test('bytecode', () => {
@@ -119,6 +147,20 @@ describe('ContractViewModel', () => {
     ).toEqual({
       ...defaultExpected,
       evm_address: '0x0000000000000000000000000000000000000bb9',
+    });
+  });
+
+  test('permanent removal', () => {
+    expect(
+      new ContractViewModel({
+        ...defaultContract,
+        deleted: true,
+        permanentRemoval: false,
+      })
+    ).toEqual({
+      ...defaultExpected,
+      deleted: true,
+      permanent_removal: false,
     });
   });
 

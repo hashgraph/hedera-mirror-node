@@ -376,6 +376,7 @@ const addAddressBookServiceEndpoint = async (addressBookServiceEndpointInput) =>
 const addEntity = async (defaults, entity) => {
   const localDefaults = {
     alias: null,
+    auto_renew_account_id: null,
     auto_renew_period: null,
     deleted: false,
     expiration_timestamp: null,
@@ -691,6 +692,7 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAcco
 
 const addContract = async (contract) => {
   const insertFields = [
+    'auto_renew_account_id',
     'auto_renew_period',
     'created_timestamp',
     'deleted',
@@ -704,6 +706,7 @@ const addContract = async (contract) => {
     'memo',
     'num',
     'obtainer_id',
+    'permanent_removal',
     'public_key',
     'proxy_account_id',
     'realm',
@@ -712,6 +715,7 @@ const addContract = async (contract) => {
     'timestamp_range',
   ];
   contract = {
+    auto_renew_account_id: null,
     auto_renew_period: null,
     deleted: false,
     evm_address: null,
@@ -720,6 +724,7 @@ const addContract = async (contract) => {
     key: null,
     max_automatic_token_associations: 0,
     memo: 'contract memo',
+    permanent_removal: null,
     public_key: null,
     realm: 0,
     shard: 0,

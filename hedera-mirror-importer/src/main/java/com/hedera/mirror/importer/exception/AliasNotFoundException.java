@@ -20,15 +20,17 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.entity.EntityType;
+
 public class AliasNotFoundException extends ImporterException {
 
     private static final long serialVersionUID = 262691996461413516L;
 
-    public AliasNotFoundException(String alias) {
-        super(getMessage(alias));
+    public AliasNotFoundException(String alias, EntityType type) {
+        super(getMessage(alias, type));
     }
 
-    private static String getMessage(String alias) {
-        return String.format("Account with alias '%s' not found", alias);
+    private static String getMessage(String alias, EntityType type) {
+        return String.format("%s entity with alias '%s' not found", type, alias);
     }
 }
