@@ -41,7 +41,7 @@ public class LogsBloomFilter {
 
     public LogsBloomFilter insertBytes(final byte[] bytes) {
         if(bytes != null) {
-            insertBytes(Bytes.wrap(bytes), logsBloom);
+            insertBytes(Bytes.wrap(bytes));
         }
         return this;
     }
@@ -81,23 +81,23 @@ public class LogsBloomFilter {
         logsBloom.clear();
     }
 
-    private void insertBytes(final Bytes contractResultBloom, final MutableBytes recordFileBloom) {
-        setBits(keccak256(contractResultBloom), recordFileBloom);
+    private void insertBytes(final Bytes contractResultBloom) {
+        setBits(keccak256(contractResultBloom));
     }
 
-    private void setBits(final Bytes hashValue, final MutableBytes recordFileBloom) {
+    private void setBits(final Bytes hashValue) {
         for (int counter = 0; counter < 6; counter += 2) {
             final var setBloomBit =
                     ((hashValue.get(counter) & LEAST_SIGNIFICANT_THREE_BITS) << BITS_IN_BYTE)
                             + (hashValue.get(counter + 1) & LEAST_SIGNIFICANT_BYTE);
-            setBit(setBloomBit, recordFileBloom);
+            setBit(setBloomBit);
         }
     }
 
-    private void setBit(final int index, final MutableBytes recordFileBloom) {
+    private void setBit(final int index) {
         final var byteIndex = BYTE_SIZE - 1 - index / 8;
         final var bitIndex = index % 8;
-        recordFileBloom.set(byteIndex, (byte) (recordFileBloom.get(byteIndex) | (1 << bitIndex)));
+        logsBloom.set(byteIndex, (byte) (logsBloom.get(byteIndex) | (1 << bitIndex)));
     }
 
     private Bytes32 keccak256(final Bytes input) {
