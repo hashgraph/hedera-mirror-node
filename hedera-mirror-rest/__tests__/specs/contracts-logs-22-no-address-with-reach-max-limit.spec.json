@@ -1,0 +1,529 @@
+{
+  "description": "Contracts logs api calls across many contracts with 25 results out of 27 in total",
+  "setup": {
+    "contractlogs": [
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1003,
+        "index": 0,
+        "topic0": [10],
+        "topic1": [11]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1003,
+        "index": 1,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1003,
+        "index": 2,
+        "topic0": [10],
+        "topic1": [11]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1003,
+        "index": 3,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1003,
+        "index": 4,
+        "topic0": [10],
+        "topic1": [11]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1003,
+        "index": 5,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1003,
+        "index": 6,
+        "topic0": [10],
+        "topic1": [11]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1003,
+        "index": 7,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1003,
+        "index": 8,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1003,
+        "index": 9,
+        "topic0": [10],
+        "topic1": [11]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1003,
+        "index": 10,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1649010141000000000,
+        "contract_id": 1004,
+        "index": 11,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 12,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1649010141000000000,
+        "contract_id": 1004,
+        "index": 13,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 14,
+        "topic0": [10],
+        "topic1": [11]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 15,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 16,
+        "topic0": [10],
+        "topic1": [11]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 17,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 18,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1649010141000000000,
+        "contract_id": 1004,
+        "index": 19,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 20,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1649010141000000000,
+        "contract_id": 1004,
+        "index": 21,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 22,
+        "topic0": [10],
+        "topic1": [11]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 23,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 24,
+        "topic0": [10],
+        "topic1": [11]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 25,
+        "topic0": [10]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 26,
+        "topic0": [10]
+      }
+    ]
+  },
+  "urls": ["/api/v1/contracts/results/logs?topic0=A&timestamp=1639010141.000000000"],
+  "responseStatus": 200,
+  "responseJson": {
+    "logs": [
+      {
+        "address": "0x00000000000000000000000000000000000003ec",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1004",
+        "data": "0x0123",
+        "index": 26,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003ec",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1004",
+        "data": "0x0123",
+        "index": 25,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003ec",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1004",
+        "data": "0x0123",
+        "index": 24,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x000000000000000000000000000000000000000000000000000000000000000b",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003ec",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1004",
+        "data": "0x0123",
+        "index": 23,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003ec",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1004",
+        "data": "0x0123",
+        "index": 22,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x000000000000000000000000000000000000000000000000000000000000000b",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003ec",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1004",
+        "data": "0x0123",
+        "index": 20,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003ec",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1004",
+        "data": "0x0123",
+        "index": 18,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003ec",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1004",
+        "data": "0x0123",
+        "index": 17,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003ec",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1004",
+        "data": "0x0123",
+        "index": 16,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x000000000000000000000000000000000000000000000000000000000000000b",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003ec",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1004",
+        "data": "0x0123",
+        "index": 15,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003ec",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1004",
+        "data": "0x0123",
+        "index": 14,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x000000000000000000000000000000000000000000000000000000000000000b",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003ec",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1004",
+        "data": "0x0123",
+        "index": 12,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003eb",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1003",
+        "data": "0x0123",
+        "index": 10,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003eb",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1003",
+        "data": "0x0123",
+        "index": 9,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x000000000000000000000000000000000000000000000000000000000000000b",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003eb",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1003",
+        "data": "0x0123",
+        "index": 8,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003eb",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1003",
+        "data": "0x0123",
+        "index": 7,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003eb",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1003",
+        "data": "0x0123",
+        "index": 6,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x000000000000000000000000000000000000000000000000000000000000000b",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003eb",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1003",
+        "data": "0x0123",
+        "index": 5,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003eb",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1003",
+        "data": "0x0123",
+        "index": 4,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x000000000000000000000000000000000000000000000000000000000000000b",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003eb",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1003",
+        "data": "0x0123",
+        "index": 3,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003eb",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1003",
+        "data": "0x0123",
+        "index": 2,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x000000000000000000000000000000000000000000000000000000000000000b",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003eb",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1003",
+        "data": "0x0123",
+        "index": 1,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      },
+      {
+        "address": "0x00000000000000000000000000000000000003eb",
+        "bloom": "0x0123",
+        "contract_id": "0.0.1003",
+        "data": "0x0123",
+        "index": 0,
+        "root_contract_id": null,
+        "timestamp": "1639010141.000000000",
+        "topics": [
+          "0x000000000000000000000000000000000000000000000000000000000000000a",
+          "0x000000000000000000000000000000000000000000000000000000000000000b",
+          "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+          "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+        ]
+      }
+    ]
+  }
+}

@@ -446,20 +446,56 @@ const extractContractIdAndFiltersFromValidatedRequest = (req) => {
   };
 };
 
+const extractFiltersFromValidatedRequest = (req) => {
+  utils.validateReq(req);
+  // extract filters from query param
+  const filters = utils.buildAndValidateFilters(req.query);
+
+  return {
+    filters,
+  };
+};
+
 /**
  * Handler function for /contracts/:contractId/results/logs API
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @returns {Promise<void>}
  */
-const getContractLogs = async (req, res) => {
+const getContractLogsById = async (req, res) => {
   // get sql filter query, params, limit and limit query from query filters
   const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req);
   checkTimestampsForTopics(filters);
 
   const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
-  const {conditions, params, timestampOrder, indexOrder, limit} = extractContractLogsByIdQuery(filters, contractId);
+  const {conditions, params, timestampOrder, indexOrder, limit} = extractContractLogsQuery(filters, contractId);
+
+  const rows = await ContractService.getContractLogsByIdAndFilters(
+    conditions,
+    params,
+    timestampOrder,
+    indexOrder,
+    limit
+  );
+
+  res.locals[constants.responseDataLabel] = {
+    logs: rows.map((row) => new ContractLogViewModel(row)),
+  };
+};
+
+/**
+ * Handler function for /contracts/results/logs API
+ * @param {Request} req HTTP request object
+ * @param {Response} res HTTP response object
+ * @returns {Promise<void>}
+ */
+const getContractLogs = async (req, res) => {
+  // get sql filter query, params, limit and limit query from query filters
+  const {filters} = extractFiltersFromValidatedRequest(req);
+  checkTimestampsForTopics(filters);
+
+  const {conditions, params, timestampOrder, indexOrder, limit} = extractContractLogsQuery(filters);
 
   const rows = await ContractService.getContractLogsByIdAndFilters(
     conditions,
@@ -704,12 +740,17 @@ const getContractResultsByTransactionId = async (req, res) => {
  * @param {string} contractId encoded contract ID
  * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
  */
-const extractContractLogsByIdQuery = (filters, contractId) => {
+const extractContractLogsQuery = (filters, contractId) => {
   let limit = defaultLimit;
   let timestampOrder = constants.orderFilterValues.DESC;
   let indexOrder = constants.orderFilterValues.DESC;
-  const conditions = [`${ContractLog.getFullName(ContractLog.CONTRACT_ID)} = $1`];
-  const params = [contractId];
+  const conditions = [];
+  const params = [];
+
+  if (contractId) {
+    conditions.push(`${ContractLog.getFullName(ContractLog.CONTRACT_ID)} = $1`);
+    params.push(contractId);
+  }
 
   const oneOperatorValues = {};
 
@@ -846,6 +887,7 @@ const checkTimestampsForTopics = (filters) => {
 module.exports = {
   getContractById,
   getContracts,
+  getContractLogsById,
   getContractLogs,
   getContractResultsById,
   getContractResultsByTimestamp,
@@ -856,7 +898,7 @@ if (utils.isTestEnv()) {
   Object.assign(module.exports, {
     contractResultsByIdParamSupportMap,
     checkTimestampsForTopics,
-    extractContractLogsByIdQuery,
+    extractContractLogsQuery,
     extractContractResultsByIdQuery,
     extractSqlFromContractFilters,
     extractTimestampConditionsFromContractFilters,

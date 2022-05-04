@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call for a specific contract using an invalid transactionId",
+  "description": "Contract results api call for non-existing route",
   "setup": {
     "contractresults": [
       {
@@ -34,13 +34,13 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/results/1", "/api/v1/contracts/results/0.0.x-167654-000123456"],
-  "responseStatus": 400,
+  "urls": ["/api/v1/contracts/results/x"],
+  "responseStatus": 404,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Invalid Transaction id. Please use \"shard.realm.num-sss-nnn\" format where sss are seconds and nnn are nanoseconds"
+          "message": "Not found"
         }
       ]
     }

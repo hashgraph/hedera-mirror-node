@@ -1,0 +1,50 @@
+{
+  "description": "Contracts logs api calls across many contracts with timestamp range more than 7d",
+  "setup": {
+    "contractlogs": [
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 0,
+        "topic0": [10],
+        "topic1": [11]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1000,
+        "index": 1,
+        "topic0": [11],
+        "topic1": [12],
+        "topic2": [13]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1001,
+        "index": 2,
+        "topic0": null,
+        "topic1": null,
+        "topic2": null
+      },
+      {
+        "consensus_timestamp": 1649010141000000000,
+        "contract_id": 1001,
+        "index": 3,
+        "topic0": [10],
+        "topic2": [13]
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/results/logs?topic0=A&topic0=B&timestamp=gt:1639010141.000000000&timestamp=lt:1649010141.000000000"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Cannot search topics without timestamp range: Timestamp lower and upper bounds must be positive and within 7d"
+        }
+      ]
+    }
+  }
+}
