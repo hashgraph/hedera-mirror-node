@@ -58,6 +58,7 @@ import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
+import com.hedera.mirror.common.domain.transaction.LogsBloomFilter;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -97,7 +98,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<CustomFee> customFees;
     private final Collection<Entity> entities;
     private final Collection<FileData> fileData;
-    private Long gasUsed = 0l;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<NftTransfer> nftTransfers;
@@ -125,6 +125,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // during batch upsert, the merged state at time T is again merged with the initial state before the batch to
     // get the full state at time T
     private final Map<TokenAccountKey, TokenAccount> tokenAccountState;
+
+    // Accumlates gasUsed and blooms for the record file
+    private Long gasUsed;
+    private final LogsBloomFilter logsBloomFilter;
 
     public SqlEntityListener(BatchPersister batchPersister,
                              EntityIdService entityIdService,
@@ -170,6 +174,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         tokens = new HashMap<>();
         tokenAccountState = new HashMap<>();
         tokenAllowanceState = new HashMap<>();
+
+        gasUsed = 0l;
+        logsBloomFilter = new LogsBloomFilter();
     }
 
     @Override
@@ -187,9 +194,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         executeBatches();
         if (recordFile != null) {
             recordFile.setGasUsed(gasUsed);
-            gasUsed = 0l;
+            recordFile.setLogsBloom(logsBloomFilter.getBloom());
             recordFileRepository.save(recordFile);
         }
+
+        gasUsed = 0l;
+        logsBloomFilter.clear();
     }
 
     @Override
@@ -304,8 +314,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onContractResult(ContractResult contractResult) throws ImporterException {
-        gasUsed += contractResult.getGasUsed();
         contractResults.add(contractResult);
+    }
+
+    @Override
+    public void onContractRecordFileInfo(long contractGasUsed, byte[] bloom) {
+        gasUsed += contractGasUsed;
+        logsBloomFilter.insertBytes(bloom);
     }
 
     @Override

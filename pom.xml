@@ -55,6 +55,7 @@
     </parent>
 
     <properties>
+        <bouncycastle.version>1.70</bouncycastle.version>
         <dependency-check.version>7.1.0</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.39.1</docker-maven-plugin.version>
@@ -93,6 +94,7 @@
         <sonar.issue.ignore.multicriteria.e3.ruleKey>java:S2187</sonar.issue.ignore.multicriteria.e3.ruleKey>
         <sonar.issue.ignore.multicriteria.e4.resourceKey>**/*.js</sonar.issue.ignore.multicriteria.e4.resourceKey>
         <sonar.issue.ignore.multicriteria.e4.ruleKey>javascript:S3758</sonar.issue.ignore.multicriteria.e4.ruleKey>
+        <tuweni.version>2.1.0</tuweni.version>
     </properties>
 
     <scm>

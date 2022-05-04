@@ -69,6 +69,9 @@ public interface EntityListener {
     default void onContractResult(ContractResult contractResult) throws ImporterException {
     }
 
+    default void onContractRecordFileInfo(long gasUsed, byte[] bloom) {
+    }
+
     default void onCryptoAllowance(CryptoAllowance cryptoAllowance) {
     }
 
