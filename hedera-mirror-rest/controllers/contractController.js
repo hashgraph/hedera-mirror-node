@@ -562,30 +562,21 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
           const conEndColName = _.camelCase(RecordFile.CONSENSUS_END);
 
           updateConditionsAndParamsWithInValues(
-            {key: constants.filterKeys.TIMESTAMP, operator: '>=', value: blockData[conStartColName]},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: blockData[conStartColName]},
             contractResultTimestampInValues,
             params,
             conditions,
             contractResultTimestampFullName
           );
           updateConditionsAndParamsWithInValues(
-            {key: constants.filterKeys.TIMESTAMP, operator: '<=', value: blockData[conEndColName]},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: blockData[conEndColName]},
             contractResultTimestampInValues,
             params,
             conditions,
             contractResultTimestampFullName
           );
-        }
-
-        // If the blockData does not exist, it should return an empty response
-        else {
-          updateConditionsAndParamsWithInValues(
-            {key: constants.filterKeys.TIMESTAMP, operator: '<', value: 0},
-            contractResultTimestampInValues,
-            params,
-            conditions,
-            contractResultTimestampFullName
-          );
+        } else {
+          throw new NotFoundError();
         }
 
         break;

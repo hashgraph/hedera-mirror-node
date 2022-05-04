@@ -443,7 +443,11 @@ const addEthereumTransaction = async (ethereumTransaction) => {
     value: '0x0',
   };
 
-  const ethTx = Object.assign({}, localDefaults, ethereumTransaction);
+  const ethTx = {
+    ...localDefaults,
+    ...ethereumTransaction,
+  };
+
   const insertFields = Object.keys(ethTx);
 
   await insertDomainObject('ethereum_transaction', insertFields, ethTx);
