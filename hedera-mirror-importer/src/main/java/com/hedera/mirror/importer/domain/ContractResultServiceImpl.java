@@ -132,7 +132,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             processContractStateChanges(functionResult, contractResult);
         }
 
-        processContractResultRecordFileInfo(contractResult, recordItem.getTransactionType());
+        processContractResultRecordFileInfo(contractResult, recordItem);
 
         entityListener.onContractResult(contractResult);
     }
@@ -157,16 +157,18 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
-    private void processContractResultRecordFileInfo(ContractResult contractResult, int transactionType) {
-        // if not a child transaction
-        TransactionType contractTransactionType = TransactionType.of(transactionType);
-        switch (contractTransactionType) {
-            case CONTRACTCALL:
-            case CONTRACTCREATEINSTANCE:
-            // case ETHEREUMTRANSACTION:
-                entityListener.onContractRecordFileInfo(contractResult.getGasUsed(), contractResult.getBloom());
-            default:
-                break;
+    private void processContractResultRecordFileInfo(ContractResult contractResult, RecordItem recordItem) {
+        // Only process parent transactions
+        if(recordItem.getParent() == null) {
+            TransactionType contractTransactionType = TransactionType.of(recordItem.getTransactionType());
+            switch (contractTransactionType) {
+                case CONTRACTCALL:
+                case CONTRACTCREATEINSTANCE:
+                case ETHEREUMTRANSACTION:
+                    entityListener.onContractRecordFileInfo(contractResult.getGasUsed(), contractResult.getBloom());
+                default:
+                    break;
+            }
         }
     }
 
