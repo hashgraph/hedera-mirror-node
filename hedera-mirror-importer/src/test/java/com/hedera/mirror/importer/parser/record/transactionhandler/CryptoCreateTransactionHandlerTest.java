@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -28,15 +31,23 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.util.UtilityTest;
 
 class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoCreateTransactionHandler(entityListener, entityRepository);
+        return new CryptoCreateTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
     }
 
     @Override
@@ -85,5 +96,22 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         );
 
         return testSpecs;
+    }
+
+    @Test
+    void updateAlias() {
+        var alias = UtilityTest.ALIAS_ECDSA_SECP256K1;
+        var recordItem = recordItemBuilder.cryptoCreate().record(r -> r.setAlias(DomainUtils.fromBytes(alias))).build();
+        var transaction = new Transaction();
+        transaction.setEntityId(EntityId.of(0L, 0L, 100L, EntityType.ACCOUNT));
+
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        ArgumentCaptor<Entity> captor = ArgumentCaptor.forClass(Entity.class);
+        verify(entityIdService).notify(captor.capture());
+        assertThat(captor.getValue())
+                .isNotNull()
+                .returns(alias, Entity::getAlias)
+                .returns(UtilityTest.EVM_ADDRESS, Entity::getEvmAddress);
     }
 }

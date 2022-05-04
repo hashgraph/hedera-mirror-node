@@ -38,8 +38,8 @@ import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
@@ -201,19 +201,18 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
      * @return The effective owner account id
      */
     private EntityId getOwnerAccountId(AccountID owner, EntityId payerAccountId) {
-        if (owner == AccountID.getDefaultInstance()) {
-            return payerAccountId;
-        }
-
-        var accountId = entityIdService.lookup(owner);
-        if (accountId == EntityId.EMPTY) {
-            // Owner has alias and entityIdService lookup failed
+        try {
+            var entityId = entityIdService.lookup(owner);
+            return !EntityId.isEmpty(entityId) ? entityId : payerAccountId;
+        } catch (AliasNotFoundException e) {
             var partialDataAction = recordParserProperties.getPartialDataAction();
             if (partialDataAction == DEFAULT || partialDataAction == ERROR) {
                 // There is no appropriate default for allowance owner, so throw an exception
-                throw new InvalidEntityException("Invalid owner for allowance");
+                throw e;
             }
+
+            // The action is SKIP
+            return EntityId.EMPTY;
         }
-        return accountId;
     }
 }

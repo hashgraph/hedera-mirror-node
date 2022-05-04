@@ -29,6 +29,8 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
@@ -37,8 +39,9 @@ class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
     private final EntityProperties entityProperties;
 
-    ScheduleCreateTransactionHandler(EntityListener entityListener, EntityProperties entityProperties) {
-        super(entityListener, TransactionType.SCHEDULECREATE);
+    ScheduleCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
+                                     EntityProperties entityProperties, RecordParserProperties recordParserProperties) {
+        super(entityIdService, entityListener, recordParserProperties, TransactionType.SCHEDULECREATE);
         this.entityProperties = entityProperties;
     }
 

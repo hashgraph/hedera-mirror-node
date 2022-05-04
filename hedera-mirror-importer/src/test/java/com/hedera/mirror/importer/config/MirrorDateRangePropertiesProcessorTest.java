@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -94,16 +94,15 @@ class MirrorDateRangePropertiesProcessorTest {
 
     @Test
     void notSetAndDatabaseEmpty() {
-        Instant startUpInstant = STARTUP_TIME;
-        DateRangeFilter expectedFilter = new DateRangeFilter(startUpInstant, null);
-        Instant expectedDate = adjustStartDate(startUpInstant);
+        Instant expectedDate = STARTUP_TIME;
+        DateRangeFilter expectedFilter = new DateRangeFilter(expectedDate, null);
         for (var downloaderProperties : downloaderPropertiesList) {
             StreamType streamType = downloaderProperties.getStreamType();
             assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
                     .isEqualTo(streamFile(streamType, expectedDate));
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType)).isEqualTo(expectedFilter);
         }
-        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(adjustStartDate(STARTUP_TIME));
+        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(expectedDate);
     }
 
     @Test
@@ -161,16 +160,17 @@ class MirrorDateRangePropertiesProcessorTest {
 
     @Test
     void startDateSetAndDatabaseEmpty() {
-        mirrorProperties.setStartDate(STARTUP_TIME);
+        var startDate = STARTUP_TIME.plusSeconds(10L);
+        mirrorProperties.setStartDate(startDate);
         DateRangeFilter expectedFilter = new DateRangeFilter(mirrorProperties.getStartDate(), null);
-        Instant expectedDate = adjustStartDate(mirrorProperties.getStartDate());
+        Instant expectedDate = mirrorProperties.getStartDate();
         for (var downloaderProperties : downloaderPropertiesList) {
             StreamType streamType = downloaderProperties.getStreamType();
             assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType))
                     .isEqualTo(streamFile(streamType, expectedDate));
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(streamType)).isEqualTo(expectedFilter);
         }
-        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(adjustStartDate(STARTUP_TIME));
+        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(startDate);
     }
 
     @ParameterizedTest(name = "startDate {0}ns before application status, endDate")
@@ -203,24 +203,18 @@ class MirrorDateRangePropertiesProcessorTest {
 
         Instant startDate = lastFileInstant.plusNanos(diffNanos);
         mirrorProperties.setStartDate(startDate);
+        Instant effectiveStartDate = max(startDate, lastFileInstant);
 
         DateRangeFilter expectedFilter = new DateRangeFilter(startDate, null);
         for (var downloaderProperties : downloaderPropertiesList) {
             StreamType streamType = downloaderProperties.getStreamType();
-            Instant effectiveStartDate = max(adjustStartDate(startDate), lastFileInstant);
+
             Optional<StreamFile> streamFile = streamFile(streamType, effectiveStartDate);
             assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).isEqualTo(streamFile);
+
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
                     .isEqualTo(expectedFilter);
         }
-
-        Instant expectedVerifyHashAfter;
-        if (diffNanos > mirrorProperties.getStartDateAdjustment().toNanos()) {
-            expectedVerifyHashAfter = adjustStartDate(startDate);
-        } else {
-            expectedVerifyHashAfter = mirrorProperties.getVerifyHashAfter();
-        }
-        assertThat(mirrorProperties.getVerifyHashAfter()).isEqualTo(expectedVerifyHashAfter);
     }
 
     @ParameterizedTest(name = "startDate {0} endDate {1} database {2} violates (effective) start date <= " +
@@ -269,10 +263,6 @@ class MirrorDateRangePropertiesProcessorTest {
     void filter(long start, long end, long timestamp, boolean expected) {
         DateRangeFilter filter = new DateRangeFilter(Instant.ofEpochSecond(0, start), Instant.ofEpochSecond(0, end));
         assertThat(filter.filter(timestamp)).isEqualTo(expected);
-    }
-
-    private Instant adjustStartDate(Instant startDate) {
-        return startDate.minus(mirrorProperties.getStartDateAdjustment());
     }
 
     private boolean matches(Optional<StreamFile> streamFile, Instant instant) {

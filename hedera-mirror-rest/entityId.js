@@ -53,6 +53,13 @@ const evmAddressShardRealmRegex = /^(\d{1,10}\.){0,2}[A-Fa-f0-9]{40}$/;
 const evmAddressRegex = /^(0x)?[A-Fa-f0-9]{40}$/;
 
 class EntityId {
+  /**
+   * Creates an EntityId instance
+   *
+   * @param {Number|null} shard
+   * @param {Number|null} realm
+   * @param {Number|null} num
+   */
   constructor(shard, realm, num) {
     this.shard = shard;
     this.realm = realm;
@@ -65,11 +72,16 @@ class EntityId {
   getEncodedId() {
     if (this.encodedId === undefined) {
       this.encodedId =
-        this.num === null ? null : ((this.shard << shardOffset) | (this.realm << numBits) | this.num).toString();
+        this.num === null
+          ? null
+          : ((BigInt(this.shard) << shardOffset) | (BigInt(this.realm) << numBits) | BigInt(this.num)).toString();
     }
     return this.encodedId;
   }
 
+  isAllZero() {
+    return this.shard === 0 && this.realm === 0 && this.num === 0;
+  }
   /**
    * Converts the entity id to the 20-byte EVM address in hex with '0x' prefix
    */
@@ -86,7 +98,7 @@ class EntityId {
   }
 
   toString() {
-    return this.num === null ? null : `${this.shard}.${this.realm}.${this.num}`;
+    return this.num === null || this.isAllZero() ? null : `${this.shard}.${this.realm}.${this.num}`;
   }
 }
 
@@ -94,9 +106,13 @@ const toHex = (num) => {
   return num.toString(16);
 };
 
-const isValidEvmAddress = (address, evmAddressType = EvmAddressType.NO_SHARD_REALM) => {
+const isValidEvmAddress = (address, evmAddressType = EvmAddressType.ANY) => {
   if (typeof address !== 'string') {
     return false;
+  }
+
+  if (evmAddressType === EvmAddressType.ANY) {
+    return evmAddressRegex.test(address) || evmAddressShardRealmRegex.test(address);
   }
   if (evmAddressType === EvmAddressType.NO_SHARD_REALM) {
     return evmAddressRegex.test(address);
@@ -110,10 +126,10 @@ const isValidEntityId = (entityId) => {
 };
 
 const isCreate2EvmAddress = (evmAddress) => {
-  if (!isValidEvmAddress(evmAddress, EvmAddressType.OPTIONAL_SHARD_REALM)) {
+  if (!isValidEvmAddress(evmAddress)) {
     return false;
   }
-  const idPartsFromEvmAddress = parseFromEvmAddress(_.last(evmAddress.split('.')));
+  const idPartsFromEvmAddress = parseFromEvmAddress(evmAddress);
   return (
     idPartsFromEvmAddress[0] > maxShard || idPartsFromEvmAddress[1] > maxRealm || idPartsFromEvmAddress[2] > maxNum
   );
@@ -122,13 +138,14 @@ const isCreate2EvmAddress = (evmAddress) => {
 /**
  * Creates EntityId from shard, realm, and num.
  *
- * @param {BigInt} shard
- * @param {BigInt} realm
- * @param {BigInt} num
+ * @param {BigInt|Number} shard
+ * @param {BigInt|Number} realm
+ * @param {BigInt|Number} num
  * @return {EntityId}
  */
 const of = (shard, realm, num) => {
-  return new EntityId(shard, realm, num);
+  const toNumber = (val) => (typeof val === 'bigint' ? Number(val) : val);
+  return new EntityId(toNumber(shard), toNumber(realm), toNumber(num));
 };
 
 const nullEntityId = of(null, null, null);
@@ -179,7 +196,7 @@ const parseFromEncodedId = (id, error) => {
  */
 const parseFromEvmAddress = (evmAddress) => {
   // extract shard from index 0->8, realm from 8->23, num from 24->40 and parse from hex to decimal
-  const hexDigits = evmAddress.replace('0x', '');
+  const hexDigits = _.last(evmAddress.split('.')).replace('0x', '');
   return [
     BigInt('0x' + hexDigits.slice(0, 8)), // shard
     BigInt('0x' + hexDigits.slice(8, 24)), // realm
@@ -278,7 +295,9 @@ const parse = (id, ...rest) => {
   let idType = null;
   if (paramName === filterKeys.FROM) {
     idType = EvmAddressType.NO_SHARD_REALM;
-  } else if (paramName === filterKeys.CONTRACTID || paramName === filterKeys.CONTRACT_ID) {
+  } else if (paramName === filterKeys.CONTRACTID) {
+    idType = EvmAddressType.ANY;
+  } else if (paramName === filterKeys.CONTRACT_ID) {
     idType = EvmAddressType.OPTIONAL_SHARD_REALM;
   }
   return checkNullId(id, isNullable) || parseMemoized(`${id}`, idType, error);
