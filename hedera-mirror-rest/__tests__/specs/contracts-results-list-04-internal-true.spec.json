@@ -52,6 +52,28 @@
         "transactionIndex": 2,
         "transactionNonce": 1
       }
+    ],
+    "transactions": [
+      {
+        "consensus_timestamp": "187654000123456",
+        "type": 11,
+        "result": 22,
+        "valid_start_ns": "187654000123456",
+        "valid_start_timestamp": "187654000123456",
+        "transaction_hash": "hash1",
+        "payerAccountId": 6001,
+        "index": 1
+      },
+      {
+        "consensus_timestamp": "987654000123456",
+        "type": 11,
+        "result": 22,
+        "valid_start_ns": "987654000123456",
+        "valid_start_timestamp": "987654000123456",
+        "transaction_hash": "hash2",
+        "payerAccountId": 5001,
+        "index": 1
+      }
     ]
   },
   "urls": ["/api/v1/contracts/results?internal=true"],

@@ -49,7 +49,7 @@ class ContractService extends BaseService {
 
   static detailedContractResultsQuery = `select ${ContractResult.tableAlias}.*
   from ${ContractResult.tableName} ${ContractResult.tableAlias}
-  join ${Transaction.tableName} ${Transaction.tableAlias}
+  left join ${Transaction.tableName} ${Transaction.tableAlias}
   on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
     Transaction.CONSENSUS_TIMESTAMP
   )}
