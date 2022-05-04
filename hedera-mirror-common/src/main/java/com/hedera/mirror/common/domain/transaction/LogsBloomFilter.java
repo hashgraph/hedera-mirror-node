@@ -26,7 +26,6 @@ import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Utility methods used by Hedera adapted from {org.hyperledger.besu.evm.log.LogsBloomFilter}
@@ -40,30 +39,31 @@ public class LogsBloomFilter {
     private static final int BITS_IN_BYTE = 8;
     private final MutableBytes logsBloom = MutableBytes.create(BYTE_SIZE);
 
-    public LogsBloomFilter(Collection<byte[]> bytes) {
-        if(bytes != null) {
-            bytes.forEach(b -> insertBytes(Bytes.wrap(b), logsBloom));
-        }
-    }
-
-    public void insertBytes(byte[] bytes) {
+    public LogsBloomFilter insertBytes(final byte[] bytes) {
         if(bytes != null) {
             insertBytes(Bytes.wrap(bytes), logsBloom);
         }
+        return this;
+    }
+
+    public LogsBloomFilter insertBytes(final Collection<byte[]> bytes) {
+        if (bytes != null) {
+            bytes.forEach(this::insertBytes);
+        }
+        return this;
     }
 
     public byte[] getBloom() {
         return logsBloom.isZero() ? new byte[0] : logsBloom.toArray();
     }
 
-    public boolean couldContain(byte[] bloom) {
+    public boolean couldContain(final byte[] bloom) {
         if (bloom == null) {
             return true;
         }
 
-        byte[] logsBloom = getBloom();
-        LogsBloomFilter subSetFilter = new LogsBloomFilter(List.of(bloom));
-        byte[] subsetBytes = subSetFilter.getBloom();
+        final var logsBloom = getBloom();
+        final var subsetBytes = new LogsBloomFilter().insertBytes(bloom).getBloom();
         if (subsetBytes.length != logsBloom.length) {
             return false;
         }

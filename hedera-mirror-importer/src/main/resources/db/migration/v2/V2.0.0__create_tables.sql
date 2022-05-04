@@ -365,7 +365,7 @@ create table if not exists record_file
     consensus_end      bigint                 not null,
     count              bigint                 not null,
     digest_algorithm   int                    not null,
-    file_hash          character varying(96)  not null
+    file_hash          character varying(96)  not null,
     gas_used           bigint                 null,
     hapi_version_major int,
     hapi_version_minor int,

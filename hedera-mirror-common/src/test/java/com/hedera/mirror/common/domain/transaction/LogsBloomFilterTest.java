@@ -16,7 +16,9 @@ public class LogsBloomFilterTest {
 
     @Test
     void getLogsBloom() {
-        byte[] bloom = new LogsBloomFilter((List.of(new byte[] {0, 1, 2}))).getBloom();
+        byte[] bloom = new LogsBloomFilter()
+                .insertBytes((List.of(new byte[] {0, 1, 2})))
+                .getBloom();
         assertThat(bloom).isEqualTo(
                 new byte[] {0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0});
         assertThat(bloom.length).isEqualTo(256);
@@ -47,7 +49,9 @@ public class LogsBloomFilterTest {
         // Hex String given as an example for the LogsBloomFilter from Besu
         byte[] expectedResult = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
         String logsBloomHexString = "0x0F572E5295C57F15886F9B263E2F6D2D6C7B5EC6";
-        byte[] logsBloom = new LogsBloomFilter(List.of(Bytes.fromHexString(logsBloomHexString).toArray())).getBloom();
+        byte[] logsBloom = new LogsBloomFilter()
+                .insertBytes(List.of(Bytes.fromHexString(logsBloomHexString).toArray()))
+                .getBloom();
         assertThat(expectedResult).isEqualTo(logsBloom);
     }
 
@@ -58,7 +62,8 @@ public class LogsBloomFilterTest {
         // From https://testnet.mirrornode.hedera.com/api/v1/contracts/0.0.34392571/results
         Bytes contractResultBloom2 = Bytes.fromHexString("0x00000000000000000000000000000000000000000000000000000000000004000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000");
 
-        LogsBloomFilter bloomFilter = new LogsBloomFilter(List.of(contractResultBloom1.toArray(), contractResultBloom2.toArray()));
+        LogsBloomFilter bloomFilter = new LogsBloomFilter()
+                .insertBytes(List.of(contractResultBloom1.toArray(), contractResultBloom2.toArray()));
 
         Bytes expectedResult = Bytes.fromHexString("0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000040000000000000000000000000000800000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000");
         assertThat(expectedResult.toArray()).isEqualTo(bloomFilter.getBloom());
@@ -71,7 +76,8 @@ public class LogsBloomFilterTest {
         // https://testnet.mirrornode.hedera.com/api/v1/contracts/0.0.34392571/results
         Bytes contractResultBloom2 = Bytes.fromHexString("0x00000000000000000000000000000000000000000000000000000000000004000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000");
 
-        LogsBloomFilter bloomFilter = new LogsBloomFilter(List.of(contractResultBloom1.toArray(), contractResultBloom2.toArray()));
+        LogsBloomFilter bloomFilter = new LogsBloomFilter()
+                .insertBytes(List.of(contractResultBloom1.toArray(), contractResultBloom2.toArray()));
 
         assertTrue(bloomFilter.couldContain(contractResultBloom1.toArray()));
         assertTrue(bloomFilter.couldContain(contractResultBloom2.toArray()));
