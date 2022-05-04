@@ -47,7 +47,9 @@ public class LogsBloomFilter {
     }
 
     public void insertBytes(byte[] bytes) {
-        insertBytes(Bytes.wrap(bytes), logsBloom);
+        if(bytes != null) {
+            insertBytes(Bytes.wrap(bytes), logsBloom);
+        }
     }
 
     public byte[] getBloom() {

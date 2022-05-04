@@ -165,7 +165,8 @@ public class ContractResultServiceImpl implements ContractResultService {
                 case CONTRACTCALL:
                 case CONTRACTCREATEINSTANCE:
                 case ETHEREUMTRANSACTION:
-                    entityListener.onContractRecordFileInfo(contractResult.getGasUsed(), contractResult.getBloom());
+                    long gasUsed = contractResult.getGasUsed() == null ? 0 : contractResult.getGasUsed();
+                    entityListener.onContractRecordFileInfo(gasUsed, contractResult.getBloom());
                 default:
                     break;
             }

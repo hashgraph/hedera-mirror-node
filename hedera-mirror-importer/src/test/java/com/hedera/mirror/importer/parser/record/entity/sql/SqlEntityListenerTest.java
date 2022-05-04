@@ -36,6 +36,7 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.tuweni.bytes.Bytes;
 import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -291,40 +292,69 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onContractResultRecordFileGasUsed() {
-        // given
-        ContractResult contractResult = domainBuilder.contractResult().get();
-        ContractResult contractResult2 = domainBuilder.contractResult().get();
-        long totalGasUsed = contractResult.getGasUsed() + contractResult2.getGasUsed();
-
-        // when
-        sqlEntityListener.onContractResult(contractResult);
-        sqlEntityListener.onContractResult(contractResult2);
+    void onContractRecordFileGasUsed() {
+        sqlEntityListener.onContractRecordFileInfo(100l, null);
+        sqlEntityListener.onContractRecordFileInfo(200l, null);
         completeFileAndCommit();
 
         // then
         RecordFile recordFile = recordFileRepository.findAll().iterator().next();
-        assertThat(recordFile.getGasUsed()).isEqualTo(totalGasUsed);
+        assertThat(recordFile.getGasUsed()).isEqualTo(300l);
     }
 
     @Test
-    void onContractResultRecordFileGasUsedReset() {
-        // given
-        ContractResult contractResult = domainBuilder.contractResult().get();
-        ContractResult contractResult2 = domainBuilder.contractResult().get();
-
+    void onContractRecordFileGasUsedClearBetweenRecordFiles() {
         // when
-        sqlEntityListener.onContractResult(contractResult);
-        sqlEntityListener.onContractResult(contractResult2);
+        sqlEntityListener.onContractRecordFileInfo(100l, null);
+        sqlEntityListener.onContractRecordFileInfo(200l, null);
         completeFileAndCommit();
 
-        ContractResult contractResult3 = domainBuilder.contractResult().get();
-        sqlEntityListener.onContractResult(contractResult3);
+        sqlEntityListener.onContractRecordFileInfo(5l, null);
         completeFileAndCommit();
 
         // then
         RecordFile recordFile = recordFileRepository.findLatest().get();
-        assertThat(recordFile.getGasUsed()).isEqualTo(contractResult3.getGasUsed());
+        assertThat(recordFile.getGasUsed()).isEqualTo(5l);
+    }
+
+    @Test
+    void onContractRecordFileLogsBloom() {
+        // given
+        // From https://testnet.mirrornode.hedera.com/api/v1/contracts/0.0.29593659/results
+        Bytes contractResultBloom1 = Bytes.fromHexString("0x00000000002000000000000000000000000000000000000000000000000200000000000000000000000000000000000000100000000000000000000000000000000000000020000000000008000000000000000000000000000000000002000000000000020000000000000000000800000000000000400000000010000000000000800000000000000000000000000000000000000040000000000000000000000080000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000");
+        // From https://testnet.mirrornode.hedera.com/api/v1/contracts/0.0.34392571/results
+        Bytes contractResultBloom2 = Bytes.fromHexString("0x00000000000000000000000000000000000000000000000000000000000004000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000");
+
+        // when
+        sqlEntityListener.onContractRecordFileInfo(100l, contractResultBloom1.toArray());
+        sqlEntityListener.onContractRecordFileInfo(200l, contractResultBloom2.toArray());
+        completeFileAndCommit();
+
+        // then
+        Bytes expectedResult = Bytes.fromHexString("0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000040000000000000000000000000000800000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000");
+        RecordFile recordFile = recordFileRepository.findAll().iterator().next();
+        assertThat(recordFile.getLogsBloom()).isEqualTo(expectedResult.toArray());
+    }
+
+    @Test
+    void onContractRecordFileLogsBloomClearBetweenRecordFiles() {
+        // given
+        // From https://testnet.mirrornode.hedera.com/api/v1/contracts/0.0.29593659/results
+        Bytes contractResultBloom1 = Bytes.fromHexString("0x00000000002000000000000000000000000000000000000000000000000200000000000000000000000000000000000000100000000000000000000000000000000000000020000000000008000000000000000000000000000000000002000000000000020000000000000000000800000000000000400000000010000000000000800000000000000000000000000000000000000040000000000000000000000080000000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000000");
+        // From https://testnet.mirrornode.hedera.com/api/v1/contracts/0.0.34392571/results
+        Bytes contractResultBloom2 = Bytes.fromHexString("0x00000000000000000000000000000000000000000000000000000000000004000000000000000000800000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000");
+
+        // when
+        sqlEntityListener.onContractRecordFileInfo(100l, contractResultBloom1.toArray());
+        completeFileAndCommit();
+
+        sqlEntityListener.onContractRecordFileInfo(5l, contractResultBloom2.toArray());
+        completeFileAndCommit();
+
+        // then
+        byte[] expectedResult = new byte[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        RecordFile recordFile = recordFileRepository.findLatest().get();
+        assertThat(recordFile.getLogsBloom()).isEqualTo(expectedResult);
     }
 
     @Test
