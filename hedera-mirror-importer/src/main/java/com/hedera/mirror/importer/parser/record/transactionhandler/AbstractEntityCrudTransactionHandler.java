@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.AccountID;
+import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -30,15 +32,34 @@ import com.hedera.mirror.common.domain.entity.EntityOperation;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.exception.AliasNotFoundException;
+import com.hedera.mirror.importer.parser.PartialDataAction;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 abstract class AbstractEntityCrudTransactionHandler<T extends AbstractEntity> implements TransactionHandler {
 
+    protected final EntityIdService entityIdService;
+
     protected final EntityListener entityListener;
+
+    protected final RecordParserProperties recordParserProperties;
 
     @Getter
     private final TransactionType type;
+
+    protected Optional<EntityId> getAccountId(AccountID accountId) {
+        try {
+            return Optional.of(entityIdService.lookup(accountId));
+        } catch (AliasNotFoundException ex) {
+            if (recordParserProperties.getPartialDataAction() == PartialDataAction.SKIP) {
+                return Optional.empty();
+            }
+            throw ex;
+        }
+    }
 
     @Override
     public final void updateTransaction(Transaction transaction, RecordItem recordItem) {

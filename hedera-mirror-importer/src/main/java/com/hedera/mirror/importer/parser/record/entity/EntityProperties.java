@@ -49,6 +49,8 @@ public class EntityProperties {
 
         private boolean cryptoTransferAmounts = true;
 
+        private boolean ethereumTransactions = true;
+
         private boolean files = true;
 
         private boolean nonFeeTransfers = false;

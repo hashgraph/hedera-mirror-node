@@ -105,27 +105,35 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
         int count = 0;
         long consensusStart = 0;
-        RecordStreamObject lastRecordStreamObject = null;
         List<RecordItem> items = new ArrayList<>();
+        RecordItem lastRecordItem = null;
 
         // read record stream objects
         while (!isHashObject(vdis, hashObjectClassId)) {
             RecordStreamObject recordStreamObject = new RecordStreamObject(vdis, recordFile.getHapiVersion(),
                     count);
-            items.add(recordStreamObject.getRecordItem());
+            var recordItem = RecordItem.builder()
+                    .hapiVersion(recordFile.getHapiVersion())
+                    .previous(lastRecordItem)
+                    .recordBytes(recordStreamObject.recordBytes)
+                    .transactionIndex(count)
+                    .transactionBytes(recordStreamObject.transactionBytes)
+                    .build();
+
+            items.add(recordItem);
 
             if (count == 0) {
-                consensusStart = recordStreamObject.getRecordItem().getConsensusTimestamp();
+                consensusStart = recordItem.getConsensusTimestamp();
             }
 
-            lastRecordStreamObject = recordStreamObject;
+            lastRecordItem = recordItem;
             count++;
         }
 
         if (count == 0) {
             throw new InvalidStreamFileException("No record stream objects in record file " + filename);
         }
-        long consensusEnd = lastRecordStreamObject.getRecordItem().getConsensusTimestamp();
+        long consensusEnd = lastRecordItem.getConsensusTimestamp();
 
         // end object running hash, metadata hash is calculated on it
         metadataDigestInputStream.on(true);
@@ -169,7 +177,6 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         private final byte[] recordBytes;
         private final byte[] transactionBytes;
         private final int transactionBlockIndex;
-        private RecordItem recordItem;
 
         RecordStreamObject(ValidatedDataInputStream vdis, Version hapiVersion, int transactionBlockIndex) {
             super(vdis);
@@ -182,18 +189,6 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             } catch (IOException e) {
                 throw new InvalidStreamFileException(e);
             }
-        }
-
-        RecordItem getRecordItem() {
-            if (recordBytes == null || transactionBytes == null) {
-                return null;
-            }
-
-            if (recordItem == null) {
-                recordItem = new RecordItem(hapiVersion, transactionBytes, recordBytes, transactionBlockIndex);
-            }
-
-            return recordItem;
         }
     }
 }

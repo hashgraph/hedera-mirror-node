@@ -24,8 +24,10 @@ import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
@@ -33,8 +35,9 @@ class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransacti
 
     private static final byte[] EMPTY = new byte[0];
 
-    ConsensusCreateTopicTransactionHandler(EntityListener entityListener) {
-        super(entityListener, TransactionType.CONSENSUSCREATETOPIC);
+    ConsensusCreateTopicTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
+                                           RecordParserProperties recordParserProperties) {
+        super(entityIdService, entityListener, recordParserProperties, TransactionType.CONSENSUSCREATETOPIC);
     }
 
     @Override
@@ -47,7 +50,7 @@ class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransacti
         var transactionBody = recordItem.getTransactionBody().getConsensusCreateTopic();
 
         if (transactionBody.hasAutoRenewAccount()) {
-            entity.setAutoRenewAccountId(EntityId.of(transactionBody.getAutoRenewAccount()));
+            entity.setAutoRenewAccountId(EntityId.of(transactionBody.getAutoRenewAccount()).getId());
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {

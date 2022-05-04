@@ -34,11 +34,8 @@ import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest {
-
-    private final EntityProperties entityProperties = new EntityProperties();
 
     @BeforeEach
     void beforeEach() {

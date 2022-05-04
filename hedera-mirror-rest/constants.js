@@ -72,6 +72,7 @@ const entityTypes = {
 const EvmAddressType = {
   NO_SHARD_REALM: 'evm address without shard and realm and with 0x prefix',
   OPTIONAL_SHARD_REALM: 'evm address with shard and realm as optionals',
+  ANY: 'can be either a NO_SHARD_REALM or OPTIONAL_SHARD_REALM',
 };
 
 const keyTypes = {

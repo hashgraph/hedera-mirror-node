@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
@@ -30,6 +31,7 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Message;
 import com.google.protobuf.StringValue;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
@@ -74,7 +76,6 @@ import com.hedera.mirror.common.domain.entity.EntityOperation;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
@@ -108,9 +109,6 @@ abstract class AbstractTransactionHandlerTest {
     protected final ContractID contractId = ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build();
 
     protected TransactionHandler transactionHandler;
-
-    @Mock(lenient = true)
-    protected ContractResultService contractResultService;
 
     @Mock(lenient = true)
     protected EntityIdService entityIdService;
@@ -170,6 +168,8 @@ abstract class AbstractTransactionHandlerTest {
     void beforeEach(TestInfo testInfo) {
         log.info("Executing: {}", testInfo.getDisplayName());
         transactionHandler = getTransactionHandler();
+        when(entityIdService.lookup(AccountID.getDefaultInstance())).thenReturn(EntityId.EMPTY);
+        when(entityIdService.lookup(AccountID.newBuilder().setAccountNum(0).build())).thenReturn(EntityId.EMPTY);
     }
 
     @Test

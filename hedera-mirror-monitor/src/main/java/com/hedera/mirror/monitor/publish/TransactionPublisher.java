@@ -46,9 +46,11 @@ import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
+import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
 import com.hedera.hashgraph.sdk.TransactionRecordQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.hashgraph.sdk.TransferTransaction;
+import com.hedera.hashgraph.sdk.WithExecute;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.NodeValidationProperties;
@@ -120,21 +122,19 @@ public class TransactionPublisher implements AutoCloseable {
 
     private Mono<TransactionResponse> getTransactionResponse(PublishRequest request, Client client) {
         Transaction<?> transaction = request.getTransaction();
-        transaction.setTransactionMemo(request.getScenario().getMemo());
 
         // set transaction node where applicable
         if (transaction.getNodeAccountIds() == null) {
-            var currentNodes = this.nodes; // Save a reference in case a COW occurs
-            if (currentNodes.isEmpty()) {
+            if (nodes.isEmpty()) {
                 return Mono.error(new IllegalArgumentException("No valid nodes available"));
             }
 
-            int nodeIndex = secureRandom.nextInt(currentNodes.size());
-            var node = currentNodes.get(nodeIndex);
+            int nodeIndex = secureRandom.nextInt(nodes.size());
+            var node = nodes.get(nodeIndex);
             transaction.setNodeAccountIds(node.getAccountIds());
         }
 
-        return Mono.fromFuture(transaction.executeAsync(client));
+        return execute(client, transaction);
     }
 
     private Mono<PublishResponse.PublishResponseBuilder> processTransactionResponse(Client client,
@@ -147,17 +147,26 @@ public class TransactionPublisher implements AutoCloseable {
                 .transactionId(transactionId);
 
         if (request.isRecord()) {
-            // TransactionId.getRecordAsync() is inefficient doing a get receipt, a cost query, then the get record
+            // TransactionId.getRecord() is inefficient doing a get receipt, a cost query, then the get record
             TransactionRecordQuery transactionRecordQuery = new TransactionRecordQuery()
                     .setQueryPayment(Hbar.from(1, HbarUnit.HBAR))
                     .setTransactionId(transactionId);
-            return Mono.fromFuture(transactionRecordQuery.executeAsync(client))
+            return execute(client, transactionRecordQuery)
                     .map(r -> builder.record(r).receipt(r.receipt));
         } else if (request.isReceipt()) {
-            return Mono.fromFuture(transactionId.getReceiptAsync(client)).map(builder::receipt);
+            var receiptQuery = new TransactionReceiptQuery().setTransactionId(transactionId);
+            return execute(client, receiptQuery).map(builder::receipt);
         }
 
         return Mono.just(builder);
+    }
+
+    private <T> Mono<T> execute(Client client, WithExecute<T> executable) {
+        if (publishProperties.isAsync()) {
+            return Mono.fromFuture(executable.executeAsync(client));
+        } else {
+            return Mono.fromCallable(() -> executable.execute(client));
+        }
     }
 
     private synchronized Flux<Client> getClients() {
@@ -235,6 +244,7 @@ public class TransactionPublisher implements AutoCloseable {
         PrivateKey operatorPrivateKey = PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
 
         Client client = Client.forNetwork(nodes);
+        client.setNodeMaxBackoff(publishProperties.getNodeMaxBackoff());
         client.setOperator(operatorId, operatorPrivateKey);
         return client;
     }

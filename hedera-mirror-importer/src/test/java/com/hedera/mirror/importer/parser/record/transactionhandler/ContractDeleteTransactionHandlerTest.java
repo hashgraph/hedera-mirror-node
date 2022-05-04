@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,12 +31,13 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-
-import org.junit.jupiter.api.Test;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
@@ -46,13 +47,14 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
 
     @BeforeEach
     void beforeEach() {
-        when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
+        when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId))
+                .thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
         when(entityIdService.lookup(obtainerId)).thenReturn(EntityId.of(OBTAINER_NUM, CONTRACT));
     }
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractDeleteTransactionHandler(entityIdService, entityListener);
+        return new ContractDeleteTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
     }
 
     @Override
@@ -74,6 +76,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
         Contract expected = (Contract) getExpectedEntityWithTimestamp();
         expected.setDeleted(true);
         expected.setObtainerId(EntityId.of(OBTAINER_NUM, EntityType.ACCOUNT));
+        expected.setPermanentRemoval(false);
 
         specs.add(
                 UpdateEntityTestSpec.builder()
@@ -87,11 +90,14 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
         TransactionBody.Builder transactionBody = TransactionBody.newBuilder()
                 .setContractDeleteInstance(ContractDeleteTransactionBody.newBuilder()
                         .setContractID(ContractID.newBuilder().setContractNum(DEFAULT_ENTITY_NUM).build())
+                        .setPermanentRemoval(true)
                         .setTransferContractID(ContractID.newBuilder().setContractNum(OBTAINER_NUM).build()));
 
+        expected = TestUtils.clone(expected);
+        expected.setPermanentRemoval(true);
         specs.add(
                 UpdateEntityTestSpec.builder()
-                        .description("Delete with contract obtainer")
+                        .description("Delete with contract obtainer and permanent removal")
                         .expected(expected)
                         .recordItem(getRecordItem(transactionBody.build(),
                                 getDefaultTransactionRecord().build()))

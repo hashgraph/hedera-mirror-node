@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -49,7 +50,8 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Override
     protected TransactionHandler getTransactionHandler() {
         entityProperties = new EntityProperties();
-        return new ScheduleCreateTransactionHandler(entityListener, entityProperties);
+        return new ScheduleCreateTransactionHandler(entityIdService, entityListener, entityProperties,
+                new RecordParserProperties());
     }
 
     @Override

@@ -57,6 +57,7 @@ import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.LogsBloomFilter;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
@@ -97,6 +98,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
     private final Collection<Entity> entities;
+    private final Collection<EthereumTransaction> ethereumTransactions;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftAllowance> nftAllowances;
@@ -152,6 +154,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
         entities = new ArrayList<>();
+        ethereumTransactions = new ArrayList<>();
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftAllowances = new ArrayList<>();
@@ -221,6 +224,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             customFees.clear();
             entities.clear();
             entityState.clear();
+            ethereumTransactions.clear();
             fileData.clear();
             liveHashes.clear();
             nonFeeTransfers.clear();
@@ -259,6 +263,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(contractStateChanges);
             batchPersister.persist(cryptoTransfers);
             batchPersister.persist(customFees);
+            batchPersister.persist(ethereumTransactions);
             batchPersister.persist(fileData);
             batchPersister.persist(liveHashes);
             batchPersister.persist(topicMessages);
@@ -356,6 +361,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    public void onEthereumTransaction(EthereumTransaction ethereumTransaction) throws ImporterException {
+        ethereumTransactions.add(ethereumTransaction);
+    }
+
+    @Override
     public void onFileData(FileData fd) {
         fileData.add(fd);
     }
@@ -443,9 +453,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private <T extends AbstractEntity> T mergeAbstractEntity(T previous, T current) {
         // Copy non-updatable fields from previous
         current.setCreatedTimestamp(previous.getCreatedTimestamp());
+        current.setEvmAddress(previous.getEvmAddress());
 
         if (current.getAutoRenewPeriod() == null) {
             current.setAutoRenewPeriod(previous.getAutoRenewPeriod());
+        }
+
+        if (current.getAutoRenewAccountId() == null) {
+            current.setAutoRenewAccountId(previous.getAutoRenewAccountId());
         }
 
         if (current.getDeleted() == null) {
@@ -475,7 +490,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Contract mergeContract(Contract previous, Contract current) {
         mergeAbstractEntity(previous, current);
 
-        current.setEvmAddress(previous.getEvmAddress());
         current.setFileId(previous.getFileId());
         current.setInitcode(previous.getInitcode());
 
@@ -485,6 +499,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         if (current.getObtainerId() == null) {
             current.setObtainerId(previous.getObtainerId());
+        }
+
+        if (current.getPermanentRemoval() == null) {
+            current.setPermanentRemoval(previous.getPermanentRemoval());
         }
 
         return current;
@@ -498,8 +516,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Entity mergeEntity(Entity previous, Entity current) {
         mergeAbstractEntity(previous, current);
 
-        if (current.getAutoRenewAccountId() == null) {
-            current.setAutoRenewAccountId(previous.getAutoRenewAccountId());
+        if (current.getEthereumNonce() == null) {
+            current.setEthereumNonce(previous.getEthereumNonce());
         }
 
         if (current.getMaxAutomaticTokenAssociations() == null) {

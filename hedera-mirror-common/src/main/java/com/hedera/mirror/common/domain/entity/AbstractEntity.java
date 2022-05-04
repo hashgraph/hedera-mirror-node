@@ -60,12 +60,18 @@ import com.hedera.mirror.common.util.DomainUtils;
 @Upsertable(history = true)
 public abstract class AbstractEntity implements History {
 
+    private Long autoRenewAccountId;
+
     private Long autoRenewPeriod;
 
     @Column(updatable = false)
     private Long createdTimestamp;
 
     private Boolean deleted;
+
+    @Column(updatable = false)
+    @ToString.Exclude
+    private byte[] evmAddress;
 
     private Long expirationTimestamp;
 
