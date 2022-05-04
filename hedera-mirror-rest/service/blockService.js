@@ -23,6 +23,17 @@
 const BaseService = require('./baseService');
 const {RecordFile} = require('../model');
 
+const buildWhereSqlStatement = (whereQuery) => {
+  let where = '';
+  const params = [];
+  for (let i = 1; i <= whereQuery.length; i++) {
+    where += `${i === 1 ? 'where' : 'and'} ${whereQuery[i - 1].query} $${i} `;
+    params.push(whereQuery[i - 1].param);
+  }
+
+  return {where, params};
+};
+
 /**
  * BlockService retrieval business logic
  */
@@ -31,19 +42,8 @@ class BlockService extends BaseService {
     super();
   }
 
-  buildWhereSqlStatement(whereQuery) {
-    let where = 'where true=true';
-    const params = [];
-    for (let i = 1; i <= whereQuery.length; i++) {
-      where += ` and ${whereQuery[i - 1].query} $${i} `;
-      params.push(whereQuery[i - 1].param);
-    }
-
-    return {where, params};
-  }
-
   async getBlocks(filters) {
-    const {where, params} = this.buildWhereSqlStatement(filters.whereQuery);
+    const {where, params} = buildWhereSqlStatement(filters.whereQuery);
 
     const query = `
       select

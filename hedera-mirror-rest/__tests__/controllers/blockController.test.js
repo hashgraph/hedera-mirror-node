@@ -50,7 +50,7 @@ describe('Block Controller', () => {
   });
 
   test('Verify extractLimitFromFilters with out of range limit', async () => {
-    let limit = await BlockController.extractLimitFromFilters([{key: 'limit', operator: '=', value: maxLimit + 1}]);
+    const limit = await BlockController.extractLimitFromFilters([{key: 'limit', operator: '=', value: maxLimit + 1}]);
     expect(limit).toEqual(defaultLimit);
   });
 
@@ -86,5 +86,13 @@ describe('Block Controller', () => {
     expect(queryObj.whereQuery[0].param).toEqual(10);
     expect(queryObj.whereQuery[1].query).toEqual('consensus_end <');
     expect(queryObj.whereQuery[1].param).toEqual('1676540001.234810000');
+  });
+
+  test('Verify getFilterWhereCondition', async () => {
+    const whereConditions = BlockController.getFilterWhereCondition('index', {operator: '=', value: 10});
+    expect(whereConditions).toHaveProperty('query');
+    expect(whereConditions).toHaveProperty('param');
+    expect(whereConditions.query).toEqual('index =');
+    expect(whereConditions.param).toEqual(10);
   });
 });

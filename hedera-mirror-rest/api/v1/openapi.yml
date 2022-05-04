@@ -198,6 +198,27 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - balances
+  /api/v1/blocks:
+    get:
+      summary: List blocks
+      description: Returns a list of blocks on the network.
+      operationId: listBlocks
+      parameters:
+        - $ref: '#/components/parameters/block.numberQueryParam'
+        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/limitQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blocks'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - blocks
   /api/v1/contracts:
     get:
       summary: List contract entities on network
@@ -1667,6 +1688,44 @@ components:
         sender_account_id: "0.0.10"
         type: "CRYPTOTRANSFER"
         token_id: "0.0.1000"
+    Block:
+      type: object
+      properties:
+        count:
+          type: integer
+          minimum: 0
+        hapi_version:
+          type: string
+        hash:
+          type: string
+        name:
+          type: string
+        number:
+          type: integer
+          minimum: 0
+        previous_hash:
+          type: string
+        size:
+          type: integer
+          nullable: true
+        timestamp:
+          type: object
+          properties:
+            from:
+              $ref: '#/components/schemas/Timestamp'
+            to:
+              $ref: '#/components/schemas/Timestamp'
+      example:
+        count: 3
+        hapi_version: "0.11.0"
+        hash: "0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b"
+        name: "2022-05-03T06_46_26.060890949Z.rcd"
+        number: 77
+        previous_hash: "0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b"
+        size: null
+        timestamp:
+          from: "1651560386.060890949"
+          to: "1651560386.661997287"
     NftTransactionHistory:
       type: object
       properties:
@@ -1674,6 +1733,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/NftTransactionTransfer'
+        links:
+          $ref: '#/components/schemas/Links'
+    Blocks:
+      type: object
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Block'
         links:
           $ref: '#/components/schemas/Links'
     Schedule:
@@ -2570,6 +2638,36 @@ components:
         default: 25
         minimum: 1
         maximum: 100
+    block.numberQueryParam:
+      name: block.number
+      in: query
+      description: The block's number
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        serialNumNoOperator:
+          summary: Example of block.number equals with no operator
+          value: 1
+        serialNumEqOperator:
+          summary: Example of block.number equals operator
+          value: eq:2
+        serialNumGtOperator:
+          summary: Example of block.number greater than operator
+          value: gt:3
+        serialNumGteOperator:
+          summary: Example of block.number greater than or equals operator
+          value: gte:4
+        serialNumLtOperator:
+          summary: Example of block.number less than operator
+          value: lt:5
+        serialNumLteOperator:
+          summary: Example of block.number less than or equals operator
+          value: lte:6
+      schema:
+        type: string
+        pattern: ^((eq|gt|gte|lt|lte):)?\d{1,19}$
+        minimum: 0
     nodeIdQueryParam:
       name: node.id
       description: The ID of the node

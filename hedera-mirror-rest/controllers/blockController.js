@@ -47,6 +47,13 @@ class BlockController extends BaseController {
     return limit ? (limit.value > maxLimit ? defaultLimit : limit.value) : defaultLimit;
   };
 
+  getFilterWhereCondition = (key, filter) => {
+    return {
+      query: `${key} ${filter.operator}`,
+      param: filter.value,
+    };
+  };
+
   extractSqlFromBlockFilters = (filters) => {
     const filterQuery = {
       order: this.extractOrderFromFilters(filters),
@@ -63,16 +70,10 @@ class BlockController extends BaseController {
       .map((f) => {
         switch (f.key) {
           case constants.filterKeys.BLOCK_NUMBER:
-            return {
-              query: `${RecordFile.INDEX} ${f.operator}`,
-              param: f.value,
-            };
+            return this.getFilterWhereCondition(RecordFile.INDEX, f);
 
           case constants.filterKeys.TIMESTAMP:
-            return {
-              query: `${RecordFile.CONSENSUS_END} ${f.operator}`,
-              param: f.value,
-            };
+            return this.getFilterWhereCondition(RecordFile.CONSENSUS_END, f);
         }
       });
 

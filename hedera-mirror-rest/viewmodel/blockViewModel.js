@@ -27,7 +27,7 @@ const utils = require('../utils');
  */
 class BlockViewModel {
   /**
-   * Constructs contract view model
+   * Constructs block view model
    *
    * @param {Block} recordFile
    */

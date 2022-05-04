@@ -90,29 +90,6 @@ const expectToEqualId17 = (blockId17) => {
 };
 
 describe('BlockService tests', () => {
-  test('Verify buildWhereSqlStatement with no params', async () => {
-    const {where, params} = BlockService.buildWhereSqlStatement([]);
-    expect(where).toEqual('where true=true');
-    expect(params).toEqual([]);
-  });
-
-  test('Verify buildWhereSqlStatement with 1 query', async () => {
-    const {where, params} = BlockService.buildWhereSqlStatement([{query: 'index >', param: '15'}]);
-
-    expect(where).toEqual('where true=true and index > $1 ');
-    expect(params).toEqual(['15']);
-  });
-
-  test('Verify buildWhereSqlStatement with 2 queries', async () => {
-    const {where, params} = BlockService.buildWhereSqlStatement([
-      {query: 'index <', param: '10'},
-      {query: 'timestamp >', param: '1651064877.265800774'},
-    ]);
-
-    expect(where).toEqual('where true=true and index < $1  and timestamp > $2 ');
-    expect(params).toEqual(['10', '1651064877.265800774']);
-  });
-
   test('Verify getBlocks without filters', async () => {
     await integrationDomainOps.loadRecordFiles(recordFiles);
 
