@@ -128,7 +128,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // get the full state at time T
     private final Map<TokenAccountKey, TokenAccount> tokenAccountState;
 
-    // Accumlates gasUsed and blooms for the record file
+    // Accumulates gasUsed and blooms for the record file
     private Long gasUsed;
     private final LogsBloomFilter logsBloomFilter;
 
