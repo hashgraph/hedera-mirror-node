@@ -22,11 +22,22 @@
 
 const sinon = require('sinon');
 
+const config = require('../config');
 const EntityId = require('../entityId');
 const utils = require('../utils.js');
 const constants = require('../constants.js');
 
 describe('utils buildAndValidateFilters test', () => {
+  let defaultMaxRepeatedQueryParameters;
+
+  beforeEach(() => {
+    defaultMaxRepeatedQueryParameters = config.maxRepeatedQueryParameters;
+  });
+
+  afterEach(() => {
+    config.maxRepeatedQueryParameters = defaultMaxRepeatedQueryParameters;
+  });
+
   const query = {
     [constants.filterKeys.ACCOUNT_ID]: '6560',
     [constants.filterKeys.LIMIT]: ['80', '1560'],
@@ -67,6 +78,19 @@ describe('utils buildAndValidateFilters test', () => {
 
     expect(() => utils.buildAndValidateFilters(query, fakeValidator)).toThrowErrorMatchingSnapshot();
     expect(fakeValidator.callCount).toEqual(4);
+  });
+
+  test('exceeded max number of repeated parameters', () => {
+    config.maxRepeatedQueryParameters = 4;
+    const fakeValidator = sinon.fake.returns(true);
+    const repeatedParamQuery = {
+      [constants.filterKeys.ACCOUNT_ID]: ['6560', '6561'],
+      [constants.filterKeys.LIMIT]: ['80', '1560', '90', '10', '11'],
+      [constants.filterKeys.TIMESTAMP]: '12345.001',
+    };
+
+    expect(() => utils.buildAndValidateFilters(repeatedParamQuery, fakeValidator)).toThrowErrorMatchingSnapshot();
+    expect(fakeValidator.callCount).toEqual(3);
   });
 });
 
@@ -146,8 +170,9 @@ describe('utils buildFilters tests', () => {
       sequencenumber: '2',
     };
 
-    const formattedFilters = utils.buildFilters(filters);
+    const {badParams, filters: formattedFilters} = utils.buildFilters(filters);
 
+    expect(badParams).toBeEmpty();
     expect(formattedFilters).toHaveLength(1);
     verifyFilter(formattedFilters[0], constants.filterKeys.SEQUENCE_NUMBER, 'eq', '2');
   });
@@ -157,8 +182,9 @@ describe('utils buildFilters tests', () => {
       timestamp: '1234567890.000000004',
     };
 
-    const formattedFilters = utils.buildFilters(filters);
+    const {badParams, filters: formattedFilters} = utils.buildFilters(filters);
 
+    expect(badParams).toBeEmpty();
     expect(formattedFilters).toHaveLength(1);
     verifyFilter(formattedFilters[0], constants.filterKeys.TIMESTAMP, 'eq', '1234567890.000000004');
   });
@@ -171,8 +197,9 @@ describe('utils buildFilters tests', () => {
       order: 'desc',
     };
 
-    const formattedFilters = utils.buildFilters(filters);
+    const {badParams, filters: formattedFilters} = utils.buildFilters(filters);
 
+    expect(badParams).toBeEmpty();
     expect(formattedFilters).toHaveLength(5);
     verifyFilter(formattedFilters[0], constants.filterKeys.SEQUENCE_NUMBER, 'lt', '2');
     verifyFilter(formattedFilters[1], constants.filterKeys.SEQUENCE_NUMBER, 'gte', '3');
@@ -186,8 +213,9 @@ describe('utils buildFilters tests', () => {
       scheduled: 'true',
     };
 
-    const formattedFilters = utils.buildFilters(filters);
+    const {badParams, filters: formattedFilters} = utils.buildFilters(filters);
 
+    expect(badParams).toBeEmpty();
     expect(formattedFilters).toHaveLength(1);
     verifyFilter(formattedFilters[0], constants.filterKeys.SCHEDULED, 'eq', 'true');
   });
@@ -197,8 +225,9 @@ describe('utils buildFilters tests', () => {
       scheduled: ['true', 'false'],
     };
 
-    const formattedFilters = utils.buildFilters(filters);
+    const {badParams, filters: formattedFilters} = utils.buildFilters(filters);
 
+    expect(badParams).toBeEmpty();
     expect(formattedFilters).toHaveLength(2);
     verifyFilter(formattedFilters[0], constants.filterKeys.SCHEDULED, 'eq', 'true');
     verifyFilter(formattedFilters[1], constants.filterKeys.SCHEDULED, 'eq', 'false');
@@ -212,8 +241,9 @@ describe('utils buildFilters tests', () => {
       limit: '10',
     };
 
-    const formattedFilters = utils.buildFilters(filters);
+    const {badParams, filters: formattedFilters} = utils.buildFilters(filters);
 
+    expect(badParams).toBeEmpty();
     expect(formattedFilters).toHaveLength(4);
     verifyFilter(formattedFilters[0], constants.filterKeys.ACCOUNT_ID, 'lt', '0.0.1024');
     verifyFilter(formattedFilters[1], constants.filterKeys.SCHEDULE_ID, 'gte', '4000');
@@ -287,7 +317,8 @@ describe('utils formatComparator tests', () => {
 });
 
 const verifyInvalidFilters = (filters) => {
-  expect(() => utils.validateAndParseFilters(filters, utils.filterValidityChecks)).toThrowErrorMatchingSnapshot();
+  const expected = filters.map((filter) => filter.key);
+  expect(utils.validateAndParseFilters(filters, utils.filterValidityChecks)).toStrictEqual(expected);
 };
 
 const validateAndParseFiltersNoExMessage = 'Verify validateAndParseFilters for valid filters does not throw exception';
@@ -303,7 +334,7 @@ const verifyValidAndInvalidFilters = (invalidFilters, validFilters) => {
 
   validFilters.forEach((filter) => {
     test(`${validateAndParseFiltersNoExMessage} for ${JSON.stringify(filter)}`, () => {
-      utils.validateAndParseFilters([filter], utils.filterValidityChecks);
+      expect(utils.validateAndParseFilters([filter], utils.filterValidityChecks)).toBeEmpty();
     });
   });
 };

@@ -871,8 +871,14 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
  * @return {[]}
  */
 const buildAndValidateFilters = (query, filterValidator = filterValidityChecks) => {
-  const filters = buildFilters(query);
-  validateAndParseFilters(filters, filterValidator);
+  const {badParams, filters} = buildFilters(query);
+  const additionalBadParams = validateAndParseFilters(filters, filterValidator);
+  badParams.push(...additionalBadParams);
+
+  if (badParams.length > 0) {
+    throw InvalidArgumentError.forRequestValidation(badParams);
+  }
+
   return filters;
 };
 
@@ -882,24 +888,31 @@ const buildAndValidateFilters = (query, filterValidator = filterValidityChecks) 
  * @param query
  */
 const buildFilters = (query) => {
-  const filterObject = [];
-  if (_.isNil(query)) {
-    return null;
-  }
+  const badParams = [];
+  const filters = [];
 
-  for (const key in query) {
-    const values = query[key];
+  for (const [key, values] of Object.entries(query)) {
     // for repeated params val will be an array
     if (Array.isArray(values)) {
+      if (!isRepeatedQueryParameterValidLength(values)) {
+        badParams.push({
+          code: InvalidArgumentError.PARAM_COUNT_EXCEEDS_MAX_CODE,
+          key,
+          count: values.length,
+          max: config.maxRepeatedQueryParameters,
+        });
+        continue;
+      }
+
       for (const val of values) {
-        filterObject.push(buildComparatorFilter(key, val));
+        filters.push(buildComparatorFilter(key, val));
       }
     } else {
-      filterObject.push(buildComparatorFilter(key, values));
+      filters.push(buildComparatorFilter(key, values));
     }
   }
 
-  return filterObject;
+  return {badParams, filters};
 };
 
 const buildComparatorFilter = (name, filter) => {
@@ -918,25 +931,22 @@ const buildComparatorFilter = (name, filter) => {
  *
  * @param filters
  * @param filterValidator
+ * @returns {string[]} the bad parameters
  */
 const validateFilters = (filters, filterValidator) => {
   const badParams = [];
-
   for (const filter of filters) {
     if (!filterValidator(filter.key, filter.operator, filter.value)) {
       badParams.push(filter.key);
     }
   }
 
-  if (badParams.length > 0) {
-    throw InvalidArgumentError.forParams(badParams);
-  }
+  return badParams;
 };
 
 /**
  * Update format to be persistence query compatible
  * @param filters
- * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
  */
 const formatFilters = (filters) => {
   for (const filter of filters) {
@@ -950,11 +960,14 @@ const formatFilters = (filters) => {
  *
  * @param filters
  * @param filterValidator
- * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
+ * @returns {string[]} the bad parameters
  */
 const validateAndParseFilters = (filters, filterValidator) => {
-  validateFilters(filters, filterValidator);
-  formatFilters(filters);
+  const badParams = validateFilters(filters, filterValidator);
+  if (badParams.length === 0) {
+    formatFilters(filters);
+  }
+  return badParams;
 };
 
 const formatComparator = (comparator) => {
