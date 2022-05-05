@@ -268,6 +268,10 @@ const filterValidityChecks = (param, op, val) => {
       // Accepted forms: valid transaction type string
       ret = TransactionType.isValid(val);
       break;
+    case constants.filterKeys.BLOCK_NUMBER:
+      const supportedOperators = ['eq', 'gt', 'gte', 'lt', 'lte'];
+      ret = isPositiveLong(val, true) && _.includes(supportedOperators, op);
+      break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
       ret = false;
