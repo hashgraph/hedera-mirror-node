@@ -65,7 +65,6 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
     );
     const expected = `select cr.*
       from contract_result cr
-      left join transaction t on cr.consensus_timestamp = t.consensus_timestamp
       where cr.contract_id = $1
       order by cr.consensus_timestamp asc
       limit $2`;
@@ -83,7 +82,6 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
     );
     const expected = `select cr.*
       from contract_result cr
-      left join transaction t on cr.consensus_timestamp = t.consensus_timestamp
       where cr.contract_id = $1
         and cr.consensus_timestamp > $2
         and cr.payer_account_id = $3
@@ -91,6 +89,44 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       limit $4`;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 10, 20, 5]);
+  });
+
+  test('Verify transaction.nonce condition', async () => {
+    const additionalConditions = ['cr.contract_id = $1', 't.nonce = $2'];
+    const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
+      additionalConditions,
+      [2, 10],
+      'asc',
+      5
+    );
+    const expected = `select cr.*
+      from contract_result cr
+      left join transaction t on cr.consensus_timestamp = t.consensus_timestamp
+      where cr.contract_id = $1
+        and t.nonce = $2
+      order by cr.consensus_timestamp asc
+      limit $3`;
+    assertSqlQueryEqual(query, expected);
+    expect(params).toEqual([2, 10, 5]);
+  });
+
+  test('Verify transaction.index condition', async () => {
+    const additionalConditions = ['cr.contract_id = $1', 't.index = $2'];
+    const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
+      additionalConditions,
+      [2, 10],
+      'asc',
+      5
+    );
+    const expected = `select cr.*
+      from contract_result cr
+      left join transaction t on cr.consensus_timestamp = t.consensus_timestamp
+      where cr.contract_id = $1
+        and t.index = $2
+      order by cr.consensus_timestamp asc
+      limit $3`;
+    assertSqlQueryEqual(query, expected);
+    expect(params).toEqual([2, 10, 5]);
   });
 });
 

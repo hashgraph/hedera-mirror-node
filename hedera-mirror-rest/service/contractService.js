@@ -49,7 +49,9 @@ class ContractService extends BaseService {
 
   static detailedContractResultsQuery = `select ${ContractResult.tableAlias}.*
   from ${ContractResult.tableName} ${ContractResult.tableAlias}
-  left join ${Transaction.tableName} ${Transaction.tableAlias}
+  `;
+
+  static joinTransactionTable = `left join ${Transaction.tableName} ${Transaction.tableAlias}
   on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
     Transaction.CONSENSUS_TIMESTAMP
   )}
@@ -112,8 +114,25 @@ class ContractService extends BaseService {
 
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
+    let joinTransactionTable = false;
+
+    const transactionWhereFields = [Transaction.INDEX, Transaction.NONCE];
+
+    if (whereConditions.length) {
+      for (let c = 0; c < whereConditions.length; c++) {
+        const condition = whereConditions[c];
+        joinTransactionTable = transactionWhereFields.some((field) => {
+          return condition.includes(`${Transaction.tableAlias}.${field}`);
+        });
+        if (joinTransactionTable) {
+          break;
+        }
+      }
+    }
+
     const query = [
       ContractService.detailedContractResultsQuery,
+      joinTransactionTable ? ContractService.joinTransactionTable : '',
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
       super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
       super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
