@@ -312,28 +312,6 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
     .join('\n');
 };
 
-// const updateConditionsAndParamsWithInValues = (filter, invalues, existingParams, existingConditions, fullName) => {
-//   if (filter.operator === utils.opsMap.eq) {
-//     // aggregate '=' conditions and use the sql 'in' operator
-//     invalues.push(filter.value);
-//   } else {
-//     existingParams.push(filter.value);
-//     existingConditions.push(`${fullName}${filter.operator}$${existingParams.length}`);
-//   }
-// };
-
-// const updateQueryFiltersWithInValues = (existingParams, existingConditions, invalues, fullName) => {
-//   if (!_.isNil(invalues) && !_.isEmpty(invalues)) {
-//     // add the condition 'c.id in ()'
-//     const start = existingParams.length + 1; // start is the next positional index
-//     existingParams.push(...invalues);
-//     const positions = _.range(invalues.length)
-//       .map((position) => position + start)
-//       .map((position) => `$${position}`);
-//     existingConditions.push(`${fullName} in (${positions})`);
-//   }
-// };
-
 const checkTimestampsForTopics = (filters) => {
   let hasTopic = false;
   const timestampFilters = [];
