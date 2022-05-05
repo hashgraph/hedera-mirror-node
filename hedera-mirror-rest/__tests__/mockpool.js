@@ -395,8 +395,6 @@ class Pool {
    * @return {Object} pVar the adjusted object
    */
   adjustRangeBasedOnConstraints(param, pVar, valueConstructor = Number) {
-    // const dec = (val) => (typeof val === 'bigint' ? val - 1n : val - 1);
-    // const inc = (val) => (typeof val === 'bigint' ? val + 1n : val + 1);
     const one = valueConstructor(1);
     const value = valueConstructor(param.value);
     switch (param.operator) {
