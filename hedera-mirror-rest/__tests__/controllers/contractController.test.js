@@ -54,7 +54,7 @@ const contractWithInitcodeFields = [...contractFields, Contract.getFullName(Cont
 
 const emptyFilterString = 'empty filters';
 const primaryContractFilter = 'cr.contract_id = $1';
-const defaultInternalFilter = 't.nonce=$2';
+const defaultInternalFilter = 't.nonce = $2';
 
 describe('extractSqlFromContractFilters', () => {
   const defaultExpected = {
@@ -488,8 +488,13 @@ describe('extractContractResultsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [primaryContractFilter, 'cr.payer_account_id > $2', 't.nonce=$3', 'cr.payer_account_id in ($4,$5)'],
-        params: [defaultContractId, '1000', defaultNonce, '1001', '1002'],
+        conditions: [
+          primaryContractFilter,
+          't.nonce = $2',
+          'cr.payer_account_id > $3',
+          'cr.payer_account_id in ($4,$5)',
+        ],
+        params: [defaultContractId, defaultNonce, '1000', '1001', '1002'],
       },
     },
     {
@@ -518,11 +523,11 @@ describe('extractContractResultsByIdQuery', () => {
         ...defaultExpected,
         conditions: [
           primaryContractFilter,
-          'cr.consensus_timestamp > $2',
-          't.nonce=$3',
+          't.nonce = $2',
+          'cr.consensus_timestamp > $3',
           'cr.consensus_timestamp in ($4,$5)',
         ],
-        params: [defaultContractId, '1000', defaultNonce, '1001', '1002'],
+        params: [defaultContractId, defaultNonce, '1000', '1001', '1002'],
       },
     },
   ];
