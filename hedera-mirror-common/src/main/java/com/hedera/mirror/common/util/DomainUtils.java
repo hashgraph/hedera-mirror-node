@@ -264,7 +264,7 @@ public class DomainUtils {
         return toEvmAddress(contractId.getShardNum().intValue(), contractId.getRealmNum(), contractId.getEntityNum());
     }
 
-    private static byte[] toEvmAddress(int shard, long realm, long num) {
+    public static byte[] toEvmAddress(int shard, long realm, long num) {
         byte[] evmAddress = new byte[EVM_ADDRESS_LENGTH];
         ByteBuffer buffer = ByteBuffer.wrap(evmAddress);
         buffer.putInt(shard);
