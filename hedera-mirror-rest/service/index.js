@@ -30,5 +30,4 @@ module.exports = {
   TokenAllowanceService: require('./tokenAllowanceService'),
   TokenService: require('./tokenService'),
   TransactionService: require('./transactionService'),
-  BlockService: require('./blockService'),
 };

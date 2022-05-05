@@ -204,7 +204,7 @@ paths:
       description: Returns a list of blocks on the network.
       operationId: listBlocks
       parameters:
-        - $ref: '#/components/parameters/block.numberQueryParam'
+        - $ref: '#/components/parameters/blockNumberQueryParam'
         - $ref: '#/components/parameters/timestampQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
         - $ref: '#/components/parameters/limitQueryParam'
@@ -214,7 +214,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Blocks'
+                $ref: '#/components/schemas/BlocksResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
@@ -1014,6 +1014,13 @@ components:
           $ref: '#/components/schemas/Schedules'
         links:
           $ref: '#/components/schemas/Links'
+    BlocksResponse:
+      type: object
+      properties:
+        schedules:
+          $ref: '#/components/schemas/Blocks'
+        links:
+          $ref: '#/components/schemas/Links'
     StateProofResponse:
       type: object
       properties:
@@ -1712,9 +1719,9 @@ components:
           type: object
           properties:
             from:
-              $ref: '#/components/schemas/Timestamp'
+              $ref: '#/components/schemas/TimestampRange'
             to:
-              $ref: '#/components/schemas/Timestamp'
+              $ref: '#/components/schemas/TimestampRange'
       example:
         count: 3
         hapi_version: "0.11.0"
@@ -1726,6 +1733,10 @@ components:
         timestamp:
           from: "1651560386.060890949"
           to: "1651560386.661997287"
+    Blocks:
+      type: array
+      items:
+        $ref: '#/components/schemas/Block'
     NftTransactionHistory:
       type: object
       properties:
@@ -1733,15 +1744,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/NftTransactionTransfer'
-        links:
-          $ref: '#/components/schemas/Links'
-    Blocks:
-      type: object
-      properties:
-        transactions:
-          type: array
-          items:
-            $ref: '#/components/schemas/Block'
         links:
           $ref: '#/components/schemas/Links'
     Schedule:
@@ -2638,7 +2640,7 @@ components:
         default: 25
         minimum: 1
         maximum: 100
-    block.numberQueryParam:
+    blockNumberQueryParam:
       name: block.number
       in: query
       description: The block's number
@@ -2646,22 +2648,22 @@ components:
         noValue:
           summary: --
           value: ""
-        serialNumNoOperator:
+        noOperator:
           summary: Example of block.number equals with no operator
           value: 1
-        serialNumEqOperator:
+        eqOperator:
           summary: Example of block.number equals operator
           value: eq:2
-        serialNumGtOperator:
+        gtOperator:
           summary: Example of block.number greater than operator
           value: gt:3
-        serialNumGteOperator:
+        gteOperator:
           summary: Example of block.number greater than or equals operator
           value: gte:4
-        serialNumLtOperator:
+        ltOperator:
           summary: Example of block.number less than operator
           value: lt:5
-        serialNumLteOperator:
+        lteOperator:
           summary: Example of block.number less than or equals operator
           value: lte:6
       schema:
