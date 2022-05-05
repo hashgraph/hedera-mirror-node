@@ -44,8 +44,8 @@ class TopicMessageViewModel {
     this.message = utils.encodeBinary(topicMessage.message, messageEncoding);
     this.payer_account_id = EntityId.parse(topicMessage.payerAccountId).toString();
     this.running_hash = utils.encodeBase64(topicMessage.runningHash);
-    this.running_hash_version = parseInt(topicMessage.runningHashVersion);
-    this.sequence_number = parseInt(topicMessage.sequenceNumber);
+    this.running_hash_version = topicMessage.runningHashVersion;
+    this.sequence_number = topicMessage.sequenceNumber;
     this.topic_id = EntityId.parse(topicMessage.topicId).toString();
   }
 }
