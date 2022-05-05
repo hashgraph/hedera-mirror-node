@@ -1776,6 +1776,10 @@ components:
           example: false
         executed_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
+        expiration_time:
+          type: string
+          example: "1234567890000030003"
+          nullable: true
         memo:
           type: string
           example: 'created on 02/10/2021'
@@ -1791,6 +1795,8 @@ components:
           type: string
           format: byte
           example: Kd6tvu8=
+        wait_for_expiry:
+          type: boolean
     Schedules:
       type: array
       items:
