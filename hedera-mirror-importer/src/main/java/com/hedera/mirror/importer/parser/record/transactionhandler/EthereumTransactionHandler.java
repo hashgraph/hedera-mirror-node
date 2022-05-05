@@ -98,7 +98,6 @@ class EthereumTransactionHandler implements TransactionHandler {
         var transactionRecord = recordItem.getRecord();
         ethereumTransaction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         ethereumTransaction.setData(ethereumDataBytes);
-        ethereumTransaction.setFromAddress(DomainUtils.toEvmAddress(senderId));
         ethereumTransaction.setHash(DomainUtils.toBytes(transactionRecord.getEthereumHash()));
         ethereumTransaction.setMaxGasAllowance(body.getMaxGasAllowance());
         ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
