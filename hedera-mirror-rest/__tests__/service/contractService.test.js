@@ -183,10 +183,10 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
 
     const expectedContractResult = [
       {
-        amount: '10',
-        contractId: '2',
-        consensusTimestamp: '1',
-        gasLimit: '1000',
+        amount: 10,
+        contractId: 2,
+        consensusTimestamp: 1,
+        gasLimit: 1000,
         gasUsed: null,
       },
     ];
@@ -215,12 +215,12 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
 
     const expectedContractResult = [
       {
-        amount: '10',
-        contractId: '2',
-        consensusTimestamp: '2',
-        gasLimit: '1000',
+        amount: 10,
+        contractId: 2,
+        consensusTimestamp: 2,
+        gasLimit: 1000,
         gasUsed: null,
-        payerAccountId: '123',
+        payerAccountId: 123,
       },
     ];
 
@@ -269,14 +269,14 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
 
     const expectedContractResult = [
       {
-        contractId: '3',
-        consensusTimestamp: '3',
-        payerAccountId: '124',
+        contractId: 3,
+        consensusTimestamp: 3,
+        payerAccountId: 124,
       },
       {
-        contractId: '3',
-        consensusTimestamp: '4',
-        payerAccountId: '124',
+        contractId: 3,
+        consensusTimestamp: 4,
+        payerAccountId: 124,
       },
     ];
 
@@ -329,28 +329,28 @@ describe('ContractService.getContractLogsByTimestamps tests', () => {
   ];
   const expected = [
     {
-      consensusTimestamp: '1',
-      contractId: '1',
+      consensusTimestamp: 1,
+      contractId: 1,
       index: 0,
-      rootContractId: '1',
+      rootContractId: 1,
     },
     {
-      consensusTimestamp: '1',
-      contractId: '2',
+      consensusTimestamp: 1,
+      contractId: 2,
       index: 1,
-      rootContractId: '1',
+      rootContractId: 1,
     },
     {
-      consensusTimestamp: '2',
-      contractId: '1',
+      consensusTimestamp: 2,
+      contractId: 1,
       index: 0,
-      rootContractId: '1',
+      rootContractId: 1,
     },
     {
-      consensusTimestamp: '2',
-      contractId: '3',
+      consensusTimestamp: 2,
+      contractId: 3,
       index: 1,
-      rootContractId: '1',
+      rootContractId: 1,
     },
   ];
 
@@ -400,26 +400,26 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
   ];
   const expected = [
     {
-      amount: '10',
+      amount: 10,
       callResult: null,
-      consensusTimestamp: '2',
-      contractId: '2',
+      consensusTimestamp: 2,
+      contractId: 2,
       createdContractIds: [],
       errorMessage: '',
-      gasLimit: '1000',
+      gasLimit: 1000,
       gasUsed: null,
-      payerAccountId: '5',
+      payerAccountId: 5,
     },
     {
-      amount: '15',
+      amount: 15,
       callResult: null,
-      consensusTimestamp: '6',
-      contractId: '3',
+      consensusTimestamp: 6,
+      contractId: 3,
       createdContractIds: [],
       errorMessage: '',
-      gasLimit: '1000',
+      gasLimit: 1000,
       gasUsed: null,
-      payerAccountId: '5',
+      payerAccountId: 5,
     },
   ];
 
@@ -480,8 +480,8 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
 
     const expectedContractLog = [
       {
-        consensusTimestamp: '1',
-        contractId: '2',
+        consensusTimestamp: 1,
+        contractId: 2,
       },
     ];
 
@@ -525,18 +525,18 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
 
     const expectedContractLog = [
       {
-        consensusTimestamp: '2',
-        contractId: '3',
+        consensusTimestamp: 2,
+        contractId: 3,
         index: 1,
       },
       {
-        consensusTimestamp: '2',
-        contractId: '3',
+        consensusTimestamp: 2,
+        contractId: 3,
         index: 0,
       },
       {
-        consensusTimestamp: '1',
-        contractId: '3',
+        consensusTimestamp: 1,
+        contractId: 3,
         index: 1,
       },
     ];
@@ -577,8 +577,8 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
 
     const expectedContractLog = [
       {
-        consensusTimestamp: '20',
-        contractId: '3',
+        consensusTimestamp: 20,
+        contractId: 3,
       },
     ];
     const response = await ContractService.getContractLogsByIdAndFilters(
@@ -625,8 +625,8 @@ describe('ContractService.getContractStateChangesByTimestamps tests', () => {
 
     const expectedContractStateChange = [
       {
-        consensusTimestamp: '1',
-        contractId: '2',
+        consensusTimestamp: 1,
+        contractId: 2,
       },
     ];
 
@@ -670,18 +670,18 @@ describe('ContractService.getContractStateChangesByTimestamps tests', () => {
 
     const expectedContractStateChange = [
       {
-        consensusTimestamp: '2',
-        contractId: '3',
+        consensusTimestamp: 2,
+        contractId: 3,
         slot: Buffer.from([92, 120, 48, 48, 48, 49]),
       },
       {
-        consensusTimestamp: '2',
-        contractId: '4',
+        consensusTimestamp: 2,
+        contractId: 4,
         slot: Buffer.from([92, 120, 48, 48, 48, 50]),
       },
       {
-        consensusTimestamp: '2',
-        contractId: '5',
+        consensusTimestamp: 2,
+        contractId: 5,
         slot: Buffer.from([92, 120, 48, 48, 48, 51]),
       },
     ];

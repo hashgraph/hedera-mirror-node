@@ -795,7 +795,7 @@ describe('token formatTokenInfoRow tests', () => {
     auto_renew_account: '0.0.98',
     auto_renew_period: 7890000,
     created_timestamp: '0.000000010',
-    decimals: 10,
+    decimals: '10',
     deleted: true,
     expiry_timestamp: 1594431063696143000,
     fee_schedule_key: {
@@ -807,7 +807,7 @@ describe('token formatTokenInfoRow tests', () => {
       _type: 'ProtobufEncoded',
       key: '030303',
     },
-    initial_supply: 1000000,
+    initial_supply: '1000000',
     kyc_key: {
       _type: 'ProtobufEncoded',
       key: '020202',
@@ -828,7 +828,7 @@ describe('token formatTokenInfoRow tests', () => {
     supply_type: 'FINITE',
     symbol: 'YBTJBOAZ',
     token_id: '0.0.7',
-    total_supply: 2000000,
+    total_supply: '2000000',
     treasury_account_id: '0.0.3',
     type: 'FUNGIBLE_COMMON',
     wipe_key: {

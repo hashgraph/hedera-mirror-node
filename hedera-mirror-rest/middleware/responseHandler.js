@@ -25,6 +25,7 @@ const {
 } = require('../config');
 const constants = require('../constants');
 const {NotFoundError} = require('../errors/notFoundError');
+const {JSONStringify} = require('../utils');
 
 // response middleware that pulls response data passed through request and sets in json response
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
@@ -39,9 +40,9 @@ const responseHandler = async (req, res, next) => {
 
     // set response json
     const code = res.locals.statusCode;
-    const data = res.locals[constants.responseDataLabel];
     res.status(code);
-    res.json(data);
+    res.set('Content-Type', 'application/json');
+    res.send(JSONStringify(responseData));
 
     const startTime = res.locals[constants.requestStartTime];
     const elapsed = startTime ? Date.now() - startTime : 0;

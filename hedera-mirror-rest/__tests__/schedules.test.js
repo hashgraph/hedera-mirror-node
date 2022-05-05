@@ -205,7 +205,7 @@ describe('schedule extractSqlFromScheduleFilters tests', () => {
     }
 
     const expectedquery = 'where creator_account_id >= $1 and s.schedule_id < $2';
-    const expectedparams = ['123', '456', 10];
+    const expectedparams = [123, 456, 10];
     const expectedorder = constants.orderFilterValues.DESC;
     const expectedlimit = 10;
 

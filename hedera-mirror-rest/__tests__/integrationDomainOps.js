@@ -30,9 +30,9 @@ const constants = require('../constants');
 const EntityId = require('../entityId');
 const testUtils = require('./testutils');
 
-const NETWORK_FEE = 1;
-const NODE_FEE = 2;
-const SERVICE_FEE = 4;
+const NETWORK_FEE = 1n;
+const NODE_FEE = 2n;
+const SERVICE_FEE = 4n;
 const DEFAULT_NODE_ID = '3';
 const DEFAULT_TREASURY_ID = '98';
 
@@ -898,7 +898,11 @@ const addCryptoTransaction = async (cryptoTransfer) => {
 
   if (!('transfers' in cryptoTransfer)) {
     cryptoTransfer.transfers = [
-      {account: cryptoTransfer.senderAccountId, amount: -NETWORK_FEE - cryptoTransfer.amount, is_approval: false},
+      {
+        account: cryptoTransfer.senderAccountId,
+        amount: -NETWORK_FEE - BigInt(cryptoTransfer.amount),
+        is_approval: false,
+      },
       {account: cryptoTransfer.recipientAccountId, amount: cryptoTransfer.amount, is_approval: false},
       {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE, is_approval: false},
     ];

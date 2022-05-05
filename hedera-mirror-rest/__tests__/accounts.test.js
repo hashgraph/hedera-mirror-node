@@ -341,7 +341,7 @@ describe('Accounts tests', () => {
 
 describe('processRow', () => {
   const input = {
-    account_balance: '123456789',
+    account_balance: 123456789,
     alias: base32.decode('WWDOGNX3TXHD2'),
     auto_renew_period: 7890000,
     consensus_timestamp: '9876500123456789',

@@ -47,7 +47,7 @@
           {
             "receiver_account_id": "0.0.10",
             "sender_account_id": "0.0.3",
-            "serial_number": 3,
+            "serial_number": 9223372036847275807,
             "token_id": "0.0.90000"
           }
         ]
@@ -110,7 +110,7 @@
           {
             "receiver_account_id": "0.0.10",
             "sender_account_id": "0.0.3",
-            "serial_number": 3,
+            "serial_number": 9223372036847275807,
             "token_id": "0.0.90000",
             "is_approval": false
           }
