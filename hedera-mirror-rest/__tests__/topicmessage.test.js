@@ -112,7 +112,7 @@ describe('topicmessage validateGetTopicMessagesParams tests', () => {
 });
 
 describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
-  test('', () => {
+  test('extractSqlFromTopicMessagesRequest', () => {
     const filters = [
       {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' > ', value: '2'},
       {key: constants.filterKeys.TIMESTAMP, operator: ' <= ', value: '1234567890.000000006'},

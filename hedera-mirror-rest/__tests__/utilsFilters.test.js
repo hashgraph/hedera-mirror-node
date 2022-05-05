@@ -28,11 +28,7 @@ const utils = require('../utils.js');
 const constants = require('../constants.js');
 
 describe('utils buildAndValidateFilters test', () => {
-  let defaultMaxRepeatedQueryParameters;
-
-  beforeEach(() => {
-    defaultMaxRepeatedQueryParameters = config.maxRepeatedQueryParameters;
-  });
+  const defaultMaxRepeatedQueryParameters = config.maxRepeatedQueryParameters;
 
   afterEach(() => {
     config.maxRepeatedQueryParameters = defaultMaxRepeatedQueryParameters;
