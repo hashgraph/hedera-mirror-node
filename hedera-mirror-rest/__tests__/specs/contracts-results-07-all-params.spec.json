@@ -111,18 +111,22 @@
         "consensus_start": "167654000123439",
         "consensus_end": "987654000123456",
         "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c"
-      }
-    ],
-    "ethereumtransactions": [
+      },
       {
-        "consensus_timestamp": "787654000123456",
-        "data": "0x0000000000000000000000000000000000001f41",
-        "from_address": "0x0000000000000000000000000000000000001f41",
-        "hash": "0x70a7552c8ab8d2621c80c8a1c149012d10a823c4619cc82235cbdfad0553310b"
+        "index": 11,
+        "count": 1,
+        "hapi_version_major": "0",
+        "hapi_version_minor": "22",
+        "hapi_version_patch": "3",
+        "name": "2022-04-27T12_09_24.499938763Z.rcd",
+        "prev_hash": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "consensus_start": "167654100123439",
+        "consensus_end": "987654200123456",
+        "hash": "dbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c"
       }
     ]
   },
-  "url": "/api/v1/contracts/5001/results?from=8001&timestamp=gt:587654.000123456&limit=2&order=asc&block.number=10&internal=true&transaction.index=2&block.hash=0x70a7552c8ab8d2621c80c8a1c149012d10a823c4619cc82235cbdfad0553310b",
+  "url": "/api/v1/contracts/5001/results?from=8001&timestamp=gt:587654.000123456&limit=2&order=asc&block.number=10&internal=true&transaction.index=2&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
   "responseStatus": 200,
   "responseJson": {
     "results": [

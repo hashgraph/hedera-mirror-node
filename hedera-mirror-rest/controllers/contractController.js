@@ -558,7 +558,14 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
         );
         break;
       case constants.filterKeys.BLOCK_NUMBER:
-        const blockData = await RecordFileService.getRecordFileBlockDetailsFromIndex(filter.value);
+      case constants.filterKeys.BLOCK_HASH:
+        let blockData;
+        if (filter.key === constants.filterKeys.BLOCK_NUMBER) {
+          blockData = await RecordFileService.getRecordFileBlockDetailsFromIndex(filter.value);
+        } else {
+          blockData = await RecordFileService.getRecordFileBlockDetailsFromHash(filter.value);
+        }
+
         if (blockData) {
           const conStartColName = _.camelCase(RecordFile.CONSENSUS_START);
           const conEndColName = _.camelCase(RecordFile.CONSENSUS_END);
@@ -582,14 +589,13 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
         }
 
         break;
-      case constants.filterKeys.BLOCK_HASH:
-        const hashFieldFullName = EthereumTransaction.getFullName(EthereumTransaction.HASH);
-        params.push(filter.value);
-        conditions.push(`${hashFieldFullName}${filter.operator}$${params.length}`);
-        break;
       case constants.filterKeys.INTERNAL:
         // If internal is `false` child transactions should be excluded
         // If it is `true` the filter does not need to be applied
+
+        // params.push(filter.value);
+        // conditions.push(`${hashFieldFullName}${filter.operator}$${params.length}`);
+
         if (!utils.parseBooleanValue(filter.value)) {
           updateConditionsAndParamsWithInValues(
             {key: constants.filterKeys.INTERNAL, operator: '=', value: 0},

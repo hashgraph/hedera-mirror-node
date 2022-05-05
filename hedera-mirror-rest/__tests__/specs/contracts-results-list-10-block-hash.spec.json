@@ -73,22 +73,27 @@
         "nonce": 0
       }
     ],
-    "ethereumtransactions": [
+    "recordFiles": [
       {
-        "consensus_timestamp": "187654000123456",
-        "data": "0x0000000000000000000000000000000000001f41",
-        "from_address": "0x0000000000000000000000000000000000001f41",
-        "hash": "0x70a7552c8ab8d2621c80c8a1c149012d10a823c4619cc82235cbdfad0553310b"
+        "index": 16,
+        "consensus_start": 167654000123439,
+        "consensus_end": 167654000123449,
+        "hash": "56caf9913fd511ede553715d3700ed955a22853487ec71cb15e7b2cc1c355d2970c12d4f07c798effe0bec57ec84d603"
       },
       {
-        "consensus_timestamp": "187654000123457",
-        "data": "0x0000000000000000000000000000000000001f42",
-        "from_address": "0x0000000000000000000000000000000000001f42",
-        "hash": "0x70a7552c8ab8d2621c80c8a1c149012d10a823c4619cc82235cbdfad0553310c"
+        "index": 17,
+        "consensus_start": 187654000123456,
+        "consensus_end": 187654001123456,
+        "hash": "1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61"
       }
     ]
   },
-  "urls": ["/api/v1/contracts/results?block.hash=0x70a7552c8ab8d2621c80c8a1c149012d10a823c4619cc82235cbdfad0553310b"],
+  "urls": [
+    "/api/v1/contracts/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+    "/api/v1/contracts/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+    "/api/v1/contracts/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
+    "/api/v1/contracts/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "results": [

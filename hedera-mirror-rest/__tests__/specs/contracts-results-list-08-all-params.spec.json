@@ -98,18 +98,10 @@
         "consensus_end": 1676540001234600000,
         "hash": "b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216"
       }
-    ],
-    "ethereumtransactions": [
-      {
-        "consensus_timestamp": "1676540001234390005",
-        "data": "0x0000000000000000000000000000000000001f41",
-        "from_address": "0x0000000000000000000000000000000000001f41",
-        "hash": "0x70a7552c8ab8d2621c80c8a1c149012d10a823c4619cc82235cbdfad0553310b"
-      }
     ]
   },
   "urls": [
-    "/api/v1/contracts/results?timestamp=1676540001.234390005&block.number=10&internal=false&block.hash=0x70a7552c8ab8d2621c80c8a1c149012d10a823c4619cc82235cbdfad0553310b&limit=1&order=asc"
+    "/api/v1/contracts/results?timestamp=1676540001.234390005&block.number=10&internal=false&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c&limit=1&order=asc"
   ],
   "responseStatus": 200,
   "responseJson": {
@@ -130,7 +122,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/contracts/results?timestamp=1676540001.234390005&block.number=10&internal=false&block.hash=0x70a7552c8ab8d2621c80c8a1c149012d10a823c4619cc82235cbdfad0553310b&limit=1&order=asc"
+      "next": "/api/v1/contracts/results?timestamp=1676540001.234390005&block.number=10&internal=false&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c&limit=1&order=asc"
     }
   }
 }

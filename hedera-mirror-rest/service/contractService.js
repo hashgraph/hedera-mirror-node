@@ -53,10 +53,6 @@ class ContractService extends BaseService {
   on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
     Transaction.CONSENSUS_TIMESTAMP
   )}
-  left join ${EthereumTransaction.tableName} ${EthereumTransaction.tableAlias}
-  on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${EthereumTransaction.getFullName(
-    EthereumTransaction.CONSENSUS_TIMESTAMP
-  )}
   `;
 
   static contractResultsQuery = `select

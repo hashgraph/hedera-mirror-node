@@ -46,6 +46,12 @@ class RecordFileService extends BaseService {
     where  ${RecordFile.INDEX} = $1
     limit 1`;
 
+  static recordFileBlockDetailsFromHashQuery = `select
+    ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
+    from ${RecordFile.tableName}
+    where  ${RecordFile.HASH} like $1
+    limit 1`;
+
   /**
    * Retrieves the recordFile containing the transaction of the given timestamp
    *
@@ -73,6 +79,22 @@ class RecordFileService extends BaseService {
       RecordFileService.recordFileBlockDetailsFromIndexQuery,
       [index],
       'getRecordFileBlockDetailsFromIndex'
+    );
+
+    return _.isNull(row) ? null : new RecordFile(row);
+  }
+
+  /**
+   * Retrieves the recordFile with the given index
+   *
+   * @param {string} hash
+   * @return {Promise<RecordFile>} recordFile subset
+   */
+  async getRecordFileBlockDetailsFromHash(hash) {
+    const row = await super.getSingleRow(
+      RecordFileService.recordFileBlockDetailsFromHashQuery,
+      [`${hash}%`],
+      'getRecordFileBlockDetailsFromHash'
     );
 
     return _.isNull(row) ? null : new RecordFile(row);

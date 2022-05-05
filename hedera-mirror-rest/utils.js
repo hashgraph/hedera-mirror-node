@@ -1037,6 +1037,11 @@ const formatComparator = (comparator) => {
           comparator.value = parseInt(comparator.value, 16);
         }
         break;
+      case constants.filterKeys.BLOCK_HASH:
+        if (comparator.value.startsWith(hexPrefix)) {
+          comparator.value = comparator.value.slice(hexPrefix.length);
+        }
+        break;
       // case 'type':
       //   // Acceptable words: credit or debit
       //   comparator.value = ;
