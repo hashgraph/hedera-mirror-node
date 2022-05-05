@@ -833,7 +833,6 @@ describe('extractContractLogsQuery - by Id', () => {
 });
 
 describe('extractContractLogsQuery - no Id specified', () => {
-  const defaultContractId = 1;
   const defaultExpected = {
     conditions: [],
     params: [],

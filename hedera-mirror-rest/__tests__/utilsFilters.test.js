@@ -31,6 +31,10 @@ describe('utils buildAndValidateFilters test', () => {
     [constants.filterKeys.ACCOUNT_ID]: '6560',
     [constants.filterKeys.LIMIT]: ['80', '1560'],
     [constants.filterKeys.TIMESTAMP]: '12345.001',
+    [constants.filterKeys.TOPIC0]: [
+      '0x92fca5e4d85f0880053c1eb3853951369b8a96d61ea5b5abccfac7f043686ed2',
+      '0xda463731fd25a0eeaeb1aead27aacf5a8ff456c1c8ad32ff88d678aff3e11455',
+    ],
   };
 
   test('validator passes', () => {
@@ -56,17 +60,27 @@ describe('utils buildAndValidateFilters test', () => {
         operator: utils.opsMap.eq,
         value: '12345001000000',
       },
+      {
+        key: constants.filterKeys.TOPIC0,
+        operator: utils.opsMap.eq,
+        value: '0x92fca5e4d85f0880053c1eb3853951369b8a96d61ea5b5abccfac7f043686ed2',
+      },
+      {
+        key: constants.filterKeys.TOPIC0,
+        operator: utils.opsMap.eq,
+        value: '0xda463731fd25a0eeaeb1aead27aacf5a8ff456c1c8ad32ff88d678aff3e11455',
+      },
     ];
 
     expect(utils.buildAndValidateFilters(query, fakeValidator)).toStrictEqual(expected);
-    expect(fakeValidator.callCount).toEqual(4);
+    expect(fakeValidator.callCount).toEqual(6);
   });
 
   test('validator fails', () => {
     const fakeValidator = sinon.fake.returns(false);
 
     expect(() => utils.buildAndValidateFilters(query, fakeValidator)).toThrowErrorMatchingSnapshot();
-    expect(fakeValidator.callCount).toEqual(4);
+    expect(fakeValidator.callCount).toEqual(6);
   });
 });
 
@@ -219,6 +233,34 @@ describe('utils buildFilters tests', () => {
     verifyFilter(formattedFilters[1], constants.filterKeys.SCHEDULE_ID, 'gte', '4000');
     verifyFilter(formattedFilters[2], constants.filterKeys.ORDER, 'eq', 'desc');
     verifyFilter(formattedFilters[3], constants.filterKeys.LIMIT, 'eq', '10');
+  });
+
+  test('Verify buildFilters for /api/v1/contracts/results/logs?timestamp=gt:1651061427&timestamp=lt:1651061600&topic0=0x92fca5e4d85f0880053c1eb3853951369b8a96d61ea5b5abccfac7f043686ed2&topic0=0xda463731fd25a0eeaeb1aead27aacf5a8ff456c1c8ad32ff88d678aff3e11455', () => {
+    const filters = {
+      topic0: [
+        '0x92fca5e4d85f0880053c1eb3853951369b8a96d61ea5b5abccfac7f043686ed2',
+        '0xda463731fd25a0eeaeb1aead27aacf5a8ff456c1c8ad32ff88d678aff3e11455',
+      ],
+      timestamp: ['gt:1651061427', 'lt:1651061600'],
+    };
+
+    const formattedFilters = utils.buildFilters(filters);
+
+    expect(formattedFilters).toHaveLength(4);
+    verifyFilter(
+      formattedFilters[0],
+      constants.filterKeys.TOPIC0,
+      'eq',
+      '0x92fca5e4d85f0880053c1eb3853951369b8a96d61ea5b5abccfac7f043686ed2'
+    );
+    verifyFilter(
+      formattedFilters[1],
+      constants.filterKeys.TOPIC0,
+      'eq',
+      '0xda463731fd25a0eeaeb1aead27aacf5a8ff456c1c8ad32ff88d678aff3e11455'
+    );
+    verifyFilter(formattedFilters[2], constants.filterKeys.TIMESTAMP, 'gt', '1651061427');
+    verifyFilter(formattedFilters[3], constants.filterKeys.TIMESTAMP, 'lt', '1651061600');
   });
 });
 
