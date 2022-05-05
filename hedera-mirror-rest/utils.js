@@ -1026,6 +1026,16 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);
         break;
+      case constants.filterKeys.BLOCK_HASH:
+        if (comparator.value.startsWith(hexPrefix)) {
+          comparator.value = comparator.value.slice(hexPrefix.length);
+        }
+        break;
+      case constants.filterKeys.BLOCK_NUMBER:
+        if (comparator.value.startsWith(hexPrefix)) {
+          comparator.value = parseInt(comparator.value, 16);
+        }
+        break;
       case constants.filterKeys.FILE_ID:
         // Accepted forms: shard.realm.num or encoded ID string
         comparator.value = EntityId.parse(comparator.value).getEncodedId();
@@ -1035,6 +1045,9 @@ const formatComparator = (comparator) => {
         break;
       case constants.filterKeys.FROM:
         comparator.value = EntityId.parse(comparator.value, contants.filterKeys.FROM).getEncodedId();
+        break;
+      case constants.filterKeys.INTERNAL:
+        comparator.value = parseBooleanValue(comparator.value) ? 1 : 0;
         break;
       case constants.filterKeys.LIMIT:
         comparator.value = math.min(Number(comparator.value), responseLimit.max);
@@ -1064,16 +1077,6 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.TOKEN_TYPE:
         // db requires upper case matching for enum
         comparator.value = comparator.value.toUpperCase();
-        break;
-      case constants.filterKeys.BLOCK_NUMBER:
-        if (comparator.value.startsWith(hexPrefix)) {
-          comparator.value = parseInt(comparator.value, 16);
-        }
-        break;
-      case constants.filterKeys.BLOCK_HASH:
-        if (comparator.value.startsWith(hexPrefix)) {
-          comparator.value = comparator.value.slice(hexPrefix.length);
-        }
         break;
       // case 'type':
       //   // Acceptable words: credit or debit

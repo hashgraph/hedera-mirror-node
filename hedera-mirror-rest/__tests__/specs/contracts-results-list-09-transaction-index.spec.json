@@ -72,9 +72,23 @@
         "index": 2,
         "nonce": 0
       }
+    ],
+    "recordFiles": [
+      {
+        "index": 16,
+        "consensus_start": 167654000123439,
+        "consensus_end": 167654000123449,
+        "hash": "56caf9913fd511ede553715d3700ed955a22853487ec71cb15e7b2cc1c355d2970c12d4f07c798effe0bec57ec84d603"
+      },
+      {
+        "index": 17,
+        "consensus_start": 987654000123456,
+        "consensus_end": 987654100123456,
+        "hash": "1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61"
+      }
     ]
   },
-  "urls": ["/api/v1/contracts/results?transaction.index=2"],
+  "urls": ["/api/v1/contracts/results?transaction.index=2&block.number=17"],
   "responseStatus": 200,
   "responseJson": {
     "results": [

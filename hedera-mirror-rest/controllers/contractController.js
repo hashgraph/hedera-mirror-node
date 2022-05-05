@@ -506,6 +506,13 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
     params.push(contractId);
   }
 
+  // The results should only be filtered by t.nonce if no internal filter is specified or internal=false
+  const internalFilter = filters.find((f) => f.key === constants.filterKeys.INTERNAL);
+  if (!internalFilter || internalFilter.value === 0) {
+    params.push(0);
+    conditions.push(`${Transaction.getFullName(Transaction.NONCE)} = $${params.length}`);
+  }
+
   const contractResultFromFullName = ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID);
   const contractResultFromInValues = [];
 
@@ -514,15 +521,6 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
 
   const transactionIndexFullName = Transaction.getFullName(Transaction.INDEX);
   const transactionIndexInValues = [];
-
-  // Add default value for INTERNAL filter
-  if (!filters.find((f) => f.key === constants.filterKeys.INTERNAL)) {
-    filters.push({
-      key: constants.filterKeys.INTERNAL,
-      operator: '=',
-      value: 'false',
-    });
-  }
 
   for (const filter of filters) {
     if (_.isNil(paramSupportMap[filter.key])) {
@@ -588,23 +586,6 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
           throw new NotFoundError();
         }
 
-        break;
-      case constants.filterKeys.INTERNAL:
-        // If internal is `false` child transactions should be excluded
-        // If it is `true` the filter does not need to be applied
-
-        // params.push(filter.value);
-        // conditions.push(`${hashFieldFullName}${filter.operator}$${params.length}`);
-
-        if (!utils.parseBooleanValue(filter.value)) {
-          updateConditionsAndParamsWithInValues(
-            {key: constants.filterKeys.INTERNAL, operator: '=', value: 0},
-            [],
-            params,
-            conditions,
-            Transaction.getFullName(Transaction.NONCE)
-          );
-        }
         break;
       case constants.filterKeys.TRANSACTION_INDEX:
         updateConditionsAndParamsWithInValues(
