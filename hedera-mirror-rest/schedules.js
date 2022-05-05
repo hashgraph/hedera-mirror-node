@@ -36,11 +36,13 @@ const scheduleSelectFields = [
   's.consensus_timestamp',
   's.creator_account_id',
   'e.deleted',
+  's.expiration_time',
   's.executed_timestamp',
   'e.memo',
   's.payer_account_id',
   's.schedule_id',
   's.transaction_body',
+  's.wait_for_expiry',
   `(
     select json_agg(
       json_build_object(
@@ -110,11 +112,13 @@ const formatScheduleRow = (row) => {
     consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
     creator_account_id: EntityId.parse(row.creator_account_id).toString(),
     executed_timestamp: utils.nsToSecNs(row.executed_timestamp),
+    expiration_time: row.expiration_time,
     memo: row.memo,
     payer_account_id: EntityId.parse(row.payer_account_id).toString(),
     schedule_id: EntityId.parse(row.schedule_id).toString(),
     signatures,
     transaction_body: utils.encodeBase64(row.transaction_body),
+    wait_for_expiry: row.wait_for_expiry,
   };
 };
 
