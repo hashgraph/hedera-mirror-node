@@ -20,9 +20,16 @@
 
 'use strict';
 
+// external libraries
+const {Router} = require('@awaitjs/express');
+const {BlockController} = require('../controllers');
+
+const router = Router();
+
+const resource = 'blocks';
+router.getAsync('/', BlockController.getBlocks);
+
 module.exports = {
-  AccountRoutes: require('./accountRoute'),
-  ContractRoutes: require('./contractRoute'),
-  NetworkRoutes: require('./networkRoute'),
-  BlockRoutes: require('./blockRoute'),
+  resource,
+  router,
 };

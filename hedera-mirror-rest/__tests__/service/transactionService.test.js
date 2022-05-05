@@ -37,31 +37,8 @@ const contractCreateType = TransactionType.getProtoId('CONTRACTCREATEINSTANCE');
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
 
-jest.setTimeout(40000);
-
-let dbConfig;
-
-// set timeout for beforeAll to 4 minutes as downloading docker image if not exists can take quite some time
-const defaultBeforeAllTimeoutMillis = 240 * 1000;
-
-beforeAll(async () => {
-  dbConfig = await integrationDbOps.instantiateDatabase();
-  await integrationDomainOps.setUp({}, dbConfig.sqlConnection);
-  global.pool = dbConfig.sqlConnection;
-}, defaultBeforeAllTimeoutMillis);
-
-afterAll(async () => {
-  await integrationDbOps.closeConnection(dbConfig);
-});
-
-beforeEach(async () => {
-  if (!dbConfig.sqlConnection) {
-    logger.warn(`sqlConnection undefined, acquire new connection`);
-    dbConfig.sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
-  }
-
-  await integrationDbOps.cleanUp(dbConfig.sqlConnection);
-});
+const {defaultMochaStatements} = require('./defaultMochaStatements');
+defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 describe('TransactionService.getTransactionDetailsFromTimestamp tests', () => {
   test('No match', async () => {
