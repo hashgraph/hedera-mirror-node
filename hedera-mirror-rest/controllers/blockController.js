@@ -108,7 +108,7 @@ class BlockController extends BaseController {
 
   getByHashOrNumber = async (req, res) => {
     const hashOrNumber = req.params.hashOrNumber;
-    const block = await BlockService.getByHashOrNumber(hashOrNumber);
+    const block = await RecordFileService.getByHashOrNumber(hashOrNumber);
 
     res.send(block);
   };

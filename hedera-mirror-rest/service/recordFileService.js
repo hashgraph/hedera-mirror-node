@@ -22,8 +22,14 @@
 
 const _ = require('lodash');
 
+const utils = require('../utils');
 const BaseService = require('./baseService');
 const {RecordFile} = require('../model');
+const {BlockViewModel} = require('../viewmodel');
+
+const isValidHash = (input) => {
+  return input.length === 96 || input.length === 98 || input.length === 64 || input.length === 66;
+};
 
 const buildWhereSqlStatement = (whereQuery) => {
   let where = '';
@@ -86,6 +92,34 @@ class RecordFileService extends BaseService {
     const rows = await super.getRows(query, params, 'getBlocks');
 
     return rows.map((recordFile) => new RecordFile(recordFile));
+  }
+
+  async getByHashOrNumber(hashOrNumber) {
+    let whereStatement = '';
+    let params = [];
+    if (isValidHash(hashOrNumber)) {
+      const hashOrNumberWithPrefix = utils.addHexPrefix(hashOrNumber);
+      const hashOrNumberWithoutPrefix = hashOrNumberWithPrefix.substring(2);
+
+      whereStatement += `${RecordFile.HASH} in ($1, $2)`;
+      params.push(hashOrNumberWithoutPrefix, hashOrNumberWithPrefix);
+    } else {
+      whereStatement += `${RecordFile.INDEX} = $1`;
+      params.push(hashOrNumber);
+    }
+
+    const query = `
+      select
+        ${RecordFile.COUNT}, ${RecordFile.HASH}, ${RecordFile.NAME}, ${RecordFile.PREV_HASH}, ${RecordFile.BYTES},
+        ${RecordFile.HAPI_VERSION_MAJOR}, ${RecordFile.HAPI_VERSION_MINOR}, ${RecordFile.HAPI_VERSION_PATCH},
+        ${RecordFile.INDEX}, ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}
+      from ${RecordFile.tableName}
+      where ${whereStatement}
+    `;
+
+    const row = await super.getSingleRow(query, params, 'getByHashOrNumber');
+
+    return row ? new BlockViewModel(new RecordFile(row)) : {};
   }
 }
 
