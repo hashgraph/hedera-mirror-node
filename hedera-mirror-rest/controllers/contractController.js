@@ -654,7 +654,7 @@ const getContractResultsById = async (req, res) => {
 
   if (!_.isEmpty(response.results)) {
     const lastRow = _.last(response.results);
-    const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
+    const lastContractResultTimestamp = lastRow.timestamp;
     response.links.next = utils.getPaginationLink(
       req,
       response.results.length !== limit,
@@ -732,7 +732,6 @@ const getLastNonceParamValue = (query) => {
  * @returns {Promise<void>}
  */
 const getContractResults = async (req, res) => {
-  utils.validateReq(req);
   const filters = utils.buildAndValidateFilters(req.query);
   const {conditions, params, order, limit} = await extractContractResultsByIdQuery(
     filters,
@@ -750,7 +749,7 @@ const getContractResults = async (req, res) => {
 
   if (!_.isEmpty(response.results)) {
     const lastRow = _.last(response.results);
-    const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
+    const lastContractResultTimestamp = lastRow.timestamp;
     response.links.next = utils.getPaginationLink(
       req,
       response.results.length !== limit,

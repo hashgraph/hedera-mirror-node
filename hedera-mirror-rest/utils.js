@@ -85,7 +85,7 @@ const isPositiveLong = (num, allowZero = false) => {
  * @returns {boolean}
  */
 const isHexPositiveLong = (num, allowZero = false) => {
-  if (num.startsWith('0x')) {
+  if (typeof num === 'string' && num.startsWith(hexPrefix)) {
     num = parseInt(num, 16);
     return isPositiveLong(num, allowZero);
   }
@@ -143,13 +143,13 @@ const isValidEncoding = (query) => {
   return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
 };
 
-const ethHashPattern = /^(0x)[0-9A-Fa-f]{64}$/;
-const isValidEthHash = (query) => {
+const blockHashPattern = /^(0x)?([0-9A-Fa-f]{64}|[0-9A-Fa-f]{96})$/;
+const isValidBlockHash = (query) => {
   if (query === undefined) {
     return false;
   }
 
-  return ethHashPattern.test(query);
+  return blockHashPattern.test(query);
 };
 
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
@@ -296,7 +296,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isPositiveLong(val, true) || isHexPositiveLong(val, true);
       break;
     case constants.filterKeys.BLOCK_HASH:
-      ret = isValidEthHash(val);
+      ret = isValidBlockHash(val);
       break;
     case constants.filterKeys.INTERNAL:
       ret = isValidBooleanOpAndValue(op, val);
@@ -1033,7 +1033,7 @@ const formatComparator = (comparator) => {
         comparator.value = comparator.value.toUpperCase();
         break;
       case constants.filterKeys.BLOCK_NUMBER:
-        if (comparator.value.startsWith('0x')) {
+        if (comparator.value.startsWith(hexPrefix)) {
           comparator.value = parseInt(comparator.value, 16);
         }
         break;

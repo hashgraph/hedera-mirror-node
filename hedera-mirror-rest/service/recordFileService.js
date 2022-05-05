@@ -44,7 +44,6 @@ class RecordFileService extends BaseService {
     ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
     from ${RecordFile.tableName}
     where  ${RecordFile.INDEX} = $1
-    order by ${RecordFile.CONSENSUS_END} asc
     limit 1`;
 
   /**
