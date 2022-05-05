@@ -58,20 +58,6 @@ const ltLte = [opsMap.lt, opsMap.lte];
 
 const gtLtPattern = /[gl]t[e]?:/;
 
-(function () {
-  // config pg bigint parsing
-  const pgTypes = pg.types;
-  pgTypes.setTypeParser(20, BigInt); // int8
-  const parseBigIntArray = pgTypes.getTypeParser(1016); // int8[]
-  pgTypes.setTypeParser(1016, (a) => parseBigIntArray(a).map(BigInt));
-
-  pgTypes.setTypeParser(114, JSONBig.parse); // json
-  pgTypes.setTypeParser(3802, JSONBig.parse); // jsonb
-
-  //  install pg-range
-  pgRange.install(pg);
-})();
-
 /**
  * Check if the given number is numeric
  * @param {String} n Number to test
@@ -463,37 +449,11 @@ const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
   );
 };
 
-const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
-  return parseParams(
-    parsedQueryParams[constants.filterKeys.TIMESTAMP],
-    (value) => parseTimestampParam(value),
-    (op, value) => [`${columnName}${op in opOverride ? opOverride[op] : op}?`, [value]],
-    false
-  );
-};
-
 const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.ACCOUNT_BALANCE],
     (value) => value,
     (op, value) => (isNumeric(value) ? [`${columnName}${op}?`, [value]] : null),
-    false
-  );
-};
-
-const parsePublicKey = (publicKey) => {
-  const publicKeyNoPrefix = publicKey ? publicKey.replace('0x', '').toLowerCase() : publicKey;
-  const decodedKey = ed25519.derToEd25519(publicKeyNoPrefix);
-  return decodedKey == null ? publicKeyNoPrefix : decodedKey;
-};
-
-const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
-  return parseParams(
-    parsedQueryParams[constants.filterKeys.ACCOUNT_PUBLICKEY],
-    (value) => {
-      return parsePublicKey(value);
-    },
-    (op, value) => [`${columnName}${op}?`, [value]],
     false
   );
 };
@@ -519,21 +479,14 @@ const parseCreditDebitParams = (parsedQueryParams, columnName) => {
 };
 
 /**
- * Parse the result=[success | fail | all] parameter
- * @param {Request} req HTTP query request object
- * @param {String} columnName Column name for the transaction result
- * @return {String} Value of the resultType parameter
+ * Parses the integer string into a Number if it's safe or otherwise a BigInt
+ *
+ * @param {string} str
+ * @returns {Number|BigInt}
  */
-const parseResultParams = (req, columnName) => {
-  const resultType = req.query.result;
-  let query = '';
-
-  if (resultType === constants.transactionResultFilter.SUCCESS) {
-    query = `${columnName} = ${resultSuccess}`;
-  } else if (resultType === constants.transactionResultFilter.FAIL) {
-    query = `${columnName} != ${resultSuccess}`;
-  }
-  return query;
+const parseInteger = (str) => {
+  const num = Number(str);
+  return Number.isSafeInteger(num) ? num : BigInt(str);
 };
 
 /**
@@ -555,6 +508,50 @@ const parseLimitAndOrderParams = (req, defaultOrder = constants.orderFilterValue
   }
 
   return buildPgSqlObject(limitQuery, [limitValue], order, limitValue);
+};
+
+const parsePublicKey = (publicKey) => {
+  const publicKeyNoPrefix = publicKey ? publicKey.replace('0x', '').toLowerCase() : publicKey;
+  const decodedKey = ed25519.derToEd25519(publicKeyNoPrefix);
+  return decodedKey == null ? publicKeyNoPrefix : decodedKey;
+};
+
+const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.ACCOUNT_PUBLICKEY],
+    (value) => {
+      return parsePublicKey(value);
+    },
+    (op, value) => [`${columnName}${op}?`, [value]],
+    false
+  );
+};
+
+/**
+ * Parse the result=[success | fail | all] parameter
+ * @param {Request} req HTTP query request object
+ * @param {String} columnName Column name for the transaction result
+ * @return {String} Value of the resultType parameter
+ */
+const parseResultParams = (req, columnName) => {
+  const resultType = req.query.result;
+  let query = '';
+
+  if (resultType === constants.transactionResultFilter.SUCCESS) {
+    query = `${columnName} = ${resultSuccess}`;
+  } else if (resultType === constants.transactionResultFilter.FAIL) {
+    query = `${columnName} != ${resultSuccess}`;
+  }
+  return query;
+};
+
+const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.TIMESTAMP],
+    (value) => parseTimestampParam(value),
+    (op, value) => [`${columnName}${op in opOverride ? opOverride[op] : op}?`, [value]],
+    false
+  );
 };
 
 const buildPgSqlObject = (query, params, order, limit) => {
@@ -1176,6 +1173,20 @@ const isRegexMatch = (regex, value) => {
   return regex.test(value.trim());
 };
 
+(function () {
+  // config pg bigint parsing
+  const pgTypes = pg.types;
+  pgTypes.setTypeParser(20, parseInteger); // int8
+  const parseBigIntArray = pgTypes.getTypeParser(1016); // int8[]
+  pgTypes.setTypeParser(1016, (a) => parseBigIntArray(a).map(parseInteger));
+
+  pgTypes.setTypeParser(114, JSONBig.parse); // json
+  pgTypes.setTypeParser(3802, JSONBig.parse); // jsonb
+
+  //  install pg-range
+  pgRange.install(pg);
+})();
+
 module.exports = {
   addHexPrefix,
   buildAndValidateFilters,
@@ -1239,6 +1250,7 @@ if (isTestEnv()) {
     getLimitParamValue,
     getNextParamQueries,
     getPaginationLink,
+    parseInteger,
     validateAndParseFilters,
     validateFilters,
   });

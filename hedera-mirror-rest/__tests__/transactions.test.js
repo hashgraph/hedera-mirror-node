@@ -736,7 +736,7 @@ describe('create transferLists', () => {
 describe('extractSqlFromTransactionsByIdRequest', () => {
   describe('success', () => {
     const defaultTransactionIdStr = '0.0.200-123456789-987654321';
-    const defaultParams = [200n, '123456789987654321'];
+    const defaultParams = [200, '123456789987654321'];
     const getQuery = (extraConditions) => {
       return `with timestampFilter as (
       select consensus_timestamp from transaction t

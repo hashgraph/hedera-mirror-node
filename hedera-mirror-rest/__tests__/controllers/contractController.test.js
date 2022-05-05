@@ -121,7 +121,7 @@ describe('extractSqlFromContractFilters', () => {
       expected: {
         ...defaultExpected,
         filterQuery: 'where c.id > $1 and c.id in ($2,$3)',
-        params: [1000n, 1001n, 1002n, defaultLimit],
+        params: [1000, 1001, 1002, defaultLimit],
         limitQuery: 'limit $4',
       },
     },
@@ -224,20 +224,20 @@ describe('extractTimestampConditionsFromContractFilters', () => {
 
 describe('formatContractRow', () => {
   const input = {
-    auto_renew_account_id: 1005n,
+    auto_renew_account_id: 1005,
     auto_renew_period: 1000n,
     created_timestamp: 999123456789n,
     deleted: false,
     evm_address: null,
     expiration_timestamp: 99999999000000000n,
-    file_id: 2800n,
-    id: 3001n,
+    file_id: 2800,
+    id: 3001,
     key: Buffer.from([0xaa, 0xbb, 0xcc, 0x77]),
     max_automatic_token_associations: 0,
     memo: 'sample contract',
-    obtainer_id: 2005n,
+    obtainer_id: 2005,
     permanent_removal: null,
-    proxy_account_id: 2002n,
+    proxy_account_id: 2002,
     timestamp_range: Range('1000123456789', '2000123456789', '[)'),
   };
   const expected = {

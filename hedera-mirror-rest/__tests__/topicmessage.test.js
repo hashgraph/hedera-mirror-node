@@ -112,26 +112,28 @@ describe('topicmessage validateGetTopicMessagesParams tests', () => {
 });
 
 describe('topicmessage extractSqlFromTopicMessagesRequest tests', () => {
-  const filters = [
-    {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' > ', value: '2'},
-    {key: constants.filterKeys.TIMESTAMP, operator: ' <= ', value: '1234567890.000000006'},
-    {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
-    {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
-  ];
+  test('', () => {
+    const filters = [
+      {key: constants.filterKeys.SEQUENCE_NUMBER, operator: ' > ', value: '2'},
+      {key: constants.filterKeys.TIMESTAMP, operator: ' <= ', value: '1234567890.000000006'},
+      {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
+      {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
+    ];
 
-  const {query, params, order, limit} = topicmessage.extractSqlFromTopicMessagesRequest(EntityId.parse('7'), filters);
+    const {query, params, order, limit} = topicmessage.extractSqlFromTopicMessagesRequest(EntityId.parse('7'), filters);
 
-  const expectedQuery = `select *
+    const expectedQuery = `select *
                          from topic_message
                          where topic_id = $1
                            and sequence_number > $2
                            and consensus_timestamp <= $3
                          order by consensus_timestamp desc
                          limit $4;`;
-  assertSqlQueryEqual(query, expectedQuery);
-  expect(params).toStrictEqual([7n, '2', '1234567890.000000006', '3']);
-  expect(order).toStrictEqual(constants.orderFilterValues.DESC);
-  expect(limit).toStrictEqual(3);
+    assertSqlQueryEqual(query, expectedQuery);
+    expect(params).toStrictEqual([7, '2', '1234567890.000000006', '3']);
+    expect(order).toStrictEqual(constants.orderFilterValues.DESC);
+    expect(limit).toStrictEqual(3);
+  });
 });
 
 const verifyValidConsensusTimestamp = (timestamp) => {

@@ -39,7 +39,7 @@ describe('utils buildAndValidateFilters test', () => {
       {
         key: constants.filterKeys.ACCOUNT_ID,
         operator: utils.opsMap.eq,
-        value: 6560n,
+        value: 6560,
       },
       {
         key: constants.filterKeys.LIMIT,
@@ -238,7 +238,7 @@ describe('utils formatComparator tests', () => {
   test('Verify formatComparator for account.id=5', () => {
     const filter = utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, '5');
     utils.formatComparator(filter);
-    verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' = ', 5n);
+    verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' = ', 5);
   });
 
   test('Verify formatComparator for account.id=0.2.5', () => {
@@ -258,7 +258,7 @@ describe('utils formatComparator tests', () => {
   test('Verify formatComparator for account.id=gte:6', () => {
     const filter = utils.buildComparatorFilter(constants.filterKeys.ACCOUNT_ID, 'gte:6');
     utils.formatComparator(filter);
-    verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' >= ', 6n);
+    verifyFilter(filter, constants.filterKeys.ACCOUNT_ID, ' >= ', 6);
   });
 
   test('Verify formatComparator for timestamp=gt:1234567890.000000004', () => {

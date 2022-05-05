@@ -60,7 +60,7 @@
         "timestamp": 2000,
         "id": 2,
         "realm_num": 15,
-        "balance": 20,
+        "balance": 9223372036847275807,
         "tokens": [
           {
             "token_realm": 0,
@@ -70,7 +70,7 @@
           {
             "token_realm": 0,
             "token_num": 90002,
-            "balance": 1890
+            "balance": 9223372036847275807
           }
         ]
       },
@@ -183,11 +183,11 @@
       },
       {
         "account": "0.15.2",
-        "balance": 20,
+        "balance": 9223372036847275807,
         "tokens": [
           {
             "token_id": "0.0.90002",
-            "balance": 1890
+            "balance": 9223372036847275807
           },
           {
             "token_id": "0.0.90000",

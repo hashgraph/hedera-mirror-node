@@ -176,25 +176,25 @@ const defaultInputAddressBookEntries = [
 
 const defaultInputServiceEndpointBooks = [
   {
-    consensus_timestamp: 1n,
+    consensus_timestamp: 1,
     ip_address_v4: '127.0.0.1',
     node_id: 0,
     port: 50211,
   },
   {
-    consensus_timestamp: 1n,
+    consensus_timestamp: 1,
     ip_address_v4: '127.0.0.2',
     node_id: 1,
     port: 50212,
   },
   {
-    consensus_timestamp: 2n,
+    consensus_timestamp: 2,
     ip_address_v4: '128.0.0.1',
     node_id: 0,
     port: 50212,
   },
   {
-    consensus_timestamp: 2n,
+    consensus_timestamp: 2,
     ip_address_v4: '128.0.0.2',
     node_id: 1,
     port: 50212,
@@ -204,15 +204,15 @@ const defaultInputServiceEndpointBooks = [
 const defaultExpectedNetworkNode101 = [
   {
     addressBook: {
-      startConsensusTimestamp: 1n,
-      fileId: 101n,
+      startConsensusTimestamp: 1,
+      fileId: 101,
       endConsensusTimestamp: null,
     },
     addressBookEntry: {
       description: 'desc 2',
       memo: 'memo 2',
-      nodeAccountId: 4n,
-      nodeId: 1n,
+      nodeAccountId: 4,
+      nodeId: 1,
     },
     addressBookServiceEndpoints: [
       {
@@ -223,15 +223,15 @@ const defaultExpectedNetworkNode101 = [
   },
   {
     addressBook: {
-      startConsensusTimestamp: 1n,
-      fileId: 101n,
+      startConsensusTimestamp: 1,
+      fileId: 101,
       endConsensusTimestamp: null,
     },
     addressBookEntry: {
       description: 'desc 1',
       memo: 'memo 1',
-      nodeAccountId: 3n,
-      nodeId: 0n,
+      nodeAccountId: 3,
+      nodeId: 0,
     },
     addressBookServiceEndpoints: [
       {
@@ -246,14 +246,14 @@ const defaultExpectedNetworkNode102 = [
   {
     addressBook: {
       endConsensusTimestamp: null,
-      fileId: 102n,
-      startConsensusTimestamp: 2n,
+      fileId: 102,
+      startConsensusTimestamp: 2,
     },
     addressBookEntry: {
       description: 'desc 3',
       memo: '0.0.3',
-      nodeAccountId: 3n,
-      nodeId: 0n,
+      nodeAccountId: 3,
+      nodeId: 0,
     },
     addressBookServiceEndpoints: [
       {
@@ -265,14 +265,14 @@ const defaultExpectedNetworkNode102 = [
   {
     addressBook: {
       endConsensusTimestamp: null,
-      fileId: 102n,
-      startConsensusTimestamp: 2n,
+      fileId: 102,
+      startConsensusTimestamp: 2,
     },
     addressBookEntry: {
       description: 'desc 4',
       memo: '0.0.4',
-      nodeAccountId: 4n,
-      nodeId: 1n,
+      nodeAccountId: 4,
+      nodeId: 1,
     },
     addressBookServiceEndpoints: [
       {
@@ -317,15 +317,15 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
   const expectedNetworkNode101 = [
     {
       addressBook: {
-        startConsensusTimestamp: 1n,
-        fileId: 101n,
+        startConsensusTimestamp: 1,
+        fileId: 101,
         endConsensusTimestamp: null,
       },
       addressBookEntry: {
         description: 'desc 1',
         memo: 'memo 1',
-        nodeAccountId: 3n,
-        nodeId: 0n,
+        nodeAccountId: 3,
+        nodeId: 0,
       },
       addressBookServiceEndpoints: [
         {
@@ -340,14 +340,14 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
     {
       addressBook: {
         endConsensusTimestamp: null,
-        fileId: 102n,
-        startConsensusTimestamp: 2n,
+        fileId: 102,
+        startConsensusTimestamp: 2,
       },
       addressBookEntry: {
         description: 'desc 3',
         memo: '0.0.3',
-        nodeAccountId: 3n,
-        nodeId: 0n,
+        nodeAccountId: 3,
+        nodeId: 0,
       },
       addressBookServiceEndpoints: [
         {
