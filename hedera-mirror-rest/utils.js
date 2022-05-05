@@ -312,6 +312,25 @@ const filterValidityChecks = (param, op, val) => {
   return ret;
 };
 
+const filterDependencyCheck = (params = []) => {
+  let badParams = [];
+  const paramNames = params.map((p) => p.key);
+  paramNames.forEach((param, i) => {
+    switch (param) {
+      case constants.filterKeys.TRANSACTION_INDEX:
+        if (
+          !paramNames.includes(constants.filterKeys.BLOCK_NUMBER) &&
+          !paramNames.includes(constants.filterKeys.BLOCK_HASH)
+        ) {
+          badParams.push(param);
+        }
+        break;
+    }
+  });
+
+  return badParams;
+};
+
 const isValidContractIdQueryParam = (op, val) => {
   if (EntityId.isValidEvmAddress(val, contants.EvmAddressType.OPTIONAL_SHARD_REALM)) {
     return op === constants.queryParamOperators.eq;
@@ -890,11 +909,25 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
  *
  * @param query
  * @param {function(string, string, string)} filterValidator
+ * @param {function(array)} filterDependencyChecker
  * @return {[]}
  */
-const buildAndValidateFilters = (query, filterValidator = filterValidityChecks) => {
+const buildAndValidateFilters = (
+  query,
+  filterValidator = filterValidityChecks,
+  filterDependencyChecker = filterDependencyCheck
+) => {
   const filters = buildFilters(query);
   validateAndParseFilters(filters, filterValidator);
+
+  if (filterDependencyChecker) {
+    const badParams = filterDependencyChecker(filters);
+
+    if (badParams.length > 0) {
+      throw InvalidArgumentError.forParams(badParams);
+    }
+  }
+
   return filters;
 };
 
@@ -1244,6 +1277,7 @@ module.exports = {
   encodeBinary,
   encodeUtf8,
   encodeKey,
+  filterDependencyCheck,
   filterValidityChecks,
   getNullableNumber,
   getPaginationLink,

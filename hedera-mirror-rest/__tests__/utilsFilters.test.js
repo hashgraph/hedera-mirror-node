@@ -286,6 +286,32 @@ describe('utils formatComparator tests', () => {
   });
 });
 
+describe('utils filterDependencyCheck tests', () => {
+  test('Verify formatComparator for isolated transaction.index', () => {
+    const filters = [utils.buildComparatorFilter(constants.filterKeys.TRANSACTION_INDEX, 'eq:1')];
+    const badFilters = utils.filterDependencyCheck(filters);
+    expect(badFilters).toEqual([constants.filterKeys.TRANSACTION_INDEX]);
+  });
+
+  test('Verify formatComparator for transaction.index with block.number', () => {
+    const filters = [
+      utils.buildComparatorFilter(constants.filterKeys.TRANSACTION_INDEX, 'eq:1'),
+      utils.buildComparatorFilter(constants.filterKeys.BLOCK_NUMBER, 'eq:1'),
+    ];
+    const badFilters = utils.filterDependencyCheck(filters);
+    expect(badFilters).toEqual([]);
+  });
+
+  test('Verify formatComparator for transaction.index with block.hash', () => {
+    const filters = [
+      utils.buildComparatorFilter(constants.filterKeys.TRANSACTION_INDEX, 'eq:1'),
+      utils.buildComparatorFilter(constants.filterKeys.BLOCK_HASH, 'eq:1'),
+    ];
+    const badFilters = utils.filterDependencyCheck(filters);
+    expect(badFilters).toEqual([]);
+  });
+});
+
 const verifyInvalidFilters = (filters) => {
   expect(() => utils.validateAndParseFilters(filters, utils.filterValidityChecks)).toThrowErrorMatchingSnapshot();
 };
