@@ -24,7 +24,7 @@ const _ = require('lodash');
 
 const RecordFile = require('../model/recordFile');
 const BaseController = require('./baseController');
-const {BlockService} = require('../service');
+const {RecordFileService} = require('../service');
 const {BlockViewModel} = require('../viewmodel');
 const utils = require('../utils');
 const constants = require('../constants');
@@ -36,13 +36,13 @@ const {
 
 class BlockController extends BaseController {
   extractOrderFromFilters = (filters) => {
-    const order = _.find(filters, {key: constants.filterKeys.ORDER});
+    const order = _.findLast(filters, {key: constants.filterKeys.ORDER});
 
     return order ? constants.orderFilterValues[order.value.toUpperCase()] : constants.orderFilterValues.DESC;
   };
 
   extractLimitFromFilters = (filters) => {
-    const limit = _.find(filters, {key: constants.filterKeys.LIMIT});
+    const limit = _.findLast(filters, {key: constants.filterKeys.LIMIT});
 
     return limit ? (limit.value > maxLimit ? defaultLimit : limit.value) : defaultLimit;
   };
@@ -96,7 +96,7 @@ class BlockController extends BaseController {
   getBlocks = async (req, res) => {
     const filters = utils.buildAndValidateFilters(req.query);
     const formattedFilters = this.extractSqlFromBlockFilters(filters);
-    const blocks = await BlockService.getBlocks(formattedFilters);
+    const blocks = await RecordFileService.getBlocks(formattedFilters);
 
     res.send({
       blocks: blocks.map((model) => new BlockViewModel(model)),
