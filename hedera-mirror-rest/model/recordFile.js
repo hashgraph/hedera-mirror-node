@@ -63,6 +63,10 @@ class RecordFile {
   static getFullName(columnName) {
     return `${this.tableAlias}.${columnName}`;
   }
+
+  getFullHapiVersion() {
+    return `${this.hapiVersionMajor}.${this.hapiVersionMinor}.${this.hapiVersionPatch}`;
+  }
 }
 
 module.exports = RecordFile;

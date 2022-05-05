@@ -62,6 +62,7 @@ const filterKeys = {
   TOPIC_ID: 'topic.id',
   TRANSACTION_INDEX: 'transaction.index',
   TRANSACTION_TYPE: 'transactiontype',
+  BLOCK_NUMBER: 'block.number',
 };
 
 const entityTypes = {

@@ -25,6 +25,17 @@ const _ = require('lodash');
 const BaseService = require('./baseService');
 const {RecordFile} = require('../model');
 
+const buildWhereSqlStatement = (whereQuery) => {
+  let where = '';
+  const params = [];
+  for (let i = 1; i <= whereQuery.length; i++) {
+    where += `${i === 1 ? 'where' : 'and'} ${whereQuery[i - 1].query} $${i} `;
+    params.push(whereQuery[i - 1].param);
+  }
+
+  return {where, params};
+};
+
 /**
  * RecordFile retrieval business logic
  */
@@ -98,6 +109,24 @@ class RecordFileService extends BaseService {
     );
 
     return _.isNull(row) ? null : new RecordFile(row);
+  }
+
+  async getBlocks(filters) {
+    const {where, params} = buildWhereSqlStatement(filters.whereQuery);
+
+    const query = `
+      select
+        ${RecordFile.COUNT}, ${RecordFile.HASH}, ${RecordFile.NAME}, ${RecordFile.PREV_HASH}, ${RecordFile.BYTES},
+        ${RecordFile.HAPI_VERSION_MAJOR}, ${RecordFile.HAPI_VERSION_MINOR}, ${RecordFile.HAPI_VERSION_PATCH},
+        ${RecordFile.INDEX}, ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}
+      from ${RecordFile.tableName}
+      ${where}
+      order by ${RecordFile.INDEX} ${filters.order}
+      limit ${filters.limit}
+    `;
+    const rows = await super.getRows(query, params, 'getBlocks');
+
+    return rows.map((recordFile) => new RecordFile(recordFile));
   }
 }
 

@@ -293,7 +293,8 @@ const filterValidityChecks = (param, op, val) => {
       ret = TransactionType.isValid(val);
       break;
     case constants.filterKeys.BLOCK_NUMBER:
-      ret = isPositiveLong(val, true) || isHexPositiveLong(val, true);
+      const supportedOperators = ['eq', 'gt', 'gte', 'lt', 'lte'];
+      ret = (isPositiveLong(val, true) || isHexPositiveLong(val, true)) && _.includes(supportedOperators, op);
       break;
     case constants.filterKeys.BLOCK_HASH:
       ret = isValidBlockHash(val);
