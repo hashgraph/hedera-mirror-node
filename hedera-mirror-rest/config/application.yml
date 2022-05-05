@@ -14,7 +14,7 @@ hedera:
           connectionTimeout: 20000
           maxConnections: 10
           statementTimeout: 20000
-        port: 54322
+        port: 5432
         sslMode: DISABLE
         tls:
           ca: ''
