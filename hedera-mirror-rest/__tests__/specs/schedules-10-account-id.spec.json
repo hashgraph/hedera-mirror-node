@@ -47,9 +47,11 @@
       {
         "consensus_timestamp": "1234567890000030003",
         "creator_account_id": "0.0.3333",
+        "expiration_time": "1234967890000003003",
         "executed_timestamp": "1234967890000003103",
         "payer_account_id": "0.0.1024",
-        "schedule_id": "0.0.4000"
+        "schedule_id": "0.0.4000",
+        "wait_for_expiry": true
       }
     ],
     "transactionsignatures": [
@@ -102,6 +104,7 @@
         "consensus_timestamp": "1234567890.000010001",
         "creator_account_id": "0.0.3333",
         "deleted": false,
+        "expiration_time": null,
         "executed_timestamp": "1234567890.000001100",
         "memo": "Created per council decision dated 02/01/21",
         "payer_account_id": "0.0.1024",
@@ -120,7 +123,8 @@
             "type": "ED25519"
           }
         ],
-        "transaction_body": "AQECAgMD"
+        "transaction_body": "AQECAgMD",
+        "wait_for_expiry": false
       },
       {
         "admin_key": {
@@ -130,6 +134,7 @@
         "consensus_timestamp": "1234567890.000030003",
         "creator_account_id": "0.0.3333",
         "deleted": false,
+        "expiration_time": "1234967890.000003003",
         "executed_timestamp": "1234967890.000003103",
         "memo": "Created per product team decision dated 02/03/21",
         "payer_account_id": "0.0.1024",
@@ -142,7 +147,8 @@
             "type": "ED25519"
           }
         ],
-        "transaction_body": "AQECAgMD"
+        "transaction_body": "AQECAgMD",
+        "wait_for_expiry": true
       }
     ],
     "links": {

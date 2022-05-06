@@ -949,6 +949,7 @@ const addSchedule = async (schedule) => {
     creator_account_id: '0.0.1024',
     payer_account_id: '0.0.1024',
     transaction_body: Buffer.from([1, 1, 2, 2, 3, 3]),
+    wait_for_expiry: false,
     ...schedule,
   };
 
@@ -958,8 +959,10 @@ const addSchedule = async (schedule) => {
                            executed_timestamp,
                            payer_account_id,
                            schedule_id,
-                           transaction_body)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+                           transaction_body,
+                           expiration_time,
+                           wait_for_expiry)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       schedule.consensus_timestamp,
       EntityId.parse(schedule.creator_account_id).getEncodedId().toString(),
@@ -967,6 +970,8 @@ const addSchedule = async (schedule) => {
       EntityId.parse(schedule.payer_account_id).getEncodedId().toString(),
       EntityId.parse(schedule.schedule_id).getEncodedId().toString(),
       schedule.transaction_body,
+      schedule.expiration_time,
+      schedule.wait_for_expiry,
     ]
   );
 };
