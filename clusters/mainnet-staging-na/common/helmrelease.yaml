@@ -40,4 +40,3 @@ spec:
       service:
         annotations:
           cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-mainnet-staging-na"} } }'
-          foo: bar

@@ -8,4 +8,3 @@ spec:
   channel: mirror-node-preprod
   secretRef:
     name: slack
-
