@@ -112,7 +112,7 @@ const formatScheduleRow = (row) => {
     consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
     creator_account_id: EntityId.parse(row.creator_account_id).toString(),
     executed_timestamp: utils.nsToSecNs(row.executed_timestamp),
-    expiration_time: row.expiration_time,
+    expiration_time: utils.nsToSecNs(row.expiration_time),
     memo: row.memo,
     payer_account_id: EntityId.parse(row.payer_account_id).toString(),
     schedule_id: EntityId.parse(row.schedule_id).toString(),

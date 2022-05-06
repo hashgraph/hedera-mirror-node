@@ -134,7 +134,7 @@
         "consensus_timestamp": "1234567890.000030003",
         "creator_account_id": "0.0.3333",
         "deleted": false,
-        "expiration_time": "1234967890000003003",
+        "expiration_time": "1234967890.000003003",
         "executed_timestamp": "1234967890.000003103",
         "memo": "Created per product team decision dated 02/03/21",
         "payer_account_id": "0.0.1024",

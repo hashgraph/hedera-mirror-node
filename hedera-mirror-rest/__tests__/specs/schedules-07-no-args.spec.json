@@ -105,7 +105,7 @@
         "creator_account_id": "0.0.1024",
         "deleted": false,
         "creator_account_id": "0.0.1024",
-        "expiration_time": "1234567890000001000",
+        "expiration_time": "1234567890.000001000",
         "executed_timestamp": "1234567890.000001100",
         "memo": "Created per council decision dated 02/01/21",
         "payer_account_id": "0.0.1024",

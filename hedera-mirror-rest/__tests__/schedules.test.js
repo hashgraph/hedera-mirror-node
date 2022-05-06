@@ -35,7 +35,7 @@ describe('schedule formatScheduleRow tests', () => {
     consensus_timestamp: '1234567890000000001',
     creator_account_id: '100',
     deleted: false,
-    expiration_time: '1234567890.000000000',
+    expiration_time: '1234567890000000000',
     executed_timestamp: '1234567890000000002',
     memo: 'Created per council decision dated 1/21/21',
     payer_account_id: '101',

@@ -53,7 +53,7 @@
     "consensus_timestamp": "1234567890.000000001",
     "creator_account_id": "0.0.1024",
     "deleted": false,
-    "expiration_time": "1234567890000000099",
+    "expiration_time": "1234567890.000000099",
     "executed_timestamp": "1234567890.000000100",
     "memo": "Created per council decision dated 02/01/21",
     "payer_account_id": "0.0.1024",
