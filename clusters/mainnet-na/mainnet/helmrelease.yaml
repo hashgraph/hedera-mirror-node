@@ -51,6 +51,7 @@ spec:
       enabled: false
     redis:
       enabled: false
+      foo: bar
     rest:
       ingress:
         annotations:
