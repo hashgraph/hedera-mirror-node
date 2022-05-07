@@ -1289,6 +1289,7 @@ module.exports = {
   loadContractResults,
   loadCryptoAllowances,
   loadEntities,
+  loadFileData,
   loadRecordFiles,
   loadTransactions,
   loadContractLogs,

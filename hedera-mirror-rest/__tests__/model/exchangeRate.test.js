@@ -20,15 +20,28 @@
 
 'use strict';
 
-module.exports = {
-  ContractService: require('./contractService'),
-  CryptoAllowanceService: require('./cryptoAllowanceService'),
-  EntityService: require('./entityService'),
-  FileDataService: require('./fileDataService'),
-  NetworkNodeService: require('./networkNodeService'),
-  NftService: require('./nftService'),
-  RecordFileService: require('./recordFileService'),
-  TokenAllowanceService: require('./tokenAllowanceService'),
-  TokenService: require('./tokenService'),
-  TransactionService: require('./transactionService'),
-};
+const {proto} = require('@hashgraph/proto');
+
+// models
+const {ExchangeRate} = require('../../model');
+
+describe('exchange rate proto parse', () => {
+  const input = {
+    contents: '0a1008b0ea0110cac1181a0608a0a1d09306121008b0ea0110e18e191a0608b0bdd09306',
+    timestamp: 1651770056616171000,
+  };
+
+  const expectedOutput = {
+    current_cent: 401610,
+    current_expiration: 1651773600,
+    current_hbar: 30000,
+    next_cent: 411489,
+    next_expiration: 1651777200,
+    next_hbar: 30000,
+    timestamp: 1651770056616171000,
+  };
+
+  test('valid append', () => {
+    expect(new ExchangeRate(input)).toEqual(expectedOutput);
+  });
+});

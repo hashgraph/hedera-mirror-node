@@ -20,15 +20,22 @@
 
 'use strict';
 
-module.exports = {
-  ContractService: require('./contractService'),
-  CryptoAllowanceService: require('./cryptoAllowanceService'),
-  EntityService: require('./entityService'),
-  FileDataService: require('./fileDataService'),
-  NetworkNodeService: require('./networkNodeService'),
-  NftService: require('./nftService'),
-  RecordFileService: require('./recordFileService'),
-  TokenAllowanceService: require('./tokenAllowanceService'),
-  TokenService: require('./tokenService'),
-  TransactionService: require('./transactionService'),
-};
+const utils = require('../utils');
+
+/**
+ * Exchange rate view model
+ */
+class ExchangeRateViewModel {
+  /**
+   * Constructs block view model
+   *
+   * @param {ExchangeRate} exchangeRate
+   */
+  constructor(exchangeRate) {
+    this.cent_equivalent = exchangeRate.cent;
+    this.expiration_time = exchangeRate.expiration;
+    this.hbar_equivalent = exchangeRate.hbar;
+  }
+}
+
+module.exports = ExchangeRateViewModel;
