@@ -1,0 +1,27 @@
+{
+  "description": "Contract results api call for all contracts with invalid parameters",
+  "setup": {},
+  "urls": [
+    "/api/v1/contracts/results?block.hash=gte:0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305&block.number=gte:10&transaction.index=gte:1",
+    "/api/v1/contracts/results?block.hash=lte:0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305&block.number=lte:10&transaction.index=lte:1",
+    "/api/v1/contracts/results?block.hash=gt:0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305&block.number=gt:10&transaction.index=gt:1",
+    "/api/v1/contracts/results?block.hash=lt:0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305&block.number=lt:10&transaction.index=lt:1",
+    "/api/v1/contracts/results?block.hash=ne:0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305&block.number=ne:10&transaction.index=ne:1"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: block.hash"
+        },
+        {
+          "message": "Invalid parameter: block.number"
+        },
+        {
+          "message": "Invalid parameter: transaction.index"
+        }
+      ]
+    }
+  }
+}

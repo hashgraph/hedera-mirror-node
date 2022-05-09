@@ -297,13 +297,13 @@ const filterValidityChecks = (param, op, val) => {
       ret = (isPositiveLong(val, true) || isHexPositiveLong(val, true)) && _.includes(supportedOperators, op);
       break;
     case constants.filterKeys.BLOCK_HASH:
-      ret = isValidBlockHash(val);
+      ret = isValidBlockHash(val) && _.includes(['eq'], op);
       break;
     case constants.filterKeys.INTERNAL:
       ret = isValidBooleanOpAndValue(op, val);
       break;
     case constants.filterKeys.TRANSACTION_INDEX:
-      ret = isPositiveLong(val, true);
+      ret = isPositiveLong(val, true) && _.includes(['eq'], op);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.

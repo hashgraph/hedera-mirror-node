@@ -152,6 +152,7 @@
   },
   "urls": [
     "/api/v1/contracts/results?block.number=10",
+    "/api/v1/contracts/results?block.number=eq:10",
     "/api/v1/contracts/results?block.number=0xa",
     "/api/v1/contracts/results?block.number=11&block.number=10"
   ],

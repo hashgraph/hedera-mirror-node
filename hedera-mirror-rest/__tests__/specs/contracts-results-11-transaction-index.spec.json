@@ -85,6 +85,7 @@
   },
   "urls": [
     "/api/v1/contracts/0.0.5001/results?transaction.index=2&block.number=16",
+    "/api/v1/contracts/0.0.5001/results?transaction.index=eq:2&block.number=16",
     "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?transaction.index=2&block.number=16"
   ],
   "responseStatus": 200,

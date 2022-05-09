@@ -289,8 +289,14 @@ describe('utils formatComparator tests', () => {
 describe('utils filterDependencyCheck tests', () => {
   test('Verify formatComparator for isolated transaction.index', () => {
     const filters = [utils.buildComparatorFilter(constants.filterKeys.TRANSACTION_INDEX, 'eq:1')];
-    const badFilters = utils.filterDependencyCheck(filters);
-    expect(badFilters).toEqual([constants.filterKeys.TRANSACTION_INDEX]);
+    try {
+      utils.filterDependencyCheck(filters);
+      expect(true).toEqual('Should throw error');
+    } catch (err) {
+      expect(err.toString()).toEqual(
+        'Error: Invalid parameter usage: transaction.index - transaction.index requires block.number or block.hash filter to be specified'
+      );
+    }
   });
 
   test('Verify formatComparator for transaction.index with block.number', () => {
@@ -298,8 +304,12 @@ describe('utils filterDependencyCheck tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.TRANSACTION_INDEX, 'eq:1'),
       utils.buildComparatorFilter(constants.filterKeys.BLOCK_NUMBER, 'eq:1'),
     ];
-    const badFilters = utils.filterDependencyCheck(filters);
-    expect(badFilters).toEqual([]);
+
+    try {
+      utils.filterDependencyCheck(filters);
+    } catch (err) {
+      expect(err).toBeUndefined();
+    }
   });
 
   test('Verify formatComparator for transaction.index with block.hash', () => {
@@ -307,8 +317,11 @@ describe('utils filterDependencyCheck tests', () => {
       utils.buildComparatorFilter(constants.filterKeys.TRANSACTION_INDEX, 'eq:1'),
       utils.buildComparatorFilter(constants.filterKeys.BLOCK_HASH, 'eq:1'),
     ];
-    const badFilters = utils.filterDependencyCheck(filters);
-    expect(badFilters).toEqual([]);
+    try {
+      utils.filterDependencyCheck(filters);
+    } catch (err) {
+      expect(err).toBeUndefined();
+    }
   });
 });
 

@@ -449,11 +449,10 @@ const getAndValidateContractIdAndConsensusTimestampPathParams = (req) => {
 };
 
 const extractContractIdAndFiltersFromValidatedRequest = (req) => {
-  utils.validateReq(req);
   // extract filters from query param
   const contractId = getAndValidateContractIdRequestPathParam(req);
 
-  const filters = utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query, contractResultsFilterValidityChecks);
 
   return {
     contractId,
@@ -718,13 +717,31 @@ const getLastNonceParamValue = (query) => {
 };
 
 /**
+ * Modifies the default filterValidityChecks logic to support special rules for operators of BLOCK_NUMBER
+ * @param {String} param Parameter to be validated
+ * @param {String} opAndVal operator:value to be validated
+ * @return {Boolean} true if the parameter is valid. false otherwise
+ */
+const contractResultsFilterValidityChecks = (param, op, val) => {
+  let ret = utils.filterValidityChecks(param, op, val);
+  switch (param) {
+    case constants.filterKeys.BLOCK_NUMBER:
+      const supportedOperators = ['eq'];
+      ret = _.includes(supportedOperators, op);
+      break;
+  }
+
+  return ret;
+};
+
+/**
  * Handler function for /contracts/results API
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @returns {Promise<void>}
  */
 const getContractResults = async (req, res) => {
-  const filters = utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query, contractResultsFilterValidityChecks);
   const {conditions, params, order, limit} = await extractContractResultsByIdQuery(
     filters,
     '',

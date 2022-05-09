@@ -144,7 +144,10 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/results?transaction.index=2&block.number=17"],
+  "urls": [
+    "/api/v1/contracts/results?transaction.index=2&block.number=17",
+    "/api/v1/contracts/results?transaction.index=eq:2&block.number=17"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "results": [

@@ -96,6 +96,7 @@
     ]
   },
   "urls": [
+    "/api/v1/contracts/0.0.5001/results?block.number=eq:10",
     "/api/v1/contracts/0.0.5001/results?block.number=10",
     "/api/v1/contracts/0.0.5001/results?block.number=0xa",
     "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.number=10",
