@@ -1,29 +1,29 @@
 -------------------
--- Fill missing contract file_id / initcode from its parent contract
+-- Fill missing contract file_id / initcode from its root contract
 -------------------
 
-with missing as (
-  select id, created_timestamp, parent_consensus_timestamp
+with recursive descendant as (
+  select id as root, id as parent, id
   from contract
-  join transaction
-    on consensus_timestamp = created_timestamp
-  where contract.created_timestamp is not null and file_id is null and initcode is null
-), contract_initsource as (
-  select m.id, c.file_id, c.initcode
-  from missing m
-  join contract_result cr
-    on cr.consensus_timestamp = coalesce(parent_consensus_timestamp, created_timestamp) and cr.contract_id <> m.id
-  join contract c
-    on c.id = cr.contract_id
-  where c.file_id is not null or c.initcode is not null
+  where file_id is not null or initcode is not null
+  union all
+  select *
+  from (
+    select d.root, d.id as parent, unnest(cr.created_contract_ids) as id
+    from contract_result cr
+    join descendant d on d.id = cr.contract_id
+    where array_length(cr.created_contract_ids, 1) > 0
+  ) children
+  where parent <> id
 ), updated as (
-  update contract
-  set file_id = ci.file_id, initcode = ci.initcode
-  from contract_initsource ci
-  where contract.id = ci.id
-  returning contract.id, contract.file_id, contract.initcode
+  update contract c
+  set file_id = r.file_id, initcode = r.initcode
+  from descendant d
+  join contract r on r.id = d.root
+  where c.id = d.id and d.id <> d.parent and c.file_id is null and c.initcode is null
+  returning c.id, c.file_id, c.initcode
 )
-update contract_history
-set file_id = updated.file_id, initcode = updated.initcode
-from updated
-where contract_history.id = updated.id
+update contract_history ch
+set file_id = u.file_id, initcode = u.initcode
+from updated u
+where ch.id = u.id;

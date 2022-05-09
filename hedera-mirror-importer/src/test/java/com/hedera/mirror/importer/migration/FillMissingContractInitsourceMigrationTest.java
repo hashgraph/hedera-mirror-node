@@ -47,7 +47,6 @@ import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.common.domain.DomainWrapper;
 import com.hedera.mirror.common.domain.History;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
@@ -58,8 +57,6 @@ import com.hedera.mirror.importer.TestUtils;
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.59.0")
 class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
-
-    private static final int CONTRACTCALL_PROTO_ID = TransactionType.CONTRACTCALL.getProtoId();
 
     private static final String TABLE_IDS = "id";
 
@@ -91,38 +88,38 @@ class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
         history.setTimestampRange(Range.closedOpen(child.getCreatedTimestamp(), child.getCreatedTimestamp() + 20L));
         insertContractHistory(history);
         contractResult(child.getCreatedTimestamp(), parent.getId(), List.of(child.getId())).persist();
-        transaction(child.getCreatedTimestamp()).customize(t -> t.type(CONTRACTCALL_PROTO_ID)).persist();
         child.setFileId(parent.getFileId());
         expected.addAll(List.of(parent, child));
         var expectedHistory = TestUtils.clone(history);
         expectedHistory.setFileId(parent.getFileId());
 
-        // pre 0.23, parent is also missing fileId
-        var parent2 = contract().customize(c -> c.fileId(null)).persist();
-        child = contract().customize(c -> c.fileId(null)).persist();
-        contractResult(child.getCreatedTimestamp(), parent2.getId(), List.of(child.getId())).persist();
-        transaction(child.getCreatedTimestamp()).customize(t -> t.type(CONTRACTCALL_PROTO_ID)).persist();
-        expected.addAll(List.of(parent2, child));
+        // pre 0.23, grandchild of parent
+        var grandchild = contract().customize(c -> c.fileId(null)).persist();
+        contractResult(grandchild.getCreatedTimestamp(), child.getId(), List.of(grandchild.getId())).persist();
+        grandchild.setFileId(parent.getFileId());
+        expected.add(grandchild);
 
-        // post 0.23, child contract in its own contractcreate transaction
-        var parent3 = contract().persist();
+        // pre 0.23, parent is also missing fileId
+        var parent3 = contract().customize(c -> c.fileId(null)).persist();
         child = contract().customize(c -> c.fileId(null)).persist();
-        contractResult(parent3.getCreatedTimestamp(), parent3.getId(), List.of(child.getId())).persist();
-        contractResult(child.getCreatedTimestamp(), child.getId(), Collections.emptyList()).persist();
-        transaction(child.getCreatedTimestamp())
-                .customize(t -> t.nonce(1).parentConsensusTimestamp(parent3.getCreatedTimestamp())).persist();
-        child.setFileId(parent3.getFileId());
+        contractResult(child.getCreatedTimestamp(), parent3.getId(), List.of(child.getId())).persist();
         expected.addAll(List.of(parent3, child));
 
-        // post 0.26, child contract in its own contractcreate transaction, parent is created with initcode
-        var parent4 = contract().customize(c -> c.fileId(null).initcode(domainBuilder.bytes(32))).persist();
+        // post 0.23, child contract in its own contractcreate transaction
+        var parent4 = contract().persist();
         child = contract().customize(c -> c.fileId(null)).persist();
-        contractResult(parent4.getCreatedTimestamp(), parent4.getId(), List.of(child.getId())).persist();
+        contractResult(parent4.getCreatedTimestamp(), parent4.getId(), List.of(parent4.getId(), child.getId())).persist();
         contractResult(child.getCreatedTimestamp(), child.getId(), Collections.emptyList()).persist();
-        transaction(child.getCreatedTimestamp())
-                .customize(t -> t.nonce(1).parentConsensusTimestamp(parent4.getCreatedTimestamp())).persist();
-        child.setInitcode(parent4.getInitcode());
+        child.setFileId(parent4.getFileId());
         expected.addAll(List.of(parent4, child));
+
+        // post 0.26, child contract in its own contractcreate transaction, parent is created with initcode
+        var parent5 = contract().customize(c -> c.fileId(null).initcode(domainBuilder.bytes(32))).persist();
+        child = contract().customize(c -> c.fileId(null)).persist();
+        contractResult(parent5.getCreatedTimestamp(), parent5.getId(), List.of(parent5.getId(), child.getId())).persist();
+        contractResult(child.getCreatedTimestamp(), child.getId(), Collections.emptyList()).persist();
+        child.setInitcode(parent5.getInitcode());
+        expected.addAll(List.of(parent5, child));
 
         migrate();
 
@@ -168,15 +165,6 @@ class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
         return domainBuilder.wrap(builder, builder::build);
     }
 
-    private DomainWrapper<Transaction, Transaction.TransactionBuilder> transaction(long consensusTimestamp) {
-        var builder = Transaction.builder()
-                .consensusTimestamp(consensusTimestamp)
-                .payerAccountId(domainBuilder.id())
-                .type(TransactionType.CONTRACTCREATEINSTANCE.getProtoId())
-                .validStartNs(consensusTimestamp - 5);
-        return domainBuilder.wrap(builder, builder::build);
-    }
-
     @Data
     @Entity
     @Table(name = TABLE_NAME)
@@ -208,21 +196,5 @@ class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
         private byte[] functionParameters;
         private long gasLimit;
         private long payerAccountId;
-    }
-
-    @Data
-    @Entity
-    @Table(name = "transaction")
-    @NoArgsConstructor
-    @SuperBuilder
-    public static class Transaction {
-        @Id
-        private long consensusTimestamp;
-        private long nonce;
-        private Long parentConsensusTimestamp;
-        private long payerAccountId;
-        private int result = 22;
-        private int type;
-        private long validStartNs;
     }
 }
