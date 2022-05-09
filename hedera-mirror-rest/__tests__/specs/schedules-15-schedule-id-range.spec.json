@@ -102,6 +102,7 @@
         "consensus_timestamp": "1234567890.000020002",
         "creator_account_id": "0.0.1024",
         "deleted": false,
+        "expiration_time": null,
         "executed_timestamp": "1234767890.000002102",
         "memo": "Created per mirror team decision dated 02/02/21",
         "payer_account_id": "0.0.1024",
@@ -120,7 +121,8 @@
             "type": "ED25519"
           }
         ],
-        "transaction_body": "AQECAgMD"
+        "transaction_body": "AQECAgMD",
+        "wait_for_expiry": false
       },
       {
         "admin_key": {
@@ -130,6 +132,7 @@
         "consensus_timestamp": "1234567890.000030003",
         "creator_account_id": "0.0.1024",
         "deleted": false,
+        "expiration_time": null,
         "executed_timestamp": "1234967890.000003103",
         "memo": "Created per product team decision dated 02/03/21",
         "payer_account_id": "0.0.1024",
@@ -142,7 +145,8 @@
             "type": "ED25519"
           }
         ],
-        "transaction_body": "AQECAgMD"
+        "transaction_body": "AQECAgMD",
+        "wait_for_expiry": false
       }
     ],
     "links": {

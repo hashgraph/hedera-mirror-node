@@ -55,7 +55,7 @@ class InvalidArgumentError extends Error {
         if (message.code === this.INVALID_PARAM_USAGE) {
           return `${invalidParamUsageMessageFormat}${message.key} - ${message.error}`;
         } else {
-          return `${InvalidArgumentErrorMessageFormat}${message.key}`;
+          return `${InvalidArgumentErrorMessageFormat}${message.key || message}`;
         }
       })
     );

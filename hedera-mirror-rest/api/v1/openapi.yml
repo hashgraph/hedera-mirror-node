@@ -400,6 +400,35 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
+  /api/v1/contracts/results/logs:
+    get:
+      summary: List contracts logs across many contracts on the network
+      description: >
+        Search the logs across many contracts with multiple contract calls. Chained logs are not
+        included but can be found by calling `/api/v1/contracts/{contractId}/results/{timestamp}`
+        or `/api/v1/contracts/results/{transactionId}`. When searching by topic a timestamp parameter must be supplied
+        and span a time range of at most seven days.
+      operationId: listContractsLogs
+      parameters:
+        - $ref: '#/components/parameters/logIndexQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: '#/components/parameters/logTopic0QueryParam'
+        - $ref: '#/components/parameters/logTopic1QueryParam'
+        - $ref: '#/components/parameters/logTopic2QueryParam'
+        - $ref: '#/components/parameters/logTopic3QueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractLogsResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - contracts
   /api/v1/network/nodes:
     get:
       summary: Get the network address book nodes
@@ -1805,6 +1834,8 @@ components:
           example: false
         executed_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
+        expiration_time:
+          $ref: '#/components/schemas/TimestampNullable'
         memo:
           type: string
           example: 'created on 02/10/2021'
@@ -1820,6 +1851,8 @@ components:
           type: string
           format: byte
           example: Kd6tvu8=
+        wait_for_expiry:
+          type: boolean
     Schedules:
       type: array
       items:

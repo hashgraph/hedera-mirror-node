@@ -34,7 +34,7 @@
         "consensus_timestamp": "1234567890000000001",
         "payerAccountId": "0.0.10",
         "recipientAccountId": "0.0.9",
-        "amount": 10,
+        "amount": 9223372036847275807,
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98"
       },
@@ -63,13 +63,13 @@
           {
             "token_id": "0.0.90000",
             "account": "0.0.10",
-            "amount": -200,
+            "amount": -9223372036847275807,
             "is_approval": true
           },
           {
             "token_id": "0.0.90000",
             "account": "0.0.200",
-            "amount": 200,
+            "amount": 9223372036847275807,
             "is_approval": true
           }
         ]
@@ -164,13 +164,13 @@
           {
             "token_id": "0.0.90000",
             "account": "0.0.10",
-            "amount": -200,
+            "amount": -9223372036847275807,
             "is_approval": true
           },
           {
             "token_id": "0.0.90000",
             "account": "0.0.200",
-            "amount": 200,
+            "amount": 9223372036847275807,
             "is_approval": true
           }
         ]
@@ -265,12 +265,12 @@
         "transfers": [
           {
             "account": "0.0.9",
-            "amount": 10,
+            "amount": 9223372036847275807,
             "is_approval": false
           },
           {
             "account": "0.0.10",
-            "amount": -11,
+            "amount": -9223372036847275808,
             "is_approval": false
           },
           {

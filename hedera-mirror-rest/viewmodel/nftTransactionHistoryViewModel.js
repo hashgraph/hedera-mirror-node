@@ -32,7 +32,7 @@ class NftTransactionHistoryViewModel {
   constructor(nftTransferModel, transactionModel) {
     this.consensus_timestamp = utils.nsToSecNs(nftTransferModel.consensusTimestamp);
     this.is_approval = _.isNil(nftTransferModel.isApproval) ? false : nftTransferModel.isApproval;
-    this.nonce = Number(transactionModel.nonce);
+    this.nonce = transactionModel.nonce;
     this.receiver_account_id = EntityId.parse(nftTransferModel.receiverAccountId, true).toString();
     this.sender_account_id = EntityId.parse(nftTransferModel.senderAccountId, true).toString();
     this.transaction_id = utils.createTransactionId(

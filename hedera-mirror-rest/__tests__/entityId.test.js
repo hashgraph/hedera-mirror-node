@@ -369,27 +369,35 @@ describe('EntityId toString', () => {
 
 describe('EntityId encoding', () => {
   test('0.0.0', () => {
-    expect(EntityId.parse('0.0.0').getEncodedId()).toBe('0');
+    expect(EntityId.parse('0.0.0').getEncodedId()).toBe(0);
   });
 
   test('0.0.10', () => {
-    expect(EntityId.parse('0.0.10').getEncodedId()).toBe('10');
+    expect(EntityId.parse('0.0.10').getEncodedId()).toBe(10);
   });
 
   test('0.0.4294967295', () => {
-    expect(EntityId.parse('0.0.4294967295').getEncodedId()).toBe('4294967295');
+    expect(EntityId.parse('0.0.4294967295').getEncodedId()).toBe(4294967295);
   });
 
   test('10.10.10', () => {
-    expect(EntityId.parse('10.10.10').getEncodedId()).toBe('2814792716779530');
+    expect(EntityId.parse('10.10.10').getEncodedId()).toBe(2814792716779530);
+  });
+
+  test('31.65535.4294967295', () => {
+    expect(EntityId.parse('31.65535.4294967295').getEncodedId()).toBe(Number.MAX_SAFE_INTEGER);
+  });
+
+  test('32.0.0', () => {
+    expect(EntityId.parse('32.0.0').getEncodedId()).toBe(2n ** 53n);
   });
 
   test('32767.65535.4294967295', () => {
-    expect(EntityId.parse('32767.65535.4294967295').getEncodedId()).toBe('9223372036854775807');
+    expect(EntityId.parse('32767.65535.4294967295').getEncodedId()).toBe(9223372036854775807n);
   });
 
   test('32767.0.0', () => {
-    expect(EntityId.parse('32767.0.0').getEncodedId()).toBe('9223090561878065152');
+    expect(EntityId.parse('32767.0.0').getEncodedId()).toBe(9223090561878065152n);
   });
 
   test('nullable', () => {

@@ -42,7 +42,7 @@ const formatBalancesResult = (req, result, limit, order) => {
   ret.balances = rows.map((row) => {
     return {
       account: EntityId.parse(row.account_id).toString(),
-      balance: Number(row.balance),
+      balance: row.balance,
       tokens: utils.parseTokenBalances(row.token_balances),
     };
   });
@@ -131,7 +131,7 @@ const getBalances = async (req, res) => {
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
 
   if (logger.isTraceEnabled()) {
-    logger.trace(`getBalance query: ${pgSqlQuery} ${JSON.stringify(sqlParams)}`);
+    logger.trace(`getBalance query: ${pgSqlQuery} ${utils.JSONStringify(sqlParams)}`);
   }
 
   // Execute query

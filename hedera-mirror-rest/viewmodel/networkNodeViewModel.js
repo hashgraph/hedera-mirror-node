@@ -39,7 +39,7 @@ class NetworkNodeViewModel {
     this.description = networkNode.addressBookEntry.description;
     this.file_id = EntityId.parse(networkNode.addressBook.fileId).toString();
     this.memo = networkNode.addressBookEntry.memo;
-    this.node_id = Number(networkNode.addressBookEntry.nodeId);
+    this.node_id = networkNode.addressBookEntry.nodeId;
     this.node_account_id = EntityId.parse(networkNode.addressBookEntry.nodeAccountId).toString();
     this.node_cert_hash = utils.addHexPrefix(utils.encodeUtf8(networkNode.addressBookEntry.nodeCertHash), true);
     this.public_key = utils.addHexPrefix(networkNode.addressBookEntry.publicKey, true);
