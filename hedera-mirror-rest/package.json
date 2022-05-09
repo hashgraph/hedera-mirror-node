@@ -99,7 +99,7 @@
     "eslint-plugin-security": "^1.5.0",
     "husky": "^8.0.0",
     "jest": "^28.0.3",
-    "jest-circus": "^28.0.3",
+    "jest-circus": "^28.1.0",
     "jest-extended": "^2.0.0",
     "jest-junit": "^13.2.0",
     "mock-req-res": "^1.2.0",
