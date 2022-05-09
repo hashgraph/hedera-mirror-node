@@ -508,10 +508,6 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public <T, B> DomainWrapper<T, B> wrap(B builder, Supplier<T> supplier) {
-        return new DomainWrapperImpl<>(builder, supplier);
-    }
-
     // Helper methods
     public byte[] bytes(int length) {
         byte[] bytes = new byte[length];
