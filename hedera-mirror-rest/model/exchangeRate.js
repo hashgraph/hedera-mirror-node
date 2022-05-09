@@ -29,7 +29,7 @@ class ExchangeRate {
    * Curently from proto, eventually from excahnge_rate table
    */
   constructor(exchangeRate) {
-    const exchangeRateSet = proto.ExchangeRateSet.decode(Buffer.from(exchangeRate.contents, 'hex'));
+    const exchangeRateSet = proto.ExchangeRateSet.decode(Buffer.from(exchangeRate.file_data, 'hex'));
 
     this.current_cent = exchangeRateSet.currentRate.centEquiv;
     this.current_expiration = exchangeRateSet.currentRate.expirationTime.seconds.low;

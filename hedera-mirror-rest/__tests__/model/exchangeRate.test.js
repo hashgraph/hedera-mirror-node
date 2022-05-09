@@ -20,15 +20,13 @@
 
 'use strict';
 
-const {proto} = require('@hashgraph/proto');
-
 // models
 const {ExchangeRate} = require('../../model');
 
 describe('exchange rate proto parse', () => {
   const input = {
-    contents: '0a1008b0ea0110cac1181a0608a0a1d09306121008b0ea0110e18e191a0608b0bdd09306',
-    timestamp: 1651770056616171000,
+    file_data: '0a1008b0ea0110cac1181a0608a0a1d09306121008b0ea0110e18e191a0608b0bdd09306',
+    consensus_timestamp: 1651770056616171000,
   };
 
   const expectedOutput = {

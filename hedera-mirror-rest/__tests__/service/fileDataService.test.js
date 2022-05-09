@@ -64,15 +64,6 @@ describe('FileDataService.getExchangeRate tests', () => {
     await expect(FileDataService.getExchangeRate(nowNanoseconds)).resolves.toBeNull();
   });
 
-  const inputRecordFile = [
-    {
-      index: 1,
-      consensus_start: 1,
-      consensus_end: 3,
-      hash: 'dee34',
-    },
-  ];
-
   const expectedPreviousFile = {
     current_cent: 435305,
     current_expiration: 1651766400,
@@ -102,8 +93,42 @@ describe('FileDataService.getExchangeRate tests', () => {
   test('FileDataService.getExchangeRate - Row match w previous latest', async () => {
     await integrationDomainOps.loadFileData(files);
 
-    await expect(FileDataService.getExchangeRate(expectedLatestFile.timestamp)).resolves.toMatchObject(
+    await expect(FileDataService.getExchangeRate(expectedLatestFile.timestamp - 1)).resolves.toMatchObject(
       expectedPreviousFile
     );
+  });
+});
+
+const fileId = 112;
+describe('FileDataService.getLatestFileDataContents tests', () => {
+  const nowNanoseconds = Date.now() * 1000000;
+  test('FileDataService.getLatestFileDataContents - No match', async () => {
+    await expect(FileDataService.getLatestFileDataContents(fileId, nowNanoseconds)).resolves.toBeNull();
+  });
+
+  const expectedPreviousFile = {
+    consensus_timestamp: 3,
+    file_data: '0a1008b0ea0110e9c81a1a060880e9cf9306121008b0ea0110f5f3191a06089085d09306',
+  };
+
+  const expectedLatestFile = {
+    consensus_timestamp: 4,
+    file_data: '0a1008b0ea0110f9bb1b1a0608f0cccf9306121008b0ea0110e9c81a1a060880e9cf9306',
+  };
+
+  test('FileDataService.getLatestFileDataContents - Row match w latest', async () => {
+    await integrationDomainOps.loadFileData(files);
+
+    await expect(FileDataService.getLatestFileDataContents(fileId, nowNanoseconds)).resolves.toMatchObject(
+      expectedLatestFile
+    );
+  });
+
+  test('FileDataService.getLatestFileDataContents - Row match w previous latest', async () => {
+    await integrationDomainOps.loadFileData(files);
+
+    await expect(
+      FileDataService.getLatestFileDataContents(fileId, expectedLatestFile.consensus_timestamp - 1)
+    ).resolves.toMatchObject(expectedPreviousFile);
   });
 });

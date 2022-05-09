@@ -32,6 +32,7 @@ const contracts = require('../../controllers/contractController');
 const {assertSqlQueryEqual} = require('../testutils');
 const utils = require('../../utils');
 const {Contract} = require('../../model');
+const {FileDataService} = require('../../service');
 
 const contractFields = [
   Contract.AUTO_RENEW_ACCOUNT_ID,
@@ -293,7 +294,7 @@ describe('getContractByIdOrAddressQuery', () => {
         with contract as (
           ${queryForTable({table: 'contract', columnName})}
         ), contract_file as (
-            ${contracts.fileDataQuery}
+            ${FileDataService.getContractInitCodeFiledataQuery()}
         )
         ${mainQuery}`,
     },
@@ -313,7 +314,7 @@ describe('getContractByIdOrAddressQuery', () => {
             order by timestamp_range desc
             limit 1
         ), contract_file as (
-            ${contracts.fileDataQuery}
+            ${FileDataService.getContractInitCodeFiledataQuery()}
         )
         ${mainQuery}`,
     },
@@ -329,7 +330,7 @@ describe('getContractByIdOrAddressQuery', () => {
         with contract as (
           ${queryForTable({table: 'contract', columnName})}
         ), contract_file as (
-            ${contracts.fileDataQuery}
+            ${FileDataService.getContractInitCodeFiledataQuery()}
         )
         ${mainQuery}`,
     },
@@ -345,7 +346,7 @@ describe('getContractByIdOrAddressQuery', () => {
             order by timestamp_range desc
             limit 1
         ), contract_file as (
-            ${contracts.fileDataQuery}
+            ${FileDataService.getContractInitCodeFiledataQuery()}
         )
         ${mainQuery}`,
     },

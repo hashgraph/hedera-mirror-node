@@ -20,7 +20,6 @@
 
 'use strict';
 
-const {proto} = require('@hashgraph/proto');
 const _ = require('lodash');
 
 const BaseService = require('./baseService');
@@ -32,34 +31,14 @@ const {Contract, ExchangeRate, FileData} = require('../model');
 class FileDataService extends BaseService {
   static exchangeRateFileId = 112;
 
-  static latestFileDataContentQuery = `select ${FileData.CONSENSUS_TIMESTAMP}, encode(${FileData.FILE_DATA}, 'escape') contents 
-    from ${FileData.tableName} where ${FileData.ENTITY_ID} = $1 and ${FileData.CONSENSUS_TIMESTAMP} < $2
+  static latestFileDataContentQuery = `select ${FileData.CONSENSUS_TIMESTAMP}, encode(${FileData.FILE_DATA}, 'escape') ${FileData.FILE_DATA} 
+    from ${FileData.tableName} where ${FileData.ENTITY_ID} = $1 and ${FileData.CONSENSUS_TIMESTAMP} <= $2
     order by ${FileData.CONSENSUS_TIMESTAMP} desc limit 1`;
 
-  // get most recent file by combining file data of matching entity since a given timestamp
-  static fileDataQuery = `with latest_update as (
-      select max(${FileData.CONSENSUS_TIMESTAMP}) as timestamp, ${FileData.ENTITY_ID}
-      from ${FileData.tableName}
-      where ${FileData.CONSENSUS_TIMESTAMP} < $1 and ${FileData.ENTITY_ID} = $2 and ${
-    FileData.TRANSACTION_TYPE
-  } in (16,17) and 
-      group by ${FileData.ENTITY_ID}
-    )
-    select encode(string_agg (${FileData.getFullName(FileData.FILE_DATA)}, ',' order by ${FileData.getFullName(
-    FileData.CONSENSUS_TIMESTAMP
-  )}), 'hex') as contents,
-      max(${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}) as timestamp
-    from ${FileData.tableName} ${FileData.tableAlias}
-    join latest_update l on ${FileData.getFullName(FileData.ENTITY_ID)} = l.entity_id and ${FileData.getFullName(
-    FileData.CONSENSUS_TIMESTAMP
-  )} >= l.timestamp
-    where ${FileData.getFullName(FileData.ENTITY_ID)} = $2 and length(${FileData.getFullName(FileData.FILE_DATA)}) <> 0
-      and ${FileData.getFullName(FileData.TRANSACTION_TYPE)} in (16,17,19) and ${FileData.getFullName(
-    FileData.CONSENSUS_TIMESTAMP
-  )} >= l.timestamp
-    group by ${FileData.getFullName(FileData.ENTITY_ID)}`;
-
   // contract byte code
+  // the query finds the file content valid at the contract's created timestamp T by aggregating the contents of all the
+  // file* txs from the latest FileCreate or FileUpdate transaction before T, to T
+  // Note the 'contract' relation is the cte not the 'contract' table
   static contractInitCodeFileDataQuery = `select
       string_agg(
           ${FileData.getFullName(FileData.FILE_DATA)}, ''
@@ -85,7 +64,11 @@ class FileDataService extends BaseService {
     ) and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${Contract.getFullName(Contract.CREATED_TIMESTAMP)}
       and ${Contract.getFullName(Contract.FILE_ID)} is not null`;
 
-  getFileContents = async (entity, timestamp) => {
+  getContractInitCodeFiledataQuery = () => {
+    return FileDataService.contractInitCodeFileDataQuery;
+  };
+
+  getLatestFileDataContents = async (entity, timestamp) => {
     const row = await super.getSingleRow(
       FileDataService.latestFileDataContentQuery,
       [entity, timestamp],
@@ -95,7 +78,7 @@ class FileDataService extends BaseService {
   };
 
   getExchangeRate = async (timestamp) => {
-    const row = await this.getFileContents(FileDataService.exchangeRateFileId, timestamp);
+    const row = await this.getLatestFileDataContents(FileDataService.exchangeRateFileId, timestamp);
 
     return _.isNil(row) ? null : new ExchangeRate(row);
   };
