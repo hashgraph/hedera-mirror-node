@@ -20,6 +20,7 @@ package com.hedera.mirror.common.domain.transaction;
  * ‍
  */
 
+import java.time.Instant;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -74,6 +75,21 @@ public class RecordFile implements StreamFile<RecordItem> {
 
     private Long gasUsed;
 
+    /**
+     * This field was created to be used during the sum of the total gas used, to avoid boxing/unboxing of
+     * {@link RecordFile#gasUsed}, since {@link RecordFile#gasUsed} must be a {@link Long} to ensure we can load
+     * a {@link RecordFile} from the database with {@code gasUsed = null}.
+     */
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    @Transient
+    private long gasUsedAccumulator = 0;
+
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    @Transient
+    private final LogsBloomFilter logsBloomFilter = new LogsBloomFilter();
+
     private Integer hapiVersionMajor;
 
     private Integer hapiVersionMinor;
@@ -123,5 +139,31 @@ public class RecordFile implements StreamFile<RecordItem> {
         }
 
         return new Version(hapiVersionMajor, hapiVersionMinor, hapiVersionPatch);
+    }
+
+    public void finishLoad(long count) {
+        gasUsed = gasUsedAccumulator;
+        this.count = count;
+        loadEnd = Instant.now().getEpochSecond();
+        logsBloom = logsBloomFilter.getBloom();
+    }
+
+    public void processItem(final RecordItem recordItem) {
+        if (recordItem.getParent() != null) {
+            return;
+        }
+        TransactionType contractTransactionType = TransactionType.of(recordItem.getTransactionType());
+        switch (contractTransactionType) {
+            case CONTRACTCALL:
+            case CONTRACTCREATEINSTANCE:
+            case ETHEREUMTRANSACTION:
+                var record = recordItem.getRecord();
+                var contractResult = record.hasContractCreateResult() ? record.getContractCreateResult() :
+                        record.getContractCallResult();
+                gasUsedAccumulator += contractResult.getGasUsed();
+                logsBloomFilter.insertBytes(contractResult.getBloom().toByteArray());
+            default:
+                break;
+        }
     }
 }
