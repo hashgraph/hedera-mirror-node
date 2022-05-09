@@ -22,9 +22,18 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
+
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNode;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNodes;
+
+import lombok.extern.log4j.Log4j2;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.MediaType;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -45,31 +54,29 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
+@Log4j2
 @Named
-public class MirrorNodeClient extends AbstractNetworkClient {
+public class MirrorNodeClient {
 
+    private final AcceptanceTestProperties acceptanceTestProperties;
     private final WebClient webClient;
     private final RetryBackoffSpec retrySpec;
 
-    public MirrorNodeClient(SDKClient sdkClient, WebClient webClient, RetryTemplate retryTemplate) {
-        super(sdkClient, retryTemplate);
+    public MirrorNodeClient(AcceptanceTestProperties acceptanceTestProperties,
+                            WebClient webClient) {
+        this.acceptanceTestProperties = acceptanceTestProperties;
         this.webClient = webClient;
-        RestPollingProperties restPollingProperties = this.sdkClient.getAcceptanceTestProperties()
-                .getRestPollingProperties();
-        retrySpec = Retry
-                .backoff(restPollingProperties.getMaxAttempts(), restPollingProperties.getMinBackoff())
-                .maxBackoff(restPollingProperties.getMaxBackoff())
-                .filter(this::shouldRetryRestCall)
-                .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
-                        r.totalRetries() + 1, r.failure().getMessage()));
-        log.info("Creating Mirror Node client for {}", sdkClient.getMirrorNodeAddress());
+        var properties = acceptanceTestProperties.getRestPollingProperties();
+        retrySpec = Retry.backoff(properties.getMaxAttempts(), properties.getMinBackoff())
+                .maxBackoff(properties.getMaxBackoff())
+                .filter(this::shouldRetryRestCall);
     }
 
-    public SubscriptionResponse subscribeToTopic(TopicMessageQuery topicMessageQuery) throws Throwable {
+    public SubscriptionResponse subscribeToTopic(SDKClient sdkClient, TopicMessageQuery topicMessageQuery) throws Throwable {
         log.debug("Subscribing to topic.");
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         SubscriptionHandle subscription = topicMessageQuery
-                .subscribe(client, subscriptionResponse::handleConsensusTopicResponse);
+                .subscribe(sdkClient.getClient(), subscriptionResponse::handleConsensusTopicResponse);
 
         subscriptionResponse.setSubscription(subscription);
 
@@ -79,10 +86,11 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         return subscriptionResponse;
     }
 
-    public SubscriptionResponse subscribeToTopicAndRetrieveMessages(TopicMessageQuery topicMessageQuery,
+    public SubscriptionResponse subscribeToTopicAndRetrieveMessages(SDKClient sdkClient,
+                                                                    TopicMessageQuery topicMessageQuery,
                                                                     int numMessages,
                                                                     long latency) throws Throwable {
-        latency = latency <= 0 ? sdkClient.getMessageTimeoutSeconds() : latency;
+        latency = latency <= 0 ? acceptanceTestProperties.getMessageTimeout().toSeconds() : latency;
         log.debug("Subscribing to topic, expecting {} within {} seconds.", numMessages, latency);
 
         CountDownLatch messageLatch = new CountDownLatch(numMessages);
@@ -90,7 +98,7 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         SubscriptionHandle subscription = topicMessageQuery
-                .subscribe(client, resp -> {
+                .subscribe(sdkClient.getClient(), resp -> {
                     // add expected messages only to messages list
                     if (subscriptionResponse.getMirrorHCSResponses().size() < numMessages) {
                         subscriptionResponse.handleConsensusTopicResponse(resp);
@@ -121,19 +129,14 @@ public class MirrorNodeClient extends AbstractNetworkClient {
 
     public MirrorCryptoAllowanceResponse getAccountCryptoAllowance(String accountId) {
         log.debug("Verify account '{}''s crypto allowance is returned by Mirror Node", accountId);
-        return callRestEndpoint(
-                "/accounts/{accountId}/allowances/crypto",
-                MirrorCryptoAllowanceResponse.class,
-                accountId);
+        return callRestEndpoint("/accounts/{accountId}/allowances/crypto",
+                MirrorCryptoAllowanceResponse.class, accountId);
     }
 
     public MirrorCryptoAllowanceResponse getAccountCryptoAllowanceBySpender(String accountId, String spenderId) {
         log.debug("Verify account '{}''s crypto allowance for {} is returned by Mirror Node", accountId, spenderId);
-        return callRestEndpoint(
-                "/accounts/{accountId}/allowances/crypto?spender.id={spenderId}",
-                MirrorCryptoAllowanceResponse.class,
-                accountId,
-                spenderId);
+        return callRestEndpoint("/accounts/{accountId}/allowances/crypto?spender.id={spenderId}",
+                MirrorCryptoAllowanceResponse.class, accountId, spenderId);
     }
 
     public MirrorContractResponse getContractInfo(String contractId) {
@@ -150,6 +153,19 @@ public class MirrorNodeClient extends AbstractNetworkClient {
         log.debug("Verify contract result '{}' is returned by Mirror Node", transactionId);
         return callRestEndpoint("/contracts/results/{transactionId}", MirrorContractResultResponse.class,
                 transactionId);
+    }
+
+    public List<MirrorNetworkNode> getNetworkNodes() {
+        List<MirrorNetworkNode> nodes = new ArrayList<>();
+        String next = "/network/nodes?limit=25";
+
+        do {
+            var response = callRestEndpoint(next, MirrorNetworkNodes.class);
+            nodes.addAll(response.getNodes());
+            next = response.getLinks() != null ? response.getLinks().getNext() : null;
+        } while (next != null);
+
+        return nodes;
     }
 
     public MirrorNftResponse getNftInfo(String tokenId, long serialNumber) {
@@ -193,22 +209,19 @@ public class MirrorNodeClient extends AbstractNetworkClient {
     }
 
     protected boolean shouldRetryRestCall(Throwable t) {
-        return sdkClient.getAcceptanceTestProperties().getRestPollingProperties().getRetryableExceptions()
+        return acceptanceTestProperties.getRestPollingProperties().getRetryableExceptions()
                 .stream()
                 .anyMatch(ex -> ex.isInstance(t) || ex.isInstance(Throwables.getRootCause(t)));
     }
 
     private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
-        T response = webClient.get()
-                .uri(uri, uriVariables)
+        return webClient.get()
+                .uri(uri.replace("/api/v1", ""), uriVariables)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(classType)
                 .retryWhen(retrySpec)
-                .doOnNext(x -> log.debug("Endpoint call successfully returned a 200"))
                 .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
                 .block();
-
-        return response;
     }
 }

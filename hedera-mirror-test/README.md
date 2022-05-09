@@ -32,18 +32,6 @@ Tests can be compiled and run by running the following command from the root fol
 
 `./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags=@acceptance`
 
-### Image Execution
-
-The hedera-mirror-test image is deployed and available in the `gcr.io/mirrornode` repository. However, in the case
-localized changes need to be tested you can build and run the tests as follows:
-
-```shell
-$ docker build -f src/main/resources/Dockerfile . -t gcr.io/mirrornode/hedera-mirror-test:latest
-$ docker run -e cucumberFlags="@subscribeonly" \
-    -v $(pwd)/application.yml:/usr/etc/hedera-mirror-node/hedera-mirror-test/src/test/resources/application-default.yml \
-    gcr.io/mirrornode/hedera-mirror-test:latest
-```
-
 ### Test Configuration
 
 Configuration properties are set in the `application.yml` file located under `src/test/resources`. This component
@@ -53,8 +41,6 @@ under `hedera.mirror.test.acceptance` include:
 - `backOffPeriod` - The number of milliseconds client should wait before retrying a retryable failure.
 - `emitBackgroundMessages` - Flag to set if background messages should be emitted. For operations use in non-production
   `environments.
-- `existingTopicNum` - A pre-existing default topic number that can be used when no topicId is specified in a test. Used
-  initially by `@subscribeonly` test.
 - `featureProperties`
   - `maxContractFunctionGas` - The maximum amount of gas an account is willing to pay for a contract function call.
 - `maxRetries` - The number of times client should retryable on supported failures.

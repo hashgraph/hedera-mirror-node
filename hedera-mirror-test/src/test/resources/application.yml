@@ -3,7 +3,6 @@ hedera:
     test:
       acceptance:
         emitBackgroundMessages: false
-        existingTopicNum:
         messageTimeout: 20s
         # grpc endpoint
         mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
