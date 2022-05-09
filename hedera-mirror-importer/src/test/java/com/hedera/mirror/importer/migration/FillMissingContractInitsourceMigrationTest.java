@@ -28,41 +28,36 @@ import java.io.File;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.experimental.SuperBuilder;
 import org.apache.commons.io.FileUtils;
-import org.hibernate.annotations.Type;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.test.context.TestPropertySource;
 
-import com.hedera.mirror.common.domain.DomainWrapper;
-import com.hedera.mirror.common.domain.History;
+import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 
 @EnabledIfV1
-@EntityScan
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.59.0")
 class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
 
     private static final String TABLE_IDS = "id";
 
     private static final String TABLE_NAME = "contract";
 
-    @Value("classpath:db/migration/v1/V1.59.1__fill_missing_contract_initsource.sql")
+    private final RecursiveComparisonConfiguration contractComparisonConfig = RecursiveComparisonConfiguration
+            .builder()
+            .withComparedFields("createdTimestamp", "fileId", "id", "initcode", "num", "realm", "shard", "timestampRange")
+            .withIgnoredFields("fileId.type")
+            .build();
+
+    @Value("classpath:db/migration/v1/R__fill_missing_contract_initsource.sql")
     private File migrationSql;
 
     @Test
@@ -76,55 +71,61 @@ class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
     void fillMissingContractInitsource() {
         List<Contract> expected = new LinkedList<>();
         // there are contract entities with just shard.realm.num and [0,) timestamp range
-        expected.add(contract().customize(c -> c.createdTimestamp(null).fileId(null)
+        expected.add(domainBuilder.contract().customize(c -> c.fileId(null).createdTimestamp(null)
                 .timestampRange(Range.atLeast(0L))).persist());
 
         // pre 0.23, child contract created in a contractcall transaction. Note the child contract has a history row
-        var parent = contract().persist();
-        var child = contract()
-                .customize(c -> c.fileId(null).timestampRange(Range.atLeast(c.createdTimestamp + 20L))).persist();
+        var parent = domainBuilder.contract().persist();
+        var createdTimestamp = domainBuilder.timestamp();
+        var updatedTimestamp = createdTimestamp + 20L;
+        var child = domainBuilder.contract().customize(c -> c.fileId(null).createdTimestamp(createdTimestamp)
+                .timestampRange(Range.atLeast(updatedTimestamp))).persist();
         // history row for child
         var history = TestUtils.clone(child);
-        history.setTimestampRange(Range.closedOpen(child.getCreatedTimestamp(), child.getCreatedTimestamp() + 20L));
+        history.setTimestampRange(Range.closedOpen(createdTimestamp, updatedTimestamp));
         insertContractHistory(history);
-        contractResult(child.getCreatedTimestamp(), parent.getId(), List.of(child.getId())).persist();
+        insertContractResult(createdTimestamp, parent, List.of(child.getId()));
         child.setFileId(parent.getFileId());
         expected.addAll(List.of(parent, child));
         var expectedHistory = TestUtils.clone(history);
         expectedHistory.setFileId(parent.getFileId());
 
         // pre 0.23, grandchild of parent
-        var grandchild = contract().customize(c -> c.fileId(null)).persist();
-        contractResult(grandchild.getCreatedTimestamp(), child.getId(), List.of(grandchild.getId())).persist();
+        var grandchild = domainBuilder.contract().customize(c -> c.fileId(null)).persist();
+        insertContractResult(grandchild.getCreatedTimestamp(), child, List.of(grandchild.getId()));
         grandchild.setFileId(parent.getFileId());
         expected.add(grandchild);
 
         // pre 0.23, parent is also missing fileId
-        var parent3 = contract().customize(c -> c.fileId(null)).persist();
-        child = contract().customize(c -> c.fileId(null)).persist();
-        contractResult(child.getCreatedTimestamp(), parent3.getId(), List.of(child.getId())).persist();
-        expected.addAll(List.of(parent3, child));
+        parent = domainBuilder.contract().customize(c -> c.fileId(null)).persist();
+        child = domainBuilder.contract().customize(c -> c.fileId(null)).persist();
+        insertContractResult(child.getCreatedTimestamp(), parent, List.of(child.getId()));
+        expected.addAll(List.of(parent, child));
 
         // post 0.23, child contract in its own contractcreate transaction
-        var parent4 = contract().persist();
-        child = contract().customize(c -> c.fileId(null)).persist();
-        contractResult(parent4.getCreatedTimestamp(), parent4.getId(), List.of(parent4.getId(), child.getId())).persist();
-        contractResult(child.getCreatedTimestamp(), child.getId(), Collections.emptyList()).persist();
-        child.setFileId(parent4.getFileId());
-        expected.addAll(List.of(parent4, child));
+        parent = domainBuilder.contract().persist();
+        child = domainBuilder.contract().customize(c -> c.fileId(null)).persist();
+        insertContractResult(parent.getCreatedTimestamp(), parent, List.of(parent.getId(), child.getId()));
+        insertContractResult(child.getCreatedTimestamp(), child, Collections.emptyList());
+        child.setFileId(parent.getFileId());
+        expected.addAll(List.of(parent, child));
 
         // post 0.26, child contract in its own contractcreate transaction, parent is created with initcode
-        var parent5 = contract().customize(c -> c.fileId(null).initcode(domainBuilder.bytes(32))).persist();
-        child = contract().customize(c -> c.fileId(null)).persist();
-        contractResult(parent5.getCreatedTimestamp(), parent5.getId(), List.of(parent5.getId(), child.getId())).persist();
-        contractResult(child.getCreatedTimestamp(), child.getId(), Collections.emptyList()).persist();
-        child.setInitcode(parent5.getInitcode());
-        expected.addAll(List.of(parent5, child));
+        parent = domainBuilder.contract().customize(c -> c.fileId(null).initcode(domainBuilder.bytes(32))).persist();
+        child = domainBuilder.contract().customize(c -> c.fileId(null)).persist();
+        insertContractResult(parent.getCreatedTimestamp(), parent, List.of(parent.getId(), child.getId()));
+        insertContractResult(child.getCreatedTimestamp(), child, Collections.emptyList());
+        child.setInitcode(parent.getInitcode());
+        expected.addAll(List.of(parent, child));
 
         migrate();
 
-        assertThat(findEntity(Contract.class, TABLE_IDS, TABLE_NAME)).containsExactlyInAnyOrderElementsOf(expected);
-        assertThat(findHistory(Contract.class, TABLE_IDS, TABLE_NAME)).containsOnly(expectedHistory);
+        assertThat(findEntity(Contract.class, TABLE_IDS, TABLE_NAME))
+                .usingRecursiveFieldByFieldElementComparator(contractComparisonConfig)
+                .containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(findHistory(Contract.class, TABLE_IDS, TABLE_NAME))
+                .usingRecursiveFieldByFieldElementComparator(contractComparisonConfig)
+                .containsOnly(expectedHistory);
     }
 
     @SneakyThrows
@@ -140,61 +141,11 @@ class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
                 PostgreSQLGuavaRangeType.INSTANCE.asString(contract.getTimestampRange()));
     }
 
-    private DomainWrapper<Contract, Contract.ContractBuilder> contract() {
-        var createdTimestamp = domainBuilder.timestamp();
-        var contractId = domainBuilder.id();
-        var builder = Contract.builder()
-                .createdTimestamp(createdTimestamp)
-                .fileId(domainBuilder.id())
-                .id(contractId)
-                .num(contractId)
-                .timestampRange(Range.atLeast(createdTimestamp));
-        return domainBuilder.wrap(builder, builder::build);
-    }
-
-    private DomainWrapper<ContractResult, ContractResult.ContractResultBuilder> contractResult(long consensusTimestamp,
-                                                                                               long contractId,
-                                                                                               List<Long> createdContractIds) {
-        var builder = ContractResult.builder()
-                .consensusTimestamp(consensusTimestamp)
-                .contractId(contractId)
-                .createdContractIds(createdContractIds)
-                .functionParameters(domainBuilder.bytes(32))
-                .gasLimit(2_000_000L)
-                .payerAccountId(domainBuilder.id());
-        return domainBuilder.wrap(builder, builder::build);
-    }
-
-    @Data
-    @Entity
-    @Table(name = TABLE_NAME)
-    @NoArgsConstructor
-    @SuperBuilder
-    public static class Contract implements History {
-        private Long createdTimestamp;
-        private Long fileId;
-        @Id
-        private long id;
-        private byte[] initcode;
-        private long num;
-        private long realm;
-        private long shard;
-        private Range<Long> timestampRange;
-    }
-
-    @Data
-    @Entity
-    @Table(name = "contract_result")
-    @NoArgsConstructor
-    @SuperBuilder
-    public static class ContractResult {
-        @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
-        private List<Long> createdContractIds = Collections.emptyList();
-        @Id
-        private long consensusTimestamp;
-        private long contractId;
-        private byte[] functionParameters;
-        private long gasLimit;
-        private long payerAccountId;
+    private void insertContractResult(long consensusTimestamp, Contract caller, List<Long> createdContractIds) {
+        domainBuilder.contractResult()
+                .customize(cr -> cr.consensusTimestamp(consensusTimestamp)
+                        .contractId(caller.toEntityId())
+                        .createdContractIds(createdContractIds))
+                .persist();
     }
 }
