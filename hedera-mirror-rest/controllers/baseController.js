@@ -97,19 +97,6 @@ class BaseController {
       throw new InvalidArgumentError(`Multiple range params not allowed for ${filter.key}`);
     }
   };
-
-  /**
-   * Validate and extract all query parameters from the request
-   * @param {Object} req HTTP request object
-   * @returns {Array}
-   */
-  extractFiltersFromValidatedRequest = (req) => {
-    utils.validateReq(req);
-    // extract filters from query param
-    const filters = utils.buildAndValidateFilters(req.query);
-
-    return filters;
-  };
 }
 
 module.exports = BaseController;

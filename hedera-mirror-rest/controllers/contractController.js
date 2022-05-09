@@ -334,7 +334,7 @@ const checkTimestampsForTopics = (filters) => {
     try {
       utils.checkTimestampRange(timestampFilters);
     } catch (e) {
-      throw new InvalidArgumentError(`Cannot search topics without timestamp range: ${e.message}`);
+      throw new InvalidArgumentError(`Cannot search topics without a valid timestamp range: ${e.message}`);
     }
   }
 };
@@ -687,13 +687,7 @@ class ContractController extends BaseController {
 
     const {conditions, params, timestampOrder, indexOrder, limit} = this.extractContractLogsQuery(filters, contractId);
 
-    const rows = await ContractService.getContractLogsByIdAndFilters(
-      conditions,
-      params,
-      timestampOrder,
-      indexOrder,
-      limit
-    );
+    const rows = await ContractService.getContractLogs(conditions, params, timestampOrder, indexOrder, limit);
 
     res.locals[constants.responseDataLabel] = {
       logs: rows.map((row) => new ContractLogViewModel(row)),
@@ -708,18 +702,12 @@ class ContractController extends BaseController {
    */
   getContractLogs = async (req, res) => {
     // get sql filter query, params, limit and limit query from query filters
-    const filters = this.extractFiltersFromValidatedRequest(req);
+    const filters = utils.buildAndValidateFilters(req.query);
     checkTimestampsForTopics(filters);
 
     const {conditions, params, timestampOrder, indexOrder, limit} = this.extractContractLogsQuery(filters);
 
-    const rows = await ContractService.getContractLogsByIdAndFilters(
-      conditions,
-      params,
-      timestampOrder,
-      indexOrder,
-      limit
-    );
+    const rows = await ContractService.getContractLogs(conditions, params, timestampOrder, indexOrder, limit);
 
     res.locals[constants.responseDataLabel] = {
       logs: rows.map((row) => new ContractLogViewModel(row)),

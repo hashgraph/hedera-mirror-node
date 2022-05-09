@@ -184,9 +184,9 @@ class ContractService extends BaseService {
    * @param timestampOrder the sorting order for field consensus_timestamp
    * @param indexOrder the sorting order for field index
    * @param limit the limit parameter for the query
-   * @returns {Promise<*[]|*>} the result of the getContractLogsByIdAndFilters query
+   * @returns {Promise<*[]|*>} the result of the getContractLogs query
    */
-  async getContractLogsByIdAndFilters(
+  async getContractLogs(
     whereConditions = [],
     whereParams = [],
     timestampOrder = orderFilterValues.DESC,
@@ -200,7 +200,7 @@ class ContractService extends BaseService {
       indexOrder,
       limit
     );
-    const rows = await super.getRows(query, params, 'getContractLogsByIdAndFilters');
+    const rows = await super.getRows(query, params, 'getContractLogs');
     return rows.map((cr) => new ContractLog(cr));
   }
 
