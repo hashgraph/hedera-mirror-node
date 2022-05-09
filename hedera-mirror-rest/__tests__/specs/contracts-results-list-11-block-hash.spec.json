@@ -38,7 +38,7 @@
         "amount": 30,
         "bloom": [5, 5],
         "call_result": [6, 6],
-        "consensus_timestamp": "987654000123456",
+        "consensus_timestamp": "167654000123440",
         "contract_id": 5001,
         "created_contract_ids": [7001],
         "error_message": "",
@@ -62,11 +62,11 @@
         "nonce": 0
       },
       {
-        "consensus_timestamp": "987654000123456",
+        "consensus_timestamp": "167654000123440",
         "type": 11,
         "result": 22,
-        "valid_start_ns": "987654000123456",
-        "valid_start_timestamp": "987654000123456",
+        "valid_start_ns": "167654000123440",
+        "valid_start_timestamp": "167654000123440",
         "transaction_hash": "hash2",
         "payerAccountId": 8001,
         "index": 2,
@@ -92,7 +92,8 @@
     "/api/v1/contracts/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
     "/api/v1/contracts/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
     "/api/v1/contracts/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
-    "/api/v1/contracts/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305"
+    "/api/v1/contracts/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
+    "/api/v1/contracts/results?block.hash=56caf9913fd511ede553715d3700ed955a22853487ec71cb15e7b2cc1c355d29&block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305"
   ],
   "responseStatus": 200,
   "responseJson": {

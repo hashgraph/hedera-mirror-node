@@ -522,6 +522,8 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
   const transactionIndexFullName = Transaction.getFullName(Transaction.INDEX);
   const transactionIndexInValues = [];
 
+  let blockFilter;
+
   for (const filter of filters) {
     if (_.isNil(paramSupportMap[filter.key])) {
       // param not supported for current endpoint
@@ -557,35 +559,7 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
         break;
       case constants.filterKeys.BLOCK_NUMBER:
       case constants.filterKeys.BLOCK_HASH:
-        let blockData;
-        if (filter.key === constants.filterKeys.BLOCK_NUMBER) {
-          blockData = await RecordFileService.getRecordFileBlockDetailsFromIndex(filter.value);
-        } else {
-          blockData = await RecordFileService.getRecordFileBlockDetailsFromHash(filter.value);
-        }
-
-        if (blockData) {
-          const conStartColName = _.camelCase(RecordFile.CONSENSUS_START);
-          const conEndColName = _.camelCase(RecordFile.CONSENSUS_END);
-
-          updateConditionsAndParamsWithInValues(
-            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: blockData[conStartColName]},
-            contractResultTimestampInValues,
-            params,
-            conditions,
-            contractResultTimestampFullName
-          );
-          updateConditionsAndParamsWithInValues(
-            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: blockData[conEndColName]},
-            contractResultTimestampInValues,
-            params,
-            conditions,
-            contractResultTimestampFullName
-          );
-        } else {
-          throw new NotFoundError();
-        }
-
+        blockFilter = filter;
         break;
       case constants.filterKeys.TRANSACTION_INDEX:
         updateConditionsAndParamsWithInValues(
@@ -598,6 +572,37 @@ const extractContractResultsByIdQuery = async (filters, contractId, paramSupport
         break;
       default:
         break;
+    }
+  }
+
+  if (blockFilter) {
+    let blockData;
+    if (blockFilter.key === constants.filterKeys.BLOCK_NUMBER) {
+      blockData = await RecordFileService.getRecordFileBlockDetailsFromIndex(blockFilter.value);
+    } else {
+      blockData = await RecordFileService.getRecordFileBlockDetailsFromHash(blockFilter.value);
+    }
+
+    if (blockData) {
+      const conStartColName = _.camelCase(RecordFile.CONSENSUS_START);
+      const conEndColName = _.camelCase(RecordFile.CONSENSUS_END);
+
+      updateConditionsAndParamsWithInValues(
+        {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: blockData[conStartColName]},
+        contractResultTimestampInValues,
+        params,
+        conditions,
+        contractResultTimestampFullName
+      );
+      updateConditionsAndParamsWithInValues(
+        {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: blockData[conEndColName]},
+        contractResultTimestampInValues,
+        params,
+        conditions,
+        contractResultTimestampFullName
+      );
+    } else {
+      throw new NotFoundError();
     }
   }
 

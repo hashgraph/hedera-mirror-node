@@ -150,7 +150,11 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/results?block.number=10", "/api/v1/contracts/results?block.number=0xa"],
+  "urls": [
+    "/api/v1/contracts/results?block.number=10",
+    "/api/v1/contracts/results?block.number=0xa",
+    "/api/v1/contracts/results?block.number=11&block.number=10"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "results": [
