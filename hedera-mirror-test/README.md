@@ -112,7 +112,7 @@ hedera:
 
 #### Feature Tags
 
-Tags: Tags allow you to filter which Cucumber scenarios and files are run. By default, tests marked with the `@critical`
+Tags: Tags allow you to filter which Cucumber scenarios and files are run. By default, tests marked with the `@acceptance`
 tag are run. To run a different set of files different tags can be specified
 
 Test Suite Tags
