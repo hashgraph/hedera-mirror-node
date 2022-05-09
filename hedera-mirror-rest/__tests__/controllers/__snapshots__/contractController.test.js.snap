@@ -1,12 +1,12 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`checkTimestampsForTopics topic0 param 1`] = `"Cannot search topics without timestamp range: Not equals operator not supported for timestamp param"`;
+exports[`checkTimestampsForTopics topic0 param 1`] = `"Cannot search topics without a valid timestamp range: Not equals operator not supported for timestamp param"`;
 
-exports[`checkTimestampsForTopics topic0 param no timestamps 1`] = `"Cannot search topics without timestamp range: No timestamp range or eq operator provided"`;
+exports[`checkTimestampsForTopics topic0 param no timestamps 1`] = `"Cannot search topics without a valid timestamp range: No timestamp range or eq operator provided"`;
 
-exports[`checkTimestampsForTopics topic1 param one timestamp gt 1`] = `"Cannot search topics without timestamp range: Timestamp range must have gt (or gte) and lt (or lte)"`;
+exports[`checkTimestampsForTopics topic1 param one timestamp gt 1`] = `"Cannot search topics without a valid timestamp range: Timestamp range must have gt (or gte) and lt (or lte)"`;
 
-exports[`checkTimestampsForTopics topic2 param one timestamp lt 1`] = `"Cannot search topics without timestamp range: Timestamp range must have gt (or gte) and lt (or lte)"`;
+exports[`checkTimestampsForTopics topic2 param one timestamp lt 1`] = `"Cannot search topics without a valid timestamp range: Timestamp range must have gt (or gte) and lt (or lte)"`;
 
 exports[`extractContractLogsQuery - by Id error - multiple index 1`] = `"Multiple params not allowed for index"`;
 
