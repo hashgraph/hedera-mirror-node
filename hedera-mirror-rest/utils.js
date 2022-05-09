@@ -314,7 +314,10 @@ const filterValidityChecks = (param, op, val) => {
 };
 
 const filterDependencyCheck = (params = []) => {
+  const badParams = [];
   const paramNames = params.map((p) => p.key);
+
+  let hasBlockNumAndHashError = false;
   paramNames.forEach((param, i) => {
     switch (param) {
       case constants.filterKeys.TRANSACTION_INDEX:
@@ -322,22 +325,34 @@ const filterDependencyCheck = (params = []) => {
           !paramNames.includes(constants.filterKeys.BLOCK_NUMBER) &&
           !paramNames.includes(constants.filterKeys.BLOCK_HASH)
         ) {
-          throw new InvalidArgumentError(
-            'Transaction.index requires block.number or block.hash filter to be specified'
-          );
+          badParams.push({
+            key: param,
+            error: 'transaction.index requires block.number or block.hash filter to be specified',
+            code: 'invalidParamUsage',
+          });
         }
         break;
       case constants.filterKeys.BLOCK_NUMBER:
       case constants.filterKeys.BLOCK_HASH:
         if (
           paramNames.includes(constants.filterKeys.BLOCK_NUMBER) &&
-          paramNames.includes(constants.filterKeys.BLOCK_HASH)
+          paramNames.includes(constants.filterKeys.BLOCK_HASH) &&
+          !hasBlockNumAndHashError
         ) {
-          throw new InvalidArgumentError('Cannot combine block.number and block.hash');
+          badParams.push({
+            key: param,
+            error: 'cannot combine block.number and block.hash',
+            code: 'invalidParamUsage',
+          });
+          hasBlockNumAndHashError = true;
         }
         break;
     }
   });
+
+  if (badParams.length) {
+    throw InvalidArgumentError.forRequestValidation(badParams);
+  }
 };
 
 const isValidContractIdQueryParam = (op, val) => {

@@ -80,7 +80,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Transaction.index requires block.number or block.hash filter to be specified"
+          "message": "Invalid parameter usage: transaction.index - transaction.index requires block.number or block.hash filter to be specified"
         }
       ]
     }

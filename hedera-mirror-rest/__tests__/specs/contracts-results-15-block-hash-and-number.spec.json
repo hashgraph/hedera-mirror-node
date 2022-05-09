@@ -9,7 +9,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Cannot combine block.number and block.hash"
+          "message": "Invalid parameter usage: block.hash - cannot combine block.number and block.hash"
         }
       ]
     }
