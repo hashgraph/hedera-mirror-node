@@ -21,11 +21,23 @@
 'use strict';
 
 const _ = require('lodash');
+const {JSONStringify} = require('../utils');
 
 /**
  * Base service class that other services should inherit from for their retrieval business logic
  */
 class BaseService {
+  buildWhereSqlStatement(whereQuery) {
+    let where = '';
+    const params = [];
+    for (let i = 1; i <= whereQuery.length; i++) {
+      where += `${i === 1 ? 'where' : 'and'} ${whereQuery[i - 1].query} $${i} `;
+      params.push(whereQuery[i - 1].param);
+    }
+
+    return {where, params};
+  }
+
   getLimitQuery(position) {
     return `limit $${position}`;
   }
@@ -38,6 +50,13 @@ class BaseService {
    */
   getOrderByQuery(...orderSpecs) {
     return 'order by ' + orderSpecs.map((spec) => `${spec}`).join(', ');
+  }
+
+  getFilterWhereCondition(key, filter) {
+    return {
+      query: `${key} ${filter.operator}`,
+      param: filter.value,
+    };
   }
 
   async getRows(query, params, functionName = '') {

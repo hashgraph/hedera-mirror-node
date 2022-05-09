@@ -27,14 +27,17 @@ const ExchangeRateViewModel = require('./exchangeRateViewModel');
  * Exchange rate set view model
  */
 class ExchangeRateSetViewModel {
+  static currentLabel = 'current_';
+  static nextLabel = 'next_';
+
   /**
    * Constructs block view model
    *
    * @param {ExchangeRateSet} exchangeRateSet
    */
   constructor(exchangeRateSet) {
-    this.current_rate = new ExchangeRateViewModel(exchangeRateSet);
-    this.next_rate = new ExchangeRateViewModel(exchangeRateSet);
+    this.current_rate = new ExchangeRateViewModel(exchangeRateSet, ExchangeRateSetViewModel.currentLabel);
+    this.next_rate = new ExchangeRateViewModel(exchangeRateSet, ExchangeRateSetViewModel.nextLabel);
     this.timestamp = utils.nsToSecNs(exchangeRateSet.timestamp);
   }
 }

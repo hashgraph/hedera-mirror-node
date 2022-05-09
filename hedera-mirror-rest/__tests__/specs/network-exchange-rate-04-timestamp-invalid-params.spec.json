@@ -1,0 +1,21 @@
+{
+  "description": "Network exchange rate with invalid query params",
+  "setup": {},
+  "url": "/api/v1/network/exchangerate?timestamp=test&limit=c&order=d",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: timestamp"
+        },
+        {
+          "message": "Invalid parameter: limit"
+        },
+        {
+          "message": "Invalid parameter: order"
+        }
+      ]
+    }
+  }
+}

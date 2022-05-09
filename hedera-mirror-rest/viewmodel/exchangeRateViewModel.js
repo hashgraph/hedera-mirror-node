@@ -31,10 +31,10 @@ class ExchangeRateViewModel {
    *
    * @param {ExchangeRate} exchangeRate
    */
-  constructor(exchangeRate) {
-    this.cent_equivalent = exchangeRate.cent;
-    this.expiration_time = exchangeRate.expiration;
-    this.hbar_equivalent = exchangeRate.hbar;
+  constructor(exchangeRate, prefix) {
+    this.cent_equivalent = exchangeRate[`${prefix}cent`];
+    this.expiration_time = exchangeRate[`${prefix}expiration`];
+    this.hbar_equivalent = exchangeRate[`${prefix}hbar`];
   }
 }
 

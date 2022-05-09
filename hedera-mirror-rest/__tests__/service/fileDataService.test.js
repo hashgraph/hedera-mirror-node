@@ -20,6 +20,7 @@
 
 'use strict';
 
+const {FileData} = require('../../model');
 const {FileDataService} = require('../../service');
 
 // add logger configuration support
@@ -58,10 +59,10 @@ const files = [
   },
 ];
 
+const fileId = 112;
 describe('FileDataService.getExchangeRate tests', () => {
-  const nowNanoseconds = Date.now() * 1000000;
   test('FileDataService.getExchangeRate - No match', async () => {
-    await expect(FileDataService.getExchangeRate(nowNanoseconds)).resolves.toBeNull();
+    await expect(FileDataService.getExchangeRate({order: 'desc', whereQuery: []})).resolves.toBeNull();
   });
 
   const expectedPreviousFile = {
@@ -87,23 +88,29 @@ describe('FileDataService.getExchangeRate tests', () => {
   test('FileDataService.getExchangeRate - Row match w latest', async () => {
     await integrationDomainOps.loadFileData(files);
 
-    await expect(FileDataService.getExchangeRate(nowNanoseconds)).resolves.toMatchObject(expectedLatestFile);
+    await expect(FileDataService.getExchangeRate({order: 'desc', whereQuery: []})).resolves.toMatchObject(
+      expectedLatestFile
+    );
   });
 
   test('FileDataService.getExchangeRate - Row match w previous latest', async () => {
     await integrationDomainOps.loadFileData(files);
 
-    await expect(FileDataService.getExchangeRate(expectedLatestFile.timestamp - 1)).resolves.toMatchObject(
+    const where = [
+      {
+        query: `${FileData.CONSENSUS_TIMESTAMP} <= `,
+        param: expectedPreviousFile.timestamp,
+      },
+    ];
+    await expect(FileDataService.getExchangeRate({order: 'desc', whereQuery: where})).resolves.toMatchObject(
       expectedPreviousFile
     );
   });
 });
 
-const fileId = 112;
 describe('FileDataService.getLatestFileDataContents tests', () => {
-  const nowNanoseconds = Date.now() * 1000000;
   test('FileDataService.getLatestFileDataContents - No match', async () => {
-    await expect(FileDataService.getLatestFileDataContents(fileId, nowNanoseconds)).resolves.toBeNull();
+    await expect(FileDataService.getLatestFileDataContents({order: 'desc', whereQuery: []})).resolves.toBeNull();
   });
 
   const expectedPreviousFile = {
@@ -119,7 +126,13 @@ describe('FileDataService.getLatestFileDataContents tests', () => {
   test('FileDataService.getLatestFileDataContents - Row match w latest', async () => {
     await integrationDomainOps.loadFileData(files);
 
-    await expect(FileDataService.getLatestFileDataContents(fileId, nowNanoseconds)).resolves.toMatchObject(
+    const where = [
+      {
+        query: `${FileData.ENTITY_ID} = `,
+        param: fileId,
+      },
+    ];
+    await expect(FileDataService.getLatestFileDataContents({order: 'desc', whereQuery: where})).resolves.toMatchObject(
       expectedLatestFile
     );
   });
@@ -127,8 +140,18 @@ describe('FileDataService.getLatestFileDataContents tests', () => {
   test('FileDataService.getLatestFileDataContents - Row match w previous latest', async () => {
     await integrationDomainOps.loadFileData(files);
 
-    await expect(
-      FileDataService.getLatestFileDataContents(fileId, expectedLatestFile.consensus_timestamp - 1)
-    ).resolves.toMatchObject(expectedPreviousFile);
+    const where = [
+      {
+        query: `${FileData.ENTITY_ID} = `,
+        param: fileId,
+      },
+      {
+        query: `${FileData.CONSENSUS_TIMESTAMP} <= `,
+        param: expectedPreviousFile.consensus_timestamp,
+      },
+    ];
+    await expect(FileDataService.getLatestFileDataContents({order: 'desc', whereQuery: where})).resolves.toMatchObject(
+      expectedPreviousFile
+    );
   });
 });

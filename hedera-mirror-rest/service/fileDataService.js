@@ -24,6 +24,7 @@ const _ = require('lodash');
 
 const BaseService = require('./baseService');
 const {Contract, ExchangeRate, FileData} = require('../model');
+const utils = require('../utils');
 
 /**
  * File data retrieval business logic
@@ -32,8 +33,7 @@ class FileDataService extends BaseService {
   static exchangeRateFileId = 112;
 
   static latestFileDataContentQuery = `select ${FileData.CONSENSUS_TIMESTAMP}, encode(${FileData.FILE_DATA}, 'escape') ${FileData.FILE_DATA} 
-    from ${FileData.tableName} where ${FileData.ENTITY_ID} = $1 and ${FileData.CONSENSUS_TIMESTAMP} <= $2
-    order by ${FileData.CONSENSUS_TIMESTAMP} desc limit 1`;
+    from ${FileData.tableName}`;
 
   // contract byte code
   // the query finds the file content valid at the contract's created timestamp T by aggregating the contents of all the
@@ -68,17 +68,27 @@ class FileDataService extends BaseService {
     return FileDataService.contractInitCodeFileDataQuery;
   };
 
-  getLatestFileDataContents = async (entity, timestamp) => {
+  getLatestFileDataContents = async (filterQueries) => {
+    const {where, params} = super.buildWhereSqlStatement(filterQueries.whereQuery);
     const row = await super.getSingleRow(
-      FileDataService.latestFileDataContentQuery,
-      [entity, timestamp],
+      `${FileDataService.latestFileDataContentQuery}
+      ${where}
+      order by ${FileData.CONSENSUS_TIMESTAMP} ${filterQueries.order} limit 1`,
+      params,
       'getLatestFileContents'
     );
     return _.isNil(row) ? null : row;
   };
 
-  getExchangeRate = async (timestamp) => {
-    const row = await this.getLatestFileDataContents(FileDataService.exchangeRateFileId, timestamp);
+  getExchangeRate = async (filterQueries) => {
+    filterQueries.whereQuery.push(
+      this.getFilterWhereCondition(
+        FileData.ENTITY_ID,
+        utils.buildComparatorFilter(FileData.ENTITY_ID, `=:${FileDataService.exchangeRateFileId}`)
+      )
+    );
+
+    const row = await this.getLatestFileDataContents(filterQueries);
 
     return _.isNil(row) ? null : new ExchangeRate(row);
   };
