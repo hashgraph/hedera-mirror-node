@@ -78,6 +78,7 @@ class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
     @Test
     void fillMissingContractInitsource() {
         List<Contract> expected = new LinkedList<>();
+        // there are contract entities with just shard.realm.num and [0,) timestamp range
         expected.add(contract().customize(c -> c.createdTimestamp(null).fileId(null)
                 .timestampRange(Range.atLeast(0L))).persist());
 
