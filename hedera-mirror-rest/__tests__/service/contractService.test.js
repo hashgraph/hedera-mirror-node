@@ -70,9 +70,9 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
 });
 
 const contractLogContractIdWhereClause = `cl.contract_id = $1`;
-describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
+describe('ContractService.getContractLogsQuery tests', () => {
   test('Verify simple query', async () => {
-    const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
+    const [query, params] = ContractService.getContractLogsQuery(
       [contractLogContractIdWhereClause],
       [2],
       'desc',
@@ -102,7 +102,7 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
   });
 
   test('Verify additional conditions', async () => {
-    const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
+    const [query, params] = ContractService.getContractLogsQuery(
       [
         `cl.contract_id  = $1`,
         `cl.topic0 = $2`,
@@ -463,9 +463,9 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
   });
 });
 
-describe('ContractService.getContractLogsByIdAndFilters tests', () => {
+describe('ContractService.getContractLogs tests', () => {
   test('No match', async () => {
-    const response = await ContractService.getContractLogsByIdAndFilters();
+    const response = await ContractService.getContractLogs();
     expect(response).toEqual([]);
   });
 
@@ -485,7 +485,7 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
       },
     ];
 
-    const response = await ContractService.getContractLogsByIdAndFilters();
+    const response = await ContractService.getContractLogs();
     expect(response).toMatchObject(expectedContractLog);
   });
 
@@ -541,7 +541,7 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
       },
     ];
 
-    const response = await ContractService.getContractLogsByIdAndFilters([contractLogContractIdWhereClause], [3]);
+    const response = await ContractService.getContractLogs([contractLogContractIdWhereClause], [3]);
     expect(response).toMatchObject(expectedContractLog);
   });
 
@@ -581,7 +581,7 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
         contractId: 3,
       },
     ];
-    const response = await ContractService.getContractLogsByIdAndFilters(
+    const response = await ContractService.getContractLogs(
       [
         contractLogContractIdWhereClause,
         'cl.topic0 = $2',

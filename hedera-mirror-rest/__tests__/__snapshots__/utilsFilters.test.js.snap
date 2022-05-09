@@ -12,5 +12,7 @@ Array [
   "Invalid parameter: limit",
   "Invalid parameter: limit",
   "Invalid parameter: timestamp",
+  "Invalid parameter: topic0",
+  "Invalid parameter: topic0",
 ]
 `;

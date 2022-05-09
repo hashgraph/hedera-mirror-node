@@ -159,7 +159,7 @@ class ContractService extends BaseService {
    * @param limit the limit parameter for the query
    * @returns {(string|*)[]} the build query and the parameters for the query
    */
-  getContractLogsByIdAndFiltersQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit) {
+  getContractLogsQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit) {
     const params = whereParams;
     const orderClause = super.getOrderByQuery(
       OrderSpec.from(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
@@ -184,23 +184,17 @@ class ContractService extends BaseService {
    * @param timestampOrder the sorting order for field consensus_timestamp
    * @param indexOrder the sorting order for field index
    * @param limit the limit parameter for the query
-   * @returns {Promise<*[]|*>} the result of the getContractLogsByIdAndFilters query
+   * @returns {Promise<*[]|*>} the result of the getContractLogs query
    */
-  async getContractLogsByIdAndFilters(
+  async getContractLogs(
     whereConditions = [],
     whereParams = [],
     timestampOrder = orderFilterValues.DESC,
     indexOrder = orderFilterValues.DESC,
     limit = defaultLimit
   ) {
-    const [query, params] = this.getContractLogsByIdAndFiltersQuery(
-      whereConditions,
-      whereParams,
-      timestampOrder,
-      indexOrder,
-      limit
-    );
-    const rows = await super.getRows(query, params, 'getContractLogsByIdAndFilters');
+    const [query, params] = this.getContractLogsQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit);
+    const rows = await super.getRows(query, params, 'getContractLogs');
     return rows.map((cr) => new ContractLog(cr));
   }
 

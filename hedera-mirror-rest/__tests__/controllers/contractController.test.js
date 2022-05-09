@@ -620,7 +620,7 @@ describe('validateContractIdParam', () => {
 });
 
 const defaultContractLogCondition = 'cl.contract_id = $1';
-describe('extractContractLogsByIdQuery', () => {
+describe('extractContractLogsQuery - by Id', () => {
   const defaultContractId = 1;
   const defaultExpected = {
     conditions: [defaultContractLogCondition],
@@ -819,15 +819,215 @@ describe('extractContractLogsByIdQuery', () => {
   ];
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      expect(contracts.extractContractLogsByIdQuery(spec.input.filter, spec.input.contractId)).toEqual(spec.expected);
+      expect(contracts.extractContractLogsQuery(spec.input.filter, spec.input.contractId)).toEqual(spec.expected);
     });
   });
 
   errorSpecs.forEach((spec) => {
     test(`error - ${spec.name}`, () => {
       expect(() =>
-        contracts.extractContractLogsByIdQuery(spec.input.filter, spec.input.contractId)
+        contracts.extractContractLogsQuery(spec.input.filter, spec.input.contractId)
       ).toThrowErrorMatchingSnapshot();
+    });
+  });
+});
+
+describe('extractContractLogsQuery - no Id specified', () => {
+  const defaultExpected = {
+    conditions: [],
+    params: [],
+    timestampOrder: constants.orderFilterValues.DESC,
+    indexOrder: constants.orderFilterValues.DESC,
+    limit: defaultLimit,
+  };
+  const specs = [
+    {
+      name: emptyFilterString,
+      input: {filter: []},
+      expected: {
+        ...defaultExpected,
+      },
+    },
+    {
+      name: 'index',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.eq,
+            value: '2',
+          },
+        ],
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: ['cl.index = $1'],
+        params: ['2'],
+      },
+    },
+    {
+      name: 'timestamp',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '1001',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '1002',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gt,
+            value: '1000',
+          },
+        ],
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: ['cl.consensus_timestamp > $1', 'cl.consensus_timestamp in ($2,$3)'],
+        params: ['1000', '1001', '1002'],
+      },
+    },
+    {
+      name: 'topics',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TOPIC0,
+            operator: utils.opsMap.eq,
+            value: '0x0011',
+          },
+          {
+            key: constants.filterKeys.TOPIC0,
+            operator: utils.opsMap.eq,
+            value: '0x000013',
+          },
+          {
+            key: constants.filterKeys.TOPIC2,
+            operator: utils.opsMap.eq,
+            value: '0x140',
+          },
+          {
+            key: constants.filterKeys.TOPIC3,
+            operator: utils.opsMap.eq,
+            value: '0000150',
+          },
+          {
+            key: constants.filterKeys.TOPIC3,
+            operator: utils.opsMap.eq,
+            value: '0000150',
+          },
+        ],
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: ['cl.topic0 in ($1,$2)', 'cl.topic2 in ($3)', 'cl.topic3 in ($4,$5)'],
+        params: [
+          Buffer.from('11', 'hex'),
+          Buffer.from('13', 'hex'),
+          Buffer.from('0140', 'hex'),
+          Buffer.from('0150', 'hex'),
+          Buffer.from('0150', 'hex'),
+        ],
+      },
+    },
+    {
+      name: 'limit',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.LIMIT,
+            operator: utils.opsMap.eq,
+            value: 20,
+          },
+        ],
+      },
+      expected: {
+        ...defaultExpected,
+        limit: 20,
+      },
+    },
+    {
+      name: 'order asc',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.ORDER,
+            operator: utils.opsMap.eq,
+            value: constants.orderFilterValues.ASC,
+          },
+        ],
+      },
+      expected: {
+        ...defaultExpected,
+        timestampOrder: constants.orderFilterValues.ASC,
+        indexOrder: constants.orderFilterValues.ASC,
+      },
+    },
+    {
+      name: 'order desc',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.ORDER,
+            operator: utils.opsMap.eq,
+            value: constants.orderFilterValues.DESC,
+          },
+        ],
+      },
+      expected: {
+        ...defaultExpected,
+        timestampOrder: constants.orderFilterValues.DESC,
+        indexOrder: constants.orderFilterValues.DESC,
+      },
+    },
+  ];
+  const errorSpecs = [
+    {
+      name: 'timestamp not equal operator',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.ne,
+            value: constants.orderFilterValues.DESC,
+          },
+        ],
+      },
+      errorMessage: 'Not equals operator not supported for timestamp param',
+    },
+    {
+      name: 'multiple index',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.lt,
+            value: '1',
+          },
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.gt,
+            value: '2',
+          },
+        ],
+      },
+      errorMessage: 'Multiple params not allowed for index',
+    },
+  ];
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(contracts.extractContractLogsQuery(spec.input.filter)).toEqual(spec.expected);
+    });
+  });
+
+  errorSpecs.forEach((spec) => {
+    test(`error - ${spec.name}`, () => {
+      expect(() => contracts.extractContractLogsQuery(spec.input.filter)).toThrowErrorMatchingSnapshot();
     });
   });
 });
