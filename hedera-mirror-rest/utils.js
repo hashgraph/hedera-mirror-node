@@ -79,12 +79,12 @@ const isPositiveLong = (num, allowZero = false) => {
 };
 
 /**
- * Validates that hex encoded num is a positive long.
+ * Validates that hex encoded num is a positive int.
  * @param num
  * @param allowZero
  * @returns {boolean}
  */
-const isHexPositiveLong = (num, allowZero = false) => {
+const isHexPositiveInt = (num, allowZero = false) => {
   if (typeof num === 'string' && num.startsWith(hexPrefix)) {
     num = parseInt(num, 16);
     return isPositiveLong(num, allowZero);
@@ -294,7 +294,7 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.BLOCK_NUMBER:
       const supportedOperators = ['eq', 'gt', 'gte', 'lt', 'lte'];
-      ret = (isPositiveLong(val, true) || isHexPositiveLong(val, true)) && _.includes(supportedOperators, op);
+      ret = (isPositiveLong(val, true) || isHexPositiveInt(val, true)) && _.includes(supportedOperators, op);
       break;
     case constants.filterKeys.BLOCK_HASH:
       ret = isValidBlockHash(val) && _.includes(['eq'], op);
