@@ -47,6 +47,34 @@
         "gas_limit": 987654,
         "gas_used": 123,
         "payer_account_id": 8001
+      },
+      {
+        "amount": 35,
+        "bloom": [5, 5],
+        "call_result": [6, 6],
+        "consensus_timestamp": "987654000123457",
+        "contract_id": 5001,
+        "created_contract_ids": [7001],
+        "error_message": "",
+        "function_parameters": [7, 7],
+        "function_result": [8, 8],
+        "gas_limit": 987654,
+        "gas_used": 123,
+        "payer_account_id": 8001
+      },
+      {
+        "amount": 30,
+        "bloom": [5, 5],
+        "call_result": [6, 6],
+        "consensus_timestamp": "997654000123456",
+        "contract_id": 5001,
+        "created_contract_ids": [7001],
+        "error_message": "",
+        "function_parameters": [7, 7],
+        "function_result": [8, 8],
+        "gas_limit": 987654,
+        "gas_used": 123,
+        "payer_account_id": 8001
       }
     ],
     "transactions": [
@@ -69,6 +97,28 @@
         "valid_start_timestamp": "987654000123456",
         "transaction_hash": "hash2",
         "payerAccountId": 5001,
+        "index": 1,
+        "nonce": 0
+      },
+      {
+        "consensus_timestamp": "987654000123457",
+        "type": 11,
+        "result": 22,
+        "valid_start_ns": "987654000123457",
+        "valid_start_timestamp": "987654000123457",
+        "transaction_hash": "hash2",
+        "payerAccountId": 5001,
+        "index": 2,
+        "nonce": 0
+      },
+      {
+        "consensus_timestamp": "997654000123456",
+        "type": 11,
+        "result": 22,
+        "valid_start_ns": "997654000123456",
+        "valid_start_timestamp": "997654000123456",
+        "transaction_hash": "hash3",
+        "payerAccountId": 5001,
         "index": 2,
         "nonce": 0
       }
@@ -85,6 +135,12 @@
         "consensus_start": 987654000123456,
         "consensus_end": 987654100123456,
         "hash": "1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61"
+      },
+      {
+        "index": 18,
+        "consensus_start": 997654000123456,
+        "consensus_end": 997654100123456,
+        "hash": "1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c62"
       }
     ]
   },
@@ -93,7 +149,7 @@
   "responseJson": {
     "results": [
       {
-        "amount": 30,
+        "amount": 35,
         "bloom": "0x0505",
         "call_result": "0x0606",
         "contract_id": "0.0.5001",
@@ -103,7 +159,7 @@
         "function_parameters": "0x0707",
         "gas_limit": 987654,
         "gas_used": 123,
-        "timestamp": "987654.000123456",
+        "timestamp": "987654.000123457",
         "to": "0x0000000000000000000000000000000000001389"
       }
     ],
