@@ -26,31 +26,8 @@ const {assertSqlQueryEqual} = require('../testutils');
 const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
 
-jest.setTimeout(40000);
-
-let dbConfig;
-
-// set timeout for beforeAll to 2 minutes as downloading docker image if not exists can take quite some time
-const defaultBeforeAllTimeoutMillis = 240 * 1000;
-
-beforeAll(async () => {
-  dbConfig = await integrationDbOps.instantiateDatabase();
-  await integrationDomainOps.setUp({}, dbConfig.sqlConnection);
-  global.pool = dbConfig.sqlConnection;
-}, defaultBeforeAllTimeoutMillis);
-
-afterAll(async () => {
-  await integrationDbOps.closeConnection(dbConfig);
-});
-
-beforeEach(async () => {
-  if (!dbConfig.sqlConnection) {
-    logger.warn(`sqlConnection undefined, acquire new connection`);
-    dbConfig.sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
-  }
-
-  await integrationDbOps.cleanUp(dbConfig.sqlConnection);
-});
+const {defaultMochaStatements} = require('./defaultMochaStatements');
+defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 const defaultNodeFilter = 'abe.node_id = $2';
 describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
@@ -118,7 +95,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       ) as service_endpoints
       from address_book_entry abe
       join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
-      where abe.node_id = $2 
+      where abe.node_id = $2
       order by abe.node_id asc
       limit $3`;
     assertSqlQueryEqual(query, expected);
@@ -204,15 +181,15 @@ const defaultInputServiceEndpointBooks = [
 const defaultExpectedNetworkNode101 = [
   {
     addressBook: {
-      startConsensusTimestamp: '1',
-      fileId: '101',
+      startConsensusTimestamp: 1,
+      fileId: 101,
       endConsensusTimestamp: null,
     },
     addressBookEntry: {
       description: 'desc 2',
       memo: 'memo 2',
-      nodeAccountId: '4',
-      nodeId: '1',
+      nodeAccountId: 4,
+      nodeId: 1,
     },
     addressBookServiceEndpoints: [
       {
@@ -223,15 +200,15 @@ const defaultExpectedNetworkNode101 = [
   },
   {
     addressBook: {
-      startConsensusTimestamp: '1',
-      fileId: '101',
+      startConsensusTimestamp: 1,
+      fileId: 101,
       endConsensusTimestamp: null,
     },
     addressBookEntry: {
       description: 'desc 1',
       memo: 'memo 1',
-      nodeAccountId: '3',
-      nodeId: '0',
+      nodeAccountId: 3,
+      nodeId: 0,
     },
     addressBookServiceEndpoints: [
       {
@@ -246,14 +223,14 @@ const defaultExpectedNetworkNode102 = [
   {
     addressBook: {
       endConsensusTimestamp: null,
-      fileId: '102',
-      startConsensusTimestamp: '2',
+      fileId: 102,
+      startConsensusTimestamp: 2,
     },
     addressBookEntry: {
       description: 'desc 3',
       memo: '0.0.3',
-      nodeAccountId: '3',
-      nodeId: '0',
+      nodeAccountId: 3,
+      nodeId: 0,
     },
     addressBookServiceEndpoints: [
       {
@@ -265,14 +242,14 @@ const defaultExpectedNetworkNode102 = [
   {
     addressBook: {
       endConsensusTimestamp: null,
-      fileId: '102',
-      startConsensusTimestamp: '2',
+      fileId: 102,
+      startConsensusTimestamp: 2,
     },
     addressBookEntry: {
       description: 'desc 4',
       memo: '0.0.4',
-      nodeAccountId: '4',
-      nodeId: '1',
+      nodeAccountId: 4,
+      nodeId: 1,
     },
     addressBookServiceEndpoints: [
       {
@@ -317,15 +294,15 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
   const expectedNetworkNode101 = [
     {
       addressBook: {
-        startConsensusTimestamp: '1',
-        fileId: '101',
+        startConsensusTimestamp: 1,
+        fileId: 101,
         endConsensusTimestamp: null,
       },
       addressBookEntry: {
         description: 'desc 1',
         memo: 'memo 1',
-        nodeAccountId: '3',
-        nodeId: '0',
+        nodeAccountId: 3,
+        nodeId: 0,
       },
       addressBookServiceEndpoints: [
         {
@@ -340,14 +317,14 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
     {
       addressBook: {
         endConsensusTimestamp: null,
-        fileId: '102',
-        startConsensusTimestamp: '2',
+        fileId: 102,
+        startConsensusTimestamp: 2,
       },
       addressBookEntry: {
         description: 'desc 3',
         memo: '0.0.3',
-        nodeAccountId: '3',
-        nodeId: '0',
+        nodeAccountId: 3,
+        nodeId: 0,
       },
       addressBookServiceEndpoints: [
         {

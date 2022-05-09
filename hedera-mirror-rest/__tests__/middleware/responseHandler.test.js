@@ -25,6 +25,7 @@ const {
 } = require('../../config');
 const {NotFoundError} = require('../../errors/notFoundError');
 const {responseHandler} = require('../../middleware/responseHandler');
+const {JSONStringify} = require('../../utils');
 require('../testutils'); // For logger init
 
 const responseData = {transactions: [], links: {next: null}};
@@ -44,11 +45,11 @@ describe('Response middleware', () => {
       },
     };
     mockResponse = {
-      json: jest.fn(),
       locals: {
         mirrorRestData: responseData,
         statusCode: 200,
       },
+      send: jest.fn(),
       set: jest.fn(),
       status: jest.fn(),
     };
@@ -61,7 +62,7 @@ describe('Response middleware', () => {
 
   test('Custom headers', async () => {
     await responseHandler(mockRequest, mockResponse, null);
-    expect(mockResponse.json).toBeCalledWith(responseData);
+    expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
     expect(mockResponse.set).toHaveBeenNthCalledWith(2, headers.path[mockRequest.route.path]);
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
@@ -70,7 +71,7 @@ describe('Response middleware', () => {
   test('Default headers', async () => {
     mockRequest.route.path = '/api/v1/transactions';
     await responseHandler(mockRequest, mockResponse, null);
-    expect(mockResponse.json).toBeCalledWith(responseData);
+    expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
     expect(mockResponse.set).toHaveBeenNthCalledWith(2, undefined);
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);

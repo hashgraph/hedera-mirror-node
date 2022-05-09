@@ -102,6 +102,7 @@
         "consensus_timestamp": "1234567890.000030003",
         "creator_account_id": "0.0.1024",
         "deleted": false,
+        "expiration_time": null,
         "executed_timestamp": null,
         "memo": "Created per product team decision dated 02/03/21",
         "payer_account_id": "0.0.1024",
@@ -114,7 +115,8 @@
             "type": "ED25519"
           }
         ],
-        "transaction_body": "AQECAgMD"
+        "transaction_body": "AQECAgMD",
+        "wait_for_expiry": false
       }
     ],
     "links": {

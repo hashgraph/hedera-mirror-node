@@ -314,7 +314,6 @@ public class DomainBuilder {
                 .chainId(bytes(1))
                 .consensusTimestamp(timestamp())
                 .data(bytes(100))
-                .fromAddress(bytes(20))
                 .gasLimit(Long.MAX_VALUE)
                 .gasPrice(bytes(32))
                 .hash(bytes(32))

@@ -30,9 +30,9 @@ const constants = require('../constants');
 const EntityId = require('../entityId');
 const testUtils = require('./testutils');
 
-const NETWORK_FEE = 1;
-const NODE_FEE = 2;
-const SERVICE_FEE = 4;
+const NETWORK_FEE = 1n;
+const NODE_FEE = 2n;
+const SERVICE_FEE = 4n;
 const DEFAULT_NODE_ID = '3';
 const DEFAULT_TREASURY_ID = '98';
 
@@ -898,7 +898,11 @@ const addCryptoTransaction = async (cryptoTransfer) => {
 
   if (!('transfers' in cryptoTransfer)) {
     cryptoTransfer.transfers = [
-      {account: cryptoTransfer.senderAccountId, amount: -NETWORK_FEE - cryptoTransfer.amount, is_approval: false},
+      {
+        account: cryptoTransfer.senderAccountId,
+        amount: -NETWORK_FEE - BigInt(cryptoTransfer.amount),
+        is_approval: false,
+      },
       {account: cryptoTransfer.recipientAccountId, amount: cryptoTransfer.amount, is_approval: false},
       {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE, is_approval: false},
     ];
@@ -945,6 +949,7 @@ const addSchedule = async (schedule) => {
     creator_account_id: '0.0.1024',
     payer_account_id: '0.0.1024',
     transaction_body: Buffer.from([1, 1, 2, 2, 3, 3]),
+    wait_for_expiry: false,
     ...schedule,
   };
 
@@ -954,8 +959,10 @@ const addSchedule = async (schedule) => {
                            executed_timestamp,
                            payer_account_id,
                            schedule_id,
-                           transaction_body)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+                           transaction_body,
+                           expiration_time,
+                           wait_for_expiry)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       schedule.consensus_timestamp,
       EntityId.parse(schedule.creator_account_id).getEncodedId().toString(),
@@ -963,6 +970,8 @@ const addSchedule = async (schedule) => {
       EntityId.parse(schedule.payer_account_id).getEncodedId().toString(),
       EntityId.parse(schedule.schedule_id).getEncodedId().toString(),
       schedule.transaction_body,
+      schedule.expiration_time,
+      schedule.wait_for_expiry,
     ]
   );
 };
@@ -1197,7 +1206,7 @@ const addRecordFile = async (recordFileInput) => {
     load_start: 1629298233,
     name: '2021-08-12T06_59_32.000852000Z.rcd',
     node_account_id: 3,
-    prev_hash: '715b4f711cbd24cc4e3a7413646f58f04a95ec811c056727742f035c890c044371fe86065021e7e977961c4aa68aa5f0',
+    prev_hash: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     version: 5,
     ...recordFileInput,
   };

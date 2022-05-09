@@ -26,17 +26,17 @@ describe('NetworkNodeViewModel', () => {
   const defaultNetworkNode = {
     addressBook: {
       endConsensusTimestamp: null,
-      fileId: '102',
+      fileId: 102,
       startConsensusTimestamp: '187654000123457',
     },
     addressBookEntry: {
       description: 'desc 1',
       memo: '0.0.3',
-      nodeAccountId: '3',
+      nodeAccountId: 3,
       nodeCertHash: Buffer.from(
         '01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16'
       ),
-      nodeId: '0',
+      nodeId: 0,
       publicKey: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     },
     addressBookServiceEndpoints: [
@@ -86,9 +86,9 @@ describe('NetworkNodeViewModel', () => {
         addressBookEntry: {
           description: null,
           memo: null,
-          nodeAccountId: '3',
+          nodeAccountId: 3,
           nodeCertHash: null,
-          nodeId: '0',
+          nodeId: 0,
           publicKey: null,
         },
       })
