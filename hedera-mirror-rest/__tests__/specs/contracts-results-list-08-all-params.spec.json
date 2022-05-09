@@ -101,7 +101,7 @@
     ]
   },
   "urls": [
-    "/api/v1/contracts/results?timestamp=1676540001.234390005&block.number=10&internal=false&transaction.index=1&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c&limit=1&order=asc"
+    "/api/v1/contracts/results?timestamp=1676540001.234390005&internal=false&transaction.index=1&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c&limit=1&order=asc"
   ],
   "responseStatus": 200,
   "responseJson": {
@@ -122,7 +122,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/contracts/results?timestamp=1676540001.234390005&block.number=10&internal=false&transaction.index=1&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c&limit=1&order=asc"
+      "next": "/api/v1/contracts/results?timestamp=1676540001.234390005&internal=false&transaction.index=1&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c&limit=1&order=asc"
     }
   }
 }

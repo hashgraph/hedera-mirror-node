@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call for a specific contract using contract id with an internal filter set to false",
+  "description": "Contract results api call for a specific contract using contract id with a block.hash filter",
   "setup": {
     "contracts": [
       {

@@ -1,0 +1,17 @@
+{
+  "description": "Contract results api call for all contracts with block.hash and block.number filters",
+  "setup": {},
+  "urls": [
+    "/api/v1/contracts/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305&block.number=17"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Cannot combine block.number and block.hash"
+        }
+      ]
+    }
+  }
+}

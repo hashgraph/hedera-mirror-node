@@ -126,7 +126,10 @@
       }
     ]
   },
-  "url": "/api/v1/contracts/5001/results?from=8001&timestamp=gt:587654.000123456&limit=2&order=asc&block.number=10&internal=true&transaction.index=2&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
+  "urls": [
+    "/api/v1/contracts/5001/results?from=8001&timestamp=gt:587654.000123456&limit=2&order=asc&internal=true&transaction.index=2&block.hash=fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
+    "/api/v1/contracts/5001/results?from=8001&timestamp=gt:587654.000123456&limit=2&order=asc&block.number=10&internal=true&transaction.index=2"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "results": [

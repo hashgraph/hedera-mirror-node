@@ -314,7 +314,6 @@ const filterValidityChecks = (param, op, val) => {
 };
 
 const filterDependencyCheck = (params = []) => {
-  let badParams = [];
   const paramNames = params.map((p) => p.key);
   paramNames.forEach((param, i) => {
     switch (param) {
@@ -323,13 +322,22 @@ const filterDependencyCheck = (params = []) => {
           !paramNames.includes(constants.filterKeys.BLOCK_NUMBER) &&
           !paramNames.includes(constants.filterKeys.BLOCK_HASH)
         ) {
-          badParams.push(param);
+          throw new InvalidArgumentError(
+            'Transaction.index requires block.number or block.hash filter to be specified'
+          );
+        }
+        break;
+      case constants.filterKeys.BLOCK_NUMBER:
+      case constants.filterKeys.BLOCK_HASH:
+        if (
+          paramNames.includes(constants.filterKeys.BLOCK_NUMBER) &&
+          paramNames.includes(constants.filterKeys.BLOCK_HASH)
+        ) {
+          throw new InvalidArgumentError('Cannot combine block.number and block.hash');
         }
         break;
     }
   });
-
-  return badParams;
 };
 
 const isValidContractIdQueryParam = (op, val) => {
@@ -922,11 +930,7 @@ const buildAndValidateFilters = (
   validateAndParseFilters(filters, filterValidator);
 
   if (filterDependencyChecker) {
-    const badParams = filterDependencyChecker(filters);
-
-    if (badParams.length > 0) {
-      throw InvalidArgumentError.forParams(badParams);
-    }
+    filterDependencyChecker(filters);
   }
 
   return filters;
