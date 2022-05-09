@@ -110,12 +110,14 @@ describe('FileDataService.getExchangeRate tests', () => {
 
 describe('FileDataService.getLatestFileDataContents tests', () => {
   test('FileDataService.getLatestFileDataContents - No match', async () => {
-    await expect(FileDataService.getLatestFileDataContents({order: 'desc', whereQuery: []})).resolves.toBeNull();
+    await expect(
+      FileDataService.getLatestFileDataContents(fileId, {order: 'desc', whereQuery: []})
+    ).resolves.toBeNull();
   });
 
   const expectedPreviousFile = {
-    consensus_timestamp: 3,
-    file_data: '0a1008b0ea0110e9c81a1a060880e9cf9306121008b0ea0110f5f3191a06089085d09306',
+    consensus_timestamp: 2,
+    file_data: files[0].file_data + files[1].file_data,
   };
 
   const expectedLatestFile = {
@@ -125,16 +127,9 @@ describe('FileDataService.getLatestFileDataContents tests', () => {
 
   test('FileDataService.getLatestFileDataContents - Row match w latest', async () => {
     await integrationDomainOps.loadFileData(files);
-
-    const where = [
-      {
-        query: `${FileData.ENTITY_ID} = `,
-        param: fileId,
-      },
-    ];
-    await expect(FileDataService.getLatestFileDataContents({order: 'desc', whereQuery: where})).resolves.toMatchObject(
-      expectedLatestFile
-    );
+    await expect(
+      FileDataService.getLatestFileDataContents(fileId, {order: 'desc', whereQuery: []})
+    ).resolves.toMatchObject(expectedLatestFile);
   });
 
   test('FileDataService.getLatestFileDataContents - Row match w previous latest', async () => {
@@ -142,16 +137,12 @@ describe('FileDataService.getLatestFileDataContents tests', () => {
 
     const where = [
       {
-        query: `${FileData.ENTITY_ID} = `,
-        param: fileId,
-      },
-      {
         query: `${FileData.CONSENSUS_TIMESTAMP} <= `,
         param: expectedPreviousFile.consensus_timestamp,
       },
     ];
-    await expect(FileDataService.getLatestFileDataContents({order: 'desc', whereQuery: where})).resolves.toMatchObject(
-      expectedPreviousFile
-    );
+    await expect(
+      FileDataService.getLatestFileDataContents(fileId, {order: 'desc', whereQuery: where})
+    ).resolves.toMatchObject(expectedPreviousFile);
   });
 });

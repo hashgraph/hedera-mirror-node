@@ -29,23 +29,23 @@
     ]
   },
   "urls": [
-    "/api/v1/network/exchangerate?timestamp=1234567890.900800399",
-    "/api/v1/network/exchangerate?timestamp=eq:1234567890.900800399",
-    "/api/v1/network/exchangerate?timestamp=lt:1234567890.900800400",
-    "/api/v1/network/exchangerate?timestamp=lte:1234567890.900800399"
+    "/api/v1/network/exchangerate?timestamp=1234567890.900800299",
+    "/api/v1/network/exchangerate?timestamp=eq:1234567890.900800299",
+    "/api/v1/network/exchangerate?timestamp=lt:1234567890.900800300",
+    "/api/v1/network/exchangerate?timestamp=lte:1234567890.900800299"
   ],
   "responseStatus": 200,
   "responseJson": {
     "current_rate": {
-      "cent_equivalent": 435305,
-      "expiration_time": 1651766400,
-      "hbar_equivalent": 30000
-    },
-    "next_rate": {
       "cent_equivalent": 424437,
       "expiration_time": 1651770000,
       "hbar_equivalent": 30000
     },
-    "timestamp": "1234567890.900800300"
+    "next_rate": {
+      "cent_equivalent": 401610,
+      "expiration_time": 1651773600,
+      "hbar_equivalent": 30000
+    },
+    "timestamp": "1234567890.900800200"
   }
 }

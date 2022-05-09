@@ -35,6 +35,32 @@ class FileDataService extends BaseService {
   static latestFileDataContentQuery = `select ${FileData.CONSENSUS_TIMESTAMP}, encode(${FileData.FILE_DATA}, 'escape') ${FileData.FILE_DATA} 
     from ${FileData.tableName}`;
 
+  static filterInnerPlaceholder = '<filterInnerPlaceHolder>';
+  static filterOuterPlaceholder = '<filterOuterPlaceHolder>';
+  static latestFileContentsQuery = `with lastest_create as (
+      select max(${FileData.CONSENSUS_TIMESTAMP}) as ${FileData.CONSENSUS_TIMESTAMP}
+      from ${FileData.tableName}
+      where ${FileData.ENTITY_ID} = $1 and ${FileData.TRANSACTION_TYPE} in (17, 19) ${
+    FileDataService.filterInnerPlaceholder
+  }
+      group by ${FileData.ENTITY_ID}
+      order by ${FileData.CONSENSUS_TIMESTAMP} desc
+    )
+    select 
+      max(${FileData.tableAlias}.${FileData.CONSENSUS_TIMESTAMP}) as ${FileData.CONSENSUS_TIMESTAMP},
+      string_agg(encode(${FileData.getFullName(FileData.FILE_DATA)}, 'escape'), '' order by ${FileData.getFullName(
+    FileData.CONSENSUS_TIMESTAMP
+  )}) as ${FileData.FILE_DATA}
+    from ${FileData.tableName} ${FileData.tableAlias}
+    join lastest_create l on ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} >= l.${FileData.CONSENSUS_TIMESTAMP}
+    where ${FileData.getFullName(FileData.ENTITY_ID)} = $1 and ${FileData.getFullName(
+    FileData.TRANSACTION_TYPE
+  )} in (16,17, 19)
+      and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} >= l.${FileData.CONSENSUS_TIMESTAMP} ${
+    FileDataService.filterOuterPlaceholder
+  }
+    group by ${FileData.getFullName(FileData.ENTITY_ID)}`;
+
   // contract byte code
   // the query finds the file content valid at the contract's created timestamp T by aggregating the contents of all the
   // file* txs from the latest FileCreate or FileUpdate transaction before T, to T
@@ -68,27 +94,21 @@ class FileDataService extends BaseService {
     return FileDataService.contractInitCodeFileDataQuery;
   };
 
-  getLatestFileDataContents = async (filterQueries) => {
-    const {where, params} = super.buildWhereSqlStatement(filterQueries.whereQuery);
-    const row = await super.getSingleRow(
-      `${FileDataService.latestFileDataContentQuery}
-      ${where}
-      order by ${FileData.CONSENSUS_TIMESTAMP} ${filterQueries.order} limit 1`,
-      params,
-      'getLatestFileContents'
-    );
+  getLatestFileContentsQuery = (innerWhere = '') => {
+    const outerWhere = innerWhere.replace('and ', `and ${FileData.tableAlias}.`);
+    return FileDataService.latestFileContentsQuery
+      .replace(FileDataService.filterInnerPlaceholder, innerWhere)
+      .replace(FileDataService.filterOuterPlaceholder, outerWhere);
+  };
+
+  getLatestFileDataContents = async (fileId, filterQueries) => {
+    const {where, params} = super.buildWhereSqlStatement(filterQueries.whereQuery, [fileId]);
+    const row = await super.getSingleRow(this.getLatestFileContentsQuery(where), params, 'getLatestFileContents');
     return _.isNil(row) ? null : row;
   };
 
   getExchangeRate = async (filterQueries) => {
-    filterQueries.whereQuery.push(
-      this.getFilterWhereCondition(
-        FileData.ENTITY_ID,
-        utils.buildComparatorFilter(FileData.ENTITY_ID, `=:${FileDataService.exchangeRateFileId}`)
-      )
-    );
-
-    const row = await this.getLatestFileDataContents(filterQueries);
+    const row = await this.getLatestFileDataContents(FileDataService.exchangeRateFileId, filterQueries);
 
     return _.isNil(row) ? null : new ExchangeRate(row);
   };

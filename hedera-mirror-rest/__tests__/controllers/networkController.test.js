@@ -233,7 +233,7 @@ describe('extractExchangeRateQuery', () => {
         whereQuery: [
           {
             query: `${FileData.CONSENSUS_TIMESTAMP}  < `,
-            param: 1,
+            param: 2,
           },
         ],
       },

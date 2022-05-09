@@ -20,6 +20,7 @@
 
 'use strict';
 
+const {FileDecodeError} = require('../../errors/fileDecodeError');
 // models
 const {ExchangeRate} = require('../../model');
 
@@ -39,7 +40,11 @@ describe('exchange rate proto parse', () => {
     timestamp: 1651770056616171000,
   };
 
-  test('valid append', () => {
+  test('valid update', () => {
     expect(new ExchangeRate(input)).toEqual(expectedOutput);
+  });
+
+  test('invalid contents', () => {
+    expect(new ExchangeRate({file_data: '123456', consensus_timestamp: 1})).toThrowError(FileDecodeError);
   });
 });

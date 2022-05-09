@@ -21,15 +21,21 @@
 'use strict';
 
 const {proto} = require('@hashgraph/proto');
-const _ = require('lodash');
+const {FileDecodeError} = require('../errors/fileDecodeError');
 
 class ExchangeRate {
   /**
    * Parses exchange rate into object
-   * Curently from proto, eventually from excahnge_rate table
+   * Curently from proto, eventually from exchange_rate table
    */
   constructor(exchangeRate) {
-    const exchangeRateSet = proto.ExchangeRateSet.decode(Buffer.from(exchangeRate.file_data, 'hex'));
+    let exchangeRateSet = {};
+
+    try {
+      exchangeRateSet = proto.ExchangeRateSet.decode(Buffer.from(exchangeRate.file_data, 'hex'));
+    } catch (error) {
+      throw new FileDecodeError();
+    }
 
     this.current_cent = exchangeRateSet.currentRate.centEquiv;
     this.current_expiration = exchangeRateSet.currentRate.expirationTime.seconds.low;

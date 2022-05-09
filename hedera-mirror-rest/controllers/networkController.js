@@ -145,8 +145,8 @@ class NetworkController extends BaseController {
             );
           }
 
+          // to ensure most recent occurence is found convert eq to lte
           if (utils.opsMap.eq === filter.operator) {
-            filter.value = filter.value;
             filter.operator = utils.opsMap.lte;
           }
 
@@ -173,9 +173,9 @@ class NetworkController extends BaseController {
     // extract filters from query param
     const filters = utils.buildAndValidateFilters(req.query);
 
-    let filterQueries = this.extractExchangeRateQuery(filters);
+    const filterQueries = this.extractExchangeRateQuery(filters);
 
-    let exchangeRate = await FileDataService.getExchangeRate(filterQueries);
+    const exchangeRate = await FileDataService.getExchangeRate(filterQueries);
 
     if (_.isNil(exchangeRate)) {
       throw new NotFoundError('Not found');
