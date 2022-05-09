@@ -32,11 +32,12 @@ const utils = require('../utils');
 class FileDataService extends BaseService {
   static exchangeRateFileId = 112;
 
-  static latestFileDataContentQuery = `select ${FileData.CONSENSUS_TIMESTAMP}, encode(${FileData.FILE_DATA}, 'escape') ${FileData.FILE_DATA} 
-    from ${FileData.tableName}`;
-
+  // placeholders to support where filtering for inner and outer calls
   static filterInnerPlaceholder = '<filterInnerPlaceHolder>';
   static filterOuterPlaceholder = '<filterOuterPlaceHolder>';
+
+  // retrieve the largest timestamp of the most recent create/update operation on the file
+  // using this timestamp retrieve all recent file operations and combine contents for applicable file
   static latestFileContentsQuery = `with lastest_create as (
       select max(${FileData.CONSENSUS_TIMESTAMP}) as ${FileData.CONSENSUS_TIMESTAMP}
       from ${FileData.tableName}

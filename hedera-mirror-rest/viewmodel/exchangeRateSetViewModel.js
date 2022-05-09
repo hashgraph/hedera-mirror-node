@@ -31,7 +31,7 @@ class ExchangeRateSetViewModel {
   static nextLabel = 'next_';
 
   /**
-   * Constructs block view model
+   * Constructs exchange rate set view model
    *
    * @param {ExchangeRateSet} exchangeRateSet
    */

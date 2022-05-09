@@ -26,7 +26,10 @@ const FileDecodeErrorMessage =
 class FileDecodeError extends Error {
   constructor(errorMessage) {
     super();
-    this.message = errorMessage === undefined ? FileDecodeErrorMessage : errorMessage;
+    this.message = FileDecodeErrorMessage;
+    if (errorMessage !== undefined) {
+      this.message += errorMessage === undefined ? '' : `. Error: '${errorMessage}'`;
+    }
   }
 }
 

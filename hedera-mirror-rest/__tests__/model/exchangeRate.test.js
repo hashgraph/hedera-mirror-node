@@ -45,6 +45,6 @@ describe('exchange rate proto parse', () => {
   });
 
   test('invalid contents', () => {
-    expect(new ExchangeRate({file_data: '123456', consensus_timestamp: 1})).toThrowError(FileDecodeError);
+    expect(() => new ExchangeRate({file_data: '123456', consensus_timestamp: 1})).toThrowError(FileDecodeError);
   });
 });

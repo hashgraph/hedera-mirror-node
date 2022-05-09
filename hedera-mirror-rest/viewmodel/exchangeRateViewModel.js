@@ -27,7 +27,7 @@ const utils = require('../utils');
  */
 class ExchangeRateViewModel {
   /**
-   * Constructs block view model
+   * Constructs exchange rate view model
    *
    * @param {ExchangeRate} exchangeRate
    */

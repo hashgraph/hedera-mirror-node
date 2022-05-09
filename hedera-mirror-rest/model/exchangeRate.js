@@ -26,7 +26,7 @@ const {FileDecodeError} = require('../errors/fileDecodeError');
 class ExchangeRate {
   /**
    * Parses exchange rate into object
-   * Curently from proto, eventually from exchange_rate table
+   * Currently from proto, eventually from exchange_rate table
    */
   constructor(exchangeRate) {
     let exchangeRateSet = {};
@@ -34,7 +34,7 @@ class ExchangeRate {
     try {
       exchangeRateSet = proto.ExchangeRateSet.decode(Buffer.from(exchangeRate.file_data, 'hex'));
     } catch (error) {
-      throw new FileDecodeError();
+      throw new FileDecodeError(`${error.message}`);
     }
 
     this.current_cent = exchangeRateSet.currentRate.centEquiv;
