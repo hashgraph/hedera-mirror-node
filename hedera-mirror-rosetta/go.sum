@@ -447,8 +447,8 @@ github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFb
 github.com/gtank/merlin v0.1.1/go.mod h1:T86dnYJhcGOh5BjZFCJWTDeTK7XW8uE+E21Cy/bIQ+s=
 github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220407062851-1cb287936c27 h1:yHRWqWUuYFwLGQu7jPAP5AaE9MYeLOqhoVIU0ecsMUI=
 github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220407062851-1cb287936c27/go.mod h1:P0QU+a1kwZlqFNfG44/YhgR2njoDbAtDrYz3zR5lq3U=
-github.com/hashgraph/hedera-sdk-go/v2 v2.13.1 h1:T1Zk/SLINwg+yRtl7pqZmcASa4/pTcaX3PAFgMmQbwI=
-github.com/hashgraph/hedera-sdk-go/v2 v2.13.1/go.mod h1:PFU3fg8s1sMRs71Ypg838ZA8ev1Cc+JImi2nUFwvmLc=
+github.com/hashgraph/hedera-sdk-go/v2 v2.13.3 h1:9I1qSZuziAIxzPaUbgngsRu86tx9+hgMpwnHy2pWtcs=
+github.com/hashgraph/hedera-sdk-go/v2 v2.13.3/go.mod h1:PFU3fg8s1sMRs71Ypg838ZA8ev1Cc+JImi2nUFwvmLc=
 github.com/hashicorp/consul/api v1.1.0/go.mod h1:VmuI/Lkw1nC05EYQWNKwWGbkg+FbDBtguAZLlVdkD9Q=
 github.com/hashicorp/consul/api v1.3.0/go.mod h1:MmDNSzIMUjNpY/mQ398R4bk2FnqQLoPndWW5VkKPlCE=
 github.com/hashicorp/consul/sdk v0.1.1/go.mod h1:VKf9jXwCTEY1QZP2MOLRhb5i/I/ssyNV1vwHyQBF0x8=
