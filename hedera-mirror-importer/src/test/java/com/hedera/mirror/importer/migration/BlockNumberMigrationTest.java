@@ -1,12 +1,11 @@
 package com.hedera.mirror.importer.migration;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import com.hedera.mirror.importer.IntegrationTest;
-
-import com.hedera.mirror.importer.repository.RecordFileRepository;
-
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
@@ -15,20 +14,15 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 public class BlockNumberMigrationTest extends IntegrationTest {
 
     private final BlockNumberMigration blockNumberMigration;
-
-    private final DomainBuilder domainBuilder;
 
     private final RecordFileRepository recordFileRepository;
 

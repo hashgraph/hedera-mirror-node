@@ -31,7 +31,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
@@ -57,7 +56,6 @@ public class ErrataMigrationTest extends IntegrationTest {
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final ContractResultRepository contractResultRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
-    private final DomainBuilder domainBuilder;
     private final ErrataMigration errataMigration;
     private final MirrorProperties mirrorProperties;
     private final TransactionRepository transactionRepository;

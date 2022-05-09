@@ -47,7 +47,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
@@ -100,9 +99,6 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
     @Resource
     private TokenTransferRepository tokenTransferRepository;
-
-    @Resource
-    private DomainBuilder domainBuilder;
 
     @BeforeEach
     void before() {
