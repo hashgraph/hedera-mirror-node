@@ -128,10 +128,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // get the full state at time T
     private final Map<TokenAccountKey, TokenAccount> tokenAccountState;
 
-    // Accumulates gasUsed and blooms for the record file
-    private Long gasUsed;
-    private final LogsBloomFilter logsBloomFilter;
-
     public SqlEntityListener(BatchPersister batchPersister,
                              EntityIdService entityIdService,
                              ApplicationEventPublisher eventPublisher,
@@ -177,9 +173,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         tokens = new HashMap<>();
         tokenAccountState = new HashMap<>();
         tokenAllowanceState = new HashMap<>();
-
-        gasUsed = 0l;
-        logsBloomFilter = new LogsBloomFilter();
     }
 
     @Override
@@ -196,13 +189,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onEnd(RecordFile recordFile) {
         executeBatches();
         if (recordFile != null) {
-            recordFile.setGasUsed(gasUsed);
-            recordFile.setLogsBloom(logsBloomFilter.getBloom());
             recordFileRepository.save(recordFile);
         }
-
-        gasUsed = 0l;
-        logsBloomFilter.clear();
     }
 
     @Override
@@ -320,12 +308,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onContractResult(ContractResult contractResult) throws ImporterException {
         contractResults.add(contractResult);
-    }
-
-    @Override
-    public void onContractRecordFileInfo(long contractGasUsed, byte[] bloom) {
-        gasUsed += contractGasUsed;
-        logsBloomFilter.insertBytes(bloom);
     }
 
     @Override
