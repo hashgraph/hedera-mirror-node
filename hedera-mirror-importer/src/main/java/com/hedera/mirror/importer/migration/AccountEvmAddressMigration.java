@@ -69,6 +69,11 @@ public class AccountEvmAddressMigration extends MirrorBaseJavaMigration {
 
     @Override
     public MigrationVersion getVersion() {
-        return MigrationVersion.fromVersion("1.58.7");
+        return null;
+    }
+
+    @Override
+    public Integer getChecksum() {
+        return 1; // Change this if this migration should be rerun
     }
 }

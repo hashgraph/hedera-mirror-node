@@ -49,8 +49,12 @@ public class UtilityTest {
     @Test
     void aliasToEvmAddress() {
         byte[] aliasEd25519 = Key.newBuilder().setEd25519(ByteString.copyFromUtf8("ab")).build().toByteArray();
-        byte[] invalidBytes = new byte[]{'a', 'b'};
+        byte[] aliasEcdsa2 = Hex.decode("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
+        byte[] evmAddress2 = Hex.decode("efa0d905af20199aa03aca71cfa5f7647f29f439");
+        byte[] invalidBytes = new byte[] {'a', 'b'};
+
         assertThat(Utility.aliasToEvmAddress(ALIAS_ECDSA_SECP256K1)).isEqualTo(EVM_ADDRESS);
+        assertThat(Utility.aliasToEvmAddress(aliasEcdsa2)).isEqualTo(evmAddress2);
         assertThat(Utility.aliasToEvmAddress(aliasEd25519)).isNull();
         assertThat(Utility.aliasToEvmAddress(null)).isNull();
         assertThat(Utility.aliasToEvmAddress(new byte[] {})).isNull();
