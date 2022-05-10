@@ -54,7 +54,6 @@ const contractWithInitcodeFields = [...contractFields, Contract.getFullName(Cont
 
 const emptyFilterString = 'empty filters';
 const primaryContractFilter = 'cr.contract_id = $1';
-const defaultInternalFilter = 't.nonce = $2';
 
 describe('extractSqlFromContractFilters', () => {
   const defaultExpected = {
@@ -416,10 +415,9 @@ describe('getLastNonceParamValue', () => {
 
 describe('extractContractResultsByIdQuery', () => {
   const defaultContractId = 1;
-  const defaultNonce = 0;
   const defaultExpected = {
-    conditions: [primaryContractFilter, defaultInternalFilter],
-    params: [defaultContractId, defaultNonce],
+    conditions: [primaryContractFilter, 't.nonce = $2'],
+    params: [defaultContractId, 0],
     order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
   };
@@ -490,11 +488,11 @@ describe('extractContractResultsByIdQuery', () => {
         ...defaultExpected,
         conditions: [
           primaryContractFilter,
-          't.nonce = $2',
-          'cr.payer_account_id > $3',
+          'cr.payer_account_id > $2',
+          't.nonce = $3',
           'cr.payer_account_id in ($4,$5)',
         ],
-        params: [defaultContractId, defaultNonce, '1000', '1001', '1002'],
+        params: [defaultContractId, '1000', 0, '1001', '1002'],
       },
     },
     {
@@ -523,24 +521,20 @@ describe('extractContractResultsByIdQuery', () => {
         ...defaultExpected,
         conditions: [
           primaryContractFilter,
-          't.nonce = $2',
-          'cr.consensus_timestamp > $3',
+          'cr.consensus_timestamp > $2',
+          't.nonce = $3',
           'cr.consensus_timestamp in ($4,$5)',
         ],
-        params: [defaultContractId, defaultNonce, '1000', '1001', '1002'],
+        params: [defaultContractId, '1000', 0, '1001', '1002'],
       },
     },
   ];
 
   specs.forEach((spec) => {
     test(`${spec.name}`, async () => {
-      expect(
-        await contracts.extractContractResultsByIdQuery(
-          spec.input.filter,
-          spec.input.contractId,
-          contracts.contractResultsByIdParamSupportMap
-        )
-      ).toEqual(spec.expected);
+      expect(await contracts.extractContractResultsByIdQuery(spec.input.filter, spec.input.contractId)).toEqual(
+        spec.expected
+      );
     });
   });
 });

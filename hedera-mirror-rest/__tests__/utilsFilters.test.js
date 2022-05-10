@@ -357,9 +357,10 @@ describe('utils formatComparator tests', () => {
 
 describe('utils filterDependencyCheck tests', () => {
   test('Verify formatComparator for isolated transaction.index', () => {
-    const filters = [utils.buildComparatorFilter(constants.filterKeys.TRANSACTION_INDEX, 'eq:1')];
+    let query = {};
+    query[constants.filterKeys.TRANSACTION_INDEX] = 'eq:1';
     try {
-      utils.filterDependencyCheck(filters);
+      utils.filterDependencyCheck(query);
       expect(true).toEqual('Should throw error');
     } catch (err) {
       expect(err.toString()).toEqual(
@@ -369,25 +370,22 @@ describe('utils filterDependencyCheck tests', () => {
   });
 
   test('Verify formatComparator for transaction.index with block.number', () => {
-    const filters = [
-      utils.buildComparatorFilter(constants.filterKeys.TRANSACTION_INDEX, 'eq:1'),
-      utils.buildComparatorFilter(constants.filterKeys.BLOCK_NUMBER, 'eq:1'),
-    ];
-
+    let query = {};
+    query[constants.filterKeys.TRANSACTION_INDEX] = 'eq:1';
+    query[constants.filterKeys.BLOCK_NUMBER] = 'eq:1';
     try {
-      utils.filterDependencyCheck(filters);
+      utils.filterDependencyCheck(query);
     } catch (err) {
       expect(err).toBeUndefined();
     }
   });
 
   test('Verify formatComparator for transaction.index with block.hash', () => {
-    const filters = [
-      utils.buildComparatorFilter(constants.filterKeys.TRANSACTION_INDEX, 'eq:1'),
-      utils.buildComparatorFilter(constants.filterKeys.BLOCK_HASH, 'eq:1'),
-    ];
+    let query = {};
+    query[constants.filterKeys.TRANSACTION_INDEX] = 'eq:1';
+    query[constants.filterKeys.BLOCK_HASH] = 'eq:1';
     try {
-      utils.filterDependencyCheck(filters);
+      utils.filterDependencyCheck(query);
     } catch (err) {
       expect(err).toBeUndefined();
     }

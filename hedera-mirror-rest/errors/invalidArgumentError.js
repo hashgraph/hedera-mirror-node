@@ -51,8 +51,7 @@ class InvalidArgumentError extends Error {
       badParams.map((message) => {
         if (message.code === this.PARAM_COUNT_EXCEEDS_MAX_CODE) {
           return `${ParameterExceedsMaxErrorMessageFormat}${message.key} count: ${message.count} max: ${message.max}`;
-        }
-        if (message.code === this.INVALID_PARAM_USAGE) {
+        } else if (message.code === this.INVALID_PARAM_USAGE) {
           return `${invalidParamUsageMessageFormat}${message.key} - ${message.error}`;
         } else {
           return `${InvalidArgumentErrorMessageFormat}${message.key || message}`;

@@ -316,42 +316,36 @@ const filterValidityChecks = (param, op, val) => {
   return ret;
 };
 
-const filterDependencyCheck = (params = []) => {
+const filterDependencyCheck = (query) => {
   const badParams = [];
-  const paramNames = params.map((p) => p.key);
-
-  let hasBlockNumAndHashError = false;
-  paramNames.forEach((param, i) => {
-    switch (param) {
-      case constants.filterKeys.TRANSACTION_INDEX:
-        if (
-          !paramNames.includes(constants.filterKeys.BLOCK_NUMBER) &&
-          !paramNames.includes(constants.filterKeys.BLOCK_HASH)
-        ) {
-          badParams.push({
-            key: param,
-            error: 'transaction.index requires block.number or block.hash filter to be specified',
-            code: 'invalidParamUsage',
-          });
-        }
-        break;
-      case constants.filterKeys.BLOCK_NUMBER:
-      case constants.filterKeys.BLOCK_HASH:
-        if (
-          paramNames.includes(constants.filterKeys.BLOCK_NUMBER) &&
-          paramNames.includes(constants.filterKeys.BLOCK_HASH) &&
-          !hasBlockNumAndHashError
-        ) {
-          badParams.push({
-            key: param,
-            error: 'cannot combine block.number and block.hash',
-            code: 'invalidParamUsage',
-          });
-          hasBlockNumAndHashError = true;
-        }
-        break;
+  let containsBlockNumber = false;
+  let containsBlockHash = false;
+  let containsTransactionIndex = false;
+  for (const [key, values] of Object.entries(query)) {
+    if (key === constants.filterKeys.TRANSACTION_INDEX) {
+      containsTransactionIndex = true;
+    } else if (key === constants.filterKeys.BLOCK_NUMBER) {
+      containsBlockNumber = true;
+    } else if (key === constants.filterKeys.BLOCK_HASH) {
+      containsBlockHash = true;
     }
-  });
+  }
+
+  if (containsTransactionIndex && !(containsBlockNumber || containsBlockHash)) {
+    badParams.push({
+      key: constants.filterKeys.TRANSACTION_INDEX,
+      error: 'transaction.index requires block.number or block.hash filter to be specified',
+      code: 'invalidParamUsage',
+    });
+  }
+
+  if (containsBlockHash && containsBlockNumber) {
+    badParams.push({
+      key: constants.filterKeys.BLOCK_HASH,
+      error: 'cannot combine block.number and block.hash',
+      code: 'invalidParamUsage',
+    });
+  }
 
   if (badParams.length) {
     throw InvalidArgumentError.forRequestValidation(badParams);
@@ -964,7 +958,7 @@ const buildAndValidateFilters = (
   }
 
   if (filterDependencyChecker) {
-    filterDependencyChecker(filters);
+    filterDependencyChecker(query);
   }
 
   return filters;
@@ -1093,7 +1087,7 @@ const formatComparator = (comparator) => {
         comparator.value = EntityId.parse(comparator.value, contants.filterKeys.FROM).getEncodedId();
         break;
       case constants.filterKeys.INTERNAL:
-        comparator.value = parseBooleanValue(comparator.value) ? 1 : 0;
+        comparator.value = parseBooleanValue(comparator.value);
         break;
       case constants.filterKeys.LIMIT:
         comparator.value = math.min(Number(comparator.value), responseLimit.max);
