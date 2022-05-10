@@ -23,14 +23,12 @@ package com.hedera.mirror.importer.util;
 import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.TextFormat;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -38,7 +36,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
-import org.bouncycastle.asn1.x9.X9IntegerConverter;
+import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
@@ -53,7 +51,6 @@ public class Utility {
 
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
     private static final ECCurve SECP256K1_CURVE = new SecP256K1Curve();
-    private static final X9IntegerConverter X9_CONVERTER = new X9IntegerConverter();
 
     /**
      * Converts an ECDSA secp256k1 alias to a 20 byte EVM address by taking the keccak hash of it. Logic copied from
@@ -72,27 +69,19 @@ public class Utility {
 
             if (key.getKeyCase() == Key.KeyCase.ECDSA_SECP256K1) {
                 var rawCompressedKey = DomainUtils.toBytes(key.getECDSASecp256K1());
-                BigInteger x = new BigInteger(rawCompressedKey, 1, 32);
-                ECPoint ecPoint = decompressKey(x, (rawCompressedKey[0] & 0x1) == 0x1);
+                ECPoint ecPoint = SECP256K1_CURVE.decodePoint(rawCompressedKey);
                 byte[] uncompressedKeyDer = ecPoint.getEncoded(false);
                 byte[] uncompressedKeyRaw = new byte[64];
                 System.arraycopy(uncompressedKeyDer, 1, uncompressedKeyRaw, 0, 64);
                 byte[] hashedKey = new Keccak.Digest256().digest(uncompressedKeyRaw);
-
                 return Arrays.copyOfRange(hashedKey, 12, 32);
             }
 
             return null;
-        } catch (InvalidProtocolBufferException e) {
-            throw new ParserException(e);
+        } catch (Exception e) {
+            var aliasHex = Hex.encodeHexString(alias);
+            throw new ParserException("Unable to decode alias to EVM address: " + aliasHex, e);
         }
-    }
-
-    // Decompress a compressed public key (x coordinate and low-bit of y-coordinate).
-    private static ECPoint decompressKey(BigInteger x, boolean yBit) {
-        final byte[] compEnc = X9_CONVERTER.integerToBytes(x, X9_CONVERTER.getByteLength(SECP256K1_CURVE) + 1);
-        compEnc[0] = (byte) (yBit ? 0x03 : 0x02);
-        return SECP256K1_CURVE.decodePoint(compEnc);
     }
 
     /**
