@@ -429,6 +429,28 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
+  /api/v1/network/exchangerate:
+    get:
+      summary: Get the network exchange rate to estimate costs
+      description: Returns the network's exchange rate, current and next.
+      operationId: getNetworkExchangeRate
+      parameters:
+        - $ref: '#/components/parameters/timestampQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkExchangeRateSetResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/ServiceUnavailableError'
+      tags:
+        - network
   /api/v1/network/nodes:
     get:
       summary: Get the network address book nodes
@@ -1050,6 +1072,15 @@ components:
           $ref: '#/components/schemas/CryptoAllowances'
         links:
           $ref: '#/components/schemas/Links'
+    NetworkExchangeRateSetResponse:
+      type: object
+      properties:
+        current_rate:
+          $ref: '#/components/schemas/ExchangeRate'
+        next_rate:
+          $ref: '#/components/schemas/ExchangeRate'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
     NetworkNodesResponse:
       type: object
       properties:
@@ -1577,6 +1608,18 @@ components:
       nullable: true
       pattern: '^(0x)?[A-Fa-f0-9]{40}$'
       example: "0x0000000000000000000000000000000000001f41"
+    ExchangeRate:
+      type: object
+      properties:
+        cent_equivalent:
+          type: number
+          example: 596987
+        expiration_time:
+          type: number
+          example: 1649689200
+        hbar_equivalent:
+          type: number
+          example: 30000
     FixedFee:
       type: object
       properties:
@@ -1727,10 +1770,12 @@ components:
       example:
         account_id: "0.1.2"
         created_timestamp: "1234567890.000000001"
+        delegating_spender: "0.0.400"
         deleted: false
         metadata: "VGhpcyBpcyBhIHRlc3QgTkZU"
         modified_timestamp: "1610682445.003266001"
         serial_number: 124
+        spender_id: "0.0.500"
         token_id: "0.0.222"
     Nfts:
       type: object
