@@ -34,7 +34,7 @@ class ExchangeRate {
     try {
       exchangeRateSet = proto.ExchangeRateSet.decode(Buffer.from(exchangeRate.file_data, 'hex'));
     } catch (error) {
-      throw new FileDecodeError(`${error.message}`);
+      throw new FileDecodeError(error.message);
     }
 
     this.current_cent = exchangeRateSet.currentRate.centEquiv;

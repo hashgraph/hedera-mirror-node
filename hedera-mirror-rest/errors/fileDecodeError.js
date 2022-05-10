@@ -28,11 +28,9 @@ class FileDecodeError extends Error {
     super();
     this.message = FileDecodeErrorMessage;
     if (errorMessage !== undefined) {
-      this.message += errorMessage === undefined ? '' : `. Error: '${errorMessage}'`;
+      this.message += `. Error: '${errorMessage}'`;
     }
   }
 }
 
-module.exports = {
-  FileDecodeError,
-};
+module.exports = FileDecodeError;

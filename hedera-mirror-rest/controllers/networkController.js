@@ -152,9 +152,6 @@ class NetworkController extends BaseController {
 
           filterQuery.whereQuery.push(FileDataService.getFilterWhereCondition(FileData.CONSENSUS_TIMESTAMP, filter));
           break;
-        case constants.filterKeys.ORDER:
-          filterQuery.order = filter.value;
-          break;
         default:
           break;
       }
@@ -181,7 +178,7 @@ class NetworkController extends BaseController {
       throw new NotFoundError('Not found');
     }
 
-    res.send(new ExchangeRateSetViewModel(exchangeRate));
+    res.locals[constants.responseDataLabel] = new ExchangeRateSetViewModel(exchangeRate);
   };
 
   /**

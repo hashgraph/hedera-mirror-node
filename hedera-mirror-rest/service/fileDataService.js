@@ -38,7 +38,7 @@ class FileDataService extends BaseService {
 
   // retrieve the largest timestamp of the most recent create/update operation on the file
   // using this timestamp retrieve all recent file operations and combine contents for applicable file
-  static latestFileContentsQuery = `with lastest_create as (
+  static latestFileContentsQuery = `with latest_create as (
       select max(${FileData.CONSENSUS_TIMESTAMP}) as ${FileData.CONSENSUS_TIMESTAMP}
       from ${FileData.tableName}
       where ${FileData.ENTITY_ID} = $1 and ${FileData.TRANSACTION_TYPE} in (17, 19) ${
@@ -53,7 +53,7 @@ class FileDataService extends BaseService {
     FileData.CONSENSUS_TIMESTAMP
   )}) as ${FileData.FILE_DATA}
     from ${FileData.tableName} ${FileData.tableAlias}
-    join lastest_create l on ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} >= l.${FileData.CONSENSUS_TIMESTAMP}
+    join latest_create l on ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} >= l.${FileData.CONSENSUS_TIMESTAMP}
     where ${FileData.getFullName(FileData.ENTITY_ID)} = $1 and ${FileData.getFullName(
     FileData.TRANSACTION_TYPE
   )} in (16,17, 19)
@@ -104,8 +104,7 @@ class FileDataService extends BaseService {
 
   getLatestFileDataContents = async (fileId, filterQueries) => {
     const {where, params} = super.buildWhereSqlStatement(filterQueries.whereQuery, [fileId]);
-    const row = await super.getSingleRow(this.getLatestFileContentsQuery(where), params, 'getLatestFileContents');
-    return _.isNil(row) ? null : row;
+    return await super.getSingleRow(this.getLatestFileContentsQuery(where), params, 'getLatestFileContents');
   };
 
   getExchangeRate = async (filterQueries) => {
