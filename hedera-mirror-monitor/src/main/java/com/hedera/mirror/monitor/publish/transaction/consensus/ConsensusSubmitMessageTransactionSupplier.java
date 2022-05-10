@@ -55,15 +55,12 @@ public class ConsensusSubmitMessageTransactionSupplier implements TransactionSup
     @Getter(lazy = true)
     private final TopicId consensusTopicId = TopicId.fromString(topicId);
 
-    @Getter(lazy = true)
-    private final String generatedMessage = !message.isEmpty() ? message :
-            new String(Utility.generateMessage(messageSize), StandardCharsets.US_ASCII);
-
     @Override
     public TopicMessageSubmitTransaction get() {
         return new TopicMessageSubmitTransaction()
                 .setMaxTransactionFee(Hbar.fromTinybars(maxTransactionFee))
-                .setMessage(getGeneratedMessage())
+                .setMessage(!message.isEmpty() ? message.getBytes(StandardCharsets.UTF_8) : Utility
+                        .generateMessage(messageSize))
                 .setTopicId(getConsensusTopicId());
     }
 }
