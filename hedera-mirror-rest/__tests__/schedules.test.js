@@ -35,6 +35,7 @@ describe('schedule formatScheduleRow tests', () => {
     consensus_timestamp: '1234567890000000001',
     creator_account_id: '100',
     deleted: false,
+    expiration_time: '1234567890000000000',
     executed_timestamp: '1234567890000000002',
     memo: 'Created per council decision dated 1/21/21',
     payer_account_id: '101',
@@ -54,6 +55,7 @@ describe('schedule formatScheduleRow tests', () => {
       },
     ],
     transaction_body: Buffer.from([0x29, 0xde, 0xad, 0xbe, 0xef]),
+    wait_for_expiry: true,
   };
   const defaultExpected = {
     admin_key: {
@@ -63,6 +65,7 @@ describe('schedule formatScheduleRow tests', () => {
     consensus_timestamp: '1234567890.000000001',
     creator_account_id: '0.0.100',
     deleted: false,
+    expiration_time: '1234567890.000000000',
     executed_timestamp: '1234567890.000000002',
     memo: 'Created per council decision dated 1/21/21',
     payer_account_id: '0.0.101',
@@ -82,6 +85,7 @@ describe('schedule formatScheduleRow tests', () => {
       },
     ],
     transaction_body: 'Kd6tvu8=',
+    wait_for_expiry: true,
   };
 
   const testSpecs = [
@@ -205,7 +209,7 @@ describe('schedule extractSqlFromScheduleFilters tests', () => {
     }
 
     const expectedquery = 'where creator_account_id >= $1 and s.schedule_id < $2';
-    const expectedparams = ['123', '456', 10];
+    const expectedparams = [123, 456, 10];
     const expectedorder = constants.orderFilterValues.DESC;
     const expectedlimit = 10;
 

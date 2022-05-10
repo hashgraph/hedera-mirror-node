@@ -25,6 +25,17 @@ const _ = require('lodash');
 const BaseService = require('./baseService');
 const {RecordFile} = require('../model');
 
+const buildWhereSqlStatement = (whereQuery) => {
+  let where = '';
+  const params = [];
+  for (let i = 1; i <= whereQuery.length; i++) {
+    where += `${i === 1 ? 'where' : 'and'} ${whereQuery[i - 1].query} $${i} `;
+    params.push(whereQuery[i - 1].param);
+  }
+
+  return {where, params};
+};
+
 /**
  * RecordFile retrieval business logic
  */
@@ -33,30 +44,89 @@ class RecordFileService extends BaseService {
     super();
   }
 
-  static recordFileBlockDetailsFromTimestampQuery = `select 
+  static recordFileBlockDetailsFromTimestampQuery = `select
     ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
-    from ${RecordFile.tableName} 
+    from ${RecordFile.tableName}
     where  ${RecordFile.CONSENSUS_END} >= $1
     order by ${RecordFile.CONSENSUS_END} asc
+    limit 1`;
+
+  static recordFileBlockDetailsFromIndexQuery = `select
+    ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
+    from ${RecordFile.tableName}
+    where  ${RecordFile.INDEX} = $1
+    limit 1`;
+
+  static recordFileBlockDetailsFromHashQuery = `select
+    ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
+    from ${RecordFile.tableName}
+    where  ${RecordFile.HASH} like $1
     limit 1`;
 
   /**
    * Retrieves the recordFile containing the transaction of the given timestamp
    *
-   * @param {string} timestamp encoded contract ID
+   * @param {string|Number|BigInt} timestamp consensus timestamp
    * @return {Promise<RecordFile>} recordFile subset
    */
   async getRecordFileBlockDetailsFromTimestamp(timestamp) {
-    const rows = await super.getRows(
+    const row = await super.getSingleRow(
       RecordFileService.recordFileBlockDetailsFromTimestampQuery,
       [timestamp],
       'getRecordFileBlockDetailsFromTimestamp'
     );
-    if (_.isEmpty(rows) || rows.length > 1) {
-      return null;
-    }
 
-    return new RecordFile(rows[0]);
+    return _.isNull(row) ? null : new RecordFile(row);
+  }
+
+  /**
+   * Retrieves the recordFile with the given index
+   *
+   * @param {number} index Int8
+   * @return {Promise<RecordFile>} recordFile subset
+   */
+  async getRecordFileBlockDetailsFromIndex(index) {
+    const row = await super.getSingleRow(
+      RecordFileService.recordFileBlockDetailsFromIndexQuery,
+      [index],
+      'getRecordFileBlockDetailsFromIndex'
+    );
+
+    return _.isNull(row) ? null : new RecordFile(row);
+  }
+
+  /**
+   * Retrieves the recordFile with the given index
+   *
+   * @param {string} hash
+   * @return {Promise<RecordFile>} recordFile subset
+   */
+  async getRecordFileBlockDetailsFromHash(hash) {
+    const row = await super.getSingleRow(
+      RecordFileService.recordFileBlockDetailsFromHashQuery,
+      [`${hash}%`],
+      'getRecordFileBlockDetailsFromHash'
+    );
+
+    return _.isNull(row) ? null : new RecordFile(row);
+  }
+
+  async getBlocks(filters) {
+    const {where, params} = buildWhereSqlStatement(filters.whereQuery);
+
+    const query = `
+      select
+        ${RecordFile.COUNT}, ${RecordFile.HASH}, ${RecordFile.NAME}, ${RecordFile.PREV_HASH}, ${RecordFile.BYTES},
+        ${RecordFile.HAPI_VERSION_MAJOR}, ${RecordFile.HAPI_VERSION_MINOR}, ${RecordFile.HAPI_VERSION_PATCH},
+        ${RecordFile.INDEX}, ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}
+      from ${RecordFile.tableName}
+      ${where}
+      order by ${RecordFile.INDEX} ${filters.order}
+      limit ${filters.limit}
+    `;
+    const rows = await super.getRows(query, params, 'getBlocks');
+
+    return rows.map((recordFile) => new RecordFile(recordFile));
   }
 }
 

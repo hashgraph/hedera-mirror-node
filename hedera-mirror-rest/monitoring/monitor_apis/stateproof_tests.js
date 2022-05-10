@@ -60,8 +60,8 @@ const checkStateproofForValidTransaction = async (server) => {
     return {url, ...result};
   }
 
-  const transactionId = transactions[0].transaction_id;
-  url = getUrl(server, stateproofPath(transactionId));
+  const {transaction_id: transactionId, nonce, scheduled} = transactions[0];
+  url = getUrl(server, stateproofPath(transactionId), {nonce, scheduled});
   const stateproof = await getAPIResponse(url);
 
   result = new CheckRunner()

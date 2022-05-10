@@ -42,6 +42,7 @@ class Transaction {
   static TYPE = `type`;
   static VALID_DURATION_SECONDS = `valid_duration_seconds`;
   static VALID_START_NS = `valid_start_ns`;
+  static INDEX = `index`;
   static FILTER_MAP = {
     [constants.filterKeys.TIMESTAMP]: Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP),
   };
@@ -67,6 +68,7 @@ class Transaction {
     this.type = transaction.type;
     this.validDurationSeconds = transaction.valid_duration_seconds;
     this.validStartNs = transaction.valid_start_ns;
+    this.index = transaction.index;
   }
 
   /**

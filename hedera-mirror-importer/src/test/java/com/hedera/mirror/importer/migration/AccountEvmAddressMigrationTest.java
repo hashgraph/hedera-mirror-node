@@ -20,8 +20,8 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import static com.hedera.mirror.importer.util.UtilityTest.EVM_ADDRESS;
 import static com.hedera.mirror.importer.util.UtilityTest.ALIAS_ECDSA_SECP256K1;
+import static com.hedera.mirror.importer.util.UtilityTest.EVM_ADDRESS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import lombok.RequiredArgsConstructor;
@@ -30,15 +30,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcOperations;
-import org.springframework.test.context.TestPropertySource;
 
-import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 
-@EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.59.0")
 class AccountEvmAddressMigrationTest extends IntegrationTest {
 
     private final JdbcOperations jdbcOperations;

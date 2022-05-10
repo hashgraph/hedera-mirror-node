@@ -30,9 +30,11 @@ const resource = 'contracts';
 router.getAsync('/', ContractController.getContracts);
 router.getAsync('/:contractId', ContractController.getContractById);
 router.getAsync('/:contractId/results', ContractController.getContractResultsById);
-router.getAsync('/:contractId/results/logs', ContractController.getContractLogs);
+router.getAsync('/:contractId/results/logs', ContractController.getContractLogsById);
 router.getAsync('/:contractId/results/:consensusTimestamp([0-9.]+)', ContractController.getContractResultsByTimestamp);
-router.getAsync('/results/:transactionId', ContractController.getContractResultsByTransactionId);
+router.getAsync('/results', ContractController.getContractResults);
+router.getAsync('/results/logs', ContractController.getContractLogs);
+router.getAsync('/results/:transactionId([0-9.-]*)', ContractController.getContractResultsByTransactionId);
 
 module.exports = {
   resource,

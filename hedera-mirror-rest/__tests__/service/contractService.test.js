@@ -29,31 +29,8 @@ const integrationDbOps = require('../integrationDbOps');
 const integrationDomainOps = require('../integrationDomainOps');
 const {NotFoundError} = require('../../errors/notFoundError');
 
-jest.setTimeout(40000);
-
-let dbConfig;
-
-// set timeout for beforeAll to 4 minutes as downloading docker image if not exists can take quite some time
-const defaultBeforeAllTimeoutMillis = 240 * 1000;
-
-beforeAll(async () => {
-  dbConfig = await integrationDbOps.instantiateDatabase();
-  await integrationDomainOps.setUp({}, dbConfig.sqlConnection);
-  global.pool = dbConfig.sqlConnection;
-}, defaultBeforeAllTimeoutMillis);
-
-afterAll(async () => {
-  await integrationDbOps.closeConnection(dbConfig);
-});
-
-beforeEach(async () => {
-  if (!dbConfig.sqlConnection) {
-    logger.warn(`sqlConnection undefined, acquire new connection`);
-    dbConfig.sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
-  }
-
-  await integrationDbOps.cleanUp(dbConfig.sqlConnection);
-});
+const {defaultMochaStatements} = require('./defaultMochaStatements');
+defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
   test('Verify simple query', async () => {
@@ -63,7 +40,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `select *
+    const expected = `select cr.*
       from contract_result cr
       where cr.contract_id = $1
       order by cr.consensus_timestamp asc
@@ -80,7 +57,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `select *
+    const expected = `select cr.*
       from contract_result cr
       where cr.contract_id = $1
         and cr.consensus_timestamp > $2
@@ -90,12 +67,52 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 10, 20, 5]);
   });
+
+  test('Verify transaction.nonce condition', async () => {
+    const additionalConditions = ['cr.contract_id = $1', 't.nonce = $2'];
+    const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
+      additionalConditions,
+      [2, 10],
+      'asc',
+      5
+    );
+    const expected = `with t as (select * from transaction where transaction.nonce = $2)
+      select cr.*
+      from contract_result cr
+      left join t on cr.consensus_timestamp = t.consensus_timestamp
+      where cr.contract_id = $1
+        and t.nonce = $2
+      order by cr.consensus_timestamp asc
+      limit $3`;
+    assertSqlQueryEqual(query, expected);
+    expect(params).toEqual([2, 10, 5]);
+  });
+
+  test('Verify transaction.index condition', async () => {
+    const additionalConditions = ['cr.contract_id = $1', 't.index = $2'];
+    const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
+      additionalConditions,
+      [2, 10],
+      'asc',
+      5
+    );
+    const expected = `with t as (select * from transaction where transaction.index = $2)
+      select cr.*
+      from contract_result cr
+      left join t on cr.consensus_timestamp = t.consensus_timestamp
+      where cr.contract_id = $1
+        and t.index = $2
+      order by cr.consensus_timestamp asc
+      limit $3`;
+    assertSqlQueryEqual(query, expected);
+    expect(params).toEqual([2, 10, 5]);
+  });
 });
 
 const contractLogContractIdWhereClause = `cl.contract_id = $1`;
-describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
+describe('ContractService.getContractLogsQuery tests', () => {
   test('Verify simple query', async () => {
-    const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
+    const [query, params] = ContractService.getContractLogsQuery(
       [contractLogContractIdWhereClause],
       [2],
       'desc',
@@ -125,7 +142,7 @@ describe('ContractService.getContractLogsByIdAndFiltersQuery tests', () => {
   });
 
   test('Verify additional conditions', async () => {
-    const [query, params] = ContractService.getContractLogsByIdAndFiltersQuery(
+    const [query, params] = ContractService.getContractLogsQuery(
       [
         `cl.contract_id  = $1`,
         `cl.topic0 = $2`,
@@ -206,10 +223,10 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
 
     const expectedContractResult = [
       {
-        amount: '10',
-        contractId: '2',
-        consensusTimestamp: '1',
-        gasLimit: '1000',
+        amount: 10,
+        contractId: 2,
+        consensusTimestamp: 1,
+        gasLimit: 1000,
         gasUsed: null,
       },
     ];
@@ -238,12 +255,12 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
 
     const expectedContractResult = [
       {
-        amount: '10',
-        contractId: '2',
-        consensusTimestamp: '2',
-        gasLimit: '1000',
+        amount: 10,
+        contractId: 2,
+        consensusTimestamp: 2,
+        gasLimit: 1000,
         gasUsed: null,
-        payerAccountId: '123',
+        payerAccountId: 123,
       },
     ];
 
@@ -292,19 +309,19 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
 
     const expectedContractResult = [
       {
-        contractId: '3',
-        consensusTimestamp: '3',
-        payerAccountId: '124',
+        contractId: 3,
+        consensusTimestamp: 3,
+        payerAccountId: 124,
       },
       {
-        contractId: '3',
-        consensusTimestamp: '4',
-        payerAccountId: '124',
+        contractId: 3,
+        consensusTimestamp: 4,
+        payerAccountId: 124,
       },
     ];
 
     const response = await ContractService.getContractResultsByIdAndFilters(
-      ['contract_id = $1', 'consensus_timestamp > $2', 'payer_account_id = $3'],
+      ['cr.contract_id = $1', 'cr.consensus_timestamp > $2', 'cr.payer_account_id = $3'],
       [3, 2, 124],
       'asc',
       2
@@ -352,28 +369,28 @@ describe('ContractService.getContractLogsByTimestamps tests', () => {
   ];
   const expected = [
     {
-      consensusTimestamp: '1',
-      contractId: '1',
+      consensusTimestamp: 1,
+      contractId: 1,
       index: 0,
-      rootContractId: '1',
+      rootContractId: 1,
     },
     {
-      consensusTimestamp: '1',
-      contractId: '2',
+      consensusTimestamp: 1,
+      contractId: 2,
       index: 1,
-      rootContractId: '1',
+      rootContractId: 1,
     },
     {
-      consensusTimestamp: '2',
-      contractId: '1',
+      consensusTimestamp: 2,
+      contractId: 1,
       index: 0,
-      rootContractId: '1',
+      rootContractId: 1,
     },
     {
-      consensusTimestamp: '2',
-      contractId: '3',
+      consensusTimestamp: 2,
+      contractId: 3,
       index: 1,
-      rootContractId: '1',
+      rootContractId: 1,
     },
   ];
 
@@ -423,26 +440,26 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
   ];
   const expected = [
     {
-      amount: '10',
+      amount: 10,
       callResult: null,
-      consensusTimestamp: '2',
-      contractId: '2',
+      consensusTimestamp: 2,
+      contractId: 2,
       createdContractIds: [],
       errorMessage: '',
-      gasLimit: '1000',
+      gasLimit: 1000,
       gasUsed: null,
-      payerAccountId: '5',
+      payerAccountId: 5,
     },
     {
-      amount: '15',
+      amount: 15,
       callResult: null,
-      consensusTimestamp: '6',
-      contractId: '3',
+      consensusTimestamp: 6,
+      contractId: 3,
       createdContractIds: [],
       errorMessage: '',
-      gasLimit: '1000',
+      gasLimit: 1000,
       gasUsed: null,
-      payerAccountId: '5',
+      payerAccountId: 5,
     },
   ];
 
@@ -486,9 +503,9 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
   });
 });
 
-describe('ContractService.getContractLogsByIdAndFilters tests', () => {
+describe('ContractService.getContractLogs tests', () => {
   test('No match', async () => {
-    const response = await ContractService.getContractLogsByIdAndFilters();
+    const response = await ContractService.getContractLogs();
     expect(response).toEqual([]);
   });
 
@@ -503,12 +520,12 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
 
     const expectedContractLog = [
       {
-        consensusTimestamp: '1',
-        contractId: '2',
+        consensusTimestamp: 1,
+        contractId: 2,
       },
     ];
 
-    const response = await ContractService.getContractLogsByIdAndFilters();
+    const response = await ContractService.getContractLogs();
     expect(response).toMatchObject(expectedContractLog);
   });
 
@@ -548,23 +565,23 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
 
     const expectedContractLog = [
       {
-        consensusTimestamp: '2',
-        contractId: '3',
+        consensusTimestamp: 2,
+        contractId: 3,
         index: 1,
       },
       {
-        consensusTimestamp: '2',
-        contractId: '3',
+        consensusTimestamp: 2,
+        contractId: 3,
         index: 0,
       },
       {
-        consensusTimestamp: '1',
-        contractId: '3',
+        consensusTimestamp: 1,
+        contractId: 3,
         index: 1,
       },
     ];
 
-    const response = await ContractService.getContractLogsByIdAndFilters([contractLogContractIdWhereClause], [3]);
+    const response = await ContractService.getContractLogs([contractLogContractIdWhereClause], [3]);
     expect(response).toMatchObject(expectedContractLog);
   });
 
@@ -600,11 +617,11 @@ describe('ContractService.getContractLogsByIdAndFilters tests', () => {
 
     const expectedContractLog = [
       {
-        consensusTimestamp: '20',
-        contractId: '3',
+        consensusTimestamp: 20,
+        contractId: 3,
       },
     ];
-    const response = await ContractService.getContractLogsByIdAndFilters(
+    const response = await ContractService.getContractLogs(
       [
         contractLogContractIdWhereClause,
         'cl.topic0 = $2',
@@ -648,8 +665,8 @@ describe('ContractService.getContractStateChangesByTimestamps tests', () => {
 
     const expectedContractStateChange = [
       {
-        consensusTimestamp: '1',
-        contractId: '2',
+        consensusTimestamp: 1,
+        contractId: 2,
       },
     ];
 
@@ -693,18 +710,18 @@ describe('ContractService.getContractStateChangesByTimestamps tests', () => {
 
     const expectedContractStateChange = [
       {
-        consensusTimestamp: '2',
-        contractId: '3',
+        consensusTimestamp: 2,
+        contractId: 3,
         slot: Buffer.from([92, 120, 48, 48, 48, 49]),
       },
       {
-        consensusTimestamp: '2',
-        contractId: '4',
+        consensusTimestamp: 2,
+        contractId: 4,
         slot: Buffer.from([92, 120, 48, 48, 48, 50]),
       },
       {
-        consensusTimestamp: '2',
-        contractId: '5',
+        consensusTimestamp: 2,
+        contractId: 5,
         slot: Buffer.from([92, 120, 48, 48, 48, 51]),
       },
     ];

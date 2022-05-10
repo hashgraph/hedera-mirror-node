@@ -55,6 +55,7 @@ const transactionFields = [
   Transaction.TYPE,
   Transaction.VALID_DURATION_SECONDS,
   Transaction.VALID_START_NS,
+  Transaction.INDEX,
 ];
 const transactionFullFields = transactionFields.map((f) => Transaction.getFullName(f));
 // consensus_timestamp in transfer_list is a coalesce of multiple consensus timestamp columns
@@ -290,7 +291,7 @@ const createTransferLists = (rows) => {
     return {
       assessed_custom_fees: createAssessedCustomFeeList(row.assessed_custom_fees),
       bytes: utils.encodeBase64(row.transaction_bytes),
-      charged_tx_fee: Number(row.charged_tx_fee),
+      charged_tx_fee: row.charged_tx_fee,
       consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
       entity_id: EntityId.parse(row.entity_id, true).toString(),
       max_fee: utils.getNullableNumber(row.max_fee),
@@ -298,7 +299,7 @@ const createTransferLists = (rows) => {
       name: TransactionType.getName(row.type),
       nft_transfers: createNftTransferList(row.nft_transfer_list),
       node: EntityId.parse(row.node_account_id, true).toString(),
-      nonce: Number(row.nonce),
+      nonce: row.nonce,
       parent_consensus_timestamp: utils.nsToSecNs(row.parent_consensus_timestamp),
       result: TransactionResult.getName(row.result),
       scheduled: row.scheduled,
@@ -574,7 +575,7 @@ const getTransactions = async (req, res) => {
 
   const query = reqToSql(req);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getTransactions query: ${query.query} ${JSON.stringify(query.params)}`);
+    logger.trace(`getTransactions query: ${query.query} ${utils.JSONStringify(query.params)}`);
   }
 
   // Execute query
@@ -669,7 +670,7 @@ const getTransactionsById = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query);
   const {query, params} = extractSqlFromTransactionsByIdRequest(req.params.transactionId, filters);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getTransactionsById query: ${query} ${JSON.stringify(params)}`);
+    logger.trace(`getTransactionsById query: ${query} ${utils.JSONStringify(params)}`);
   }
 
   // Execute query

@@ -26,6 +26,20 @@ const _ = require('lodash');
  * Base service class that other services should inherit from for their retrieval business logic
  */
 class BaseService {
+  buildWhereSqlStatement(whereQuery, params = []) {
+    if (_.isEmpty(whereQuery)) {
+      return {where: '', params};
+    }
+
+    let where = params.length === 0 ? 'where' : 'and';
+    for (let i = 1; i <= whereQuery.length; i++) {
+      where += `${i === 1 ? '' : 'and'} ${whereQuery[i - 1].query} $${i + params.length} `;
+      params.push(whereQuery[i - 1].param);
+    }
+
+    return {where, params};
+  }
+
   getLimitQuery(position) {
     return `limit $${position}`;
   }
@@ -38,6 +52,13 @@ class BaseService {
    */
   getOrderByQuery(...orderSpecs) {
     return 'order by ' + orderSpecs.map((spec) => `${spec}`).join(', ');
+  }
+
+  getFilterWhereCondition(key, filter) {
+    return {
+      query: `${key} ${filter.operator}`,
+      param: filter.value,
+    };
   }
 
   async getRows(query, params, functionName = '') {

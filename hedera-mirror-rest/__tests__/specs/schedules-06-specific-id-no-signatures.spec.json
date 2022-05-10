@@ -19,9 +19,11 @@
       {
         "consensus_timestamp": "1234567890000000001",
         "creator_account_id": "0.0.1024",
+        "expiration_time": "1234567890000000002",
         "executed_timestamp": "1234567890000000100",
         "payer_account_id": "0.0.1024",
-        "schedule_id": "0.0.2000"
+        "schedule_id": "0.0.2000",
+        "wait_for_expiry": true
       }
     ]
   },
@@ -35,11 +37,13 @@
     "consensus_timestamp": "1234567890.000000001",
     "creator_account_id": "0.0.1024",
     "deleted": false,
+    "expiration_time": "1234567890.000000002",
     "executed_timestamp": "1234567890.000000100",
     "memo": "Created per council decision dated 02/01/21",
     "payer_account_id": "0.0.1024",
     "schedule_id": "0.0.2000",
     "signatures": [],
-    "transaction_body": "AQECAgMD"
+    "transaction_body": "AQECAgMD",
+    "wait_for_expiry": true
   }
 }

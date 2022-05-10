@@ -1,0 +1,24 @@
+{
+  "description": "Get blocks with invalid params",
+  "setup": {},
+  "urls": ["/api/v1/blocks?block.number=gt:invalidnumber&timestamp=invalidtimestamp&order=any&limit=invalidlimit"],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: block.number"
+        },
+        {
+          "message": "Invalid parameter: timestamp"
+        },
+        {
+          "message": "Invalid parameter: order"
+        },
+        {
+          "message": "Invalid parameter: limit"
+        }
+      ]
+    }
+  }
+}

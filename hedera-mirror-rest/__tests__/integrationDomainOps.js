@@ -30,9 +30,9 @@ const constants = require('../constants');
 const EntityId = require('../entityId');
 const testUtils = require('./testutils');
 
-const NETWORK_FEE = 1;
-const NODE_FEE = 2;
-const SERVICE_FEE = 4;
+const NETWORK_FEE = 1n;
+const NODE_FEE = 2n;
+const SERVICE_FEE = 4n;
 const DEFAULT_NODE_ID = '3';
 const DEFAULT_TREASURY_ID = '98';
 
@@ -56,6 +56,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadCryptoAllowances(testDataJson.cryptoAllowances);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
+  await loadEthereumTransactions(testDataJson.ethereumtransactions);
   await loadFileData(testDataJson.filedata);
   await loadNfts(testDataJson.nfts);
   await loadRecordFiles(testDataJson.recordFiles);
@@ -205,6 +206,16 @@ const loadEntities = async (entities) => {
 
   for (const entity of entities) {
     await addEntity({}, entity);
+  }
+};
+
+const loadEthereumTransactions = async (ethereumTransactions) => {
+  if (ethereumTransactions == null) {
+    return;
+  }
+
+  for (const ethereumTransaction of ethereumTransactions) {
+    await addEthereumTransaction(ethereumTransaction);
   }
 };
 
@@ -407,6 +418,42 @@ const addEntity = async (defaults, entity) => {
   await insertDomainObject('entity', insertFields, entity);
 };
 
+const addEthereumTransaction = async (ethereumTransaction) => {
+  const localDefaults = {
+    access_list: null,
+    call_data_id: null,
+    call_data: null,
+    chain_id: null,
+    consensus_timestamp: '187654000123456',
+    data: '0x000000000',
+    from_address: '0x0000000000000000000000000000000000001f41',
+    gas_limit: 1000000,
+    gas_price: '0x4a817c800',
+    hash: '0x0000000000000000000000000000000000000000000000000000000000000123',
+    max_fee_per_gas: null,
+    max_gas_allowance: 10000,
+    max_priority_fee_per_gas: null,
+    nonce: 1,
+    payer_account_id: 5001,
+    recovery_id: 1,
+    signature_r: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+    signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+    signature_v: '0x1b',
+    to_address: null,
+    type: 1,
+    value: '0x0',
+  };
+
+  const ethTx = {
+    ...localDefaults,
+    ...ethereumTransaction,
+  };
+
+  const insertFields = Object.keys(ethTx);
+
+  await insertDomainObject('ethereum_transaction', insertFields, ethTx);
+};
+
 const addFileData = async (fileDataInput) => {
   const fileData = {
     transaction_type: 17,
@@ -556,6 +603,7 @@ const addTransaction = async (transaction) => {
     type: 14,
     valid_duration_seconds: 11,
     valid_start_ns: null,
+    index: 1,
   };
   const insertFields = Object.keys(defaults);
 
@@ -898,7 +946,11 @@ const addCryptoTransaction = async (cryptoTransfer) => {
 
   if (!('transfers' in cryptoTransfer)) {
     cryptoTransfer.transfers = [
-      {account: cryptoTransfer.senderAccountId, amount: -NETWORK_FEE - cryptoTransfer.amount, is_approval: false},
+      {
+        account: cryptoTransfer.senderAccountId,
+        amount: -NETWORK_FEE - BigInt(cryptoTransfer.amount),
+        is_approval: false,
+      },
       {account: cryptoTransfer.recipientAccountId, amount: cryptoTransfer.amount, is_approval: false},
       {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE, is_approval: false},
     ];
@@ -945,6 +997,7 @@ const addSchedule = async (schedule) => {
     creator_account_id: '0.0.1024',
     payer_account_id: '0.0.1024',
     transaction_body: Buffer.from([1, 1, 2, 2, 3, 3]),
+    wait_for_expiry: false,
     ...schedule,
   };
 
@@ -954,8 +1007,10 @@ const addSchedule = async (schedule) => {
                            executed_timestamp,
                            payer_account_id,
                            schedule_id,
-                           transaction_body)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+                           transaction_body,
+                           expiration_time,
+                           wait_for_expiry)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       schedule.consensus_timestamp,
       EntityId.parse(schedule.creator_account_id).getEncodedId().toString(),
@@ -963,6 +1018,8 @@ const addSchedule = async (schedule) => {
       EntityId.parse(schedule.payer_account_id).getEncodedId().toString(),
       EntityId.parse(schedule.schedule_id).getEncodedId().toString(),
       schedule.transaction_body,
+      schedule.expiration_time,
+      schedule.wait_for_expiry,
     ]
   );
 };
@@ -1197,7 +1254,7 @@ const addRecordFile = async (recordFileInput) => {
     load_start: 1629298233,
     name: '2021-08-12T06_59_32.000852000Z.rcd',
     node_account_id: 3,
-    prev_hash: '715b4f711cbd24cc4e3a7413646f58f04a95ec811c056727742f035c890c044371fe86065021e7e977961c4aa68aa5f0',
+    prev_hash: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     version: 5,
     ...recordFileInput,
   };
@@ -1232,6 +1289,7 @@ module.exports = {
   loadContractResults,
   loadCryptoAllowances,
   loadEntities,
+  loadFileData,
   loadRecordFiles,
   loadTransactions,
   loadContractLogs,

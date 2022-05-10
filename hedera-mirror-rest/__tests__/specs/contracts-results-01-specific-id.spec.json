@@ -44,9 +44,31 @@
         "error_message": "",
         "function_parameters": [7, 7],
         "function_result": [8, 8],
-        "gas_limit": 987654,
-        "gas_used": 123,
+        "gas_limit": 9223372036854775807,
+        "gas_used": 9223372036854775806,
         "payer_account_id": 8001
+      }
+    ],
+    "transactions": [
+      {
+        "consensus_timestamp": "187654000123456",
+        "type": 11,
+        "result": 22,
+        "valid_start_ns": "187654000123456",
+        "valid_start_timestamp": "187654000123456",
+        "transaction_hash": "hash1",
+        "payerAccountId": 6001,
+        "index": 1
+      },
+      {
+        "consensus_timestamp": "987654000123456",
+        "type": 11,
+        "result": 22,
+        "valid_start_ns": "987654000123456",
+        "valid_start_timestamp": "987654000123456",
+        "transaction_hash": "hash2",
+        "payerAccountId": 5001,
+        "index": 1
       }
     ]
   },
@@ -68,8 +90,8 @@
         "error_message": null,
         "from": "0x0000000000000000000000000000000000001f41",
         "function_parameters": "0x0707",
-        "gas_limit": 987654,
-        "gas_used": 123,
+        "gas_limit": 9223372036854775807,
+        "gas_used": 9223372036854775806,
         "timestamp": "987654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
       },

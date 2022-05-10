@@ -37,7 +37,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Cannot search topics without timestamp range: No timestamp range or eq operator provided"
+          "message": "Cannot search topics without a valid timestamp range: No timestamp range or eq operator provided"
         }
       ]
     }

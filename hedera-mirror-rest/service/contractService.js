@@ -24,6 +24,8 @@ const _ = require('lodash');
 
 const constants = require('../constants');
 const Contract = require('../model/contract');
+const Transaction = require('../model/transaction');
+const EthereumTransaction = require('../model/ethereumTransaction');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
   response: {
@@ -34,6 +36,7 @@ const EntityId = require('../entityId');
 const {NotFoundError} = require('../errors/notFoundError');
 const {orderFilterValues} = require('../constants');
 const {OrderSpec} = require('../sql');
+const {JSONStringify} = require('../utils');
 
 const BaseService = require('./baseService');
 
@@ -45,8 +48,21 @@ class ContractService extends BaseService {
     super();
   }
 
-  static detailedContractResultsQuery = `select *
-  from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
+  static detailedContractResultsQuery = `select ${ContractResult.tableAlias}.*
+  from ${ContractResult.tableName} ${ContractResult.tableAlias}
+  `;
+
+  static transactionTableCTE = `with ${Transaction.tableAlias} as (
+      select * from ${Transaction.tableName}
+      where $where
+    )
+  `;
+
+  static joinTransactionTable = `left join ${Transaction.tableAlias}
+  on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
+    Transaction.CONSENSUS_TIMESTAMP
+  )}
+  `;
 
   static contractResultsQuery = `select
     ${ContractResult.AMOUNT},
@@ -105,8 +121,27 @@ class ContractService extends BaseService {
 
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
+    let joinTransactionTable = false;
+    let transactionWhereClauses = [];
+    if (whereConditions.length) {
+      for (let c = 0; c < whereConditions.length; c++) {
+        const condition = whereConditions[c];
+        if (
+          condition.includes(`${Transaction.tableAlias}.${Transaction.INDEX}`) ||
+          condition.includes(`${Transaction.tableAlias}.${Transaction.NONCE}`)
+        ) {
+          joinTransactionTable = true;
+          transactionWhereClauses.push(condition.replace(`${Transaction.tableAlias}.`, `${Transaction.tableName}.`));
+        }
+      }
+    }
+
     const query = [
+      joinTransactionTable
+        ? ContractService.transactionTableCTE.replace('$where', transactionWhereClauses.join(' and '))
+        : '',
       ContractService.detailedContractResultsQuery,
+      joinTransactionTable ? ContractService.joinTransactionTable : '',
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
       super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
       super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
@@ -158,7 +193,7 @@ class ContractService extends BaseService {
    * @param limit the limit parameter for the query
    * @returns {(string|*)[]} the build query and the parameters for the query
    */
-  getContractLogsByIdAndFiltersQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit) {
+  getContractLogsQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit) {
     const params = whereParams;
     const orderClause = super.getOrderByQuery(
       OrderSpec.from(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
@@ -183,23 +218,17 @@ class ContractService extends BaseService {
    * @param timestampOrder the sorting order for field consensus_timestamp
    * @param indexOrder the sorting order for field index
    * @param limit the limit parameter for the query
-   * @returns {Promise<*[]|*>} the result of the getContractLogsByIdAndFilters query
+   * @returns {Promise<*[]|*>} the result of the getContractLogs query
    */
-  async getContractLogsByIdAndFilters(
+  async getContractLogs(
     whereConditions = [],
     whereParams = [],
     timestampOrder = orderFilterValues.DESC,
     indexOrder = orderFilterValues.DESC,
     limit = defaultLimit
   ) {
-    const [query, params] = this.getContractLogsByIdAndFiltersQuery(
-      whereConditions,
-      whereParams,
-      timestampOrder,
-      indexOrder,
-      limit
-    );
-    const rows = await super.getRows(query, params, 'getContractLogsByIdAndFilters');
+    const [query, params] = this.getContractLogsQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit);
+    const rows = await super.getRows(query, params, 'getContractLogs');
     return rows.map((cr) => new ContractLog(cr));
   }
 
@@ -257,13 +286,13 @@ class ContractService extends BaseService {
     const rows = await super.getRows(query, params, 'getContractIdByEvmAddress');
     if (rows.length === 0) {
       throw new NotFoundError(
-        `No contract with the given evm address: ${JSON.stringify(evmAddressFilter)} has been found.`
+        `No contract with the given evm address: ${JSONStringify(evmAddressFilter)} has been found.`
       );
     }
     //since evm_address is not an unique index, it is important to make this check.
     if (rows.length > 1) {
       throw new Error(
-        `More than one contract with the evm address ${JSON.stringify(evmAddressFilter)} have been found.`
+        `More than one contract with the evm address ${JSONStringify(evmAddressFilter)} have been found.`
       );
     }
     const contractId = rows[0];

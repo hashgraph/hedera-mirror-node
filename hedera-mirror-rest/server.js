@@ -41,7 +41,7 @@ const stateproof = require('./stateproof');
 const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
-const {getPoolClass, isTestEnv, loadPgRange} = require('./utils');
+const {getPoolClass, isTestEnv} = require('./utils');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
 const {serveSwaggerDocs, openApiValidator} = require('./middleware/openapiHandler');
@@ -50,7 +50,7 @@ const {requestLogger, requestQueryParser} = require('./middleware/requestHandler
 const fs = require('fs');
 
 // routes
-const {AccountRoutes, ContractRoutes, NetworkRoutes} = require('./routes');
+const {AccountRoutes, ContractRoutes, NetworkRoutes, BlockRoutes} = require('./routes');
 
 // Logger
 const logger = log4js.getLogger();
@@ -105,7 +105,6 @@ if (config.db.tls.enabled) {
 }
 
 const Pool = getPoolClass(isTestEnv());
-loadPgRange();
 const pool = new Pool(poolConfig);
 global.pool = pool;
 
@@ -159,6 +158,9 @@ app.useAsync(`${apiPrefix}/${ContractRoutes.resource}`, ContractRoutes.router);
 
 // network routes
 app.useAsync(`${apiPrefix}/${NetworkRoutes.resource}`, NetworkRoutes.router);
+
+// block routes
+app.useAsync(`${apiPrefix}/${BlockRoutes.resource}`, BlockRoutes.router);
 
 // schedules routes
 app.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);

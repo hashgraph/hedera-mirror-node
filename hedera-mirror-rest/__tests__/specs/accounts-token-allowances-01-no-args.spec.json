@@ -49,7 +49,7 @@
         "timestamp_range": "[1234567890000000004,)"
       },
       {
-        "amount": 77,
+        "amount": 9223372036854775807,
         "owner": 1001,
         "spender": 5001,
         "token_id": 10005,
@@ -99,7 +99,7 @@
         }
       },
       {
-        "amount_granted": 77,
+        "amount_granted": 9223372036854775807,
         "owner": "0.0.1001",
         "spender": "0.0.5001",
         "token_id": "0.0.10005",

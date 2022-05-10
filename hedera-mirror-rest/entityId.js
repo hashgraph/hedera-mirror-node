@@ -39,11 +39,14 @@ const maxNum = 2n ** numBits - 1n;
 
 const realmBits = 16n;
 const realmMask = 2n ** realmBits - 1n;
+const realmScale = 2 ** Number(numBits);
 const maxRealm = 2n ** realmBits - 1n;
 
 const shardBits = 15n;
 const shardOffset = numBits + realmBits;
+const shardScale = 2 ** Number(shardOffset);
 const maxShard = 2n ** shardBits - 1n;
+const maxSafeShard = 2 ** 5 - 1;
 
 const maxEncodedId = 2n ** 63n - 1n;
 
@@ -67,14 +70,21 @@ class EntityId {
   }
 
   /**
-   * @returns {string|null} encoded id corresponding to this EntityId.
+   * Encodes the shard.realm.num entity id into an integer. Returns null if shard / realm / num is null; returns a
+   * number if the encoded integer is not larger than Number.MAX_SAFE_INTEGER; returns a BigInt otherwise.
+   *
+   * @returns {Number|BigInt|null} encoded id corresponding to this EntityId.
    */
   getEncodedId() {
     if (this.encodedId === undefined) {
-      this.encodedId =
-        this.num === null
-          ? null
-          : ((BigInt(this.shard) << shardOffset) | (BigInt(this.realm) << numBits) | BigInt(this.num)).toString();
+      if (this.num === null) {
+        this.encodedId = null;
+      } else {
+        this.encodedId =
+          this.shard <= maxSafeShard
+            ? this.shard * shardScale + this.realm * realmScale + this.num
+            : (BigInt(this.shard) << shardOffset) | (BigInt(this.realm) << numBits) | BigInt(this.num);
+      }
     }
     return this.encodedId;
   }

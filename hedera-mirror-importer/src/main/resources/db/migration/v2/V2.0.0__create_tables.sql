@@ -247,7 +247,6 @@ create table if not exists ethereum_transaction
     chain_id                 bytea    null,
     consensus_timestamp      bigint   not null,
     data                     bytea    not null,
-    from_address             bytea    not null,
     gas_limit                bigint   not null,
     gas_price                bytea    null,
     hash                     bytea    not null,
