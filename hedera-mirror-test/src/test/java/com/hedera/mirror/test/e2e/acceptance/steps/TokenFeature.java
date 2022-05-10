@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,14 +28,13 @@ import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.cucumber.junit.platform.engine.Cucumber;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import junit.framework.AssertionFailedError;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
@@ -77,23 +76,21 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
-@Cucumber
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class TokenFeature {
     private static final int INITIAL_SUPPLY = 1_000_000;
     private static final int MAX_SUPPLY = 1;
+
+    private final TokenClient tokenClient;
+    private final AccountClient accountClient;
+    private final MirrorNodeClient mirrorClient;
+    private final TopicClient topicClient;
+
     private final List<ExpandedAccountId> recipients = new ArrayList<>();
     private final List<ExpandedAccountId> senders = new ArrayList<>();
     private final Map<TokenId, List<CustomFee>> tokenCustomFees = new HashMap<>();
     private final Map<TokenId, List<Long>> tokenSerialNumbers = new HashMap<>();
     private final List<TokenId> tokenIds = new ArrayList<>();
-    @Autowired
-    private TokenClient tokenClient;
-    @Autowired
-    private AccountClient accountClient;
-    @Autowired
-    private MirrorNodeClient mirrorClient;
-    @Autowired
-    private TopicClient topicClient;
     private NetworkTransactionResponse networkTransactionResponse;
 
     @Given("I successfully create a new token")
@@ -316,7 +313,7 @@ public class TokenFeature {
     }
 
     @Then("the mirror node Token Info REST API should return pause status {string}")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+    @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyTokenPauseStatus(String status) {
@@ -326,7 +323,7 @@ public class TokenFeature {
     }
 
     @Then("the mirror node REST API should return status {int}")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+    @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorAPIResponses(int status) {
@@ -337,7 +334,7 @@ public class TokenFeature {
 
     @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?serial number " +
             "(:?(.*) )?transaction flow$")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+    @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorNftTransactionsAPIResponses(int status, Integer tokenIndex, Integer serialNumberIndex) {
@@ -349,7 +346,7 @@ public class TokenFeature {
     }
 
     @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?fund flow$")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+    @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenFundFlow(int status, Integer tokenIndex) {
@@ -358,7 +355,7 @@ public class TokenFeature {
 
     @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?fund flow with assessed custom " +
             "fees$")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+    @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenFundFlow(int status, Integer tokenIndex,
@@ -371,7 +368,7 @@ public class TokenFeature {
     }
 
     @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?serial number (:?(.*) )?full flow$")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+    @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorNftFundFlow(int status, Integer tokenIndex, Integer serialNumberIndex) {
@@ -386,7 +383,7 @@ public class TokenFeature {
     }
 
     @Then("the mirror node REST API should confirm token update")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+    @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenUpdateFlow() {
@@ -397,7 +394,7 @@ public class TokenFeature {
     }
 
     @Then("the mirror node REST API should return status {int} for transaction {string}")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+    @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorRestTransactionIsPresent(int status, String transactionIdString) {
@@ -418,7 +415,7 @@ public class TokenFeature {
     }
 
     @Then("the mirror node REST API should confirm token {int} with custom fees schedule")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+    @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenWithCustomFeesSchedule(Integer tokenIndex) {

@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance;
+package com.hedera.mirror.test.e2e.acceptance.props;
 
 /*-
  * ‌
@@ -20,16 +20,25 @@ package com.hedera.mirror.test.e2e.acceptance;
  * ‍
  */
 
-import io.cucumber.spring.CucumberContextConfiguration;
-import org.junit.platform.suite.api.IncludeEngines;
-import org.junit.platform.suite.api.SelectClasspathResource;
-import org.junit.platform.suite.api.Suite;
-import org.springframework.boot.test.context.SpringBootTest;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.Data;
 
-@Suite
-@IncludeEngines("cucumber")
-@SelectClasspathResource("features")
-@SpringBootTest(properties = "spring.main.banner-mode=off")
-@CucumberContextConfiguration
-public class AcceptanceTest {
+@Data
+public class MirrorNetworkNode {
+    private String description;
+    private String fileId;
+    private String memo;
+    private String nodeAccountId;
+    private long nodeId;
+    private String nodeCertHash;
+    private String publicKey;
+    private List<MirrorServiceEndpoint> serviceEndpoints = new ArrayList<>();
+    private TimestampRange timestamp;
+
+    @Data
+    public static class MirrorServiceEndpoint {
+        private String ipAddressV4;
+        private int port;
+    }
 }

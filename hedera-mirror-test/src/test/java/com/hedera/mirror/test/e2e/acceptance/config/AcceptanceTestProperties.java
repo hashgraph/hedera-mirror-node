@@ -43,9 +43,6 @@ public class AcceptanceTestProperties {
 
     private boolean emitBackgroundMessages = false;
 
-    @NotNull
-    private Long existingTopicNum;
-
     private final FeatureProperties featureProperties;
 
     @Max(5)
@@ -73,7 +70,7 @@ public class AcceptanceTestProperties {
 
     private final RestPollingProperties restPollingProperties;
 
-    private boolean retrieveAddressBook = false;
+    private boolean retrieveAddressBook = true;
 
     private final SdkProperties sdkProperties;
 

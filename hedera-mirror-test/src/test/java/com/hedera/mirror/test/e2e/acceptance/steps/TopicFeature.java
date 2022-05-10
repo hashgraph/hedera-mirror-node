@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,14 +26,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.cucumber.junit.platform.engine.Cucumber;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import junit.framework.AssertionFailedError;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.retry.annotation.Backoff;
@@ -49,6 +48,7 @@ import com.hedera.hashgraph.sdk.TopicInfo;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.client.SDKClient;
 import com.hedera.mirror.test.e2e.acceptance.client.SubscriptionResponse;
 import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
@@ -56,10 +56,14 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
 @Log4j2
-@Cucumber
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class TopicFeature {
-    @Autowired
-    private AcceptanceTestProperties acceptanceProps;
+
+    private final AcceptanceTestProperties acceptanceProps;
+    private final MirrorNodeClient mirrorClient;
+    private final SDKClient sdkClient;
+    private final TopicClient topicClient;
+
     private int messageSubscribeCount;
     private long latency;
     private TopicMessageQuery topicMessageQuery;
@@ -68,10 +72,6 @@ public class TopicFeature {
     private PrivateKey submitKey;
     private Instant testInstantReference;
     private List<TransactionReceipt> publishedTransactionReceipts;
-    @Autowired
-    private MirrorNodeClient mirrorClient;
-    @Autowired
-    private TopicClient topicClient;
 
     @Given("I successfully create a new topic id")
     public void createNewTopic() {
@@ -130,16 +130,15 @@ public class TopicFeature {
     @Given("I provide a topic id {string}")
     public void setTopicIdParam(String topicId) {
         testInstantReference = Instant.now();
-        topicMessageQuery = new TopicMessageQuery();
+        topicMessageQuery = new TopicMessageQuery().setStartTime(Instant.EPOCH);
+        consensusTopicId = null;
 
-        Long topicNum = topicId.isEmpty() ? acceptanceProps.getExistingTopicNum() : Long.parseLong(topicId);
-        consensusTopicId = new TopicId(0, 0, topicNum);
+        if (!topicId.isEmpty()) {
+            consensusTopicId = new TopicId(0, 0, Long.parseLong(topicId));
+            topicMessageQuery.setTopicId(consensusTopicId);
+        }
 
-        topicMessageQuery
-                .setTopicId(consensusTopicId)
-                .setStartTime(Instant.EPOCH);
         log.debug("Set TopicMessageQuery with topic: {}, StartTime: {}", consensusTopicId, Instant.EPOCH);
-
         messageSubscribeCount = 0;
     }
 
@@ -221,7 +220,7 @@ public class TopicFeature {
 
     @When("I subscribe to the topic")
     public void verifySubscriptionChannelConnection() throws Throwable {
-        subscriptionResponse = mirrorClient.subscribeToTopic(topicMessageQuery);
+        subscriptionResponse = mirrorClient.subscribeToTopic(sdkClient, topicMessageQuery);
         assertNotNull(subscriptionResponse);
     }
 
@@ -249,7 +248,7 @@ public class TopicFeature {
     }
 
     @When("I publish and verify {int} messages sent")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class, PrecheckStatusException.class,
+    @Retryable(value = {AssertionError.class, PrecheckStatusException.class,
             ReceiptStatusException.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
@@ -287,7 +286,7 @@ public class TopicFeature {
     }
 
     @Then("I subscribe with a filter to retrieve messages")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+    @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public void retrieveTopicMessages() throws Throwable {
@@ -298,7 +297,7 @@ public class TopicFeature {
     }
 
     @Then("I subscribe with a filter to retrieve these published messages")
-    @Retryable(value = {AssertionError.class, AssertionFailedError.class},
+    @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
     public void retrievePublishedTopicMessages() throws Throwable {
@@ -380,7 +379,7 @@ public class TopicFeature {
 
         try {
             subscriptionResponse = mirrorClient
-                    .subscribeToTopicAndRetrieveMessages(topicMessageQuery, messageSubscribeCount, latency);
+                    .subscribeToTopicAndRetrieveMessages(sdkClient, topicMessageQuery, messageSubscribeCount, latency);
             assertEquals(messageSubscribeCount, subscriptionResponse.getMirrorHCSResponses().size());
         } finally {
             if (scheduler != null) {

@@ -4,18 +4,12 @@
         <Console name="console" target="SYSTEM_OUT">
             <PatternLayout>
                 <alwaysWriteExceptions>false</alwaysWriteExceptions>
-                <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}{GMT-6} %p %t %c{1.} %m %ex{short}%n</pattern>
+                <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}{GMT-6} %p %t %c{1.} %m %ex{5}%n</pattern>
             </PatternLayout>
         </Console>
     </Appenders>
     <Loggers>
         <Logger name="com.hedera.mirror.test" level="info" additivity="false">
-            <AppenderRef ref="console"/>
-        </Logger>
-        <Logger name="org.springframework.retry.support" level="debug" additivity="false">
-            <AppenderRef ref="console"/>
-        </Logger>
-        <Logger name="reactor.netty.http.client" level="debug" additivity="false">
             <AppenderRef ref="console"/>
         </Logger>
         <Root level="warn">
