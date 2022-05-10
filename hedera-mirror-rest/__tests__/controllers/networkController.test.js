@@ -193,22 +193,6 @@ describe('extractExchangeRateQuery', () => {
 
   const specs = [
     {
-      name: 'order asc',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.ORDER,
-            operator: utils.opsMap.eq,
-            value: constants.orderFilterValues.ASC,
-          },
-        ],
-      },
-      expected: {
-        ...defaultExpected,
-        order: constants.orderFilterValues.ASC,
-      },
-    },
-    {
       name: 'no timestamp',
       input: {
         filters: [],
