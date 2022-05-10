@@ -81,6 +81,21 @@ const isPositiveLong = (num, allowZero = false) => {
   return positiveLongRegex.test(num) && long.fromValue(num).greaterThanOrEqual(min);
 };
 
+/**
+ * Validates that hex encoded num is a positive int.
+ * @param num
+ * @param allowZero
+ * @returns {boolean}
+ */
+const isHexPositiveInt = (num, allowZero = false) => {
+  if (typeof num === 'string' && num.startsWith(hexPrefix)) {
+    num = parseInt(num, 16);
+    return isPositiveLong(num, allowZero);
+  }
+
+  return false;
+};
+
 const nonNegativeInt32Regex = /^\d{1,10}$/;
 
 /**
@@ -129,6 +144,15 @@ const isValidEncoding = (query) => {
   }
   query = query.toLowerCase();
   return query === constants.characterEncoding.BASE64 || isValidUtf8Encoding(query);
+};
+
+const blockHashPattern = /^(0x)?([0-9A-Fa-f]{64}|[0-9A-Fa-f]{96})$/;
+const isValidBlockHash = (query) => {
+  if (query === undefined) {
+    return false;
+  }
+
+  return blockHashPattern.test(query);
 };
 
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
@@ -273,7 +297,16 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.BLOCK_NUMBER:
       const supportedOperators = ['eq', 'gt', 'gte', 'lt', 'lte'];
-      ret = isPositiveLong(val, true) && _.includes(supportedOperators, op);
+      ret = (isPositiveLong(val, true) || isHexPositiveInt(val, true)) && _.includes(supportedOperators, op);
+      break;
+    case constants.filterKeys.BLOCK_HASH:
+      ret = isValidBlockHash(val) && _.includes(['eq'], op);
+      break;
+    case constants.filterKeys.INTERNAL:
+      ret = isValidBooleanOpAndValue(op, val);
+      break;
+    case constants.filterKeys.TRANSACTION_INDEX:
+      ret = isPositiveLong(val, true) && _.includes(['eq'], op);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -281,6 +314,46 @@ const filterValidityChecks = (param, op, val) => {
   }
 
   return ret;
+};
+
+/**
+ * Validates the parameter dependencies
+ * @param query
+ */
+const filterDependencyCheck = (query) => {
+  const badParams = [];
+  let containsBlockNumber = false;
+  let containsBlockHash = false;
+  let containsTransactionIndex = false;
+  for (const [key, values] of Object.entries(query)) {
+    if (key === constants.filterKeys.TRANSACTION_INDEX) {
+      containsTransactionIndex = true;
+    } else if (key === constants.filterKeys.BLOCK_NUMBER) {
+      containsBlockNumber = true;
+    } else if (key === constants.filterKeys.BLOCK_HASH) {
+      containsBlockHash = true;
+    }
+  }
+
+  if (containsTransactionIndex && !(containsBlockNumber || containsBlockHash)) {
+    badParams.push({
+      key: constants.filterKeys.TRANSACTION_INDEX,
+      error: 'transaction.index requires block.number or block.hash filter to be specified',
+      code: 'invalidParamUsage',
+    });
+  }
+
+  if (containsBlockHash && containsBlockNumber) {
+    badParams.push({
+      key: constants.filterKeys.BLOCK_HASH,
+      error: 'cannot combine block.number and block.hash',
+      code: 'invalidParamUsage',
+    });
+  }
+
+  if (badParams.length) {
+    throw InvalidArgumentError.forRequestValidation(badParams);
+  }
 };
 
 const isValidContractIdQueryParam = (op, val) => {
@@ -872,15 +945,24 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
  *
  * @param query
  * @param {function(string, string, string)} filterValidator
+ * @param {function(array)} filterDependencyChecker
  * @return {[]}
  */
-const buildAndValidateFilters = (query, filterValidator = filterValidityChecks) => {
+const buildAndValidateFilters = (
+  query,
+  filterValidator = filterValidityChecks,
+  filterDependencyChecker = filterDependencyCheck
+) => {
   const {badParams, filters} = buildFilters(query);
   const additionalBadParams = validateAndParseFilters(filters, filterValidator);
   badParams.push(...additionalBadParams);
 
   if (badParams.length > 0) {
     throw InvalidArgumentError.forRequestValidation(badParams);
+  }
+
+  if (filterDependencyChecker) {
+    filterDependencyChecker(query);
   }
 
   return filters;
@@ -988,6 +1070,16 @@ const formatComparator = (comparator) => {
       case constants.filterKeys.ACCOUNT_PUBLICKEY:
         comparator.value = parsePublicKey(comparator.value);
         break;
+      case constants.filterKeys.BLOCK_HASH:
+        if (comparator.value.startsWith(hexPrefix)) {
+          comparator.value = comparator.value.slice(hexPrefix.length);
+        }
+        break;
+      case constants.filterKeys.BLOCK_NUMBER:
+        if (comparator.value.startsWith(hexPrefix)) {
+          comparator.value = parseInt(comparator.value, 16);
+        }
+        break;
       case constants.filterKeys.FILE_ID:
         // Accepted forms: shard.realm.num or encoded ID string
         comparator.value = EntityId.parse(comparator.value).getEncodedId();
@@ -997,6 +1089,9 @@ const formatComparator = (comparator) => {
         break;
       case constants.filterKeys.FROM:
         comparator.value = EntityId.parse(comparator.value, contants.filterKeys.FROM).getEncodedId();
+        break;
+      case constants.filterKeys.INTERNAL:
+        comparator.value = parseBooleanValue(comparator.value);
         break;
       case constants.filterKeys.LIMIT:
         comparator.value = math.min(Number(comparator.value), responseLimit.max);
@@ -1190,6 +1285,24 @@ const isRegexMatch = (regex, value) => {
   return regex.test(value.trim());
 };
 
+/**
+ * Intended to be used when it is possible for different API routes to have conflicting paths
+ * and only one of them needs to be executed. E.g:
+ * /contracts/results
+ * /contracts/:contractId
+ *
+ * @param req
+ * @param paramName
+ * @param possibleConflicts
+ * @returns {boolean}
+ */
+const conflictingPathParam = (req, paramName, possibleConflicts = []) => {
+  if (!Array.isArray(possibleConflicts)) {
+    possibleConflicts = [possibleConflicts];
+  }
+  return req.params[paramName] && possibleConflicts.indexOf(req.params[paramName]) !== -1;
+};
+
 (function () {
   // config pg bigint parsing
   const pgTypes = pg.types;
@@ -1210,12 +1323,14 @@ module.exports = {
   buildComparatorFilter,
   buildPgSqlObject,
   checkTimestampRange,
+  conflictingPathParam,
   createTransactionId,
   convertMySqlStyleQueryToPostgres,
   encodeBase64,
   encodeBinary,
   encodeUtf8,
   encodeKey,
+  filterDependencyCheck,
   filterValidityChecks,
   getNullableNumber,
   getPaginationLink,

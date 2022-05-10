@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call for a specific contract using contract id with a timestamp filter",
+  "description": "Contract results api call for a specific contract using contract id with a block.hash filter",
   "setup": {
     "contracts": [
       {
@@ -67,35 +67,48 @@
         "payerAccountId": 9001,
         "index": 1
       }
+    ],
+    "recordFiles": [
+      {
+        "index": 16,
+        "consensus_start": 167654000123439,
+        "consensus_end": 167654000123449,
+        "hash": "56caf9913fd511ede553715d3700ed955a22853487ec71cb15e7b2cc1c355d2970c12d4f07c798effe0bec57ec84d603"
+      },
+      {
+        "index": 17,
+        "consensus_start": 187654000123456,
+        "consensus_end": 187654001123456,
+        "hash": "1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61"
+      }
     ]
   },
   "urls": [
-    "/api/v1/contracts/0.0.5001/results?timestamp=987654.000123456",
-    "/api/v1/contracts/0.0.5001/results?timestamp=eq:987654.000123456",
-    "/api/v1/contracts/0.0.5001/results?timestamp=gt:200000.000123456&timestamp=lt:999999.000123456",
-    "/api/v1/contracts/0.0.5001/results?timestamp=gte:987654.000123456&timestamp=lte:987654.000123456",
-    "/api/v1/contracts/0.0.5001/results?timestamp=ne:187654.000123456",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=987654.000123456",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=eq:987654.000123456",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=gt:200000.000123456&timestamp=lt:999999.000123456",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=gte:987654.000123456&timestamp=lte:987654.000123456",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?timestamp=ne:187654.000123456"
+    "/api/v1/contracts/0.0.5001/results?block.hash=eq:0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+    "/api/v1/contracts/0.0.5001/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+    "/api/v1/contracts/0.0.5001/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
+    "/api/v1/contracts/0.0.5001/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+    "/api/v1/contracts/0.0.5001/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305"
   ],
   "responseStatus": 200,
   "responseJson": {
     "results": [
       {
-        "amount": 30,
-        "bloom": "0x0303",
-        "call_result": "0x0404",
+        "amount": 20,
+        "bloom": "0x0101",
+        "call_result": "0x0202",
         "contract_id": "0.0.5001",
-        "created_contract_ids": ["0.0.7001"],
+        "created_contract_ids": [],
         "error_message": null,
         "from": "0x0000000000000000000000000000000000000065",
         "function_parameters": "0x010102020303",
         "gas_limit": 1000,
-        "gas_used": 10,
-        "timestamp": "987654.000123456",
+        "gas_used": 100,
+        "timestamp": "187654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
       }
     ],

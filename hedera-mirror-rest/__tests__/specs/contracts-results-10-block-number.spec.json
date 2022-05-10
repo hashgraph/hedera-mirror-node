@@ -1,0 +1,127 @@
+{
+  "description": "Contract results api call for a specific contract using contract id with a block.number filter",
+  "setup": {
+    "contracts": [
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "8001",
+        "timestamp_range": "[987654999123200, 987654999123299]"
+      },
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "5001",
+        "timestamp_range": "[987654999123300,)"
+      }
+    ],
+    "contractresults": [
+      {
+        "amount": 20,
+        "bloom": [1, 1],
+        "call_result": [2, 2],
+        "consensus_timestamp": "1676540001234390005",
+        "contract_id": 5001,
+        "gas_used": 100
+      },
+      {
+        "amount": 30,
+        "bloom": [3, 3],
+        "call_result": [4, 4],
+        "consensus_timestamp": "1676540001234500005",
+        "contract_id": 5001,
+        "created_contract_ids": [7001],
+        "gas_used": 10
+      }
+    ],
+    "transactions": [
+      {
+        "consensus_timestamp": "1676540001234390005",
+        "type": 11,
+        "result": 22,
+        "valid_start_ns": "1676540001234390005",
+        "valid_duration_seconds": 5,
+        "valid_start_timestamp": "1676540001234390005",
+        "node_account_id": 3,
+        "entity_id": 5001,
+        "transaction_hash": "hash1",
+        "nonce": 0,
+        "payerAccountId": 8001,
+        "index": 1
+      },
+      {
+        "consensus_timestamp": "1676540001234500005",
+        "type": 11,
+        "result": 22,
+        "valid_start_ns": "1676540001234500005",
+        "valid_duration_seconds": 5,
+        "valid_start_timestamp": "1676540001234500005",
+        "node_account_id": 3,
+        "entity_id": 5001,
+        "transaction_hash": "hash2",
+        "nonce": 0,
+        "payerAccountId": 9001,
+        "index": 2
+      }
+    ],
+    "recordFiles": [
+      {
+        "index": 10,
+        "count": 1,
+        "hapi_version_major": "0",
+        "hapi_version_minor": "22",
+        "hapi_version_patch": "3",
+        "name": "2022-04-27T12_09_24.499938763Z.rcd",
+        "prev_hash": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "consensus_start": 1676540001234390000,
+        "consensus_end": 1676540001234490000,
+        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c"
+      },
+      {
+        "index": 11,
+        "count": 1,
+        "hapi_version_major": "0",
+        "hapi_version_minor": "22",
+        "hapi_version_patch": "3",
+        "name": "2022-04-27T12_24_30.768994443Z.rcd",
+        "prev_hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
+        "consensus_start": 1676540001234500000,
+        "consensus_end": 1676540001234600000,
+        "hash": "b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/0.0.5001/results?block.number=eq:10",
+    "/api/v1/contracts/0.0.5001/results?block.number=10",
+    "/api/v1/contracts/0.0.5001/results?block.number=0xa",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.number=10",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?block.number=0xa"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "results": [
+      {
+        "amount": 20,
+        "bloom": "0x0101",
+        "call_result": "0x0202",
+        "contract_id": "0.0.5001",
+        "created_contract_ids": [],
+        "error_message": null,
+        "from": "0x0000000000000000000000000000000000000065",
+        "function_parameters": "0x010102020303",
+        "gas_limit": 1000,
+        "gas_used": 100,
+        "timestamp": "1676540001.234390005",
+        "to": "0x0000000000000000000000000000000000001389"
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

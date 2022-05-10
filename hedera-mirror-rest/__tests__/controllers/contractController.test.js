@@ -416,8 +416,8 @@ describe('getLastNonceParamValue', () => {
 describe('extractContractResultsByIdQuery', () => {
   const defaultContractId = 1;
   const defaultExpected = {
-    conditions: [primaryContractFilter],
-    params: [defaultContractId],
+    conditions: [primaryContractFilter, 't.nonce = $2'],
+    params: [defaultContractId, 0],
     order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
   };
@@ -486,8 +486,13 @@ describe('extractContractResultsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [primaryContractFilter, 'cr.payer_account_id > $2', 'cr.payer_account_id in ($3,$4)'],
-        params: [defaultContractId, '1000', '1001', '1002'],
+        conditions: [
+          primaryContractFilter,
+          'cr.payer_account_id > $2',
+          't.nonce = $3',
+          'cr.payer_account_id in ($4,$5)',
+        ],
+        params: [defaultContractId, '1000', 0, '1001', '1002'],
       },
     },
     {
@@ -514,21 +519,22 @@ describe('extractContractResultsByIdQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [primaryContractFilter, 'cr.consensus_timestamp > $2', 'cr.consensus_timestamp in ($3,$4)'],
-        params: [defaultContractId, '1000', '1001', '1002'],
+        conditions: [
+          primaryContractFilter,
+          'cr.consensus_timestamp > $2',
+          't.nonce = $3',
+          'cr.consensus_timestamp in ($4,$5)',
+        ],
+        params: [defaultContractId, '1000', 0, '1001', '1002'],
       },
     },
   ];
 
   specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(
-        contracts.extractContractResultsByIdQuery(
-          spec.input.filter,
-          spec.input.contractId,
-          contracts.contractResultsByIdParamSupportMap
-        )
-      ).toEqual(spec.expected);
+    test(`${spec.name}`, async () => {
+      expect(await contracts.extractContractResultsByIdQuery(spec.input.filter, spec.input.contractId)).toEqual(
+        spec.expected
+      );
     });
   });
 });

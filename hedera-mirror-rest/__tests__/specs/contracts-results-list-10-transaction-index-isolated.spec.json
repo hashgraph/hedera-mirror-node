@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call for a specific contract using contract id",
+  "description": "Contract results api call for all contracts with a transaction.index filter",
   "setup": {
     "contracts": [
       {
@@ -44,8 +44,8 @@
         "error_message": "",
         "function_parameters": [7, 7],
         "function_result": [8, 8],
-        "gas_limit": 9223372036854775807,
-        "gas_used": 9223372036854775806,
+        "gas_limit": 987654,
+        "gas_used": 123,
         "payer_account_id": 8001
       }
     ],
@@ -58,7 +58,8 @@
         "valid_start_timestamp": "187654000123456",
         "transaction_hash": "hash1",
         "payerAccountId": 6001,
-        "index": 1
+        "index": 1,
+        "nonce": 0
       },
       {
         "consensus_timestamp": "987654000123456",
@@ -68,50 +69,20 @@
         "valid_start_timestamp": "987654000123456",
         "transaction_hash": "hash2",
         "payerAccountId": 5001,
-        "index": 1
+        "index": 2,
+        "nonce": 0
       }
     ]
   },
-  "urls": [
-    "/api/v1/contracts/0.0.5001/results",
-    "/api/v1/contracts/0.5001/results",
-    "/api/v1/contracts/5001/results",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results"
-  ],
-  "responseStatus": 200,
+  "urls": ["/api/v1/contracts/results?transaction.index=2"],
+  "responseStatus": 400,
   "responseJson": {
-    "results": [
-      {
-        "amount": 30,
-        "bloom": "0x0505",
-        "call_result": "0x0606",
-        "contract_id": "0.0.5001",
-        "created_contract_ids": ["0.0.7001"],
-        "error_message": null,
-        "from": "0x0000000000000000000000000000000000001f41",
-        "function_parameters": "0x0707",
-        "gas_limit": 9223372036854775807,
-        "gas_used": 9223372036854775806,
-        "timestamp": "987654.000123456",
-        "to": "0x0000000000000000000000000000000000001389"
-      },
-      {
-        "amount": 20,
-        "bloom": "0x0101",
-        "call_result": "0x0202",
-        "contract_id": "0.0.5001",
-        "created_contract_ids": [],
-        "error_message": "Not enough gas",
-        "from": "0x0000000000000000000000000000000000001771",
-        "function_parameters": "0x0303",
-        "gas_limit": 1234556,
-        "gas_used": 987,
-        "timestamp": "187654.000123456",
-        "to": "0x0000000000000000000000000000000000001389"
-      }
-    ],
-    "links": {
-      "next": null
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter usage: transaction.index - transaction.index requires block.number or block.hash filter to be specified"
+        }
+      ]
     }
   }
 }

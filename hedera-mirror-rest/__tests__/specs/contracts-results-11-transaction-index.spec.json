@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call for a specific contract using contract id",
+  "description": "Contract results api call for a specific contract using contract id with a transaction.index filter",
   "setup": {
     "contracts": [
       {
@@ -26,27 +26,16 @@
         "call_result": [2, 2],
         "consensus_timestamp": "187654000123456",
         "contract_id": 5001,
-        "created_contract_ids": [],
-        "error_message": "Not enough gas",
-        "function_parameters": [3, 3],
-        "function_result": [4, 4],
-        "gas_limit": 1234556,
-        "gas_used": 987,
-        "payer_account_id": 6001
+        "gas_used": 100
       },
       {
         "amount": 30,
-        "bloom": [5, 5],
-        "call_result": [6, 6],
+        "bloom": [3, 3],
+        "call_result": [4, 4],
         "consensus_timestamp": "987654000123456",
         "contract_id": 5001,
         "created_contract_ids": [7001],
-        "error_message": "",
-        "function_parameters": [7, 7],
-        "function_result": [8, 8],
-        "gas_limit": 9223372036854775807,
-        "gas_used": 9223372036854775806,
-        "payer_account_id": 8001
+        "gas_used": 10
       }
     ],
     "transactions": [
@@ -55,9 +44,13 @@
         "type": 11,
         "result": 22,
         "valid_start_ns": "187654000123456",
+        "valid_duration_seconds": 5,
         "valid_start_timestamp": "187654000123456",
+        "node_account_id": 3,
+        "entity_id": 5001,
         "transaction_hash": "hash1",
-        "payerAccountId": 6001,
+        "nonce": 0,
+        "payerAccountId": 8001,
         "index": 1
       },
       {
@@ -65,48 +58,51 @@
         "type": 11,
         "result": 22,
         "valid_start_ns": "987654000123456",
+        "valid_duration_seconds": 5,
         "valid_start_timestamp": "987654000123456",
+        "node_account_id": 3,
+        "entity_id": 5001,
         "transaction_hash": "hash2",
-        "payerAccountId": 5001,
-        "index": 1
+        "nonce": 0,
+        "payerAccountId": 9001,
+        "index": 2
+      }
+    ],
+    "recordFiles": [
+      {
+        "index": 16,
+        "consensus_start": 987654000123456,
+        "consensus_end": 987654001123456,
+        "hash": "56caf9913fd511ede553715d3700ed955a22853487ec71cb15e7b2cc1c355d2970c12d4f07c798effe0bec57ec84d603"
+      },
+      {
+        "index": 17,
+        "consensus_start": 187654000123456,
+        "consensus_end": 187654001123456,
+        "hash": "1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61"
       }
     ]
   },
   "urls": [
-    "/api/v1/contracts/0.0.5001/results",
-    "/api/v1/contracts/0.5001/results",
-    "/api/v1/contracts/5001/results",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results"
+    "/api/v1/contracts/0.0.5001/results?transaction.index=2&block.number=16",
+    "/api/v1/contracts/0.0.5001/results?transaction.index=eq:2&block.number=16",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?transaction.index=2&block.number=16"
   ],
   "responseStatus": 200,
   "responseJson": {
     "results": [
       {
         "amount": 30,
-        "bloom": "0x0505",
-        "call_result": "0x0606",
+        "bloom": "0x0303",
+        "call_result": "0x0404",
         "contract_id": "0.0.5001",
         "created_contract_ids": ["0.0.7001"],
         "error_message": null,
-        "from": "0x0000000000000000000000000000000000001f41",
-        "function_parameters": "0x0707",
-        "gas_limit": 9223372036854775807,
-        "gas_used": 9223372036854775806,
+        "from": "0x0000000000000000000000000000000000000065",
+        "function_parameters": "0x010102020303",
+        "gas_limit": 1000,
+        "gas_used": 10,
         "timestamp": "987654.000123456",
-        "to": "0x0000000000000000000000000000000000001389"
-      },
-      {
-        "amount": 20,
-        "bloom": "0x0101",
-        "call_result": "0x0202",
-        "contract_id": "0.0.5001",
-        "created_contract_ids": [],
-        "error_message": "Not enough gas",
-        "from": "0x0000000000000000000000000000000000001771",
-        "function_parameters": "0x0303",
-        "gas_limit": 1234556,
-        "gas_used": 987,
-        "timestamp": "187654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
       }
     ],

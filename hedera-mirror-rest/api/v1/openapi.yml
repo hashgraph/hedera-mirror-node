@@ -276,6 +276,10 @@ paths:
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
         - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: '#/components/parameters/contractsBlockNumberQueryParam'
+        - $ref: '#/components/parameters/blockHashQueryParam'
+        - $ref: '#/components/parameters/transactionIndexQueryParam'
+        - $ref: '#/components/parameters/internalQueryParam'
       responses:
         200:
           description: OK
@@ -312,6 +316,31 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/NotFoundError'
+      tags:
+        - contracts
+  /api/v1/contracts/results:
+    get:
+      summary: List contract results from all contracts on the network
+      description: Returns a list of all ContractResults for all contract's function executions.
+      operationId: listAllContractsResults
+      parameters:
+        - $ref: '#/components/parameters/fromQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: '#/components/parameters/contractsBlockNumberQueryParam'
+        - $ref: '#/components/parameters/blockHashQueryParam'
+        - $ref: '#/components/parameters/transactionIndexQueryParam'
+        - $ref: '#/components/parameters/internalQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractResultsResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
   /api/v1/contracts/results/{transactionId}:
@@ -3145,3 +3174,77 @@ components:
         type: array
         items:
           type: string
+    contractsBlockNumberQueryParam:
+      name: block.number
+      in: query
+      description: The block's number
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        noOperator:
+          summary: Example of block.number equals with no operator
+          value: 1
+        eqOperator:
+          summary: Example of block.number equals operator
+          value: eq:2
+        hexEncoded:
+          summary: Example of hex encoded block.number equals with no operator
+          value: '0xa0'
+        hexEncodedEqOperator:
+          summary: Example of hex encoded block.number equals with equals operator
+          value: eq:0xa0
+      schema:
+        type: string
+        pattern: ^(eq:)?(\d{1,19}|0x[a-fA-f0-9]+)$
+        minimum: 0
+    blockHashQueryParam:
+      name: block.hash
+      in: query
+      description: The block's hash
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        32ByteNoOperator:
+          summary: Example of 32 byte block.hash equals with no operator
+          value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+        48ByteNoOperator:
+          summary: Example of 48 byte block.hash equals with no operator
+          value: 1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61
+        32ByteEqOperator:
+          summary: Example of 32 byte block.hash with equals operator
+          value: eq:ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+        48ByteEqOperator:
+          summary: Example of 48 byte block.hash with equals operator
+          value: eq:1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61
+        32Byte0xPrefixNoOperator:
+          summary: Example of 32 byte block.hash equals with 0x prefix and no operator
+          value: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+        48Byte0xPrefixNoOperator:
+          summary: Example of 48 byte block.hash equals with 0x prefix and no operator
+          value: '0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61'
+        32Byte0xPrefixEqOperator:
+          summary: Example of 32 byte block.hash with 0x prefix and equals operator
+          value: eq:0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+        48Byte0xPrefixEqOperator:
+          summary: Example of 48 byte block.hash with 0x prefix and equals operator
+          value: eq:0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61
+      schema:
+        type: string
+        pattern: ^(eq:)?(0x)?([0-9A-Fa-f]{64}|[0-9A-Fa-f]{96})$
+    transactionIndexQueryParam:
+      name: transaction.index
+      in: query
+      description: The transaction index in the block
+      example: 1
+      schema:
+        type: number
+    internalQueryParam:
+      name: internal
+      in: query
+      description: Whether to include child transactions or not
+      example: true
+      schema:
+        type: boolean
+        default: false

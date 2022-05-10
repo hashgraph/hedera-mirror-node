@@ -35,7 +35,15 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
-const {Contract, ContractLog, ContractResult, FileData, TransactionResult} = require('../model');
+const {
+  Contract,
+  ContractLog,
+  ContractResult,
+  FileData,
+  TransactionResult,
+  RecordFile,
+  Transaction,
+} = require('../model');
 const {ContractService, RecordFileService, TransactionService} = require('../service');
 const TransactionId = require('../transactionId');
 const utils = require('../utils');
@@ -312,6 +320,20 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
     .join('\n');
 };
 
+/**
+ * Modifies the default filterValidityChecks logic to support special rules for operators of BLOCK_NUMBER
+ * @param {String} param Parameter to be validated
+ * @param {String} opAndVal operator:value to be validated
+ * @return {Boolean} true if the parameter is valid. false otherwise
+ */
+const contractResultsFilterValidityChecks = (param, op, val) => {
+  let ret = utils.filterValidityChecks(param, op, val);
+  if (ret && param === constants.filterKeys.BLOCK_NUMBER) {
+    return op === constants.queryParamOperators.eq;
+  }
+  return ret;
+};
+
 const checkTimestampsForTopics = (filters) => {
   let hasTopic = false;
   const timestampFilters = [];
@@ -354,16 +376,6 @@ const getLastNonceParamValue = (query) => {
   }
 
   return nonce;
-};
-
-const defaultParamSupportMap = {
-  [constants.filterKeys.LIMIT]: true,
-  [constants.filterKeys.ORDER]: true,
-};
-const contractResultsByIdParamSupportMap = {
-  [constants.filterKeys.FROM]: true,
-  [constants.filterKeys.TIMESTAMP]: true,
-  ...defaultParamSupportMap,
 };
 
 /**
@@ -412,11 +424,10 @@ const getAndValidateContractIdAndConsensusTimestampPathParams = (req) => {
 };
 
 const extractContractIdAndFiltersFromValidatedRequest = (req) => {
-  utils.validateReq(req);
   // extract filters from query param
   const contractId = getAndValidateContractIdRequestPathParam(req);
 
-  const filters = utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query, contractResultsFilterValidityChecks);
 
   return {
     contractId,
@@ -432,11 +443,17 @@ class ContractController extends BaseController {
    * @param {string} contractId encoded contract ID
    * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
    */
-  extractContractResultsByIdQuery = (filters, contractId, paramSupportMap = defaultParamSupportMap) => {
+  extractContractResultsByIdQuery = async (filters, contractId) => {
     let limit = defaultLimit;
     let order = constants.orderFilterValues.DESC;
-    const conditions = [`${ContractResult.getFullName(ContractResult.CONTRACT_ID)} = $1`];
-    const params = [contractId];
+    const conditions = [];
+    const params = [];
+    if (contractId !== '') {
+      conditions.push(`${ContractResult.getFullName(ContractResult.CONTRACT_ID)} = $1`);
+      params.push(contractId);
+    }
+
+    let internal = false;
 
     const contractResultFromFullName = ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID);
     const contractResultFromInValues = [];
@@ -444,8 +461,23 @@ class ContractController extends BaseController {
     const contractResultTimestampFullName = ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP);
     const contractResultTimestampInValues = [];
 
+    const transactionIndexFullName = Transaction.getFullName(Transaction.INDEX);
+    const transactionIndexInValues = [];
+
+    let blockFilter;
+
+    const supportedParams = [
+      constants.filterKeys.FROM,
+      constants.filterKeys.TIMESTAMP,
+      constants.filterKeys.BLOCK_NUMBER,
+      constants.filterKeys.BLOCK_HASH,
+      constants.filterKeys.TRANSACTION_INDEX,
+      constants.filterKeys.INTERNAL,
+      constants.filterKeys.LIMIT,
+      constants.filterKeys.ORDER,
+    ];
     for (const filter of filters) {
-      if (_.isNil(paramSupportMap[filter.key])) {
+      if (!supportedParams.includes(filter.key)) {
         // param not supported for current endpoint
         continue;
       }
@@ -479,8 +511,63 @@ class ContractController extends BaseController {
             conditions.length + 1
           );
           break;
+        case constants.filterKeys.BLOCK_NUMBER:
+        case constants.filterKeys.BLOCK_HASH:
+          blockFilter = filter;
+          break;
+        case constants.filterKeys.TRANSACTION_INDEX:
+          this.updateConditionsAndParamsWithInValues(
+            filter,
+            transactionIndexInValues,
+            params,
+            conditions,
+            transactionIndexFullName,
+            conditions.length + 1
+          );
+          break;
+        case constants.filterKeys.INTERNAL:
+          internal = filter.value;
+          break;
         default:
           break;
+      }
+    }
+
+    if (!internal) {
+      params.push(0);
+      conditions.push(`${Transaction.getFullName(Transaction.NONCE)} = $${params.length}`);
+    }
+
+    if (blockFilter) {
+      let blockData;
+      if (blockFilter.key == constants.filterKeys.BLOCK_NUMBER) {
+        blockData = await RecordFileService.getRecordFileBlockDetailsFromIndex(blockFilter.value);
+      } else {
+        blockData = await RecordFileService.getRecordFileBlockDetailsFromHash(blockFilter.value);
+      }
+
+      if (blockData) {
+        const conStartColName = _.camelCase(RecordFile.CONSENSUS_START);
+        const conEndColName = _.camelCase(RecordFile.CONSENSUS_END);
+
+        this.updateConditionsAndParamsWithInValues(
+          {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: blockData[conStartColName]},
+          contractResultTimestampInValues,
+          params,
+          conditions,
+          contractResultTimestampFullName,
+          conditions.length + 1
+        );
+        this.updateConditionsAndParamsWithInValues(
+          {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: blockData[conEndColName]},
+          contractResultTimestampInValues,
+          params,
+          conditions,
+          contractResultTimestampFullName,
+          conditions.length + 1
+        );
+      } else {
+        throw new NotFoundError();
       }
     }
 
@@ -492,6 +579,7 @@ class ContractController extends BaseController {
       contractResultTimestampInValues,
       contractResultTimestampFullName
     );
+    this.updateQueryFiltersWithInValues(params, conditions, transactionIndexInValues, transactionIndexFullName);
 
     return {
       conditions: conditions,
@@ -611,6 +699,8 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractById = async (req, res) => {
+    if (utils.conflictingPathParam(req, 'contractId', 'results')) return;
+
     const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req);
 
     const {conditions: timestampConditions, params: timestampParams} =
@@ -725,11 +815,7 @@ class ContractController extends BaseController {
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
-    const {conditions, params, order, limit} = this.extractContractResultsByIdQuery(
-      filters,
-      contractId,
-      contractResultsByIdParamSupportMap
-    );
+    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, contractId);
 
     const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
@@ -741,7 +827,7 @@ class ContractController extends BaseController {
 
     if (!_.isEmpty(response.results)) {
       const lastRow = _.last(response.results);
-      const lastContractResultTimestamp = lastRow !== undefined ? lastRow.timestamp : null;
+      const lastContractResultTimestamp = lastRow.timestamp;
       response.links.next = utils.getPaginationLink(
         req,
         response.results.length !== limit,
@@ -793,6 +879,40 @@ class ContractController extends BaseController {
       contractLogs,
       contractStateChanges
     );
+  };
+
+  /**
+   * Handler function for /contracts/results API
+   * @param {Request} req HTTP request object
+   * @param {Response} res HTTP response object
+   * @returns {Promise<void>}
+   */
+  getContractResults = async (req, res) => {
+    const filters = utils.buildAndValidateFilters(req.query, contractResultsFilterValidityChecks);
+    const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, '');
+
+    const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
+    const response = {
+      results: rows.map((row) => new ContractResultViewModel(row)),
+      links: {
+        next: null,
+      },
+    };
+
+    if (!_.isEmpty(response.results)) {
+      const lastRow = _.last(response.results);
+      const lastContractResultTimestamp = lastRow.timestamp;
+      response.links.next = utils.getPaginationLink(
+        req,
+        response.results.length !== limit,
+        {
+          [constants.filterKeys.TIMESTAMP]: lastContractResultTimestamp,
+        },
+        order
+      );
+    }
+
+    res.locals[constants.responseDataLabel] = response;
   };
 
   /**
@@ -876,6 +996,7 @@ module.exports = exportControllerMethods([
   'getContracts',
   'getContractLogsById',
   'getContractLogs',
+  'getContractResults',
   'getContractResultsById',
   'getContractResultsByTimestamp',
   'getContractResultsByTransactionId',
@@ -886,7 +1007,6 @@ if (utils.isTestEnv()) {
     module.exports,
     exportControllerMethods(['extractContractLogsQuery', 'extractContractResultsByIdQuery']),
     {
-      contractResultsByIdParamSupportMap,
       checkTimestampsForTopics,
       extractSqlFromContractFilters,
       extractTimestampConditionsFromContractFilters,

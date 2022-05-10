@@ -56,6 +56,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadCryptoAllowances(testDataJson.cryptoAllowances);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
+  await loadEthereumTransactions(testDataJson.ethereumtransactions);
   await loadFileData(testDataJson.filedata);
   await loadNfts(testDataJson.nfts);
   await loadRecordFiles(testDataJson.recordFiles);
@@ -205,6 +206,16 @@ const loadEntities = async (entities) => {
 
   for (const entity of entities) {
     await addEntity({}, entity);
+  }
+};
+
+const loadEthereumTransactions = async (ethereumTransactions) => {
+  if (ethereumTransactions == null) {
+    return;
+  }
+
+  for (const ethereumTransaction of ethereumTransactions) {
+    await addEthereumTransaction(ethereumTransaction);
   }
 };
 
@@ -407,6 +418,42 @@ const addEntity = async (defaults, entity) => {
   await insertDomainObject('entity', insertFields, entity);
 };
 
+const addEthereumTransaction = async (ethereumTransaction) => {
+  const localDefaults = {
+    access_list: null,
+    call_data_id: null,
+    call_data: null,
+    chain_id: null,
+    consensus_timestamp: '187654000123456',
+    data: '0x000000000',
+    from_address: '0x0000000000000000000000000000000000001f41',
+    gas_limit: 1000000,
+    gas_price: '0x4a817c800',
+    hash: '0x0000000000000000000000000000000000000000000000000000000000000123',
+    max_fee_per_gas: null,
+    max_gas_allowance: 10000,
+    max_priority_fee_per_gas: null,
+    nonce: 1,
+    payer_account_id: 5001,
+    recovery_id: 1,
+    signature_r: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+    signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+    signature_v: '0x1b',
+    to_address: null,
+    type: 1,
+    value: '0x0',
+  };
+
+  const ethTx = {
+    ...localDefaults,
+    ...ethereumTransaction,
+  };
+
+  const insertFields = Object.keys(ethTx);
+
+  await insertDomainObject('ethereum_transaction', insertFields, ethTx);
+};
+
 const addFileData = async (fileDataInput) => {
   const fileData = {
     transaction_type: 17,
@@ -556,6 +603,7 @@ const addTransaction = async (transaction) => {
     type: 14,
     valid_duration_seconds: 11,
     valid_start_ns: null,
+    index: 1,
   };
   const insertFields = Object.keys(defaults);
 
