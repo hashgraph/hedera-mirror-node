@@ -63,12 +63,22 @@ public class AccountEvmAddressMigration extends MirrorBaseJavaMigration {
     }
 
     @Override
+    public Integer getChecksum() {
+        return 1; // Change this if this migration should be rerun
+    }
+
+    @Override
     public String getDescription() {
         return "Populates evm_address for accounts with an ECDSA secp256k1 alias";
     }
 
     @Override
+    public MigrationVersion getMinimumVersion() {
+        return MigrationVersion.fromVersion("1.58.6");
+    }
+
+    @Override
     public MigrationVersion getVersion() {
-        return MigrationVersion.fromVersion("1.58.7");
+        return null;
     }
 }
