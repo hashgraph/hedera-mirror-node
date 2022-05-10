@@ -186,8 +186,6 @@ describe('validateExtractNetworkNodesQuery throw', () => {
 
 describe('extractExchangeRateQuery', () => {
   const defaultExpected = {
-    limit: 1,
-    order: constants.orderFilterValues.DESC,
     whereQuery: [],
   };
 

@@ -125,10 +125,8 @@ class NetworkController extends BaseController {
   };
 
   extractExchangeRateQuery = (filters) => {
-    // get latest rate only
+    // get latest rate only. Since logic pulls most recent items order and limit are ommitted in filterQuery
     const filterQuery = {
-      order: constants.orderFilterValues.DESC,
-      limit: 1,
       whereQuery: [],
     };
 
