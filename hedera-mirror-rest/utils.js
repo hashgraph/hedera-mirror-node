@@ -316,6 +316,10 @@ const filterValidityChecks = (param, op, val) => {
   return ret;
 };
 
+/**
+ * Validates the parameter dependencies
+ * @param query
+ */
 const filterDependencyCheck = (query) => {
   const badParams = [];
   let containsBlockNumber = false;

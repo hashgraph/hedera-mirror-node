@@ -52,7 +52,13 @@ class ContractService extends BaseService {
   from ${ContractResult.tableName} ${ContractResult.tableAlias}
   `;
 
-  static joinTransactionTable = `left join ${Transaction.tableName} ${Transaction.tableAlias}
+  static transactionTableCTE = `with ${Transaction.tableAlias} as (
+      select * from ${Transaction.tableName}
+      where $where
+    )
+  `;
+
+  static joinTransactionTable = `left join ${Transaction.tableAlias}
   on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
     Transaction.CONSENSUS_TIMESTAMP
   )}
@@ -116,22 +122,24 @@ class ContractService extends BaseService {
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
     let joinTransactionTable = false;
-
-    const transactionWhereFields = [Transaction.INDEX, Transaction.NONCE];
-
+    let transactionWhereClauses = [];
     if (whereConditions.length) {
       for (let c = 0; c < whereConditions.length; c++) {
         const condition = whereConditions[c];
-        joinTransactionTable = transactionWhereFields.some((field) => {
-          return condition.includes(`${Transaction.tableAlias}.${field}`);
-        });
-        if (joinTransactionTable) {
-          break;
+        if (
+          condition.includes(`${Transaction.tableAlias}.${Transaction.INDEX}`) ||
+          condition.includes(`${Transaction.tableAlias}.${Transaction.NONCE}`)
+        ) {
+          joinTransactionTable = true;
+          transactionWhereClauses.push(condition.replace(`${Transaction.tableAlias}.`, `${Transaction.tableName}.`));
         }
       }
     }
 
     const query = [
+      joinTransactionTable
+        ? ContractService.transactionTableCTE.replace('$where', transactionWhereClauses.join(' and '))
+        : '',
       ContractService.detailedContractResultsQuery,
       joinTransactionTable ? ContractService.joinTransactionTable : '',
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
