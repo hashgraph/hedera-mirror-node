@@ -540,7 +540,7 @@ class ContractController extends BaseController {
 
     if (blockFilter) {
       let blockData;
-      if (blockFilter.key === constants.filterKeys.BLOCK_NUMBER) {
+      if (blockFilter.key == constants.filterKeys.BLOCK_NUMBER) {
         blockData = await RecordFileService.getRecordFileBlockDetailsFromIndex(blockFilter.value);
       } else {
         blockData = await RecordFileService.getRecordFileBlockDetailsFromHash(blockFilter.value);
