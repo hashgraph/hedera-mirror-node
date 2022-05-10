@@ -216,7 +216,7 @@ class NetworkController extends BaseController {
    * Handler function for /network/supply API.
    * @param {Request} req HTTP request object
    * @param {Response} res HTTP response object
-   * @return {Promise} Promise for PostgreSQL query
+   * @return {Promise<void>}
    */
   getSupply = async (req, res) => {
     utils.validateReq(req);
@@ -240,16 +240,13 @@ class NetworkController extends BaseController {
       logger.trace(`getSupply query: ${query} ${utils.JSONStringify(tsParams)}`);
     }
 
-    return pool.queryQuietly(query, tsParams).then((result) => {
-      const {rows} = result;
+    const {rows} = await pool.queryQuietly(query, tsParams);
+    if (rows.length !== 1 || !rows[0].consensus_timestamp) {
+      throw new NotFoundError('Not found');
+    }
 
-      if (rows.length !== 1 || !rows[0].consensus_timestamp) {
-        throw new NotFoundError('Not found');
-      }
-
-      res.locals[constants.responseDataLabel] = new NetworkSupplyViewModel(rows[0], NetworkController.totalSupply);
-      logger.debug(`getSupply returning ${result.rows.length} entries`);
-    });
+    res.locals[constants.responseDataLabel] = new NetworkSupplyViewModel(rows[0], NetworkController.totalSupply);
+    logger.debug(`getSupply returning ${rows.length} entries`);
   };
 }
 
