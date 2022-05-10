@@ -104,7 +104,7 @@ class FileDataService extends BaseService {
 
   getLatestFileDataContents = async (fileId, filterQueries) => {
     const {where, params} = super.buildWhereSqlStatement(filterQueries.whereQuery, [fileId]);
-    return await super.getSingleRow(this.getLatestFileContentsQuery(where), params, 'getLatestFileContents');
+    return super.getSingleRow(this.getLatestFileContentsQuery(where), params, 'getLatestFileContents');
   };
 
   getExchangeRate = async (filterQueries) => {

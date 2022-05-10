@@ -137,23 +137,19 @@ class NetworkController extends BaseController {
         continue;
       }
 
-      switch (filter.key) {
-        case constants.filterKeys.TIMESTAMP:
-          if (utils.opsMap.ne === filter.operator) {
-            throw new InvalidArgumentError(
-              `Not equals (ne) operator is not supported for ${constants.filterKeys.TIMESTAMP}`
-            );
-          }
+      if (filter.key === constants.filterKeys.TIMESTAMP) {
+        if (utils.opsMap.ne === filter.operator) {
+          throw new InvalidArgumentError(
+            `Not equals (ne) operator is not supported for ${constants.filterKeys.TIMESTAMP}`
+          );
+        }
 
-          // to ensure most recent occurence is found convert eq to lte
-          if (utils.opsMap.eq === filter.operator) {
-            filter.operator = utils.opsMap.lte;
-          }
+        // to ensure most recent occurence is found convert eq to lte
+        if (utils.opsMap.eq === filter.operator) {
+          filter.operator = utils.opsMap.lte;
+        }
 
-          filterQuery.whereQuery.push(FileDataService.getFilterWhereCondition(FileData.CONSENSUS_TIMESTAMP, filter));
-          break;
-        default:
-          break;
+        filterQuery.whereQuery.push(FileDataService.getFilterWhereCondition(FileData.CONSENSUS_TIMESTAMP, filter));
       }
     }
 
