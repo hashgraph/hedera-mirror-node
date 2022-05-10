@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -103,28 +103,37 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         metadataDigestInputStream.on(false); // metadata hash is not calculated on record stream objects
         long hashObjectClassId = startHashObject.getClassId();
 
-        long count = 0;
+        int count = 0;
         long consensusStart = 0;
-        RecordStreamObject lastRecordStreamObject = null;
         List<RecordItem> items = new ArrayList<>();
+        RecordItem lastRecordItem = null;
 
         // read record stream objects
         while (!isHashObject(vdis, hashObjectClassId)) {
-            RecordStreamObject recordStreamObject = new RecordStreamObject(vdis, recordFile.getHapiVersion());
-            items.add(recordStreamObject.getRecordItem());
+            RecordStreamObject recordStreamObject = new RecordStreamObject(vdis, recordFile.getHapiVersion(),
+                    count);
+            var recordItem = RecordItem.builder()
+                    .hapiVersion(recordFile.getHapiVersion())
+                    .previous(lastRecordItem)
+                    .recordBytes(recordStreamObject.recordBytes)
+                    .transactionIndex(count)
+                    .transactionBytes(recordStreamObject.transactionBytes)
+                    .build();
+
+            items.add(recordItem);
 
             if (count == 0) {
-                consensusStart = recordStreamObject.getRecordItem().getConsensusTimestamp();
+                consensusStart = recordItem.getConsensusTimestamp();
             }
 
-            lastRecordStreamObject = recordStreamObject;
+            lastRecordItem = recordItem;
             count++;
         }
 
         if (count == 0) {
             throw new InvalidStreamFileException("No record stream objects in record file " + filename);
         }
-        long consensusEnd = lastRecordStreamObject.getRecordItem().getConsensusTimestamp();
+        long consensusEnd = lastRecordItem.getConsensusTimestamp();
 
         // end object running hash, metadata hash is calculated on it
         metadataDigestInputStream.on(true);
@@ -134,7 +143,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             throw new InvalidStreamFileException("Extra data discovered in record file " + filename);
         }
 
-        recordFile.setCount(count);
+        recordFile.setCount((long) count);
         recordFile.setConsensusEnd(consensusEnd);
         recordFile.setConsensusStart(consensusStart);
         recordFile.setHash(Hex.encodeHexString(endHashObject.getHash()));
@@ -167,11 +176,12 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
         private final Version hapiVersion;
         private final byte[] recordBytes;
         private final byte[] transactionBytes;
-        private RecordItem recordItem;
+        private final int transactionBlockIndex;
 
-        RecordStreamObject(ValidatedDataInputStream vdis, Version hapiVersion) {
+        RecordStreamObject(ValidatedDataInputStream vdis, Version hapiVersion, int transactionBlockIndex) {
             super(vdis);
             this.hapiVersion = hapiVersion;
+            this.transactionBlockIndex = transactionBlockIndex;
 
             try {
                 recordBytes = vdis.readLengthAndBytes(1, MAX_RECORD_LENGTH, false, "record bytes");
@@ -179,18 +189,6 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             } catch (IOException e) {
                 throw new InvalidStreamFileException(e);
             }
-        }
-
-        RecordItem getRecordItem() {
-            if (recordBytes == null || transactionBytes == null) {
-                return null;
-            }
-
-            if (recordItem == null) {
-                recordItem = new RecordItem(hapiVersion, transactionBytes, recordBytes);
-            }
-
-            return recordItem;
         }
     }
 }

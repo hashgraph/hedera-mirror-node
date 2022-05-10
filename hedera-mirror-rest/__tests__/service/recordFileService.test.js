@@ -32,8 +32,8 @@ const {defaultMochaStatements} = require('./defaultMochaStatements');
 defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 const expectToEqualId16 = (blockId16) => {
-  expect(blockId16.index).toEqual('16');
-  expect(blockId16.count).toEqual('3');
+  expect(blockId16.index).toEqual(16);
+  expect(blockId16.count).toEqual(3);
   expect(blockId16.name).toEqual('2022-04-27T12_09_24.499938763Z.rcd');
   expect(blockId16.hash).toEqual(
     'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c'
@@ -44,13 +44,13 @@ const expectToEqualId16 = (blockId16) => {
   expect(blockId16.hapiVersionMajor).toEqual(0);
   expect(blockId16.hapiVersionMinor).toEqual(22);
   expect(blockId16.hapiVersionPatch).toEqual(3);
-  expect(blockId16.consensusStart).toEqual('1676540001234390000');
-  expect(blockId16.consensusEnd).toEqual('1676540001234490000');
+  expect(blockId16.consensusStart).toEqual(1676540001234390000n);
+  expect(blockId16.consensusEnd).toEqual(1676540001234490000n);
 };
 
 const expectToEqualId17 = (blockId17) => {
-  expect(blockId17.index).toEqual('17');
-  expect(blockId17.count).toEqual('5');
+  expect(blockId17.index).toEqual(17);
+  expect(blockId17.count).toEqual(5);
   expect(blockId17.name).toEqual('2022-04-27T12_24_30.768994443Z.rcd');
   expect(blockId17.hash).toEqual('b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c1278');
   expect(blockId17.prevHash).toEqual(
@@ -59,8 +59,8 @@ const expectToEqualId17 = (blockId17) => {
   expect(blockId17.hapiVersionMajor).toEqual(0);
   expect(blockId17.hapiVersionMinor).toEqual(22);
   expect(blockId17.hapiVersionPatch).toEqual(3);
-  expect(blockId17.consensusStart).toEqual('1676540001234500000');
-  expect(blockId17.consensusEnd).toEqual('1676540001234600000');
+  expect(blockId17.consensusStart).toEqual(1676540001234500000n);
+  expect(blockId17.consensusEnd).toEqual(1676540001234600000n);
 };
 
 const recordFiles = [
@@ -105,9 +105,9 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
   ];
 
   const expectedRecordFile = {
-    consensusEnd: '3',
+    consensusEnd: 3,
     hash: 'dee34',
-    index: '1',
+    index: 1,
   };
 
   test('RecordFileService.getRecordFileBlockDetailsFromTimestamp - Row match w start', async () => {

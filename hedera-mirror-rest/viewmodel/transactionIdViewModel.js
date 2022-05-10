@@ -40,7 +40,7 @@ class TransactionIdViewModel {
       // handle proto format
       const {accountID, transactionValidStart, nonce, scheduled} = transactionId;
       this.account_id = EntityId.of(accountID.shardNum, accountID.realmNum, accountID.accountNum).toString();
-      this.nonce = Number(nonce);
+      this.nonce = nonce;
       this.scheduled = scheduled;
       this.transaction_valid_start = `${transactionValidStart.seconds}.${transactionValidStart.nanos
         .toString()
@@ -48,7 +48,7 @@ class TransactionIdViewModel {
     } else {
       // handle db format. Handle nil case for nonce and scheduled
       this.account_id = EntityId.parse(transactionId.payerAccountId).toString();
-      this.nonce = _.isNil(transactionId.nonce) ? null : Number(transactionId.nonce);
+      this.nonce = transactionId.nonce;
       this.scheduled = transactionId.scheduled;
       this.transaction_valid_start = utils.nsToSecNs(transactionId.validStartTimestamp);
     }

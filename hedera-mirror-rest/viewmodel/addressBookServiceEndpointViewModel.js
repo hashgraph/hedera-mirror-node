@@ -31,7 +31,7 @@ class AddressBookServiceEndpointViewModel {
    */
   constructor(serviceEndpoint) {
     this.ip_address_v4 = serviceEndpoint.ipAddressV4;
-    this.port = Number(serviceEndpoint.port);
+    this.port = serviceEndpoint.port;
   }
 }
 

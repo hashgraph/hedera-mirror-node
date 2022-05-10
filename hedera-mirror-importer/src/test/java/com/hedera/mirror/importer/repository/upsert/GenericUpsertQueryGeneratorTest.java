@@ -69,10 +69,13 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
         assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
         assertThat(format(generator.getInsertQuery())).isEqualTo(format("with existing as (" +
                 "  insert into contract_history (" +
-                "    auto_renew_period, created_timestamp, deleted, evm_address, expiration_timestamp, file_id, id," +
-                "    key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type" +
+                "    auto_renew_account_id,auto_renew_period, created_timestamp, deleted, evm_address," +
+                "    expiration_timestamp, file_id, id, initcode, key, max_automatic_token_associations, memo, " +
+                "    num, obtainer_id, permanent_removal, proxy_account_id, public_key, realm, shard, timestamp_range," +
+                "    type" +
                 "  )" +
                 "  select" +
+                "    e.auto_renew_account_id," +
                 "    e.auto_renew_period," +
                 "    e.created_timestamp," +
                 "    e.deleted," +
@@ -80,10 +83,13 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    e.expiration_timestamp," +
                 "    e.file_id," +
                 "    e.id," +
+                "    e.initcode," +
                 "    e.key," +
+                "    e.max_automatic_token_associations," +
                 "    e.memo," +
                 "    e.num," +
                 "    e.obtainer_id," +
+                "    e.permanent_removal," +
                 "    e.proxy_account_id," +
                 "    e.public_key," +
                 "    e.realm," +
@@ -97,10 +103,12 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 ")," +
                 "history as (" +
                 "  insert into contract_history (" +
-                "    auto_renew_period, created_timestamp, deleted, evm_address, expiration_timestamp, file_id, id," +
-                "    key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type" +
+                "    auto_renew_account_id, auto_renew_period, created_timestamp, deleted, evm_address," +
+                "    expiration_timestamp, file_id, id, initcode, key, max_automatic_token_associations, memo, num," +
+                "    obtainer_id, permanent_removal,proxy_account_id, public_key, realm, shard, timestamp_range, type" +
                 "  )" +
                 "  select distinct" +
+                "    coalesce(t.auto_renew_account_id, e.auto_renew_account_id, null)," +
                 "    coalesce(t.auto_renew_period, e.auto_renew_period, null)," +
                 "    coalesce(t.created_timestamp, e.created_timestamp, null)," +
                 "    coalesce(t.deleted, e.deleted, null)," +
@@ -108,10 +116,13 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    coalesce(t.expiration_timestamp, e.expiration_timestamp, null)," +
                 "    coalesce(t.file_id, e.file_id, null)," +
                 "    coalesce(t.id, e.id, null)," +
+                "    coalesce(t.initcode, e.initcode, null)," +
                 "    coalesce(t.key, e.key, null)," +
+                "    coalesce(t.max_automatic_token_associations, e.max_automatic_token_associations, null)," +
                 "    coalesce(t.memo, e.memo, '')," +
                 "    coalesce(t.num, e.num, null)," +
                 "    coalesce(t.obtainer_id, e.obtainer_id, null)," +
+                "    coalesce(t.permanent_removal, e.permanent_removal, null)," +
                 "    coalesce(t.proxy_account_id, e.proxy_account_id, null)," +
                 "    coalesce(t.public_key, e.public_key, null)," +
                 "    coalesce(t.realm, e.realm, null)," +
@@ -123,10 +134,12 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "  where upper(t.timestamp_range) is not null returning *" +
                 ")" +
                 "insert into contract (" +
-                "  auto_renew_period, created_timestamp, deleted, evm_address, expiration_timestamp, file_id, id," +
-                "  key, memo, num, obtainer_id, proxy_account_id, public_key, realm, shard, timestamp_range, type" +
+                "  auto_renew_account_id, auto_renew_period, created_timestamp, deleted, evm_address," +
+                "  expiration_timestamp, file_id, id, initcode, key, max_automatic_token_associations, memo, num," +
+                "  obtainer_id, permanent_removal, proxy_account_id, public_key, realm, shard, timestamp_range, type" +
                 ")" +
                 "select" +
+                "  coalesce(t.auto_renew_account_id, e.auto_renew_account_id, null)," +
                 "  coalesce(t.auto_renew_period, e.auto_renew_period, null)," +
                 "  coalesce(t.created_timestamp, e.created_timestamp, null)," +
                 "  coalesce(t.deleted, e.deleted, null)," +
@@ -134,10 +147,13 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "  coalesce(t.expiration_timestamp, e.expiration_timestamp, null)," +
                 "  coalesce(t.file_id, e.file_id, null)," +
                 "  coalesce(t.id, e.id, null)," +
+                "  coalesce(t.initcode, e.initcode, null)," +
                 "  coalesce(t.key, e.key, null)," +
+                "  coalesce(t.max_automatic_token_associations, e.max_automatic_token_associations, null)," +
                 "  coalesce(t.memo, e.memo, '')," +
                 "  coalesce(t.num, e.num, null)," +
                 "  coalesce(t.obtainer_id, e.obtainer_id, null)," +
+                "  coalesce(t.permanent_removal, e.permanent_removal, null)," +
                 "  coalesce(t.proxy_account_id, e.proxy_account_id, null)," +
                 "  coalesce(t.public_key, e.public_key, null)," +
                 "  coalesce(t.realm, e.realm, null)," +
@@ -148,12 +164,15 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "left join existing e on e.id = t.id " +
                 "where upper(t.timestamp_range) is null on conflict (id) do " +
                 "update set" +
+                "  auto_renew_account_id = excluded.auto_renew_account_id," +
                 "  auto_renew_period = excluded.auto_renew_period," +
                 "  deleted = excluded.deleted," +
                 "  expiration_timestamp = excluded.expiration_timestamp," +
                 "  key = excluded.key," +
+                "  max_automatic_token_associations = excluded.max_automatic_token_associations," +
                 "  memo = excluded.memo," +
                 "  obtainer_id = excluded.obtainer_id," +
+                "  permanent_removal = excluded.permanent_removal," +
                 "  proxy_account_id = excluded.proxy_account_id," +
                 "  public_key = excluded.public_key," +
                 "  timestamp_range = excluded.timestamp_range"));

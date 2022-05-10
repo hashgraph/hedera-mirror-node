@@ -32,7 +32,9 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 import javax.inject.Named;
+import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
@@ -41,6 +43,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -66,8 +69,8 @@ public class EntityIdServiceImpl implements EntityIdService {
     }
 
     @Override
-    public EntityId lookup(AccountID... accountIds) {
-        return doLookups(accountIds, this::load);
+    public EntityId lookup(AliasNotFoundAction action, AccountID... accountIds) {
+        return doLookups(action, accountIds, this::load);
     }
 
     @Override
@@ -76,34 +79,35 @@ public class EntityIdServiceImpl implements EntityIdService {
     }
 
     @Override
-    public EntityId lookup(ContractID... contractIds) {
-        return doLookups(contractIds, this::load);
+    public EntityId lookup(AliasNotFoundAction action, ContractID... contractIds) {
+        return doLookups(action, contractIds, this::load);
     }
 
+    @SneakyThrows
     private EntityId doLookup(GeneratedMessageV3 entityIdProto, Callable<EntityId> loader) {
         if (entityIdProto == null || entityIdProto.equals(entityIdProto.getDefaultInstanceForType())) {
             return EntityId.EMPTY;
         }
 
-        EntityId entityId = cache.get(entityIdProto.hashCode(), loader);
-
-        if (entityId == null) {
-            log.warn("No match found. It could be that the mirror node has partial data " +
-                    "or the alias doesn't exist: {}", entityIdProto);
-            return EntityId.EMPTY;
+        try {
+            return cache.get(entityIdProto.hashCode(), loader);
+        } catch (Cache.ValueRetrievalException e) {
+            throw e.getCause();
         }
-
-        return entityId;
     }
 
-    private <T extends GeneratedMessageV3> EntityId doLookups(T[] entityIdProtos, Function<T, EntityId> loader) {
+    private <T extends GeneratedMessageV3> EntityId doLookups(AliasNotFoundAction action, T[] entityIdProtos,
+                                                              Function<T, EntityId> loader) {
         for (T entityIdProto : entityIdProtos) {
             try {
-                EntityId entityId = doLookup(entityIdProto, () -> loader.apply(entityIdProto));
+                var entityId = doLookup(entityIdProto, () -> loader.apply(entityIdProto));
                 if (!EntityId.isEmpty(entityId)) {
                     return entityId;
                 }
-            } catch (Exception e) {
+            }  catch (Exception e) {
+                if (e instanceof AliasNotFoundException && action == AliasNotFoundAction.ERROR) {
+                    throw e;
+                }
                 log.warn("Skipping entity ID {}: {}", entityIdProto, e.getMessage());
             }
         }
@@ -151,9 +155,11 @@ public class EntityIdServiceImpl implements EntityIdService {
                 return EntityId.of(accountId);
             case ALIAS:
                 byte[] alias = DomainUtils.toBytes(accountId.getAlias());
-                return entityRepository.findByAlias(alias)
-                        .map(id -> EntityId.of(id, ACCOUNT))
-                        .orElse(null);
+                return alias.length == DomainUtils.EVM_ADDRESS_LENGTH ?
+                        findByEvmAddress(alias, accountId.getShardNum(), accountId.getRealmNum()) :
+                        entityRepository.findByAlias(alias)
+                                .map(id -> EntityId.of(id, ACCOUNT))
+                                .orElseThrow(() -> new AliasNotFoundException(Hex.encodeHexString(alias), ACCOUNT));
             default:
                 throw new InvalidDatasetException("Invalid AccountID: " + accountId);
         }
@@ -165,18 +171,18 @@ public class EntityIdServiceImpl implements EntityIdService {
             case CONTRACTNUM:
                 return EntityId.of(contractId);
             case EVM_ADDRESS:
-                return findByEvmAddress(contractId);
+                byte[] evmAddress = DomainUtils.toBytes(contractId.getEvmAddress());
+                return findByEvmAddress(evmAddress, contractId.getShardNum(), contractId.getRealmNum());
             default:
                 throw new InvalidDatasetException("Invalid ContractID: " + contractId);
         }
     }
 
-    private EntityId findByEvmAddress(ContractID contractId) {
-        byte[] evmAddress = DomainUtils.toBytes(contractId.getEvmAddress());
+    private EntityId findByEvmAddress(byte[] evmAddress, long shardNum, long realmNum) {
         return Optional.ofNullable(DomainUtils.fromEvmAddress(evmAddress))
                 // Verify shard and realm match when assuming evmAddress is in the 'shard.realm.num' form
-                .filter(e -> e.getShardNum() == contractId.getShardNum() && e.getRealmNum() == contractId.getRealmNum())
+                .filter(e -> e.getShardNum() == shardNum && e.getRealmNum() == realmNum)
                 .or(() -> contractRepository.findByEvmAddress(evmAddress).map(id -> EntityId.of(id, CONTRACT)))
-                .orElse(null);
+                .orElseThrow(() -> new AliasNotFoundException(Hex.encodeHexString(evmAddress), CONTRACT));
     }
 }

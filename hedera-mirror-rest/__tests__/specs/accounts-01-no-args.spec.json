@@ -60,12 +60,12 @@
       {
         "timestamp": 2000,
         "id": 2,
-        "balance": 20,
+        "balance": 9223372036847275807,
         "tokens": [
           {
             "token_realm": 0,
             "token_num": 90001,
-            "balance": 2
+            "balance": 9223372036847275807
           },
           {
             "token_realm": 0,
@@ -129,7 +129,8 @@
     ],
     "contracts": [
       {
-        "num": 7
+        "num": 7,
+        "max_automatic_token_associations": 20
       },
       {
         "num": 8
@@ -173,11 +174,11 @@
       {
         "balance": {
           "timestamp": "0.000002000",
-          "balance": 20,
+          "balance": 9223372036847275807,
           "tokens": [
             {
               "token_id": "0.0.90001",
-              "balance": 2
+              "balance": 9223372036847275807
             },
             {
               "token_id": "0.0.90010",
@@ -295,7 +296,7 @@
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
-        "max_automatic_token_associations": null,
+        "max_automatic_token_associations": 20,
         "memo": "contract memo",
         "receiver_sig_required": null
       },
@@ -311,7 +312,7 @@
         "auto_renew_period": null,
         "key": null,
         "deleted": false,
-        "max_automatic_token_associations": null,
+        "max_automatic_token_associations": 0,
         "memo": "contract memo",
         "receiver_sig_required": null
       },

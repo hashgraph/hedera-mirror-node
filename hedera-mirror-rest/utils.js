@@ -21,10 +21,12 @@
 'use strict';
 
 const _ = require('lodash');
-const crypto = require('crypto');
 const anonymize = require('ip-anonymize');
+const crypto = require('crypto');
+const JSONBig = require('json-bigint')({useNativeBigInt: true});
 const long = require('long');
 const math = require('mathjs');
+const pg = require('pg');
 const util = require('util');
 
 const constants = require('./constants');
@@ -37,6 +39,7 @@ const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
 const {TransactionResult, TransactionType} = require('./model');
 const {keyTypes} = require('./constants');
+const pgRange = require('pg-range');
 
 const responseLimit = config.response.limit;
 const resultSuccess = TransactionResult.getSuccessProtoId();
@@ -450,37 +453,11 @@ const parseAccountIdQueryParam = (parsedQueryParams, columnName) => {
   );
 };
 
-const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
-  return parseParams(
-    parsedQueryParams[constants.filterKeys.TIMESTAMP],
-    (value) => parseTimestampParam(value),
-    (op, value) => [`${columnName}${op in opOverride ? opOverride[op] : op}?`, [value]],
-    false
-  );
-};
-
 const parseBalanceQueryParam = (parsedQueryParams, columnName) => {
   return parseParams(
     parsedQueryParams[constants.filterKeys.ACCOUNT_BALANCE],
     (value) => value,
     (op, value) => (isNumeric(value) ? [`${columnName}${op}?`, [value]] : null),
-    false
-  );
-};
-
-const parsePublicKey = (publicKey) => {
-  const publicKeyNoPrefix = publicKey ? publicKey.replace('0x', '').toLowerCase() : publicKey;
-  const decodedKey = ed25519.derToEd25519(publicKeyNoPrefix);
-  return decodedKey == null ? publicKeyNoPrefix : decodedKey;
-};
-
-const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
-  return parseParams(
-    parsedQueryParams[constants.filterKeys.ACCOUNT_PUBLICKEY],
-    (value) => {
-      return parsePublicKey(value);
-    },
-    (op, value) => [`${columnName}${op}?`, [value]],
     false
   );
 };
@@ -506,21 +483,14 @@ const parseCreditDebitParams = (parsedQueryParams, columnName) => {
 };
 
 /**
- * Parse the result=[success | fail | all] parameter
- * @param {Request} req HTTP query request object
- * @param {String} columnName Column name for the transaction result
- * @return {String} Value of the resultType parameter
+ * Parses the integer string into a Number if it's safe or otherwise a BigInt
+ *
+ * @param {string} str
+ * @returns {Number|BigInt}
  */
-const parseResultParams = (req, columnName) => {
-  const resultType = req.query.result;
-  let query = '';
-
-  if (resultType === constants.transactionResultFilter.SUCCESS) {
-    query = `${columnName} = ${resultSuccess}`;
-  } else if (resultType === constants.transactionResultFilter.FAIL) {
-    query = `${columnName} != ${resultSuccess}`;
-  }
-  return query;
+const parseInteger = (str) => {
+  const num = Number(str);
+  return Number.isSafeInteger(num) ? num : BigInt(str);
 };
 
 /**
@@ -542,6 +512,50 @@ const parseLimitAndOrderParams = (req, defaultOrder = constants.orderFilterValue
   }
 
   return buildPgSqlObject(limitQuery, [limitValue], order, limitValue);
+};
+
+const parsePublicKey = (publicKey) => {
+  const publicKeyNoPrefix = publicKey ? publicKey.replace('0x', '').toLowerCase() : publicKey;
+  const decodedKey = ed25519.derToEd25519(publicKeyNoPrefix);
+  return decodedKey == null ? publicKeyNoPrefix : decodedKey;
+};
+
+const parsePublicKeyQueryParam = (parsedQueryParams, columnName) => {
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.ACCOUNT_PUBLICKEY],
+    (value) => {
+      return parsePublicKey(value);
+    },
+    (op, value) => [`${columnName}${op}?`, [value]],
+    false
+  );
+};
+
+/**
+ * Parse the result=[success | fail | all] parameter
+ * @param {Request} req HTTP query request object
+ * @param {String} columnName Column name for the transaction result
+ * @return {String} Value of the resultType parameter
+ */
+const parseResultParams = (req, columnName) => {
+  const resultType = req.query.result;
+  let query = '';
+
+  if (resultType === constants.transactionResultFilter.SUCCESS) {
+    query = `${columnName} = ${resultSuccess}`;
+  } else if (resultType === constants.transactionResultFilter.FAIL) {
+    query = `${columnName} != ${resultSuccess}`;
+  }
+  return query;
+};
+
+const parseTimestampQueryParam = (parsedQueryParams, columnName, opOverride = {}) => {
+  return parseParams(
+    parsedQueryParams[constants.filterKeys.TIMESTAMP],
+    (value) => parseTimestampParam(value),
+    (op, value) => [`${columnName}${op in opOverride ? opOverride[op] : op}?`, [value]],
+    false
+  );
 };
 
 const buildPgSqlObject = (query, params, order, limit) => {
@@ -861,8 +875,14 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
  * @return {[]}
  */
 const buildAndValidateFilters = (query, filterValidator = filterValidityChecks) => {
-  const filters = buildFilters(query);
-  validateAndParseFilters(filters, filterValidator);
+  const {badParams, filters} = buildFilters(query);
+  const additionalBadParams = validateAndParseFilters(filters, filterValidator);
+  badParams.push(...additionalBadParams);
+
+  if (badParams.length > 0) {
+    throw InvalidArgumentError.forRequestValidation(badParams);
+  }
+
   return filters;
 };
 
@@ -872,24 +892,31 @@ const buildAndValidateFilters = (query, filterValidator = filterValidityChecks) 
  * @param query
  */
 const buildFilters = (query) => {
-  const filterObject = [];
-  if (_.isNil(query)) {
-    return null;
-  }
+  const badParams = [];
+  const filters = [];
 
-  for (const key in query) {
-    const values = query[key];
+  for (const [key, values] of Object.entries(query)) {
     // for repeated params val will be an array
     if (Array.isArray(values)) {
+      if (!isRepeatedQueryParameterValidLength(values)) {
+        badParams.push({
+          code: InvalidArgumentError.PARAM_COUNT_EXCEEDS_MAX_CODE,
+          key,
+          count: values.length,
+          max: config.maxRepeatedQueryParameters,
+        });
+        continue;
+      }
+
       for (const val of values) {
-        filterObject.push(buildComparatorFilter(key, val));
+        filters.push(buildComparatorFilter(key, val));
       }
     } else {
-      filterObject.push(buildComparatorFilter(key, values));
+      filters.push(buildComparatorFilter(key, values));
     }
   }
 
-  return filterObject;
+  return {badParams, filters};
 };
 
 const buildComparatorFilter = (name, filter) => {
@@ -908,25 +935,22 @@ const buildComparatorFilter = (name, filter) => {
  *
  * @param filters
  * @param filterValidator
+ * @returns {string[]} the bad parameters
  */
 const validateFilters = (filters, filterValidator) => {
   const badParams = [];
-
   for (const filter of filters) {
     if (!filterValidator(filter.key, filter.operator, filter.value)) {
       badParams.push(filter.key);
     }
   }
 
-  if (badParams.length > 0) {
-    throw InvalidArgumentError.forParams(badParams);
-  }
+  return badParams;
 };
 
 /**
  * Update format to be persistence query compatible
  * @param filters
- * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
  */
 const formatFilters = (filters) => {
   for (const filter of filters) {
@@ -940,11 +964,14 @@ const formatFilters = (filters) => {
  *
  * @param filters
  * @param filterValidator
- * @returns {{code: number, contents: {_status: {messages: *}}, isValid: boolean}|{code: number, contents: string, isValid: boolean}}
+ * @returns {string[]} the bad parameters
  */
 const validateAndParseFilters = (filters, filterValidator) => {
-  validateFilters(filters, filterValidator);
-  formatFilters(filters);
+  const badParams = validateFilters(filters, filterValidator);
+  if (badParams.length === 0) {
+    formatFilters(filters);
+  }
+  return badParams;
 };
 
 const formatComparator = (comparator) => {
@@ -972,7 +999,7 @@ const formatComparator = (comparator) => {
         comparator.value = EntityId.parse(comparator.value, contants.filterKeys.FROM).getEncodedId();
         break;
       case constants.filterKeys.LIMIT:
-        comparator.value = Number(comparator.value);
+        comparator.value = math.min(Number(comparator.value), responseLimit.max);
         break;
       case constants.filterKeys.NODE_ID:
       case constants.filterKeys.NONCE:
@@ -1065,7 +1092,7 @@ const ipMask = (ip) => {
  * @param {boolean} mock
  */
 const getPoolClass = (mock = false) => {
-  const Pool = mock ? require('./__tests__/mockpool') : require('pg').Pool;
+  const Pool = mock ? require('./__tests__/mockpool') : pg.Pool;
   Pool.prototype.queryQuietly = async function (query, params = [], preQueryHint = undefined) {
     let client;
     let result;
@@ -1094,15 +1121,6 @@ const getPoolClass = (mock = false) => {
   };
 
   return Pool;
-};
-
-/**
- * Loads and installs pg-range for pg
- */
-const loadPgRange = () => {
-  const pg = require('pg');
-  const pgRange = require('pg-range');
-  pgRange.install(pg);
 };
 
 /**
@@ -1172,6 +1190,10 @@ const isRegexMatch = (regex, value) => {
   return regex.test(value.trim());
 };
 
+const isRegexMatch = (regex, value) => {
+  return regex.test(value.trim());
+};
+
 const ETH_HASH_PATTERN = /^0x([A-Fa-f0-9]{64})$/;
 const isValidEthHash = (hash) => {
   return isRegexMatch(ETH_HASH_PATTERN, addHexPrefix(hash));
@@ -1181,6 +1203,20 @@ const HEDERA_HASH_PATTERN = /^0x([A-Fa-f0-9]{96})$/;
 const isValidHederaHash = (hash) => {
   return isRegexMatch(HEDERA_HASH_PATTERN, addHexPrefix(hash));
 };
+
+(function () {
+  // config pg bigint parsing
+  const pgTypes = pg.types;
+  pgTypes.setTypeParser(20, parseInteger); // int8
+  const parseBigIntArray = pgTypes.getTypeParser(1016); // int8[]
+  pgTypes.setTypeParser(1016, (a) => parseBigIntArray(a).map(parseInteger));
+
+  pgTypes.setTypeParser(114, JSONBig.parse); // json
+  pgTypes.setTypeParser(3802, JSONBig.parse); // jsonb
+
+  //  install pg-range
+  pgRange.install(pg);
+})();
 
 module.exports = {
   addHexPrefix,
@@ -1209,7 +1245,8 @@ module.exports = {
   isValidOperatorQuery,
   isValidValueIgnoreCase,
   isValidTimestampParam,
-  loadPgRange,
+  JSONParse: JSONBig.parse,
+  JSONStringify: JSONBig.stringify,
   ltLte,
   mergeParams,
   nsToSecNs,
@@ -1246,6 +1283,7 @@ if (isTestEnv()) {
     getLimitParamValue,
     getNextParamQueries,
     getPaginationLink,
+    parseInteger,
     validateAndParseFilters,
     validateFilters,
   });

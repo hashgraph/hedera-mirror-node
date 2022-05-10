@@ -41,7 +41,7 @@ const stateproof = require('./stateproof');
 const tokens = require('./tokens');
 const topicmessage = require('./topicmessage');
 const transactions = require('./transactions');
-const {getPoolClass, isTestEnv, loadPgRange} = require('./utils');
+const {getPoolClass, isTestEnv} = require('./utils');
 const {handleError} = require('./middleware/httpErrorHandler');
 const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
 const {serveSwaggerDocs, openApiValidator} = require('./middleware/openapiHandler');
@@ -105,7 +105,6 @@ if (config.db.tls.enabled) {
 }
 
 const Pool = getPoolClass(isTestEnv());
-loadPgRange();
 const pool = new Pool(poolConfig);
 global.pool = pool;
 

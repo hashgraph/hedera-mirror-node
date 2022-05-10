@@ -244,6 +244,18 @@ describe('Utils isValidTimestampParam tests', () => {
   });
 });
 
+describe('parseInteger', () => {
+  [
+    {input: '1', expected: 1},
+    {input: `${Number.MAX_SAFE_INTEGER}`, expected: Number.MAX_SAFE_INTEGER},
+    {input: `${2n ** 53n}`, expected: 2n ** 53n},
+  ].forEach((spec) => {
+    test(spec.input, () => {
+      expect(utils.parseInteger(spec.input)).toBe(spec.expected);
+    });
+  });
+});
+
 describe('Utils parseLimitAndOrderParams tests', () => {
   const defaultResult = {
     query: 'limit ? ',
@@ -578,7 +590,7 @@ describe('Utils parseAccountIdQueryParam tests', () => {
       name: singleParamTestName,
       parsedQueryParams: {'account.id': 'gte:0.0.3'},
       expectedClause: 'account.id >= ?',
-      expectedValues: ['3'],
+      expectedValues: [3],
     },
     {
       name: noParamTestName,
@@ -590,7 +602,7 @@ describe('Utils parseAccountIdQueryParam tests', () => {
       name: multipleParamsTestName,
       parsedQueryParams: {'account.id': ['gte:0.0.3', 'lt:0.0.5', '2']},
       expectedClause: 'account.id >= ? and account.id < ? and account.id IN (?)',
-      expectedValues: ['3', '5', '2'],
+      expectedValues: [3, 5, 2],
     },
     {
       name: extraParamTestName,
@@ -599,13 +611,13 @@ describe('Utils parseAccountIdQueryParam tests', () => {
         timestamp: '2000',
       },
       expectedClause: 'account.id IN (?)',
-      expectedValues: ['3'],
+      expectedValues: [3],
     },
     {
       name: multipleEqualsTestName,
       parsedQueryParams: {'account.id': ['0.0.3', '4']},
       expectedClause: 'account.id IN (?, ?)',
-      expectedValues: ['3', '4'],
+      expectedValues: [3, 4],
     },
   ];
   parseQueryParamTest(testSpecs, (spec) => utils.parseAccountIdQueryParam(spec.parsedQueryParams, 'account.id'));

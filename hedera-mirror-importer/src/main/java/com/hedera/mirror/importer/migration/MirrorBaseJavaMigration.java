@@ -41,6 +41,10 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
         return false;
     }
 
+    protected MigrationVersion getMinimumVersion() {
+        return null;
+    }
+
     @Override
     public void migrate(Context context) throws IOException {
         Configuration configuration = context.getConfiguration();
@@ -66,13 +70,19 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
      */
     protected boolean skipMigration(Configuration configuration) {
         MigrationVersion current = getVersion();
-        MigrationVersion baselineVersion = configuration.getBaselineVersion();
+
+        // The only case where we should skip a repeatable migration,
+        // is when the target migration is not greater or equal to the required one.
+        if (current == null && !hasMinimumRequiredVersion(configuration)) {
+            return true;
+        }
 
         // Don't skip repeatable migration
         if (current == null) {
             return false;
         }
 
+        MigrationVersion baselineVersion = configuration.getBaselineVersion();
         // Skip when current version is older than baseline
         if (baselineVersion.isNewerThan(current.getVersion())) {
             return true;
@@ -81,6 +91,20 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
         // Skip when current version is newer than target
         MigrationVersion targetVersion = configuration.getTarget();
         return targetVersion != null && current.isNewerThan(targetVersion.getVersion());
+    }
+
+    private boolean hasMinimumRequiredVersion(Configuration configuration) {
+        MigrationVersion minimumRequiredVersion = getMinimumVersion();
+        if (minimumRequiredVersion == null) {
+            return true;
+        }
+
+        MigrationVersion targetVersion = configuration.getTarget();
+        if (targetVersion == null) {
+            return true;
+        }
+
+        return minimumRequiredVersion.compareTo(targetVersion) <= 0;
     }
 
     @Override

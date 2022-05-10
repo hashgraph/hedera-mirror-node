@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * limitations under the License.
  * ‍
  */
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
@@ -28,16 +31,23 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import java.util.List;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.util.UtilityTest;
 
 class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoCreateTransactionHandler(entityListener, entityRepository);
+        return new CryptoCreateTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
     }
 
     @Override
@@ -60,7 +70,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @Override
     protected AbstractEntity getExpectedUpdatedEntity() {
         AbstractEntity entity = super.getExpectedUpdatedEntity();
-        ((Entity) entity).setMaxAutomaticTokenAssociations(0);
+        entity.setMaxAutomaticTokenAssociations(0);
         return entity;
     }
 
@@ -75,7 +85,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         body = getTransactionBody(body, innerBody);
 
         AbstractEntity expected = getExpectedUpdatedEntity();
-        ((Entity) expected).setMaxAutomaticTokenAssociations(500);
+        expected.setMaxAutomaticTokenAssociations(500);
         expected.setMemo("");
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
@@ -86,5 +96,22 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         );
 
         return testSpecs;
+    }
+
+    @Test
+    void updateAlias() {
+        var alias = UtilityTest.ALIAS_ECDSA_SECP256K1;
+        var recordItem = recordItemBuilder.cryptoCreate().record(r -> r.setAlias(DomainUtils.fromBytes(alias))).build();
+        var transaction = new Transaction();
+        transaction.setEntityId(EntityId.of(0L, 0L, 100L, EntityType.ACCOUNT));
+
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        ArgumentCaptor<Entity> captor = ArgumentCaptor.forClass(Entity.class);
+        verify(entityIdService).notify(captor.capture());
+        assertThat(captor.getValue())
+                .isNotNull()
+                .returns(alias, Entity::getAlias)
+                .returns(UtilityTest.EVM_ADDRESS, Entity::getEvmAddress);
     }
 }

@@ -83,23 +83,27 @@ comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactio
 -- contract
 create table if not exists contract
 (
-    auto_renew_period    bigint                         null,
-    created_timestamp    bigint                         null,
-    deleted              boolean                        null,
-    evm_address          bytea                          null,
-    expiration_timestamp bigint                         null,
-    file_id              bigint                         null,
-    id                   bigint                         not null,
-    key                  bytea                          null,
-    memo                 text        default ''         not null,
-    num                  bigint                         not null,
-    obtainer_id          bigint                         null,
-    proxy_account_id     bigint                         null,
-    public_key           character varying              null,
-    realm                bigint                         not null,
-    shard                bigint                         not null,
-    timestamp_range      int8range                      not null,
-    type                 entity_type default 'CONTRACT' not null
+    auto_renew_account_id            bigint                         null,
+    auto_renew_period                bigint                         null,
+    created_timestamp                bigint                         null,
+    deleted                          boolean                        null,
+    evm_address                      bytea                          null,
+    expiration_timestamp             bigint                         null,
+    file_id                          bigint                         null,
+    id                               bigint                         not null,
+    initcode                         bytea                          null,
+    key                              bytea                          null,
+    max_automatic_token_associations integer                        null,
+    memo                             text        default ''         not null,
+    num                              bigint                         not null,
+    obtainer_id                      bigint                         null,
+    permanent_removal                boolean                        null,
+    proxy_account_id                 bigint                         null,
+    public_key                       character varying              null,
+    realm                            bigint                         not null,
+    shard                            bigint                         not null,
+    timestamp_range                  int8range                      not null,
+    type                             entity_type default 'CONTRACT' not null
 );
 comment on table contract is 'Contract entity';
 
@@ -141,7 +145,8 @@ create table if not exists contract_result
     function_result      bytea        null,
     gas_limit            bigint       not null,
     gas_used             bigint       null,
-    payer_account_id     bigint       not null
+    payer_account_id     bigint       not null,
+    sender_id            bigint       null
 );
 comment on table contract_result is 'Crypto contract execution results';
 
@@ -209,6 +214,8 @@ create table if not exists entity
     auto_renew_period                bigint            null,
     created_timestamp                bigint            null,
     deleted                          boolean           null,
+    ethereum_nonce                   bigint            null,
+    evm_address                      bytea             null,
     expiration_timestamp             bigint            null,
     id                               bigint            not null,
     key                              bytea             null,
@@ -231,6 +238,32 @@ create table if not exists entity_history
     like entity including defaults
 );
 comment on table entity_history is 'Network entity historical state';
+
+create table if not exists ethereum_transaction
+(
+    access_list              bytea    null,
+    call_data_id             bigint   null,
+    call_data                bytea    null,
+    chain_id                 bytea    null,
+    consensus_timestamp      bigint   not null,
+    data                     bytea    not null,
+    gas_limit                bigint   not null,
+    gas_price                bytea    null,
+    hash                     bytea    not null,
+    max_fee_per_gas          bytea    null,
+    max_gas_allowance        bigint   not null,
+    max_priority_fee_per_gas bytea    null,
+    nonce                    bigint   not null,
+    payer_account_id         bigint   not null,
+    recovery_id              smallint null,
+    signature_r              bytea    not null,
+    signature_s              bytea    not null,
+    signature_v              bytea    null,
+    to_address               bytea    null,
+    type                     smallint not null,
+    value                    bytea    null
+);
+comment on table ethereum_transaction is 'Ethereum transaction details';
 
 -- event_file
 create table if not exists event_file
@@ -463,11 +496,12 @@ create table if not exists transaction
     consensus_timestamp        bigint      not null,
     entity_id                  bigint,
     errata                     errata_type null,
+    index                      integer     null,
     initial_balance            bigint               default 0,
     max_fee                    bigint,
     memo                       bytea,
     node_account_id            bigint,
-    nonce                      integer              default 0 not null,
+    nonce                      integer     not null default 0,
     parent_consensus_timestamp bigint      null,
     payer_account_id           bigint      not null,
     result                     smallint    not null,

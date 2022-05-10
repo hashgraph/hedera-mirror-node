@@ -106,6 +106,7 @@
         "consensus_timestamp": "1234567890.000010001",
         "creator_account_id": "0.0.1024",
         "deleted": false,
+        "expiration_time": null,
         "executed_timestamp": "1234567890.000001100",
         "memo": "Created per council decision dated 02/01/21",
         "payer_account_id": "0.0.1024",
@@ -124,7 +125,8 @@
             "type": "ED25519"
           }
         ],
-        "transaction_body": "AQECAgMD"
+        "transaction_body": "AQECAgMD",
+        "wait_for_expiry": false
       }
     ],
     "links": {

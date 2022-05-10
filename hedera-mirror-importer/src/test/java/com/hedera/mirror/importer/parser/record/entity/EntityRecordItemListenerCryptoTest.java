@@ -29,6 +29,9 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+
+import com.hedera.mirror.importer.util.UtilityTest;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -69,6 +72,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -82,6 +86,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
@@ -93,8 +98,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private static final AccountID accountId1 = AccountID.newBuilder().setAccountNum(1001).build();
     private static final long[] additionalTransfers = {5000};
     private static final long[] additionalTransferAmounts = {1001, 1002};
-    private static final ByteString ALIAS_KEY = ByteString.copyFromUtf8(
-            "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff");
+    private static final ByteString ALIAS_KEY = DomainUtils.fromBytes(UtilityTest.ALIAS_ECDSA_SECP256K1);
+
+    @Resource
+    private ContractRepository contractRepository;
 
     @Resource
     private CryptoAllowanceRepository cryptoAllowanceRepository;
@@ -809,6 +816,35 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         );
     }
 
+    @Test
+    void cryptoTransferWithEvmAddressAlias() {
+        Contract contract = domainBuilder.contract().persist();
+        assertThat(contractRepository.findByEvmAddress(contract.getEvmAddress())).isPresent();
+
+        entityProperties.getPersist().setNonFeeTransfers(true);
+
+        long transferAmount = 123;
+        var transfer1 = accountAliasAmount(DomainUtils.fromBytes(contract.getEvmAddress()), transferAmount).build();
+        Transaction transaction = buildTransaction(builder -> builder.getCryptoTransferBuilder().getTransfersBuilder()
+                .addAccountAmounts(transfer1));
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord transactionRecord = transactionRecordSuccess(transactionBody);
+        RecordItem recordItem = new RecordItem(transaction, transactionRecord);
+        parseRecordItemAndCommit(recordItem);
+
+        assertAll(
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(1, nonFeeTransferRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, transactionRecord),
+                () -> assertThat(findNonFeeTransfers())
+                        .allSatisfy(nonFeeTransfer -> {
+                            assertThat(nonFeeTransfer.getEntityId()).isEqualTo(contract.toEntityId());
+                            assertThat(nonFeeTransfer.getAmount()).isEqualTo(transferAmount);
+                            assertThat(nonFeeTransfer.getPayerAccountId()).isEqualTo(recordItem.getPayerAccountId());
+                        })
+        );
+    }
+
     private Condition<CryptoTransfer> isAccountAmountReceiverAccountAmount(AccountAmount receiver) {
         return new Condition<>(
                 cryptoTransfer ->
@@ -1053,6 +1089,10 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .setSpender(spender2)
                 .setTokenId(tokenId)
                 .build());
+
+        // duplicate nft allowance
+        nftAllowances.add(nftAllowances.get(nftAllowances.size() - 1));
+
         // serial number 2's allowance is granted twice, the allowance should be granted to spender2 since it appears
         // after the nft allowance to spender1
         expectedNfts.add(nft2.toBuilder().modifiedTimestamp(timestamp).spender(EntityId.of(spender2)).build());

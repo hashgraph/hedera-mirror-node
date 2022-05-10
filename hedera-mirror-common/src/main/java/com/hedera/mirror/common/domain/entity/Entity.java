@@ -21,13 +21,11 @@ package com.hedera.mirror.common.domain.entity;
  */
 
 import javax.persistence.Column;
-import javax.persistence.Convert;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.Aliasable;
 
 @Data
@@ -40,10 +38,7 @@ public class Entity extends AbstractEntity implements Aliasable  {
     @ToString.Exclude
     private byte[] alias;
 
-    @Convert(converter = AccountIdConverter.class)
-    private EntityId autoRenewAccountId;
-
-    private Integer maxAutomaticTokenAssociations;
+    private Long ethereumNonce;
 
     private Boolean receiverSigRequired;
 

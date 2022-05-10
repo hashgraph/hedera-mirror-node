@@ -124,6 +124,10 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractResult.setFunctionResult(functionResult.toByteArray());
             contractResult.setGasUsed(functionResult.getGasUsed());
 
+            if (functionResult.hasSenderId()) {
+                contractResult.setSenderId(EntityId.of(functionResult.getSenderId()));
+            }
+
             processContractLogs(functionResult, contractResult);
             processContractStateChanges(functionResult, contractResult);
         }
@@ -198,6 +202,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         Contract contract = contractEntityId.toEntity();
         contract.setCreatedTimestamp(recordItem.getConsensusTimestamp());
         contract.setDeleted(false);
+        contract.setMaxAutomaticTokenAssociations(0);
         contract.setTimestampLower(recordItem.getConsensusTimestamp());
 
         if (recordItem.getTransactionBody().hasContractCreateInstance()) {
@@ -207,8 +212,16 @@ public class ContractResultServiceImpl implements ContractResultService {
         entityListener.onContract(contract);
     }
 
+    /**
+     * Updates the contract entities in ContractCreateResult.CreatedContractIDs list. The method should only be called
+     * for such contract entities in pre services 0.23 contract create transactions. Since services 0.23, the child
+     * contract creation is externalized into its own synthesized contract create transaction and should be processed by
+     * ContractCreateTransactionHandler.
+     *
+     * @param contract The contract entity
+     * @param recordItem The recordItem in which the contract is created
+     */
     private void updateContractEntityOnCreate(Contract contract, RecordItem recordItem) {
-        var contractCreateResult = recordItem.getRecord().getContractCreateResult();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         if (transactionBody.hasAutoRenewPeriod()) {
@@ -225,10 +238,6 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         if (transactionBody.hasFileID()) {
             contract.setFileId(EntityId.of(transactionBody.getFileID()));
-        }
-
-        if (contractCreateResult.hasEvmAddress()) {
-            contract.setEvmAddress(DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()));
         }
 
         contract.setMemo(transactionBody.getMemo());

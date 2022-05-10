@@ -43,7 +43,7 @@ class Pool {
    */
   constructor(dbParams) {
     // Some defaults for generating test/dummy data
-    this.TEST_DATA_MAX_ACCOUNTS = 1000000;
+    this.TEST_DATA_MAX_ACCOUNTS = 1000000n;
     this.TEST_DATA_MAX_HISTORY = 60 * 60; // seconds
     this.TEST_DATA_MAX_BALANCE = 1000000;
     this.NUM_NODES = 39;
@@ -159,7 +159,7 @@ class Pool {
    */
   createMockTransactions(parsedparams) {
     let accountNum = {
-      low: 1,
+      low: 1n,
       high: this.TEST_DATA_MAX_ACCOUNTS,
     };
     let timestamp = {
@@ -176,7 +176,7 @@ class Pool {
     for (const param of parsedparams) {
       switch (param.field) {
         case 'entity_id':
-          accountNum = this.adjustRangeBasedOnConstraints(param, accountNum);
+          accountNum = this.adjustRangeBasedOnConstraints(param, accountNum, BigInt);
           break;
         case 'consensus_timestamp':
           timestamp = this.adjustRangeBasedOnConstraints(param, timestamp);
@@ -241,7 +241,7 @@ class Pool {
    */
   createMockBalances(parsedparams) {
     let accountNum = {
-      low: 1,
+      low: 1n,
       high: this.TEST_DATA_MAX_ACCOUNTS,
     };
     let timestamp = {
@@ -262,7 +262,7 @@ class Pool {
     for (const param of parsedparams) {
       switch (param.field) {
         case 'account_id':
-          accountNum = this.adjustRangeBasedOnConstraints(param, accountNum);
+          accountNum = this.adjustRangeBasedOnConstraints(param, accountNum, BigInt);
           break;
         case 'consensus_timestamp':
           // Convert the nanoseconds into seconds
@@ -314,7 +314,7 @@ class Pool {
    */
   createMockAccounts(parsedparams) {
     let accountNum = {
-      low: 1,
+      low: 1n,
       high: this.TEST_DATA_MAX_ACCOUNTS,
     };
     let balance = {
@@ -331,7 +331,7 @@ class Pool {
     for (const param of parsedparams) {
       switch (param.field) {
         case 'account_id':
-          accountNum = this.adjustRangeBasedOnConstraints(param, accountNum);
+          accountNum = this.adjustRangeBasedOnConstraints(param, accountNum, BigInt);
           break;
         case 'balance':
           balance = this.adjustRangeBasedOnConstraints(param, balance);
@@ -381,40 +381,41 @@ class Pool {
   // account.id can be a range or a list of acceptable values
   getAccountId(accountNum, i) {
     if (accountNum.equals) {
-      return `${accountNum.equals[i % accountNum.equals.length]}`;
+      return accountNum.equals[i % accountNum.equals.length];
     }
-    return `${
-      Number(accountNum.high) - (accountNum.high === accountNum.low ? 0 : i % (accountNum.high - accountNum.low))
-    }`;
+    return accountNum.high - (accountNum.high === accountNum.low ? 0n : BigInt(i) % (accountNum.high - accountNum.low));
   }
 
   /**
    * Utility function to adjust the low and high constraints of a given object based on
    * the values present in the SQL query
-   * @param {Object} parm A query parameters that was present in the SQL query
+   * @param {Object} param A query parameters that was present in the SQL query
    * @param {Object} pVar The object whose low/high values need to be adjusted
+   * @param {function} valueConstructor The constructor to convert the value, default is Number
    * @return {Object} pVar the adjusted object
    */
-  adjustRangeBasedOnConstraints(param, pVar) {
+  adjustRangeBasedOnConstraints(param, pVar, valueConstructor = Number) {
+    const one = valueConstructor(1);
+    const value = valueConstructor(param.value);
     switch (param.operator) {
       case '<':
       case '<=':
-        pVar.high = param.value - 1;
+        pVar.high = value - one;
         break;
       case '>':
       case '>=':
-        pVar.low = param.value + 1;
+        pVar.low = value + one;
         break;
       case '=':
-        pVar.low = param.value;
-        pVar.high = param.value;
+        pVar.low = value;
+        pVar.high = value;
         break;
       // Only account.id supports in currently
       case 'in':
         if (pVar.equals) {
-          pVar.equals.push(param.value);
+          pVar.equals.push(value);
         } else {
-          pVar.equals = [param.value];
+          pVar.equals = [value];
         }
         break;
     }

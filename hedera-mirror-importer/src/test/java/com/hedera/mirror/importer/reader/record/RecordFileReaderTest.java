@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,7 +28,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,21 +38,27 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
-import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 @ExtendWith(MockitoExtension.class)
 abstract class RecordFileReaderTest {
 
     private static final Collection<RecordFile> ALL_RECORD_FILES = TestRecordFiles.getAll().values();
 
+    private static final String ethPath = "data/recordstreams/eth-0.26.0/record0.0.3";
     protected RecordFileReader recordFileReader;
     protected Path testPath;
+    @Value("classpath:data/recordstreams/eth-0.26.0/record0.0.3/*.rcd")
+    private Resource[] ethTestFiles;
 
     @BeforeEach
     void setup() throws Exception {
@@ -85,6 +93,42 @@ abstract class RecordFileReaderTest {
                     assertThat(timestamps).first().isEqualTo(recordFile.getConsensusStart());
                     assertThat(timestamps).last().isEqualTo(recordFile.getConsensusEnd());
                     assertThat(timestamps).doesNotHaveDuplicates().isSorted();
+
+                    List<Integer> transactionIndexes = actual.getItems()
+                            .map(RecordItem::getTransactionIndex)
+                            .collectList()
+                            .block();
+                    assertThat(transactionIndexes).first().isEqualTo(0);
+                    assertThat(transactionIndexes).isEqualTo(IntStream.range(0, recordFile.getCount()
+                            .intValue()).boxed().collect(Collectors.toList()));
+                    assertThat(transactionIndexes).doesNotHaveDuplicates().isSorted();
+                });
+    }
+
+    @SneakyThrows
+    @TestFactory
+    Stream<DynamicTest> verifyRecordItemLinksInValidFile() {
+        String template = "read file %s containing eth transactions";
+        var resourceResolver = new PathMatchingResourcePatternResolver();
+
+        return DynamicTest.stream(
+                getFilteredFiles(false),
+                (recordFile) -> String.format(template, recordFile.getVersion(), recordFile.getName()),
+                (recordFile) -> {
+                    // given
+                    Path testFile = getTestFile(recordFile);
+                    StreamFileData streamFileData = StreamFileData.from(testFile.toFile());
+
+                    // when
+                    RecordFile actual = recordFileReader.read(streamFileData);
+
+                    // then
+                    RecordItem previousItem = null;
+                    for (var item : actual.getItems().collectList().block()) {
+                        // assert previous link points to previous item
+                        assertThat(item.getPrevious()).isEqualTo(previousItem);
+                        previousItem = item;
+                    }
                 });
     }
 

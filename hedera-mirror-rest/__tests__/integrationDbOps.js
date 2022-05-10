@@ -28,13 +28,12 @@ const path = require('path');
 const {GenericContainer} = require('testcontainers');
 const {db: defaultDbConfig} = require('../config');
 const {isDockerInstalled} = require('./integrationUtils');
-const {getPoolClass, loadPgRange, randomString} = require('../utils');
+const {getPoolClass} = require('../utils');
 const os = require('os');
 
 const logger = log4js.getLogger();
 
 const Pool = getPoolClass();
-loadPgRange();
 
 let oldPool;
 
@@ -45,7 +44,7 @@ const dbAdminPassword = process.env.POSTGRES_PASSWORD || crypto.randomBytes(16).
 const v1SchemaConfigs = {
   docker: {
     imageName: 'postgres',
-    tagName: '9.6-alpine',
+    tagName: '14-alpine',
   },
   flyway: {
     baselineVersion: '0',
@@ -152,7 +151,7 @@ const flywayMigrate = async (dbSessionConfig) => {
       "url": "jdbc:postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}",
       "user": "${dbAdminUser}"
     },
-    "version": "7.15.0",
+    "version": "8.5.9",
     "downloads": {
       "storageDirectory": "${flywayDataPath}"
     }

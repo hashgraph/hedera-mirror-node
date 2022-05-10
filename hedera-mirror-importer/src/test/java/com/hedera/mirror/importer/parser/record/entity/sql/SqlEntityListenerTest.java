@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
@@ -38,6 +40,8 @@ import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -84,6 +88,7 @@ import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
@@ -113,6 +118,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
     private final DomainBuilder domainBuilder;
     private final EntityRepository entityRepository;
+    private final EthereumTransactionRepository ethereumTransactionRepository;
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
     private final NftRepository nftRepository;
@@ -133,6 +139,20 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     private static Key keyFromString(String key) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
+    }
+
+    private static Stream<Arguments> provideParamsContractHistory() {
+        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {
+        };
+        Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[] {1, 2, 3, 4});
+        return Stream.of(
+                Arguments.of("fileId", emptyCustomizer, 1),
+                Arguments.of("fileId", emptyCustomizer, 2),
+                Arguments.of("fileId", emptyCustomizer, 3),
+                Arguments.of("initcode", initcodeCustomizer, 1),
+                Arguments.of("initcode", initcodeCustomizer, 2),
+                Arguments.of("initcode", initcodeCustomizer, 3)
+        );
     }
 
     @BeforeEach
@@ -172,7 +192,10 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onContract() {
         // given
         Contract contract1 = domainBuilder.contract().get();
-        Contract contract2 = domainBuilder.contract().customize(c -> c.evmAddress(null)).get();
+        Contract contract2 = domainBuilder.contract()
+                .customize(c -> c.fileId(null).initcode(domainBuilder.bytes(1024))
+                        .autoRenewAccountId(null).evmAddress(null))
+                .get();
 
         // when
         sqlEntityListener.onContract(contract1);
@@ -185,22 +208,28 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(findHistory(Contract.class)).isEmpty();
     }
 
-    @ValueSource(ints = {1, 2, 3})
-    @ParameterizedTest
-    void onContractHistory(int commitIndex) {
+    @ParameterizedTest(name = "{2} record files with {0}")
+    @MethodSource("provideParamsContractHistory")
+    void onContractHistory(String bytecodeSource, Consumer<Contract.ContractBuilder> customizer, int commitIndex) {
         // given
-        Contract contractCreate = domainBuilder.contract().customize(c -> c.obtainerId(null)).get();
+        Contract contractCreate = domainBuilder.contract()
+                .customize(c -> c.obtainerId(null))
+                .customize(customizer)
+                .get();
 
         Contract contractUpdate = contractCreate.toEntityId().toEntity();
+        contractUpdate.setAutoRenewAccountId(110L);
         contractUpdate.setAutoRenewPeriod(30L);
         contractUpdate.setExpirationTimestamp(500L);
         contractUpdate.setKey(domainBuilder.key());
+        contractUpdate.setMaxAutomaticTokenAssociations(100);
         contractUpdate.setMemo("updated");
         contractUpdate.setTimestampLower(contractCreate.getTimestampLower() + 1);
         contractUpdate.setProxyAccountId(EntityId.of(100L, ACCOUNT));
 
         Contract contractDelete = contractCreate.toEntityId().toEntity();
         contractDelete.setDeleted(true);
+        contractDelete.setPermanentRemoval(true);
         contractDelete.setTimestampLower(contractCreate.getTimestampLower() + 2);
         contractDelete.setObtainerId(EntityId.of(999L, EntityType.CONTRACT));
 
@@ -381,7 +410,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         Entity entityUpdate = entityCreate.toEntityId().toEntity();
         entityUpdate.setAlias(entityCreate.getAlias());
-        entityUpdate.setAutoRenewAccountId(EntityId.of(101L, ACCOUNT));
+        entityUpdate.setAutoRenewAccountId(101L);
         entityUpdate.setAutoRenewPeriod(30L);
         entityUpdate.setExpirationTimestamp(500L);
         entityUpdate.setKey(domainBuilder.key());
@@ -493,14 +522,37 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onTransaction() {
         // given
-        var expectedTransaction = makeTransaction();
+        var firstTransaction = domainBuilder.transaction().get();
+        var secondTransaction = domainBuilder.transaction().get();
+        var thirdTransaction = domainBuilder.transaction().get();
 
         // when
-        sqlEntityListener.onTransaction(expectedTransaction);
+        sqlEntityListener.onTransaction(firstTransaction);
+        sqlEntityListener.onTransaction(secondTransaction);
+        sqlEntityListener.onTransaction(thirdTransaction);
         completeFileAndCommit();
 
         // then
-        assertThat(transactionRepository.findAll()).containsExactlyInAnyOrder(expectedTransaction);
+        assertThat(transactionRepository.findAll())
+                .containsExactlyInAnyOrder(firstTransaction, secondTransaction, thirdTransaction);
+
+        assertThat(transactionRepository.findById(firstTransaction.getConsensusTimestamp()))
+                .get()
+                .isNotNull()
+                .extracting(Transaction::getIndex)
+                .isEqualTo(0);
+
+        assertThat(transactionRepository.findById(secondTransaction.getConsensusTimestamp()))
+                .get()
+                .isNotNull()
+                .extracting(Transaction::getIndex)
+                .isEqualTo(1);
+
+        assertThat(transactionRepository.findById(thirdTransaction.getConsensusTimestamp()))
+                .get()
+                .isNotNull()
+                .extracting(Transaction::getIndex)
+                .isEqualTo(2);
     }
 
     @Test
@@ -510,7 +562,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onEntity(entity);
 
         Entity entityAutoUpdated = getEntity(1, 5L);
-        EntityId autoRenewAccountId = EntityId.of("0.0.10", ACCOUNT);
+        Long autoRenewAccountId = 10L;
         entityAutoUpdated.setAutoRenewAccountId(autoRenewAccountId);
         entityAutoUpdated.setAutoRenewPeriod(360L);
         sqlEntityListener.onEntity(entityAutoUpdated);
@@ -601,7 +653,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // given
         final String idColumns = "payer_account_id, spender, token_id";
         var builder = domainBuilder.nftAllowance();
-        NftAllowance nftAllowanceCreate = builder.customize(c -> c.approvedForAll(true)).get();;
+        NftAllowance nftAllowanceCreate = builder.customize(c -> c.approvedForAll(true)).get();
 
         NftAllowance nftAllowanceUpdate1 = builder.get();
         nftAllowanceUpdate1.setTimestampLower(nftAllowanceCreate.getTimestampLower() + 1);
@@ -1304,6 +1356,41 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrder(schedule);
     }
 
+    @Test
+    void onEthereumTransactionWInitCode() {
+        var ethereumTransaction = domainBuilder.ethereumTransaction(true).get();
+        sqlEntityListener.onEthereumTransaction(ethereumTransaction);
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(ethereumTransactionRepository.findAll())
+                .hasSize(1)
+                .first()
+                .usingRecursiveComparison()
+                .isEqualTo(ethereumTransaction);
+    }
+
+    @Test
+    void onEthereumTransactionWFileId() {
+        var ethereumTransaction = domainBuilder.ethereumTransaction(false).get();
+        sqlEntityListener.onEthereumTransaction(ethereumTransaction);
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(ethereumTransactionRepository.findAll())
+                .hasSize(1)
+                .first()
+                .satisfies(t -> assertThat(t.getCallDataId().getId()).isEqualTo(ethereumTransaction.getCallDataId()
+                        .getId()))
+                .usingRecursiveComparison()
+                .ignoringFields("callDataId.type")
+                .isEqualTo(ethereumTransaction);
+    }
+
     private void completeFileAndCommit() {
         RecordFile recordFile = domainBuilder.recordFile().persist();
         transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(recordFile));
@@ -1321,7 +1408,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo,
-                             Key adminKey, EntityId autoRenewAccountId, Long autoRenewPeriod,
+                             Key adminKey, Long autoRenewAccountId, Long autoRenewPeriod,
                              Boolean deleted, Long expiryTimeNs, Integer maxAutomaticTokenAssociations,
                              Boolean receiverSigRequired, Key submitKey) {
         Entity entity = new Entity();
@@ -1344,28 +1431,6 @@ class SqlEntityListenerTest extends IntegrationTest {
             entity.setMemo(memo);
         }
         return entity;
-    }
-
-    private Transaction makeTransaction() {
-        EntityId entityId = EntityId.of(10, 10, 10, ACCOUNT);
-        Transaction transaction = new Transaction();
-        transaction.setConsensusTimestamp(101L);
-        transaction.setEntityId(entityId);
-        transaction.setNodeAccountId(entityId);
-        transaction.setMemo("memo".getBytes());
-        transaction.setNonce(0);
-        transaction.setType(14);
-        transaction.setResult(22);
-        transaction.setTransactionHash("transaction hash".getBytes());
-        transaction.setTransactionBytes("transaction bytes".getBytes());
-        transaction.setPayerAccountId(entityId);
-        transaction.setValidStartNs(1L);
-        transaction.setValidDurationSeconds(1L);
-        transaction.setMaxFee(1L);
-        transaction.setChargedTxFee(1L);
-        transaction.setInitialBalance(0L);
-        transaction.setScheduled(true);
-        return transaction;
     }
 
     private TopicMessage getTopicMessage() {

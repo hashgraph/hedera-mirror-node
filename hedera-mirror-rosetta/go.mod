@@ -3,15 +3,15 @@ module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 go 1.18
 
 require (
-	github.com/coinbase/rosetta-sdk-go v0.7.8
+	github.com/coinbase/rosetta-sdk-go v0.7.9
 	github.com/cucumber/godog v0.12.5
-	github.com/go-playground/validator/v10 v10.10.1
-	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220222084737-119eab707793
-	github.com/hashgraph/hedera-sdk-go/v2 v2.11.0
+	github.com/go-playground/validator/v10 v10.11.0
+	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220407062851-1cb287936c27
+	github.com/hashgraph/hedera-sdk-go/v2 v2.13.3
 	github.com/hellofresh/health-go/v4 v4.5.0
-	github.com/jackc/pgtype v1.10.0
+	github.com/jackc/pgtype v1.11.0
 	github.com/lib/pq v1.10.5
-	github.com/mitchellh/mapstructure v1.4.3
+	github.com/mitchellh/mapstructure v1.5.0
 	github.com/onrik/gorm-logrus v0.3.0
 	github.com/ory/dockertest/v3 v3.8.1
 	github.com/pkg/errors v0.9.1
@@ -24,8 +24,8 @@ require (
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
-	gorm.io/driver/postgres v1.3.4
-	gorm.io/gorm v1.23.4
+	gorm.io/driver/postgres v1.3.5
+	gorm.io/gorm v1.23.5
 )
 
 require (
@@ -65,12 +65,12 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.11.0 // indirect
+	github.com/jackc/pgconn v1.12.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.2.0 // indirect
+	github.com/jackc/pgproto3/v2 v2.3.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgx/v4 v4.15.0 // indirect
+	github.com/jackc/pgx/v4 v4.16.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect

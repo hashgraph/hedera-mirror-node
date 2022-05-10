@@ -15,6 +15,7 @@
         "timestamp_range": "[987654999123200, 987654999123299]"
       },
       {
+        "auto_renew_account_id": "7007",
         "created_timestamp": "987654999123200",
         "evm_address": "abbcccddddeeeeeefffffff000000068fed9dddd",
         "file_id": "5001",
@@ -92,6 +93,7 @@
       "_type": "ProtobufEncoded",
       "key": "010101"
     },
+    "auto_renew_account": "0.0.7007",
     "auto_renew_period": null,
     "bytecode": "0x189a554c82bba493",
     "contract_id": "0.0.8001",
@@ -100,8 +102,10 @@
     "evm_address": "0xabbcccddddeeeeeefffffff000000068fed9dddd",
     "expiration_timestamp": null,
     "file_id": "0.0.5001",
+    "max_automatic_token_associations": 0,
     "memo": "contract memo",
     "obtainer_id": null,
+    "permanent_removal": null,
     "proxy_account_id": null,
     "timestamp": {
       "from": "987654.999123300",

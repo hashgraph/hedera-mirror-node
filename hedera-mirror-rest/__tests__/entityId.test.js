@@ -133,6 +133,23 @@ describe('EntityId parse from entityId string', () => {
       paramName: constants.filterKeys.FROM,
     },
     {
+      entityIdStr: '0.0.000000000000000000000000000000000186Fb1b',
+      expected: EntityId.of(0, 0, 25623323),
+    },
+    {
+      entityIdStr: '0.000000000000000000000000000000000186Fb1b',
+      expected: EntityId.of(0, 0, 25623323),
+    },
+    {
+      entityIdStr: '000000000000000000000000000000000186Fb1b',
+      expected: EntityId.of(0, 0, 25623323),
+    },
+    {
+      entityIdStr: '0x000000000000000000000000000000000186Fb1b',
+      expected: EntityId.of(0, 0, 25623323),
+      paramName: constants.filterKeys.FROM,
+    },
+    {
       entityIdStr: null,
       isNullable: true,
       expected: EntityId.of(null, null, null),
@@ -322,11 +339,11 @@ describe('EntityId parse from encoded entityId', () => {
 
 describe('EntityId toEvmAddress', () => {
   test('0.0.0', () => {
-    expect(EntityId.of(0n, 0n, 0n).toEvmAddress()).toEqual('0x0000000000000000000000000000000000000000');
+    expect(EntityId.of(0, 0, 0).toEvmAddress()).toEqual('0x0000000000000000000000000000000000000000');
   });
 
   test('0.0.7', () => {
-    expect(EntityId.of(1n, 2n, 7n).toEvmAddress()).toEqual('0x0000000100000000000000020000000000000007');
+    expect(EntityId.of(1, 2, 7).toEvmAddress()).toEqual('0x0000000100000000000000020000000000000007');
   });
 
   test('32767.65535.4294967295', () => {
@@ -337,38 +354,50 @@ describe('EntityId toEvmAddress', () => {
 });
 
 describe('EntityId toString', () => {
+  test('null', () => {
+    expect(EntityId.of(null, null, null).toString()).toEqual(null);
+  });
+
   test('0.0.0', () => {
-    expect(EntityId.of(0n, 0n, 0n).toString()).toEqual('0.0.0');
+    expect(EntityId.of(0n, 0n, 0n).toString()).toEqual(null);
   });
 
   test('32767.65535.4294967295', () => {
-    expect(EntityId.of(32767n, 65535n, 4294967295n).toString()).toEqual('32767.65535.4294967295');
+    expect(EntityId.of(32767, 65535, 4294967295).toString()).toEqual('32767.65535.4294967295');
   });
 });
 
 describe('EntityId encoding', () => {
   test('0.0.0', () => {
-    expect(EntityId.parse('0.0.0').getEncodedId()).toBe('0');
+    expect(EntityId.parse('0.0.0').getEncodedId()).toBe(0);
   });
 
   test('0.0.10', () => {
-    expect(EntityId.parse('0.0.10').getEncodedId()).toBe('10');
+    expect(EntityId.parse('0.0.10').getEncodedId()).toBe(10);
   });
 
   test('0.0.4294967295', () => {
-    expect(EntityId.parse('0.0.4294967295').getEncodedId()).toBe('4294967295');
+    expect(EntityId.parse('0.0.4294967295').getEncodedId()).toBe(4294967295);
   });
 
   test('10.10.10', () => {
-    expect(EntityId.parse('10.10.10').getEncodedId()).toBe('2814792716779530');
+    expect(EntityId.parse('10.10.10').getEncodedId()).toBe(2814792716779530);
+  });
+
+  test('31.65535.4294967295', () => {
+    expect(EntityId.parse('31.65535.4294967295').getEncodedId()).toBe(Number.MAX_SAFE_INTEGER);
+  });
+
+  test('32.0.0', () => {
+    expect(EntityId.parse('32.0.0').getEncodedId()).toBe(2n ** 53n);
   });
 
   test('32767.65535.4294967295', () => {
-    expect(EntityId.parse('32767.65535.4294967295').getEncodedId()).toBe('9223372036854775807');
+    expect(EntityId.parse('32767.65535.4294967295').getEncodedId()).toBe(9223372036854775807n);
   });
 
   test('32767.0.0', () => {
-    expect(EntityId.parse('32767.0.0').getEncodedId()).toBe('9223090561878065152');
+    expect(EntityId.parse('32767.0.0').getEncodedId()).toBe(9223090561878065152n);
   });
 
   test('nullable', () => {

@@ -50,7 +50,7 @@ class InvalidArgumentError extends Error {
         if (message.code === this.PARAM_COUNT_EXCEEDS_MAX_CODE) {
           return `${ParameterExceedsMaxErrorMessageFormat}${message.key} count: ${message.count} max: ${message.max}`;
         } else {
-          return `${InvalidArgumentErrorMessageFormat}${message.key}`;
+          return `${InvalidArgumentErrorMessageFormat}${message.key || message}`;
         }
       })
     );

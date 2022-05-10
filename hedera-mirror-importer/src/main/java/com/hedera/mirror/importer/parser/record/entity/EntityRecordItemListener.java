@@ -61,7 +61,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -259,6 +258,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         Transaction transaction = new Transaction();
         transaction.setChargedTxFee(txRecord.getTransactionFee());
         transaction.setConsensusTimestamp(consensusTimestamp);
+        transaction.setIndex(recordItem.getTransactionIndex());
         transaction.setInitialBalance(0L);
         transaction.setMaxFee(body.getTransactionFee());
         transaction.setMemo(DomainUtils.toBytes(body.getMemoBytes()));
@@ -296,16 +296,17 @@ public class EntityRecordItemListener implements RecordItemListener {
         var partialDataAction = parserProperties.getPartialDataAction();
         var transactionRecord = recordItem.getRecord();
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
+            var entityId = EntityId.EMPTY;
             if (aa.getAmount() != 0) {
-                var entityId = entityIdService.lookup(aa.getAccountID());
-                if (entityId == EntityId.EMPTY) {
+                try {
+                    entityId = entityIdService.lookup(aa.getAccountID());
+                } catch (AliasNotFoundException ex) {
                     switch (partialDataAction) {
                         case DEFAULT:
                             log.warn("Setting non-fee transfer account to default value due to partial data issue");
                             break;
                         case ERROR:
-                            var alias = Hex.encodeHexString(DomainUtils.toBytes(aa.getAccountID().getAlias()));
-                            throw new AliasNotFoundException(alias);
+                            throw ex;
                         case SKIP:
                             log.warn("Skipping non-fee transfer due to partial data issue");
                             continue;
@@ -640,11 +641,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         return null;
     }
 
-    private AccountAmount findAccountAmount(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId, TransactionBody body){
+    private AccountAmount findAccountAmount(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId,
+                                            TransactionBody body) {
         if (!body.hasCryptoTransfer()) {
             return null;
         }
-        final List<TokenTransferList> tokenTransfersLists = body.getCryptoTransfer().getTokenTransfersList();
+        List<TokenTransferList> tokenTransfersLists = body.getCryptoTransfer().getTokenTransfersList();
         for (TokenTransferList transferList : tokenTransfersLists) {
             if (!transferList.getToken().equals(tokenId)) {
                 continue;
@@ -683,7 +685,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertFungibleTokenTransfers(
             long consensusTimestamp, TransactionBody body, boolean isTokenDissociate,
-            TokenID tokenId, EntityId entityTokenId, EntityId payerAccountId, List<AccountAmount> tokenTransfers){
+            TokenID tokenId, EntityId entityTokenId, EntityId payerAccountId, List<AccountAmount> tokenTransfers) {
         for (AccountAmount accountAmount : tokenTransfers) {
             EntityId accountId = EntityId.of(accountAmount.getAccountID());
             long amount = accountAmount.getAmount();
@@ -708,13 +710,12 @@ public class EntityRecordItemListener implements RecordItemListener {
                     // Is there any account amount inside the body's transfer list for the given tokenId
                     // with the same accountId as the accountAmount from the record?
                     AccountAmount accountAmountWithSameIdInsideBody = findAccountAmount(
-                                    aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
-                                    tokenId, body);
+                            aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
+                            tokenId, body);
                     if (accountAmountWithSameIdInsideBody != null) {
                         tokenTransfer.setIsApproval(true);
                     }
-                }
-                else {
+                } else {
                     tokenTransfer.setIsApproval(accountAmountInsideTransferList.getIsApproval());
                 }
             }
@@ -759,7 +760,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertNonFungibleTokenTransfers(
             long consensusTimestamp, TransactionBody body, TokenID tokenId,
-            EntityId entityTokenId, EntityId payerAccountId, List<com.hederahashgraph.api.proto.java.NftTransfer> nftTransfersList) {
+            EntityId entityTokenId, EntityId payerAccountId,
+            List<com.hederahashgraph.api.proto.java.NftTransfer> nftTransfersList) {
         for (NftTransfer nftTransfer : nftTransfersList) {
             long serialNumber = nftTransfer.getSerialNumber();
             if (serialNumber == NftTransferId.WILDCARD_SERIAL_NUMBER) {

@@ -125,7 +125,7 @@ class MissingEvmAddressMigrationTest extends IntegrationTest {
         var createdTimestamp = timestamp.getAndIncrement();
         return MigrationContract.builder()
                 .createdTimestamp(createdTimestamp)
-                .evmAddress(domainBuilder.create2EvmAddress())
+                .evmAddress(domainBuilder.evmAddress())
                 .id(contractId)
                 .num(contractId)
                 .timestampRange(Range.atLeast(createdTimestamp))
@@ -164,14 +164,16 @@ class MissingEvmAddressMigrationTest extends IntegrationTest {
             contract.setEvmAddress(null);
         }
 
-        var lower = contract.getTimestampUpper() == null ? contract.getCreatedTimestamp() : contract.getTimestampUpper();
+        var lower = contract.getTimestampUpper() == null ? contract.getCreatedTimestamp() :
+                contract.getTimestampUpper();
         contract.setTimestampRange(Range.atLeast(lower));
 
         persistContract(contract);
         return contract;
     }
 
-    private MigrationContract persistHistoricalContract(MigrationContract contract, boolean clearEvmAddress, long validDuration) {
+    private MigrationContract persistHistoricalContract(MigrationContract contract, boolean clearEvmAddress,
+                                                        long validDuration) {
         contract = clone(contract);
         if (clearEvmAddress) {
             contract.setEvmAddress(null);

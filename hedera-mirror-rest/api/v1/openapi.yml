@@ -70,23 +70,28 @@ paths:
 
         | Query Param   | Comparison Operator | Support | Description           | Example |
         | ------------- | ------------------- | ------- | --------------------- | ------- |
-        | token.id      | eq                  | Y       | Single occurence only. | ?token.id=X |
+        | token.id      | eq                  | Y       | Single occurrence only. | ?token.id=X |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurence only. | ?token.id=lte:X |
-        |               | gt(e)               | Y       | Single occurence only. | ?token.id=gte:X |
-        | serialnumber  | eq                  | Y       | Single occurence only. Requires the presence of a **token.id** query | ?serialnumber=lt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. | ?token.id=lte:X |
+        |               | gt(e)               | Y       | Single occurrence only. | ?token.id=gte:X |
+        | serialnumber  | eq                  | Y       | Single occurrence only. Requires the presence of a **token.id** query | ?serialnumber=Y |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurence only. Requires the presence of an **lte** **token.id** query | ?token.id=lte:X&serialnumber=lt:Y |
-        |               | gt(e)               | Y       | Single occurence only. Requires the presence of an **gte** **token.id** query | ?token.id=gte:X&serialnumber=gt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** **token.id** query | ?token.id=lte:X&serialnumber=lt:Y |
+        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** **token.id** query | ?token.id=gte:X&serialnumber=gt:Y |
+        | spender.id    | eq                  | Y       | | ?spender.id=Z |
+        |               | ne                  | N       | | |
+        |               | lt(e)               | Y       | | ?spender.id=lt:Z |
+        |               | gt(e)               | Y       | | ?spender.id=gt:Z |
 
         Note: When searching across a range for individual NFTs a **serialnumber** with an additional **token.id** query filter must be provided.
-        Both filters must be a single occurence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
+        Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
 
       operationId: listNftByAccountId
       parameters:
         - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
         - $ref: '#/components/parameters/tokenIdQueryParam'
         - $ref: '#/components/parameters/serialNumberQueryParam'
+        - $ref: '#/components/parameters/spenderIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
       responses:
@@ -144,16 +149,16 @@ paths:
 
         | Query Param   | Comparison Operator | Support | Description           | Example |
         | ------------- | ------------------- | ------- | --------------------- | ------- |
-        | spender.id    | eq                  | Y       | Single occurence only. | ?spender.id=X |
+        | spender.id    | eq                  | Y       | Single occurrence only. | ?spender.id=X |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurence only. | ?spender.id=lte:X |
-        |               | gt(e)               | Y       | Single occurence only. | ?spender.id=gte:X |
-        | token.id      | eq                  | Y       | Single occurence only. Requires the presence of a **spender.id** query | ?token.id=lt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. | ?spender.id=lte:X |
+        |               | gt(e)               | Y       | Single occurrence only. | ?spender.id=gte:X |
+        | token.id      | eq                  | Y       | Single occurrence only. Requires the presence of a **spender.id** query | ?token.id=lt:Y |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurence only. Requires the presence of an **lte** **spender.id** query | ?spender.id=lte:X&token.id=lt:Y |
-        |               | gt(e)               | Y       | Single occurence only. Requires the presence of an **gte** **spender.id** query | ?spender.id=gte:X&token.id=gt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** **spender.id** query | ?spender.id=lte:X&token.id=lt:Y |
+        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** **spender.id** query | ?spender.id=gte:X&token.id=gt:Y |
 
-        Both filters must be a single occurence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
+        Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
 
       operationId: listTokenAllowancesByAccountId
       parameters:
@@ -198,6 +203,27 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - balances
+  /api/v1/blocks:
+    get:
+      summary: List blocks
+      description: Returns a list of blocks on the network.
+      operationId: listBlocks
+      parameters:
+        - $ref: '#/components/parameters/blockNumberQueryParam'
+        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/limitQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlocksResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - blocks
   /api/v1/blocks:
     get:
       summary: List blocks
@@ -365,6 +391,35 @@ paths:
       operationId: listContractLogs
       parameters:
         - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/logIndexQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: '#/components/parameters/logTopic0QueryParam'
+        - $ref: '#/components/parameters/logTopic1QueryParam'
+        - $ref: '#/components/parameters/logTopic2QueryParam'
+        - $ref: '#/components/parameters/logTopic3QueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractLogsResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - contracts
+  /api/v1/contracts/results/logs:
+    get:
+      summary: List contracts logs across many contracts on the network
+      description: >
+        Search the logs across many contracts with multiple contract calls. Chained logs are not
+        included but can be found by calling `/api/v1/contracts/{contractId}/results/{timestamp}`
+        or `/api/v1/contracts/results/{transactionId}`. When searching by topic a timestamp parameter must be supplied
+        and span a time range of at most seven days.
+      operationId: listContractsLogs
+      parameters:
         - $ref: '#/components/parameters/logIndexQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
@@ -809,7 +864,7 @@ paths:
         - $ref: '#/components/parameters/tokenIdPathParam'
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
       responses:
         200:
           description: OK
@@ -852,6 +907,8 @@ paths:
       parameters:
         - $ref: '#/components/parameters/tokenIdPathParam'
         - $ref: '#/components/parameters/serialNumberPathParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
       responses:
         200:
           description: OK
@@ -894,7 +951,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.56.0-SNAPSHOT
+  version: 0.57.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1032,10 +1089,6 @@ components:
           $ref: '#/components/schemas/Schedules'
         links:
           $ref: '#/components/schemas/Links'
-    BlockResponse:
-      allOf:
-        - $ref: '#/components/schemas/Block'
-        - type: object
     BlocksResponse:
       type: object
       properties:
@@ -1043,6 +1096,10 @@ components:
           $ref: '#/components/schemas/Blocks'
         links:
           $ref: '#/components/schemas/Links'
+    BlockResponse:
+      allOf:
+        - $ref: '#/components/schemas/Block'
+        - type: object
     StateProofResponse:
       type: object
       properties:
@@ -1254,6 +1311,8 @@ components:
       properties:
         admin_key:
           $ref: '#/components/schemas/Key'
+        auto_renew_account:
+          $ref: '#/components/schemas/EntityId'
         auto_renew_period:
           type: number
           nullable: true
@@ -1271,11 +1330,18 @@ components:
           $ref: '#/components/schemas/TimestampNullable'
         file_id:
           $ref: '#/components/schemas/EntityId'
+        max_automatic_token_associations:
+          type: integer
+          format: int32
+          nullable: true
         memo:
           example: contract memo
           type: string
         obtainer_id:
           $ref: '#/components/schemas/EntityId'
+        permanent_removal:
+          type: boolean
+          nullable: true
         proxy_account_id:
           $ref: '#/components/schemas/EntityId'
         timestamp:
@@ -1800,6 +1866,8 @@ components:
           example: false
         executed_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
+        expiration_time:
+          $ref: '#/components/schemas/TimestampNullable'
         memo:
           type: string
           example: 'created on 02/10/2021'
@@ -1815,6 +1883,8 @@ components:
           type: string
           format: byte
           example: Kd6tvu8=
+        wait_for_expiry:
+          type: boolean
     Schedules:
       type: array
       items:
@@ -2044,8 +2114,10 @@ components:
         custom_fees:
           $ref: '#/components/schemas/CustomFees'
     LogTopicQueryParam:
-      type: string
-      pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
+      type: array
+      items:
+        type: string
+        pattern: ^(0x)?[0-9A-Fa-f]{1,64}$
     TransactionTypes:
       type: string
       enum:
@@ -3010,29 +3082,26 @@ components:
     logTopic0QueryParam:
       name: topic0
       in: query
+      explode: true
       description: The first topic associated with a contract log. Requires a timestamp range also be populated.
-      example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         $ref: '#/components/schemas/LogTopicQueryParam'
     logTopic1QueryParam:
       name: topic1
       in: query
       description: The second topic associated with a contract log. Requires a timestamp range also be populated.
-      example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         $ref: '#/components/schemas/LogTopicQueryParam'
     logTopic2QueryParam:
       name: topic2
       in: query
       description: The third topic associated with a contract log. Requires a timestamp range also be populated.
-      example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         $ref: '#/components/schemas/LogTopicQueryParam'
     logTopic3QueryParam:
       name: topic3
       in: query
       description: The fourth topic associated with a contract log. Requires a timestamp range also be populated.
-      example: 0x5908baf1fe6ba0149e9bf0af1346476940e92be2436cfccbe428b71009767a10
       schema:
         $ref: '#/components/schemas/LogTopicQueryParam'
     spenderIdQueryParam:

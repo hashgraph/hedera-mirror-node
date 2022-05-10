@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -77,9 +77,9 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
     protected abstract RecordFileDigest getRecordFileDigest(InputStream is);
 
     /**
-     * Reads the record file header, updates the message digest with data from the header, and sets corresponding {@link
-     * RecordFile} fields. {@code vdis} should point at the beginning of the stream. The header should contain file
-     * version, HAPI version, and the previous file hash.
+     * Reads the record file header, updates the message digest with data from the header, and sets corresponding
+     * {@link RecordFile} fields. {@code vdis} should point at the beginning of the stream. The header should contain
+     * file version, HAPI version, and the previous file hash.
      *
      * @param vdis       the {@link ValidatedDataInputStream} of the record file
      * @param recordFile the {@link RecordFile} object
@@ -96,10 +96,10 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
     }
 
     /**
-     * Reads the record file body, updates the message digest with data from the body, and sets corresponding {@link
-     * RecordFile} fields. {@code vdis} should point at the beginning of the body. The body should contain a variable
-     * number of transaction and record pairs ordered by consensus timestamp. The body may also contain metadata to mark
-     * the boundary of the pairs.
+     * Reads the record file body, updates the message digest with data from the body, and sets corresponding
+     * {@link RecordFile} fields. {@code vdis} should point at the beginning of the body. The body should contain a
+     * variable number of transaction and record pairs ordered by consensus timestamp. The body may also contain
+     * metadata to mark the boundary of the pairs.
      *
      * @param vdis       the {@link ValidatedDataInputStream} of the record file
      * @param digest     the {@link RecordFileDigest} to update the digest with
@@ -107,17 +107,24 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
      * @throws IOException
      */
     private void readBody(ValidatedDataInputStream vdis, RecordFileDigest digest, RecordFile recordFile) throws IOException {
-        long count = 0;
+        int count = 0;
         long consensusStart = 0;
         long consensusEnd = 0;
         digest.startBody();
         List<RecordItem> items = new ArrayList<>();
+        RecordItem lastRecordItem = null;
 
         while (vdis.available() != 0) {
             vdis.readByte(RECORD_MARKER, "record marker");
             byte[] transactionBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction bytes");
             byte[] recordBytes = vdis.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "record bytes");
-            RecordItem recordItem = new RecordItem(recordFile.getHapiVersion(), transactionBytes, recordBytes);
+            RecordItem recordItem = RecordItem.builder()
+                    .hapiVersion(recordFile.getHapiVersion())
+                    .previous(lastRecordItem)
+                    .recordBytes(recordBytes)
+                    .transactionIndex(count)
+                    .transactionBytes(transactionBytes)
+                    .build();
             items.add(recordItem);
 
             if (count == 0) {
@@ -128,6 +135,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
                 consensusEnd = recordItem.getConsensusTimestamp();
             }
 
+            lastRecordItem = recordItem;
             count++;
         }
 
@@ -135,7 +143,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
 
         recordFile.setConsensusStart(consensusStart);
         recordFile.setConsensusEnd(consensusEnd);
-        recordFile.setCount(count);
+        recordFile.setCount((long) count);
         recordFile.setFileHash(fileHash);
         recordFile.setHash(fileHash);
         recordFile.setItems(Flux.fromIterable(items));

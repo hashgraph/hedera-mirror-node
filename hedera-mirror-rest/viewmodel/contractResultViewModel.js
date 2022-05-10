@@ -35,7 +35,7 @@ class ContractResultViewModel {
    */
   constructor(contractResult) {
     const contractId = EntityId.parse(contractResult.contractId, true);
-    this.amount = contractResult.amount === null ? null : Number(contractResult.amount);
+    this.amount = contractResult.amount;
     this.bloom = utils.toHexString(contractResult.bloom, true);
     this.call_result = utils.toHexString(contractResult.callResult, true);
     this.contract_id = contractId.toString();
@@ -43,8 +43,8 @@ class ContractResultViewModel {
     this.error_message = _.isEmpty(contractResult.errorMessage) ? null : contractResult.errorMessage;
     this.from = EntityId.parse(contractResult.payerAccountId).toEvmAddress();
     this.function_parameters = utils.toHexString(contractResult.functionParameters, true);
-    this.gas_limit = Number(contractResult.gasLimit);
-    this.gas_used = _.isNil(contractResult.gasUsed) ? null : Number(contractResult.gasUsed);
+    this.gas_limit = contractResult.gasLimit;
+    this.gas_used = contractResult.gasUsed;
     this.timestamp = utils.nsToSecNs(contractResult.consensusTimestamp);
     this.to = contractId.toEvmAddress();
   }

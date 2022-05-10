@@ -48,13 +48,13 @@ describe('TransactionService.getTransactionDetailsFromTimestamp tests', () => {
   const inputTransaction = [
     {
       consensus_timestamp: 2,
-      payerAccountId: '5',
+      payerAccountId: 5,
       valid_start_timestamp: 1,
     },
   ];
 
   const expectedTransaction = {
-    payerAccountId: '5',
+    payerAccountId: 5,
   };
 
   test('Row match', async () => {
@@ -69,31 +69,31 @@ describe('TransactionService.getTransactionDetailsFromTimestamp tests', () => {
 describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce tests', () => {
   const duplicateValidStartNs = 10;
   const inputTransactions = [
-    {consensus_timestamp: 2, payerAccountId: '5'}, // crypto transfer, success
-    {consensus_timestamp: 6, payerAccountId: '5', type: contractCreateType}, // success
+    {consensus_timestamp: 2, payerAccountId: 5}, // crypto transfer, success
+    {consensus_timestamp: 6, payerAccountId: 5, type: contractCreateType}, // success
     {
       consensus_timestamp: 8,
-      payerAccountId: '5',
+      payerAccountId: 5,
       type: contractCallType,
       result: duplicateTransactionResult, // duplicate of the previous tx, though this is of different tx type
       valid_start_timestamp: 5,
     },
     {
       consensus_timestamp: 11,
-      payerAccountId: '5',
+      payerAccountId: 5,
       type: contractCallType,
       valid_start_timestamp: duplicateValidStartNs, // success
     },
     {
       consensus_timestamp: 13,
-      payerAccountId: '5',
+      payerAccountId: 5,
       type: contractCallType,
       nonce: 1,
       valid_start_timestamp: duplicateValidStartNs, // success, child
     },
     {
       consensus_timestamp: 15,
-      payerAccountId: '5',
+      payerAccountId: 5,
       type: contractCallType,
       result: duplicateTransactionResult,
       valid_start_timestamp: duplicateValidStartNs, // same valid start so duplicate tx id with the 4th tx
@@ -121,7 +121,7 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
     const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
       TransactionId.fromString('0.0.5-0-1')
     );
-    expect(pickTransactionFields(actual)).toEqual([{consensusTimestamp: '2', payerAccountId: '5'}]);
+    expect(pickTransactionFields(actual)).toEqual([{consensusTimestamp: 2, payerAccountId: 5}]);
   });
 
   test('Single row match nonce=1', async () => {
@@ -129,7 +129,7 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
       TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`),
       1
     );
-    expect(pickTransactionFields(actual)).toEqual([{consensusTimestamp: '13', payerAccountId: '5'}]);
+    expect(pickTransactionFields(actual)).toEqual([{consensusTimestamp: 13, payerAccountId: 5}]);
   });
 
   test('Multiple rows match with nonce', async () => {
@@ -138,8 +138,8 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
       0
     );
     expect(pickTransactionFields(actual)).toIncludeSameMembers([
-      {consensusTimestamp: '6', payerAccountId: '5'},
-      {consensusTimestamp: '8', payerAccountId: '5'},
+      {consensusTimestamp: 6, payerAccountId: 5},
+      {consensusTimestamp: 8, payerAccountId: 5},
     ]);
   });
 
@@ -148,9 +148,9 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
       TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`)
     );
     expect(pickTransactionFields(actual)).toIncludeSameMembers([
-      {consensusTimestamp: '11', payerAccountId: '5'},
-      {consensusTimestamp: '13', payerAccountId: '5'},
-      {consensusTimestamp: '15', payerAccountId: '5'},
+      {consensusTimestamp: 11, payerAccountId: 5},
+      {consensusTimestamp: 13, payerAccountId: 5},
+      {consensusTimestamp: 15, payerAccountId: 5},
     ]);
   });
 
@@ -161,8 +161,8 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
       duplicateTransactionResult
     );
     expect(pickTransactionFields(actual)).toIncludeSameMembers([
-      {consensusTimestamp: '11', payerAccountId: '5'},
-      {consensusTimestamp: '13', payerAccountId: '5'},
+      {consensusTimestamp: 11, payerAccountId: 5},
+      {consensusTimestamp: 13, payerAccountId: 5},
     ]);
   });
 
@@ -172,7 +172,7 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
       0,
       duplicateTransactionResult
     );
-    expect(pickTransactionFields(actual)).toIncludeSameMembers([{consensusTimestamp: '11', payerAccountId: '5'}]);
+    expect(pickTransactionFields(actual)).toIncludeSameMembers([{consensusTimestamp: 11, payerAccountId: 5}]);
   });
 
   test('No match without nonce exclude all possible transaction results', async () => {

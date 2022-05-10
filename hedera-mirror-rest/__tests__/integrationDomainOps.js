@@ -30,9 +30,9 @@ const constants = require('../constants');
 const EntityId = require('../entityId');
 const testUtils = require('./testutils');
 
-const NETWORK_FEE = 1;
-const NODE_FEE = 2;
-const SERVICE_FEE = 4;
+const NETWORK_FEE = 1n;
+const NODE_FEE = 2n;
+const SERVICE_FEE = 4n;
 const DEFAULT_NODE_ID = '3';
 const DEFAULT_TREASURY_ID = '98';
 
@@ -376,6 +376,7 @@ const addAddressBookServiceEndpoint = async (addressBookServiceEndpointInput) =>
 const addEntity = async (defaults, entity) => {
   const localDefaults = {
     alias: null,
+    auto_renew_account_id: null,
     auto_renew_period: null,
     deleted: false,
     expiration_timestamp: null,
@@ -691,6 +692,7 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAcco
 
 const addContract = async (contract) => {
   const insertFields = [
+    'auto_renew_account_id',
     'auto_renew_period',
     'created_timestamp',
     'deleted',
@@ -698,10 +700,13 @@ const addContract = async (contract) => {
     'expiration_timestamp',
     'file_id',
     'id',
+    'initcode',
     'key',
+    'max_automatic_token_associations',
     'memo',
     'num',
     'obtainer_id',
+    'permanent_removal',
     'public_key',
     'proxy_account_id',
     'realm',
@@ -710,12 +715,16 @@ const addContract = async (contract) => {
     'timestamp_range',
   ];
   contract = {
+    auto_renew_account_id: null,
     auto_renew_period: null,
     deleted: false,
     evm_address: null,
     expiration_timestamp: null,
+    initcode: null,
     key: null,
+    max_automatic_token_associations: 0,
     memo: 'contract memo',
+    permanent_removal: null,
     public_key: null,
     realm: 0,
     shard: 0,
@@ -725,6 +734,7 @@ const addContract = async (contract) => {
   };
   contract.evm_address = contract.evm_address != null ? Buffer.from(contract.evm_address, 'hex') : null;
   contract.id = EntityId.of(BigInt(contract.shard), BigInt(contract.realm), BigInt(contract.num)).getEncodedId();
+  contract.initcode = contract.initcode != null ? Buffer.from(contract.initcode) : null;
   contract.key = contract.key != null ? Buffer.from(contract.key) : null;
 
   const table = getTableName('contract', contract);
@@ -888,7 +898,11 @@ const addCryptoTransaction = async (cryptoTransfer) => {
 
   if (!('transfers' in cryptoTransfer)) {
     cryptoTransfer.transfers = [
-      {account: cryptoTransfer.senderAccountId, amount: -NETWORK_FEE - cryptoTransfer.amount, is_approval: false},
+      {
+        account: cryptoTransfer.senderAccountId,
+        amount: -NETWORK_FEE - BigInt(cryptoTransfer.amount),
+        is_approval: false,
+      },
       {account: cryptoTransfer.recipientAccountId, amount: cryptoTransfer.amount, is_approval: false},
       {account: cryptoTransfer.treasuryAccountId, amount: NETWORK_FEE, is_approval: false},
     ];
@@ -935,6 +949,7 @@ const addSchedule = async (schedule) => {
     creator_account_id: '0.0.1024',
     payer_account_id: '0.0.1024',
     transaction_body: Buffer.from([1, 1, 2, 2, 3, 3]),
+    wait_for_expiry: false,
     ...schedule,
   };
 
@@ -944,8 +959,10 @@ const addSchedule = async (schedule) => {
                            executed_timestamp,
                            payer_account_id,
                            schedule_id,
-                           transaction_body)
-     VALUES ($1, $2, $3, $4, $5, $6)`,
+                           transaction_body,
+                           expiration_time,
+                           wait_for_expiry)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       schedule.consensus_timestamp,
       EntityId.parse(schedule.creator_account_id).getEncodedId().toString(),
@@ -953,6 +970,8 @@ const addSchedule = async (schedule) => {
       EntityId.parse(schedule.payer_account_id).getEncodedId().toString(),
       EntityId.parse(schedule.schedule_id).getEncodedId().toString(),
       schedule.transaction_body,
+      schedule.expiration_time,
+      schedule.wait_for_expiry,
     ]
   );
 };

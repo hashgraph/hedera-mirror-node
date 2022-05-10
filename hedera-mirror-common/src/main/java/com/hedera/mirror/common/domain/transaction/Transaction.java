@@ -67,6 +67,8 @@ public class Transaction implements Persistable<Long> {
     @Type(type = "pgsql_enum")
     private ErrataType errata;
 
+    private Integer index;
+
     private Long initialBalance;
 
     @ToString.Exclude

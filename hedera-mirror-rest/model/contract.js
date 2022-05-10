@@ -37,6 +37,7 @@ class Contract {
   static tableAlias = 'c';
   static tableName = 'contract';
 
+  static AUTO_RENEW_ACCOUNT_ID = 'auto_renew_account_id';
   static AUTO_RENEW_PERIOD = 'auto_renew_period';
   static CREATED_TIMESTAMP = 'created_timestamp';
   static DELETED = 'deleted';
@@ -44,10 +45,13 @@ class Contract {
   static EXPIRATION_TIMESTAMP = 'expiration_timestamp';
   static FILE_ID = 'file_id';
   static ID = 'id';
+  static INITCODE = 'initcode';
   static KEY = 'key';
+  static MAX_AUTOMATIC_TOKEN_ASSOCIATIONS = 'max_automatic_token_associations';
   static MEMO = 'memo';
   static NUM = 'num';
   static OBTAINER_ID = 'obtainer_id';
+  static PERMANENT_REMOVAL = 'permanent_removal';
   static PROXY_ACCOUNT_ID = 'proxy_account_id';
   static PUBLIC_KEY = 'public_key';
   static REALM = 'realm';

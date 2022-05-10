@@ -27,9 +27,6 @@ import java.util.List;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -40,6 +37,7 @@ import org.springframework.data.domain.Persistable;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.ContractIdConverter;
 import com.hedera.mirror.common.converter.LongListToStringSerializer;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
 @Data
 @Entity
@@ -78,6 +76,9 @@ public class ContractResult implements Persistable<Long> {
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
+
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId senderId;
 
     @JsonIgnore
     @Override

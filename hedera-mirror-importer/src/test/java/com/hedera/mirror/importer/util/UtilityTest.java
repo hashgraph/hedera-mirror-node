@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.util;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,20 +21,47 @@ package com.hedera.mirror.importer.util;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import java.time.Instant;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-class UtilityTest {
+import com.hedera.mirror.importer.exception.ParserException;
+
+public class UtilityTest {
+
+    public static final byte[] ALIAS_ECDSA_SECP256K1 = Hex.decode(
+            "3a21033a514176466fa815ed481ffad09110a2d344f6c9b78c1d14afc351c3a51be33d");
+    public static final byte[] EVM_ADDRESS = Hex.decode("a94f5374fce5edbc8e2a8697c15331677e6ebf0b");
+
+    @Test
+    void aliasToEvmAddress() {
+        byte[] aliasEd25519 = Key.newBuilder().setEd25519(ByteString.copyFromUtf8("ab")).build().toByteArray();
+        byte[] aliasEcdsa2 = Hex.decode("3a2102ff806fecbd31b4c377293cba8d2b78725965a4990e0ff1b1b29a1d2c61402310");
+        byte[] evmAddress2 = Hex.decode("efa0d905af20199aa03aca71cfa5f7647f29f439");
+        byte[] invalidBytes = new byte[] {'a', 'b'};
+
+        assertThat(Utility.aliasToEvmAddress(ALIAS_ECDSA_SECP256K1)).isEqualTo(EVM_ADDRESS);
+        assertThat(Utility.aliasToEvmAddress(aliasEcdsa2)).isEqualTo(evmAddress2);
+        assertThat(Utility.aliasToEvmAddress(aliasEd25519)).isNull();
+        assertThat(Utility.aliasToEvmAddress(null)).isNull();
+        assertThat(Utility.aliasToEvmAddress(new byte[] {})).isNull();
+        assertThatThrownBy(() -> Utility.aliasToEvmAddress(invalidBytes))
+                .isInstanceOf(ParserException.class)
+                .hasRootCauseExactlyInstanceOf(InvalidProtocolBufferException.class);
+    }
 
     @Test
     void getTopic() {
@@ -88,4 +115,3 @@ class UtilityTest {
         );
     }
 }
-

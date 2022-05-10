@@ -56,6 +56,7 @@ const {cloudProviders} = require('../constants');
 const EntityId = require('../entityId');
 const server = require('../server');
 const transactions = require('../transactions');
+const {JSONParse} = require('../utils');
 
 jest.setTimeout(40000);
 
@@ -97,7 +98,7 @@ const defaultRealm = 15;
 const setupData = async () => {
   const testDataPath = path.join(__dirname, 'integration_test_data.json');
   const testData = fs.readFileSync(testDataPath);
-  const testDataJson = JSON.parse(testData);
+  const testDataJson = JSONParse(testData);
 
   await integrationDomainOps.setUp(testDataJson.setup, dbConfig.sqlConnection);
 
@@ -186,7 +187,7 @@ const extractDurationAndMaxFeeFromTransactionResults = (rows) => {
 // expected transaction rows order by consensus_timestamp desc, only check fields consensus_timestamp and crypto_transfer_list
 const expectedTransactionRowsDesc = [
   {
-    consensusTimestamp: '1052',
+    consensusTimestamp: 1052,
     cryptoTransfers: [
       {account: '0.15.8', amount: -31, is_approval: false},
       {account: '0.15.9', amount: 30, is_approval: false},
@@ -194,7 +195,7 @@ const expectedTransactionRowsDesc = [
     ],
   },
   {
-    consensusTimestamp: '1051',
+    consensusTimestamp: 1051,
     cryptoTransfers: [
       {account: '0.15.9', amount: 20, is_approval: false},
       {account: '0.15.10', amount: -21, is_approval: false},
@@ -202,7 +203,7 @@ const expectedTransactionRowsDesc = [
     ],
   },
   {
-    consensusTimestamp: '1050',
+    consensusTimestamp: 1050,
     cryptoTransfers: [
       {account: '0.15.9', amount: 10, is_approval: false},
       {account: '0.15.10', amount: -11, is_approval: false},
@@ -255,7 +256,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
   const expected = [
     {
-      consensusTimestamp: '2064',
+      consensusTimestamp: 2064,
       cryptoTransfers: [
         {account: '0.15.63', amount: 20, is_approval: false},
         {account: '0.15.82', amount: -21, is_approval: false},
@@ -263,7 +264,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
       ],
     },
     {
-      consensusTimestamp: '2063',
+      consensusTimestamp: 2063,
       cryptoTransfers: [
         {account: '0.15.63', amount: -71, is_approval: false},
         {account: '0.15.82', amount: 70, is_approval: false},
@@ -452,6 +453,24 @@ describe('DB integration test - spec based', () => {
     restoreConfig();
   });
 
+  const getTests = (spec) => {
+    const tests = spec.tests || [
+      {
+        url: spec.url,
+        urls: spec.urls,
+        responseJson: spec.responseJson,
+        responseStatus: spec.responseStatus,
+      },
+    ];
+    return _.flatten(
+      tests.map((test) => {
+        const urls = test.urls || [test.url];
+        const {responseJson, responseStatus} = test;
+        return urls.map((url) => ({url, responseJson, responseStatus}));
+      })
+    );
+  };
+
   const specPath = path.join(__dirname, 'specs');
   // process applicable .spec.json files
   fs.readdirSync(specPath)
@@ -459,13 +478,8 @@ describe('DB integration test - spec based', () => {
     .forEach((file) => {
       const p = path.join(specPath, file);
       const specText = fs.readFileSync(p, 'utf8');
-      const spec = JSON.parse(specText);
-      let {tests} = spec;
-      if (tests === undefined) {
-        const urls = spec.urls || [spec.url];
-        const {responseJson, responseStatus} = spec;
-        tests = urls.map((url) => ({url, responseJson, responseStatus}));
-      }
+      const spec = JSONParse(specText);
+      const tests = getTests(spec);
 
       tests.forEach((tt) =>
         test(`DB integration test - ${file} - ${tt.url}`, async () => {
@@ -473,7 +487,7 @@ describe('DB integration test - spec based', () => {
           const response = await request(server).get(tt.url);
 
           expect(response.status).toEqual(tt.responseStatus);
-          let jsonObj = response.text === '' ? {} : JSON.parse(response.text);
+          let jsonObj = response.text === '' ? {} : JSONParse(response.text);
           if (response.status === 200 && file.startsWith('stateproof')) {
             jsonObj = transformStateProofResponse(jsonObj);
           }

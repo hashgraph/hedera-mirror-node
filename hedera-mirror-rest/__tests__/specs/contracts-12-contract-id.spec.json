@@ -53,6 +53,7 @@
           "_type": "ProtobufEncoded",
           "key": "020202"
         },
+        "auto_renew_account": null,
         "auto_renew_period": null,
         "contract_id": "0.0.8002",
         "created_timestamp": "987654.111123456",
@@ -60,8 +61,10 @@
         "evm_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
         "expiration_timestamp": null,
         "file_id": "0.0.5001",
+        "max_automatic_token_associations": 0,
         "memo": "contract memo",
         "obtainer_id": null,
+        "permanent_removal": null,
         "proxy_account_id": null,
         "timestamp": {
           "from": "987654.111123456",
