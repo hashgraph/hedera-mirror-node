@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,12 +39,7 @@ import org.springframework.util.CollectionUtils;
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
-import com.hedera.hashgraph.sdk.FileContentsQuery;
-import com.hedera.hashgraph.sdk.FileId;
 import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.PrecheckStatusException;
-import com.hedera.hashgraph.sdk.proto.NodeAddress;
-import com.hedera.hashgraph.sdk.proto.NodeAddressBook;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
@@ -56,42 +49,24 @@ import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 @Value
 public class SDKClient implements AutoCloseable {
 
-    private static final FileId ADDRESS_BOOK_ID = new FileId(0L, 0L, 101L);
-
     private final Client client;
-    private final String mirrorNodeAddress;
-    private final long messageTimeoutSeconds;
     private final Hbar maxTransactionFee;
     private final Map<String, AccountId> validateNetworkMap;
     private final AcceptanceTestProperties acceptanceTestProperties;
+    private final MirrorNodeClient mirrorNodeClient;
 
     @Getter
     private final ExpandedAccountId expandedOperatorAccountId;
 
-    public SDKClient(AcceptanceTestProperties acceptanceTestProperties) throws InterruptedException {
-        mirrorNodeAddress = acceptanceTestProperties.getMirrorNodeAddress();
-        messageTimeoutSeconds = acceptanceTestProperties.getMessageTimeout().toSeconds();
+    public SDKClient(AcceptanceTestProperties acceptanceTestProperties, MirrorNodeClient mirrorNodeClient)
+            throws InterruptedException {
+        this.mirrorNodeClient = mirrorNodeClient;
         maxTransactionFee = Hbar.fromTinybars(acceptanceTestProperties.getMaxTinyBarTransactionFee());
         this.acceptanceTestProperties = acceptanceTestProperties;
         expandedOperatorAccountId = new ExpandedAccountId(
                 acceptanceTestProperties.getOperatorId(),
                 acceptanceTestProperties.getOperatorKey());
-
-        Client client = getBootstrapClient(acceptanceTestProperties.getNetwork(), acceptanceTestProperties.getNodes());
-        client.setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());
-        client.setMirrorNetwork(List.of(mirrorNodeAddress));
-
-        Map<String, AccountId> networkMapToValidate = client.getNetwork();
-        if (acceptanceTestProperties.isRetrieveAddressBook()) {
-            try {
-                networkMapToValidate = getAddressBookNetworkMap(client);
-            } catch (Exception e) {
-                log.warn("Error retrieving address book", e);
-            }
-        }
-
-        // only use validated nodes for tests
-        this.client = getValidatedClient(networkMapToValidate, client);
+        this.client = getValidatedClient();
         validateNetworkMap = this.client.getNetwork();
     }
 
@@ -105,32 +80,25 @@ public class SDKClient implements AutoCloseable {
         client.close();
     }
 
-    private Client getBootstrapClient(AcceptanceTestProperties.HederaNetwork network,
-                                      Set<NodeProperties> customNodes) {
+    private Map<String, AccountId> getNetworkMap() {
+        var customNodes = acceptanceTestProperties.getNodes();
+        var network = acceptanceTestProperties.getNetwork();
+
         if (!CollectionUtils.isEmpty(customNodes)) {
             log.debug("Creating SDK client for {} network with nodes: {}", network, customNodes);
-            return Client.forNetwork(getNetworkMap(customNodes));
+            return getNetworkMap(customNodes);
         }
 
-        Client client;
-        switch (network) {
-            case MAINNET:
-                log.debug("Creating SDK client for MainNet");
-                client = Client.forMainnet();
-                break;
-            case PREVIEWNET:
-                log.debug("Creating SDK client for PreviewNet");
-                client = Client.forPreviewnet();
-                break;
-            case TESTNET:
-                log.debug("Creating SDK client for TestNet");
-                client = Client.forTestnet();
-                break;
-            default:
-                throw new IllegalStateException("Unsupported network specified!");
+        if (acceptanceTestProperties.isRetrieveAddressBook()) {
+            try {
+                return getAddressBook();
+            } catch (Exception e) {
+                log.warn("Error retrieving address book", e);
+            }
         }
 
-        return client;
+        Client client = Client.forName(network.toString().toLowerCase());
+        return client.getNetwork();
     }
 
     private Map<String, AccountId> getNetworkMap(Set<NodeProperties> nodes) {
@@ -138,80 +106,69 @@ public class SDKClient implements AutoCloseable {
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
     }
 
-    private Client getValidatedClient(Map<String, AccountId> currentNetworkMap, Client client) throws InterruptedException {
+    private Client getValidatedClient() throws InterruptedException {
+        Map<String, AccountId> network = getNetworkMap();
         Map<String, AccountId> validNodes = new LinkedHashMap<>();
-        for (var nodeEntry : currentNetworkMap.entrySet()) {
-            try {
-                if (validateNode(nodeEntry.getValue().toString(), client)) {
-                    validNodes.putIfAbsent(nodeEntry.getKey(), nodeEntry.getValue());
-                    log.trace("Added node {} at endpoint {} to list of valid nodes", nodeEntry.getValue(),
-                            nodeEntry.getKey());
-                }
-            } catch (Exception e) {
-                //
+
+        for (var nodeEntry : network.entrySet()) {
+            var endpoint = nodeEntry.getKey();
+            var nodeAccountId = nodeEntry.getValue();
+
+            if (validateNode(endpoint, nodeAccountId)) {
+                validNodes.putIfAbsent(endpoint, nodeAccountId);
+                log.trace("Added node {} at endpoint {} to list of valid nodes", nodeAccountId, endpoint);
             }
         }
 
-        log.info("{} of {} nodes are reachable", validNodes.size(), currentNetworkMap.size());
+        log.info("Validated {} of {} nodes", validNodes.size(), network.size());
         if (validNodes.size() == 0) {
             throw new IllegalStateException("All provided nodes are unreachable!");
         }
 
-        log.info("Creating validated client using nodes: {} nodes", validNodes);
-        Client validatedClient = Client.forNetwork(validNodes);
-        validatedClient
-                .setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());
-        validatedClient.setMirrorNetwork(List.of(mirrorNodeAddress));
-
-        return validatedClient;
+        log.info("Creating validated client using nodes: {}", validNodes);
+        return toClient(validNodes);
     }
 
-    private boolean validateNode(String accountId, Client client) {
+    private Client toClient(Map<String, AccountId> network) throws InterruptedException {
+        Client client = Client.forNetwork(network);
+        client.setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());
+        client.setMirrorNetwork(List.of(acceptanceTestProperties.getMirrorNodeAddress()));
+        return client;
+    }
+
+    private boolean validateNode(String endpoint, AccountId nodeAccountId) {
         boolean valid = false;
-        try {
-            AccountId nodeAccountId = AccountId.fromString(accountId);
+
+        try (Client client = toClient(Map.of(endpoint, nodeAccountId))) {
             new AccountBalanceQuery()
                     .setAccountId(nodeAccountId)
                     .setNodeAccountIds(List.of(nodeAccountId))
                     .execute(client, Duration.ofSeconds(10L));
-            log.trace("Validated node: {}", accountId);
+            log.debug("Validated node: {}", nodeAccountId);
             valid = true;
         } catch (Exception e) {
-            log.warn("Unable to validate node {}: ", accountId, e);
+            log.warn("Unable to validate node {}: ", nodeAccountId, e.getMessage());
         }
 
         return valid;
     }
 
-    private NodeAddressBook getAddressBookFromNetwork(Client client) throws TimeoutException, PrecheckStatusException,
-            InvalidProtocolBufferException {
-        ByteString contents = new FileContentsQuery()
-                .setFileId(ADDRESS_BOOK_ID)
-                .setMaxQueryPayment(new Hbar(1))
-                .execute(client);
-
-        log.debug("Retrieved address book with content size: {} b", contents.size());
-
-        return NodeAddressBook.parseFrom(contents.toByteArray());
-    }
-
-    private Map<String, AccountId> getAddressBookNetworkMap(Client client) throws InvalidProtocolBufferException,
-            PrecheckStatusException,
-            TimeoutException {
-        NodeAddressBook addressBook = getAddressBookFromNetwork(client);
-
+    private Map<String, AccountId> getAddressBook() {
         Map<String, AccountId> networkMap = new HashMap<>();
-        for (NodeAddress nodeAddressProto : addressBook.getNodeAddressList()) {
-            networkMap.putIfAbsent(
-                    String.format("%s:%d", nodeAddressProto.getIpAddress().toStringUtf8(), nodeAddressProto
-                            .getPortno()),
-                    new AccountId(nodeAddressProto.getNodeAccountId().getShardNum(),
-                            nodeAddressProto.getNodeAccountId().getRealmNum(),
-                            nodeAddressProto.getNodeAccountId().getAccountNum()));
+        var nodes = mirrorNodeClient.getNetworkNodes();
+
+        for (var node : nodes) {
+            var accountId = AccountId.fromString(node.getNodeAccountId());
+            for (var serviceEndpoint : node.getServiceEndpoints()) {
+                var ip = serviceEndpoint.getIpAddressV4();
+                var port = serviceEndpoint.getPort();
+                if (port == 50211) {
+                    networkMap.putIfAbsent(ip + ":" + port, accountId);
+                }
+            }
         }
 
-        log.debug("Obtained addressBook networkMap: {}", networkMap);
-
+        log.info("Obtained address book with {} nodes and {} endpoints", nodes.size(), networkMap.size());
         return networkMap;
     }
 }

@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance;
+package com.hedera.mirror.test.e2e.acceptance.props;
 
 /*-
  * ‌
@@ -20,16 +20,9 @@ package com.hedera.mirror.test.e2e.acceptance;
  * ‍
  */
 
-import io.cucumber.spring.CucumberContextConfiguration;
-import org.junit.platform.suite.api.IncludeEngines;
-import org.junit.platform.suite.api.SelectClasspathResource;
-import org.junit.platform.suite.api.Suite;
-import org.springframework.boot.test.context.SpringBootTest;
+import lombok.Data;
 
-@Suite
-@IncludeEngines("cucumber")
-@SelectClasspathResource("features")
-@SpringBootTest(properties = "spring.main.banner-mode=off")
-@CucumberContextConfiguration
-public class AcceptanceTest {
+@Data
+public class MirrorLinks {
+    private String next;
 }

@@ -26,13 +26,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.cucumber.junit.platform.engine.Cucumber;
 import java.util.List;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.util.CollectionUtils;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
@@ -46,20 +45,18 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorCryptoAllowanceRespo
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
 @Log4j2
-@Cucumber
 @Data
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class AccountFeature extends AbstractFeature {
+
+    private final AccountClient accountClient;
+    private final MirrorNodeClient mirrorClient;
+
     private long balance;
     private AccountId ownerAccountId;
     private AccountId receiverAccountId;
     private ExpandedAccountId senderAccountId;
     private long startingBalance;
-
-    @Autowired
-    private AccountClient accountClient;
-
-    @Autowired
-    private MirrorNodeClient mirrorClient;
 
     @When("I request balance info for this account")
     public void getAccountBalance() {
@@ -123,13 +120,6 @@ public class AccountFeature extends AbstractFeature {
     @Given("I approve {string} to transfer up to {long} tℏ")
     public void approveCryptoAllowance(String accountName, long amount) {
         setCryptoAllowance(accountName, amount);
-    }
-
-    @Given("I adjust {string} transfer allowance to {long} tℏ")
-    public void adjustCryptoAllowance(String accountName, long amount) {
-        senderAccountId = accountClient
-                .getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        setCryptoAllowance(senderAccountId.getAccountId(), amount);
     }
 
     @When("{string} transfers {long} tℏ from their approved balance to {string}")
@@ -215,32 +205,6 @@ public class AccountFeature extends AbstractFeature {
     public void verifyCryptoAllowanceDelete() {
         log.info("Verify crypto allowance deletion transaction");
         verifyMirrorAPIApprovedCryptoTransferResponse(0);
-    }
-
-    @When("I remove all my allowances from my account")
-    public void cleanUpAllowances() {
-        MirrorCryptoAllowanceResponse mirrorCryptoAllowanceResponse =
-                mirrorClient.getAccountCryptoAllowance(accountClient.getClient().getOperatorAccountId().toString());
-
-        if (mirrorCryptoAllowanceResponse != null && !CollectionUtils
-                .isEmpty(mirrorCryptoAllowanceResponse.getAllowances())) {
-            mirrorCryptoAllowanceResponse.getAllowances().forEach(x -> {
-                // set allowance to 0 for each non zero
-                if (x.getAmountGranted() > 0) {
-                    setCryptoAllowance(AccountId.fromString(x.getSpender()), 0);
-                }
-            });
-        }
-    }
-
-    @Then("the mirror node REST API should confirm no granted allowances remain")
-    public void verifyNoAllowances() {
-        log.info("Verify crypto allowance deletion transaction");
-        MirrorCryptoAllowanceResponse mirrorCryptoAllowanceResponse =
-                mirrorClient.getAccountCryptoAllowance(accountClient.getClient().getOperatorAccountId().toString());
-        var allowances = mirrorCryptoAllowanceResponse.getAllowances();
-        assertThat(allowances).isNotEmpty();
-        assertThat(allowances.stream().map(MirrorCryptoAllowance::getAmountGranted).reduce(0L, Long::sum)).isZero();
     }
 
     private void setCryptoAllowance(String accountName, long amount) {

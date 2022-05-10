@@ -220,7 +220,7 @@ public class AccountClient extends AbstractNetworkClient {
                 ownerAccountId);
 
         var transaction = new AccountAllowanceApproveTransaction()
-                .addHbarAllowance(spender, hbarAmount);
+                .approveHbarAllowance(null, spender, hbarAmount);
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(transaction);

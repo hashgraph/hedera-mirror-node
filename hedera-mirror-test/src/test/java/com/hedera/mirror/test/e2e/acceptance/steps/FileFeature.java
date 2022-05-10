@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,9 +25,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import io.cucumber.junit.platform.engine.Cucumber;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,16 +41,15 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Log4j2
-@Cucumber
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class FileFeature {
     private final static String originalFileContents = "Mirror Node v1";
     private final static String updateBaseFileContents = "Mirror Node v2,";
     private final static String appendFileContents = " new and improved";
     private final static String updatedFileContents = updateBaseFileContents + appendFileContents;
-    @Autowired
-    private FileClient fileClient;
-    @Autowired
-    private MirrorNodeClient mirrorClient;
+
+    private final FileClient fileClient;
+    private final MirrorNodeClient mirrorClient;
 
     private NetworkTransactionResponse networkTransactionResponse;
     private FileId fileId;
