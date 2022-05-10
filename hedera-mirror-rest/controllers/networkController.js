@@ -30,9 +30,9 @@ const utils = require('../utils');
 
 const BaseController = require('./baseController');
 
-const {AddressBookEntry} = require('../model');
-const {NetworkNodeService} = require('../service');
-const {NetworkNodeViewModel, NetworkSupplyViewModel} = require('../viewmodel');
+const {AddressBookEntry, FileData} = require('../model');
+const {FileDataService, NetworkNodeService} = require('../service');
+const {ExchangeRateSetViewModel, NetworkNodeViewModel, NetworkSupplyViewModel} = require('../viewmodel');
 
 // errors
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
@@ -46,46 +46,6 @@ const networkNodesMaxSize = 25;
 class NetworkController extends BaseController {
   static totalSupply = 5000000000000000000n;
   static unreleasedSupplyAccounts = defaultUnreleasedSupplyAccounts.map((a) => entityId.parse(a).getEncodedId());
-
-  /**
-   * Handler function for /network/supply API.
-   * @param {Request} req HTTP request object
-   * @param {Response} res HTTP response object
-   * @return {Promise} Promise for PostgreSQL query
-   */
-  getSupply = async (req, res) => {
-    utils.validateReq(req);
-    const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'abf.consensus_timestamp', {
-      [utils.opsMap.eq]: utils.opsMap.lte,
-    });
-
-    const sqlQuery = `
-      select sum(balance) as unreleased_supply, max(consensus_timestamp) as consensus_timestamp
-      from account_balance
-      where consensus_timestamp = (
-        select max(consensus_timestamp)
-        from account_balance_file abf
-        where ${tsQuery !== '' ? tsQuery : '1=1'}
-      )
-        and account_id in (${NetworkController.unreleasedSupplyAccounts});`;
-
-    const query = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
-
-    if (logger.isTraceEnabled()) {
-      logger.trace(`getSupply query: ${query} ${utils.JSONStringify(tsParams)}`);
-    }
-
-    return pool.queryQuietly(query, tsParams).then((result) => {
-      const {rows} = result;
-
-      if (rows.length !== 1 || !rows[0].consensus_timestamp) {
-        throw new NotFoundError('Not found');
-      }
-
-      res.locals[constants.responseDataLabel] = new NetworkSupplyViewModel(rows[0], NetworkController.totalSupply);
-      logger.debug(`getSupply returning ${result.rows.length} entries`);
-    });
-  };
 
   /**
    * Extracts SQL where conditions, params, order, and limit
@@ -164,6 +124,57 @@ class NetworkController extends BaseController {
     };
   };
 
+  extractExchangeRateQuery = (filters) => {
+    // get latest rate only. Since logic pulls most recent items order and limit are ommitted in filterQuery
+    const filterQuery = {
+      whereQuery: [],
+    };
+
+    for (const filter of filters) {
+      if (_.isNil(filter)) {
+        continue;
+      }
+
+      if (filter.key === constants.filterKeys.TIMESTAMP) {
+        if (utils.opsMap.ne === filter.operator) {
+          throw new InvalidArgumentError(
+            `Not equals (ne) operator is not supported for ${constants.filterKeys.TIMESTAMP}`
+          );
+        }
+
+        // to ensure most recent occurence is found convert eq to lte
+        if (utils.opsMap.eq === filter.operator) {
+          filter.operator = utils.opsMap.lte;
+        }
+
+        filterQuery.whereQuery.push(FileDataService.getFilterWhereCondition(FileData.CONSENSUS_TIMESTAMP, filter));
+      }
+    }
+
+    return filterQuery;
+  };
+
+  /**
+   * Handler function for /network/exchangerate API
+   * @param {Request} req HTTP request object
+   * @param {Response} res HTTP response object
+   * @returns {Promise<void>}
+   */
+  getExchangeRate = async (req, res) => {
+    // extract filters from query param
+    const filters = utils.buildAndValidateFilters(req.query);
+
+    const filterQueries = this.extractExchangeRateQuery(filters);
+
+    const exchangeRate = await FileDataService.getExchangeRate(filterQueries);
+
+    if (_.isNil(exchangeRate)) {
+      throw new NotFoundError('Not found');
+    }
+
+    res.locals[constants.responseDataLabel] = new ExchangeRateSetViewModel(exchangeRate);
+  };
+
   /**
    * Handler function for /network/nodes API
    * @param {Request} req HTTP request object
@@ -193,6 +204,43 @@ class NetworkController extends BaseController {
     }
 
     res.locals[constants.responseDataLabel] = response;
+  };
+
+  /**
+   * Handler function for /network/supply API.
+   * @param {Request} req HTTP request object
+   * @param {Response} res HTTP response object
+   * @return {Promise<void>}
+   */
+  getSupply = async (req, res) => {
+    utils.validateReq(req);
+    const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'abf.consensus_timestamp', {
+      [utils.opsMap.eq]: utils.opsMap.lte,
+    });
+
+    const sqlQuery = `
+      select sum(balance) as unreleased_supply, max(consensus_timestamp) as consensus_timestamp
+      from account_balance
+      where consensus_timestamp = (
+        select max(consensus_timestamp)
+        from account_balance_file abf
+        where ${tsQuery !== '' ? tsQuery : '1=1'}
+      )
+        and account_id in (${NetworkController.unreleasedSupplyAccounts});`;
+
+    const query = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
+
+    if (logger.isTraceEnabled()) {
+      logger.trace(`getSupply query: ${query} ${utils.JSONStringify(tsParams)}`);
+    }
+
+    const {rows} = await pool.queryQuietly(query, tsParams);
+    if (rows.length !== 1 || !rows[0].consensus_timestamp) {
+      throw new NotFoundError('Not found');
+    }
+
+    res.locals[constants.responseDataLabel] = new NetworkSupplyViewModel(rows[0], NetworkController.totalSupply);
+    logger.debug(`getSupply returning ${rows.length} entries`);
   };
 }
 

@@ -20,15 +20,17 @@
 
 'use strict';
 
-module.exports = {
-  ContractService: require('./contractService'),
-  CryptoAllowanceService: require('./cryptoAllowanceService'),
-  EntityService: require('./entityService'),
-  FileDataService: require('./fileDataService'),
-  NetworkNodeService: require('./networkNodeService'),
-  NftService: require('./nftService'),
-  RecordFileService: require('./recordFileService'),
-  TokenAllowanceService: require('./tokenAllowanceService'),
-  TokenService: require('./tokenService'),
-  TransactionService: require('./transactionService'),
-};
+const FileDecodeErrorMessage =
+  'Failed to decode file contents. Ensure timestamp filters cover the complete file create/update and append transactions';
+
+class FileDecodeError extends Error {
+  constructor(errorMessage) {
+    super();
+    this.message = FileDecodeErrorMessage;
+    if (errorMessage !== undefined) {
+      this.message += `. Error: '${errorMessage}'`;
+    }
+  }
+}
+
+module.exports = FileDecodeError;
