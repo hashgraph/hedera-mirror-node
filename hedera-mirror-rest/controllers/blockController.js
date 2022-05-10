@@ -28,11 +28,24 @@ const {RecordFileService} = require('../service');
 const {BlockViewModel} = require('../viewmodel');
 const utils = require('../utils');
 const constants = require('../constants');
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {
   response: {
     limit: {default: defaultLimit, max: maxLimit},
   },
 } = require('../config');
+
+const validateHashOrNumber = (hashOrNumber) => {
+  if (utils.isValidEthHash(hashOrNumber) || utils.isValidHederaHash(hashOrNumber)) {
+    return {hash: hashOrNumber, number: null};
+  }
+
+  if (utils.isPositiveLong(hashOrNumber)) {
+    return {hash: null, number: parseInt(hashOrNumber)};
+  }
+
+  throw InvalidArgumentError.forParams(constants.filterKeys.HASH_OR_NUMBER);
+};
 
 class BlockController extends BaseController {
   extractOrderFromFilters = (filters) => {
@@ -107,10 +120,10 @@ class BlockController extends BaseController {
   };
 
   getByHashOrNumber = async (req, res) => {
-    const hashOrNumber = req.params.hashOrNumber;
-    const block = await RecordFileService.getByHashOrNumber(hashOrNumber);
+    const {hash, number} = validateHashOrNumber(req.params.hashOrNumber);
+    const block = await RecordFileService.getByHashOrNumber(hash, number);
 
-    res.send(block);
+    res.send(block ? new BlockViewModel(block) : {});
   };
 }
 

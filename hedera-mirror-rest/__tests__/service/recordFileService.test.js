@@ -52,9 +52,7 @@ const expectToEqualId17 = (blockId17) => {
   expect(blockId17.index).toEqual('17');
   expect(blockId17.count).toEqual('5');
   expect(blockId17.name).toEqual('2022-04-27T12_24_30.768994443Z.rcd');
-  expect(blockId17.hash).toEqual(
-    'b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216'
-  );
+  expect(blockId17.hash).toEqual('b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c1278');
   expect(blockId17.prevHash).toEqual(
     'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c'
   );
@@ -88,7 +86,7 @@ const recordFiles = [
     prev_hash: 'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c',
     consensus_start: '1676540001234500000',
     consensus_end: '1676540001234600000',
-    hash: 'b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216',
+    hash: 'b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c1278',
   },
 ];
 
@@ -175,5 +173,58 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
 
     expect(blocks.length).toEqual(1);
     expectToEqualId17(blocks[0]);
+  });
+
+  test('RecordFileService.getByHashOrNumber with valid hedera hash without prefix', async () => {
+    await integrationDomainOps.loadRecordFiles(recordFiles);
+
+    const block = await RecordFileService.getByHashOrNumber(
+      'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c'
+    );
+    expectToEqualId16(block);
+  });
+
+  test('RecordFileService.getByHashOrNumber with valid hedera hash with prefix', async () => {
+    await integrationDomainOps.loadRecordFiles(recordFiles);
+
+    const block = await RecordFileService.getByHashOrNumber(
+      '0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c'
+    );
+    expectToEqualId16(block);
+  });
+
+  test('RecordFileService.getByHashOrNumber with valid eth hash without prefix', async () => {
+    await integrationDomainOps.loadRecordFiles(recordFiles);
+
+    const block = await RecordFileService.getByHashOrNumber(
+      'b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c1278'
+    );
+    expectToEqualId17(block);
+  });
+
+  test('RecordFileService.getByHashOrNumber with valid eth hash with prefix', async () => {
+    await integrationDomainOps.loadRecordFiles(recordFiles);
+
+    const block = await RecordFileService.getByHashOrNumber(
+      '0xb0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c1278'
+    );
+    expectToEqualId17(block);
+  });
+
+  test('RecordFileService.getByHashOrNumber with valid number', async () => {
+    await integrationDomainOps.loadRecordFiles(recordFiles);
+
+    const block = await RecordFileService.getByHashOrNumber(null, '16');
+    expectToEqualId16(block);
+  });
+
+  test('RecordFileService.getByHashOrNumber with invalid number', async () => {
+    const block = await RecordFileService.getByHashOrNumber(null, '16');
+    expect(block).toBeNull();
+  });
+
+  test('RecordFileService.getByHashOrNumber with no hash or number', async () => {
+    const block = await RecordFileService.getByHashOrNumber(null, null);
+    expect(block).toBeNull();
   });
 });

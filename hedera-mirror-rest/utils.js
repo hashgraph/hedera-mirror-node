@@ -1172,6 +1172,16 @@ const isRegexMatch = (regex, value) => {
   return regex.test(value.trim());
 };
 
+const ETH_HASH_PATTERN = /^0x([A-Fa-f0-9]{64})$/;
+const isValidEthHash = (hash) => {
+  return isRegexMatch(ETH_HASH_PATTERN, addHexPrefix(hash));
+};
+
+const HEDERA_HASH_PATTERN = /^0x([A-Fa-f0-9]{96})$/;
+const isValidHederaHash = (hash) => {
+  return isRegexMatch(HEDERA_HASH_PATTERN, addHexPrefix(hash));
+};
+
 module.exports = {
   addHexPrefix,
   buildAndValidateFilters,
@@ -1224,6 +1234,8 @@ module.exports = {
   secNsToSeconds,
   toHexString,
   validateReq,
+  isValidEthHash,
+  isValidHederaHash,
 };
 
 if (isTestEnv()) {

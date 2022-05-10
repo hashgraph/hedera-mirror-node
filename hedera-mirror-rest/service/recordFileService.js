@@ -27,10 +27,6 @@ const BaseService = require('./baseService');
 const {RecordFile} = require('../model');
 const {BlockViewModel} = require('../viewmodel');
 
-const isValidHash = (input) => {
-  return input.length === 96 || input.length === 98 || input.length === 64 || input.length === 66;
-};
-
 const buildWhereSqlStatement = (whereQuery) => {
   let where = '';
   const params = [];
@@ -57,6 +53,13 @@ class RecordFileService extends BaseService {
     order by ${RecordFile.CONSENSUS_END} asc
     limit 1`;
 
+  static blocksQuery = `select
+    ${RecordFile.COUNT}, ${RecordFile.HASH}, ${RecordFile.NAME}, ${RecordFile.PREV_HASH}, ${RecordFile.BYTES},
+    ${RecordFile.HAPI_VERSION_MAJOR}, ${RecordFile.HAPI_VERSION_MINOR}, ${RecordFile.HAPI_VERSION_PATCH},
+    ${RecordFile.INDEX}, ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}
+    from ${RecordFile.tableName}
+  `;
+
   /**
    * Retrieves the recordFile containing the transaction of the given timestamp
    *
@@ -79,12 +82,9 @@ class RecordFileService extends BaseService {
   async getBlocks(filters) {
     const {where, params} = buildWhereSqlStatement(filters.whereQuery);
 
-    const query = `
-      select
-        ${RecordFile.COUNT}, ${RecordFile.HASH}, ${RecordFile.NAME}, ${RecordFile.PREV_HASH}, ${RecordFile.BYTES},
-        ${RecordFile.HAPI_VERSION_MAJOR}, ${RecordFile.HAPI_VERSION_MINOR}, ${RecordFile.HAPI_VERSION_PATCH},
-        ${RecordFile.INDEX}, ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}
-      from ${RecordFile.tableName}
+    const query =
+      RecordFileService.blocksQuery +
+      `
       ${where}
       order by ${RecordFile.INDEX} ${filters.order}
       limit ${filters.limit}
@@ -94,32 +94,29 @@ class RecordFileService extends BaseService {
     return rows.map((recordFile) => new RecordFile(recordFile));
   }
 
-  async getByHashOrNumber(hashOrNumber) {
+  async getByHashOrNumber(hash, number) {
     let whereStatement = '';
     let params = [];
-    if (isValidHash(hashOrNumber)) {
-      const hashOrNumberWithPrefix = utils.addHexPrefix(hashOrNumber);
-      const hashOrNumberWithoutPrefix = hashOrNumberWithPrefix.substring(2);
+    if (hash) {
+      const hashWithPrefix = utils.addHexPrefix(hash);
+      const hashWithoutPrefix = hashWithPrefix.substring(2);
 
       whereStatement += `${RecordFile.HASH} in ($1, $2)`;
-      params.push(hashOrNumberWithoutPrefix, hashOrNumberWithPrefix);
+      params.push(hashWithoutPrefix, hashWithPrefix);
     } else {
       whereStatement += `${RecordFile.INDEX} = $1`;
-      params.push(hashOrNumber);
+      params.push(number);
     }
 
-    const query = `
-      select
-        ${RecordFile.COUNT}, ${RecordFile.HASH}, ${RecordFile.NAME}, ${RecordFile.PREV_HASH}, ${RecordFile.BYTES},
-        ${RecordFile.HAPI_VERSION_MAJOR}, ${RecordFile.HAPI_VERSION_MINOR}, ${RecordFile.HAPI_VERSION_PATCH},
-        ${RecordFile.INDEX}, ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}
-      from ${RecordFile.tableName}
+    const query =
+      RecordFileService.blocksQuery +
+      `
       where ${whereStatement}
     `;
 
     const row = await super.getSingleRow(query, params, 'getByHashOrNumber');
 
-    return row ? new BlockViewModel(new RecordFile(row)) : {};
+    return row ? new RecordFile(row) : null;
   }
 }
 

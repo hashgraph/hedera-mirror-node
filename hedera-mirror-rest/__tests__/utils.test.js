@@ -1513,3 +1513,45 @@ describe('Utils addHexPrefix tests', () => {
     });
   });
 });
+
+describe('Utils isValidEthHash', () => {
+  test('Verify invalid hash', () => {
+    const isValid = utils.isValidEthHash('0x58fe343a4');
+    expect(isValid).toBeFalsy();
+  });
+  test('Verify invalid string hash', () => {
+    const isValid = utils.isValidEthHash('invalidhash');
+    expect(isValid).toBeFalsy();
+  });
+  test('Verify valid hash without prefix', () => {
+    const isValid = utils.isValidEthHash('3a34f8713d4169ae754da14f2caf124ef8cd7a5d605fc747be12bd7eb9d9df09');
+    expect(isValid).toBeTruthy();
+  });
+  test('Verify valid hash with prefix', () => {
+    const isValid = utils.isValidEthHash('0x3a34f8713d4169ae754da14f2caf124ef8cd7a5d605fc747be12bd7eb9d9df09');
+    expect(isValid).toBeTruthy();
+  });
+});
+
+describe('Utils isValidHederaHash', () => {
+  test('Verify invalid hash', () => {
+    const isValid = utils.isValidHederaHash('0xa266e77');
+    expect(isValid).toBeFalsy();
+  });
+  test('Verify invalid string hash', () => {
+    const isValid = utils.isValidHederaHash('invalidhash');
+    expect(isValid).toBeFalsy();
+  });
+  test('Verify valid hash without prefix', () => {
+    const isValid = utils.isValidHederaHash(
+      '84a8c75a1a5f9ed26eb1a266e778416b76bf79f378cf12bc1329c2258fe343a4e049d524ba8aca30fdc92b537160ef73'
+    );
+    expect(isValid).toBeTruthy();
+  });
+  test('Verify valid hash with prefix', () => {
+    const isValid = utils.isValidHederaHash(
+      '0x84a8c75a1a5f9ed26eb1a266e778416b76bf79f378cf12bc1329c2258fe343a4e049d524ba8aca30fdc92b537160ef73'
+    );
+    expect(isValid).toBeTruthy();
+  });
+});

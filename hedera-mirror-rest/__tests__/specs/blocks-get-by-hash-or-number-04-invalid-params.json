@@ -1,0 +1,13 @@
+{
+  "description": "Get block getByHashOrNumber with invalid params",
+  "setup": {},
+  "urls": [
+    "/api/v1/blocks/b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216",
+    "/api/v1/blocks/0xb0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216",
+    "/api/v1/blocks/ff90773193892540084e62086df3953d2362061b16cf682fde5bb00830b232b2",
+    "/api/v1/blocks/0xff90773193892540084e62086df3953d2362061b16cf682fde5bb00830b232b2",
+    "/api/v1/blocks/10"
+  ],
+  "responseStatus": 200,
+  "responseJson": {}
+}
