@@ -25,7 +25,6 @@ const _ = require('lodash');
 const utils = require('../utils');
 const BaseService = require('./baseService');
 const {RecordFile} = require('../model');
-const {BlockViewModel} = require('../viewmodel');
 
 const buildWhereSqlStatement = (whereQuery) => {
   let where = '';
@@ -101,8 +100,8 @@ class RecordFileService extends BaseService {
       const hashWithPrefix = utils.addHexPrefix(hash);
       const hashWithoutPrefix = hashWithPrefix.substring(2);
 
-      whereStatement += `${RecordFile.HASH} in ($1, $2)`;
-      params.push(hashWithoutPrefix, hashWithPrefix);
+      whereStatement += `${RecordFile.HASH} like $1`;
+      params.push(hashWithoutPrefix + '%');
     } else {
       whereStatement += `${RecordFile.INDEX} = $1`;
       params.push(number);

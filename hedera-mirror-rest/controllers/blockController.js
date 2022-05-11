@@ -28,6 +28,7 @@ const {RecordFileService} = require('../service');
 const {BlockViewModel} = require('../viewmodel');
 const utils = require('../utils');
 const constants = require('../constants');
+const {NotFoundError} = require('../errors/notFoundError');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {
   response: {
@@ -36,12 +37,12 @@ const {
 } = require('../config');
 
 const validateHashOrNumber = (hashOrNumber) => {
-  if (utils.isValidEthHash(hashOrNumber) || utils.isValidHederaHash(hashOrNumber)) {
+  if (utils.isValidBlockHash(hashOrNumber)) {
     return {hash: hashOrNumber, number: null};
   }
 
   if (utils.isPositiveLong(hashOrNumber)) {
-    return {hash: null, number: parseInt(hashOrNumber)};
+    return {hash: null, number: hashOrNumber};
   }
 
   throw InvalidArgumentError.forParams(constants.filterKeys.HASH_OR_NUMBER);
@@ -111,19 +112,23 @@ class BlockController extends BaseController {
     const formattedFilters = this.extractSqlFromBlockFilters(filters);
     const blocks = await RecordFileService.getBlocks(formattedFilters);
 
-    res.send({
+    res.locals[constants.responseDataLabel] = {
       blocks: blocks.map((model) => new BlockViewModel(model)),
       links: {
         next: this.generateNextLink(req, blocks, formattedFilters),
       },
-    });
+    };
   };
 
   getByHashOrNumber = async (req, res) => {
     const {hash, number} = validateHashOrNumber(req.params.hashOrNumber);
     const block = await RecordFileService.getByHashOrNumber(hash, number);
 
-    res.send(block ? new BlockViewModel(block) : {});
+    if (!block) {
+      throw new NotFoundError();
+    }
+
+    res.locals[constants.responseDataLabel] = new BlockViewModel(block);
   };
 }
 

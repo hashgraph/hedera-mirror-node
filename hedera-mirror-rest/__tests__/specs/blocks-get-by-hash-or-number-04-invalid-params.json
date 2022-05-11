@@ -8,6 +8,14 @@
     "/api/v1/blocks/0xff90773193892540084e62086df3953d2362061b16cf682fde5bb00830b232b2",
     "/api/v1/blocks/10"
   ],
-  "responseStatus": 200,
-  "responseJson": {}
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
+  }
 }

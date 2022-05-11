@@ -224,27 +224,6 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - blocks
-  /api/v1/blocks:
-    get:
-      summary: List blocks
-      description: Returns a list of blocks on the network.
-      operationId: listBlocks
-      parameters:
-        - $ref: '#/components/parameters/blockNumberQueryParam'
-        - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
-        - $ref: '#/components/parameters/limitQueryParam'
-      responses:
-        200:
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BlocksResponse'
-        400:
-          $ref: '#/components/responses/InvalidParameterError'
-      tags:
-        - blocks
   /api/v1/blocks/{hashOrNumber}:
     get:
       summary: Get block by hash or number
