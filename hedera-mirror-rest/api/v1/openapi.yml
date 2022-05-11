@@ -240,6 +240,8 @@ paths:
                 $ref: '#/components/schemas/BlockResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
       tags:
         - blocks
   /api/v1/contracts:
@@ -1138,7 +1140,6 @@ components:
     BlockResponse:
       allOf:
         - $ref: '#/components/schemas/Block'
-        - type: object
     StateProofResponse:
       type: object
       properties:
@@ -1613,15 +1614,15 @@ components:
       pattern: '^(0x)?[A-Fa-f0-9]{96}$'
     EthereumHash:
       type: string
-      description: A hedera hash format.
+      description: A ethereum hash format.
       minLength: 64
       maxLength: 66
       pattern: '^(0x)?[A-Fa-f0-9]{64}$'
     PositiveNumber:
-      type: string
-      description: A hedera hash format.
-      minLength: 64
-      maxLength: 66
+      type: integer
+      format: int64
+      description: A positive number.
+      minimum: 0
       pattern: '\d{1,19}$'
     EvmAddress:
       type: string

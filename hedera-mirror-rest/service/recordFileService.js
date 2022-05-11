@@ -136,7 +136,7 @@ class RecordFileService extends BaseService {
 
   async getByHashOrNumber(hash, number) {
     let whereStatement = '';
-    let params = [];
+    const params = [];
     if (hash) {
       const hashWithPrefix = utils.addHexPrefix(hash);
       const hashWithoutPrefix = hashWithPrefix.substring(2);
