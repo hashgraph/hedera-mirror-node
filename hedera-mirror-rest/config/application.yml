@@ -101,6 +101,7 @@ hedera:
         headers:
           default: { 'Cache-Control': 'public, max-age=1' }
           path:
+            /api/v1/network/exchangerate: { 'Cache-Control': 'public, max-age=600' }
             /api/v1/transactions/:transactionId: { 'Cache-Control': 'public, max-age=300' }
             /api/v1/transactions/:transactionId/stateproof: { 'Cache-Control': 'public, max-age=600' }
         includeHostInLink: false
