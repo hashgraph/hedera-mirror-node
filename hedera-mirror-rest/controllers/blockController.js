@@ -38,7 +38,7 @@ const {
 
 const validateHashOrNumber = (hashOrNumber) => {
   if (utils.isValidBlockHash(hashOrNumber)) {
-    return {hash: hashOrNumber, number: null};
+    return {hash: hashOrNumber.replace('0x', ''), number: null};
   }
 
   if (utils.isPositiveLong(hashOrNumber)) {

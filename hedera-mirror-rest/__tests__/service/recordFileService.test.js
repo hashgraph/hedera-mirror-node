@@ -184,29 +184,11 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
     expectToEqualId16(block);
   });
 
-  test('RecordFileService.getByHashOrNumber with valid hedera hash with prefix', async () => {
-    await integrationDomainOps.loadRecordFiles(recordFiles);
-
-    const block = await RecordFileService.getByHashOrNumber(
-      '0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c'
-    );
-    expectToEqualId16(block);
-  });
-
   test('RecordFileService.getByHashOrNumber with valid eth hash without prefix', async () => {
     await integrationDomainOps.loadRecordFiles(recordFiles);
 
     const block = await RecordFileService.getByHashOrNumber(
       'b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c1278'
-    );
-    expectToEqualId17(block);
-  });
-
-  test('RecordFileService.getByHashOrNumber with valid eth hash with prefix', async () => {
-    await integrationDomainOps.loadRecordFiles(recordFiles);
-
-    const block = await RecordFileService.getByHashOrNumber(
-      '0xb0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c1278'
     );
     expectToEqualId17(block);
   });

@@ -22,7 +22,6 @@
 
 const _ = require('lodash');
 
-const utils = require('../utils');
 const BaseService = require('./baseService');
 const {RecordFile} = require('../model');
 
@@ -138,11 +137,8 @@ class RecordFileService extends BaseService {
     let whereStatement = '';
     const params = [];
     if (hash) {
-      const hashWithPrefix = utils.addHexPrefix(hash);
-      const hashWithoutPrefix = hashWithPrefix.substring(2);
-
       whereStatement += `${RecordFile.HASH} like $1`;
-      params.push(hashWithoutPrefix + '%');
+      params.push(hash + '%');
     } else {
       whereStatement += `${RecordFile.INDEX} = $1`;
       params.push(number);

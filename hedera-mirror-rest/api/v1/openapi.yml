@@ -1608,13 +1608,13 @@ components:
                     type: string
     HederaHash:
       type: string
-      description: A hedera hash format.
+      description: A hex encoded hedera transaction hash.
       minLength: 96
       maxLength: 98
       pattern: '^(0x)?[A-Fa-f0-9]{96}$'
     EthereumHash:
       type: string
-      description: A ethereum hash format.
+      description: A hex encoded ethereum transaction hash.
       minLength: 64
       maxLength: 66
       pattern: '^(0x)?[A-Fa-f0-9]{64}$'

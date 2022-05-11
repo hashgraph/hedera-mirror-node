@@ -1,5 +1,5 @@
 {
-  "description": "Get block getByHashOrNumber with invalid params",
+  "description": "Get block getByHashOrNumber with non matching records",
   "setup": {},
   "urls": [
     "/api/v1/blocks/b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216",
