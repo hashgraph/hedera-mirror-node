@@ -53,7 +53,9 @@ class ContractService extends BaseService {
   `;
 
   static transactionTableCTE = `with ${Transaction.tableAlias} as (
-      select * from ${Transaction.tableName}
+      select
+      ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.INDEX}, ${Transaction.NONCE}
+      from ${Transaction.tableName}
       where $where
     )
   `;

@@ -51,7 +51,9 @@ class TransactionService extends BaseService {
       and ${Transaction.VALID_START_NS} = $2`;
 
   static transactionDetailsFromEthHashQuery = `with ${EthereumTransaction.tableAlias} as (
-      select * from ${EthereumTransaction.tableName}
+      select ${EthereumTransaction.CONSENSUS_TIMESTAMP}, ${EthereumTransaction.HASH} from ${
+    EthereumTransaction.tableName
+  }
       where ${EthereumTransaction.tableName}.${EthereumTransaction.HASH} = $1
   )
     ${this.selectTransactionDetailsBaseQuery}
