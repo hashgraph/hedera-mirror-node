@@ -122,10 +122,9 @@ class ContractService extends BaseService {
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
     let joinTransactionTable = false;
-    let transactionWhereClauses = [];
+    const transactionWhereClauses = [];
     if (whereConditions.length) {
-      for (let c = 0; c < whereConditions.length; c++) {
-        const condition = whereConditions[c];
+      for (let condition of whereConditions) {
         if (
           condition.includes(`${Transaction.tableAlias}.${Transaction.INDEX}`) ||
           condition.includes(`${Transaction.tableAlias}.${Transaction.NONCE}`)

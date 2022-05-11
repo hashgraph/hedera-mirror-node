@@ -357,7 +357,7 @@ describe('utils formatComparator tests', () => {
 
 describe('utils filterDependencyCheck tests', () => {
   test('Verify formatComparator for isolated transaction.index', () => {
-    let query = {};
+    const query = {};
     query[constants.filterKeys.TRANSACTION_INDEX] = 'eq:1';
     try {
       utils.filterDependencyCheck(query);
@@ -370,7 +370,7 @@ describe('utils filterDependencyCheck tests', () => {
   });
 
   test('Verify formatComparator for transaction.index with block.number', () => {
-    let query = {};
+    const query = {};
     query[constants.filterKeys.TRANSACTION_INDEX] = 'eq:1';
     query[constants.filterKeys.BLOCK_NUMBER] = 'eq:1';
     try {
@@ -381,7 +381,7 @@ describe('utils filterDependencyCheck tests', () => {
   });
 
   test('Verify formatComparator for transaction.index with block.hash', () => {
-    let query = {};
+    const query = {};
     query[constants.filterKeys.TRANSACTION_INDEX] = 'eq:1';
     query[constants.filterKeys.BLOCK_HASH] = 'eq:1';
     try {

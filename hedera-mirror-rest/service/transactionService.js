@@ -86,7 +86,7 @@ class TransactionService extends BaseService {
    * @return {Promise<Transaction[]>} transactions subset
    */
   async getTransactionDetailsFromTransactionId(transactionId, nonce = undefined, excludeTransactionResults = []) {
-    return await this.getTransactionDetails(
+    return this.getTransactionDetails(
       TransactionService.transactionDetailsFromTransactionIdQuery,
       [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()],
       'getTransactionDetailsFromEthHash',
@@ -96,7 +96,7 @@ class TransactionService extends BaseService {
   }
 
   async getTransactionDetailsFromEthHash(ethHash, nonce = undefined, excludeTransactionResults = []) {
-    return await this.getTransactionDetails(
+    return this.getTransactionDetails(
       TransactionService.transactionDetailsFromEthHashQuery,
       [ethHash],
       'getTransactionDetailsFromEthHash',

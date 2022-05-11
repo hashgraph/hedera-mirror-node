@@ -291,7 +291,7 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
  * @return {Boolean} true if the parameter is valid. false otherwise
  */
 const contractResultsFilterValidityChecks = (param, op, val) => {
-  let ret = utils.filterValidityChecks(param, op, val);
+  const ret = utils.filterValidityChecks(param, op, val);
   if (ret && param === constants.filterKeys.BLOCK_NUMBER) {
     return op === constants.queryParamOperators.eq;
   }
@@ -663,7 +663,9 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractById = async (req, res) => {
-    if (utils.conflictingPathParam(req, 'contractId', 'results')) return;
+    if (utils.conflictingPathParam(req, 'contractId', 'results')) {
+      return;
+    }
 
     const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req);
 
@@ -886,7 +888,9 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractResultsByTransactionIdOrHash = async (req, res) => {
-    if (utils.conflictingPathParam(req, 'transactionIdOrHash', 'logs')) return;
+    if (utils.conflictingPathParam(req, 'transactionIdOrHash', 'logs')) {
+      return;
+    }
 
     utils.validateReq(req);
 
