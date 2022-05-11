@@ -28,6 +28,8 @@ spring:
     password: ${hedera.mirror.importer.db.password}
     placeholders:
       compressionAge: 9223372036854775807 # use long max to avoid compression during test
+    # disable repeatable migrations to avoid failures when running them with old version
+    repeatableSqlMigrationPrefix: DISABLED
     user: ${hedera.mirror.importer.db.username}
   redis:
     host: ${embedded.redis.host}

@@ -29,7 +29,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import javax.annotation.Resource;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -40,7 +39,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.test.context.TestPropertySource;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.EnabledIfV1;
@@ -54,9 +52,6 @@ class MissingEvmAddressMigrationTest extends IntegrationTest {
     private static final String TABLE_IDS = "id";
 
     private static final String TABLE_NAME = "contract";
-
-    @Resource
-    private DomainBuilder domainBuilder;
 
     @Value("classpath:db/migration/v1/V1.55.5__missing_evm_address.sql")
     private File migrationSql;
