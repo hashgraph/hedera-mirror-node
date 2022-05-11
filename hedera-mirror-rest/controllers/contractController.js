@@ -35,14 +35,7 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
-const {
-  Contract,
-  ContractLog,
-  ContractResult,
-  TransactionResult,
-  RecordFile,
-  Transaction,
-} = require('../model');
+const {Contract, ContractLog, ContractResult, TransactionResult, RecordFile, Transaction} = require('../model');
 const {ContractService, FileDataService, RecordFileService, TransactionService} = require('../service');
 const TransactionId = require('../transactionId');
 const utils = require('../utils');
@@ -903,17 +896,16 @@ class ContractController extends BaseController {
     let transactions = [];
     // When getting transactions, exclude duplicate transactions. there can be at most one
     if (utils.isValidEthHash(transactionIdOrHash)) {
-      const ethHash = transactionIdOrHash;
+      const ethHash = transactionIdOrHash.replace('0x', '');
       // get transactions using ethereum hash and nonce
       transactions = await TransactionService.getTransactionDetailsFromEthHash(
         ethHash,
         nonce,
         duplicateTransactionResult
       );
-    }
-    else {
+    } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
-      // get transactions using id and nonce,
+      // get transactions using id and nonce
       transactions = await TransactionService.getTransactionDetailsFromTransactionId(
         transactionId,
         nonce,
@@ -926,7 +918,7 @@ class ContractController extends BaseController {
     } else if (transactions.length > 1) {
       logger.error(
         'Transaction invariance breached: there should be at most one transaction with none-duplicate-transaction ' +
-        'result for a specific (payer + valid start timestamp + nonce) combination'
+          'result for a specific (payer + valid start timestamp + nonce) combination'
       );
       throw new Error('Transaction invariance breached');
     }

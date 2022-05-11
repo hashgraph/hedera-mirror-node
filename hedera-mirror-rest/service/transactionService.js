@@ -85,12 +85,8 @@ class TransactionService extends BaseService {
    * @param {Number[]|Number} excludeTransactionResults Transaction results to exclude, can be a list or a single result
    * @return {Promise<Transaction[]>} transactions subset
    */
-  async getTransactionDetailsFromTransactionId(
-    transactionId,
-    nonce = undefined,
-    excludeTransactionResults = []
-  ) {
-    return await this.addFiltersAndGetResults(
+  async getTransactionDetailsFromTransactionId(transactionId, nonce = undefined, excludeTransactionResults = []) {
+    return await this.getTransactionDetails(
       TransactionService.transactionDetailsFromTransactionIdQuery,
       [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()],
       'getTransactionDetailsFromEthHash',
@@ -99,12 +95,8 @@ class TransactionService extends BaseService {
     );
   }
 
-  async getTransactionDetailsFromEthHash(
-    ethHash,
-    nonce = undefined,
-    excludeTransactionResults = []
-  ) {
-    return await this.addFiltersAndGetResults(
+  async getTransactionDetailsFromEthHash(ethHash, nonce = undefined, excludeTransactionResults = []) {
+    return await this.getTransactionDetails(
       TransactionService.transactionDetailsFromEthHashQuery,
       [ethHash],
       'getTransactionDetailsFromEthHash',
@@ -113,13 +105,7 @@ class TransactionService extends BaseService {
     );
   }
 
-  async addFiltersAndGetResults(
-    query,
-    params,
-    parentFunctionName,
-    nonce = undefined,
-    excludeTransactionResults = []
-  ) {
+  async getTransactionDetails(query, params, parentFunctionName, nonce = undefined, excludeTransactionResults = []) {
     if (nonce !== undefined) {
       params.push(nonce);
       query = `${query}
