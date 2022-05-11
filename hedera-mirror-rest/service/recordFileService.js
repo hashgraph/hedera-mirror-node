@@ -52,6 +52,18 @@ class RecordFileService extends BaseService {
     order by ${RecordFile.CONSENSUS_END} asc
     limit 1`;
 
+  static recordFileBlockDetailsFromIndexQuery = `select
+    ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
+    from ${RecordFile.tableName}
+    where  ${RecordFile.INDEX} = $1
+    limit 1`;
+
+  static recordFileBlockDetailsFromHashQuery = `select
+    ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
+    from ${RecordFile.tableName}
+    where  ${RecordFile.HASH} like $1
+    limit 1`;
+
   static blocksQuery = `select
     ${RecordFile.COUNT}, ${RecordFile.HASH}, ${RecordFile.NAME}, ${RecordFile.PREV_HASH}, ${RecordFile.BYTES},
     ${RecordFile.HAPI_VERSION_MAJOR}, ${RecordFile.HAPI_VERSION_MINOR}, ${RecordFile.HAPI_VERSION_PATCH},
@@ -66,16 +78,45 @@ class RecordFileService extends BaseService {
    * @return {Promise<RecordFile>} recordFile subset
    */
   async getRecordFileBlockDetailsFromTimestamp(timestamp) {
-    const rows = await super.getRows(
+    const row = await super.getSingleRow(
       RecordFileService.recordFileBlockDetailsFromTimestampQuery,
       [timestamp],
       'getRecordFileBlockDetailsFromTimestamp'
     );
-    if (_.isEmpty(rows) || rows.length > 1) {
-      return null;
-    }
 
-    return new RecordFile(rows[0]);
+    return _.isNull(row) ? null : new RecordFile(row);
+  }
+
+  /**
+   * Retrieves the recordFile with the given index
+   *
+   * @param {number} index Int8
+   * @return {Promise<RecordFile>} recordFile subset
+   */
+  async getRecordFileBlockDetailsFromIndex(index) {
+    const row = await super.getSingleRow(
+      RecordFileService.recordFileBlockDetailsFromIndexQuery,
+      [index],
+      'getRecordFileBlockDetailsFromIndex'
+    );
+
+    return _.isNull(row) ? null : new RecordFile(row);
+  }
+
+  /**
+   * Retrieves the recordFile with the given index
+   *
+   * @param {string} hash
+   * @return {Promise<RecordFile>} recordFile subset
+   */
+  async getRecordFileBlockDetailsFromHash(hash) {
+    const row = await super.getSingleRow(
+      RecordFileService.recordFileBlockDetailsFromHashQuery,
+      [`${hash}%`],
+      'getRecordFileBlockDetailsFromHash'
+    );
+
+    return _.isNull(row) ? null : new RecordFile(row);
   }
 
   async getBlocks(filters) {
