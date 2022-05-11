@@ -892,24 +892,41 @@ class ContractController extends BaseController {
    * @param {Response} res HTTP response object
    * @returns {Promise<void>}
    */
-  getContractResultsByTransactionId = async (req, res) => {
-    utils.validateReq(req);
-    // extract filters from query param
-    const transactionId = TransactionId.fromString(req.params.transactionId);
-    const nonce = getLastNonceParamValue(req.query);
+  getContractResultsByTransactionIdOrHash = async (req, res) => {
+    if (utils.conflictingPathParam(req, 'transactionIdOrHash', 'logs')) return;
 
-    // get transactions using id and nonce, exclude duplicate transactions. there can be at most one
-    const transactions = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
-      transactionId,
-      nonce,
-      duplicateTransactionResult
-    );
+    utils.validateReq(req);
+
+    // extract filters from query param
+    const {transactionIdOrHash} = req.params;
+    const nonce = getLastNonceParamValue(req.query);
+    let transactions = [];
+    // When getting transactions, exclude duplicate transactions. there can be at most one
+    if (utils.isValidEthHash(transactionIdOrHash)) {
+      const ethHash = transactionIdOrHash;
+      // get transactions using ethereum hash and nonce
+      transactions = await TransactionService.getTransactionDetailsFromEthHash(
+        ethHash,
+        nonce,
+        duplicateTransactionResult
+      );
+    }
+    else {
+      const transactionId = TransactionId.fromString(transactionIdOrHash);
+      // get transactions using id and nonce,
+      transactions = await TransactionService.getTransactionDetailsFromTransactionId(
+        transactionId,
+        nonce,
+        duplicateTransactionResult
+      );
+    }
+
     if (transactions.length === 0) {
       throw new NotFoundError('No correlating transaction');
     } else if (transactions.length > 1) {
       logger.error(
         'Transaction invariance breached: there should be at most one transaction with none-duplicate-transaction ' +
-          'result for a specific (payer + valid start timestamp + nonce) combination'
+        'result for a specific (payer + valid start timestamp + nonce) combination'
       );
       throw new Error('Transaction invariance breached');
     }
@@ -970,7 +987,7 @@ module.exports = exportControllerMethods([
   'getContractResults',
   'getContractResultsById',
   'getContractResultsByTimestamp',
-  'getContractResultsByTransactionId',
+  'getContractResultsByTransactionIdOrHash',
 ]);
 
 if (utils.isTestEnv()) {

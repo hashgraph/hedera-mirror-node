@@ -155,6 +155,16 @@ const isValidBlockHash = (query) => {
   return blockHashPattern.test(query);
 };
 
+const ethHashPattern = /^(0x)?([0-9A-Fa-f]{64})$/;
+const isValidEthHash = (hash) => {
+  if (hash === undefined) {
+    return false;
+  }
+
+  return ethHashPattern.test(hash);
+};
+
+
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
 
 const addressBookFileIdPattern = ['101', '0.101', '0.0.101', '102', '0.102', '0.0.102'];
@@ -1342,6 +1352,7 @@ module.exports = {
   isTestEnv,
   isPositiveLong,
   isRegexMatch,
+  isValidEthHash,
   isValidPublicKeyQuery,
   isValidOperatorQuery,
   isValidValueIgnoreCase,
