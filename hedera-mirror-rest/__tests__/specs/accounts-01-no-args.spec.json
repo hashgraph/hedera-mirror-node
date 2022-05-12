@@ -34,6 +34,8 @@
       },
       {
         "alias": "32W353Y",
+        "evm_address": "81f45dd06f708f9829e3a0284b464d9cbec37e61",
+        "ethereum_nonce": 9007199254740992,
         "num": 10,
         "expiration_timestamp": "9223372036854775807",
         "receiver_sig_required": true
@@ -129,6 +131,7 @@
     ],
     "contracts": [
       {
+        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57",
         "num": 7,
         "max_automatic_token_associations": 20
       },
@@ -161,6 +164,8 @@
         "account": "0.0.1",
         "alias": null,
         "deleted": false,
+        "ethereum_nonce": null,
+        "evm_address": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": {
@@ -188,6 +193,8 @@
         },
         "account": "0.0.2",
         "alias": null,
+        "ethereum_nonce": null,
+        "evm_address": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": {
@@ -207,6 +214,8 @@
         },
         "account": "0.0.3",
         "alias": null,
+        "ethereum_nonce": null,
+        "evm_address": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": {
@@ -226,6 +235,8 @@
         },
         "account": "0.0.4",
         "alias": null,
+        "ethereum_nonce": null,
+        "evm_address": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": {
@@ -254,6 +265,8 @@
         },
         "account": "0.0.5",
         "alias": null,
+        "ethereum_nonce": null,
+        "evm_address": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": {
@@ -273,6 +286,8 @@
         },
         "account": "0.0.6",
         "alias": null,
+        "ethereum_nonce": null,
+        "evm_address": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": {
@@ -292,6 +307,8 @@
         },
         "account": "0.0.7",
         "alias": null,
+        "ethereum_nonce": null,
+        "evm_address": "0xebb9a1be370150759408cd7af48e9eda2b8ead57",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -308,6 +325,8 @@
         },
         "account": "0.0.8",
         "alias": null,
+        "ethereum_nonce": null,
+        "evm_address": "0x0000000000000000000000000000000000000008",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -324,6 +343,8 @@
         },
         "account": "0.0.9",
         "alias": null,
+        "ethereum_nonce": null,
+        "evm_address": null,
         "expiry_timestamp": "9223372036.854775806",
         "auto_renew_period": null,
         "key": null,
@@ -340,6 +361,8 @@
         },
         "account": "0.0.10",
         "alias": "32W353Y",
+        "ethereum_nonce": 9007199254740992,
+        "evm_address": "0x81f45dd06f708f9829e3a0284b464d9cbec37e61",
         "expiry_timestamp": "9223372036.854775807",
         "auto_renew_period": null,
         "key": null,

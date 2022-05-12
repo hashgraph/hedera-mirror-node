@@ -43,14 +43,15 @@
     "/api/v1/accounts/0.5.6.7",
     "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72000",
     "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72000",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72000"
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72000",
+    "/api/v1/accounts/1.2.0000000000000000000000000000000000000013"
   ],
   "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Invalid parameter: accountAliasOrAccountId"
+          "message": "Invalid parameter: idOrAliasOrEvmAddress"
         }
       ]
     }

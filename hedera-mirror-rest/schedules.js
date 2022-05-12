@@ -129,7 +129,8 @@ const formatScheduleRow = (row) => {
  * @returns {Promise<void>}
  */
 const getScheduleById = async (req, res) => {
-  const scheduleId = EntityId.parse(req.params.scheduleId, constants.filterKeys.SCHEDULEID).getEncodedId();
+  const parseOptions = {allowEvmAddress: false, paramName: constants.filterKeys.SCHEDULEID};
+  const scheduleId = EntityId.parse(req.params.scheduleId, parseOptions).getEncodedId();
   if (logger.isTraceEnabled()) {
     logger.trace(`getScheduleById query: ${getScheduleByIdQuery}, params: ${scheduleId}`);
   }

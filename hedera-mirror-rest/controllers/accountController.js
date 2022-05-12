@@ -328,14 +328,14 @@ const validateSingleFilterKeyOccurrence = (filterMap, filter) => {
 };
 
 /**
- * Handler function for /accounts/:accountAliasOrAccountId/nfts API
+ * Handler function for /accounts/:idOrAliasOrEvmAddress/nfts API
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @returns {Promise<void>}
  */
 const getNftsByAccountId = async (req, res) => {
   // extract filters from query param
-  const accountId = await EntityService.getEncodedIdAccountIdOrAlias(req.params.accountAliasOrAccountId);
+  const accountId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
 
   // extract filters from query param
   const filters = utils.buildAndValidateFilters(req.query);
