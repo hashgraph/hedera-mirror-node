@@ -390,7 +390,7 @@ const getAccounts = async (req, res) => {
 };
 
 /**
- * Handler function for /account/:accountAliasOrAccountId API.
+ * Handler function for /account/:idOrAliasOrEvmAddress API.
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @return {Promise}
