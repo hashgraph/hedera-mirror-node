@@ -78,7 +78,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @Transient
-    private final LogsBloomFilter logsBloomFilter = new LogsBloomFilter();
+    private transient final LogsBloomFilter logsBloomFilter = new LogsBloomFilter();
 
     private Integer hapiVersionMajor;
 
