@@ -224,6 +224,26 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - blocks
+  /api/v1/blocks/{hashOrNumber}:
+    get:
+      summary: Get block by hash or number
+      description: Returns the block information by given hash or number.
+      operationId: getByHashOrNumber
+      parameters:
+        - $ref: '#/components/parameters/hashOrNumberPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Block'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - blocks
   /api/v1/contracts:
     get:
       summary: List contract entities on network
@@ -1583,6 +1603,23 @@ components:
                 properties:
                   message:
                     type: string
+    HederaHash:
+      type: string
+      description: A hex encoded hedera transaction hash.
+      minLength: 96
+      maxLength: 98
+      pattern: '^(0x)?[A-Fa-f0-9]{96}$'
+    EthereumHash:
+      type: string
+      description: A hex encoded ethereum transaction hash.
+      minLength: 64
+      maxLength: 66
+      pattern: '^(0x)?[A-Fa-f0-9]{64}$'
+    PositiveNumber:
+      type: integer
+      format: int64
+      description: A positive number.
+      minimum: 0
     EvmAddress:
       type: string
       description: A network entity encoded as an EVM address in hex.
@@ -2690,6 +2727,16 @@ components:
         oneOf:
           - $ref: '#/components/schemas/EntityId'
           - $ref: '#/components/schemas/EvmAddressWithShardRealm'
+    hashOrNumberPathParam:
+      name: hashOrNumber
+      in: path
+      required: true
+      description: Accepts both eth and hedera hash format or block number
+      schema:
+        oneOf:
+          - $ref: '#/components/schemas/HederaHash'
+          - $ref: '#/components/schemas/EthereumHash'
+          - $ref: '#/components/schemas/PositiveNumber'
     entityIdPathParam:
       name: entityId
       in: path

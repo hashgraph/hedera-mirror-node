@@ -35,14 +35,7 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
-const {
-  Contract,
-  ContractLog,
-  ContractResult,
-  TransactionResult,
-  RecordFile,
-  Transaction,
-} = require('../model');
+const {Contract, ContractLog, ContractResult, TransactionResult, RecordFile, Transaction} = require('../model');
 const {ContractService, FileDataService, RecordFileService, TransactionService} = require('../service');
 const TransactionId = require('../transactionId');
 const utils = require('../utils');
