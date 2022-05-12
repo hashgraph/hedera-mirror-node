@@ -32,11 +32,11 @@ class BlockViewModel {
    * @param {Block} recordFile
    */
   constructor(recordFile) {
-    this.count = BigInt(recordFile.count);
+    this.count = recordFile.count;
     this.hapi_version = recordFile.getFullHapiVersion();
     this.hash = utils.addHexPrefix(recordFile.hash);
     this.name = recordFile.name;
-    this.number = BigInt(recordFile.index);
+    this.number = recordFile.index;
     this.previous_hash = utils.addHexPrefix(recordFile.prevHash);
     this.size = recordFile.bytes ? recordFile.bytes.length : null;
     this.timestamp = {

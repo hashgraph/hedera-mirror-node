@@ -237,7 +237,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/BlockResponse'
+                $ref: '#/components/schemas/Block'
         400:
           $ref: '#/components/responses/InvalidParameterError'
         404:
@@ -1137,9 +1137,6 @@ components:
           $ref: '#/components/schemas/Blocks'
         links:
           $ref: '#/components/schemas/Links'
-    BlockResponse:
-      allOf:
-        - $ref: '#/components/schemas/Block'
     StateProofResponse:
       type: object
       properties:
@@ -1623,7 +1620,6 @@ components:
       format: int64
       description: A positive number.
       minimum: 0
-      pattern: '\d{1,19}$'
     EvmAddress:
       type: string
       description: A network entity encoded as an EVM address in hex.

@@ -38,11 +38,11 @@ describe('BlockViewModel', () => {
     bytes: '10101100',
   });
   const defaultExpected = {
-    count: 3n,
+    count: 3,
     hapi_version: '0.22.3',
     hash: '0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c',
     name: '2022-04-27T12_09_24.499938763Z.rcd',
-    number: 16n,
+    number: 16,
     previous_hash: '0x000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     size: 8,
     timestamp: {
