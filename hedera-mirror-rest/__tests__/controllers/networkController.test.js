@@ -22,6 +22,7 @@
 
 const constants = require('../../constants');
 const {NetworkController} = require('../../controllers');
+const {FileData} = require('../../model');
 const networkCtrl = require('../../controllers/networkController');
 const utils = require('../../utils');
 
@@ -179,6 +180,114 @@ describe('validateExtractNetworkNodesQuery throw', () => {
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
       expect(() => NetworkController.extractNetworkNodesQuery(spec.input.filters)).toThrowErrorMatchingSnapshot();
+    });
+  });
+});
+
+describe('extractExchangeRateQuery', () => {
+  const defaultExpected = {
+    whereQuery: [],
+  };
+
+  const specs = [
+    {
+      name: 'no timestamp',
+      input: {
+        filters: [],
+      },
+      expected: {
+        ...defaultExpected,
+      },
+    },
+    {
+      name: 'le timestamp',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.lt,
+            value: 2,
+          },
+        ],
+      },
+      expected: {
+        ...defaultExpected,
+        whereQuery: [
+          {
+            query: `${FileData.CONSENSUS_TIMESTAMP}  < `,
+            param: 2,
+          },
+        ],
+      },
+    },
+    {
+      name: 'lte timestamp',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.lte,
+            value: 2,
+          },
+        ],
+      },
+      expected: {
+        ...defaultExpected,
+        whereQuery: [
+          {
+            query: `${FileData.CONSENSUS_TIMESTAMP}  <= `,
+            param: 2,
+          },
+        ],
+      },
+    },
+    {
+      name: 'gt timestamp',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gt,
+            value: 2,
+          },
+        ],
+      },
+      expected: {
+        ...defaultExpected,
+        whereQuery: [
+          {
+            query: `${FileData.CONSENSUS_TIMESTAMP}  > `,
+            param: 2,
+          },
+        ],
+      },
+    },
+    {
+      name: 'gte timestamp',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gte,
+            value: 2,
+          },
+        ],
+      },
+      expected: {
+        ...defaultExpected,
+        whereQuery: [
+          {
+            query: `${FileData.CONSENSUS_TIMESTAMP}  >= `,
+            param: 2,
+          },
+        ],
+      },
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(networkCtrl.extractExchangeRateQuery(spec.input.filters)).toEqual(spec.expected);
     });
   });
 });

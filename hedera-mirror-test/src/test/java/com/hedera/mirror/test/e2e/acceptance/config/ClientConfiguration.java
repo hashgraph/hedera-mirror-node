@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.CacheControl;
@@ -47,6 +49,7 @@ import reactor.netty.http.client.HttpClient;
 
 import com.hedera.hashgraph.sdk.PrecheckStatusException;
 import com.hedera.hashgraph.sdk.ReceiptStatusException;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 
 @Configuration
 @RequiredArgsConstructor
@@ -65,10 +68,8 @@ class ClientConfiguration {
                 TimeoutException.class, true,
                 RuntimeException.class, true,
                 ReceiptStatusException.class, true); // make configurable
-        SimpleRetryPolicy simpleRetryPolicy = new SimpleRetryPolicy(
-                acceptanceTestProperties.getMaxRetries(),
-                retryableExceptionMap,
-                true); // traverseCauses
+        int maxRetries = acceptanceTestProperties.getMaxRetries();
+        var simpleRetryPolicy = new SimpleRetryPolicy(maxRetries, retryableExceptionMap, true);
 
         RetryTemplate retryTemplate = new RetryTemplate();
         retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
@@ -98,6 +99,7 @@ class ClientConfiguration {
                 .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         Jackson2JsonDecoder jackson2JsonDecoder = new Jackson2JsonDecoder(objectMapper, MediaType.APPLICATION_JSON);
         Jackson2JsonEncoder jackson2JsonEncoder = new Jackson2JsonEncoder(objectMapper, MediaType.APPLICATION_JSON);
+        Logger logger = LogManager.getLogger(MirrorNodeClient.class);
 
         return WebClient.builder()
                 .baseUrl(acceptanceTestProperties.getRestPollingProperties().getBaseUrl())
@@ -111,6 +113,9 @@ class ClientConfiguration {
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                     httpHeaders.setCacheControl(CacheControl.noStore());
                 })
+                .filter((request, next) -> next.exchange(request).doOnNext(response ->
+                        logger.info("{} {}: {}", request.method(), request.url(), response.statusCode()))
+                )
                 .build();
     }
 }

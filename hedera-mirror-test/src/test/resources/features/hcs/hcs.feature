@@ -13,50 +13,6 @@ Feature: HCS Base Coverage Feature
             | numMessages |
             | 10          |
 
-    @opensubscribe @acceptance
-    Scenario Outline: Validate Topic message submission to an open submit topic
-        Given I successfully create a new open topic
-        And I publish and verify <numMessages> messages sent
-        Then the network should successfully observe the topic
-        When I provide a number of messages <numMessages> I want to receive
-        And I subscribe with a filter to retrieve messages
-        Then the network should successfully observe these messages
-        Examples:
-            | numMessages |
-            | 2           |
-
-    @subscribeonly
-    Scenario Outline: Validate topic message subscription only
-        Given I provide a topic id <topicId>
-        And I provide a starting timestamp <startTimestamp> and a number of messages <numMessages> I want to receive
-        When I subscribe with a filter to retrieve messages
-        Then the network should successfully observe these messages
-        Examples:
-            | topicId | startTimestamp | numMessages |
-            | ""      | "-86400"       | 5           |
-
-    @publishonly
-    Scenario Outline: Validate topic message subscription
-        Given I provide a topic id <topicId>
-        And I publish <numBatches> batches of <numMessages> messages every <milliSleep> milliseconds
-        Then the network should successfully observe the topic
-        And I subscribe with a filter to retrieve these published messages
-        Then the network should successfully observe these messages
-        Examples:
-            | topicId | numBatches | numMessages | milliSleep |
-            | ""      | 2          | 3           | 2000       |
-
-    @publishandverify
-    Scenario Outline: Validate topic message subscription
-        Given I provide a topic id <topicId>
-        And I publish and verify <numMessages> messages sent
-        Then the network should successfully observe the topic
-        And I subscribe with a filter to retrieve these published messages
-        Then the network should successfully observe these messages
-        Examples:
-            | topicId  | numMessages |
-            | "171231" | 340         |
-
     @release @acceptance @updatetopic
     Scenario: Validate Topic Updates
         Given I successfully create a new topic id

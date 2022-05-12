@@ -17,4 +17,4 @@ Feature: Contract Base Coverage Feature
         And the mirror node REST API should verify the deleted contract entity
         Examples:
             | httpStatusCode | initialBalance |
-            | 200            | 1000           |
+            | 200            | 10000000       |

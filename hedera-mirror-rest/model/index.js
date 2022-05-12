@@ -33,6 +33,8 @@ module.exports = {
   CryptoTransfer: require('./cryptoTransfer'),
   CustomFee: require('./customFee'),
   Entity: require('./entity'),
+  EthereumTransaction: require('./ethereumTransaction'),
+  ExchangeRate: require('./exchangeRate'),
   FileData: require('./fileData'),
   NetworkNode: require('./networkNode'),
   Nft: require('./nft'),

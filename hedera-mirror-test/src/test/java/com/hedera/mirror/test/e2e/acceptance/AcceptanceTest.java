@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,21 +20,16 @@ package com.hedera.mirror.test.e2e.acceptance;
  * ‍
  */
 
-import io.cucumber.junit.Cucumber;
-import io.cucumber.junit.CucumberOptions;
 import io.cucumber.spring.CucumberContextConfiguration;
-import org.junit.runner.RunWith;
+import org.junit.platform.suite.api.IncludeEngines;
+import org.junit.platform.suite.api.SelectClasspathResource;
+import org.junit.platform.suite.api.Suite;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@RunWith(Cucumber.class)
-@CucumberOptions(
-        features = "src/test/resources",
-        glue = "com.hedera.mirror.test.e2e.acceptance",
-        plugin = {"pretty", "me.jvt.cucumber.report.PrettyReports:target/cucumber",
-                "timeline:target/cucumber/thread-report"},
-        tags = "@critical"
-)
-@SpringBootTest
+@Suite
+@IncludeEngines("cucumber")
+@SelectClasspathResource("features")
+@SpringBootTest(properties = "spring.main.banner-mode=off")
 @CucumberContextConfiguration
 public class AcceptanceTest {
 }

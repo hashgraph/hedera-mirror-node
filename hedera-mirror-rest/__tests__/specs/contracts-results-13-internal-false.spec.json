@@ -1,0 +1,100 @@
+{
+  "description": "Contract results api call for a specific contract using contract id with an internal filter set to false",
+  "setup": {
+    "contracts": [
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "8001",
+        "timestamp_range": "[987654999123200, 987654999123299]"
+      },
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "5001",
+        "timestamp_range": "[987654999123300,)"
+      }
+    ],
+    "contractresults": [
+      {
+        "amount": 20,
+        "bloom": [1, 1],
+        "call_result": [2, 2],
+        "consensus_timestamp": "187654000123456",
+        "contract_id": 5001,
+        "gas_used": 100
+      },
+      {
+        "amount": 30,
+        "bloom": [3, 3],
+        "call_result": [4, 4],
+        "consensus_timestamp": "987654000123456",
+        "contract_id": 5001,
+        "created_contract_ids": [7001],
+        "gas_used": 10
+      }
+    ],
+    "transactions": [
+      {
+        "consensus_timestamp": "187654000123456",
+        "type": 11,
+        "result": 22,
+        "valid_start_ns": "187654000123456",
+        "valid_duration_seconds": 5,
+        "valid_start_timestamp": "187654000123456",
+        "node_account_id": 3,
+        "entity_id": 5001,
+        "transaction_hash": "hash1",
+        "nonce": 0,
+        "payerAccountId": 8001,
+        "index": 1
+      },
+      {
+        "consensus_timestamp": "987654000123456",
+        "type": 11,
+        "result": 22,
+        "valid_start_ns": "987654000123456",
+        "valid_duration_seconds": 5,
+        "valid_start_timestamp": "987654000123456",
+        "node_account_id": 3,
+        "entity_id": 5001,
+        "transaction_hash": "hash2",
+        "nonce": 1,
+        "payerAccountId": 9001,
+        "index": 2
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/0.0.5001/results",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results",
+    "/api/v1/contracts/0.0.5001/results?internal=false",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results?internal=false"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "results": [
+      {
+        "amount": 20,
+        "bloom": "0x0101",
+        "call_result": "0x0202",
+        "contract_id": "0.0.5001",
+        "created_contract_ids": [],
+        "error_message": null,
+        "from": "0x0000000000000000000000000000000000000065",
+        "function_parameters": "0x010102020303",
+        "gas_limit": 1000,
+        "gas_used": 100,
+        "timestamp": "187654.000123456",
+        "to": "0x0000000000000000000000000000000000001389"
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

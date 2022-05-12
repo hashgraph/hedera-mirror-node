@@ -307,16 +307,13 @@ test:
       mirror:
         test:
           acceptance:
-            existingTopicNum:
             # grpc endpoint
             mirrorNodeAddress: "{{ .Release.Name }}-grpc:5600"
-            network:
             # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
             operatorId:
             operatorKey:
             rest:
               baseUrl: "http://{{ .Release.Name }}-rest/api/v1"
-            retrieveAddressBook: false
   cucumberTags: "@acceptance"
   enabled: false
   image:

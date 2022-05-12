@@ -29,6 +29,8 @@ const filterKeys = {
   ACCOUNT_ID_OR_ALIAS: 'accountAliasOrAccountId',
   ACCOUNT_PUBLICKEY: 'account.publickey',
   BALANCE: 'balance',
+  BLOCK_HASH: 'block.hash',
+  BLOCK_NUMBER: 'block.number',
   CONTRACTID: 'contractid',
   CONTRACT_ID: 'contract.id',
   CREDIT_TYPE: 'type',
@@ -38,6 +40,7 @@ const filterKeys = {
   FROM: 'from',
   ID_OR_ALIAS_OR_EVM_ADDRESS: 'idOrAliasOrEvmAddress',
   INDEX: 'index',
+  INTERNAL: 'internal',
   LIMIT: 'limit',
   NODE_ID: 'node.id',
   NONCE: 'nonce',
@@ -58,8 +61,8 @@ const filterKeys = {
   TOPIC2: 'topic2',
   TOPIC3: 'topic3',
   TOPIC_ID: 'topic.id',
+  TRANSACTION_INDEX: 'transaction.index',
   TRANSACTION_TYPE: 'transactiontype',
-  BLOCK_NUMBER: 'block.number',
 };
 
 const entityTypes = {
