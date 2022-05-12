@@ -25,7 +25,6 @@ import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
-import java.util.Collection;
 
 /**
  * Utility methods used by Hedera adapted from {org.hyperledger.besu.evm.log.LogsBloomFilter}
@@ -46,45 +45,8 @@ public class LogsBloomFilter {
         return this;
     }
 
-    public LogsBloomFilter insertBytes(final Collection<byte[]> bytes) {
-        if (bytes != null) {
-            bytes.forEach(this::insertBytes);
-        }
-        return this;
-    }
-
     public byte[] getBloom() {
         return logsBloom.isZero() ? new byte[0] : logsBloom.toArray();
-    }
-
-    /**
-     * If true the filter could contain the bloom. If false the filter definitely does not contain the bloom.
-     *
-     * @param bloom that may be contained within this filter.
-     * @returns {boolean} if the bloom filter may contain the bloom.
-     */
-    public boolean couldContain(final byte[] bloom) {
-        if (bloom == null) {
-            return true;
-        }
-
-        final var thisBloomBytes = getBloom();
-        final var subsetBytes = new LogsBloomFilter().insertBytes(bloom).getBloom();
-        if (subsetBytes.length != thisBloomBytes.length) {
-            return false;
-        }
-
-        for (int i = 0; i < thisBloomBytes.length; i++) {
-            final byte subsetValue = subsetBytes[i];
-            if ((thisBloomBytes[i] & subsetValue) != subsetValue) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public void clear() {
-        logsBloom.clear();
     }
 
     private void insertBytes(final Bytes contractResultBloom) {

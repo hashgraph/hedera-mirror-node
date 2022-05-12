@@ -73,17 +73,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     @ToString.Exclude
     private String fileHash;
 
-    private Long gasUsed;
-
-    /**
-     * This field was created to be used during the sum of the total gas used, to avoid boxing/unboxing of
-     * {@link RecordFile#gasUsed}, since {@link RecordFile#gasUsed} must be a {@link Long} to ensure we can load
-     * a {@link RecordFile} from the database with {@code gasUsed = null}.
-     */
-    @EqualsAndHashCode.Exclude
-    @ToString.Exclude
-    @Transient
-    private long gasUsedAccumulator = 0;
+    private long gasUsed = 0L;
 
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
@@ -142,7 +132,6 @@ public class RecordFile implements StreamFile<RecordItem> {
     }
 
     public void finishLoad(long count) {
-        gasUsed = gasUsedAccumulator;
         this.count = count;
         loadEnd = Instant.now().getEpochSecond();
         logsBloom = logsBloomFilter.getBloom();
@@ -160,7 +149,7 @@ public class RecordFile implements StreamFile<RecordItem> {
                 var record = recordItem.getRecord();
                 var contractResult = record.hasContractCreateResult() ? record.getContractCreateResult() :
                         record.getContractCallResult();
-                gasUsedAccumulator += contractResult.getGasUsed();
+                gasUsed += contractResult.getGasUsed();
                 logsBloomFilter.insertBytes(contractResult.getBloom().toByteArray());
             default:
                 break;
