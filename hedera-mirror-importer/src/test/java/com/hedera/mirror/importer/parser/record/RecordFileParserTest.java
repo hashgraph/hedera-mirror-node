@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -51,15 +50,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamFile;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
-import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
 
@@ -73,6 +69,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
 
     @Mock(lenient = true)
     private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+
+    private DomainBuilder domainBuilder = new DomainBuilder();
 
     private long count = 0;
 
@@ -223,29 +221,15 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     }
 
     private RecordFile getStreamFile(final Flux<RecordItem> items, final long timestamp) {
-        Instant instant = Instant.ofEpochSecond(0L, timestamp);
-        String filename = StreamFilename.getFilename(parserProperties.getStreamType(), DATA, instant);
 
-        RecordFile recordFile = new RecordFile();
-        recordFile.setBytes(new byte[] { 0, 1, 2 });
-        recordFile.setConsensusEnd(timestamp);
-        recordFile.setConsensusStart(timestamp);
-        recordFile.setConsensusEnd(timestamp);
-        recordFile.setCount(timestamp);
-        recordFile.setDigestAlgorithm(DigestAlgorithm.SHA384);
-        recordFile.setFileHash("fileHash" + timestamp);
-        recordFile.setHapiVersionMajor(0);
-        recordFile.setHapiVersionMinor(23);
-        recordFile.setHapiVersionPatch(0);
-        recordFile.setHash("hash" + timestamp);
-        recordFile.setLoadEnd(timestamp);
-        recordFile.setLoadStart(timestamp);
-        recordFile.setName(filename);
-        recordFile.setNodeAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT));
-        recordFile.setPreviousHash("previousHash" + (timestamp - 1));
-        recordFile.setVersion(1);
-        recordFile.setItems(items);
-        return recordFile;
+        return domainBuilder
+                .recordFile()
+                .customize(recordFileBuilder -> recordFileBuilder.bytes(new byte[] { 0, 1, 2 })
+                        .consensusEnd(timestamp)
+                        .consensusStart(timestamp)
+                        .items(items)
+                )
+                .get();
     }
 
     private RecordItem.RecordItemBuilder cryptoTransferRecordItem(long timestamp) {
