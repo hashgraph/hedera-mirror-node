@@ -10,7 +10,7 @@ public class LogsBloomFilterTest {
     void getLogsBloomWhenEmpty() {
         assertThat(new LogsBloomFilter().getBloom()).isEqualTo(new byte[0]);
     }
-    
+
     @Test
     void getLogsBloomInsertBytesTest() {
         byte[] bytes1 = {-105, 32, 78, -1, -19, -26, 125, 15, -14, 80, -75, 3, -62, -57, -35, 14, -69, -80, 43, 113};
