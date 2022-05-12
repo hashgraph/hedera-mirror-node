@@ -102,6 +102,38 @@ describe('EntityService.getAccountIdFromAlias tests', () => {
   });
 });
 
+describe('EntityService.getEntityIdFromEvmAddress tests', () => {
+  const defaultEvmAddress = defaultInputEntity[0].evm_address;
+
+  test('EntityService.getEntityIdFromEvmAddress - Matching evm address', async () => {
+    await integrationDomainOps.loadEntities(defaultInputEntity);
+
+    await expect(EntityService.getEntityIdFromEvmAddress(defaultEvmAddress)).resolves.toBe(defaultExpectedEntity.id);
+  });
+
+  test('EntityService.getEntityIdFromEvmAddress - No match', async () => {
+    await expect(() =>
+      EntityService.getEntityIdFromEvmAddress(defaultEvmAddress)
+    ).rejects.toThrowErrorMatchingSnapshot();
+  });
+
+  test('EntityService.getEntityIdFromEvmAddress - Multiple matches', async () => {
+    const inputEntities = [
+      defaultInputEntity[0],
+      {
+        ...defaultInputEntity[0],
+        id: defaultInputEntity[0].id + 1,
+        num: defaultInputEntity[0].num + 1,
+      },
+    ];
+    await integrationDomainOps.loadEntities(inputEntities);
+
+    await expect(() =>
+      EntityService.getEntityIdFromEvmAddress(defaultEvmAddress)
+    ).rejects.toThrowErrorMatchingSnapshot();
+  });
+});
+
 describe('EntityService.isValidAccount tests', () => {
   test('EntityService.isValidAccount - No match', async () => {
     await expect(EntityService.isValidAccount(defaultInputEntity[0].id)).resolves.toBe(false);

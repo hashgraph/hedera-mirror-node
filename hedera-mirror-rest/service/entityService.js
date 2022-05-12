@@ -117,14 +117,17 @@ class EntityService extends BaseService {
   }
 
   /**
-   * Gets the encoded
+   * Gets the encoded entity id from the evm address.
    *
    * @param {String} evmAddress
    * @return {Promise<BigInt|Number>}
    */
   async getEntityIdFromEvmAddress(evmAddress) {
-    const evmAddressBytes = Buffer.from(evmAddress, 'hex');
-    const rows = await this.getRows(EntityService.entityFromEvmAddressQuery, evmAddressBytes);
+    const rows = await this.getRows(
+      EntityService.entityFromEvmAddressQuery,
+      Buffer.from(evmAddress, 'hex'),
+      'getEntityIdFromEvmAddress'
+    );
     if (rows.length === 0) {
       throw new NotFoundError();
     } else if (rows.length > 1) {

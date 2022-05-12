@@ -66,7 +66,8 @@
     "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/crypto",
     "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/crypto",
     "/api/v1/accounts/ebb9a1be370150759408cd7af48e9eda2b8ead57/allowances/crypto",
-    "/api/v1/accounts/0xebb9a1be370150759408cd7af48e9eda2b8ead57/allowances/crypto"
+    "/api/v1/accounts/0xebb9a1be370150759408cd7af48e9eda2b8ead57/allowances/crypto",
+    "/api/v1/accounts/0.0.ebb9a1be370150759408cd7af48e9eda2b8ead57/allowances/crypto"
   ],
   "responseStatus": 200,
   "responseJson": {

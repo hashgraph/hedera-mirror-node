@@ -9,3 +9,7 @@ Array [
   "Invalid parameter: idOrAliasOrEvmAddress",
 ]
 `;
+
+exports[`EntityService.getEntityIdFromEvmAddress tests EntityService.getEntityIdFromEvmAddress - Multiple matches 1`] = `"Multiple alive entities matching evm address"`;
+
+exports[`EntityService.getEntityIdFromEvmAddress tests EntityService.getEntityIdFromEvmAddress - No match 1`] = `"Not found"`;
