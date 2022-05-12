@@ -1,0 +1,49 @@
+{
+  "description": "Get block getByHashOrNumber with hash 64 param",
+  "setup": {
+    "recordFiles": [
+      {
+        "index": 16,
+        "count": 3,
+        "hapi_version_major": 0,
+        "hapi_version_minor": 22,
+        "hapi_version_patch": 3,
+        "name": "2022-04-27T12_09_24.499938763Z.rcd",
+        "prev_hash": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "consensus_start": "1676540001234390000",
+        "consensus_end": "1676540001234490000",
+        "hash": "d475bd8588de1fa2610c1586366e7c9db4d4e63db17a209cdd850aed2ab229113193892540084e62086df3953d236206"
+      },
+      {
+        "index": 17,
+        "count": 5,
+        "hapi_version_major": 0,
+        "hapi_version_minor": 22,
+        "hapi_version_patch": 3,
+        "name": "2022-04-27T12_24_30.768994443Z.rcd",
+        "prev_hash": "d475bd8588de1fa2610c1586366e7c9db4d4e63db17a209cdd850aed2ab229113193892540084e62086df3953d236206",
+        "consensus_start": "1676540001234500000",
+        "consensus_end": "1676540001234600000",
+        "hash": "ff90773193892540084e62086df3953d2362061b16cf682fde5bb00830b232b2224f8188068f3d7e696ba012cbd330d8"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/blocks/ff90773193892540084e62086df3953d2362061b16cf682fde5bb00830b232b2",
+    "/api/v1/blocks/0xff90773193892540084e62086df3953d2362061b16cf682fde5bb00830b232b2"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "count": 5,
+    "hapi_version": "0.22.3",
+    "hash": "0xff90773193892540084e62086df3953d2362061b16cf682fde5bb00830b232b2224f8188068f3d7e696ba012cbd330d8",
+    "name": "2022-04-27T12_24_30.768994443Z.rcd",
+    "number": 17,
+    "previous_hash": "0xd475bd8588de1fa2610c1586366e7c9db4d4e63db17a209cdd850aed2ab229113193892540084e62086df3953d236206",
+    "size": 6,
+    "timestamp": {
+      "from": "1676540001.234500000",
+      "to": "1676540001.234600000"
+    }
+  }
+}

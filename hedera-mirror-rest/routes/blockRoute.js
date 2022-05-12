@@ -28,6 +28,7 @@ const router = Router();
 
 const resource = 'blocks';
 router.getAsync('/', BlockController.getBlocks);
+router.getAsync('/:hashOrNumber', BlockController.getByHashOrNumber);
 
 module.exports = {
   resource,

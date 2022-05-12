@@ -1375,6 +1375,7 @@ module.exports = {
   secNsToSeconds,
   toHexString,
   validateReq,
+  isValidBlockHash,
 };
 
 if (isTestEnv()) {
