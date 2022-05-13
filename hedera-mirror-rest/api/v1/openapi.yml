@@ -2481,6 +2481,10 @@ components:
           nullable: true
         transaction_valid_start:
           $ref: '#/components/schemas/Timestamp'
+    TransactionIdStr:
+      type: string
+      description: A transaction id in string format.
+      pattern: '^(\d+)\.(\d+)\.(\d+)-(\d{1,19})-(\d{1,9})$'
     Transactions:
       type: array
       items:
@@ -3343,6 +3347,10 @@ components:
     transactionIdOrEthHashPathParam:
       name: transactionIdOrHash
       in: path
+      schema:
+        oneOf:
+          - $ref: '#/components/schemas/EthereumHash'
+          - $ref: '#/components/schemas/TransactionIdStr'
       required: true
       description: Transaction Id or a 32 byte hash with optional 0x prefix
       examples: 
@@ -3352,5 +3360,3 @@ components:
           value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
         transactionHashWith0xPrefix:        
           value: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-      schema:
-        type: string
