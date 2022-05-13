@@ -4,11 +4,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-public class LogsBloomFilterTest {
+import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
+
+public class LogsBloomAggregatorTest {
 
     @Test
     void getLogsBloomWhenEmpty() {
-        assertThat(new LogsBloomFilter().getBloom()).isEqualTo(new byte[0]);
+        assertThat(new LogsBloomAggregator().getBloom()).isEqualTo(new byte[0]);
     }
 
     @Test
@@ -18,7 +20,7 @@ public class LogsBloomFilterTest {
         byte[] bytes3 = { -38, -27, -17, 3, -55, -10, -13, 29, -50, -61, -97, 19, -9, -2, 38, -121, -104, 103, -34,
                 -52 };
 
-        LogsBloomFilter bloomFilter = new LogsBloomFilter();
+        LogsBloomAggregator bloomFilter = new LogsBloomAggregator();
         bloomFilter.insertBytes(bytes1);
         byte[] expectedResult = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0,
                 0, 0, 4, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0

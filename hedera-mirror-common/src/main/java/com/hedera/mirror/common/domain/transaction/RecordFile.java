@@ -39,6 +39,7 @@ import lombok.ToString;
 import org.springframework.data.util.Version;
 import reactor.core.publisher.Flux;
 
+import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.StreamFile;
@@ -81,7 +82,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @Transient
-    private transient final LogsBloomFilter logsBloomFilter = new LogsBloomFilter();
+    private transient final LogsBloomAggregator logsBloomAggregator = new LogsBloomAggregator();
 
     private Integer hapiVersionMajor;
 
@@ -137,7 +138,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     public void finishLoad(long count) {
         this.count = count;
         loadEnd = Instant.now().getEpochSecond();
-        logsBloom = logsBloomFilter.getBloom();
+        logsBloom = logsBloomAggregator.getBloom();
     }
 
     public void processItem(final RecordItem recordItem) {
@@ -149,7 +150,7 @@ public class RecordFile implements StreamFile<RecordItem> {
             return;
         }
         gasUsed += contractResult.getGasUsed();
-        logsBloomFilter.insertBytes(DomainUtils.toBytes(contractResult.getBloom()));
+        logsBloomAggregator.insertBytes(DomainUtils.toBytes(contractResult.getBloom()));
     }
 
     private ContractFunctionResult getContractFunctionResult(TransactionRecord record) {

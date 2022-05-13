@@ -1,4 +1,4 @@
-package com.hedera.mirror.common.domain.transaction;
+package com.hedera.mirror.common.aggregator;
 
 /*-
  * ‌
@@ -30,7 +30,7 @@ import org.bouncycastle.jcajce.provider.digest.Keccak;
  * Utility methods used by Hedera adapted from {org.hyperledger.besu.evm.log.LogsBloomFilter}
  */
 @NoArgsConstructor
-public class LogsBloomFilter {
+public class LogsBloomAggregator {
 
     public static final int BYTE_SIZE = 256;
     private static final int LEAST_SIGNIFICANT_BYTE = 0xFF;
@@ -38,8 +38,8 @@ public class LogsBloomFilter {
     private static final int BITS_IN_BYTE = 8;
     private final MutableBytes logsBloom = MutableBytes.create(BYTE_SIZE);
 
-    public LogsBloomFilter insertBytes(final byte[] bytes) {
-        if(bytes != null) {
+    public LogsBloomAggregator insertBytes(final byte[] bytes) {
+        if (bytes != null) {
             insertBytes(Bytes.wrap(bytes));
         }
         return this;
@@ -66,7 +66,7 @@ public class LogsBloomFilter {
         final var byteIndex = BYTE_SIZE - 1 - index / 8;
         final var bitIndex = index % 8;
         // "& 0xff" to prevent bit promotion: https://jira.sonarsource.com/browse/RSPEC-3034
-        final byte setBit = (byte) (logsBloom.get(byteIndex) & 0xff | (1 << bitIndex));
+        final byte setBit = (byte) (logsBloom.get(byteIndex) & LEAST_SIGNIFICANT_BYTE | (1 << bitIndex));
         logsBloom.set(byteIndex, setBit);
     }
 
