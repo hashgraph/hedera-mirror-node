@@ -79,6 +79,7 @@ class CompositeEthereumTransactionParserTest extends AbstractEthereumTransaction
     void decodeEip1559WithAlternate2ndByte() {
         var ethereumTransaction = ethereumTransactionParser.decode(Hex.decodeHex(LONDON_RAW_TX_2));
         validateEthereumTransaction(ethereumTransaction);
+        assertThat(ethereumTransaction.getType()).isEqualTo(Eip1559EthereumTransactionParser.EIP1559_TYPE_BYTE);
     }
 
     @Override

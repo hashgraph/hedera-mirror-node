@@ -68,8 +68,6 @@ class EthereumTransactionHandler implements TransactionHandler {
 
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        var transactionRecord = recordItem.getRecord();
-
         parseEthereumTransaction(recordItem);
     }
 
