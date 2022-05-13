@@ -1205,11 +1205,15 @@ const getPoolClass = (mock = false) => {
     let client;
     let result;
     params = Array.isArray(params) ? params : [params];
+    const clientErrorCallback = (error) => {
+      console.error('error event emitted from pg client', {error: error.stack || error, client});
+    };
     try {
       if (!preQueryHint) {
         result = await this.query(query, params);
       } else {
         client = await this.connect();
+        client.on('error', clientErrorCallback);
         await client.query(`begin; ${preQueryHint}`);
         result = await client.query(query, params);
         await client.query('commit');
@@ -1223,6 +1227,7 @@ const getPoolClass = (mock = false) => {
       throw new DbError(err.message);
     } finally {
       if (client !== undefined) {
+        client.off('error', clientErrorCallback);
         client.release();
       }
     }
