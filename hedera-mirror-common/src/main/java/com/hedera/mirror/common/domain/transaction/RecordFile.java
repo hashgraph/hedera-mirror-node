@@ -44,6 +44,7 @@ import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
 
 @Builder(toBuilder = true)
 @Data
@@ -148,7 +149,7 @@ public class RecordFile implements StreamFile<RecordItem> {
             return;
         }
         gasUsed += contractResult.getGasUsed();
-        logsBloomFilter.insertBytes(contractResult.getBloom().toByteArray());
+        logsBloomFilter.insertBytes(DomainUtils.toBytes(contractResult.getBloom()));
     }
 
     private ContractFunctionResult getContractFunctionResult(TransactionRecord record) {
