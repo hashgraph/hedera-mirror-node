@@ -20,6 +20,8 @@ package com.hedera.mirror.common.domain.transaction;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
 import javax.persistence.Column;
 import javax.persistence.Convert;
@@ -141,18 +143,21 @@ public class RecordFile implements StreamFile<RecordItem> {
         if (recordItem.getParent() != null) {
             return;
         }
-        TransactionType contractTransactionType = TransactionType.of(recordItem.getTransactionType());
-        switch (contractTransactionType) {
-            case CONTRACTCALL:
-            case CONTRACTCREATEINSTANCE:
-            case ETHEREUMTRANSACTION:
-                var record = recordItem.getRecord();
-                var contractResult = record.hasContractCreateResult() ? record.getContractCreateResult() :
-                        record.getContractCallResult();
-                gasUsed += contractResult.getGasUsed();
-                logsBloomFilter.insertBytes(contractResult.getBloom().toByteArray());
-            default:
-                break;
+        var contractResult = getContractFunctionResult(recordItem.getRecord());
+        if (contractResult == null) {
+            return;
         }
+        gasUsed += contractResult.getGasUsed();
+        logsBloomFilter.insertBytes(contractResult.getBloom().toByteArray());
+    }
+
+    private ContractFunctionResult getContractFunctionResult(TransactionRecord record) {
+        if (record.hasContractCreateResult()) {
+            return record.getContractCreateResult();
+        }
+        if (record.hasContractCallResult()) {
+            return record.getContractCallResult();
+        }
+        return null;
     }
 }
