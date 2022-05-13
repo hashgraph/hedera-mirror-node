@@ -84,7 +84,7 @@ abstract class RecordFileReaderTest {
                     // then
                     assertThat(actual)
                             .usingRecursiveComparison()
-                            .ignoringFields("bytes", "items", "loadStart", "logsBloomFilter", "gasUsedAccumulator")
+                            .ignoringFields("bytes", "items", "loadStart", "logsBloomAggregator")
                             .isEqualTo(recordFile);
                     assertThat(actual.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
                     assertThat(actual.getLoadStart()).isNotNull().isPositive();
