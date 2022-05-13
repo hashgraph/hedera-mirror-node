@@ -26,9 +26,9 @@ const {getAccountContractUnionQueryWithOrder} = require('./accountContract');
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const utils = require('./utils');
+const {EntityService} = require('./service');
 const transactions = require('./transactions');
 const {NotFoundError} = require('./errors/notFoundError');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -44,12 +44,20 @@ const processRow = (row) => {
           timestamp: utils.nsToSecNs(row.consensus_timestamp),
           tokens: utils.parseTokenBalances(row.token_balances),
         };
+  const entityId = EntityId.parse(row.id);
+  let evmAddress = row.evm_address && utils.toHexString(row.evm_address, true);
+  if (evmAddress === null && row.type === constants.entityTypes.CONTRACT) {
+    evmAddress = entityId.toEvmAddress();
+  }
+
   return {
-    account: EntityId.parse(row.id).toString(),
+    account: entityId.toString(),
     alias: base32.encode(row.alias),
     auto_renew_period: row.auto_renew_period,
     balance,
     deleted: row.deleted,
+    ethereum_nonce: row.ethereum_nonce,
+    evm_address: evmAddress,
     expiry_timestamp: utils.nsToSecNs(row.expiration_timestamp),
     key: utils.encodeKey(row.key),
     max_automatic_token_associations: row.max_automatic_token_associations,
@@ -63,6 +71,8 @@ const entityFields = [
   'alias',
   'auto_renew_period',
   'deleted',
+  'ethereum_nonce',
+  'evm_address',
   'expiration_timestamp',
   'key',
   'max_automatic_token_associations',
@@ -380,53 +390,7 @@ const getAccounts = async (req, res) => {
 };
 
 /**
- * Gets the query to find the alive entity matching the account alias string.
- * @param {string} accountAliasStr
- * @return {{query: string, params: *[]}}
- */
-const getAccountAliasQuery = (accountAliasStr) => {
-  const accountAlias = AccountAlias.fromString(accountAliasStr);
-  const columns = ['shard', 'realm', 'alias'];
-  const conditions = ['deleted <> true'];
-  const params = [];
-
-  columns
-    .filter((column) => accountAlias[column] !== null)
-    .forEach((column) => {
-      const length = params.push(accountAlias[column]);
-      conditions.push(`${column} = $${length}`);
-    });
-
-  const query = `select id from entity where ${conditions.join(' and ')}`;
-  return {query, params};
-};
-
-/**
- * Gets the encoded account id from the account alias string. Throws {@link InvalidArgumentError} if the account alias
- * string is invalid,
- * @param {string} accountAlias the account alias string
- * @return {Promise}
- */
-const getAccountIdFromAccountAlias = async (accountAlias) => {
-  const {query, params} = getAccountAliasQuery(accountAlias);
-
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getAccountIdFromAccountAlias query: ${query} ${utils.JSONStringify(params)}`);
-  }
-
-  const {rows} = await pool.queryQuietly(query, params);
-  if (rows.length === 0) {
-    throw new NotFoundError();
-  } else if (rows.length > 1) {
-    logger.error(`Incorrect db state: ${rows.length} alive entities matching alias ${accountAlias}`);
-    throw new Error();
-  }
-
-  return rows[0].id;
-};
-
-/**
- * Handler function for /account/:accountAliasOrAccountId API.
+ * Handler function for /account/:idOrAliasOrEvmAddress API.
  * @param {Request} req HTTP request object
  * @param {Response} res HTTP response object
  * @return {Promise}
@@ -435,23 +399,7 @@ const getOneAccount = async (req, res) => {
   // Validate query parameters first
   utils.validateReq(req);
 
-  // get the encoded account id from the path parameter directly if it's an account id. If it's an account alias,
-  // get the encoded account id from the alias by querying the db.
-  const {accountAliasOrAccountId} = req.params;
-  let accountId;
-  try {
-    if (EntityId.isValidEntityId(accountAliasOrAccountId)) {
-      accountId = EntityId.parse(accountAliasOrAccountId).getEncodedId();
-    } else {
-      accountId = await getAccountIdFromAccountAlias(accountAliasOrAccountId);
-    }
-  } catch (err) {
-    if (err instanceof InvalidArgumentError) {
-      throw InvalidArgumentError.forParams('accountAliasOrAccountId');
-    }
-    // rethrow any other error
-    throw err;
-  }
+  const encodedId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
 
   // Parse the filter parameters for account-numbers, balance, and pagination
   const parsedQueryParams = req.query;
@@ -459,7 +407,7 @@ const getOneAccount = async (req, res) => {
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 
-  const accountIdParams = [accountId];
+  const accountIdParams = [encodedId];
   const {query: entityQuery, params: entityParams} = getAccountQuery(
     {query: 'id = ?', params: accountIdParams},
     {query: 'ab.account_id = ?', params: accountIdParams}
@@ -475,7 +423,7 @@ const getOneAccount = async (req, res) => {
 
   const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
   const accountQuery = 'ctl.entity_id = ?';
-  const accountParams = [accountId];
+  const accountParams = [encodedId];
   const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);
 
   const innerQuery = transactions.getTransactionsInnerQuery(
@@ -548,7 +496,6 @@ module.exports = {
 
 if (utils.isTestEnv()) {
   Object.assign(module.exports, {
-    getAccountAliasQuery,
     getBalanceParamValue,
     processRow,
   });

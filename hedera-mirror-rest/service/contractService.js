@@ -307,7 +307,7 @@ class ContractService extends BaseService {
       return this.getContractIdByEvmAddress(contractIdParts);
     }
 
-    return EntityId.parse(contractIdValue, constants.filterKeys.CONTRACTID).getEncodedId();
+    return EntityId.parse(contractIdValue, {paramName: constants.filterKeys.CONTRACTID}).getEncodedId();
   }
 }
 

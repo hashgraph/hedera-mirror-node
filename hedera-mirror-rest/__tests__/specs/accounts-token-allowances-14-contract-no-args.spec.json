@@ -1,12 +1,7 @@
 {
-  "description": "Account api call for all token allowances",
+  "description": "Account api call for all token allowances of a contract",
   "setup": {
     "accounts": [
-      {
-        "num": 1001,
-        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
-        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57"
-      },
       {
         "num": 2001
       },
@@ -18,6 +13,12 @@
       },
       {
         "num": 5001
+      }
+    ],
+    "contracts": [
+      {
+        "num": 1001,
+        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57"
       }
     ],
     "tokenAllowances": [
@@ -62,9 +63,6 @@
     "/api/v1/accounts/1001/allowances/tokens",
     "/api/v1/accounts/0.1001/allowances/tokens",
     "/api/v1/accounts/0.0.1001/allowances/tokens",
-    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/tokens",
-    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/tokens",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/allowances/tokens",
     "/api/v1/accounts/ebb9a1be370150759408cd7af48e9eda2b8ead57/allowances/tokens",
     "/api/v1/accounts/0xebb9a1be370150759408cd7af48e9eda2b8ead57/allowances/tokens",
     "/api/v1/accounts/0.0.ebb9a1be370150759408cd7af48e9eda2b8ead57/allowances/tokens"

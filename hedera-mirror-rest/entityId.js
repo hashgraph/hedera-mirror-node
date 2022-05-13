@@ -23,7 +23,6 @@
 const _ = require('lodash');
 const mem = require('mem');
 const quickLru = require('quick-lru');
-const {filterKeys} = require('./constants');
 
 const {
   cache: {entityId: entityIdCacheConfig},
@@ -62,15 +61,17 @@ class EntityId {
    * @param {Number|null} shard
    * @param {Number|null} realm
    * @param {Number|null} num
+   * @param {string|null} evmAddress The hex encoded non-parsable evm address, without 0x prefix
    */
-  constructor(shard, realm, num) {
+  constructor(shard, realm, num, evmAddress) {
     this.shard = shard;
     this.realm = realm;
     this.num = num;
+    this.evmAddress = evmAddress;
   }
 
   /**
-   * Encodes the shard.realm.num entity id into an integer. Returns null if shard / realm / num is null; returns a
+   * Encodes the shard.realm.num entity id into an integer. Returns null if num is null; returns a
    * number if the encoded integer is not larger than Number.MAX_SAFE_INTEGER; returns a BigInt otherwise.
    *
    * @returns {Number|BigInt|null} encoded id corresponding to this EntityId.
@@ -96,6 +97,10 @@ class EntityId {
    * Converts the entity id to the 20-byte EVM address in hex with '0x' prefix
    */
   toEvmAddress() {
+    if (this.evmAddress) {
+      return `0x${this.evmAddress}`;
+    }
+
     // shard, realm, and num take 4, 8, and 8 bytes respectively from the left
     return this.num === null
       ? null
@@ -108,7 +113,15 @@ class EntityId {
   }
 
   toString() {
-    return this.num === null || this.isAllZero() ? null : `${this.shard}.${this.realm}.${this.num}`;
+    if (this.isAllZero()) {
+      return null;
+    }
+
+    if (this.num === null && this.evmAddress === null) {
+      return null;
+    }
+
+    return [this.shard, this.realm, this.num, this.evmAddress].filter((x) => x !== null).join('.');
   }
 }
 
@@ -130,9 +143,13 @@ const isValidEvmAddress = (address, evmAddressType = EvmAddressType.ANY) => {
   return evmAddressShardRealmRegex.test(address);
 };
 
-const isValidEntityId = (entityId) => {
-  // Accepted forms: shard.realm.num, realm.num, or encodedId
-  return (typeof entityId === 'string' && entityIdRegex.test(entityId)) || encodedEntityIdRegex.test(entityId);
+const isValidEntityId = (entityId, allowEvmAddress = true, evmAddressType = EvmAddressType.ANY) => {
+  if ((typeof entityId === 'string' && entityIdRegex.test(entityId)) || encodedEntityIdRegex.test(entityId)) {
+    // Accepted forms: shard.realm.num, realm.num, or encodedId
+    return true;
+  }
+
+  return allowEvmAddress && isValidEvmAddress(entityId, evmAddressType);
 };
 
 const isCreate2EvmAddress = (evmAddress) => {
@@ -151,14 +168,15 @@ const isCreate2EvmAddress = (evmAddress) => {
  * @param {BigInt|Number} shard
  * @param {BigInt|Number} realm
  * @param {BigInt|Number} num
+ * @param {string|null} evmAddress The hex encoded non-parsable evm address
  * @return {EntityId}
  */
-const of = (shard, realm, num) => {
+const of = (shard, realm, num, evmAddress = null) => {
   const toNumber = (val) => (typeof val === 'bigint' ? Number(val) : val);
-  return new EntityId(toNumber(shard), toNumber(realm), toNumber(num));
+  return new EntityId(toNumber(shard), toNumber(realm), toNumber(num), evmAddress);
 };
 
-const nullEntityId = of(null, null, null);
+const nullEntityId = of(null, null, null, null);
 const nullEntityIdError = new InvalidArgumentError('Null entity ID');
 
 /**
@@ -180,11 +198,14 @@ const checkNullId = (id, isNullable) => {
   return entityId;
 };
 
+// without and with 0x prefix
+const isValidEvmAddressLength = (len) => len === 40 || len === 42;
+
 /**
  * Parses shard, realm, num from encoded ID string.
  * @param {string} id
  * @param {Function} error
- * @return {bigint[3]}
+ * @return {[BigInt, BigInt, BigInt, null]}
  */
 const parseFromEncodedId = (id, error) => {
   const encodedId = BigInt(id);
@@ -196,7 +217,7 @@ const parseFromEncodedId = (id, error) => {
   const shardRealm = encodedId >> numBits;
   const realm = shardRealm & realmMask;
   const shard = shardRealm >> realmBits;
-  return [shard, realm, num];
+  return [shard, realm, num, null];
 };
 
 /**
@@ -213,18 +234,43 @@ const parseFromEvmAddress = (evmAddress) => {
     BigInt('0x' + hexDigits.slice(24, 40)), // num
   ];
 };
+
 /**
- * Parses shard, realm, num from entity ID string, can be shard.realm.num or realm.num.
+ * Parses entity id string, accepts the following formats:
+ *   - shard.realm.num
+ *   - realm.num
+ *   - shard.realm.evmAddress
+ *   - evmAddress with or without 0x prefix
+ *
  * @param {string} id
- * @return {bigint[3]}
+ * @param {Function} error The error function
+ * @return {[BigInt|null, BigInt|null, BigInt|null, string|null]}
  */
-const parseFromString = (id) => {
+const parseFromString = (id, error) => {
   const parts = id.split('.');
+  const numOrEvmAddress = parts[parts.length - 1];
+  if (isValidEvmAddressLength(numOrEvmAddress.length)) {
+    const evmAddress = numOrEvmAddress.replace('0x', '');
+    let [shard, realm, num] = parseFromEvmAddress(numOrEvmAddress);
+    if (shard > maxShard || realm > maxRealm || num > maxNum) {
+      // non-parsable evm address
+      shard = parts.length === 3 ? BigInt(parts[0]) : null;
+      realm = parts.length === 3 ? BigInt(parts[1]) : null;
+      return [shard, realm, null, evmAddress];
+    } else {
+      if (parts.length === 3 && (parts[0] !== `${shard}` || parts[1] !== `${realm}`)) {
+        throw error();
+      }
+      return [shard, realm, num, null];
+    }
+  }
+
+  // it's either shard.realm.num or realm.num
   if (parts.length < 3) {
     parts.unshift(systemShard);
   }
 
-  return parts.map((part) => BigInt(part));
+  return [BigInt(parts[0]), BigInt(parts[1]), BigInt(parts[2]), null];
 };
 
 const computeContractIdPartsFromContractIdValue = (contractId) => {
@@ -246,71 +292,56 @@ const entityIdCacheOptions = {
   cache: new quickLru({
     maxSize: entityIdCacheConfig.maxSize,
   }),
-  cacheKey: (args) => args[0],
+  cacheKey: (args) => `${args[0]}_${args[1]}_${args[2]}`,
   maxAge: entityIdCacheConfig.maxAge * 1000, // in millis
 };
 
 const parseMemoized = mem(
   /**
-   * Parses entity ID string, can be shard.realm.num, realm.num, the encoded entity ID or an evm contract address.
+   * Parses entity ID string, can be shard.realm.num, realm.num, the encoded entity ID or an evm address.
    * @param {string} id
+   * @param {boolean} allowEvmAddress
+   * @param {number} evmAddressType
    * @param {Function} error
    * @return {EntityId}
    */
-  (id, idType, error) => {
-    let shard, realm, num;
-    if (isValidEntityId(id)) {
-      [shard, realm, num] = id.includes('.') ? parseFromString(id) : parseFromEncodedId(id, error);
-    } else if (isValidEvmAddress(id, idType)) {
-      [shard, realm, num] = parseFromEvmAddress(id);
-    } else {
+  (id, allowEvmAddress, evmAddressType, error) => {
+    if (!isValidEntityId(id, allowEvmAddress, evmAddressType)) {
       throw error();
     }
 
-    if (num > maxNum || realm > maxRealm || shard > maxShard) {
+    const [shard, realm, num, evmAddress] =
+      id.includes('.') || isValidEvmAddressLength(id.length)
+        ? parseFromString(id, error)
+        : parseFromEncodedId(id, error);
+    if (evmAddress === null && (num > maxNum || realm > maxRealm || shard > maxShard)) {
       throw error();
     }
 
-    return of(shard, realm, num);
+    return of(shard, realm, num, evmAddress);
   },
   entityIdCacheOptions
 );
 
 /**
- * Parses entity ID string. The entity ID string can be shard.realm.num, realm.num, or the encoded entity ID string.
- * If there are at 3 or more arguments, the second is the param name string, and the third is isNullable. If there are
- * 2 arguments, the second is the param name string if its type is string, or isNullable if its type is boolean.
+ * Parses entity ID string. The entity ID string can be shard.realm.num, realm.num, shard.realm.evm_address, evm_address,
+ * or the encoded entity ID string.
  *
  * @param id
- * @param rest
+ * @param options
  * @return {EntityId}
  */
-const parse = (id, ...rest) => {
-  let paramName = '';
-  let isNullable = false;
-  if (rest.length >= 2) {
-    paramName = rest[0];
-    isNullable = rest[1];
-  } else if (rest.length === 1) {
-    if (typeof rest[0] === 'string') {
-      paramName = rest[0];
-    } else if (typeof rest[0] === 'boolean') {
-      isNullable = rest[0];
-    }
-  }
+const parse = (id, {allowEvmAddress, evmAddressType, isNullable, paramName} = {}) => {
+  // defaults
+  allowEvmAddress = allowEvmAddress === undefined ? true : allowEvmAddress;
+  evmAddressType = evmAddressType === undefined ? EvmAddressType.ANY : evmAddressType;
+  isNullable = isNullable === undefined ? false : isNullable;
+  paramName = paramName === undefined ? '' : paramName;
 
   // lazily create error object
   const error = () =>
     paramName ? InvalidArgumentError.forParams(paramName) : new InvalidArgumentError(`Invalid entity ID "${id}"`);
-  let idType = null;
-  if (paramName === filterKeys.FROM) {
-    idType = EvmAddressType.NO_SHARD_REALM;
-  } else if (paramName === filterKeys.CONTRACTID) {
-    idType = EvmAddressType.ANY;
-  } else if (paramName === filterKeys.CONTRACT_ID) {
-    idType = EvmAddressType.OPTIONAL_SHARD_REALM;
-  }
-  return checkNullId(id, isNullable) || parseMemoized(`${id}`, idType, error);
+  return checkNullId(id, isNullable) || parseMemoized(`${id}`, allowEvmAddress, evmAddressType, error);
 };
 
 module.exports = {

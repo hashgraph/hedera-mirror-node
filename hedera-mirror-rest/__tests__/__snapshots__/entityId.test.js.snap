@@ -42,6 +42,10 @@ Array [
 ]
 `;
 
+exports[`EntityId parse from entityId string 2.3.0000000100000000000000020000000000000007 1`] = `"Invalid entity ID \\"2.3.0000000100000000000000020000000000000007\\""`;
+
+exports[`EntityId parse from entityId string 32768.65536.4294967296 1`] = `"Invalid entity ID \\"32768.65536.4294967296\\""`;
+
 exports[`EntityId parse from entityId string a 1`] = `"Invalid entity ID \\"a\\""`;
 
 exports[`EntityId parse from entityId string a.b.c 1`] = `"Invalid entity ID \\"a.b.c\\""`;

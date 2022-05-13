@@ -340,14 +340,16 @@ describe('Accounts tests', () => {
 });
 
 describe('processRow', () => {
-  const input = {
+  const inputAccount = {
     account_balance: 123456789,
     alias: base32.decode('WWDOGNX3TXHD2'),
     auto_renew_period: 7890000,
     consensus_timestamp: '9876500123456789',
+    ethereum_nonce: 1,
+    evm_address: Buffer.from('ac384c53f03855fa1b3616052f8ba32c6c2a2fec', 'hex'),
     deleted: false,
     expiration_timestamp: '999876500123456789',
-    id: '1250',
+    id: 1250,
     key: Buffer.from([1, 2, 3, 4, 5, 6]),
     max_automatic_token_associations: 100,
     memo: 'entity memo',
@@ -358,8 +360,16 @@ describe('processRow', () => {
         balance: 2000,
       },
     ],
+    type: constants.entityTypes.ACCOUNT,
   };
-  const expected = {
+  const inputContract = {
+    ...inputAccount,
+    alias: null,
+    memo: 'contract memo',
+    receiver_sig_required: null,
+    type: constants.entityTypes.CONTRACT,
+  };
+  const expectedAccount = {
     account: '0.0.1250',
     alias: 'WWDOGNX3TXHD2',
     auto_renew_period: 7890000,
@@ -374,6 +384,8 @@ describe('processRow', () => {
       ],
     },
     deleted: false,
+    ethereum_nonce: 1,
+    evm_address: '0xac384c53f03855fa1b3616052f8ba32c6c2a2fec',
     expiry_timestamp: '999876500.123456789',
     key: {
       _type: 'ProtobufEncoded',
@@ -383,20 +395,26 @@ describe('processRow', () => {
     memo: 'entity memo',
     receiver_sig_required: false,
   };
+  const expectedContract = {
+    ...expectedAccount,
+    alias: null,
+    memo: 'contract memo',
+    receiver_sig_required: null,
+  };
 
   test('with balance', () => {
-    expect(processRow(input)).toEqual(expected);
+    expect(processRow(inputAccount)).toEqual(expectedAccount);
   });
 
   test('undefined balance', () => {
     const inputBalanceUndefined = {
-      ...input,
+      ...inputAccount,
       account_balance: undefined,
       consensus_timestamp: undefined,
       token_balances: undefined,
     };
     const expectedNoBalance = {
-      ...expected,
+      ...expectedAccount,
       balance: null,
     };
     expect(processRow(inputBalanceUndefined)).toEqual(expectedNoBalance);
@@ -404,13 +422,13 @@ describe('processRow', () => {
 
   test('null balance', () => {
     const inputNullBalance = {
-      ...input,
+      ...inputAccount,
       account_balance: null,
       consensus_timestamp: null,
       token_balances: null,
     };
     const expectedNullBalance = {
-      ...expected,
+      ...expectedAccount,
       balance: {
         balance: null,
         timestamp: null,
@@ -421,61 +439,28 @@ describe('processRow', () => {
   });
 
   test('null auto_renew_period', () => {
-    expect(processRow({...input, auto_renew_period: null})).toEqual({...expected, auto_renew_period: null});
-  });
-
-  test('null key', () => {
-    expect(processRow({...input, key: null})).toEqual({...expected, key: null});
-  });
-
-  test('null alias', () => {
-    expect(processRow({...input, alias: null})).toEqual({...expected, alias: null});
-  });
-});
-
-describe('getAccountAliasQuery', () => {
-  const alias = 'AABBCC22';
-
-  describe('valid', () => {
-    const aliasArray = base32.decode(alias);
-    const query = 'select id from entity where deleted <> true';
-    const getExpectedQuery = (...columns) =>
-      [query, ...columns.map((column, index) => `${column} = $${index + 1}`)].join(' and ');
-    const testSpecs = [
-      {
-        alias,
-        expected: {query: getExpectedQuery('alias'), params: [aliasArray]},
-      },
-      {
-        alias: `0.${alias}`,
-        expected: {query: getExpectedQuery('realm', 'alias'), params: ['0', aliasArray]},
-      },
-      {
-        alias: `0.1.${alias}`,
-        expected: {query: getExpectedQuery('shard', 'realm', 'alias'), params: ['0', '1', aliasArray]},
-      },
-    ];
-
-    testSpecs.forEach((spec) => {
-      test(JSON.stringify(spec.alias), () => {
-        expect(getAccountAliasQuery(spec.alias)).toEqual(spec.expected);
-      });
+    expect(processRow({...inputAccount, auto_renew_period: null})).toEqual({
+      ...expectedAccount,
+      auto_renew_period: null,
     });
   });
 
-  describe('invalid', () => {
-    const invalidAccountAliases = _.flattenDeep([
-      null,
-      undefined,
-      testutils.invalidBase32Strs.map((invalidAlias) => testutils.getAllAccountAliases(invalidAlias)),
-      `100000.${alias}`,
-      `100000.0.${alias}`,
-    ]);
+  test('null key', () => {
+    expect(processRow({...inputAccount, key: null})).toEqual({...expectedAccount, key: null});
+  });
 
-    invalidAccountAliases.forEach((invalidAccountAlias) => {
-      test(`${invalidAccountAlias}`, () => {
-        expect(() => getAccountAliasQuery(invalidAccountAlias)).toThrowErrorMatchingSnapshot();
-      });
+  test('null alias', () => {
+    expect(processRow({...inputAccount, alias: null})).toEqual({...expectedAccount, alias: null});
+  });
+
+  test('default contract', () => {
+    expect(processRow(inputContract)).toEqual(expectedContract);
+  });
+
+  test('contract with parsable evm address', () => {
+    expect(processRow({...inputContract, evm_address: null})).toEqual({
+      ...expectedContract,
+      evm_address: '0x00000000000000000000000000000000000004e2',
     });
   });
 });

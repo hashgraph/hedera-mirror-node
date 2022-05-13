@@ -23,13 +23,14 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - accounts
-  /api/v1/accounts/{accountAliasOrAccountId}:
+  /api/v1/accounts/{idOrAliasOrEvmAddress}:
     get:
-      summary: Get account by alias or id
-      description: Return the account transactions and balance information given an account alias or an account id
-      operationId: getAccountByAliasOrId
+      summary: Get account by alias, id, or evm address
+      description: |
+        Return the account transactions and balance information given an account alias, an account id, or an evm address
+      operationId: getAccountByIdOrAliasOrEvmAddress
       parameters:
-        - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
+        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
         - $ref: '#/components/parameters/transactionTypeQueryParam'
       responses:
         200:
@@ -44,7 +45,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
-  /api/v1/accounts/{accountAliasOrAccountId}/nfts:
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/nfts:
     get:
       summary: Get nfts for an account info
       description: |
@@ -88,7 +89,7 @@ paths:
 
       operationId: listNftByAccountId
       parameters:
-        - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
+        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
         - $ref: '#/components/parameters/tokenIdQueryParam'
         - $ref: '#/components/parameters/serialNumberQueryParam'
         - $ref: '#/components/parameters/spenderIdQueryParam'
@@ -107,13 +108,13 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
-  /api/v1/accounts/{accountAliasOrAccountId}/allowances/crypto:
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/crypto:
     get:
       summary: Get crypto allowances for an account info
       description: Returns information for all crypto allowances for an account.
       operationId: listCryptoAllowancesByAccountId
       parameters:
-        - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
+        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
         - $ref: '#/components/parameters/spenderIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
@@ -130,7 +131,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
-  /api/v1/accounts/{accountAliasOrAccountId}/allowances/tokens:
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/tokens:
     get:
       summary: Get fungible token allowances for an account
       description: |
@@ -162,7 +163,7 @@ paths:
 
       operationId: listTokenAllowancesByAccountId
       parameters:
-        - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
+        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
         - $ref: '#/components/parameters/spenderIdQueryParam'
         - $ref: '#/components/parameters/tokenIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
@@ -1209,6 +1210,12 @@ components:
         deleted:
           type: boolean
           nullable: true
+        ethereum_nonce:
+          type: integer
+          format: int64
+          nullable: true
+        evm_address:
+          $ref: '#/components/schemas/EvmAddressNullable'
         expiry_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         key:
@@ -1234,6 +1241,8 @@ components:
             - token_id: 0.0.200001
               balance: 8
         deleted: false
+        ethereum_nonce: 10
+        evm_address: "0xac384c53f03855fa1b3616052f8ba32c6c2a2fec"
         expiry_timestamp: null
         key: null
         max_automatic_token_associations: 200
@@ -1275,6 +1284,12 @@ components:
           $ref: '#/components/schemas/EntityId'
         alias:
           $ref: '#/components/schemas/Alias'
+        ethereum_nonce:
+          type: integer
+          format: int64
+          nullable: true
+        evm_address:
+          $ref: '#/components/schemas/EvmAddressNullable'
         expiry_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         auto_renew_period:
@@ -1290,6 +1305,7 @@ components:
           type: string
         receiver_sig_required:
           type: boolean
+          nullable: true
         links:
           $ref: '#/components/schemas/Links'
     Alias:
@@ -2538,10 +2554,10 @@ components:
               messages:
                 - message: Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig
   parameters:
-    accountAliasOrAccountIdPathParam:
-      name: accountAliasOrAccountId
+    accountIdOrAliasOrEvmAddressPathParam:
+      name: idOrAliasOrEvmAddress
       in: path
-      description: Account alias or account id
+      description: Account alias or account id or evm address
       required: true
       examples:
         aliasOnly:
@@ -2556,10 +2572,18 @@ components:
           value: 0.8
         shardRealmAccountNum:
           value: 0.0.8
+        evmAddress:
+          value: ac384c53f03855fa1b3616052f8ba32c6c2a2fec
+        evmAddressWithPrefix:
+          value: 0xac384c53f03855fa1b3616052f8ba32c6c2a2fec
+        evmAddressWithShardAndRealm:
+          value: 0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec
       schema:
         oneOf:
           - $ref: '#/components/schemas/AccountAlias'
           - $ref: '#/components/schemas/EntityId'
+          - $ref: '#/components/schemas/EvmAddress'
+          - $ref: '#/components/schemas/EvmAddressWithShardRealm'
     accountBalanceQueryParam:
       name: account.balance
       in: query

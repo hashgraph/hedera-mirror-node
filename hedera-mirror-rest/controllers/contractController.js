@@ -369,7 +369,7 @@ const getAndValidateContractIdRequestPathParam = (req) => {
  */
 const validateContractIdAndConsensusTimestampParam = (consensusTimestamp, contractId) => {
   const params = [];
-  if (!EntityId.isValidEntityId(contractId) && !EntityId.isValidEvmAddress(contractId)) {
+  if (!EntityId.isValidEntityId(contractId)) {
     params.push(constants.filterKeys.CONTRACTID);
   }
   if (!utils.isValidTimestampParam(consensusTimestamp)) {

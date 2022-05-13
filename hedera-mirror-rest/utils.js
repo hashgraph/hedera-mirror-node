@@ -239,7 +239,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidPublicKeyQuery(val);
       break;
     case constants.filterKeys.FROM:
-      ret = EntityId.isValidEntityId(val) || EntityId.isValidEvmAddress(val);
+      ret = EntityId.isValidEntityId(val, true, constants.EvmAddressType.NO_SHARD_REALM);
       break;
     case constants.filterKeys.INDEX:
       ret = isNumeric(val) && val >= 0;
@@ -360,7 +360,7 @@ const isValidContractIdQueryParam = (op, val) => {
   if (EntityId.isValidEvmAddress(val, contants.EvmAddressType.OPTIONAL_SHARD_REALM)) {
     return op === constants.queryParamOperators.eq;
   }
-  return EntityId.isValidEntityId(val);
+  return EntityId.isValidEntityId(val, false);
 };
 
 /**
@@ -1088,7 +1088,10 @@ const formatComparator = (comparator) => {
         comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.FROM:
-        comparator.value = EntityId.parse(comparator.value, contants.filterKeys.FROM).getEncodedId();
+        comparator.value = EntityId.parse(comparator.value, {
+          evmAddressType: constants.EvmAddressType.NO_SHARD_REALM,
+          paramName: comparator.key,
+        }).getEncodedId();
         break;
       case constants.filterKeys.INTERNAL:
         comparator.value = parseBooleanValue(comparator.value);
