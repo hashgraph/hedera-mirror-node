@@ -429,7 +429,6 @@ const addEthereumTransaction = async (ethereumTransaction) => {
     chain_id: null,
     consensus_timestamp: '187654000123456',
     data: '0x000000000',
-    from_address: '0x0000000000000000000000000000000000001f41',
     gas_limit: 1000000,
     gas_price: '0x4a817c800',
     hash: '0x0000000000000000000000000000000000000000000000000000000000000123',

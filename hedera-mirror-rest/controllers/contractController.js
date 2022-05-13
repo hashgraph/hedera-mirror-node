@@ -291,7 +291,7 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
  * @return {Boolean} true if the parameter is valid. false otherwise
  */
 const contractResultsFilterValidityChecks = (param, op, val) => {
-  let ret = utils.filterValidityChecks(param, op, val);
+  const ret = utils.filterValidityChecks(param, op, val);
   if (ret && param === constants.filterKeys.BLOCK_NUMBER) {
     return op === constants.queryParamOperators.eq;
   }
@@ -663,7 +663,9 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractById = async (req, res) => {
-    if (utils.conflictingPathParam(req, 'contractId', 'results')) return;
+    if (utils.conflictingPathParam(req, 'contractId', 'results')) {
+      return;
+    }
 
     const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req);
 
@@ -885,18 +887,32 @@ class ContractController extends BaseController {
    * @param {Response} res HTTP response object
    * @returns {Promise<void>}
    */
-  getContractResultsByTransactionId = async (req, res) => {
-    utils.validateReq(req);
-    // extract filters from query param
-    const transactionId = TransactionId.fromString(req.params.transactionId);
-    const nonce = getLastNonceParamValue(req.query);
+  getContractResultsByTransactionIdOrHash = async (req, res) => {
+    if (utils.conflictingPathParam(req, 'transactionIdOrHash', 'logs')) {
+      return;
+    }
 
-    // get transactions using id and nonce, exclude duplicate transactions. there can be at most one
-    const transactions = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
-      transactionId,
-      nonce,
-      duplicateTransactionResult
-    );
+    utils.validateReq(req);
+
+    // extract filters from query param
+    const {transactionIdOrHash} = req.params;
+    let transactions = [];
+    // When getting transactions, exclude duplicate transactions. there can be at most one
+    if (utils.isValidEthHash(transactionIdOrHash)) {
+      const ethHash = transactionIdOrHash.replace('0x', '');
+      // get transactions using ethereum hash and nonce
+      transactions = await TransactionService.getTransactionDetailsFromEthHash(ethHash, duplicateTransactionResult);
+    } else {
+      const transactionId = TransactionId.fromString(transactionIdOrHash);
+      const nonce = getLastNonceParamValue(req.query);
+      // get transactions using id and nonce
+      transactions = await TransactionService.getTransactionDetailsFromTransactionId(
+        transactionId,
+        nonce,
+        duplicateTransactionResult
+      );
+    }
+
     if (transactions.length === 0) {
       throw new NotFoundError('No correlating transaction');
     } else if (transactions.length > 1) {
@@ -963,7 +979,7 @@ module.exports = exportControllerMethods([
   'getContractResults',
   'getContractResultsById',
   'getContractResultsByTimestamp',
-  'getContractResultsByTransactionId',
+  'getContractResultsByTransactionIdOrHash',
 ]);
 
 if (utils.isTestEnv()) {

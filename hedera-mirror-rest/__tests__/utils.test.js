@@ -385,6 +385,47 @@ describe('Utils isPositiveLong', () => {
   });
 });
 
+describe('Utils isValidEthHash', () => {
+  test('Verify invalid for empty input', () => {
+    expect(utils.isValidEthHash()).toBeFalse();
+  });
+
+  test('Verify invalid for empty string', () => {
+    expect(utils.isValidEthHash('')).toBeFalse();
+  });
+
+  test('Verify invalid for incorrect data types', () => {
+    expect(utils.isValidEthHash({})).toBeFalse();
+    expect(utils.isValidEthHash([1, 2, 3])).toBeFalse();
+    expect(utils.isValidEthHash(100)).toBeFalse();
+    expect(utils.isValidEthHash(true)).toBeFalse();
+  });
+
+  test('Verify invalid for hex with incorrect length', () => {
+    expect(utils.isValidEthHash('4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb639')).toBeFalse();
+    expect(utils.isValidEthHash('4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb63923')).toBeFalse();
+    expect(utils.isValidEthHash('4a56')).toBeFalse();
+    expect(utils.isValidEthHash('4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb63922acd')).toBeFalse();
+  });
+
+  test('Verify invalid for 64 char long random string', () => {
+    expect(utils.isValidEthHash('qwert1234qwert1234qwert1234qwert1234qwert1234qwert1234qwert1234a')).toBeFalse();
+  });
+
+  test('Verify invalid for 64 char long random string with 0x prefix', () => {
+    expect(utils.isValidEthHash('qwert1234qwert1234qwert1234qwert1234qwert1234qwert1234qwert1234a')).toBeFalse();
+    expect(utils.isValidEthHash('0xqwert1234qwert1234qwert1234qwert1234qwert1234qwert1234qwert1234a')).toBeFalse();
+  });
+
+  test('Verify valid for 32 byte hash', () => {
+    expect(utils.isValidEthHash('4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392')).toBeTrue();
+  });
+
+  test('Verify valid for 32 byte hash with 0x prefix', () => {
+    expect(utils.isValidEthHash('0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392')).toBeTrue();
+  });
+});
+
 describe('Utils isValidValueIgnoreCase tokenTypeFilter tests', () => {
   const tokenTypeObjectValues = Object.values(constants.tokenTypeFilter);
 

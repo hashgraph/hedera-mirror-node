@@ -364,13 +364,13 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
-  /api/v1/contracts/results/{transactionId}:
+  /api/v1/contracts/results/{transactionIdOrHash}:
     get:
-      summary: Get the contract result from a contract on the network for a given transactionId
-      description: Returns a single ContractResult for a contract's function executions for a given transactionId.
-      operationId: getContractResultByTransactionId
+      summary: Get the contract result from a contract on the network for a given transactionId or ethereum transaction hash
+      description: Returns a single ContractResult for a contract's function executions for a given transactionId or ethereum transaction hash.
+      operationId: getContractResultByTransactionIdOrHash
       parameters:
-        - $ref: '#/components/parameters/transactionIdPathParam'
+        - $ref: '#/components/parameters/transactionIdOrEthHashPathParam'
         - $ref: '#/components/parameters/nonceQueryParamWithDefault'
       responses:
         200:
@@ -2497,6 +2497,10 @@ components:
           nullable: true
         transaction_valid_start:
           $ref: '#/components/schemas/Timestamp'
+    TransactionIdStr:
+      type: string
+      description: A transaction id in string format.
+      pattern: '^(\d+)\.(\d+)\.(\d+)-(\d{1,19})-(\d{1,9})$'
     Transactions:
       type: array
       items:
@@ -3364,3 +3368,19 @@ components:
       schema:
         type: boolean
         default: false
+    transactionIdOrEthHashPathParam:
+      name: transactionIdOrHash
+      in: path
+      schema:
+        oneOf:
+          - $ref: '#/components/schemas/EthereumHash'
+          - $ref: '#/components/schemas/TransactionIdStr'
+      required: true
+      description: Transaction Id or a 32 byte hash with optional 0x prefix
+      examples: 
+        trahsactionId:
+          value: 0.0.10-1234567890-000000000
+        transactionHash:        
+          value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+        transactionHashWith0xPrefix:        
+          value: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
