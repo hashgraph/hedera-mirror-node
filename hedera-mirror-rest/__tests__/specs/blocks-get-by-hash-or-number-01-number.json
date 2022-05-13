@@ -1,0 +1,46 @@
+{
+  "description": "Get block getByHashOrNumber with number param",
+  "setup": {
+    "recordFiles": [
+      {
+        "index": 9900000000000000,
+        "count": 9990000000000111,
+        "hapi_version_major": 0,
+        "hapi_version_minor": 22,
+        "hapi_version_patch": 3,
+        "name": "2022-04-27T12_09_24.499938763Z.rcd",
+        "prev_hash": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "consensus_start": "1676540001234390000",
+        "consensus_end": "1676540001234490000",
+        "hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c"
+      },
+      {
+        "index": 9900000000000001,
+        "count": 9990000000000222,
+        "hapi_version_major": 0,
+        "hapi_version_minor": 22,
+        "hapi_version_patch": 3,
+        "name": "2022-04-27T12_24_30.768994443Z.rcd",
+        "prev_hash": "fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
+        "consensus_start": "1676540001234500000",
+        "consensus_end": "1676540001234600000",
+        "hash": "b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216"
+      }
+    ]
+  },
+  "urls": ["/api/v1/blocks/9900000000000001"],
+  "responseStatus": 200,
+  "responseJson": {
+    "count": 9990000000000222,
+    "hapi_version": "0.22.3",
+    "hash": "0xb0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216",
+    "name": "2022-04-27T12_24_30.768994443Z.rcd",
+    "number": 9900000000000001,
+    "previous_hash": "0xfbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c",
+    "size": 6,
+    "timestamp": {
+      "from": "1676540001.234500000",
+      "to": "1676540001.234600000"
+    }
+  }
+}
