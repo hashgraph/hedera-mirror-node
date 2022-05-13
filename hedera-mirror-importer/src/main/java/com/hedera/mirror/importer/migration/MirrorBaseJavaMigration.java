@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import java.io.IOException;
+import javax.inject.Named;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.api.MigrationVersion;
@@ -29,15 +30,11 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.Context;
 import org.flywaydb.core.api.migration.JavaMigration;
 
-public abstract class MirrorBaseJavaMigration implements JavaMigration {
+abstract class MirrorBaseJavaMigration implements JavaMigration {
 
     protected final Logger log = LogManager.getLogger(getClass());
 
     public boolean isBaselineMigration() {
-        return false;
-    }
-
-    public boolean isStateScript() {
         return false;
     }
 
