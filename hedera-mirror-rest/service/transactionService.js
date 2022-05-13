@@ -92,22 +92,21 @@ class TransactionService extends BaseService {
       TransactionService.transactionDetailsFromTransactionIdQuery,
       [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()],
       'getTransactionDetailsFromEthHash',
-      nonce,
-      excludeTransactionResults
+      excludeTransactionResults,
+      nonce
     );
   }
 
-  async getTransactionDetailsFromEthHash(ethHash, nonce = undefined, excludeTransactionResults = []) {
+  async getTransactionDetailsFromEthHash(ethHash, excludeTransactionResults = []) {
     return this.getTransactionDetails(
       TransactionService.transactionDetailsFromEthHashQuery,
       [ethHash],
       'getTransactionDetailsFromEthHash',
-      nonce,
       excludeTransactionResults
     );
   }
 
-  async getTransactionDetails(query, params, parentFunctionName, nonce = undefined, excludeTransactionResults = []) {
+  async getTransactionDetails(query, params, parentFunctionName, excludeTransactionResults = [], nonce = undefined) {
     if (nonce !== undefined) {
       params.push(nonce);
       query = `${query}

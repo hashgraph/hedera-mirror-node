@@ -30,7 +30,7 @@
     "ethereumtransactions": [
       {
         "consensus_timestamp": 167654000123457,
-        "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392"
+        "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393"
       }
     ]
   },
@@ -39,11 +39,7 @@
     "/api/v1/contracts/results/0.0.8001-167654-000123400?nonce=0",
     "/api/v1/contracts/results/0.0.8001-167654-000123400?nonce=2",
     "/api/v1/contracts/results/4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
-    "/api/v1/contracts/results/4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392?nonce=0",
-    "/api/v1/contracts/results/4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392?nonce=2",
-    "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
-    "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392?nonce=0",
-    "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392?nonce=2"
+    "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392"
   ],
   "responseStatus": 404,
   "responseJson": {

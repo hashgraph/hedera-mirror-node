@@ -896,19 +896,15 @@ class ContractController extends BaseController {
 
     // extract filters from query param
     const {transactionIdOrHash} = req.params;
-    const nonce = getLastNonceParamValue(req.query);
     let transactions = [];
     // When getting transactions, exclude duplicate transactions. there can be at most one
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = transactionIdOrHash.replace('0x', '');
       // get transactions using ethereum hash and nonce
-      transactions = await TransactionService.getTransactionDetailsFromEthHash(
-        ethHash,
-        nonce,
-        duplicateTransactionResult
-      );
+      transactions = await TransactionService.getTransactionDetailsFromEthHash(ethHash, duplicateTransactionResult);
     } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
+      const nonce = getLastNonceParamValue(req.query);
       // get transactions using id and nonce
       transactions = await TransactionService.getTransactionDetailsFromTransactionId(
         transactionId,
