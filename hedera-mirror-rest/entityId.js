@@ -144,8 +144,8 @@ const isValidEvmAddress = (address, evmAddressType = EvmAddressType.ANY) => {
 };
 
 const isValidEntityId = (entityId, allowEvmAddress = true, evmAddressType = EvmAddressType.ANY) => {
-  // Accepted forms: shard.realm.num, realm.num, or encodedId
   if ((typeof entityId === 'string' && entityIdRegex.test(entityId)) || encodedEntityIdRegex.test(entityId)) {
+    // Accepted forms: shard.realm.num, realm.num, or encodedId
     return true;
   }
 
