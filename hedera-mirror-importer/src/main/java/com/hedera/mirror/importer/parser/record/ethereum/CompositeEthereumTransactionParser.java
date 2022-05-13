@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.ethereum;
  * ‍
  */
 
+import com.esaulpaugh.headlong.rlp.RLPDecoder;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
@@ -32,7 +33,7 @@ import com.hedera.mirror.importer.exception.InvalidDatasetException;
 @Primary
 @RequiredArgsConstructor
 public class CompositeEthereumTransactionParser implements EthereumTransactionParser {
-    private static final byte[] EIP1559_BYTES_PREFIX = new byte[] {2, -8};
+    private static final int EIP1559_TYPE_BYTE = 2;
     private final LegacyEthereumTransactionParser legacyEthereumTransactionParser;
     private final Eip1559EthereumTransactionParser eip1559EthereumTransactionParser;
 
@@ -47,8 +48,27 @@ public class CompositeEthereumTransactionParser implements EthereumTransactionPa
             throw new InvalidDatasetException("Ethereum transaction bytes length is less than 2 bytes in length");
         }
 
-        var eip1559StartingBytesMatch = transactionBytes[0] == EIP1559_BYTES_PREFIX[0] &&
-                transactionBytes[1] == EIP1559_BYTES_PREFIX[1];
-        return eip1559StartingBytesMatch ? eip1559EthereumTransactionParser : legacyEthereumTransactionParser;
+        var decoder = RLPDecoder.RLP_STRICT.sequenceIterator(
+                transactionBytes);
+        var legacyRlpItem = decoder.next();
+        Byte legacyRlpItemByte;
+
+        try {
+            legacyRlpItemByte = legacyRlpItem.asByte();
+        } catch (IllegalArgumentException illEx) {
+            // catch out of range length exception
+            return legacyEthereumTransactionParser;
+        }
+
+        if (legacyRlpItemByte != EIP1559_TYPE_BYTE) {
+            return legacyEthereumTransactionParser;
+        }
+
+        var eip1559RlpItem = decoder.next();
+        if (!eip1559RlpItem.isList()) {
+            return legacyEthereumTransactionParser;
+        }
+
+        return eip1559EthereumTransactionParser;
     }
 }

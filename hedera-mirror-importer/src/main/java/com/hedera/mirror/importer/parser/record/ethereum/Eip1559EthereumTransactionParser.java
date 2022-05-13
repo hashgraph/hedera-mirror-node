@@ -28,10 +28,9 @@ import com.hedera.mirror.importer.exception.InvalidEthereumBytesException;
 
 @Named
 public class Eip1559EthereumTransactionParser implements EthereumTransactionParser {
+    public static final String TRANSACTION_TYPE_NAME = "EIP1559";
     private static final int EIP1559_TYPE_BYTE = 2;
     private static final int EIP1559_TYPE_RLP_ITEM_COUNT = 12;
-
-    private static final String TRANSACTION_TYPE_NAME = "EIP1559";
 
     @Override
     public EthereumTransaction decode(byte[] transactionBytes) {
