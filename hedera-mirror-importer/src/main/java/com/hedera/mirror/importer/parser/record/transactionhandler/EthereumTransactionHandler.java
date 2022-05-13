@@ -70,10 +70,6 @@ class EthereumTransactionHandler implements TransactionHandler {
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         var transactionRecord = recordItem.getRecord();
 
-        // pull entity from ContractResult
-        var contractFunctionResult = transactionRecord.hasContractCreateResult() ?
-                transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
-
         parseEthereumTransaction(recordItem);
     }
 
