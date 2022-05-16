@@ -26,6 +26,7 @@ import javax.inject.Named;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.api.MigrationVersion;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -77,8 +78,10 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
     private final TransactionTemplate transactionTemplate;
 
     @Lazy
-    public BackfillBlockMigration(NamedParameterJdbcTemplate jdbcTemplate, TransactionTemplate transactionTemplate) {
-        super(jdbcTemplate);
+    public BackfillBlockMigration(NamedParameterJdbcTemplate jdbcTemplate,
+                                  @Value("${hedera.mirror.importer.db.schema}") CharSequence schema,
+                                  TransactionTemplate transactionTemplate) {
+        super(jdbcTemplate, schema);
         this.transactionTemplate = transactionTemplate;
     }
 
@@ -123,12 +126,7 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
 
     @Override
     protected int getSuccessChecksum() {
-        return 1; // Change this if this migration should be rerun
-    }
-
-    @Override
-    public MigrationVersion getVersion() {
-        return null; // Repeatable migration
+        return 2; // Change this if this migration should be rerun
     }
 
     private byte[] aggregateBloomFilters(List<byte[]> bloomFilters) {

@@ -82,7 +82,7 @@ spring:
   flyway:
     baselineOnMigrate: true
     connectRetries: 20
-    ignoreMissingMigrations: true
+    ignoreMigrationPatterns: "*:missing"
     password: ${hedera.mirror.importer.db.ownerPassword}
     placeholders:
       api-password: ${hedera.mirror.importer.db.restPassword}

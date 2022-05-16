@@ -21,7 +21,11 @@ package com.hedera.mirror.importer.migration;
  */
 
 import java.io.IOException;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -32,11 +36,12 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 abstract class AsyncJavaMigration extends MirrorBaseJavaMigration {
 
+    private static final String CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL = "select exists( " +
+            "  select * from information_schema.tables " +
+            "  where table_schema = :schema and table_name = 'flyway_schema_history')";
+
     private static final String SELECT_LAST_CHECKSUM_SQL = "select checksum from flyway_schema_history " +
             "where script = :className order by installed_rank desc limit 1";
-
-    private static final String SELECT_SMALLEST_CHECKSUM_SQL = "select min(checksum) from flyway_schema_history " +
-            "where script = :className";
 
     private static final String UPDATE_CHECKSUM_SQL = "with last as (" +
             "  select installed_rank from flyway_schema_history" +
@@ -47,24 +52,32 @@ abstract class AsyncJavaMigration extends MirrorBaseJavaMigration {
             "from last " +
             "where f.installed_rank = last.installed_rank";
 
+    protected final Logger log = LogManager.getLogger(getClass());
+
     protected final NamedParameterJdbcTemplate jdbcTemplate;
+
+    private final CharSequence schema;
 
     @Override
     public Integer getChecksum() {
-        var paramSource = getSqlParamSource();
-        Integer lastChecksum = queryForObjectOrNull(SELECT_LAST_CHECKSUM_SQL, paramSource, Integer.class);
+        if (!hasFlywaySchemaHistoryTable()) {
+            return -1;
+        }
 
+        Integer lastChecksum = queryForObjectOrNull(SELECT_LAST_CHECKSUM_SQL, getSqlParamSource(), Integer.class);
         if (lastChecksum == null) {
             return -1;
         } else if (lastChecksum < 0) {
             return lastChecksum - 1;
         } else if (lastChecksum != getSuccessChecksum()) {
-            // success checksum has changed, return the smallest - 1 to guarantee it's different and flyway will rerun
-            // this migration
-            Integer smallest = queryForObjectOrNull(SELECT_SMALLEST_CHECKSUM_SQL, paramSource, Integer.class);
-            return smallest != null ? smallest - 1 : -1;
+            return -1;
         }
         return lastChecksum;
+    }
+
+    @Override
+    public MigrationVersion getVersion() {
+        return null; // repeatable
     }
 
     public <T> T queryForObjectOrNull(String sql, SqlParameterSource paramSource, Class<T> requiredType) {
@@ -77,7 +90,11 @@ abstract class AsyncJavaMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected void doMigrate() throws IOException {
-        Mono.fromRunnable(this::migrateAsync).subscribeOn(Schedulers.single()).doOnSuccess(t -> onSuccess()).subscribe();
+        Mono.fromRunnable(this::migrateAsync)
+                .subscribeOn(Schedulers.single())
+                .doOnSuccess(t -> onSuccess())
+                .doOnError(t -> log.error("Asynchronous migration failed:", t))
+                .subscribe();
     }
 
     protected abstract void migrateAsync();
@@ -86,6 +103,12 @@ abstract class AsyncJavaMigration extends MirrorBaseJavaMigration {
 
     private MapSqlParameterSource getSqlParamSource() {
         return new MapSqlParameterSource().addValue("className", getClass().getName());
+    }
+
+    private boolean hasFlywaySchemaHistoryTable() {
+        var exists = jdbcTemplate.queryForObject(CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL, Map.of("schema", schema),
+                Boolean.class);
+        return exists != null ? exists : false;
     }
 
     private void onSuccess() {
