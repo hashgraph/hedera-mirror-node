@@ -38,6 +38,7 @@ import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
@@ -156,29 +157,33 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         long timestamp = ++count;
         ContractFunctionResult contractFunctionResult1 = contractFunctionResult(
                 10000000000L, new byte[] { 0, 6, 4, 0, 5, 7, 2 });
-        RecordItem recordItem1 = contractCreate(contractFunctionResult1, timestamp);
+        RecordItem recordItem1 = contractCreate(contractFunctionResult1, timestamp, 1);
 
         ContractFunctionResult contractFunctionResult2 = contractFunctionResult(
                 100000000000L, new byte[] { 3, 5, 1, 7, 4, 4, 0 });
-        RecordItem recordItem2 = contractCall(contractFunctionResult2, timestamp);
+        RecordItem recordItem2 = contractCall(contractFunctionResult2, timestamp, 2);
 
         ContractFunctionResult contractFunctionResult3 = contractFunctionResult(
                 1000000000000L, new byte[] { 0, 1, 1, 2, 2, 6, 0 });
-        RecordItem recordItem3 = ethereumTransaction(contractFunctionResult3, timestamp);
+        RecordItem recordItem3 = ethereumTransaction(contractFunctionResult3, timestamp, 3);
 
-        RecordFile recordFile = getStreamFile(Flux.just(recordItem1, recordItem2, recordItem3), timestamp);
+        ContractFunctionResult contractFunctionResult4 = contractFunctionResult(
+                1000000000000L, new byte[] { 0, 1, 1, 2, 2, 6, 0 });
+        RecordItem recordItem4 = ethereumTransaction(contractFunctionResult4, timestamp, 0);
+
+        RecordFile recordFile = getStreamFile(Flux.just(recordItem1, recordItem2, recordItem3, recordItem4), timestamp);
 
         parser.parse(recordFile);
 
         byte[] expectedLogBloom = new byte[] {
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0,
-                0, 0, 16, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0, 0, 0
+                3, 7, 5, 7, 7, 7, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
         };
         assertAll(
                 () -> assertEquals(10000000000L + 100000000000L + 1000000000000L, recordFile.getGasUsed()),
@@ -213,21 +218,25 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         assertPostParseStreamFile(recordFile, true);
     }
 
-    private RecordItem contractCall(ContractFunctionResult contractFunctionResult, long timestamp) {
+    private RecordItem contractCall(ContractFunctionResult contractFunctionResult, long timestamp,
+            int transactionIdNonce) {
         return recordItemBuilder
                 .contractCall()
                 .record(builder -> builder.setContractCallResult(contractFunctionResult)
                         .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
+                        .setTransactionID(TransactionID.newBuilder().setNonce(transactionIdNonce).build())
                 )
                 .transactionBody(builder -> builder.mergeFrom(ContractCallTransactionBody.newBuilder().build()))
                 .build();
     }
 
-    private RecordItem contractCreate(ContractFunctionResult contractFunctionResult, long timestamp) {
+    private RecordItem contractCreate(ContractFunctionResult contractFunctionResult, long timestamp,
+            int transactionIdNonce) {
         return recordItemBuilder
                 .contractCreate()
                 .record(builder -> builder.setContractCreateResult(contractFunctionResult)
                         .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
+                        .setTransactionID(TransactionID.newBuilder().setNonce(transactionIdNonce).build())
                 )
                 .transactionBody(builder -> builder.mergeFrom(ContractCreateTransactionBody.newBuilder().build()))
                 .build();
@@ -252,11 +261,13 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
                 .build();
     }
 
-    private RecordItem ethereumTransaction(ContractFunctionResult contractFunctionResult, long timestamp) {
+    private RecordItem ethereumTransaction(ContractFunctionResult contractFunctionResult, long timestamp,
+            int transactionIdNonce) {
         return recordItemBuilder
                 .ethereumTransaction(true)
                 .record(builder -> builder.setContractCallResult(contractFunctionResult)
                         .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
+                        .setTransactionID(TransactionID.newBuilder().setNonce(transactionIdNonce).build())
                 )
                 .transactionBody(builder -> builder.mergeFrom(EthereumTransactionBody.newBuilder().build()))
                 .build();

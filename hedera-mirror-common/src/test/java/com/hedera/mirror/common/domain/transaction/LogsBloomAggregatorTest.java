@@ -15,29 +15,32 @@ public class LogsBloomAggregatorTest {
 
     @Test
     void getLogsBloomInsertBytesTest() {
-        byte[] bytes1 = { -105, 32, 78, -1, -19, -26, 125, 15, -14, 80, -75, 3, -62, -57, -35, 14, -69, -80, 43, 113 };
-        byte[] bytes2 = { 52, 33, 99, -54, -4, 126, -64, -78, -115, -70, -122, 43, 127, 54, -95, -40, -25, 84, 11, 59 };
-        byte[] bytes3 = { -38, -27, -17, 3, -55, -10, -13, 29, -50, -61, -97, 19, -9, -2, 38, -121, -104, 103, -34,
+        byte[] bytes1 = { 127, -128, 78, -1, -19, -26, 125, 15, -14, -127, -75, 3, -62, -57, -35, 14, -69, -80, 43,
+                113 };
+        byte[] bytes2 = { -127, 1, 99, -54, -4, 126, -64, -78, -115, -70, -122, 127, 127, 54, -95, -40, -25, 84, 11,
+                59 };
+        byte[] bytes3 = { 127, 127, -17, 3, -55, -10, -13, 127, -50, -61, -97, 19, -9, -2, 38, -121, -104, 103, -34,
                 -52 };
 
-        LogsBloomAggregator bloomFilter = new LogsBloomAggregator();
-        bloomFilter.insertBytes(bytes1);
-        byte[] expectedResult = new byte[] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0,
-                0, 0, 4, 0, 16, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-                , 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
+        bloomAggregator.insertBytes(bytes1);
+        byte[] expectedResult = new byte[] { -1, -1, -17, -1, -3, -2, -1, -1, -1, -5, -65, 127, -1, -1, -1, -33, -1,
+                -9, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, -128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0 };
-        assertThat(bloomFilter.getBloom()).isNotEqualTo(expectedResult);
-        bloomFilter.insertBytes(bytes2);
-        assertThat(bloomFilter.getBloom()).isNotEqualTo(expectedResult);
-        bloomFilter.insertBytes(bytes3);
-        assertThat(bloomFilter.getBloom()).isEqualTo(expectedResult);
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0 };
+        assertThat(bloomAggregator.getBloom()).isNotEqualTo(expectedResult);
+        bloomAggregator.insertBytes(bytes2);
+        assertThat(bloomAggregator.getBloom()).isNotEqualTo(expectedResult);
+        bloomAggregator.insertBytes(bytes3);
+        assertThat(bloomAggregator.getBloom()).isEqualTo(expectedResult);
 
         // Already inserted bytes should not change the filter
-        bloomFilter.insertBytes(bytes3);
-        assertThat(bloomFilter.getBloom()).isEqualTo(expectedResult);
+        bloomAggregator.insertBytes(bytes3);
+        assertThat(bloomAggregator.getBloom()).isEqualTo(expectedResult);
     }
 }

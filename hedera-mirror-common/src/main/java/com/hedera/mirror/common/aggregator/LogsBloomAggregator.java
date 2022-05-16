@@ -22,23 +22,18 @@ package com.hedera.mirror.common.aggregator;
 
 import java.util.Arrays;
 import lombok.NoArgsConstructor;
-import org.bouncycastle.jcajce.provider.digest.Keccak;
 
-/**
- * Utility methods used by Hedera adapted from {org.hyperledger.besu.evm.log.LogsBloomFilter}
- */
 @NoArgsConstructor
 public class LogsBloomAggregator {
 
     public static final int BYTE_SIZE = 256;
-    private static final int LEAST_SIGNIFICANT_BYTE = 0xFF;
-    private static final int LEAST_SIGNIFICANT_THREE_BITS = 0x7;
-    private static final int BITS_IN_BYTE = 8;
     private final byte[] logsBloom = new byte[BYTE_SIZE];
 
-    public LogsBloomAggregator insertBytes(final byte[] bytes) {
-        if (bytes != null) {
-            setBits(keccak256(bytes));
+    public LogsBloomAggregator insertBytes(final byte[] bloom) {
+        if (bloom != null) {
+            for (int i = 0; i < bloom.length; i++) {
+                logsBloom[i] |= bloom[i];
+            }
         }
         return this;
     }
@@ -46,25 +41,10 @@ public class LogsBloomAggregator {
     public byte[] getBloom() {
         return Arrays.copyOf(logsBloom, logsBloom.length);
     }
-
-    private void setBits(final byte[] hashValue) {
-        for (int counter = 0; counter < 6; counter += 2) {
-            final var setBloomBit =
-                    ((hashValue[counter] & LEAST_SIGNIFICANT_THREE_BITS) << BITS_IN_BYTE)
-                            + (hashValue[counter + 1] & LEAST_SIGNIFICANT_BYTE);
-            setBit(setBloomBit);
-        }
-    }
-
-    private void setBit(final int index) {
-        final var byteIndex = BYTE_SIZE - 1 - index / 8;
-        final var bitIndex = index % 8;
-        // "& 0xff" to prevent bit promotion: https://jira.sonarsource.com/browse/RSPEC-3034
-        final byte setBit = (byte) (logsBloom[byteIndex] & LEAST_SIGNIFICANT_BYTE | (1 << bitIndex));
-        logsBloom[byteIndex] = setBit;
-    }
-
-    private byte[] keccak256(final byte[] msg) {
-        return new Keccak.Digest256().digest(msg);
-    }
 }
+
+// 0111 1111 = 127
+
+// 1000 0001 = -127
+
+// 0111 1111 = 127
