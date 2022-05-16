@@ -59,11 +59,6 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.apache.tuweni</groupId>
-            <artifactId>tuweni-bytes</artifactId>
-            <version>${tuweni.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.hibernate</groupId>
             <artifactId>hibernate-jpamodelgen</artifactId>
         </dependency>

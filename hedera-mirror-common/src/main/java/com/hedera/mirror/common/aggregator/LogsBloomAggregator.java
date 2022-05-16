@@ -20,10 +20,8 @@ package com.hedera.mirror.common.aggregator;
  * ‍
  */
 
+import java.util.Arrays;
 import lombok.NoArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.bytes.MutableBytes;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 
 /**
@@ -36,28 +34,24 @@ public class LogsBloomAggregator {
     private static final int LEAST_SIGNIFICANT_BYTE = 0xFF;
     private static final int LEAST_SIGNIFICANT_THREE_BITS = 0x7;
     private static final int BITS_IN_BYTE = 8;
-    private final MutableBytes logsBloom = MutableBytes.create(BYTE_SIZE);
+    private final byte[] logsBloom = new byte[BYTE_SIZE];
 
     public LogsBloomAggregator insertBytes(final byte[] bytes) {
         if (bytes != null) {
-            insertBytes(Bytes.wrap(bytes));
+            setBits(keccak256(bytes));
         }
         return this;
     }
 
     public byte[] getBloom() {
-        return logsBloom.isZero() ? new byte[0] : logsBloom.toArray();
+        return Arrays.copyOf(logsBloom, logsBloom.length);
     }
 
-    private void insertBytes(final Bytes contractResultBloom) {
-        setBits(keccak256(contractResultBloom));
-    }
-
-    private void setBits(final Bytes hashValue) {
+    private void setBits(final byte[] hashValue) {
         for (int counter = 0; counter < 6; counter += 2) {
             final var setBloomBit =
-                    ((hashValue.get(counter) & LEAST_SIGNIFICANT_THREE_BITS) << BITS_IN_BYTE)
-                            + (hashValue.get(counter + 1) & LEAST_SIGNIFICANT_BYTE);
+                    ((hashValue[counter] & LEAST_SIGNIFICANT_THREE_BITS) << BITS_IN_BYTE)
+                            + (hashValue[counter + 1] & LEAST_SIGNIFICANT_BYTE);
             setBit(setBloomBit);
         }
     }
@@ -66,15 +60,11 @@ public class LogsBloomAggregator {
         final var byteIndex = BYTE_SIZE - 1 - index / 8;
         final var bitIndex = index % 8;
         // "& 0xff" to prevent bit promotion: https://jira.sonarsource.com/browse/RSPEC-3034
-        final byte setBit = (byte) (logsBloom.get(byteIndex) & LEAST_SIGNIFICANT_BYTE | (1 << bitIndex));
-        logsBloom.set(byteIndex, setBit);
+        final byte setBit = (byte) (logsBloom[byteIndex] & LEAST_SIGNIFICANT_BYTE | (1 << bitIndex));
+        logsBloom[byteIndex] = setBit;
     }
 
-    private Bytes32 keccak256(final Bytes input) {
-        return Bytes32.wrap(keccak256DigestOf(input.toArray()));
-    }
-
-    private byte[] keccak256DigestOf(final byte[] msg) {
+    private byte[] keccak256(final byte[] msg) {
         return new Keccak.Digest256().digest(msg);
     }
 }
