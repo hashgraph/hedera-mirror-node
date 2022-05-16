@@ -36,10 +36,7 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
-import com.hederahashgraph.api.proto.java.SignatureMap;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -257,17 +254,9 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
 
     private RecordItem.RecordItemBuilder recordItem(TransactionBody transactionBody,
             TransactionRecord transactionRecord) {
-        SignedTransaction signedTransaction = SignedTransaction.newBuilder()
-                .setBodyBytes(transactionBody.toByteString())
-                .setSigMap(SignatureMap.newBuilder().build())
-                .build();
-        Transaction transaction = Transaction.newBuilder()
-                .setSignedTransactionBytes(signedTransaction.toByteString())
-                .build();
         return RecordItem.builder()
                 .record(transactionRecord)
-                .transaction(transaction)
-                .transactionBytes(transaction.toByteArray());
+                .transactionBody(transactionBody);
     }
 
     private TransactionBody txBodyForContractCreate() {

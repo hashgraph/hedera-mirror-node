@@ -193,6 +193,7 @@ public class RecordItem implements StreamItem {
 
     // Necessary since Lombok doesn't use our setters for builders
     public static class RecordItemBuilder<C, B extends RecordItem.RecordItemBuilder> {
+        private TransactionBody transactionBody;
 
         public RecordItem build() {
             // set parent, parent-child items are assured to exist in sequential order of [Parent, Child1,..., ChildN]
@@ -206,6 +207,17 @@ public class RecordItem implements StreamItem {
                     // check older siblings parent, if child count is > 1 this prevents having to search to parent
                     parent = previous.parent;
                 }
+            }
+
+            if (transactionBody != null) {
+                SignedTransaction signedTransaction = SignedTransaction.newBuilder()
+                        .setBodyBytes(transactionBody.toByteString())
+                        .setSigMap(SignatureMap.newBuilder().build())
+                        .build();
+                transaction = Transaction.newBuilder()
+                        .setSignedTransactionBytes(signedTransaction.toByteString())
+                        .build();
+                transactionBytes(transaction.toByteArray());
             }
 
             return buildInternal();
@@ -231,6 +243,11 @@ public class RecordItem implements StreamItem {
             }
 
             this.recordBytes = recordBytes;
+            return (B) this;
+        }
+
+        public B transactionBody(final TransactionBody transactionBody) {
+            this.transactionBody = transactionBody;
             return (B) this;
         }
     }
