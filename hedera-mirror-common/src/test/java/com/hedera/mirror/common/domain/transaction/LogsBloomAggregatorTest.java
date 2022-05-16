@@ -44,6 +44,24 @@ public class LogsBloomAggregatorTest {
     }
 
     @Test
+    void nullIsConsideredToBeInTheBloom() {
+        LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
+
+        String bloom1 = "000000040000000010";
+        bloomAggregator.insertBytes(ByteString.fromHex(bloom1).toByteArray());
+        assertTrue(bloomAggregator.couldContain(null));
+    }
+
+    @Test
+    void byteArrayMustCorrectLength() {
+        LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
+
+        String bloom1 = "0000000400000000100";
+        bloomAggregator.insertBytes(ByteString.fromHex(bloom1).toByteArray());
+        assertFalse(bloomAggregator.couldContain(new byte[] { 1, 2, 3 }));
+    }
+
+    @Test
     void topicsMustBeFoundInsideAggregatedBloom() {
         LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
 
@@ -80,6 +98,17 @@ public class LogsBloomAggregatorTest {
                     .insertBytes(Bytes.fromHexString(topic))
                     .build();
             assertTrue(bloomAggregator.couldContain(topicBloom.toArray()), topic);
+        }
+
+        String[] stringsNotPresentInAnyBloom = {
+                "FF2F8788117E7EFF1D82E926EC794901D17C78024A50270940304540A733656F0D",
+                "AA9F2DF0FED2C77648DE5860A4CC508CD0818C85B8B8A1AB4CEEEF8D981C8956A6"
+        };
+        for (var str : stringsNotPresentInAnyBloom) {
+            LogsBloomFilter bloom = LogsBloomFilter.builder()
+                    .insertBytes(Bytes.fromHexString(str))
+                    .build();
+            assertFalse(bloomAggregator.couldContain(bloom.toArray()), str);
         }
     }
 }
