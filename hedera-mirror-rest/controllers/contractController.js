@@ -832,6 +832,11 @@ class ContractController extends BaseController {
       throw new NotFoundError();
     }
 
+    let fileData = null;
+    if (!_.isNil(transaction.call_data_id)) {
+      fileData = await FileDataService.getFileDataByEntityId(transaction.call_data_id);
+    }
+
     if (_.isNil(contractResults[0].callResult)) {
       // set 206 partial response
       res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
@@ -843,7 +848,8 @@ class ContractController extends BaseController {
       recordFile,
       transaction,
       contractLogs,
-      contractStateChanges
+      contractStateChanges,
+      fileData
     );
   };
 

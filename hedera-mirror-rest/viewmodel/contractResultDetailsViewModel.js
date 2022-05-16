@@ -43,8 +43,9 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
    * @param {Transaction} transaction
    * @param {ContractLog[]} contractLogs
    * @param {ContractStateChange[]} contractStateChanges
+   * @param {FileData} fileData
    */
-  constructor(contractResult, recordFile, transaction, contractLogs, contractStateChanges) {
+  constructor(contractResult, recordFile, transaction, contractLogs, contractStateChanges, fileData) {
     super(contractResult);
 
     let txHash = transaction.transactionHash;
@@ -56,11 +57,13 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.transaction_index = transaction.index;
     this.nonce = transaction.nonce;
 
-    this.access_list = transaction.access_list;
-    this.chain_id = transaction.chain_id;
+    this.access_list = transaction.access_list ? utils.addHexPrefix(transaction.access_list) : null;
+    this.chain_id = transaction.chain_id ? utils.addHexPrefix(transaction.chain_id) : null;
     this.gas_price = transaction.gas_price ? utils.addHexPrefix(transaction.gas_price) : null;
-    this.max_fee_per_gas = transaction.max_fee_per_gas;
-    this.max_priority_fee_per_gas = transaction.max_priority_fee_per_gas;
+    this.max_fee_per_gas = transaction.max_fee_per_gas ? utils.addHexPrefix(transaction.max_fee_per_gas) : null;
+    this.max_priority_fee_per_gas = transaction.max_priority_fee_per_gas
+      ? utils.addHexPrefix(transaction.max_priority_fee_per_gas)
+      : null;
     this.r = transaction.signature_r ? utils.addHexPrefix(transaction.signature_r) : null;
     this.s = transaction.signature_s ? utils.addHexPrefix(transaction.signature_s) : null;
     this.type = transaction.ethType || null;
@@ -68,26 +71,26 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     // TODO this.gas_price = ethereum_transation.gas_price
 
-    if (transaction.type === TransactionType.getProtoId('ETHEREUMTRANSACTION')) {
-      txHash = _.isNull(transaction.ethHash) ? transaction.transactionHash : transaction.ethHash;
+    if (`${transaction.type}` === TransactionType.getProtoId('ETHEREUMTRANSACTION')) {
+      txHash = _.isNil(transaction.ethHash) ? transaction.transactionHash : transaction.ethHash;
 
-      if (!_.isNull(transaction.value)) {
+      if (!_.isNil(transaction.value)) {
         this.amount = transaction.value;
       }
 
-      if (!_.isNull(contractResult.sender_id)) {
+      if (!_.isNil(contractResult.sender_id)) {
         this.from = contractResult.sender_id;
       }
 
-      if (!_.isNull(transaction.call_data)) {
+      if (!_.isNil(transaction.call_data)) {
         this.function_parameters = transaction.call_data;
       } else {
-        if (_.isNull(contractResult.function_parameters)) {
-          // file_data from ethereum_transaction.call_data_id
+        if (_.isNil(contractResult.function_parameters)) {
+          this.function_parameters = utils.toHexString(fileData.fileData, true);
         }
       }
 
-      if (!_.isNull(transaction.gas_limit)) {
+      if (!_.isNil(transaction.gas_limit)) {
         this.gas_limit = transaction.gas_limit;
       }
     }

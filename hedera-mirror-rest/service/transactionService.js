@@ -64,6 +64,8 @@ class TransactionService extends BaseService {
       ${Transaction.getFullName(Transaction.TYPE)},
       ${EthereumTransaction.getFullName(EthereumTransaction.ACCESS_LIST)},
       ${EthereumTransaction.getFullName(EthereumTransaction.CHAIN_ID)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.CALL_DATA)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.CALL_DATA_ID)},
       ${EthereumTransaction.getFullName(EthereumTransaction.GAS_PRICE)},
       ${EthereumTransaction.getFullName(EthereumTransaction.MAX_FEE_PER_GAS)},
       ${EthereumTransaction.getFullName(EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS)},
@@ -110,17 +112,13 @@ class TransactionService extends BaseService {
    * @return {Promise<Transaction>} transaction subset
    */
   async getTransactionDetailsFromTimestamp(timestamp) {
-    try {
-      const row = await super.getSingleRow(
-        TransactionService.transactionDetailsFromTimestampQuery,
-        [timestamp],
-        'getTransactionDetailsFromTimestamp'
-      );
+    const row = await super.getSingleRow(
+      TransactionService.transactionDetailsFromTimestampQuery,
+      [timestamp],
+      'getTransactionDetailsFromTimestamp'
+    );
 
-      return _.isNull(row) ? null : new TransactionWithEthData(row);
-    } catch (e) {
-      console.log(e);
-    }
+    return _.isNull(row) ? null : new TransactionWithEthData(row);
   }
 
   /**
