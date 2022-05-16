@@ -42,6 +42,8 @@ class Entity {
   static AUTO_RENEW_PERIOD = 'auto_renew_period';
   static CREATED_TIMESTAMP = 'created_timestamp';
   static DELETED = 'deleted';
+  static ETHEREUM_NONCE = 'ethereum_nonce';
+  static EVM_ADDRESS = 'evm_address';
   static EXPIRATION_TIMESTAMP = 'expiration_timestamp';
   static ID = 'id';
   static KEY = 'key';

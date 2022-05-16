@@ -23,13 +23,14 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - accounts
-  /api/v1/accounts/{accountAliasOrAccountId}:
+  /api/v1/accounts/{idOrAliasOrEvmAddress}:
     get:
-      summary: Get account by alias or id
-      description: Return the account transactions and balance information given an account alias or an account id
-      operationId: getAccountByAliasOrId
+      summary: Get account by alias, id, or evm address
+      description: |
+        Return the account transactions and balance information given an account alias, an account id, or an evm address
+      operationId: getAccountByIdOrAliasOrEvmAddress
       parameters:
-        - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
+        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
         - $ref: '#/components/parameters/transactionTypeQueryParam'
       responses:
         200:
@@ -44,7 +45,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
-  /api/v1/accounts/{accountAliasOrAccountId}/nfts:
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/nfts:
     get:
       summary: Get nfts for an account info
       description: |
@@ -88,7 +89,7 @@ paths:
 
       operationId: listNftByAccountId
       parameters:
-        - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
+        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
         - $ref: '#/components/parameters/tokenIdQueryParam'
         - $ref: '#/components/parameters/serialNumberQueryParam'
         - $ref: '#/components/parameters/spenderIdQueryParam'
@@ -107,13 +108,13 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
-  /api/v1/accounts/{accountAliasOrAccountId}/allowances/crypto:
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/crypto:
     get:
       summary: Get crypto allowances for an account info
       description: Returns information for all crypto allowances for an account.
       operationId: listCryptoAllowancesByAccountId
       parameters:
-        - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
+        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
         - $ref: '#/components/parameters/spenderIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
@@ -130,7 +131,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
-  /api/v1/accounts/{accountAliasOrAccountId}/allowances/tokens:
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/allowances/tokens:
     get:
       summary: Get fungible token allowances for an account
       description: |
@@ -162,7 +163,7 @@ paths:
 
       operationId: listTokenAllowancesByAccountId
       parameters:
-        - $ref: '#/components/parameters/accountAliasOrAccountIdPathParam'
+        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
         - $ref: '#/components/parameters/spenderIdQueryParam'
         - $ref: '#/components/parameters/tokenIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
@@ -222,6 +223,26 @@ paths:
                 $ref: '#/components/schemas/BlocksResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - blocks
+  /api/v1/blocks/{hashOrNumber}:
+    get:
+      summary: Get block by hash or number
+      description: Returns the block information by given hash or number.
+      operationId: getByHashOrNumber
+      parameters:
+        - $ref: '#/components/parameters/hashOrNumberPathParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Block'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
       tags:
         - blocks
   /api/v1/contracts:
@@ -343,13 +364,13 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
-  /api/v1/contracts/results/{transactionId}:
+  /api/v1/contracts/results/{transactionIdOrHash}:
     get:
-      summary: Get the contract result from a contract on the network for a given transactionId
-      description: Returns a single ContractResult for a contract's function executions for a given transactionId.
-      operationId: getContractResultByTransactionId
+      summary: Get the contract result from a contract on the network for a given transactionId or ethereum transaction hash
+      description: Returns a single ContractResult for a contract's function executions for a given transactionId or ethereum transaction hash.
+      operationId: getContractResultByTransactionIdOrHash
       parameters:
-        - $ref: '#/components/parameters/transactionIdPathParam'
+        - $ref: '#/components/parameters/transactionIdOrEthHashPathParam'
         - $ref: '#/components/parameters/nonceQueryParamWithDefault'
       responses:
         200:
@@ -429,6 +450,28 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
+  /api/v1/network/exchangerate:
+    get:
+      summary: Get the network exchange rate to estimate costs
+      description: Returns the network's exchange rate, current and next.
+      operationId: getNetworkExchangeRate
+      parameters:
+        - $ref: '#/components/parameters/timestampQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkExchangeRateSetResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/ServiceUnavailableError'
+      tags:
+        - network
   /api/v1/network/nodes:
     get:
       summary: Get the network address book nodes
@@ -1050,6 +1093,15 @@ components:
           $ref: '#/components/schemas/CryptoAllowances'
         links:
           $ref: '#/components/schemas/Links'
+    NetworkExchangeRateSetResponse:
+      type: object
+      properties:
+        current_rate:
+          $ref: '#/components/schemas/ExchangeRate'
+        next_rate:
+          $ref: '#/components/schemas/ExchangeRate'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
     NetworkNodesResponse:
       type: object
       properties:
@@ -1158,6 +1210,12 @@ components:
         deleted:
           type: boolean
           nullable: true
+        ethereum_nonce:
+          type: integer
+          format: int64
+          nullable: true
+        evm_address:
+          $ref: '#/components/schemas/EvmAddressNullable'
         expiry_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         key:
@@ -1183,6 +1241,8 @@ components:
             - token_id: 0.0.200001
               balance: 8
         deleted: false
+        ethereum_nonce: 10
+        evm_address: "0xac384c53f03855fa1b3616052f8ba32c6c2a2fec"
         expiry_timestamp: null
         key: null
         max_automatic_token_associations: 200
@@ -1224,6 +1284,12 @@ components:
           $ref: '#/components/schemas/EntityId'
         alias:
           $ref: '#/components/schemas/Alias'
+        ethereum_nonce:
+          type: integer
+          format: int64
+          nullable: true
+        evm_address:
+          $ref: '#/components/schemas/EvmAddressNullable'
         expiry_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         auto_renew_period:
@@ -1239,6 +1305,7 @@ components:
           type: string
         receiver_sig_required:
           type: boolean
+          nullable: true
         links:
           $ref: '#/components/schemas/Links'
     Alias:
@@ -1552,6 +1619,23 @@ components:
                 properties:
                   message:
                     type: string
+    HederaHash:
+      type: string
+      description: A hex encoded hedera transaction hash.
+      minLength: 96
+      maxLength: 98
+      pattern: '^(0x)?[A-Fa-f0-9]{96}$'
+    EthereumHash:
+      type: string
+      description: A hex encoded ethereum transaction hash.
+      minLength: 64
+      maxLength: 66
+      pattern: '^(0x)?[A-Fa-f0-9]{64}$'
+    PositiveNumber:
+      type: integer
+      format: int64
+      description: A positive number.
+      minimum: 0
     EvmAddress:
       type: string
       description: A network entity encoded as an EVM address in hex.
@@ -1577,6 +1661,18 @@ components:
       nullable: true
       pattern: '^(0x)?[A-Fa-f0-9]{40}$'
       example: "0x0000000000000000000000000000000000001f41"
+    ExchangeRate:
+      type: object
+      properties:
+        cent_equivalent:
+          type: number
+          example: 596987
+        expiration_time:
+          type: number
+          example: 1649689200
+        hbar_equivalent:
+          type: number
+          example: 30000
     FixedFee:
       type: object
       properties:
@@ -1727,10 +1823,12 @@ components:
       example:
         account_id: "0.1.2"
         created_timestamp: "1234567890.000000001"
+        delegating_spender: "0.0.400"
         deleted: false
         metadata: "VGhpcyBpcyBhIHRlc3QgTkZU"
         modified_timestamp: "1610682445.003266001"
         serial_number: 124
+        spender_id: "0.0.500"
         token_id: "0.0.222"
     Nfts:
       type: object
@@ -2399,6 +2497,10 @@ components:
           nullable: true
         transaction_valid_start:
           $ref: '#/components/schemas/Timestamp'
+    TransactionIdStr:
+      type: string
+      description: A transaction id in string format.
+      pattern: '^(\d+)\.(\d+)\.(\d+)-(\d{1,19})-(\d{1,9})$'
     Transactions:
       type: array
       items:
@@ -2456,10 +2558,10 @@ components:
               messages:
                 - message: Require at least 1/3 signature files to prove consensus, got 1 out of 4 for file 2019-10-11T13_33_25.526889Z.rcd_sig
   parameters:
-    accountAliasOrAccountIdPathParam:
-      name: accountAliasOrAccountId
+    accountIdOrAliasOrEvmAddressPathParam:
+      name: idOrAliasOrEvmAddress
       in: path
-      description: Account alias or account id
+      description: Account alias or account id or evm address
       required: true
       examples:
         aliasOnly:
@@ -2474,10 +2576,18 @@ components:
           value: 0.8
         shardRealmAccountNum:
           value: 0.0.8
+        evmAddress:
+          value: ac384c53f03855fa1b3616052f8ba32c6c2a2fec
+        evmAddressWithPrefix:
+          value: 0xac384c53f03855fa1b3616052f8ba32c6c2a2fec
+        evmAddressWithShardAndRealm:
+          value: 0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec
       schema:
         oneOf:
           - $ref: '#/components/schemas/AccountAlias'
           - $ref: '#/components/schemas/EntityId'
+          - $ref: '#/components/schemas/EvmAddress'
+          - $ref: '#/components/schemas/EvmAddressWithShardRealm'
     accountBalanceQueryParam:
       name: account.balance
       in: query
@@ -2645,6 +2755,16 @@ components:
         oneOf:
           - $ref: '#/components/schemas/EntityId'
           - $ref: '#/components/schemas/EvmAddressWithShardRealm'
+    hashOrNumberPathParam:
+      name: hashOrNumber
+      in: path
+      required: true
+      description: Accepts both eth and hedera hash format or block number
+      schema:
+        oneOf:
+          - $ref: '#/components/schemas/HederaHash'
+          - $ref: '#/components/schemas/EthereumHash'
+          - $ref: '#/components/schemas/PositiveNumber'
     entityIdPathParam:
       name: entityId
       in: path
@@ -3248,3 +3368,19 @@ components:
       schema:
         type: boolean
         default: false
+    transactionIdOrEthHashPathParam:
+      name: transactionIdOrHash
+      in: path
+      schema:
+        oneOf:
+          - $ref: '#/components/schemas/EthereumHash'
+          - $ref: '#/components/schemas/TransactionIdStr'
+      required: true
+      description: Transaction Id or a 32 byte hash with optional 0x prefix
+      examples: 
+        trahsactionId:
+          value: 0.0.10-1234567890-000000000
+        transactionHash:        
+          value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
+        transactionHashWith0xPrefix:        
+          value: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'

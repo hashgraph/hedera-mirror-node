@@ -21,7 +21,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Invalid parameter: accountAliasOrAccountId"
+          "message": "Invalid parameter: idOrAliasOrEvmAddress"
         }
       ]
     }

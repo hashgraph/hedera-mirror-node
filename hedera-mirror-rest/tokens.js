@@ -225,7 +225,7 @@ const createCustomFeesObject = (customFees, tokenType) => {
 const formatTokenInfoRow = (row) => {
   return {
     admin_key: utils.encodeKey(row.key),
-    auto_renew_account: EntityId.parse(row.auto_renew_account_id, true).toString(),
+    auto_renew_account: EntityId.parse(row.auto_renew_account_id, {isNullable: true}).toString(),
     auto_renew_period: row.auto_renew_period,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),
     custom_fees: createCustomFeesObject(row.custom_fees, row.type),
@@ -286,7 +286,7 @@ const validateTokenQueryFilter = (param, op, val) => {
       ret = utils.isPositiveLong(val);
       break;
     case constants.filterKeys.TOKEN_ID:
-      ret = EntityId.isValidEntityId(val);
+      ret = EntityId.isValidEntityId(val, false);
       break;
     case constants.filterKeys.TOKEN_TYPE:
       ret = utils.isValidValueIgnoreCase(val, Object.values(constants.tokenTypeFilter));
@@ -317,7 +317,7 @@ const getTokensRequest = async (req, res) => {
     conditions.push('ta.associated is true');
     getTokensSqlQuery.unshift(tokenAccountCte);
     getTokensSqlQuery.push(tokenAccountJoinQuery);
-    getTokenSqlParams.push(EntityId.parse(accountId, constants.filterKeys.ACCOUNT_ID).getEncodedId());
+    getTokenSqlParams.push(EntityId.parse(accountId, {paramName: constants.filterKeys.ACCOUNT_ID}).getEncodedId());
   }
 
   // add join with entities table to sql query
@@ -357,7 +357,7 @@ const getTokensRequest = async (req, res) => {
  * Verify tokenId meets entity id format
  */
 const validateTokenIdParam = (tokenId) => {
-  if (!EntityId.isValidEntityId(tokenId)) {
+  if (!EntityId.isValidEntityId(tokenId, false)) {
     throw InvalidArgumentError.forParams(constants.filterKeys.TOKENID);
   }
 };
@@ -365,7 +365,7 @@ const validateTokenIdParam = (tokenId) => {
 const getAndValidateTokenIdRequestPathParam = (req) => {
   const tokenIdString = req.params.tokenId;
   validateTokenIdParam(tokenIdString);
-  return EntityId.parse(tokenIdString, constants.filterKeys.TOKENID).getEncodedId();
+  return EntityId.parse(tokenIdString, {paramName: constants.filterKeys.TOKENID}).getEncodedId();
 };
 
 /**

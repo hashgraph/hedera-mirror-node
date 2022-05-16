@@ -155,6 +155,16 @@ const isValidBlockHash = (query) => {
   return blockHashPattern.test(query);
 };
 
+const ethHashPattern = /^(0x)?([0-9A-Fa-f]{64})$/;
+const isValidEthHash = (hash) => {
+  if (hash === undefined) {
+    return false;
+  }
+
+  return ethHashPattern.test(hash);
+};
+
+
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
 
 const addressBookFileIdPattern = ['101', '0.101', '0.0.101', '102', '0.102', '0.0.102'];
@@ -239,7 +249,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isValidPublicKeyQuery(val);
       break;
     case constants.filterKeys.FROM:
-      ret = EntityId.isValidEntityId(val) || EntityId.isValidEvmAddress(val);
+      ret = EntityId.isValidEntityId(val, true, constants.EvmAddressType.NO_SHARD_REALM);
       break;
     case constants.filterKeys.INDEX:
       ret = isNumeric(val) && val >= 0;
@@ -360,7 +370,7 @@ const isValidContractIdQueryParam = (op, val) => {
   if (EntityId.isValidEvmAddress(val, contants.EvmAddressType.OPTIONAL_SHARD_REALM)) {
     return op === constants.queryParamOperators.eq;
   }
-  return EntityId.isValidEntityId(val);
+  return EntityId.isValidEntityId(val, false);
 };
 
 /**
@@ -1088,7 +1098,10 @@ const formatComparator = (comparator) => {
         comparator.value = parsePublicKey(comparator.value);
         break;
       case constants.filterKeys.FROM:
-        comparator.value = EntityId.parse(comparator.value, contants.filterKeys.FROM).getEncodedId();
+        comparator.value = EntityId.parse(comparator.value, {
+          evmAddressType: constants.EvmAddressType.NO_SHARD_REALM,
+          paramName: comparator.key,
+        }).getEncodedId();
         break;
       case constants.filterKeys.INTERNAL:
         comparator.value = parseBooleanValue(comparator.value);
@@ -1342,6 +1355,7 @@ module.exports = {
   isTestEnv,
   isPositiveLong,
   isRegexMatch,
+  isValidEthHash,
   isValidPublicKeyQuery,
   isValidOperatorQuery,
   isValidValueIgnoreCase,
@@ -1372,6 +1386,7 @@ module.exports = {
   secNsToSeconds,
   toHexString,
   validateReq,
+  isValidBlockHash,
 };
 
 if (isTestEnv()) {

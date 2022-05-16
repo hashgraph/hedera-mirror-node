@@ -5,6 +5,7 @@
       {
         "num": 1001,
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57",
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
       },
       {
@@ -77,7 +78,10 @@
     "/api/v1/accounts/0.0.1001/nfts",
     "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/nfts",
     "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/nfts",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/nfts"
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/nfts",
+    "/api/v1/accounts/ebb9a1be370150759408cd7af48e9eda2b8ead57/nfts",
+    "/api/v1/accounts/0xebb9a1be370150759408cd7af48e9eda2b8ead57/nfts",
+    "/api/v1/accounts/0.0.ebb9a1be370150759408cd7af48e9eda2b8ead57/nfts"
   ],
   "responseStatus": 200,
   "responseJson": {

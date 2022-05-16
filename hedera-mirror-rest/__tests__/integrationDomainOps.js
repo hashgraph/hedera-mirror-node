@@ -390,6 +390,8 @@ const addEntity = async (defaults, entity) => {
     auto_renew_account_id: null,
     auto_renew_period: null,
     deleted: false,
+    ethereum_nonce: null,
+    evm_address: null,
     expiration_timestamp: null,
     id: null,
     key: null,
@@ -411,6 +413,7 @@ const addEntity = async (defaults, entity) => {
   };
   entity.id = EntityId.of(BigInt(entity.shard), BigInt(entity.realm), BigInt(entity.num)).getEncodedId();
   entity.alias = base32.decode(entity.alias);
+  entity.evm_address = entity.evm_address && Buffer.from(entity.evm_address, 'hex');
   if (typeof entity.key === 'string') {
     entity.key = Buffer.from(entity.key, 'hex');
   }
@@ -426,7 +429,6 @@ const addEthereumTransaction = async (ethereumTransaction) => {
     chain_id: null,
     consensus_timestamp: '187654000123456',
     data: '0x000000000',
-    from_address: '0x0000000000000000000000000000000000001f41',
     gas_limit: 1000000,
     gas_price: '0x4a817c800',
     hash: '0x0000000000000000000000000000000000000000000000000000000000000123',
@@ -507,7 +509,7 @@ const addAssessedCustomFee = async (assessedCustomFee) => {
       EntityId.parse(collector_account_id).getEncodedId(),
       consensus_timestamp.toString(),
       effectivePayerAccountIds,
-      EntityId.parse(token_id, 'tokenId', true).getEncodedId(),
+      EntityId.parse(token_id, {isNullable: true}).getEncodedId(),
       EntityId.parse(payer_account_id).getEncodedId(),
     ]
   );
@@ -536,9 +538,9 @@ const addCustomFee = async (customFee) => {
     [
       customFee.amount || null,
       customFee.amount_denominator || null,
-      EntityId.parse(customFee.collector_account_id, 'collectorAccountId', true).getEncodedId(),
+      EntityId.parse(customFee.collector_account_id, {isNullable: true}).getEncodedId(),
       customFee.created_timestamp.toString(),
-      EntityId.parse(customFee.denominating_token_id, 'denominatingTokenId', true).getEncodedId(),
+      EntityId.parse(customFee.denominating_token_id, {isNullable: true}).getEncodedId(),
       customFee.maximum_amount || null,
       customFee.minimum_amount || '0',
       netOfTransfers != null ? netOfTransfers : null,
@@ -613,8 +615,8 @@ const addTransaction = async (transaction) => {
     non_fee_transfers: [],
     transfers: [],
     ...transaction,
-    entity_id: EntityId.parse(transaction.entity_id, 'entity_id', true).getEncodedId(),
-    node_account_id: EntityId.parse(transaction.nodeAccountId, 'nodeAccountId', true).getEncodedId(),
+    entity_id: EntityId.parse(transaction.entity_id, {isNullable: true}).getEncodedId(),
+    node_account_id: EntityId.parse(transaction.nodeAccountId, {isNullable: true}).getEncodedId(),
     payer_account_id: EntityId.parse(transaction.payerAccountId).getEncodedId(),
     valid_start_ns: transaction.valid_start_timestamp,
   };
@@ -721,8 +723,8 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAcco
   const nftTransfers = nftTransferList.map((transfer) => {
     return [
       `${consensusTimestamp}`,
-      EntityId.parse(transfer.receiver_account_id, '', true).getEncodedId(),
-      EntityId.parse(transfer.sender_account_id, '', true).getEncodedId(),
+      EntityId.parse(transfer.receiver_account_id, {isNullable: true}).getEncodedId(),
+      EntityId.parse(transfer.sender_account_id, {isNullable: true}).getEncodedId(),
       transfer.serial_number,
       EntityId.parse(transfer.token_id).getEncodedId().toString(),
       payerAccountId,
@@ -1013,10 +1015,10 @@ const addSchedule = async (schedule) => {
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       schedule.consensus_timestamp,
-      EntityId.parse(schedule.creator_account_id).getEncodedId().toString(),
+      EntityId.parse(schedule.creator_account_id).getEncodedId(),
       schedule.executed_timestamp,
-      EntityId.parse(schedule.payer_account_id).getEncodedId().toString(),
-      EntityId.parse(schedule.schedule_id).getEncodedId().toString(),
+      EntityId.parse(schedule.payer_account_id).getEncodedId(),
+      EntityId.parse(schedule.schedule_id).getEncodedId(),
       schedule.transaction_body,
       schedule.expiration_time,
       schedule.wait_for_expiry,
@@ -1035,7 +1037,7 @@ const addTransactionSignature = async (transactionSignature) => {
     [
       transactionSignature.consensus_timestamp,
       Buffer.from(transactionSignature.public_key_prefix),
-      EntityId.parse(transactionSignature.entity_id, '', true).getEncodedId().toString(),
+      EntityId.parse(transactionSignature.entity_id, {isNullable: true}).getEncodedId(),
       Buffer.from(transactionSignature.signature),
       transactionSignature.type,
     ]
@@ -1204,14 +1206,14 @@ const addNft = async (nft) => {
     `INSERT INTO nft (account_id, created_timestamp, delegating_spender, deleted, modified_timestamp, metadata, serial_number, spender, token_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
     [
-      EntityId.parse(nft.account_id, '', true).getEncodedId(),
+      EntityId.parse(nft.account_id, {isNullable: true}).getEncodedId(),
       nft.created_timestamp,
-      EntityId.parse(nft.delegating_spender, '', true).getEncodedId(),
+      EntityId.parse(nft.delegating_spender, {isNullable: true}).getEncodedId(),
       nft.deleted,
       nft.modified_timestamp,
       nft.metadata,
       nft.serial_number,
-      EntityId.parse(nft.spender, '', true).getEncodedId(),
+      EntityId.parse(nft.spender, {isNullable: true}).getEncodedId(),
       EntityId.parse(nft.token_id).getEncodedId(),
     ]
   );

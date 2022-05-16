@@ -90,13 +90,13 @@ class CryptoAllowanceController extends BaseController {
   };
 
   /**
-   * Handler function for /accounts/:accountAliasOrAccountId/allowances/crypto API
+   * Handler function for /accounts/:idOrAliasOrEvmAddress/allowances/crypto API
    * @param {Request} req HTTP request object
    * @param {Response} res HTTP response object
    * @returns {Promise<void>}
    */
   getAccountCryptoAllowances = async (req, res) => {
-    const accountId = await EntityService.getEncodedIdAccountIdOrAlias(req.params.accountAliasOrAccountId);
+    const accountId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
     const filters = utils.buildAndValidateFilters(req.query);
     const {conditions, params, order, limit} = this.extractCryptoAllowancesQuery(filters, accountId);
     const allowances = await CryptoAllowanceService.getAccountCryptoAllowances(conditions, params, order, limit);

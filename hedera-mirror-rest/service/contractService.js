@@ -53,7 +53,9 @@ class ContractService extends BaseService {
   `;
 
   static transactionTableCTE = `with ${Transaction.tableAlias} as (
-      select * from ${Transaction.tableName}
+      select
+      ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.INDEX}, ${Transaction.NONCE}
+      from ${Transaction.tableName}
       where $where
     )
   `;
@@ -122,10 +124,9 @@ class ContractService extends BaseService {
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
     let joinTransactionTable = false;
-    let transactionWhereClauses = [];
+    const transactionWhereClauses = [];
     if (whereConditions.length) {
-      for (let c = 0; c < whereConditions.length; c++) {
-        const condition = whereConditions[c];
+      for (let condition of whereConditions) {
         if (
           condition.includes(`${Transaction.tableAlias}.${Transaction.INDEX}`) ||
           condition.includes(`${Transaction.tableAlias}.${Transaction.NONCE}`)
@@ -307,7 +308,7 @@ class ContractService extends BaseService {
       return this.getContractIdByEvmAddress(contractIdParts);
     }
 
-    return EntityId.parse(contractIdValue, constants.filterKeys.CONTRACTID).getEncodedId();
+    return EntityId.parse(contractIdValue, {paramName: constants.filterKeys.CONTRACTID}).getEncodedId();
   }
 }
 
