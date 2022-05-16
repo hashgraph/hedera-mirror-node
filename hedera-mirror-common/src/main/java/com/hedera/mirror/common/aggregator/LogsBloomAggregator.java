@@ -27,24 +27,34 @@ import lombok.NoArgsConstructor;
 public class LogsBloomAggregator {
 
     public static final int BYTE_SIZE = 256;
-    private final byte[] logsBloom = new byte[BYTE_SIZE];
+    private final byte[] aggregatedBlooms = new byte[BYTE_SIZE];
 
-    public LogsBloomAggregator insertBytes(final byte[] bloom) {
+    public LogsBloomAggregator insertBytes(byte[] bloom) {
         if (bloom != null) {
             for (int i = 0; i < bloom.length; i++) {
-                logsBloom[i] |= bloom[i];
+                aggregatedBlooms[i] |= bloom[i];
             }
         }
         return this;
     }
 
     public byte[] getBloom() {
-        return Arrays.copyOf(logsBloom, logsBloom.length);
+        return Arrays.copyOf(aggregatedBlooms, aggregatedBlooms.length);
+    }
+
+    public boolean couldContain(byte[] bloom) {
+        if (bloom == null) {
+            // other implementations accept null values as positive matches.
+            return true;
+        }
+        if (bloom.length != BYTE_SIZE) {
+            return false;
+        }
+        for (int i = 0; i < bloom.length; i++) {
+            if ((bloom[i] & aggregatedBlooms[i]) != bloom[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 }
-
-// 0111 1111 = 127
-
-// 1000 0001 = -127
-
-// 0111 1111 = 127

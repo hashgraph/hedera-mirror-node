@@ -1,17 +1,16 @@
 package com.hedera.mirror.common.domain.transaction;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.protobuf.ByteString;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.evm.log.LogsBloomFilter;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 
 public class LogsBloomAggregatorTest {
-
-    @Test
-    void getLogsBloomWhenEmpty() {
-        assertThat(new LogsBloomAggregator().getBloom()).isEqualTo(new byte[0]);
-    }
 
     @Test
     void getLogsBloomInsertBytesTest() {
@@ -42,5 +41,45 @@ public class LogsBloomAggregatorTest {
         // Already inserted bytes should not change the filter
         bloomAggregator.insertBytes(bytes3);
         assertThat(bloomAggregator.getBloom()).isEqualTo(expectedResult);
+    }
+
+    @Test
+    void topicsMustBeFoundInsideAggregatedBloom() {
+        LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
+
+        String bloom1 =
+                "00000004000000001000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000100000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000004000000000000000000000000000000000000000000000040000000000000000000000000000000001000000000000000000000000000000000000000000000001000000000000100000080000000000000000000000000000000000000000000000000000000000000000000000000";
+        bloomAggregator.insertBytes(ByteString.fromHex(bloom1).toByteArray());
+
+        String bloom2 =
+                "00000004000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008004000000000000000000000000000000000000000000000040000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000100002080000000000000000000000000000000000000000000000400000000000000000000000000";
+        bloomAggregator.insertBytes(ByteString.fromHex(bloom2).toByteArray());
+
+        String[] topics = {
+                // topic0 from bloom1
+                "2F8788117E7EFF1D82E926EC794901D17C78024A50270940304540A733656F0D",
+
+                // topic1 from bloom1
+                "9F2DF0FED2C77648DE5860A4CC508CD0818C85B8B8A1AB4CEEEF8D981C8956A6",
+
+                // evm address from bloom1
+                "00000000000000000000000000000000000D98C7",
+
+                // topic0 from bloom2
+                "2F8788117E7EFF1D82E926EC794901D17C78024A50270940304540A733656F0D",
+
+                // topic1 from bloom2
+                "65D7A28E3265B37A6474929F336521B332C1681B933F6CB9F3376673440D862A",
+
+                // evm address from bloom2
+                "00000000000000000000000000000000000D98C7"
+        };
+
+        for (var topic : topics) {
+            LogsBloomFilter topicBloom = LogsBloomFilter.builder()
+                    .insertBytes(Bytes.fromHexString(topic))
+                    .build();
+            assertTrue(bloomAggregator.couldContain(topicBloom.toArray()), topic);
+        }
     }
 }

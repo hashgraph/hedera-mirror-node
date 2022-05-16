@@ -93,6 +93,12 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>org.hyperledger.besu</groupId>
+            <artifactId>evm</artifactId>
+            <version>${besu.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
