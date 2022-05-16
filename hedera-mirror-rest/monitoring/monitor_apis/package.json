@@ -22,7 +22,7 @@
     "extend": "^3.0.2",
     "http-errors": "^2.0.0",
     "lodash": "^4.17.21",
-    "log4js": "^6.4.6",
+    "log4js": "^6.4.7",
     "mathjs": "^10.5.1",
     "node-fetch": "^2.6.7",
     "parse-duration": "^1.0.2",
