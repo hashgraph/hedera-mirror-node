@@ -56,7 +56,7 @@ public class LogsBloomAggregatorTest {
     void byteArrayMustCorrectLength() {
         LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
 
-        String bloom1 = "0000000400000000100";
+        String bloom1 = "00000004000000000100";
         bloomAggregator.insertBytes(ByteString.fromHex(bloom1).toByteArray());
         assertFalse(bloomAggregator.couldContain(new byte[] { 1, 2, 3 }));
     }
