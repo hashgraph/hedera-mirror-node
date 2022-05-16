@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -68,10 +69,6 @@ class EthereumTransactionHandler implements TransactionHandler {
 
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        parseEthereumTransaction(recordItem);
-    }
-
-    private void parseEthereumTransaction(RecordItem recordItem) {
         if (!entityProperties.getPersist().isEthereumTransactions()) {
             return;
         }
@@ -97,6 +94,21 @@ class EthereumTransactionHandler implements TransactionHandler {
         ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
 
         entityListener.onEthereumTransaction(ethereumTransaction);
+        updateAccountNonce(recordItem, ethereumTransaction);
+    }
+
+    private void updateAccountNonce(RecordItem recordItem, EthereumTransaction ethereumTransaction) {
+        var transactionRecord = recordItem.getRecord();
+        var functionResult = transactionRecord.hasContractCreateResult() ?
+                transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
+        var senderId = EntityId.of(functionResult.getSenderId());
+
+        if (!EntityId.isEmpty(senderId)) {
+            Entity entity = senderId.toEntity();
+            entity.setEthereumNonce(ethereumTransaction.getNonce());
+            entity.setTimestampRange(null); // Don't trigger a history row
+            entityListener.onEntity(entity);
+        }
     }
 
     private void convertGasWeiToTinyBars(EthereumTransaction ethereumTransaction) {

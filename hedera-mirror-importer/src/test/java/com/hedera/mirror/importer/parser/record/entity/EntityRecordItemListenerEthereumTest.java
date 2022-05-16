@@ -27,59 +27,64 @@ import com.esaulpaugh.headlong.rlp.RLPEncoder;
 import com.esaulpaugh.headlong.util.Integers;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.FileID;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.web3j.crypto.Hash;
 
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.record.ethereum.LegacyEthereumTransactionParserTest;
-import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListenerTest {
-    static final String LONDON_RAW_TX =
-            "02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
 
-    @Resource
-    private ContractRepository contractRepository;
-
-    @Resource
-    private EthereumTransactionRepository ethereumTransactionRepository;
+    private final EthereumTransactionRepository ethereumTransactionRepository;
 
     @BeforeEach
     void before() {
         entityProperties.getPersist().setEthereumTransactions(true);
     }
 
-    @Test
-    void ethereumTransactionCallLondon() {
-        RecordItem recordItem = recordItemBuilder.ethereumTransaction(false)
-                .build();
+    @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    void ethereumTransactionEip1559(boolean create) {
+        RecordItem recordItem = recordItemBuilder.ethereumTransaction(create).build();
+        var record = recordItem.getRecord();
+        var functionResult = create ? record.getContractCreateResult() : record.getContractCallResult();
+        var senderId = EntityId.of(functionResult.getSenderId());
+        Entity sender = domainBuilder.entity()
+                .customize(e -> e.id(senderId.getId()).num(senderId.getEntityNum()))
+                .persist();
 
         parseRecordItemAndCommit(recordItem);
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(1, contractRepository.count()),
-                () -> assertEquals(0, entityRepository.count()),
+                () -> assertEquals(1, entityRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem)
+                () -> assertEthereumTransaction(recordItem, sender)
         );
     }
 
-    @Test
-    void ethereumTransactionCallLegacy() {
-        RecordItem recordItem = getEthereumTransactionRecordItem(false,
+    @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    void ethereumTransactionLegacy(boolean create) {
+        RecordItem recordItem = getEthereumTransactionRecordItem(create,
                 LegacyEthereumTransactionParserTest.LEGACY_RAW_TX);
 
         parseRecordItemAndCommit(recordItem);
@@ -92,13 +97,14 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem)
+                () -> assertEthereumTransaction(recordItem, null)
         );
     }
 
-    @Test
-    void ethereumTransactionCallEIP155() {
-        RecordItem recordItem = getEthereumTransactionRecordItem(false,
+    @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    void ethereumTransactionEip155(boolean create) {
+        RecordItem recordItem = getEthereumTransactionRecordItem(create,
                 LegacyEthereumTransactionParserTest.EIP155_RAW_TX);
 
         parseRecordItemAndCommit(recordItem);
@@ -111,64 +117,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem)
-        );
-    }
-
-    @Test
-    void ethereumEip1559TransactionCreate() {
-        RecordItem recordItem = getEthereumTransactionRecordItem(true,
-                LONDON_RAW_TX);
-
-        parseRecordItemAndCommit(recordItem);
-
-        assertAll(
-                () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(1, contractRepository.count()),
-                () -> assertEquals(0, entityRepository.count()),
-                () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
-                () -> assertEquals(1, ethereumTransactionRepository.count()),
-                () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem)
-        );
-    }
-
-    @Test
-    void ethereumLegacyTransactionCreate() {
-        RecordItem recordItem = getEthereumTransactionRecordItem(true,
-                LegacyEthereumTransactionParserTest.LEGACY_RAW_TX);
-
-        parseRecordItemAndCommit(recordItem);
-
-        assertAll(
-                () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(1, contractRepository.count()),
-                () -> assertEquals(0, entityRepository.count()),
-                () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
-                () -> assertEquals(1, ethereumTransactionRepository.count()),
-                () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem)
-        );
-    }
-
-    @Test
-    void ethereumLegacyChainListTransactionCreate() {
-        RecordItem recordItem = getEthereumTransactionRecordItem(true,
-                LegacyEthereumTransactionParserTest.EIP155_RAW_TX);
-
-        parseRecordItemAndCommit(recordItem);
-
-        assertAll(
-                () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(1, contractRepository.count()),
-                () -> assertEquals(0, entityRepository.count()),
-                () -> assertEquals(1, contractResultRepository.count()),
-                () -> assertEquals(3, cryptoTransferRepository.count()),
-                () -> assertEquals(1, ethereumTransactionRepository.count()),
-                () -> assertThat(contractResultRepository.findAll()).hasSize(1),
-                () -> assertEthereumTransaction(recordItem)
+                () -> assertEthereumTransaction(recordItem, null)
         );
     }
 
@@ -194,7 +143,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 .build();
     }
 
-    private void assertEthereumTransaction(RecordItem recordItem) {
+    private void assertEthereumTransaction(RecordItem recordItem, Entity sender) {
         long createdTimestamp = recordItem.getConsensusTimestamp();
         var ethTransaction = ethereumTransactionRepository.findById(createdTimestamp).get();
         var transactionBody = recordItem.getTransactionBody().getEthereumTransaction();
@@ -207,5 +156,12 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 .returns(DomainUtils.toBytes(transactionBody.getEthereumData()), EthereumTransaction::getData)
                 .returns(transactionBody.getMaxGasAllowance(), EthereumTransaction::getMaxGasAllowance)
                 .returns(DomainUtils.toBytes(recordItem.getRecord().getEthereumHash()), EthereumTransaction::getHash);
+
+        if (sender != null) {
+            assertThat(entityRepository.findById(sender.getId()))
+                    .get()
+                    .extracting(Entity::getEthereumNonce)
+                    .isEqualTo(ethTransaction.getNonce());
+        }
     }
 }

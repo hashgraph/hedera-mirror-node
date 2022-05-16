@@ -402,6 +402,89 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(findHistory(Entity.class)).isEmpty();
     }
 
+    @Test
+    void onEntityWithNonHistoryUpdates() {
+        // given
+        // Update to non-history field with existing entity should just update nonce
+        Entity existingEntity = domainBuilder.entity().persist();
+        Entity existingEntityNonce1 = existingEntity.toEntityId().toEntity();
+        existingEntityNonce1.setEthereumNonce(100L);
+        existingEntityNonce1.setTimestampRange(null);
+
+        Entity existingEntityNonce2 = existingEntity.toEntityId().toEntity();
+        existingEntityNonce2.setEthereumNonce(101L);
+        existingEntityNonce2.setTimestampRange(null);
+
+        // Update to non-history field with partial data should be discarded
+        Entity nonExistingEntityNonce1 = domainBuilder.entityId(EntityType.ACCOUNT).toEntity();
+        nonExistingEntityNonce1.setEthereumNonce(200L);
+        nonExistingEntityNonce1.setTimestampRange(null);
+
+        Entity nonExistingEntityNonce2 = domainBuilder.entityId(EntityType.ACCOUNT).toEntity();
+        nonExistingEntityNonce2.setEthereumNonce(201L);
+        nonExistingEntityNonce2.setTimestampRange(null);
+
+        // when
+        sqlEntityListener.onEntity(existingEntityNonce1);
+        sqlEntityListener.onEntity(existingEntityNonce2);
+        sqlEntityListener.onEntity(nonExistingEntityNonce1);
+        sqlEntityListener.onEntity(nonExistingEntityNonce2);
+        completeFileAndCommit();
+
+        Entity existingEntityNonce3 = existingEntity.toEntityId().toEntity();
+        existingEntityNonce3.setEthereumNonce(102L);
+        existingEntityNonce3.setTimestampRange(null);
+
+        Entity nonExistingEntityNonce3 = domainBuilder.entityId(EntityType.ACCOUNT).toEntity();
+        nonExistingEntityNonce3.setEthereumNonce(202L);
+        nonExistingEntityNonce3.setTimestampRange(null);
+
+        sqlEntityListener.onEntity(existingEntityNonce3);
+        sqlEntityListener.onEntity(nonExistingEntityNonce3);
+        completeFileAndCommit();
+
+        // then
+        existingEntity.setEthereumNonce(existingEntityNonce3.getEthereumNonce());
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(existingEntity);
+        assertThat(findHistory(Entity.class)).isEmpty();
+    }
+
+    @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    void onEntityWithHistoryAndNonHistoryUpdates(boolean nonceBefore) {
+        // given
+        Entity entity = domainBuilder.entity().persist();
+        Entity entityNonce = entity.toEntityId().toEntity();
+        entityNonce.setEthereumNonce(100L);
+        entityNonce.setTimestampRange(null);
+
+        Entity entityDeleted = entity.toEntityId().toEntity();
+        entityDeleted.setDeleted(true);
+        entityDeleted.setTimestampLower(domainBuilder.timestamp());
+
+        // when
+        if (nonceBefore) {
+            sqlEntityListener.onEntity(entityNonce);
+            sqlEntityListener.onEntity(entityDeleted);
+        } else {
+            sqlEntityListener.onEntity(entityDeleted);
+            sqlEntityListener.onEntity(entityNonce);
+        }
+        completeFileAndCommit();
+
+        // then
+        Entity entityMerged = TestUtils.clone(entity);
+        entityMerged.setDeleted(entityDeleted.getDeleted());
+        entityMerged.setEthereumNonce(entityNonce.getEthereumNonce());
+        entityMerged.setTimestampRange(entityDeleted.getTimestampRange());
+        entity.setTimestampUpper(entityDeleted.getTimestampLower());
+
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entityMerged);
+        assertThat(findHistory(Entity.class)).containsExactlyInAnyOrder(entity);
+    }
+
     @ValueSource(ints = {1, 2, 3})
     @ParameterizedTest
     void onEntityHistory(int commitIndex) {
