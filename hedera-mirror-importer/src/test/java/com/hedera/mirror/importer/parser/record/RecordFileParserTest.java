@@ -55,6 +55,7 @@ import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 
 class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser> {
 
@@ -68,6 +69,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
     private DomainBuilder domainBuilder = new DomainBuilder();
+
+    private RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
 
     private long count = 0;
 
@@ -103,7 +106,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     @Override
     protected StreamFile getStreamFile() {
         long id = ++count;
-        recordItem = cryptoTransferRecordItem(id).build();
+        recordItem = cryptoTransferRecordItem(id);
         return getStreamFile(Flux.just(recordItem), id);
     }
 
@@ -151,17 +154,17 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
                 .thenReturn(DateRangeFilter.all());
 
         long timestamp = ++count;
-        ContractFunctionResult contractCallResult1 = contractFunctionResult(
+        ContractFunctionResult contractFunctionResult1 = contractFunctionResult(
                 10000000000L, new byte[] { 0, 6, 4, 0, 5, 7, 2 });
-        RecordItem recordItem1 = recordItem(timestamp, contractCallResult1, txBodyForContractCreate());
+        RecordItem recordItem1 = contractCreate(contractFunctionResult1, timestamp);
 
-        ContractFunctionResult contractCallResult2 = contractFunctionResult(
+        ContractFunctionResult contractFunctionResult2 = contractFunctionResult(
                 100000000000L, new byte[] { 3, 5, 1, 7, 4, 4, 0 });
-        RecordItem recordItem2 = recordItem(timestamp, contractCallResult2, txBodyForContractCall());
+        RecordItem recordItem2 = contractCall(contractFunctionResult2, timestamp);
 
-        ContractFunctionResult contractCallResult3 = contractFunctionResult(
+        ContractFunctionResult contractFunctionResult3 = contractFunctionResult(
                 1000000000000L, new byte[] { 0, 1, 1, 2, 2, 6, 0 });
-        RecordItem recordItem3 = recordItem(timestamp, contractCallResult3, txBodyForEthereum());
+        RecordItem recordItem3 = ethereumTransaction(contractFunctionResult3, timestamp);
 
         RecordFile recordFile = getStreamFile(Flux.just(recordItem1, recordItem2, recordItem3), timestamp);
 
@@ -210,6 +213,26 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         assertPostParseStreamFile(recordFile, true);
     }
 
+    private RecordItem contractCall(ContractFunctionResult contractFunctionResult, long timestamp) {
+        return recordItemBuilder
+                .contractCall()
+                .record(builder -> builder.setContractCallResult(contractFunctionResult)
+                        .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
+                )
+                .transactionBody(builder -> builder.mergeFrom(ContractCallTransactionBody.newBuilder().build()))
+                .build();
+    }
+
+    private RecordItem contractCreate(ContractFunctionResult contractFunctionResult, long timestamp) {
+        return recordItemBuilder
+                .contractCreate()
+                .record(builder -> builder.setContractCreateResult(contractFunctionResult)
+                        .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
+                )
+                .transactionBody(builder -> builder.mergeFrom(ContractCreateTransactionBody.newBuilder().build()))
+                .build();
+    }
+
     private ContractFunctionResult contractFunctionResult(long gasUsed, byte[] logBloom) {
         return ContractFunctionResult.newBuilder()
                 .setGasUsed(gasUsed)
@@ -217,8 +240,29 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
                 .build();
     }
 
-    private RecordFile getStreamFile(final Flux<RecordItem> items, final long timestamp) {
+    private RecordItem cryptoTransferRecordItem(long timestamp) {
+        CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder().build();
+        TransactionBody transactionBody = TransactionBody.newBuilder().setCryptoTransfer(cryptoTransfer).build();
+        TransactionRecord transactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
+                .build();
+        return RecordItem.builder()
+                .record(transactionRecord)
+                .transactionBody(transactionBody)
+                .build();
+    }
 
+    private RecordItem ethereumTransaction(ContractFunctionResult contractFunctionResult, long timestamp) {
+        return recordItemBuilder
+                .ethereumTransaction(true)
+                .record(builder -> builder.setContractCallResult(contractFunctionResult)
+                        .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
+                )
+                .transactionBody(builder -> builder.mergeFrom(EthereumTransactionBody.newBuilder().build()))
+                .build();
+    }
+
+    private RecordFile getStreamFile(final Flux<RecordItem> items, final long timestamp) {
         return domainBuilder
                 .recordFile()
                 .customize(recordFileBuilder -> recordFileBuilder.bytes(new byte[] { 0, 1, 2 })
@@ -227,56 +271,5 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
                         .items(items)
                 )
                 .get();
-    }
-
-    private RecordItem.RecordItemBuilder cryptoTransferRecordItem(long timestamp) {
-        CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder().build();
-        TransactionBody transactionBody = TransactionBody.newBuilder().setCryptoTransfer(cryptoTransfer).build();
-
-        return recordItem(timestamp, transactionBody);
-    }
-
-    private RecordItem recordItem(long timestamp, ContractFunctionResult contractFunctionResult,
-            TransactionBody transactionBody) {
-        TransactionRecord transactionRecord = TransactionRecord.newBuilder()
-                .setContractCallResult(contractFunctionResult)
-                .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
-                .build();
-        return recordItem(transactionBody, transactionRecord).build();
-    }
-
-    private RecordItem.RecordItemBuilder recordItem(long timestamp, TransactionBody transactionBody) {
-        TransactionRecord transactionRecord = TransactionRecord.newBuilder()
-                .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
-                .build();
-        return recordItem(transactionBody, transactionRecord);
-    }
-
-    private RecordItem.RecordItemBuilder recordItem(TransactionBody transactionBody,
-            TransactionRecord transactionRecord) {
-        return RecordItem.builder()
-                .record(transactionRecord)
-                .transactionBody(transactionBody);
-    }
-
-    private TransactionBody txBodyForContractCreate() {
-        ContractCreateTransactionBody contractCreateTx = ContractCreateTransactionBody.newBuilder().build();
-        return TransactionBody.newBuilder()
-                .setContractCreateInstance(contractCreateTx)
-                .build();
-    }
-
-    private TransactionBody txBodyForContractCall() {
-        ContractCallTransactionBody contractCallTx = ContractCallTransactionBody.newBuilder().build();
-        return TransactionBody.newBuilder()
-                .setContractCall(contractCallTx)
-                .build();
-    }
-
-    private TransactionBody txBodyForEthereum() {
-        EthereumTransactionBody ethereumTx = EthereumTransactionBody.newBuilder().build();
-        return TransactionBody.newBuilder()
-                .setEthereumTransaction(ethereumTx)
-                .build();
     }
 }
