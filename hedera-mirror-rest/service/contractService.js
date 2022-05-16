@@ -77,7 +77,8 @@ class ContractService extends BaseService {
     ${ContractResult.FUNCTION_PARAMETERS},
     ${ContractResult.GAS_LIMIT},
     ${ContractResult.GAS_USED},
-    ${ContractResult.PAYER_ACCOUNT_ID}
+    ${ContractResult.PAYER_ACCOUNT_ID},
+    ${ContractResult.SENDER_ID}
     from ${ContractResult.tableName}`;
 
   static contractStateChangesQuery = `select

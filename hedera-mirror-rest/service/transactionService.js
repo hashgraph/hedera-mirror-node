@@ -25,6 +25,7 @@ const _ = require('lodash');
 const BaseService = require('./baseService');
 const {Transaction} = require('../model');
 const {EthereumTransaction} = require('../model');
+const {TransactionWithEthData} = require('../model');
 
 /**
  * Transaction retrieval business logic
@@ -34,10 +35,49 @@ class TransactionService extends BaseService {
     super();
   }
 
-  static transactionDetailsFromTimestampQuery = `select
-    ${Transaction.PAYER_ACCOUNT_ID}, ${Transaction.RESULT}, ${Transaction.TRANSACTION_HASH}
-    from ${Transaction.tableName}
-    where ${Transaction.CONSENSUS_TIMESTAMP} = $1`;
+  static transactionDetailsFromTimestampQuery = `with ${EthereumTransaction.tableAlias} as (
+      select
+        ${EthereumTransaction.CONSENSUS_TIMESTAMP},
+        ${EthereumTransaction.ACCESS_LIST},
+        ${EthereumTransaction.CHAIN_ID},
+        ${EthereumTransaction.GAS_PRICE},
+        ${EthereumTransaction.MAX_FEE_PER_GAS},
+        ${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS},
+        ${EthereumTransaction.SIGNATURE_R},
+        ${EthereumTransaction.SIGNATURE_S},
+        ${EthereumTransaction.TYPE},
+        ${EthereumTransaction.RECOVERY_ID},
+        ${EthereumTransaction.VALUE},
+        ${EthereumTransaction.HASH},
+        ${EthereumTransaction.CALL_DATA},
+        ${EthereumTransaction.CALL_DATA_ID},
+        ${EthereumTransaction.GAS_LIMIT}
+      from ${EthereumTransaction.tableName}
+      where ${EthereumTransaction.CONSENSUS_TIMESTAMP} = $1
+  )
+    select
+      ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
+      ${Transaction.getFullName(Transaction.RESULT)},
+      ${Transaction.getFullName(Transaction.TRANSACTION_HASH)},
+      ${Transaction.getFullName(Transaction.INDEX)},
+      ${Transaction.getFullName(Transaction.NONCE)},
+      ${Transaction.getFullName(Transaction.TYPE)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.ACCESS_LIST)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.CHAIN_ID)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.GAS_PRICE)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.MAX_FEE_PER_GAS)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_R)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)} as ethType,
+      ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} as ethHash,
+      ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)}
+    from ${Transaction.tableName} ${Transaction.tableAlias}
+    left join ${EthereumTransaction.tableAlias}
+    on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ${EthereumTransaction.getFullName(
+    EthereumTransaction.CONSENSUS_TIMESTAMP
+  )}
+    where ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = $1`;
 
   static selectTransactionDetailsBaseQuery = `select
     ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)},
@@ -51,14 +91,17 @@ class TransactionService extends BaseService {
       and ${Transaction.VALID_START_NS} = $2`;
 
   static transactionDetailsFromEthHashQuery = `with ${EthereumTransaction.tableAlias} as (
-      select ${EthereumTransaction.CONSENSUS_TIMESTAMP} from ${EthereumTransaction.tableName}
+      select ${EthereumTransaction.CONSENSUS_TIMESTAMP}, ${EthereumTransaction.HASH} from ${
+    EthereumTransaction.tableName
+  }
       where ${EthereumTransaction.tableName}.${EthereumTransaction.HASH} = $1
   )
     ${this.selectTransactionDetailsBaseQuery}
-    join ${EthereumTransaction.tableAlias}
+    left join ${EthereumTransaction.tableAlias}
     on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ${EthereumTransaction.getFullName(
     EthereumTransaction.CONSENSUS_TIMESTAMP
-  )}`;
+  )}
+    where ${EthereumTransaction.tableAlias}.${EthereumTransaction.HASH} = $1`;
 
   /**
    * Retrieves the transaction for the given timestamp
@@ -67,13 +110,17 @@ class TransactionService extends BaseService {
    * @return {Promise<Transaction>} transaction subset
    */
   async getTransactionDetailsFromTimestamp(timestamp) {
-    const row = await super.getSingleRow(
-      TransactionService.transactionDetailsFromTimestampQuery,
-      [timestamp],
-      'getTransactionDetailsFromTimestamp'
-    );
+    try {
+      const row = await super.getSingleRow(
+        TransactionService.transactionDetailsFromTimestampQuery,
+        [timestamp],
+        'getTransactionDetailsFromTimestamp'
+      );
 
-    return _.isNull(row) ? null : new Transaction(row);
+      return _.isNull(row) ? null : new TransactionWithEthData(row);
+    } catch (e) {
+      console.log(e);
+    }
   }
 
   /**
@@ -89,21 +136,22 @@ class TransactionService extends BaseService {
       TransactionService.transactionDetailsFromTransactionIdQuery,
       [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()],
       'getTransactionDetailsFromEthHash',
-      excludeTransactionResults,
-      nonce
-    );
-  }
-
-  async getTransactionDetailsFromEthHash(ethHash, excludeTransactionResults = []) {
-    return this.getTransactionDetails(
-      TransactionService.transactionDetailsFromEthHashQuery,
-      [ethHash],
-      'getTransactionDetailsFromEthHash',
+      nonce,
       excludeTransactionResults
     );
   }
 
-  async getTransactionDetails(query, params, parentFunctionName, excludeTransactionResults = [], nonce = undefined) {
+  async getTransactionDetailsFromEthHash(ethHash, nonce = undefined, excludeTransactionResults = []) {
+    return this.getTransactionDetails(
+      TransactionService.transactionDetailsFromEthHashQuery,
+      [ethHash],
+      'getTransactionDetailsFromEthHash',
+      nonce,
+      excludeTransactionResults
+    );
+  }
+
+  async getTransactionDetails(query, params, parentFunctionName, nonce = undefined, excludeTransactionResults = []) {
     if (nonce !== undefined) {
       params.push(nonce);
       query = `${query}
@@ -125,7 +173,7 @@ class TransactionService extends BaseService {
     }
 
     const rows = await super.getRows(query, params, parentFunctionName);
-    return rows.map((row) => new Transaction(row));
+    return rows.map((row) => new TransactionWithEthData(row));
   }
 }
 

@@ -20,10 +20,11 @@
 
 'use strict';
 
+const _ = require('lodash');
 const ContractLogResultsViewModel = require('./contractResultLogViewModel');
 const ContractResultStateChangeViewModel = require('./contractResultStateChangeViewModel');
 const ContractResultViewModel = require('./contractResultViewModel');
-const {TransactionResult} = require('../model');
+const {TransactionResult, TransactionType} = require('../model');
 const utils = require('../utils');
 
 /**
@@ -45,11 +46,54 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
    */
   constructor(contractResult, recordFile, transaction, contractLogs, contractStateChanges) {
     super(contractResult);
-    this.block_hash = utils.addHexPrefix(recordFile.hash, false);
+
+    let txHash = transaction.transactionHash;
+
+    this.block_hash = utils.addHexPrefix(recordFile.hash);
     this.block_number = recordFile.index;
-    this.hash = utils.toHexString(transaction.transactionHash, true);
     this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
     this.result = TransactionResult.getName(transaction.result);
+    this.transaction_index = transaction.index;
+    this.nonce = transaction.nonce;
+
+    this.access_list = transaction.access_list;
+    this.chain_id = transaction.chain_id;
+    this.gas_price = transaction.gas_price ? utils.addHexPrefix(transaction.gas_price) : null;
+    this.max_fee_per_gas = transaction.max_fee_per_gas;
+    this.max_priority_fee_per_gas = transaction.max_priority_fee_per_gas;
+    this.r = transaction.signature_r ? utils.addHexPrefix(transaction.signature_r) : null;
+    this.s = transaction.signature_s ? utils.addHexPrefix(transaction.signature_s) : null;
+    this.type = transaction.ethType || null;
+    this.v = transaction.recovery_id;
+
+    // TODO this.gas_price = ethereum_transation.gas_price
+
+    if (transaction.type === TransactionType.getProtoId('ETHEREUMTRANSACTION')) {
+      txHash = _.isNull(transaction.ethHash) ? transaction.transactionHash : transaction.ethHash;
+
+      if (!_.isNull(transaction.value)) {
+        this.amount = transaction.value;
+      }
+
+      if (!_.isNull(contractResult.sender_id)) {
+        this.from = contractResult.sender_id;
+      }
+
+      if (!_.isNull(transaction.call_data)) {
+        this.function_parameters = transaction.call_data;
+      } else {
+        if (_.isNull(contractResult.function_parameters)) {
+          // file_data from ethereum_transaction.call_data_id
+        }
+      }
+
+      if (!_.isNull(transaction.gas_limit)) {
+        this.gas_limit = transaction.gas_limit;
+      }
+    }
+
+    this.hash = utils.toHexString(txHash, true);
+
     this.state_changes = contractStateChanges.map(
       (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
     );
