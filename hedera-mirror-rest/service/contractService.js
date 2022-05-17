@@ -85,6 +85,19 @@ class ContractService extends BaseService {
     ${ContractLog.TOPIC3}
     from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
+  static contractLogsPaginationQuery = `select
+    ${ContractLog.BLOOM},
+    ${ContractLog.CONTRACT_ID},
+    ${ContractLog.CONSENSUS_TIMESTAMP},
+    ${ContractLog.DATA},
+    ${ContractLog.INDEX},
+    ${ContractLog.ROOT_CONTRACT_ID},
+    ${ContractLog.TOPIC0},
+    ${ContractLog.TOPIC1},
+    ${ContractLog.TOPIC2},
+    ${ContractLog.TOPIC3}
+    from `;
+
   static contractIdByEvmAddressQuery = `select
     ${Contract.ID}
     from ${Contract.tableName} ${Contract.tableAlias}
@@ -165,9 +178,19 @@ class ContractService extends BaseService {
       OrderSpec.from(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
       OrderSpec.from(ContractLog.getFullName(ContractLog.INDEX), indexOrder)
     );
+    // array of arrays. Inner arrays are joined with AND and Outer array is joined with OR
+    const whereClause = whereConditions
+      .map(
+        (conditions, i) =>
+          `${i === 0 ? 'where' : ''} ${
+            whereConditions.length > 1 ? `( ${conditions.join(' and ')} )` : conditions.join(' and ')
+          }`
+      )
+      .join(' or ');
+
     const query = [
       ContractService.contractLogsQuery,
-      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
+      whereClause,
       orderClause,
       super.getLimitQuery(params.length + 1),
     ].join('\n');
@@ -176,6 +199,20 @@ class ContractService extends BaseService {
     return [query, params];
   }
 
+  getContractLogsPaginationQuery = (nestedQuery, params, timestampOrder, indexOrder) => {
+    const orderClause = super.getOrderByQuery(
+      OrderSpec.from(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
+      OrderSpec.from(ContractLog.getFullName(ContractLog.INDEX), indexOrder)
+    );
+
+    const query = [
+      `${ContractService.contractLogsPaginationQuery} (${nestedQuery}) as ${ContractLog.tableAlias}`,
+      orderClause,
+      super.getLimitQuery(params.length),
+    ].join('\n');
+
+    return query;
+  };
   /**
    * Retrieves contract logs based on contract id and various filters
    *
@@ -191,9 +228,18 @@ class ContractService extends BaseService {
     whereParams = [],
     timestampOrder = orderFilterValues.DESC,
     indexOrder = orderFilterValues.DESC,
-    limit = defaultLimit
+    limit = defaultLimit,
+    paginationOrder = orderFilterValues.DESC
   ) {
-    const [query, params] = this.getContractLogsQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit);
+    const [nestedQuery, params] = this.getContractLogsQuery(
+      whereConditions,
+      whereParams,
+      paginationOrder,
+      paginationOrder,
+      limit
+    );
+    const query = this.getContractLogsPaginationQuery(nestedQuery, params, timestampOrder, indexOrder);
+
     const rows = await super.getRows(query, params, 'getContractLogs');
     return rows.map((cr) => new ContractLog(cr));
   }

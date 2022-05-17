@@ -48,6 +48,7 @@ const {
 const {httpStatusCodes} = require('../constants');
 
 const BaseController = require('./baseController');
+const Bound = require('./bound');
 
 const contractSelectFields = [
   Contract.AUTO_RENEW_ACCOUNT_ID,
@@ -511,6 +512,12 @@ class ContractController extends BaseController {
     let limit = defaultLimit;
     let timestampOrder = constants.orderFilterValues.DESC;
     let indexOrder = constants.orderFilterValues.DESC;
+
+    const bounds = {
+      [constants.filterKeys.INDEX]: new Bound(),
+      [constants.filterKeys.TIMESTAMP]: new Bound(),
+    };
+
     const conditions = [];
     const params = [];
 
@@ -522,7 +529,6 @@ class ContractController extends BaseController {
     const oneOperatorValues = {};
 
     const keyFullNames = {
-      [constants.filterKeys.TIMESTAMP]: ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP),
       [constants.filterKeys.TOPIC0]: ContractLog.getFullName(ContractLog.TOPIC0),
       [constants.filterKeys.TOPIC1]: ContractLog.getFullName(ContractLog.TOPIC1),
       [constants.filterKeys.TOPIC2]: ContractLog.getFullName(ContractLog.TOPIC2),
@@ -530,7 +536,6 @@ class ContractController extends BaseController {
     };
 
     const inValues = {
-      [constants.filterKeys.TIMESTAMP]: [],
       [constants.filterKeys.TOPIC0]: [],
       [constants.filterKeys.TOPIC1]: [],
       [constants.filterKeys.TOPIC2]: [],
@@ -543,8 +548,7 @@ class ContractController extends BaseController {
           if (oneOperatorValues[filter.key]) {
             throw new InvalidArgumentError(`Multiple params not allowed for ${filter.key}`);
           }
-          params.push(filter.value);
-          conditions.push(`${ContractLog.getFullName(filter.key)}${filter.operator}$${params.length}`);
+          bounds[filter.key].parse(filter);
           oneOperatorValues[filter.key] = true;
           break;
         case constants.filterKeys.LIMIT:
@@ -558,14 +562,10 @@ class ContractController extends BaseController {
           if (filter.operator === utils.opsMap.ne) {
             throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
           }
-          this.updateConditionsAndParamsWithInValues(
-            filter,
-            inValues[filter.key],
-            params,
-            conditions,
-            keyFullNames[filter.key],
-            conditions.length + 1
-          );
+          if (bounds[filter.key].hasEqual() && filter.operator === utils.opsMap.eq) {
+            throw new InvalidArgumentError(`Cannot search across timestamps`);
+          }
+          bounds[filter.key].parse(filter);
           break;
         case constants.filterKeys.TOPIC0:
         case constants.filterKeys.TOPIC1:
@@ -596,8 +596,192 @@ class ContractController extends BaseController {
     });
 
     return {
+      bounds,
       conditions,
       params,
+      timestampOrder,
+      indexOrder,
+      limit,
+    };
+  };
+
+  getContractLogsPaginationFilters = (indexBound, timestampBound, defaultOrder) => {
+    const lower = [];
+    const upper = [];
+    let paginationOrder = defaultOrder;
+
+    if (timestampBound.hasLower() && timestampBound.hasUpper() && indexBound.isEmpty()) {
+      // timestamp range is provided but index is missing
+      lower.push(timestampBound.lower, timestampBound.upper);
+    } else {
+      if (timestampBound.hasLower()) {
+        // split timestamp and index into 2 parts if both operators are compatible
+        // timestamp >= & index =/>/>=
+        if (timestampBound.lower.operator == utils.opsMap.gte && (indexBound.hasEqual() || indexBound.hasLower())) {
+          lower.push(indexBound.lower, indexBound.equal, {...timestampBound.lower, operator: utils.opsMap.eq});
+          upper.push({...timestampBound.lower, operator: utils.opsMap.gt});
+        } else {
+          // use timestamp only, index is not compatible
+          lower.push(timestampBound.lower);
+        }
+        if (!indexBound.hasUpper()) {
+          // ASC order for index >/>=/= & timestamp >=
+          paginationOrder = constants.orderFilterValues.ASC;
+        }
+      }
+
+      if (timestampBound.hasUpper()) {
+        // split timestamp and index into 2 parts if both operators are compatible
+        // timestamp <= & index =/</<=
+        if (timestampBound.upper.operator == utils.opsMap.lte && (indexBound.hasEqual() || indexBound.hasUpper())) {
+          upper.push(indexBound.upper, indexBound.equal, {...timestampBound.upper, operator: utils.opsMap.eq});
+          lower.push({...timestampBound.upper, operator: utils.opsMap.lt});
+        } else {
+          // use timestamp only, index is not compatible
+          upper.push(timestampBound.upper);
+        }
+        if (!indexBound.hasLower()) {
+          // DESC order for index =/</<= & timestamp <=
+          paginationOrder = constants.orderFilterValues.DESC;
+        }
+      }
+
+      if (timestampBound.hasEqual()) {
+        // timestamp has no lower or upper bound, so
+        // use the default filters as they are supplied by the user
+        lower.push(
+          indexBound.lower,
+          indexBound.equal,
+          indexBound.upper,
+          timestampBound.lower,
+          timestampBound.equal,
+          timestampBound.upper
+        );
+        // if timestamp and index have no bounds, use the default order
+        if (indexBound.hasLower()) {
+          // ASC order for index >/>=/= & timestamp =
+          paginationOrder = constants.orderFilterValues.ASC;
+        }
+        if (indexBound.hasUpper()) {
+          // DESC order for index =/</<= & timestamp =
+          paginationOrder = constants.orderFilterValues.DESC;
+        }
+      }
+    }
+
+    return {
+      paginationFilters: [lower.filter((f) => !_.isNil(f)), upper.filter((f) => !_.isNil(f))].filter(
+        (filters) => !_.isEmpty(filters)
+      ),
+      paginationOrder,
+    };
+  };
+
+  extractContractLogsPaginationQuery = (filters, contractId) => {
+    const {
+      bounds,
+      conditions: baseConditions,
+      params: baseParams,
+      timestampOrder,
+      indexOrder,
+      limit,
+    } = this.extractContractLogsQuery(filters, contractId);
+
+    const mapFilterKeyToColumn = {
+      [constants.filterKeys.INDEX]: constants.filterKeys.INDEX,
+      [constants.filterKeys.TIMESTAMP]: ContractLog.CONSENSUS_TIMESTAMP,
+    };
+    const indexBound = bounds[constants.filterKeys.INDEX];
+    const timestampBound = bounds[constants.filterKeys.TIMESTAMP];
+    let conditions = [];
+    const params = [...baseParams];
+
+    // if index is presented, at least 1 timestamp is required
+    if (!indexBound.isEmpty() && timestampBound.isEmpty()) {
+      throw new InvalidArgumentError('Cannot search by index without a timestamp');
+    }
+
+    if (timestampBound.hasBound() && timestampBound.hasEqual()) {
+      throw new InvalidArgumentError('Timestamp range must have gt (or gte) and lt (or lte)');
+    }
+
+    // validate index and timestamp operators compatibility
+    if (
+      indexBound.hasEqual() &&
+      timestampBound.hasLower() &&
+      timestampBound.lower.operator == utils.opsMap.gte &&
+      timestampBound.hasUpper() &&
+      timestampBound.upper.operator == utils.opsMap.lte
+    ) {
+      // invalid ops: index = & timestamp >= & timestamp <=
+      throw new InvalidArgumentError('Unsupported combination');
+    }
+
+    if (indexBound.hasEqual() && timestampBound.hasEqual() && timestampBound.hasBound()) {
+      // invalid ops: index = & timestamp = & timestamp >/>=/</<=
+      throw new InvalidArgumentError('Cannot support both range and equal');
+    }
+
+    if (
+      indexBound.hasLower() &&
+      !timestampBound.hasEqual() &&
+      (!timestampBound.hasLower() || timestampBound.lower.operator != utils.opsMap.gte)
+    ) {
+      // bounds should match index >/>= & timestamp =/>=
+      throw new InvalidArgumentError('Unsupported combination');
+    }
+
+    if (
+      indexBound.hasUpper() &&
+      !timestampBound.hasEqual() &&
+      (!timestampBound.hasUpper() || timestampBound.upper.operator != utils.opsMap.lte)
+    ) {
+      // bounds should match index </<= & timestamp =/<=
+      throw new InvalidArgumentError('Unsupported combination');
+    }
+
+    if (
+      indexBound.hasEqual() &&
+      !timestampBound.hasEqual() &&
+      (!timestampBound.hasLower() || timestampBound.lower.operator != utils.opsMap.gte) &&
+      (!timestampBound.hasUpper() || timestampBound.upper.operator != utils.opsMap.lte)
+    ) {
+      // bounds should match index = & timestamp =/>=/<=
+      throw new InvalidArgumentError('Unsupported combination');
+    }
+
+    const {paginationFilters, paginationOrder} = this.getContractLogsPaginationFilters(
+      indexBound,
+      timestampBound,
+      timestampOrder
+    );
+
+    paginationFilters.forEach((filters) => {
+      const nestedConditions = [...baseConditions];
+
+      filters.forEach((filter) => {
+        this.updateConditionsAndParamsWithValues(
+          filter,
+          params,
+          nestedConditions,
+          ContractLog.getFullName(mapFilterKeyToColumn[filter.key]),
+          params.length + 1
+        );
+      });
+
+      if (!_.isEmpty(nestedConditions)) {
+        conditions.push(nestedConditions);
+      }
+    });
+
+    if (_.isEmpty(conditions) && !_.isEmpty(baseConditions)) {
+      conditions = [baseConditions];
+    }
+
+    return {
+      conditions,
+      params,
+      paginationOrder,
       timestampOrder,
       indexOrder,
       limit,
@@ -671,7 +855,27 @@ class ContractController extends BaseController {
 
     res.locals[constants.responseDataLabel] = response;
   };
+  /**
+   * Generates pagination link for the next page
+   * @param {Request} req
+   * @param {ContractLogs[]} logs
+   * @param {string} paginationOrder
+   * @param {string} timestampOrder
+   * @param {number} limit
+   * @returns {string|null}
+   */
+  generateContractLogsPaginationLink = (req, logs, paginationOrder, timestampOrder, limit) => {
+    if (_.isEmpty(logs)) {
+      return null;
+    }
+    const nextLog = timestampOrder === paginationOrder ? _.last(logs) : _.first(logs);
+    const lastValueMap = {
+      [constants.filterKeys.TIMESTAMP]: {value: nextLog.timestamp, inclusive: true},
+      [constants.filterKeys.INDEX]: {value: nextLog.index, inclusive: false},
+    };
 
+    return utils.getPaginationLink(req, logs.length !== limit, lastValueMap, paginationOrder);
+  };
   /**
    * Handler function for /contracts/:contractId/results/logs API
    * @param {Request} req HTTP request object
@@ -685,13 +889,24 @@ class ContractController extends BaseController {
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
-    const {conditions, params, timestampOrder, indexOrder, limit} = this.extractContractLogsQuery(filters, contractId);
+    const {conditions, params, timestampOrder, indexOrder, limit, paginationOrder} =
+      this.extractContractLogsPaginationQuery(filters, contractId);
 
-    const rows = await ContractService.getContractLogs(conditions, params, timestampOrder, indexOrder, limit);
+    const rows = await ContractService.getContractLogs(
+      conditions,
+      params,
+      timestampOrder,
+      indexOrder,
+      limit,
+      paginationOrder
+    );
 
-    res.locals[constants.responseDataLabel] = {
-      logs: rows.map((row) => new ContractLogViewModel(row)),
+    const logs = rows.map((row) => new ContractLogViewModel(row));
+    const links = {
+      next: this.generateContractLogsPaginationLink(req, logs, paginationOrder, timestampOrder, limit),
     };
+
+    res.locals[constants.responseDataLabel] = {logs, links};
   };
 
   /**
@@ -705,13 +920,24 @@ class ContractController extends BaseController {
     const filters = utils.buildAndValidateFilters(req.query);
     checkTimestampsForTopics(filters);
 
-    const {conditions, params, timestampOrder, indexOrder, limit} = this.extractContractLogsQuery(filters);
+    const {conditions, params, timestampOrder, indexOrder, limit, paginationOrder} =
+      this.extractContractLogsPaginationQuery(filters);
 
-    const rows = await ContractService.getContractLogs(conditions, params, timestampOrder, indexOrder, limit);
+    const rows = await ContractService.getContractLogs(
+      conditions,
+      params,
+      timestampOrder,
+      indexOrder,
+      limit,
+      paginationOrder
+    );
 
-    res.locals[constants.responseDataLabel] = {
-      logs: rows.map((row) => new ContractLogViewModel(row)),
+    const logs = rows.map((row) => new ContractLogViewModel(row));
+    const links = {
+      next: this.generateContractLogsPaginationLink(req, logs, paginationOrder, timestampOrder, limit),
     };
+
+    res.locals[constants.responseDataLabel] = {logs, links};
   };
 
   /**
@@ -884,7 +1110,12 @@ module.exports = exportControllerMethods([
 if (utils.isTestEnv()) {
   Object.assign(
     module.exports,
-    exportControllerMethods(['extractContractLogsQuery', 'extractContractResultsByIdQuery']),
+    exportControllerMethods([
+      'extractContractLogsQuery',
+      'extractContractResultsByIdQuery',
+      'extractContractLogsPaginationQuery',
+      'getContractLogsPaginationFilters',
+    ]),
     {
       contractResultsByIdParamSupportMap,
       checkTimestampsForTopics,
