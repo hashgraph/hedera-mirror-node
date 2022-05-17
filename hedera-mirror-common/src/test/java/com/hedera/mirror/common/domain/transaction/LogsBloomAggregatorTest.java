@@ -133,9 +133,9 @@ public class LogsBloomAggregatorTest {
     }
 
     @Test
-    void resultingBloomMustBeNull() {
+    void resultingBloomMustBeEmpty() {
         LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
-        assertNull(bloomAggregator.getBloom());
+        assertArrayEquals(new byte[0], bloomAggregator.getBloom());
     }
 
     @Test
