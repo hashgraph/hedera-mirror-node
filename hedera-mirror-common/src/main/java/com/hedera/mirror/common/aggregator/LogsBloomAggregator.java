@@ -26,13 +26,13 @@ import lombok.NoArgsConstructor;
 public class LogsBloomAggregator {
 
     public static final int BYTE_SIZE = 256;
-    private byte[] aggregatedBlooms = null;
+    private byte[] aggregatedBlooms = new byte[0];
 
     public LogsBloomAggregator aggregate(byte[] bloom) {
         if (bloom == null) {
             return this;
         }
-        if (aggregatedBlooms == null) {
+        if (aggregatedBlooms.length == 0) {
             aggregatedBlooms = new byte[BYTE_SIZE];
         }
         for (int i = 0; i < bloom.length; i++) {
@@ -50,7 +50,7 @@ public class LogsBloomAggregator {
             // other implementations accept null values as positive matches.
             return true;
         }
-        if (aggregatedBlooms == null) {
+        if (aggregatedBlooms.length == 0) {
             return false;
         }
         if (bloom.length != BYTE_SIZE) {
