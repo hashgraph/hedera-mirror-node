@@ -83,7 +83,7 @@ jobs:
         with:
           cache: 'maven'
           distribution: 'temurin'
-          java-version: 17.0.1_12
+          java-version: 17.0.1
 
       - name: Create and Switch to Release Branch
         run: |
@@ -174,7 +174,7 @@ jobs:
         with:
           cache: 'maven'
           distribution: 'temurin'
-          java-version: 17.0.1_12
+          java-version: 17.0.1
 
       - name: Reset main to release branch
         run: |

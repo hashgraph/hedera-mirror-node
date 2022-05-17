@@ -27,7 +27,7 @@ jobs:
         with:
           cache: 'maven'
           distribution: 'temurin'
-          java-version: 17.0.1_12
+          java-version: 17.0.1
 
       - name: Maven verify
         run: ./mvnw verify -pl "${MODULE}" -Dtest='!com.hedera.mirror.importer.**' -DfailIfNoTests=false
