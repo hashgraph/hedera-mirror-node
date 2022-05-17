@@ -10,9 +10,13 @@ exports[`checkTimestampsForTopics topic2 param one timestamp lt 1`] = `"Cannot s
 
 exports[`extractContractLogsQuery - by Id error - multiple index 1`] = `"Multiple params not allowed for index"`;
 
+exports[`extractContractLogsQuery - by Id error - timestamp multiple equal operators 1`] = `"Cannot search across timestamps"`;
+
 exports[`extractContractLogsQuery - by Id error - timestamp not equal operator 1`] = `"Not equals operator not supported for timestamp param"`;
 
 exports[`extractContractLogsQuery - no Id specified error - multiple index 1`] = `"Multiple params not allowed for index"`;
+
+exports[`extractContractLogsQuery - no Id specified error - timestamp invalid range 1`] = `"Only one gt/gte operator is allowed"`;
 
 exports[`extractContractLogsQuery - no Id specified error - timestamp not equal operator 1`] = `"Not equals operator not supported for timestamp param"`;
 

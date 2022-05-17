@@ -32,6 +32,7 @@ const contracts = require('../../controllers/contractController');
 const {assertSqlQueryEqual} = require('../testutils');
 const utils = require('../../utils');
 const {Contract} = require('../../model');
+const Bound = require('../../controllers/bound');
 
 const contractFields = [
   Contract.AUTO_RENEW_ACCOUNT_ID,
@@ -623,6 +624,10 @@ const defaultContractLogCondition = 'cl.contract_id = $1';
 describe('extractContractLogsQuery - by Id', () => {
   const defaultContractId = 1;
   const defaultExpected = {
+    bounds: {
+      [constants.filterKeys.INDEX]: new Bound(),
+      [constants.filterKeys.TIMESTAMP]: new Bound(),
+    },
     conditions: [defaultContractLogCondition],
     params: [defaultContractId],
     timestampOrder: constants.orderFilterValues.DESC,
@@ -651,24 +656,20 @@ describe('extractContractLogsQuery - by Id', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [defaultContractLogCondition, 'cl.index = $2'],
-        params: [defaultContractId, '2'],
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          ...defaultExpected.bounds,
+          [constants.filterKeys.INDEX]: Bound.create({
+            equal: {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '2'},
+          }),
+        },
       },
     },
     {
       name: 'timestamp',
       input: {
         filter: [
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.eq,
-            value: '1001',
-          },
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.eq,
-            value: '1002',
-          },
           {
             key: constants.filterKeys.TIMESTAMP,
             operator: utils.opsMap.gt,
@@ -679,8 +680,14 @@ describe('extractContractLogsQuery - by Id', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [defaultContractLogCondition, 'cl.consensus_timestamp > $2', 'cl.consensus_timestamp in ($3,$4)'],
-        params: [defaultContractId, '1000', '1001', '1002'],
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          ...defaultExpected.bounds,
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1000'},
+          }),
+        },
       },
     },
     {
@@ -798,6 +805,25 @@ describe('extractContractLogsQuery - by Id', () => {
       errorMessage: 'Not equals operator not supported for timestamp param',
     },
     {
+      name: 'timestamp multiple equal operators',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '11',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '12',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      errorMessage: 'Cannot search across timestamps',
+    },
+    {
       name: 'multiple index',
       input: {
         filter: [
@@ -834,6 +860,10 @@ describe('extractContractLogsQuery - by Id', () => {
 
 describe('extractContractLogsQuery - no Id specified', () => {
   const defaultExpected = {
+    bounds: {
+      [constants.filterKeys.INDEX]: new Bound(),
+      [constants.filterKeys.TIMESTAMP]: new Bound(),
+    },
     conditions: [],
     params: [],
     timestampOrder: constants.orderFilterValues.DESC,
@@ -854,15 +884,21 @@ describe('extractContractLogsQuery - no Id specified', () => {
         filter: [
           {
             key: constants.filterKeys.INDEX,
-            operator: utils.opsMap.eq,
+            operator: utils.opsMap.gte,
             value: '2',
           },
         ],
       },
       expected: {
         ...defaultExpected,
-        conditions: ['cl.index = $1'],
-        params: ['2'],
+        conditions: [],
+        params: [],
+        bounds: {
+          ...defaultExpected.bounds,
+          [constants.filterKeys.INDEX]: Bound.create({
+            lower: {key: constants.filterKeys.INDEX, operator: utils.opsMap.gte, value: '2'},
+          }),
+        },
       },
     },
     {
@@ -871,13 +907,8 @@ describe('extractContractLogsQuery - no Id specified', () => {
         filter: [
           {
             key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.eq,
+            operator: utils.opsMap.lte,
             value: '1001',
-          },
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.eq,
-            value: '1002',
           },
           {
             key: constants.filterKeys.TIMESTAMP,
@@ -888,8 +919,15 @@ describe('extractContractLogsQuery - no Id specified', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['cl.consensus_timestamp > $1', 'cl.consensus_timestamp in ($2,$3)'],
-        params: ['1000', '1001', '1002'],
+        conditions: [],
+        params: [],
+        bounds: {
+          ...defaultExpected.bounds,
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1000'},
+            upper: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: '1001'},
+          }),
+        },
       },
     },
     {
@@ -999,6 +1037,24 @@ describe('extractContractLogsQuery - no Id specified', () => {
         ],
       },
       errorMessage: 'Not equals operator not supported for timestamp param',
+    },
+    {
+      name: 'timestamp invalid range',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gt,
+            value: '11',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gte,
+            value: '12',
+          },
+        ],
+      },
+      errorMessage: 'Only one gt/gte operator is allowed',
     },
     {
       name: 'multiple index',
@@ -1135,5 +1191,616 @@ describe('checkTimestampsForTopics', () => {
       },
     ];
     expect(() => contracts.checkTimestampsForTopics(filters)).toThrowErrorMatchingSnapshot();
+  });
+});
+
+describe('getContractLogsPaginationFilters', () => {
+  const defaultInput = {
+    indexBound: new Bound(),
+    timestampBound: new Bound(),
+    defaultOrder: constants.orderFilterValues.DESC,
+  };
+  const defaultExpected = {
+    paginationFilters: [],
+    paginationOrder: constants.orderFilterValues.DESC,
+  };
+  const specs = [
+    {
+      name: 'empty params',
+      input: {...defaultInput},
+      expected: {
+        ...defaultExpected,
+      },
+    },
+    {
+      name: 'no index & timestamp >= 1',
+      input: {
+        ...defaultInput,
+        timestampBound: Bound.create({
+          lower: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: '1'},
+        }),
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [[{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: '1'}]],
+        paginationOrder: constants.orderFilterValues.ASC,
+      },
+    },
+    {
+      name: 'no index & timestamp < 1',
+      input: {
+        ...defaultInput,
+        timestampBound: Bound.create({
+          upper: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '1'},
+        }),
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [[{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '1'}]],
+        paginationOrder: constants.orderFilterValues.DESC,
+      },
+    },
+    {
+      name: 'no index & timestamp = 1',
+      input: {
+        ...defaultInput,
+        timestampBound: Bound.create({
+          equal: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+        }),
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [[{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'}]],
+      },
+    },
+    {
+      name: 'no index & timestamp >= 1 & timestamp <= 2',
+      input: {
+        ...defaultInput,
+        timestampBound: Bound.create({
+          lower: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: '1'},
+          upper: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: '2'},
+        }),
+        defaultOrder: constants.orderFilterValues.DESC,
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [
+          [
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: '1'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: '2'},
+          ],
+        ],
+      },
+    },
+    {
+      name: 'index < 5 & timestamp = 1',
+      input: {
+        ...defaultInput,
+        indexBound: Bound.create({
+          upper: {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '5'},
+        }),
+        timestampBound: Bound.create({
+          equal: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+        }),
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [
+          [
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '5'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+          ],
+        ],
+        paginationOrder: constants.orderFilterValues.DESC,
+      },
+    },
+    {
+      name: 'index > 5 & timestamp = 1',
+      input: {
+        ...defaultInput,
+        indexBound: Bound.create({
+          lower: {key: constants.filterKeys.INDEX, operator: utils.opsMap.gt, value: '5'},
+        }),
+        timestampBound: Bound.create({
+          equal: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+        }),
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [
+          [
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.gt, value: '5'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+          ],
+        ],
+        paginationOrder: constants.orderFilterValues.ASC,
+      },
+    },
+    {
+      name: 'index > 0 & timestamp >= 1',
+      input: {
+        ...defaultInput,
+        indexBound: Bound.create({
+          lower: {key: constants.filterKeys.INDEX, operator: utils.opsMap.gt, value: '0'},
+        }),
+        timestampBound: Bound.create({
+          lower: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: '1'},
+        }),
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [
+          [
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.gt, value: '0'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+          ],
+          [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1'}],
+        ],
+        paginationOrder: constants.orderFilterValues.ASC,
+      },
+    },
+    {
+      name: 'index < 5 & timestamp <= 1',
+      input: {
+        ...defaultInput,
+        indexBound: Bound.create({
+          upper: {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '5'},
+        }),
+        timestampBound: Bound.create({
+          upper: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: '1'},
+        }),
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [
+          [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '1'}],
+          [
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '5'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+          ],
+        ],
+        paginationOrder: constants.orderFilterValues.DESC,
+      },
+    },
+    {
+      name: 'index = 0 & timestamp = 1',
+      input: {
+        ...defaultInput,
+        indexBound: Bound.create({
+          equal: {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '0'},
+        }),
+        timestampBound: Bound.create({
+          equal: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+        }),
+        defaultOrder: constants.orderFilterValues.ASC,
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [
+          [
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '0'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+          ],
+        ],
+        paginationOrder: constants.orderFilterValues.ASC,
+      },
+    },
+    {
+      name: 'index = 0 & timestamp >= 1',
+      input: {
+        ...defaultInput,
+        indexBound: Bound.create({
+          equal: {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '0'},
+        }),
+        timestampBound: Bound.create({
+          lower: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: '1'},
+        }),
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [
+          [
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '0'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+          ],
+          [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1'}],
+        ],
+        paginationOrder: constants.orderFilterValues.ASC,
+      },
+    },
+    {
+      name: 'index = 0 & timestamp <= 1',
+      input: {
+        ...defaultInput,
+        indexBound: Bound.create({
+          equal: {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '0'},
+        }),
+        timestampBound: Bound.create({
+          upper: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: '1'},
+        }),
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [
+          [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '1'}],
+          [
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '0'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+          ],
+        ],
+        paginationOrder: constants.orderFilterValues.DESC,
+      },
+    },
+    {
+      name: 'index >= 0 & timestamp >= 1 && timestamp <= 2',
+      input: {
+        ...defaultInput,
+        indexBound: Bound.create({
+          lower: {key: constants.filterKeys.INDEX, operator: utils.opsMap.gte, value: '0'},
+        }),
+        timestampBound: Bound.create({
+          lower: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: '1'},
+          upper: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: '2'},
+        }),
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [
+          [
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.gte, value: '0'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+          ],
+          [
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: '2'},
+          ],
+        ],
+        paginationOrder: constants.orderFilterValues.ASC,
+      },
+    },
+    {
+      name: 'index < 3 & timestamp > 1 && timestamp <= 3',
+      input: {
+        ...defaultInput,
+        indexBound: Bound.create({
+          upper: {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '3'},
+        }),
+        timestampBound: Bound.create({
+          lower: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1'},
+          upper: {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: '3'},
+        }),
+        defaultOrder: constants.orderFilterValues.ASC,
+      },
+      expected: {
+        ...defaultExpected,
+        paginationFilters: [
+          [
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '3'},
+          ],
+          [
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '3'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '3'},
+          ],
+        ],
+        paginationOrder: constants.orderFilterValues.DESC,
+      },
+    },
+  ];
+  specs.forEach(({name, input, expected}) => {
+    test(`${name}`, () => {
+      expect(
+        contracts.getContractLogsPaginationFilters(input.indexBound, input.timestampBound, input.defaultOrder)
+      ).toEqual(expected);
+    });
+  });
+});
+
+describe('extractContractLogsPaginationQuery', () => {
+  const defaultContractId = 1;
+  const defaultExpected = {
+    conditions: [],
+    params: [],
+    timestampOrder: constants.orderFilterValues.DESC,
+    indexOrder: constants.orderFilterValues.DESC,
+    paginationOrder: constants.orderFilterValues.DESC,
+    limit: defaultLimit,
+  };
+  const specs = [
+    {
+      name: emptyFilterString,
+      input: {filters: []},
+      expected: {
+        ...defaultExpected,
+      },
+    },
+    {
+      name: 'with contractId: no index & timestamp >= 2',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gte,
+            value: '2',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [['cl.contract_id = $1', 'cl.consensus_timestamp >= $2']],
+        paginationOrder: constants.orderFilterValues.ASC,
+        params: [defaultContractId, '2'],
+      },
+    },
+    {
+      name: 'with contractId: no index & timestamp >= 2 & timestamp <= 3',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gte,
+            value: '2',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.lte,
+            value: '3',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [['cl.contract_id = $1', 'cl.consensus_timestamp >= $2', 'cl.consensus_timestamp <= $3']],
+        params: [defaultContractId, '2', '3'],
+      },
+    },
+    {
+      name: 'with contractId: index > 1 & timestamp >= 2',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.gt,
+            value: '1',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gte,
+            value: '2',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [
+          ['cl.contract_id = $1', 'cl.index > $2', 'cl.consensus_timestamp = $3'],
+          ['cl.contract_id = $1', 'cl.consensus_timestamp > $4'],
+        ],
+        paginationOrder: constants.orderFilterValues.ASC,
+        params: [defaultContractId, '1', '2', '2'],
+      },
+    },
+    {
+      name: 'with contractId: index > 1 & timestamp >= 2 & timestamp <= 3',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.gt,
+            value: '1',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gte,
+            value: '2',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.lte,
+            value: '3',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [
+          ['cl.contract_id = $1', 'cl.index > $2', 'cl.consensus_timestamp = $3'],
+          ['cl.contract_id = $1', 'cl.consensus_timestamp > $4', 'cl.consensus_timestamp <= $5'],
+        ],
+        paginationOrder: constants.orderFilterValues.ASC,
+        params: [defaultContractId, '1', '2', '2', '3'],
+      },
+    },
+    {
+      name: 'with contractId and topics: index > 1 & timestamp >= 2 & timestamp <= 3',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.gt,
+            value: '1',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gte,
+            value: '2',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.lte,
+            value: '3',
+          },
+          {
+            key: constants.filterKeys.TOPIC0,
+            operator: utils.opsMap.eq,
+            value: '0x0011',
+          },
+          {
+            key: constants.filterKeys.TOPIC0,
+            operator: utils.opsMap.eq,
+            value: '0x000013',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [
+          ['cl.contract_id = $1', 'cl.topic0 in ($2,$3)', 'cl.index > $4', 'cl.consensus_timestamp = $5'],
+          [
+            'cl.contract_id = $1',
+            'cl.topic0 in ($2,$3)',
+            'cl.consensus_timestamp > $6',
+            'cl.consensus_timestamp <= $7',
+          ],
+        ],
+        paginationOrder: constants.orderFilterValues.ASC,
+        params: [defaultContractId, Buffer.from('11', 'hex'), Buffer.from('13', 'hex'), '1', '2', '2', '3'],
+      },
+    },
+    {
+      name: 'no contractId: index > 1 & timestamp >= 2 & timestamp <= 3',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.gt,
+            value: '1',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gte,
+            value: '2',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.lte,
+            value: '3',
+          },
+        ],
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [
+          ['cl.index > $1', 'cl.consensus_timestamp = $2'],
+          ['cl.consensus_timestamp > $3', 'cl.consensus_timestamp <= $4'],
+        ],
+        paginationOrder: constants.orderFilterValues.ASC,
+        params: ['1', '2', '2', '3'],
+      },
+    },
+  ];
+  const errorSpecs = [
+    {
+      name: 'index = 1 & no timestamp',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.eq,
+            value: '1',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      errorMessage: 'Cannot search by index without a timestamp',
+    },
+    {
+      name: 'timestamp = 1 & timestamp = 2',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '1',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '2',
+          },
+        ],
+      },
+      errorMessage: 'Cannot search across timestamps',
+    },
+    {
+      name: 'timestamp = 1 & timestamp > 2',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.eq,
+            value: '1',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gt,
+            value: '2',
+          },
+        ],
+      },
+      errorMessage: 'Timestamp range must have gt (or gte) and lt (or lte)',
+    },
+    {
+      name: 'index = 0 & timestamp >= 1 & timestamp <= 2',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.eq,
+            value: '0',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gte,
+            value: '1',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.lte,
+            value: '2',
+          },
+        ],
+      },
+      errorMessage: 'Unsupported combination',
+    },
+    {
+      name: 'index > 0 & timestamp < 1',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.gt,
+            value: '0',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.lt,
+            value: '1',
+          },
+        ],
+      },
+      errorMessage: 'Unsupported combination',
+    },
+  ];
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(contracts.extractContractLogsPaginationQuery(spec.input.filters, spec.input.contractId)).toEqual(
+        spec.expected
+      );
+    });
+  });
+
+  errorSpecs.forEach((spec) => {
+    test(`error - ${spec.name}`, () => {
+      expect(() => contracts.extractContractLogsPaginationQuery(spec.input.filters, spec.input.contractId)).toThrow(
+        spec.errorMessage
+      );
+    });
   });
 });

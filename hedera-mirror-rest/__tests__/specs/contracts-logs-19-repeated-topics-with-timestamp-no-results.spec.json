@@ -36,6 +36,9 @@
   "urls": ["/api/v1/contracts/0.0.1000/results/logs?topic0=E&topic2=D&timestamp=1639010141.000000000"],
   "responseStatus": 200,
   "responseJson": {
-    "logs": []
+    "logs": [],
+    "links": {
+      "next": null
+    }
   }
 }

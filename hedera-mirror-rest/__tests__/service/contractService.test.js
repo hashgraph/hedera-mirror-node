@@ -73,7 +73,7 @@ const contractLogContractIdWhereClause = `cl.contract_id = $1`;
 describe('ContractService.getContractLogsQuery tests', () => {
   test('Verify simple query', async () => {
     const [query, params] = ContractService.getContractLogsQuery(
-      [contractLogContractIdWhereClause],
+      [[contractLogContractIdWhereClause]],
       [2],
       'desc',
       'asc',
@@ -104,13 +104,15 @@ describe('ContractService.getContractLogsQuery tests', () => {
   test('Verify additional conditions', async () => {
     const [query, params] = ContractService.getContractLogsQuery(
       [
-        `cl.contract_id  = $1`,
-        `cl.topic0 = $2`,
-        `cl.topic1 = $3`,
-        `cl.topic2 = $4`,
-        `cl.topic3 = $5`,
-        'cl.index = $6',
-        `cl.consensus_timestamp in ($7, $8)`,
+        [
+          `cl.contract_id  = $1`,
+          `cl.topic0 = $2`,
+          `cl.topic1 = $3`,
+          `cl.topic2 = $4`,
+          `cl.topic3 = $5`,
+          'cl.index = $6',
+          `cl.consensus_timestamp in ($7, $8)`,
+        ],
       ],
       [
         1002,
@@ -541,7 +543,7 @@ describe('ContractService.getContractLogs tests', () => {
       },
     ];
 
-    const response = await ContractService.getContractLogs([contractLogContractIdWhereClause], [3]);
+    const response = await ContractService.getContractLogs([[contractLogContractIdWhereClause]], [3]);
     expect(response).toMatchObject(expectedContractLog);
   });
 
@@ -583,13 +585,15 @@ describe('ContractService.getContractLogs tests', () => {
     ];
     const response = await ContractService.getContractLogs(
       [
-        contractLogContractIdWhereClause,
-        'cl.topic0 = $2',
-        'cl.topic1 = $3',
-        'cl.topic2 = $4',
-        'cl.topic3 = $5',
-        'cl.index = $6',
-        'cl.consensus_timestamp in ($7)',
+        [
+          contractLogContractIdWhereClause,
+          'cl.topic0 = $2',
+          'cl.topic1 = $3',
+          'cl.topic2 = $4',
+          'cl.topic3 = $5',
+          'cl.index = $6',
+          'cl.consensus_timestamp in ($7)',
+        ],
       ],
       [
         3,
@@ -837,5 +841,63 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
       create2_evm_address: evmAddress,
     });
     expect(contractId.toString()).toEqual('111169');
+  });
+});
+
+describe('ContractService.getContractLogsPaginationQuery tests', () => {
+  test('Find all contract logs by Id = 1002 & index >= 0 & timestamp => 20', async () => {
+    const paginationOrder = 'asc';
+    const whereParams = [1002, 0, 20, 20];
+    const whereConditions = [
+      [`cl.contract_id  = $1`, 'cl.index >= $2', `cl.consensus_timestamp = $3`],
+      [`cl.contract_id  = $1`, `cl.consensus_timestamp > $4`],
+    ];
+    const [nestedQuery, params] = ContractService.getContractLogsQuery(
+      whereConditions,
+      whereParams,
+      paginationOrder,
+      paginationOrder,
+      5
+    );
+    const query = ContractService.getContractLogsPaginationQuery(nestedQuery, params, 'desc', 'desc');
+
+    assertSqlQueryEqual(
+      query,
+      `select
+        bloom,
+        contract_id,
+        consensus_timestamp,
+        data,
+        index,
+        root_contract_id,
+        topic0,
+        topic1,
+        topic2,
+        topic3
+      from (
+        select
+          bloom,
+          contract_id,
+          consensus_timestamp,
+          data,
+          index,
+          root_contract_id,
+          topic0,
+          topic1,
+          topic2,
+          topic3
+        from contract_log cl
+        where (cl.contract_id = $1
+          and cl.index >= $2
+          and cl.consensus_timestamp = $3)
+        OR (cl.contract_id = $1
+          and cl.consensus_timestamp > $4)
+        order by cl.consensus_timestamp asc, cl.index asc
+        limit $5
+      ) as cl
+      order by cl.consensus_timestamp desc, cl.index desc
+      limit $5`
+    );
+    expect(params).toEqual([1002, 0, 20, 20, 5]);
   });
 });

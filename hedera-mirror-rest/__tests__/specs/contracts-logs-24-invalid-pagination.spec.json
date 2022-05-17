@@ -1,0 +1,56 @@
+{
+  "description": "Contracts logs api calls with invalid pagination params",
+  "setup": {
+    "contractlogs": [
+      {
+        "consensus_timestamp": 1639010142000000000,
+        "contract_id": 1004,
+        "index": 0
+      },
+      {
+        "consensus_timestamp": 1639010142000000000,
+        "contract_id": 1004,
+        "index": 1
+      },
+      {
+        "consensus_timestamp": 1639010142000000000,
+        "contract_id": 1004,
+        "index": 2
+      },
+      {
+        "consensus_timestamp": 1639010142000000000,
+        "contract_id": 1004,
+        "index": 3
+      },
+      {
+        "consensus_timestamp": 1639010142000000000,
+        "contract_id": 1004,
+        "index": 4
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "contract_id": 1003,
+        "index": 0
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "contract_id": 1003,
+        "index": 1
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/0.0.1004/results/logs?index=gte:0&timestamp=lt:1639010142.000000000&limit=3&order=asc",
+    "/api/v1/contracts/0.0.1004/results/logs?index=0&timestamp=gt:1639010142.000000000&timestamp=lt:1639010151.000000000&limit=3&order=asc"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Unsupported combination"
+        }
+      ]
+    }
+  }
+}

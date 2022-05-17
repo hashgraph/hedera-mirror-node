@@ -1,0 +1,309 @@
+{
+  "description": "Contracts logs api calls with pagination",
+  "setup": {
+    "contractlogs": [
+      {
+        "consensus_timestamp": 1639010142000000000,
+        "contract_id": 1004,
+        "index": 0
+      },
+      {
+        "consensus_timestamp": 1639010142000000000,
+        "contract_id": 1004,
+        "index": 1
+      },
+      {
+        "consensus_timestamp": 1639010142000000000,
+        "contract_id": 1004,
+        "index": 2
+      },
+      {
+        "consensus_timestamp": 1639010142000000000,
+        "contract_id": 1004,
+        "index": 3
+      },
+      {
+        "consensus_timestamp": 1639010142000000000,
+        "contract_id": 1004,
+        "index": 4
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "contract_id": 1003,
+        "index": 0
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "contract_id": 1003,
+        "index": 1
+      }
+    ]
+  },
+  "tests": [
+    {
+      "url": "/api/v1/contracts/0.0.1004/results/logs?index=gte:0&timestamp=1639010142.000000000&limit=3&order=asc",
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0123",
+            "index": 0,
+            "root_contract_id": null,
+            "timestamp": "1639010142.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0123",
+            "index": 1,
+            "root_contract_id": null,
+            "timestamp": "1639010142.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0123",
+            "index": 2,
+            "root_contract_id": null,
+            "timestamp": "1639010142.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          }
+        ],
+        "links": {
+          "next": "/api/v1/contracts/0.0.1004/results/logs?timestamp=1639010142.000000000&limit=3&order=asc&index=gt:2"
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/0.0.1004/results/logs?timestamp=1639010142.000000000&limit=3&order=asc&index=gt:2",
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0123",
+            "index": 3,
+            "root_contract_id": null,
+            "timestamp": "1639010142.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0123",
+            "index": 4,
+            "root_contract_id": null,
+            "timestamp": "1639010142.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/results/logs?timestamp=lte:1639010151.000000000&limit=3&order=asc",
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0123",
+            "index": 4,
+            "root_contract_id": null,
+            "timestamp": "1639010142.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003eb",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1003",
+            "data": "0x0123",
+            "index": 0,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003eb",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1003",
+            "data": "0x0123",
+            "index": 1,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          }
+        ],
+        "links": {
+          "next": "/api/v1/contracts/results/logs?limit=3&order=asc&timestamp=lte:1639010142.000000000&index=lt:4"
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/results/logs?timestamp=gte:1639010142.000000000&timestamp=lte:1639010151.000000000&limit=3&order=asc",
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0123",
+            "index": 0,
+            "root_contract_id": null,
+            "timestamp": "1639010142.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0123",
+            "index": 1,
+            "root_contract_id": null,
+            "timestamp": "1639010142.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0123",
+            "index": 2,
+            "root_contract_id": null,
+            "timestamp": "1639010142.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          }
+        ],
+        "links": {
+          "next": "/api/v1/contracts/results/logs?timestamp=lte:1639010151.000000000&timestamp=gte:1639010142.000000000&limit=3&order=asc&index=gt:2"
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/results/logs?timestamp=lte:1639010151.000000000&timestamp=gte:1639010142.000000000&limit=3&order=asc&index=gt:2",
+      "responseStatus": 200,
+      "responseJson": {
+        "logs": [
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0123",
+            "index": 3,
+            "root_contract_id": null,
+            "timestamp": "1639010142.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003ec",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1004",
+            "data": "0x0123",
+            "index": 4,
+            "root_contract_id": null,
+            "timestamp": "1639010142.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          },
+          {
+            "address": "0x00000000000000000000000000000000000003eb",
+            "bloom": "0x0123",
+            "contract_id": "0.0.1003",
+            "data": "0x0123",
+            "index": 0,
+            "root_contract_id": null,
+            "timestamp": "1639010151.000000000",
+            "topics": [
+              "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
+              "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925",
+              "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+              "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
+            ]
+          }
+        ],
+        "links": {
+          "next": "/api/v1/contracts/results/logs?timestamp=lte:1639010151.000000000&timestamp=gte:1639010151.000000000&limit=3&order=asc&index=gt:0"
+        }
+      }
+    }
+  ]
+}
