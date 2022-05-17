@@ -57,23 +57,37 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "urls": [
-    "/api/v1/accounts/7",
-    "/api/v1/accounts/0.7",
-    "/api/v1/accounts/0.0.7",
-    "/api/v1/accounts/AAAAAA5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
-    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
-    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
-  ],
-  "responseStatus": 404,
-  "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "Not found"
+  "tests": [
+    {
+      "urls": ["/api/v1/accounts/7", "/api/v1/accounts/0.7", "/api/v1/accounts/0.0.7"],
+      "responseStatus": 404,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Not found"
+            }
+          ]
         }
-      ]
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/accounts/AAAAAA5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
+      ],
+      "responseStatus": 404,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "No account with a matching alias found"
+            }
+          ]
+        }
+      }
     }
-  }
+  ]
 }

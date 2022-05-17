@@ -355,6 +355,43 @@ describe('utils formatComparator tests', () => {
   });
 });
 
+describe('utils filterDependencyCheck tests', () => {
+  test('Verify formatComparator for isolated transaction.index', () => {
+    const query = {};
+    query[constants.filterKeys.TRANSACTION_INDEX] = 'eq:1';
+    try {
+      utils.filterDependencyCheck(query);
+      expect(true).toEqual('Should throw error');
+    } catch (err) {
+      expect(err.toString()).toEqual(
+        'Error: Invalid parameter usage: transaction.index - transaction.index requires block.number or block.hash filter to be specified'
+      );
+    }
+  });
+
+  test('Verify formatComparator for transaction.index with block.number', () => {
+    const query = {};
+    query[constants.filterKeys.TRANSACTION_INDEX] = 'eq:1';
+    query[constants.filterKeys.BLOCK_NUMBER] = 'eq:1';
+    try {
+      utils.filterDependencyCheck(query);
+    } catch (err) {
+      expect(err).toBeUndefined();
+    }
+  });
+
+  test('Verify formatComparator for transaction.index with block.hash', () => {
+    const query = {};
+    query[constants.filterKeys.TRANSACTION_INDEX] = 'eq:1';
+    query[constants.filterKeys.BLOCK_HASH] = 'eq:1';
+    try {
+      utils.filterDependencyCheck(query);
+    } catch (err) {
+      expect(err).toBeUndefined();
+    }
+  });
+});
+
 const verifyInvalidFilters = (filters) => {
   const expected = filters.map((filter) => filter.key);
   expect(utils.validateAndParseFilters(filters, utils.filterValidityChecks)).toStrictEqual(expected);

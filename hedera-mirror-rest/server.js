@@ -147,7 +147,7 @@ if (config.metrics.enabled) {
 
 // accounts routes
 app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
-app.getAsync(`${apiPrefix}/accounts/:accountAliasOrAccountId`, accounts.getOneAccount);
+app.getAsync(`${apiPrefix}/accounts/:${constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS}`, accounts.getOneAccount);
 app.useAsync(`${apiPrefix}/${AccountRoutes.resource}`, AccountRoutes.router);
 
 // balances routes

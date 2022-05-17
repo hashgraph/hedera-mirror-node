@@ -1,0 +1,17 @@
+{
+  "description": "Contract results api call for a specific contract using contract id with block.hash and block.number filters",
+  "setup": {},
+  "urls": [
+    "/api/v1/contracts/0.0.5001/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305&block.number=10"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter usage: block.hash - cannot combine block.number and block.hash"
+        }
+      ]
+    }
+  }
+}

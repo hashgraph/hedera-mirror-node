@@ -51,6 +51,25 @@ class RecordFileService extends BaseService {
     order by ${RecordFile.CONSENSUS_END} asc
     limit 1`;
 
+  static recordFileBlockDetailsFromIndexQuery = `select
+    ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
+    from ${RecordFile.tableName}
+    where  ${RecordFile.INDEX} = $1
+    limit 1`;
+
+  static recordFileBlockDetailsFromHashQuery = `select
+    ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
+    from ${RecordFile.tableName}
+    where  ${RecordFile.HASH} like $1
+    limit 1`;
+
+  static blocksQuery = `select
+    ${RecordFile.COUNT}, ${RecordFile.HASH}, ${RecordFile.NAME}, ${RecordFile.PREV_HASH}, ${RecordFile.BYTES},
+    ${RecordFile.HAPI_VERSION_MAJOR}, ${RecordFile.HAPI_VERSION_MINOR}, ${RecordFile.HAPI_VERSION_PATCH},
+    ${RecordFile.INDEX}, ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}
+    from ${RecordFile.tableName}
+  `;
+
   /**
    * Retrieves the recordFile containing the transaction of the given timestamp
    *
@@ -58,27 +77,53 @@ class RecordFileService extends BaseService {
    * @return {Promise<RecordFile>} recordFile subset
    */
   async getRecordFileBlockDetailsFromTimestamp(timestamp) {
-    const rows = await super.getRows(
+    const row = await super.getSingleRow(
       RecordFileService.recordFileBlockDetailsFromTimestampQuery,
       [timestamp],
       'getRecordFileBlockDetailsFromTimestamp'
     );
-    if (_.isEmpty(rows) || rows.length > 1) {
-      return null;
-    }
 
-    return new RecordFile(rows[0]);
+    return _.isNull(row) ? null : new RecordFile(row);
+  }
+
+  /**
+   * Retrieves the recordFile with the given index
+   *
+   * @param {number} index Int8
+   * @return {Promise<RecordFile>} recordFile subset
+   */
+  async getRecordFileBlockDetailsFromIndex(index) {
+    const row = await super.getSingleRow(
+      RecordFileService.recordFileBlockDetailsFromIndexQuery,
+      [index],
+      'getRecordFileBlockDetailsFromIndex'
+    );
+
+    return _.isNull(row) ? null : new RecordFile(row);
+  }
+
+  /**
+   * Retrieves the recordFile with the given index
+   *
+   * @param {string} hash
+   * @return {Promise<RecordFile>} recordFile subset
+   */
+  async getRecordFileBlockDetailsFromHash(hash) {
+    const row = await super.getSingleRow(
+      RecordFileService.recordFileBlockDetailsFromHashQuery,
+      [`${hash}%`],
+      'getRecordFileBlockDetailsFromHash'
+    );
+
+    return _.isNull(row) ? null : new RecordFile(row);
   }
 
   async getBlocks(filters) {
     const {where, params} = buildWhereSqlStatement(filters.whereQuery);
 
-    const query = `
-      select
-        ${RecordFile.COUNT}, ${RecordFile.HASH}, ${RecordFile.NAME}, ${RecordFile.PREV_HASH}, ${RecordFile.BYTES},
-        ${RecordFile.HAPI_VERSION_MAJOR}, ${RecordFile.HAPI_VERSION_MINOR}, ${RecordFile.HAPI_VERSION_PATCH},
-        ${RecordFile.INDEX}, ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}
-      from ${RecordFile.tableName}
+    const query =
+      RecordFileService.blocksQuery +
+      `
       ${where}
       order by ${RecordFile.INDEX} ${filters.order}
       limit ${filters.limit}
@@ -86,6 +131,28 @@ class RecordFileService extends BaseService {
     const rows = await super.getRows(query, params, 'getBlocks');
 
     return rows.map((recordFile) => new RecordFile(recordFile));
+  }
+
+  async getByHashOrNumber(hash, number) {
+    let whereStatement = '';
+    const params = [];
+    if (hash) {
+      whereStatement += `${RecordFile.HASH} like $1`;
+      params.push(hash + '%');
+    } else {
+      whereStatement += `${RecordFile.INDEX} = $1`;
+      params.push(number);
+    }
+
+    const query =
+      RecordFileService.blocksQuery +
+      `
+      where ${whereStatement}
+    `;
+
+    const row = await super.getSingleRow(query, params, 'getByHashOrNumber');
+
+    return row ? new RecordFile(row) : null;
   }
 }
 

@@ -62,7 +62,7 @@ class CustomFeeViewModel {
       Object.assign(this, this._parseFixedFee(customFee));
     }
 
-    this.collector_account_id = EntityId.parse(customFee.collectorAccountId, true).toString();
+    this.collector_account_id = EntityId.parse(customFee.collectorAccountId, {isNullable: true}).toString();
   }
 
   hasFee() {
@@ -84,7 +84,7 @@ class CustomFeeViewModel {
   _parseFixedFee(customFee) {
     return {
       amount: customFee.amount,
-      denominating_token_id: EntityId.parse(customFee.denominatingTokenId, true).toString(),
+      denominating_token_id: EntityId.parse(customFee.denominatingTokenId, {isNullable: true}).toString(),
     };
   }
 }

@@ -55,6 +55,7 @@ const transactionFields = [
   Transaction.TYPE,
   Transaction.VALID_DURATION_SECONDS,
   Transaction.VALID_START_NS,
+  Transaction.INDEX,
 ];
 const transactionFullFields = transactionFields.map((f) => Transaction.getFullName(f));
 // consensus_timestamp in transfer_list is a coalesce of multiple consensus timestamp columns
@@ -292,12 +293,12 @@ const createTransferLists = (rows) => {
       bytes: utils.encodeBase64(row.transaction_bytes),
       charged_tx_fee: row.charged_tx_fee,
       consensus_timestamp: utils.nsToSecNs(row.consensus_timestamp),
-      entity_id: EntityId.parse(row.entity_id, true).toString(),
+      entity_id: EntityId.parse(row.entity_id, {isNullable: true}).toString(),
       max_fee: utils.getNullableNumber(row.max_fee),
       memo_base64: utils.encodeBase64(row.memo),
       name: TransactionType.getName(row.type),
       nft_transfers: createNftTransferList(row.nft_transfer_list),
-      node: EntityId.parse(row.node_account_id, true).toString(),
+      node: EntityId.parse(row.node_account_id, {isNullable: true}).toString(),
       nonce: row.nonce,
       parent_consensus_timestamp: utils.nsToSecNs(row.parent_consensus_timestamp),
       result: TransactionResult.getName(row.result),

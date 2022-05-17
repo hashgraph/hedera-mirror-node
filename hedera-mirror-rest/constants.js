@@ -26,9 +26,10 @@ const MAX_INT32 = 2147483647;
 const filterKeys = {
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_ID: 'account.id',
-  ACCOUNT_ID_OR_ALIAS: 'accountAliasOrAccountId',
   ACCOUNT_PUBLICKEY: 'account.publickey',
   BALANCE: 'balance',
+  BLOCK_HASH: 'block.hash',
+  BLOCK_NUMBER: 'block.number',
   CONTRACTID: 'contractid',
   CONTRACT_ID: 'contract.id',
   CREDIT_TYPE: 'type',
@@ -36,7 +37,9 @@ const filterKeys = {
   ENTITY_PUBLICKEY: 'publickey',
   FILE_ID: 'file.id',
   FROM: 'from',
+  ID_OR_ALIAS_OR_EVM_ADDRESS: 'idOrAliasOrEvmAddress',
   INDEX: 'index',
+  INTERNAL: 'internal',
   LIMIT: 'limit',
   NODE_ID: 'node.id',
   NONCE: 'nonce',
@@ -57,8 +60,9 @@ const filterKeys = {
   TOPIC2: 'topic2',
   TOPIC3: 'topic3',
   TOPIC_ID: 'topic.id',
+  TRANSACTION_INDEX: 'transaction.index',
   TRANSACTION_TYPE: 'transactiontype',
-  BLOCK_NUMBER: 'block.number',
+  HASH_OR_NUMBER: 'hashOrNumber',
 };
 
 const entityTypes = {
@@ -71,9 +75,12 @@ const entityTypes = {
 };
 
 const EvmAddressType = {
-  NO_SHARD_REALM: 'evm address without shard and realm and with 0x prefix',
-  OPTIONAL_SHARD_REALM: 'evm address with shard and realm as optionals',
-  ANY: 'can be either a NO_SHARD_REALM or OPTIONAL_SHARD_REALM',
+  // evm address without shard and realm and with 0x prefix
+  NO_SHARD_REALM: 0,
+  // evm address with shard and realm as optionals
+  OPTIONAL_SHARD_REALM: 1,
+  // can be either a NO_SHARD_REALM or OPTIONAL_SHARD_REALM
+  ANY: 2,
 };
 
 const keyTypes = {

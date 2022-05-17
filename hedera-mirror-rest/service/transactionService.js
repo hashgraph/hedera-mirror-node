@@ -24,6 +24,7 @@ const _ = require('lodash');
 
 const BaseService = require('./baseService');
 const {Transaction} = require('../model');
+const {EthereumTransaction} = require('../model');
 
 /**
  * Transaction retrieval business logic
@@ -38,14 +39,26 @@ class TransactionService extends BaseService {
     from ${Transaction.tableName}
     where ${Transaction.CONSENSUS_TIMESTAMP} = $1`;
 
-  static transactionDetailsFromTransactionIdQuery = `select
-    ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.PAYER_ACCOUNT_ID}, ${Transaction.RESULT}, ${Transaction.TRANSACTION_HASH}
-    from ${Transaction.tableName}
+  static selectTransactionDetailsBaseQuery = `select
+    ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)},
+    ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
+    ${Transaction.getFullName(Transaction.RESULT)},
+    ${Transaction.getFullName(Transaction.TRANSACTION_HASH)}
+    from ${Transaction.tableName} ${Transaction.tableAlias}`;
+
+  static transactionDetailsFromTransactionIdQuery = `${this.selectTransactionDetailsBaseQuery}
     where ${Transaction.PAYER_ACCOUNT_ID} = $1
       and ${Transaction.VALID_START_NS} = $2`;
-  static transactionDetailsFromTransactionIdAndNonceQuery = `
-    ${TransactionService.transactionDetailsFromTransactionIdQuery}
-      and ${Transaction.NONCE} = $3`;
+
+  static transactionDetailsFromEthHashQuery = `with ${EthereumTransaction.tableAlias} as (
+      select ${EthereumTransaction.CONSENSUS_TIMESTAMP} from ${EthereumTransaction.tableName}
+      where ${EthereumTransaction.tableName}.${EthereumTransaction.HASH} = $1
+  )
+    ${this.selectTransactionDetailsBaseQuery}
+    join ${EthereumTransaction.tableAlias}
+    on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ${EthereumTransaction.getFullName(
+    EthereumTransaction.CONSENSUS_TIMESTAMP
+  )}`;
 
   /**
    * Retrieves the transaction for the given timestamp
@@ -71,17 +84,30 @@ class TransactionService extends BaseService {
    * @param {Number[]|Number} excludeTransactionResults Transaction results to exclude, can be a list or a single result
    * @return {Promise<Transaction[]>} transactions subset
    */
-  async getTransactionDetailsFromTransactionIdAndNonce(
-    transactionId,
-    nonce = undefined,
-    excludeTransactionResults = []
-  ) {
-    const params = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
-    let query = TransactionService.transactionDetailsFromTransactionIdQuery;
+  async getTransactionDetailsFromTransactionId(transactionId, nonce = undefined, excludeTransactionResults = []) {
+    return this.getTransactionDetails(
+      TransactionService.transactionDetailsFromTransactionIdQuery,
+      [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()],
+      'getTransactionDetailsFromEthHash',
+      excludeTransactionResults,
+      nonce
+    );
+  }
 
+  async getTransactionDetailsFromEthHash(ethHash, excludeTransactionResults = []) {
+    return this.getTransactionDetails(
+      TransactionService.transactionDetailsFromEthHashQuery,
+      [ethHash],
+      'getTransactionDetailsFromEthHash',
+      excludeTransactionResults
+    );
+  }
+
+  async getTransactionDetails(query, params, parentFunctionName, excludeTransactionResults = [], nonce = undefined) {
     if (nonce !== undefined) {
       params.push(nonce);
-      query = TransactionService.transactionDetailsFromTransactionIdAndNonceQuery;
+      query = `${query}
+      and ${Transaction.getFullName(Transaction.NONCE)} = $${params.length}`;
     }
 
     if (excludeTransactionResults !== undefined) {
@@ -90,15 +116,15 @@ class TransactionService extends BaseService {
           const start = params.length + 1;
           params.push(...excludeTransactionResults);
           const positions = _.range(start, params.length + 1).map((p) => `$${p}`);
-          query += ` and ${Transaction.RESULT} not in (${positions})`;
+          query += ` and ${Transaction.getFullName(Transaction.RESULT)} not in (${positions})`;
         }
       } else {
         params.push(excludeTransactionResults);
-        query += ` and ${Transaction.RESULT} <> $${params.length}`;
+        query += ` and ${Transaction.getFullName(Transaction.RESULT)} <> $${params.length}`;
       }
     }
 
-    const rows = await super.getRows(query, params, 'getTransactionDetailsFromTransactionIdAndNonce');
+    const rows = await super.getRows(query, params, parentFunctionName);
     return rows.map((row) => new Transaction(row));
   }
 }

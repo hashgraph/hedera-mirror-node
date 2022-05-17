@@ -1,0 +1,121 @@
+{
+  "description": "Contract results api call for all contracts with a block.hash filter",
+  "setup": {
+    "contracts": [
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "8001",
+        "timestamp_range": "[987654999123200, 987654999123299]"
+      },
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "5001",
+        "timestamp_range": "[987654999123300,)"
+      }
+    ],
+    "contractresults": [
+      {
+        "amount": 20,
+        "bloom": [1, 1],
+        "call_result": [2, 2],
+        "consensus_timestamp": "187654000123456",
+        "contract_id": 5001,
+        "created_contract_ids": [],
+        "error_message": "Not enough gas",
+        "function_parameters": [3, 3],
+        "function_result": [4, 4],
+        "gas_limit": 1234556,
+        "gas_used": 987,
+        "payer_account_id": 6001
+      },
+      {
+        "amount": 30,
+        "bloom": [5, 5],
+        "call_result": [6, 6],
+        "consensus_timestamp": "167654000123440",
+        "contract_id": 5001,
+        "created_contract_ids": [7001],
+        "error_message": "",
+        "function_parameters": [7, 7],
+        "function_result": [8, 8],
+        "gas_limit": 987654,
+        "gas_used": 123,
+        "payer_account_id": 8001
+      }
+    ],
+    "transactions": [
+      {
+        "consensus_timestamp": "187654000123456",
+        "type": 11,
+        "result": 22,
+        "valid_start_ns": "187654000123456",
+        "valid_start_timestamp": "187654000123456",
+        "transaction_hash": "hash1",
+        "payerAccountId": 6001,
+        "index": 1,
+        "nonce": 0
+      },
+      {
+        "consensus_timestamp": "167654000123440",
+        "type": 11,
+        "result": 22,
+        "valid_start_ns": "167654000123440",
+        "valid_start_timestamp": "167654000123440",
+        "transaction_hash": "hash2",
+        "payerAccountId": 8001,
+        "index": 2,
+        "nonce": 0
+      }
+    ],
+    "recordFiles": [
+      {
+        "index": 16,
+        "consensus_start": 167654000123439,
+        "consensus_end": 167654000123449,
+        "hash": "56caf9913fd511ede553715d3700ed955a22853487ec71cb15e7b2cc1c355d2970c12d4f07c798effe0bec57ec84d603"
+      },
+      {
+        "index": 17,
+        "consensus_start": 187654000123456,
+        "consensus_end": 187654001123456,
+        "hash": "1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/results?block.hash=eq:0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+    "/api/v1/contracts/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+    "/api/v1/contracts/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305312fcb305804a48baa41571e71c39c61",
+    "/api/v1/contracts/results?block.hash=0x1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
+    "/api/v1/contracts/results?block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305",
+    "/api/v1/contracts/results?block.hash=56caf9913fd511ede553715d3700ed955a22853487ec71cb15e7b2cc1c355d29&block.hash=1eaf1abbd64bbcac7f473f0272671c66d3d1d64f584112b11cd4d2063e736305"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "results": [
+      {
+        "amount": 20,
+        "bloom": "0x0101",
+        "call_result": "0x0202",
+        "contract_id": "0.0.5001",
+        "created_contract_ids": [],
+        "error_message": "Not enough gas",
+        "from": "0x0000000000000000000000000000000000001771",
+        "function_parameters": "0x0303",
+        "gas_limit": 1234556,
+        "gas_used": 987,
+        "timestamp": "187654.000123456",
+        "to": "0x0000000000000000000000000000000000001389"
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

@@ -24,6 +24,8 @@ const _ = require('lodash');
 
 const constants = require('../constants');
 const Contract = require('../model/contract');
+const Transaction = require('../model/transaction');
+const EthereumTransaction = require('../model/ethereumTransaction');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
   response: {
@@ -46,8 +48,23 @@ class ContractService extends BaseService {
     super();
   }
 
-  static detailedContractResultsQuery = `select *
-  from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
+  static detailedContractResultsQuery = `select ${ContractResult.tableAlias}.*
+  from ${ContractResult.tableName} ${ContractResult.tableAlias}
+  `;
+
+  static transactionTableCTE = `with ${Transaction.tableAlias} as (
+      select
+      ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.INDEX}, ${Transaction.NONCE}
+      from ${Transaction.tableName}
+      where $where
+    )
+  `;
+
+  static joinTransactionTable = `left join ${Transaction.tableAlias}
+  on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
+    Transaction.CONSENSUS_TIMESTAMP
+  )}
+  `;
 
   static contractResultsQuery = `select
     ${ContractResult.AMOUNT},
@@ -119,8 +136,26 @@ class ContractService extends BaseService {
 
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
+    let joinTransactionTable = false;
+    const transactionWhereClauses = [];
+    if (whereConditions.length) {
+      for (let condition of whereConditions) {
+        if (
+          condition.includes(`${Transaction.tableAlias}.${Transaction.INDEX}`) ||
+          condition.includes(`${Transaction.tableAlias}.${Transaction.NONCE}`)
+        ) {
+          joinTransactionTable = true;
+          transactionWhereClauses.push(condition.replace(`${Transaction.tableAlias}.`, `${Transaction.tableName}.`));
+        }
+      }
+    }
+
     const query = [
+      joinTransactionTable
+        ? ContractService.transactionTableCTE.replace('$where', transactionWhereClauses.join(' and '))
+        : '',
       ContractService.detailedContractResultsQuery,
+      joinTransactionTable ? ContractService.joinTransactionTable : '',
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
       super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
       super.getLimitQuery(whereParams.length + 1), // get limit param located at end of array
@@ -319,7 +354,7 @@ class ContractService extends BaseService {
       return this.getContractIdByEvmAddress(contractIdParts);
     }
 
-    return EntityId.parse(contractIdValue, constants.filterKeys.CONTRACTID).getEncodedId();
+    return EntityId.parse(contractIdValue, {paramName: constants.filterKeys.CONTRACTID}).getEncodedId();
   }
 }
 

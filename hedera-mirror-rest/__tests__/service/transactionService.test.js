@@ -66,7 +66,7 @@ describe('TransactionService.getTransactionDetailsFromTimestamp tests', () => {
   });
 });
 
-describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce tests', () => {
+describe('TransactionService.getTransactionDetailsFromTransactionId tests', () => {
   const duplicateValidStartNs = 10;
   const inputTransactions = [
     {consensus_timestamp: 2, payerAccountId: 5}, // crypto transfer, success
@@ -111,21 +111,21 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
 
   test('No match', async () => {
     await expect(
-      TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+      TransactionService.getTransactionDetailsFromTransactionId(
         TransactionId.fromString('0.0.1010-1234567890-123456789')
       )
     ).resolves.toHaveLength(0);
   });
 
   test('Single row match', async () => {
-    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+    const actual = await TransactionService.getTransactionDetailsFromTransactionId(
       TransactionId.fromString('0.0.5-0-1')
     );
     expect(pickTransactionFields(actual)).toEqual([{consensusTimestamp: 2, payerAccountId: 5}]);
   });
 
   test('Single row match nonce=1', async () => {
-    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+    const actual = await TransactionService.getTransactionDetailsFromTransactionId(
       TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`),
       1
     );
@@ -133,7 +133,7 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
   });
 
   test('Multiple rows match with nonce', async () => {
-    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+    const actual = await TransactionService.getTransactionDetailsFromTransactionId(
       TransactionId.fromString('0.0.5-0-5'),
       0
     );
@@ -144,7 +144,7 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
   });
 
   test('Multiple rows match without nonce', async () => {
-    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+    const actual = await TransactionService.getTransactionDetailsFromTransactionId(
       TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`)
     );
     expect(pickTransactionFields(actual)).toIncludeSameMembers([
@@ -155,7 +155,7 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
   });
 
   test('Tow rows match without nonce exclude duplicate transaction', async () => {
-    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+    const actual = await TransactionService.getTransactionDetailsFromTransactionId(
       TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`),
       undefined,
       duplicateTransactionResult
@@ -167,7 +167,7 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
   });
 
   test('Single row match with nonce exclude duplicate transaction', async () => {
-    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+    const actual = await TransactionService.getTransactionDetailsFromTransactionId(
       TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`),
       0,
       duplicateTransactionResult
@@ -176,7 +176,7 @@ describe('TransactionService.getTransactionDetailsFromTransactionIdAndNonce test
   });
 
   test('No match without nonce exclude all possible transaction results', async () => {
-    const actual = await TransactionService.getTransactionDetailsFromTransactionIdAndNonce(
+    const actual = await TransactionService.getTransactionDetailsFromTransactionId(
       TransactionId.fromString(`0.0.5-0-${duplicateValidStartNs}`),
       undefined,
       [duplicateTransactionResult, successTransactionResult]

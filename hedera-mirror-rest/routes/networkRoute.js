@@ -27,6 +27,7 @@ const {NetworkController} = require('../controllers');
 const router = Router();
 
 const resource = 'network';
+router.getAsync('/exchangerate', NetworkController.getExchangeRate);
 router.getAsync('/nodes', NetworkController.getNetworkNodes);
 router.getAsync('/supply', NetworkController.getSupply);
 

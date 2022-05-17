@@ -40,7 +40,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `select *
+    const expected = `select cr.*
       from contract_result cr
       where cr.contract_id = $1
       order by cr.consensus_timestamp asc
@@ -57,7 +57,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `select *
+    const expected = `select cr.*
       from contract_result cr
       where cr.contract_id = $1
         and cr.consensus_timestamp > $2
@@ -66,6 +66,46 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       limit $4`;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 10, 20, 5]);
+  });
+
+  test('Verify transaction.nonce condition', async () => {
+    const additionalConditions = ['cr.contract_id = $1', 't.nonce = $2'];
+    const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
+      additionalConditions,
+      [2, 10],
+      'asc',
+      5
+    );
+    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.nonce = $2)
+      select cr.*
+      from contract_result cr
+      left join t on cr.consensus_timestamp = t.consensus_timestamp
+      where cr.contract_id = $1
+        and t.nonce = $2
+      order by cr.consensus_timestamp asc
+      limit $3`;
+    assertSqlQueryEqual(query, expected);
+    expect(params).toEqual([2, 10, 5]);
+  });
+
+  test('Verify transaction.index condition', async () => {
+    const additionalConditions = ['cr.contract_id = $1', 't.index = $2'];
+    const [query, params] = ContractService.getContractResultsByIdAndFiltersQuery(
+      additionalConditions,
+      [2, 10],
+      'asc',
+      5
+    );
+    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.index = $2)
+      select cr.*
+      from contract_result cr
+      left join t on cr.consensus_timestamp = t.consensus_timestamp
+      where cr.contract_id = $1
+        and t.index = $2
+      order by cr.consensus_timestamp asc
+      limit $3`;
+    assertSqlQueryEqual(query, expected);
+    expect(params).toEqual([2, 10, 5]);
   });
 });
 
@@ -283,7 +323,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
     ];
 
     const response = await ContractService.getContractResultsByIdAndFilters(
-      ['contract_id = $1', 'consensus_timestamp > $2', 'payer_account_id = $3'],
+      ['cr.contract_id = $1', 'cr.consensus_timestamp > $2', 'cr.payer_account_id = $3'],
       [3, 2, 124],
       'asc',
       2

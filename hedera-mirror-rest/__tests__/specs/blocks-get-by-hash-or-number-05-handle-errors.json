@@ -1,0 +1,22 @@
+{
+  "description": "Get block getByHashOrNumber and handle invalid param error",
+  "setup": {},
+  "urls": [
+    "/api/v1/blocks/b0162e8a244dc05fbd6f3",
+    "/api/v1/blocks/0xb0162e8a244dc05fbd6f3",
+    "/api/v1/blocks/ff90773193892540084e62086df3953d2362061",
+    "/api/v1/blocks/0xff90773193892540084e62086df3953d2362061",
+    "/api/v1/blocks/invalidnumber",
+    "/api/v1/blocks/1test"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: hashOrNumber"
+        }
+      ]
+    }
+  }
+}

@@ -15,6 +15,7 @@
       {
         "num": 8,
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "evm_address": "ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
       },
       {
@@ -105,7 +106,10 @@
     "/api/v1/accounts/0.0.8",
     "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
     "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+    "/api/v1/accounts/ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
+    "/api/v1/accounts/0xac384c53f03855fa1b3616052f8ba32c6c2a2fec",
+    "/api/v1/accounts/0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec"
   ],
   "responseStatus": 200,
   "responseJson": {
@@ -232,6 +236,8 @@
     },
     "account": "0.0.8",
     "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+    "ethereum_nonce": null,
+    "evm_address": "0xac384c53f03855fa1b3616052f8ba32c6c2a2fec",
     "expiry_timestamp": null,
     "auto_renew_period": null,
     "key": null,

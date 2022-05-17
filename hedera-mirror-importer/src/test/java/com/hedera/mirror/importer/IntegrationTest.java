@@ -46,6 +46,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
@@ -66,6 +67,9 @@ public abstract class IntegrationTest {
 
     @Resource
     private Collection<CacheManager> cacheManagers;
+
+    @Resource
+    protected DomainBuilder domainBuilder;
 
     @Resource
     protected JdbcOperations jdbcOperations;

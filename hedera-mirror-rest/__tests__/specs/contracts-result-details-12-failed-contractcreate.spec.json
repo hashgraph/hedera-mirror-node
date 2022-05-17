@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call using failed CONTRACTCREATE's transactionId",
+  "description": "Contract results api call using failed CONTRACTCREATE's transactionId or ethereum transaction hash",
   "setup": {
     "contractresults": [
       {
@@ -34,12 +34,24 @@
         "result": 33,
         "valid_start_timestamp": 167654000123400
       }
+    ],
+    "ethereumtransactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392"
+      }
     ]
   },
   "urls": [
     "/api/v1/contracts/results/0.0.8001-167654-000123400",
     "/api/v1/contracts/results/0.0.8001-167654-000123400?nonce=0",
-    "/api/v1/contracts/results/0.0.8001-167654-000123400?nonce=1&nonce=0"
+    "/api/v1/contracts/results/0.0.8001-167654-000123400?nonce=1&nonce=0",
+    "/api/v1/contracts/results/4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+    "/api/v1/contracts/results/4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392?nonce=0",
+    "/api/v1/contracts/results/4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392?nonce=1&nonce=0",
+    "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+    "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392?nonce=0",
+    "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392?nonce=1&nonce=0"
   ],
   "responseStatus": 200,
   "responseJson": {

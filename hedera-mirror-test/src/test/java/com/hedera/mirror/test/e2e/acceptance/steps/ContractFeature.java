@@ -28,17 +28,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
-import io.cucumber.junit.platform.engine.Cucumber;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.ResourceUtils;
+import org.springframework.util.StringUtils;
 
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractId;
@@ -55,31 +55,27 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultRespon
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
 
 @Log4j2
-@Cucumber
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ContractFeature extends AbstractFeature {
-    private final ObjectMapper mapper = new ObjectMapper()
+
+    private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+
+    private final ContractClient contractClient;
+    private final FileClient fileClient;
+    private final MirrorNodeClient mirrorClient;
+
+    @Value("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json")
+    private Path parentContract;
 
     private ContractId contractId;
     private FileId fileId;
     private CompiledSolidityArtifact compiledSolidityArtifact;
 
-    @Value("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json")
-    private Path parentContract;
-
-    @Autowired
-    private ContractClient contractClient;
-
-    @Autowired
-    private FileClient fileClient;
-
-    @Autowired
-    private MirrorNodeClient mirrorClient;
-
     @Given("I successfully create a contract from contract bytes with {int} balance")
     public void createNewContract(int initialBalance) throws IOException {
-        compiledSolidityArtifact = mapper.readValue(
+        compiledSolidityArtifact = MAPPER.readValue(
                 ResourceUtils.getFile(parentContract.toUri()),
                 CompiledSolidityArtifact.class);
         createContract(compiledSolidityArtifact.getBytecode(), initialBalance);
@@ -245,7 +241,7 @@ public class ContractFeature extends AbstractFeature {
         int numCreatedIds = 2; // parent and child contract
         switch (contractExecutionStage) {
             case CREATION:
-                amount = 1000;
+                amount = 10000000;
                 assertThat(createdIds).contains(contractId.toString());
                 assertThat(isEmptyHex(contractResult.getFunctionParameters())).isTrue();
                 break;
