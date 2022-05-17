@@ -938,6 +938,11 @@ class ContractController extends BaseController {
       ContractService.getContractStateChangesByTimestamps(transaction.consensusTimestamp),
     ]);
 
+    let fileData = null;
+    if (!_.isNil(transaction.call_data_id)) {
+      fileData = await FileDataService.getFileDataByEntityId(transaction.call_data_id);
+    }
+
     if (contractResults.length === 0) {
       throw new NotFoundError();
     }
@@ -947,7 +952,8 @@ class ContractController extends BaseController {
       recordFile,
       transaction,
       contractLogs,
-      contractStateChanges
+      contractStateChanges,
+      fileData
     );
 
     if (_.isNil(contractResults[0].callResult)) {
