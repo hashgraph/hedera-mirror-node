@@ -1,3 +1,4 @@
+## @formatter:off
 with existing as (
   select $existingColumnsAs, t.*
   from $tempTable t

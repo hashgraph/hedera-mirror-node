@@ -132,7 +132,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var functionResult = getContractFunctionResult(recordItem.getRecord(), create);
         var senderId = functionResult.getSenderId().getAccountNum();
         verify(entityListener).onEntity(argThat(e -> e.getId() == senderId && e.getTimestampRange() == null &&
-                e.getEthereumNonce() == ethereumTransaction.getNonce()));
+                e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
     }
 
     @Test
@@ -150,6 +150,45 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         verify(entityListener).onEthereumTransaction(any());
         verify(entityListener, never()).onEntity(any());
+    }
+
+    @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    void updateTransactionSkipNonceOnFailure(boolean create) {
+        var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
+        doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
+
+        var recordItem = recordItemBuilder.ethereumTransaction(create)
+                .record(x -> x.clearContractCreateResult().clearContractCallResult())
+                .status(ResponseCodeEnum.WRONG_NONCE)
+                .build();
+
+        var transaction = new Transaction();
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        verify(entityListener).onEthereumTransaction(any());
+        verify(entityListener, never()).onEntity(any());
+    }
+
+    @Test
+    void updateTransactionUpdateNonceOnFailure() {
+        boolean create = true;
+        var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
+        doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
+
+        var recordItem = recordItemBuilder.ethereumTransaction(create)
+                .record(x -> x.setEthereumHash(ETHEREUM_HASH))
+                .status(ResponseCodeEnum.INSUFFICIENT_GAS)
+                .build();
+
+        var transaction = new Transaction();
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        var functionResult = getContractFunctionResult(recordItem.getRecord(), create);
+        var senderId = functionResult.getSenderId().getAccountNum();
+        verify(entityListener).onEthereumTransaction(ethereumTransaction);
+        verify(entityListener).onEntity(argThat(e -> e.getId() == senderId && e.getTimestampRange() == null &&
+                e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
     }
 
     @Test

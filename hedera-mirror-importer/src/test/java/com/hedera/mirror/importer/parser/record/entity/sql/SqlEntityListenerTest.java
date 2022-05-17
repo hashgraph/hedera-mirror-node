@@ -416,11 +416,12 @@ class SqlEntityListenerTest extends IntegrationTest {
         existingEntityNonce2.setTimestampRange(null);
 
         // Update to non-history field with partial data should be discarded
-        Entity nonExistingEntityNonce1 = domainBuilder.entityId(EntityType.ACCOUNT).toEntity();
+        Entity nonExistingEntity = domainBuilder.entity().get();
+        Entity nonExistingEntityNonce1 = nonExistingEntity.toEntityId().toEntity();
         nonExistingEntityNonce1.setEthereumNonce(200L);
         nonExistingEntityNonce1.setTimestampRange(null);
 
-        Entity nonExistingEntityNonce2 = domainBuilder.entityId(EntityType.ACCOUNT).toEntity();
+        Entity nonExistingEntityNonce2 = nonExistingEntity.toEntityId().toEntity();
         nonExistingEntityNonce2.setEthereumNonce(201L);
         nonExistingEntityNonce2.setTimestampRange(null);
 
@@ -445,8 +446,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         existingEntity.setEthereumNonce(existingEntityNonce3.getEthereumNonce());
-        assertThat(contractRepository.count()).isZero();
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(existingEntity);
+        assertThat(entityRepository.findAll()).containsExactly(existingEntity);
         assertThat(findHistory(Entity.class)).isEmpty();
     }
 
@@ -480,9 +480,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         entityMerged.setTimestampRange(entityDeleted.getTimestampRange());
         entity.setTimestampUpper(entityDeleted.getTimestampLower());
 
-        assertThat(contractRepository.count()).isZero();
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entityMerged);
-        assertThat(findHistory(Entity.class)).containsExactlyInAnyOrder(entity);
+        assertThat(entityRepository.findAll()).containsExactly(entityMerged);
+        assertThat(findHistory(Entity.class)).containsExactly(entity);
     }
 
     @ValueSource(ints = {1, 2, 3})
@@ -1500,6 +1499,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setAutoRenewPeriod(autoRenewPeriod);
         entity.setCreatedTimestamp(createdTimestamp);
         entity.setDeleted(deleted);
+        entity.setEthereumNonce(0L);
         entity.setExpirationTimestamp(expiryTimeNs);
         entity.setKey(adminKey != null ? adminKey.toByteArray() : null);
         entity.setMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations);
