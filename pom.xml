@@ -55,6 +55,7 @@
     </parent>
 
     <properties>
+        <besu.version>22.4.0</besu.version>
         <dependency-check.version>7.1.0</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.39.1</docker-maven-plugin.version>
@@ -69,8 +70,8 @@
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.46.0</grpc.version>
         <guava.version>31.1-jre</guava.version>
-        <headlong.version>6.3.0</headlong.version>
-        <hedera-protobuf.version>0.26.0-alpha.1</hedera-protobuf.version>
+        <headlong.version>6.3.1</headlong.version>
+        <hedera-protobuf.version>0.26.0</hedera-protobuf.version>
         <hibernate-types.version>2.16.2</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>17</java.version>
@@ -143,12 +144,8 @@
             </snapshots>
         </repository>
         <repository>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-            <id>proto-staging</id>
-            <name>0.26.0-alpha.1 protobufs</name>
-            <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1443</url>
+            <id>besu-repository</id>
+            <url>https://hyperledger.jfrog.io/artifactory/besu-maven/</url>
         </repository>
     </repositories>
 

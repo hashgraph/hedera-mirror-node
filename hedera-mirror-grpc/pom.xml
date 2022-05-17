@@ -15,7 +15,7 @@
     </parent>
 
     <properties>
-        <vertx.version>4.2.7</vertx.version>
+        <vertx.version>4.3.0</vertx.version>
     </properties>
 
     <dependencies>

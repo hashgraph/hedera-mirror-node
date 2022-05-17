@@ -7,7 +7,7 @@ require (
 	github.com/cucumber/godog v0.12.5
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220407062851-1cb287936c27
-	github.com/hashgraph/hedera-sdk-go/v2 v2.13.3
+	github.com/hashgraph/hedera-sdk-go/v2 v2.13.4
 	github.com/hellofresh/health-go/v4 v4.5.0
 	github.com/jackc/pgtype v1.11.0
 	github.com/lib/pq v1.10.5
@@ -15,7 +15,7 @@ require (
 	github.com/onrik/gorm-logrus v0.3.0
 	github.com/ory/dockertest/v3 v3.8.1
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.12.1
+	github.com/prometheus/client_golang v1.12.2
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.11.0
