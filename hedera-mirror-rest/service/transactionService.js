@@ -27,6 +27,8 @@ const {Transaction} = require('../model');
 const {EthereumTransaction} = require('../model');
 const {TransactionWithEthData} = require('../model');
 
+const ethTransactionReplaceString = `$ethTransactionWhere`;
+
 /**
  * Transaction retrieval business logic
  */
@@ -53,7 +55,7 @@ class TransactionService extends BaseService {
         ${EthereumTransaction.CALL_DATA_ID},
         ${EthereumTransaction.GAS_LIMIT}
       from ${EthereumTransaction.tableName}
-      where $ethTransactionWhere
+      where ${ethTransactionReplaceString}
   )`;
 
   static ethTransactionSelectedFields = `
@@ -122,7 +124,7 @@ class TransactionService extends BaseService {
   async getTransactionDetailsFromTimestamp(timestamp) {
     const row = await super.getSingleRow(
       TransactionService.transactionDetailsFromTimestampQuery.replace(
-        '$ethTransactionWhere',
+        ethTransactionReplaceString,
         `${EthereumTransaction.CONSENSUS_TIMESTAMP} = $1`
       ),
       [timestamp],
@@ -143,7 +145,7 @@ class TransactionService extends BaseService {
   async getTransactionDetailsFromTransactionId(transactionId, nonce = undefined, excludeTransactionResults = []) {
     return this.getTransactionDetails(
       TransactionService.transactionDetailsFromTransactionIdQuery.replace(
-        '$ethTransactionWhere',
+        ethTransactionReplaceString,
         `${EthereumTransaction.PAYER_ACCOUNT_ID} = $1`
       ),
       [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()],
@@ -156,7 +158,7 @@ class TransactionService extends BaseService {
   async getTransactionDetailsFromEthHash(ethHash, excludeTransactionResults = []) {
     return this.getTransactionDetails(
       TransactionService.transactionDetailsFromEthHashQuery.replace(
-        '$ethTransactionWhere',
+        ethTransactionReplaceString,
         `${EthereumTransaction.HASH} = $1`
       ),
       [ethHash],

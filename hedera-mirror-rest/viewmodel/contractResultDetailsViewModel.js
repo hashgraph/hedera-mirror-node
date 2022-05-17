@@ -71,8 +71,6 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.type = transaction.ethType || null;
     this.v = transaction.recovery_id;
 
-    // TODO this.gas_price = ethereum_transation.gas_price
-
     if (`${transaction.type}` === TransactionType.getProtoId('ETHEREUMTRANSACTION')) {
       txHash = _.isNil(transaction.ethHash) ? transaction.transactionHash : transaction.ethHash;
 
