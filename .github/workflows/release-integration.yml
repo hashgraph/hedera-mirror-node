@@ -15,7 +15,7 @@ jobs:
         with:
           cache: 'maven'
           distribution: 'temurin'
-          java-version: 11
+          java-version: 17.0.1_12
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v0

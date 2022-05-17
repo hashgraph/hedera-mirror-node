@@ -30,7 +30,7 @@ jobs:
         with:
           cache: 'maven'
           distribution: 'temurin'
-          java-version: 11
+          java-version: 17.0.1_12
 
       - name: Maven verify
         run: ./mvnw verify -pl "${MODULE}" -Dspring.profiles.active=${{ matrix.schema }}
