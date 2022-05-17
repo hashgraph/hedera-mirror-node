@@ -20,7 +20,6 @@ package com.hedera.mirror.common.aggregator;
  * ‍
  */
 
-import java.util.Arrays;
 import lombok.NoArgsConstructor;
 
 @NoArgsConstructor
@@ -43,10 +42,7 @@ public class LogsBloomAggregator {
     }
 
     public byte[] getBloom() {
-        if (aggregatedBlooms == null) {
-            return null;
-        }
-        return Arrays.copyOf(aggregatedBlooms, aggregatedBlooms.length);
+        return aggregatedBlooms;
     }
 
     public boolean couldContain(byte[] bloom) {
