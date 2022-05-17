@@ -91,15 +91,6 @@ class FileDataService extends BaseService {
     ) and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${Contract.getFullName(Contract.CREATED_TIMESTAMP)}
       and ${Contract.getFullName(Contract.FILE_ID)} is not null`;
 
-  static fileDataByEntityIdQuery = `select
-        string_agg(
-          ${FileData.getFullName(FileData.FILE_DATA)}, ''
-          order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
-      ) ${FileData.FILE_DATA}
-    from ${FileData.tableName} ${FileData.tableAlias}
-    where ${FileData.getFullName(FileData.ENTITY_ID)} = $1
-  `;
-
   getContractInitCodeFiledataQuery = () => {
     return FileDataService.contractInitCodeFileDataQuery;
   };
@@ -120,12 +111,6 @@ class FileDataService extends BaseService {
     const row = await this.getLatestFileDataContents(FileDataService.exchangeRateFileId, filterQueries);
 
     return _.isNil(row) ? null : new ExchangeRate(row);
-  };
-
-  getFileDataByEntityId = async (entityId) => {
-    const row = await super.getSingleRow(FileDataService.fileDataByEntityIdQuery, [entityId], 'getFileDataByEntityId');
-
-    return _.isNull(row) ? null : new FileData(row);
   };
 }
 
