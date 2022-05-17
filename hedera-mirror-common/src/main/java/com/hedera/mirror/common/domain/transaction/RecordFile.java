@@ -151,7 +151,7 @@ public class RecordFile implements StreamFile<RecordItem> {
             return;
         }
         gasUsed += contractResult.getGasUsed();
-        logsBloomAggregator.insertBytes(DomainUtils.toBytes(contractResult.getBloom()));
+        logsBloomAggregator.aggregate(DomainUtils.toBytes(contractResult.getBloom()));
     }
 
     private ContractFunctionResult getContractFunctionResult(TransactionRecord record) {

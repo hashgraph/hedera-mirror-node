@@ -22,7 +22,7 @@ public class LogsBloomAggregatorTest {
                 -52 };
 
         LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
-        bloomAggregator.insertBytes(bytes1);
+        bloomAggregator.aggregate(bytes1);
         byte[] expectedResult = new byte[] { -1, -1, -17, -1, -3, -2, -1, -1, -1, -5, -65, 127, -1, -1, -1, -33, -1,
                 -9, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -33,13 +33,13 @@ public class LogsBloomAggregatorTest {
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                 0, 0 };
         assertThat(bloomAggregator.getBloom()).isNotEqualTo(expectedResult);
-        bloomAggregator.insertBytes(bytes2);
+        bloomAggregator.aggregate(bytes2);
         assertThat(bloomAggregator.getBloom()).isNotEqualTo(expectedResult);
-        bloomAggregator.insertBytes(bytes3);
+        bloomAggregator.aggregate(bytes3);
         assertThat(bloomAggregator.getBloom()).isEqualTo(expectedResult);
 
         // Already inserted bytes should not change the filter
-        bloomAggregator.insertBytes(bytes3);
+        bloomAggregator.aggregate(bytes3);
         assertThat(bloomAggregator.getBloom()).isEqualTo(expectedResult);
     }
 
@@ -48,16 +48,16 @@ public class LogsBloomAggregatorTest {
         LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
 
         String bloom1 = "000000040000000010";
-        bloomAggregator.insertBytes(ByteString.fromHex(bloom1).toByteArray());
+        bloomAggregator.aggregate(ByteString.fromHex(bloom1).toByteArray());
         assertTrue(bloomAggregator.couldContain(null));
     }
 
     @Test
-    void byteArrayMustCorrectLength() {
+    void byteArrayMustHaveCorrectLength() {
         LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
 
         String bloom1 = "00000004000000000100";
-        bloomAggregator.insertBytes(ByteString.fromHex(bloom1).toByteArray());
+        bloomAggregator.aggregate(ByteString.fromHex(bloom1).toByteArray());
         assertFalse(bloomAggregator.couldContain(new byte[] { 1, 2, 3 }));
     }
 
@@ -67,11 +67,11 @@ public class LogsBloomAggregatorTest {
 
         String bloom1 =
                 "00000004000000001000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000100000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000004000000000000000000000000000000000000000000000040000000000000000000000000000000001000000000000000000000000000000000000000000000001000000000000100000080000000000000000000000000000000000000000000000000000000000000000000000000";
-        bloomAggregator.insertBytes(ByteString.fromHex(bloom1).toByteArray());
+        bloomAggregator.aggregate(ByteString.fromHex(bloom1).toByteArray());
 
         String bloom2 =
                 "00000004000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008004000000000000000000000000000000000000000000000040000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000100002080000000000000000000000000000000000000000000000400000000000000000000000000";
-        bloomAggregator.insertBytes(ByteString.fromHex(bloom2).toByteArray());
+        bloomAggregator.aggregate(ByteString.fromHex(bloom2).toByteArray());
 
         String[] topics = {
                 // topic0 from bloom1
@@ -110,5 +110,17 @@ public class LogsBloomAggregatorTest {
                     .build();
             assertFalse(bloomAggregator.couldContain(bloom.toArray()), str);
         }
+    }
+
+    @Test
+    void resultingBloomMustBeNull() {
+        LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
+        assertNull(bloomAggregator.getBloom());
+    }
+
+    @Test
+    void mustReturnFalseWhenNotInitialized() {
+        LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
+        assertFalse(bloomAggregator.couldContain(new byte[] { }));
     }
 }

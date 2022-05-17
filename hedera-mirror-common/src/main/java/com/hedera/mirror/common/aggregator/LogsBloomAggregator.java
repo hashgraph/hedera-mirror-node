@@ -27,18 +27,25 @@ import lombok.NoArgsConstructor;
 public class LogsBloomAggregator {
 
     public static final int BYTE_SIZE = 256;
-    private final byte[] aggregatedBlooms = new byte[BYTE_SIZE];
+    private byte[] aggregatedBlooms = null;
 
-    public LogsBloomAggregator insertBytes(byte[] bloom) {
-        if (bloom != null) {
-            for (int i = 0; i < bloom.length; i++) {
-                aggregatedBlooms[i] |= bloom[i];
-            }
+    public LogsBloomAggregator aggregate(byte[] bloom) {
+        if (bloom == null) {
+            return this;
+        }
+        if (aggregatedBlooms == null) {
+            aggregatedBlooms = new byte[BYTE_SIZE];
+        }
+        for (int i = 0; i < bloom.length; i++) {
+            aggregatedBlooms[i] |= bloom[i];
         }
         return this;
     }
 
     public byte[] getBloom() {
+        if (aggregatedBlooms == null) {
+            return null;
+        }
         return Arrays.copyOf(aggregatedBlooms, aggregatedBlooms.length);
     }
 
@@ -47,9 +54,13 @@ public class LogsBloomAggregator {
             // other implementations accept null values as positive matches.
             return true;
         }
+        if (aggregatedBlooms == null) {
+            return false;
+        }
         if (bloom.length != BYTE_SIZE) {
             return false;
         }
+
         for (int i = 0; i < bloom.length; i++) {
             if ((bloom[i] & aggregatedBlooms[i]) != bloom[i]) {
                 return false;
