@@ -344,7 +344,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             list.add(merged);
         }
         if (previous != null && !previous.isHistory() && list.size() > 1) {
-            list.remove(previous);
+            list.remove(list.size() - 2);
         }
     }
 
