@@ -31,11 +31,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
-import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -229,7 +226,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
                         .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
                         .setTransactionID(TransactionID.newBuilder().setNonce(transactionIdNonce).build())
                 )
-                .transactionBody(builder -> builder.mergeFrom(ContractCallTransactionBody.newBuilder().build()))
                 .build();
     }
 
@@ -241,7 +237,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
                         .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
                         .setTransactionID(TransactionID.newBuilder().setNonce(transactionIdNonce).build())
                 )
-                .transactionBody(builder -> builder.mergeFrom(ContractCreateTransactionBody.newBuilder().build()))
                 .build();
     }
 
@@ -279,7 +274,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
                         .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
                         .setTransactionID(TransactionID.newBuilder().setNonce(transactionIdNonce).build())
                 )
-                .transactionBody(builder -> builder.mergeFrom(EthereumTransactionBody.newBuilder().build()))
                 .build();
     }
 
