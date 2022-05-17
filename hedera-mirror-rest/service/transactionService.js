@@ -62,13 +62,15 @@ class TransactionService extends BaseService {
       ${EthereumTransaction.getFullName(EthereumTransaction.CALL_DATA)},
       ${EthereumTransaction.getFullName(EthereumTransaction.CALL_DATA_ID)},
       ${EthereumTransaction.getFullName(EthereumTransaction.GAS_PRICE)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.GAS_LIMIT)},
       ${EthereumTransaction.getFullName(EthereumTransaction.MAX_FEE_PER_GAS)},
       ${EthereumTransaction.getFullName(EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS)},
       ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_R)},
       ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)},
       ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)} as ethType,
       ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} as ethHash,
-      ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)}
+      ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.VALUE)}
   `;
 
   static transactionDetailsFromTimestampQuery = `${this.ethTransactionTableCTE}

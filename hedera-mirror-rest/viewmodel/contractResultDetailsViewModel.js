@@ -26,6 +26,8 @@ const ContractResultStateChangeViewModel = require('./contractResultStateChangeV
 const ContractResultViewModel = require('./contractResultViewModel');
 const {TransactionResult, TransactionType} = require('../model');
 const utils = require('../utils');
+const EntityId = require('../entityId');
+const long = require('long');
 
 /**
  * Contract result details view model
@@ -75,17 +77,17 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       txHash = _.isNil(transaction.ethHash) ? transaction.transactionHash : transaction.ethHash;
 
       if (!_.isNil(transaction.value)) {
-        this.amount = transaction.value;
+        this.amount = long.fromValue(Buffer.from(transaction.value, 'utf8').toString()).toNumber();
       }
 
-      if (!_.isNil(contractResult.sender_id)) {
-        this.from = contractResult.sender_id;
+      if (!_.isNil(contractResult.senderId)) {
+        this.from = EntityId.parse(contractResult.senderId).toEvmAddress();
       }
 
       if (!_.isNil(transaction.call_data)) {
-        this.function_parameters = transaction.call_data;
+        this.function_parameters = utils.addHexPrefix(transaction.call_data);
       } else {
-        if (_.isNil(contractResult.function_parameters)) {
+        if (!contractResult.functionParameters.length && !_.isNil(fileData)) {
           this.function_parameters = utils.toHexString(fileData.fileData, true);
         }
       }

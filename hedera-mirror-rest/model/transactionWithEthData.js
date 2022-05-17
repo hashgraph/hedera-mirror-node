@@ -29,9 +29,11 @@ class TransactionWithEthData extends Transaction {
   constructor(txWithEthData) {
     super(txWithEthData);
     this.access_list = txWithEthData.access_list;
+    this.call_data = txWithEthData.call_data;
     this.call_data_id = txWithEthData.call_data_id;
     this.chain_id = txWithEthData.chain_id;
     this.gas_price = txWithEthData.gas_price;
+    this.gas_limit = txWithEthData.gas_limit;
     this.max_fee_per_gas = txWithEthData.max_fee_per_gas;
     this.max_priority_fee_per_gas = txWithEthData.max_priority_fee_per_gas;
     this.signature_r = txWithEthData.signature_r;

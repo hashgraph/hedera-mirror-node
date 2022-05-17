@@ -805,6 +805,7 @@ const addContractResult = async (contractResultInput) => {
     'gas_limit',
     'gas_used',
     'payer_account_id',
+    'sender_id',
   ];
 
   const contractResult = {
