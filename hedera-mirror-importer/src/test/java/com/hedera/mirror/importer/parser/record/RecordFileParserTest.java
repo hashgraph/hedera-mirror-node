@@ -36,7 +36,10 @@ import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.SignatureMap;
+import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -255,9 +258,16 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         TransactionRecord transactionRecord = TransactionRecord.newBuilder()
                 .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
                 .build();
+        SignedTransaction signedTransaction = SignedTransaction.newBuilder()
+                .setBodyBytes(transactionBody.toByteString())
+                .setSigMap(SignatureMap.newBuilder().build())
+                .build();
+        Transaction transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(signedTransaction.toByteString())
+                .build();
         return RecordItem.builder()
                 .record(transactionRecord)
-                .transactionBody(transactionBody)
+                .transactionBytes(transaction.toByteArray())
                 .build();
     }
 
