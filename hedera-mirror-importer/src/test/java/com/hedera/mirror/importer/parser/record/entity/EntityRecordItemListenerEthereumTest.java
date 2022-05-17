@@ -161,7 +161,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
             assertThat(entityRepository.findById(sender.getId()))
                     .get()
                     .extracting(Entity::getEthereumNonce)
-                    .isEqualTo(ethTransaction.getNonce());
+                    .isEqualTo(ethTransaction.getNonce() + 1);
         }
     }
 }

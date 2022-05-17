@@ -708,6 +708,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         if (null != submitKey) {
             topic.setSubmitKey(submitKey.toByteArray());
         }
+        topic.setEthereumNonce(0L);
         topic.setMemo(memo);
         topic.setType(EntityType.TOPIC);
         return topic;
