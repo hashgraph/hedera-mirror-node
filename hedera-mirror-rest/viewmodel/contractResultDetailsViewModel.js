@@ -59,19 +59,19 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.transaction_index = transaction.index;
     this.nonce = transaction.nonce;
 
-    this.access_list = transaction.accessList ? utils.addHexPrefix(transaction.accessList) : null;
-    this.chain_id = transaction.chainId ? utils.addHexPrefix(transaction.chainId) : null;
-    this.gas_price = transaction.gasPrice ? utils.addHexPrefix(transaction.gasPrice) : null;
-    this.max_fee_per_gas = transaction.maxFeePerGas ? utils.addHexPrefix(transaction.maxFeePerGas) : null;
-    this.max_priority_fee_per_gas = transaction.maxPriorityFeePerGas
-      ? utils.addHexPrefix(transaction.maxPriorityFeePerGas)
-      : null;
-    this.r = transaction.signatureR ? utils.addHexPrefix(transaction.signatureR) : null;
-    this.s = transaction.signatureS ? utils.addHexPrefix(transaction.signatureS) : null;
-    this.type = transaction.ethType || null;
-    this.v = transaction.recoveryId;
-
     if (`${transaction.type}` === TransactionType.getProtoId('ETHEREUMTRANSACTION')) {
+      this.access_list = transaction.accessList ? utils.addHexPrefix(transaction.accessList) : null;
+      this.chain_id = transaction.chainId ? utils.addHexPrefix(transaction.chainId) : null;
+      this.gas_price = transaction.gasPrice ? utils.addHexPrefix(transaction.gasPrice) : null;
+      this.max_fee_per_gas = transaction.maxFeePerGas ? utils.addHexPrefix(transaction.maxFeePerGas) : null;
+      this.max_priority_fee_per_gas = transaction.maxPriorityFeePerGas
+        ? utils.addHexPrefix(transaction.maxPriorityFeePerGas)
+        : null;
+      this.r = transaction.signatureR ? utils.addHexPrefix(transaction.signatureR) : null;
+      this.s = transaction.signatureS ? utils.addHexPrefix(transaction.signatureS) : null;
+      this.type = transaction.ethType || null;
+      this.v = transaction.recoveryId;
+
       txHash = _.isNil(transaction.ethHash) ? transaction.transactionHash : transaction.ethHash;
 
       if (!_.isNil(transaction.value)) {
@@ -93,6 +93,16 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       if (!_.isNil(transaction.gasLimit)) {
         this.gas_limit = transaction.gasLimit;
       }
+    } else {
+      this.access_list = null;
+      this.chain_id = null;
+      this.gas_price = null;
+      this.max_fee_per_gas = null;
+      this.max_priority_fee_per_gas = null;
+      this.r = null;
+      this.s = null;
+      this.type = null;
+      this.v = null;
     }
 
     this.hash = utils.toHexString(txHash, true);

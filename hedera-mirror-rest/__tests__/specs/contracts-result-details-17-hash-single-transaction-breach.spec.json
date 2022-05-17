@@ -84,22 +84,22 @@
     "from": "0x0000000000000000000000000000000000001f41",
     "function_parameters": "0x0707",
     "gas_limit": 987654,
-    "gas_price": "0x4a817c800",
+    "gas_price": null,
     "gas_used": 123,
     "hash": "0x3531396130303866616264653464",
     "logs": [],
     "max_fee_per_gas": null,
     "max_priority_fee_per_gas": null,
     "nonce": 0,
-    "r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
+    "r": null,
     "result": "SUCCESS",
-    "s": "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",
+    "s": null,
     "state_changes": [],
     "status": "0x1",
     "timestamp": "167654.000123456",
     "to": "0x0000000000000000000000000000000000001389",
     "transaction_index": 1,
-    "type": 2,
-    "v": 1
+    "type": null,
+    "v": null
   }
 }
