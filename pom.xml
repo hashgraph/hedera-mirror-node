@@ -73,7 +73,7 @@
         <hedera-protobuf.version>0.26.0-alpha.1</hedera-protobuf.version>
         <hibernate-types.version>2.16.2</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
-        <java.version>11</java.version>
+        <java.version>17</java.version>
         <javax.version>1</javax.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.1</msgpack.version>
