@@ -21,12 +21,13 @@ package com.hedera.mirror.common.aggregator;
  */
 
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.ArrayUtils;
 
 @NoArgsConstructor
 public class LogsBloomAggregator {
 
     public static final int BYTE_SIZE = 256;
-    private byte[] aggregatedBlooms = new byte[0];
+    private byte[] aggregatedBlooms = ArrayUtils.EMPTY_BYTE_ARRAY;
 
     public LogsBloomAggregator aggregate(byte[] bloom) {
         if (bloom == null) {
