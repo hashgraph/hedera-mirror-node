@@ -1519,11 +1519,11 @@ components:
               type: string
               example: '0x4a817c800'
             max_fee_per_gas:
-              description: The max_fee_per_gas of the wrapped ethereum transaction
+              description: The hex encoded max_fee_per_gas of the wrapped ethereum transaction
               type: string
               example: '0x5'
             max_priority_fee_per_gas:
-              description: The max_priority_fee_per_gas of the wrapped ethereum transaction
+              description: The hex encoded max_priority_fee_per_gas of the wrapped ethereum transaction
               type: string
               example: '0x100'
             nonce:
@@ -1547,9 +1547,9 @@ components:
               type: integer
               example: 1
             type:
-              description: The type of the wrapped ethereum transaction
+              description: The type of the wrapped ethereum transaction, 0 (Pre-Eip1559) or 2 (Post-Eip1559)
               type: integer
-              example: 1
+              example: 2
     ContractResultLog:
       type: object
       properties:

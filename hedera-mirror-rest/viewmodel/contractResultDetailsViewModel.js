@@ -59,17 +59,17 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.transaction_index = transaction.index;
     this.nonce = transaction.nonce;
 
-    this.access_list = transaction.access_list ? utils.addHexPrefix(transaction.access_list) : null;
-    this.chain_id = transaction.chain_id ? utils.addHexPrefix(transaction.chain_id) : null;
-    this.gas_price = transaction.gas_price ? utils.addHexPrefix(transaction.gas_price) : null;
-    this.max_fee_per_gas = transaction.max_fee_per_gas ? utils.addHexPrefix(transaction.max_fee_per_gas) : null;
-    this.max_priority_fee_per_gas = transaction.max_priority_fee_per_gas
-      ? utils.addHexPrefix(transaction.max_priority_fee_per_gas)
+    this.access_list = transaction.accessList ? utils.addHexPrefix(transaction.accessList) : null;
+    this.chain_id = transaction.chainId ? utils.addHexPrefix(transaction.chainId) : null;
+    this.gas_price = transaction.gasPrice ? utils.addHexPrefix(transaction.gasPrice) : null;
+    this.max_fee_per_gas = transaction.maxFeePerGas ? utils.addHexPrefix(transaction.maxFeePerGas) : null;
+    this.max_priority_fee_per_gas = transaction.maxPriorityFeePerGas
+      ? utils.addHexPrefix(transaction.maxPriorityFeePerGas)
       : null;
-    this.r = transaction.signature_r ? utils.addHexPrefix(transaction.signature_r) : null;
-    this.s = transaction.signature_s ? utils.addHexPrefix(transaction.signature_s) : null;
+    this.r = transaction.signatureR ? utils.addHexPrefix(transaction.signatureR) : null;
+    this.s = transaction.signatureS ? utils.addHexPrefix(transaction.signatureS) : null;
     this.type = transaction.ethType || null;
-    this.v = transaction.recovery_id;
+    this.v = transaction.recoveryId;
 
     if (`${transaction.type}` === TransactionType.getProtoId('ETHEREUMTRANSACTION')) {
       txHash = _.isNil(transaction.ethHash) ? transaction.transactionHash : transaction.ethHash;
@@ -82,16 +82,16 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
         this.from = EntityId.parse(contractResult.senderId).toEvmAddress();
       }
 
-      if (!_.isNil(transaction.call_data)) {
-        this.function_parameters = utils.addHexPrefix(transaction.call_data);
+      if (!_.isNil(transaction.callData)) {
+        this.function_parameters = utils.addHexPrefix(transaction.callData);
       } else {
         if (!contractResult.functionParameters.length && !_.isNil(fileData)) {
-          this.function_parameters = utils.toHexString(fileData.fileData, true);
+          this.function_parameters = utils.toHexString(fileData.file_data, true);
         }
       }
 
-      if (!_.isNil(transaction.gas_limit)) {
-        this.gas_limit = transaction.gas_limit;
+      if (!_.isNil(transaction.gasLimit)) {
+        this.gas_limit = transaction.gasLimit;
       }
     }
 

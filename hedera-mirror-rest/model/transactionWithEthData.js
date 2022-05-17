@@ -28,17 +28,17 @@ class TransactionWithEthData extends Transaction {
    */
   constructor(txWithEthData) {
     super(txWithEthData);
-    this.access_list = txWithEthData.access_list;
-    this.call_data = txWithEthData.call_data;
-    this.call_data_id = txWithEthData.call_data_id;
-    this.chain_id = txWithEthData.chain_id;
-    this.gas_price = txWithEthData.gas_price;
-    this.gas_limit = txWithEthData.gas_limit;
-    this.max_fee_per_gas = txWithEthData.max_fee_per_gas;
-    this.max_priority_fee_per_gas = txWithEthData.max_priority_fee_per_gas;
-    this.signature_r = txWithEthData.signature_r;
-    this.signature_s = txWithEthData.signature_s;
-    this.recovery_id = txWithEthData.recovery_id;
+    this.accessList = txWithEthData.access_list;
+    this.callData = txWithEthData.call_data;
+    this.callDataId = txWithEthData.call_data_id;
+    this.chainId = txWithEthData.chain_id;
+    this.gasPrice = txWithEthData.gas_price;
+    this.gasLimit = txWithEthData.gas_limit;
+    this.maxFeePerGas = txWithEthData.max_fee_per_gas;
+    this.maxPriorityFeePerGas = txWithEthData.max_priority_fee_per_gas;
+    this.signatureR = txWithEthData.signature_r;
+    this.signatureS = txWithEthData.signature_s;
+    this.recoveryId = txWithEthData.recovery_id;
     this.value = txWithEthData.value;
     this.ethType = txWithEthData.ethtype;
     this.ethHash = txWithEthData.ethhash;

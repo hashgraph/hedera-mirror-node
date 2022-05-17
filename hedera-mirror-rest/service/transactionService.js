@@ -39,39 +39,39 @@ class TransactionService extends BaseService {
 
   static ethTransactionTableCTE = `with ${EthereumTransaction.tableAlias} as (
       select
-        ${EthereumTransaction.CONSENSUS_TIMESTAMP},
         ${EthereumTransaction.ACCESS_LIST},
+        ${EthereumTransaction.CALL_DATA},
+        ${EthereumTransaction.CALL_DATA_ID},
         ${EthereumTransaction.CHAIN_ID},
+        ${EthereumTransaction.CONSENSUS_TIMESTAMP},
+        ${EthereumTransaction.GAS_LIMIT},
         ${EthereumTransaction.GAS_PRICE},
+        ${EthereumTransaction.HASH},
         ${EthereumTransaction.MAX_FEE_PER_GAS},
         ${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS},
         ${EthereumTransaction.SIGNATURE_R},
         ${EthereumTransaction.SIGNATURE_S},
         ${EthereumTransaction.TYPE},
         ${EthereumTransaction.RECOVERY_ID},
-        ${EthereumTransaction.VALUE},
-        ${EthereumTransaction.HASH},
-        ${EthereumTransaction.CALL_DATA},
-        ${EthereumTransaction.CALL_DATA_ID},
-        ${EthereumTransaction.GAS_LIMIT}
+        ${EthereumTransaction.VALUE}
       from ${EthereumTransaction.tableName}
       where ${ethTransactionReplaceString}
   )`;
 
   static ethTransactionSelectedFields = `
       ${EthereumTransaction.getFullName(EthereumTransaction.ACCESS_LIST)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.CHAIN_ID)},
       ${EthereumTransaction.getFullName(EthereumTransaction.CALL_DATA)},
       ${EthereumTransaction.getFullName(EthereumTransaction.CALL_DATA_ID)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.GAS_PRICE)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.CHAIN_ID)},
       ${EthereumTransaction.getFullName(EthereumTransaction.GAS_LIMIT)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.GAS_PRICE)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} as ethHash,
       ${EthereumTransaction.getFullName(EthereumTransaction.MAX_FEE_PER_GAS)},
       ${EthereumTransaction.getFullName(EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)},
       ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_R)},
       ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)},
       ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)} as ethType,
-      ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} as ethHash,
-      ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)},
       ${EthereumTransaction.getFullName(EthereumTransaction.VALUE)}
   `;
 
@@ -113,7 +113,7 @@ class TransactionService extends BaseService {
       and ${Transaction.VALID_START_NS} = $2`;
 
   static transactionDetailsFromEthHashQuery = `${this.selectTransactionDetailsBaseQuery}
-    where ${EthereumTransaction.tableAlias}.${EthereumTransaction.HASH} = $1`;
+    where ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} = $1`;
 
   /**
    * Retrieves the transaction for the given timestamp

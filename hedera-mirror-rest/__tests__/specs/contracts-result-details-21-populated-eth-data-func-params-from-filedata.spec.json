@@ -158,7 +158,7 @@
     "created_contract_ids": ["0.0.7001"],
     "error_message": null,
     "from": "0x0000000000000000000000000000000000001b59",
-    "function_parameters": "0x0c0b0a090807ff80",
+    "function_parameters": "0x0c0b0a0908075c3337375c323030",
     "gas_limit": 15000,
     "gas_price": "0x4a817c800",
     "gas_used": 123,
@@ -215,7 +215,7 @@
     "timestamp": "167654.000123456",
     "to": "0x0000000000000000000000000000000000001389",
     "transaction_index": 1,
-    "type": 1,
+    "type": 2,
     "v": 1
   }
 }

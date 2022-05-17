@@ -833,8 +833,8 @@ class ContractController extends BaseController {
     }
 
     let fileData = null;
-    if (!_.isNil(transaction.call_data_id)) {
-      fileData = await FileDataService.getFileDataByEntityId(transaction.call_data_id);
+    if (!_.isNil(transaction.callDataId)) {
+      fileData = await FileDataService.getLatestFileDataContents(transaction.callDataId, {whereQuery: []});
     }
 
     if (_.isNil(contractResults[0].callResult)) {
@@ -939,8 +939,8 @@ class ContractController extends BaseController {
     ]);
 
     let fileData = null;
-    if (!_.isNil(transaction.call_data_id)) {
-      fileData = await FileDataService.getFileDataByEntityId(transaction.call_data_id);
+    if (!_.isNil(transaction.callDataId)) {
+      fileData = await FileDataService.getLatestFileDataContents(transaction.callDataId, {whereQuery: []});
     }
 
     if (contractResults.length === 0) {

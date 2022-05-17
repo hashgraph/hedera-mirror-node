@@ -442,7 +442,7 @@ const addEthereumTransaction = async (ethereumTransaction) => {
     signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
     signature_v: '0x1b',
     to_address: null,
-    type: 1,
+    type: 2,
     value: '0x0',
   };
 
