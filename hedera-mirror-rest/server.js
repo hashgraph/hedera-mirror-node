@@ -106,8 +106,8 @@ if (config.db.tls.enabled) {
 
 const Pool = getPoolClass(isTestEnv());
 const pool = new Pool(poolConfig);
-pool.on('error', (error, client) => {
-  console.error('error event emitted from pg pool', {error: error.stack || error, client});
+pool.on('error', (error) => {
+  logger.error(`error event emitted on pg pool. ${error.stack}`);
 });
 global.pool = pool;
 

@@ -164,7 +164,6 @@ const isValidEthHash = (hash) => {
   return ethHashPattern.test(hash);
 };
 
-
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
 
 const addressBookFileIdPattern = ['101', '0.101', '0.0.101', '102', '0.102', '0.0.102'];
@@ -1206,7 +1205,7 @@ const getPoolClass = (mock = false) => {
     let result;
     params = Array.isArray(params) ? params : [params];
     const clientErrorCallback = (error) => {
-      console.error('error event emitted from pg client', {error: error.stack || error, client});
+      logger.error(`error event emitted on pg pool. ${error.stack}`);
     };
     try {
       if (!preQueryHint) {
