@@ -1506,6 +1506,50 @@ components:
               $ref: '#/components/schemas/ContractResultLogs'
             state_changes:
               $ref: '#/components/schemas/ContractResultStateChanges'
+            access_list:
+              description: The hex encoded access_list of the wrapped ethereum transaction
+              type: string
+              example: '0xabcd'
+            chain_id:
+              description: The hex encoded chain_id of the wrapped ethereum transaction              
+              type: string
+              example: '0x0127'
+            gas_price:
+              description: The hex encoded gas_price of the wrapped ethereum transaction
+              type: string
+              example: '0x4a817c800'
+            max_fee_per_gas:
+              description: The max_fee_per_gas of the wrapped ethereum transaction
+              type: string
+              example: '0x5'
+            max_priority_fee_per_gas:
+              description: The max_priority_fee_per_gas of the wrapped ethereum transaction
+              type: string
+              example: '0x100'
+            nonce:
+              description: The nonce of the wrapped ethereum transaction
+              type: integer
+              example: 1
+            r:
+              description: The hex encoded signature_r of the wrapped ethereum transaction
+              type: string
+              example: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c043'
+            s:
+              description: The hex encoded signature_s of the wrapped ethereum transaction
+              type: string
+              example: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b355'
+            v:
+              description: The recovery_id of the wrapped ethereum transaction
+              type: integer
+              example: 1              
+            transaction_index:
+              description: The position of the transaction in the block
+              type: integer
+              example: 1
+            type:
+              description: The type of the wrapped ethereum transaction
+              type: integer
+              example: 1
     ContractResultLog:
       type: object
       properties:
