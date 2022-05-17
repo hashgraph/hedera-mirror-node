@@ -55,7 +55,6 @@
     </parent>
 
     <properties>
-        <bouncycastle.version>1.71</bouncycastle.version>
         <besu.version>22.4.0</besu.version>
         <dependency-check.version>7.1.0</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
