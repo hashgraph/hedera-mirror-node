@@ -36,12 +36,12 @@ import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -124,14 +124,16 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             }
 
             recordStreamFileListener.onStart();
-            long count = recordItems.filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
+
+            long count = recordItems.doOnNext(recordFile::processItem)
+                    .filter(r -> dateRangeFilter.filter(r.getConsensusTimestamp()))
                     .doOnNext(recordItemListener::onItem)
                     .doOnNext(this::recordMetrics)
                     .count()
                     .block();
 
-            recordFile.setCount(count);
-            recordFile.setLoadEnd(Instant.now().getEpochSecond());
+            recordFile.finishLoad(count);
+
             recordStreamFileListener.onEnd(recordFile);
         } catch (Exception ex) {
             recordStreamFileListener.onError();
