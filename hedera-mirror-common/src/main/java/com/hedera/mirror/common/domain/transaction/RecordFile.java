@@ -143,7 +143,7 @@ public class RecordFile implements StreamFile<RecordItem> {
 
     public void processItem(final RecordItem recordItem) {
         // if the record item is not the parent.
-        if (recordItem.getRecord().getTransactionID().getNonce() == 0L) {
+        if (recordItem.getRecord().getTransactionID().getNonce() != 0L) {
             return;
         }
         var contractResult = getContractFunctionResult(recordItem.getRecord());
