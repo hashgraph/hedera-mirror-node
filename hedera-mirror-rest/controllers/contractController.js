@@ -766,12 +766,9 @@ class ContractController extends BaseController {
       timestampBound.upper.operator == utils.opsMap.lte
     ) {
       // invalid ops: index = & timestamp >= & timestamp <=
-      throw new InvalidArgumentError('Unsupported combination');
-    }
-
-    if (indexBound.hasEqual() && timestampBound.hasEqual() && timestampBound.hasBound()) {
-      // invalid ops: index = & timestamp = & timestamp >/>=/</<=
-      throw new InvalidArgumentError('Cannot support both range and equal');
+      throw new InvalidArgumentError(
+        'Index and timestamp does not match. Timestamp range cannot have both gte and lte'
+      );
     }
 
     if (
@@ -780,7 +777,7 @@ class ContractController extends BaseController {
       (!timestampBound.hasLower() || timestampBound.lower.operator != utils.opsMap.gte)
     ) {
       // bounds should match index >/>= & timestamp =/>=
-      throw new InvalidArgumentError('Unsupported combination');
+      throw new InvalidArgumentError('Index and timestamp does not match. The timestamp must have gte or eq');
     }
 
     if (
@@ -789,7 +786,7 @@ class ContractController extends BaseController {
       (!timestampBound.hasUpper() || timestampBound.upper.operator != utils.opsMap.lte)
     ) {
       // bounds should match index </<= & timestamp =/<=
-      throw new InvalidArgumentError('Unsupported combination');
+      throw new InvalidArgumentError('Index and timestamp does not match. The timestamp must have lte or eq');
     }
 
     if (
@@ -799,7 +796,7 @@ class ContractController extends BaseController {
       (!timestampBound.hasUpper() || timestampBound.upper.operator != utils.opsMap.lte)
     ) {
       // bounds should match index = & timestamp =/>=/<=
-      throw new InvalidArgumentError('Unsupported combination');
+      throw new InvalidArgumentError('Index and timestamp does not match. The timestamp must have gte, lte or eq');
     }
 
     const {paginationFilters, paginationOrder} = this.getContractLogsPaginationFilters(

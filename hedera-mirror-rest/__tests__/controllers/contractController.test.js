@@ -1774,7 +1774,25 @@ describe('extractContractLogsPaginationQuery', () => {
           },
         ],
       },
-      errorMessage: 'Unsupported combination',
+      errorMessage: 'Index and timestamp does not match. Timestamp range cannot have both gte and lte',
+    },
+    {
+      name: 'index = 0 & timestamp > 1',
+      input: {
+        filters: [
+          {
+            key: constants.filterKeys.INDEX,
+            operator: utils.opsMap.eq,
+            value: '0',
+          },
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.gt,
+            value: '1',
+          },
+        ],
+      },
+      errorMessage: 'Index and timestamp does not match. The timestamp must have gte, lte or eq',
     },
     {
       name: 'index > 0 & timestamp < 1',
@@ -1792,7 +1810,7 @@ describe('extractContractLogsPaginationQuery', () => {
           },
         ],
       },
-      errorMessage: 'Unsupported combination',
+      errorMessage: 'Index and timestamp does not match. The timestamp must have gte or eq',
     },
   ];
   specs.forEach((spec) => {
