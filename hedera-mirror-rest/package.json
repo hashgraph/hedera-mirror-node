@@ -59,6 +59,7 @@
     "@hashgraph/proto",
     "asn1js",
     "aws-sdk",
+    "bigint-buffer",
     "body-parser",
     "compression",
     "cors",

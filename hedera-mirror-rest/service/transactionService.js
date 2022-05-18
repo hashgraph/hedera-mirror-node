@@ -43,7 +43,7 @@ class TransactionService extends BaseService {
         ${EthereumTransaction.CALL_DATA},
         ${EthereumTransaction.CALL_DATA_ID},
         ${EthereumTransaction.CHAIN_ID},
-        ${EthereumTransaction.CONSENSUS_TIMESTAMP},
+        ${EthereumTransaction.CONSENSUS_TIMESTAMP} as ethConsensus,
         ${EthereumTransaction.GAS_LIMIT},
         ${EthereumTransaction.GAS_PRICE},
         ${EthereumTransaction.HASH},
@@ -71,9 +71,7 @@ class TransactionService extends BaseService {
       ${EthereumTransaction.tableAlias}.*
     from ${Transaction.tableName} ${Transaction.tableAlias}
     left join ${EthereumTransaction.tableAlias}
-    on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ${EthereumTransaction.getFullName(
-    EthereumTransaction.CONSENSUS_TIMESTAMP
-  )}
+    on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ethConsensus
     where ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = $1`;
 
   static selectTransactionDetailsBaseQuery = `${this.ethTransactionTableCTE}
@@ -89,9 +87,7 @@ class TransactionService extends BaseService {
     ${EthereumTransaction.tableAlias}.*
     from ${Transaction.tableName} ${Transaction.tableAlias}
     left join ${EthereumTransaction.tableAlias}
-    on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ${EthereumTransaction.getFullName(
-    EthereumTransaction.CONSENSUS_TIMESTAMP
-  )}
+    on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ethConsensus
     `;
 
   static transactionDetailsFromTransactionIdQuery = `${this.selectTransactionDetailsBaseQuery}
