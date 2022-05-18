@@ -59,24 +59,6 @@ class TransactionService extends BaseService {
       where ${ethTransactionReplaceString}
   )`;
 
-  static ethTransactionSelectedFields = `
-      ${EthereumTransaction.getFullName(EthereumTransaction.ACCESS_LIST)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.CALL_DATA)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.CALL_DATA_ID)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.CHAIN_ID)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.GAS_LIMIT)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.GAS_PRICE)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} as ethHash,
-      ${EthereumTransaction.getFullName(EthereumTransaction.MAX_FEE_PER_GAS)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.NONCE)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_R)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.VALUE)}
-  `;
-
   static transactionDetailsFromTimestampQuery = `${this.ethTransactionTableCTE}
     select
       ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
@@ -86,7 +68,7 @@ class TransactionService extends BaseService {
         ${Transaction.getFullName(Transaction.TRANSACTION_HASH)}
       ) as ${Transaction.TRANSACTION_HASH},
       ${Transaction.getFullName(Transaction.INDEX)},
-      ${this.ethTransactionSelectedFields}
+      ${EthereumTransaction.tableAlias}.*
     from ${Transaction.tableName} ${Transaction.tableAlias}
     left join ${EthereumTransaction.tableAlias}
     on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ${EthereumTransaction.getFullName(
@@ -104,7 +86,7 @@ class TransactionService extends BaseService {
       ${Transaction.getFullName(Transaction.TRANSACTION_HASH)}
     ) as ${Transaction.TRANSACTION_HASH},
     ${Transaction.getFullName(Transaction.INDEX)},
-    ${this.ethTransactionSelectedFields}
+    ${EthereumTransaction.tableAlias}.*
     from ${Transaction.tableName} ${Transaction.tableAlias}
     left join ${EthereumTransaction.tableAlias}
     on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ${EthereumTransaction.getFullName(
