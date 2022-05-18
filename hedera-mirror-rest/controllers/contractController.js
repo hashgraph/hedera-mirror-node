@@ -669,7 +669,7 @@ class ContractController extends BaseController {
       if (timestampBound.hasLower()) {
         // split timestamp and index into 2 parts if both operators are compatible
         // timestamp >= & index =/>/>=
-        if (timestampBound.lower.operator == utils.opsMap.gte && (indexBound.hasEqual() || indexBound.hasLower())) {
+        if (timestampBound.lower.operator === utils.opsMap.gte && (indexBound.hasEqual() || indexBound.hasLower())) {
           lower.push(indexBound.lower, indexBound.equal, {...timestampBound.lower, operator: utils.opsMap.eq});
           upper.push({...timestampBound.lower, operator: utils.opsMap.gt});
         } else {
@@ -685,7 +685,7 @@ class ContractController extends BaseController {
       if (timestampBound.hasUpper()) {
         // split timestamp and index into 2 parts if both operators are compatible
         // timestamp <= & index =/</<=
-        if (timestampBound.upper.operator == utils.opsMap.lte && (indexBound.hasEqual() || indexBound.hasUpper())) {
+        if (timestampBound.upper.operator === utils.opsMap.lte && (indexBound.hasEqual() || indexBound.hasUpper())) {
           upper.push(indexBound.upper, indexBound.equal, {...timestampBound.upper, operator: utils.opsMap.eq});
           lower.push({...timestampBound.upper, operator: utils.opsMap.lt});
         } else {
@@ -761,9 +761,9 @@ class ContractController extends BaseController {
     if (
       indexBound.hasEqual() &&
       timestampBound.hasLower() &&
-      timestampBound.lower.operator == utils.opsMap.gte &&
+      timestampBound.lower.operator === utils.opsMap.gte &&
       timestampBound.hasUpper() &&
-      timestampBound.upper.operator == utils.opsMap.lte
+      timestampBound.upper.operator === utils.opsMap.lte
     ) {
       // invalid ops: index = & timestamp >= & timestamp <=
       throw new InvalidArgumentError(
@@ -774,7 +774,7 @@ class ContractController extends BaseController {
     if (
       indexBound.hasLower() &&
       !timestampBound.hasEqual() &&
-      (!timestampBound.hasLower() || timestampBound.lower.operator != utils.opsMap.gte)
+      (!timestampBound.hasLower() || timestampBound.lower.operator !== utils.opsMap.gte)
     ) {
       // bounds should match index >/>= & timestamp =/>=
       throw new InvalidArgumentError('Index and timestamp does not match. The timestamp must have gte or eq');
@@ -783,7 +783,7 @@ class ContractController extends BaseController {
     if (
       indexBound.hasUpper() &&
       !timestampBound.hasEqual() &&
-      (!timestampBound.hasUpper() || timestampBound.upper.operator != utils.opsMap.lte)
+      (!timestampBound.hasUpper() || timestampBound.upper.operator !== utils.opsMap.lte)
     ) {
       // bounds should match index </<= & timestamp =/<=
       throw new InvalidArgumentError('Index and timestamp does not match. The timestamp must have lte or eq');
@@ -792,8 +792,8 @@ class ContractController extends BaseController {
     if (
       indexBound.hasEqual() &&
       !timestampBound.hasEqual() &&
-      (!timestampBound.hasLower() || timestampBound.lower.operator != utils.opsMap.gte) &&
-      (!timestampBound.hasUpper() || timestampBound.upper.operator != utils.opsMap.lte)
+      (!timestampBound.hasLower() || timestampBound.lower.operator !== utils.opsMap.gte) &&
+      (!timestampBound.hasUpper() || timestampBound.upper.operator !== utils.opsMap.lte)
     ) {
       // bounds should match index = & timestamp =/>=/<=
       throw new InvalidArgumentError('Index and timestamp does not match. The timestamp must have gte, lte or eq');
@@ -805,10 +805,10 @@ class ContractController extends BaseController {
       timestampOrder
     );
 
-    paginationFilters.forEach((filters) => {
+    paginationFilters.forEach((pFilters) => {
       const nestedConditions = [...baseConditions];
 
-      filters.forEach((filter) => {
+      pFilters.forEach((filter) => {
         this.updateConditionsAndParamsWithValues(
           filter,
           params,

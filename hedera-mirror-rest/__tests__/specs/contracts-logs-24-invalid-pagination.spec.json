@@ -39,18 +39,36 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/contracts/0.0.1004/results/logs?index=gte:0&timestamp=lt:1639010142.000000000&limit=3&order=asc",
-    "/api/v1/contracts/0.0.1004/results/logs?index=0&timestamp=gt:1639010142.000000000&timestamp=lt:1639010151.000000000&limit=3&order=asc"
-  ],
-  "responseStatus": 400,
-  "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "Unsupported combination"
+  "tests": [
+    {
+      "url": [
+        "/api/v1/contracts/0.0.1004/results/logs?index=gte:0&timestamp=lt:1639010142.000000000&limit=3&order=asc"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Index and timestamp does not match. The timestamp must have gte or eq"
+            }
+          ]
         }
-      ]
+      }
+    },
+    {
+      "url": [
+        "/api/v1/contracts/0.0.1004/results/logs?index=0&timestamp=gt:1639010142.000000000&timestamp=lt:1639010151.000000000&limit=3&order=asc"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Index and timestamp does not match. The timestamp must have gte, lte or eq"
+            }
+          ]
+        }
+      }
     }
-  }
+  ]
 }

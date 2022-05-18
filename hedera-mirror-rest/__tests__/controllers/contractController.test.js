@@ -1536,7 +1536,7 @@ describe('extractContractLogsPaginationQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [['cl.contract_id = $1', 'cl.consensus_timestamp >= $2']],
+        conditions: [[defaultContractLogCondition, 'cl.consensus_timestamp >= $2']],
         paginationOrder: constants.orderFilterValues.ASC,
         params: [defaultContractId, '2'],
       },
@@ -1560,7 +1560,7 @@ describe('extractContractLogsPaginationQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [['cl.contract_id = $1', 'cl.consensus_timestamp >= $2', 'cl.consensus_timestamp <= $3']],
+        conditions: [[defaultContractLogCondition, 'cl.consensus_timestamp >= $2', 'cl.consensus_timestamp <= $3']],
         params: [defaultContractId, '2', '3'],
       },
     },
@@ -1584,8 +1584,8 @@ describe('extractContractLogsPaginationQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: [
-          ['cl.contract_id = $1', 'cl.index > $2', 'cl.consensus_timestamp = $3'],
-          ['cl.contract_id = $1', 'cl.consensus_timestamp > $4'],
+          [defaultContractLogCondition, 'cl.index > $2', 'cl.consensus_timestamp = $3'],
+          [defaultContractLogCondition, 'cl.consensus_timestamp > $4'],
         ],
         paginationOrder: constants.orderFilterValues.ASC,
         params: [defaultContractId, '1', '2', '2'],
@@ -1616,8 +1616,8 @@ describe('extractContractLogsPaginationQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: [
-          ['cl.contract_id = $1', 'cl.index > $2', 'cl.consensus_timestamp = $3'],
-          ['cl.contract_id = $1', 'cl.consensus_timestamp > $4', 'cl.consensus_timestamp <= $5'],
+          [defaultContractLogCondition, 'cl.index > $2', 'cl.consensus_timestamp = $3'],
+          [defaultContractLogCondition, 'cl.consensus_timestamp > $4', 'cl.consensus_timestamp <= $5'],
         ],
         paginationOrder: constants.orderFilterValues.ASC,
         params: [defaultContractId, '1', '2', '2', '3'],
@@ -1658,9 +1658,9 @@ describe('extractContractLogsPaginationQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: [
-          ['cl.contract_id = $1', 'cl.topic0 in ($2,$3)', 'cl.index > $4', 'cl.consensus_timestamp = $5'],
+          [defaultContractLogCondition, 'cl.topic0 in ($2,$3)', 'cl.index > $4', 'cl.consensus_timestamp = $5'],
           [
-            'cl.contract_id = $1',
+            defaultContractLogCondition,
             'cl.topic0 in ($2,$3)',
             'cl.consensus_timestamp > $6',
             'cl.consensus_timestamp <= $7',
