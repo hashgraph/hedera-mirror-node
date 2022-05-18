@@ -214,7 +214,7 @@ create table if not exists entity
     auto_renew_period                bigint            null,
     created_timestamp                bigint            null,
     deleted                          boolean           null,
-    ethereum_nonce                   bigint            null,
+    ethereum_nonce                   bigint  default 0 null,
     evm_address                      bytea             null,
     expiration_timestamp             bigint            null,
     id                               bigint            not null,

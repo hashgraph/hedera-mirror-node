@@ -21,20 +21,24 @@ package com.hedera.mirror.importer.repository.upsert;
  */
 
 import java.util.Comparator;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 import lombok.Value;
 
 @Value
-class UpsertColumn implements Comparable<UpsertColumn> {
+class ColumnMetadata implements Comparable<ColumnMetadata> {
 
     private final Object defaultValue;
-    private final boolean history;
+    private final Function<Object, Object> getter;
     private final boolean id;
     private final String name;
     private final boolean nullable;
+    private final BiConsumer<Object, Object> setter;
+    private final Class<?> type;
     private final boolean updatable;
 
     @Override
-    public int compareTo(UpsertColumn other) {
-        return Comparator.comparing(UpsertColumn::getName).compare(this, other);
+    public int compareTo(ColumnMetadata other) {
+        return Comparator.comparing(ColumnMetadata::getName).compare(this, other);
     }
 }
