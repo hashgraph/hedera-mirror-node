@@ -468,7 +468,7 @@ const addEthereumTransaction = async (ethereumTransaction) => {
     'to_address',
     'value',
   ];
-  for (let field of byteaFields) {
+  for (const field of byteaFields) {
     if (!_.isNull(ethTx[field])) {
       const stringValue = ethTx[field].toString();
       ethTx[field] = Buffer.from(stringValue.replace(/^0x/, '').padStart(2, '0'), 'hex');
