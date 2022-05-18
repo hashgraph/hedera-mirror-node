@@ -906,7 +906,7 @@ class ContractController extends BaseController {
     let transactions = [];
     // When getting transactions, exclude duplicate transactions. there can be at most one
     if (utils.isValidEthHash(transactionIdOrHash)) {
-      const ethHash = transactionIdOrHash.replace('0x', '');
+      const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
       // get transactions using ethereum hash and nonce
       transactions = await TransactionService.getTransactionDetailsFromEthHash(ethHash, duplicateTransactionResult);
     } else {

@@ -78,7 +78,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     if (`${transaction.type}` === TransactionType.getProtoId('ETHEREUMTRANSACTION')) {
       this.access_list = utils.toHexStringNonQuantity(transaction.accessList);
-      this.amount = parseInt(transaction.value.toString('hex'), 16);
+      this.amount = transaction.value.readBigInt64BE();
       this.block_gas_used = recordFile.gasUsed;
       this.chain_id = utils.toHexStringQuantity(transaction.chainId);
       this.from = !_.isNil(contractResult.senderId) ? EntityId.parse(contractResult.senderId).toEvmAddress() : null;

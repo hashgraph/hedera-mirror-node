@@ -470,8 +470,9 @@ const addEthereumTransaction = async (ethereumTransaction) => {
   ];
   for (let field of byteaFields) {
     if (!_.isNull(ethTx[field])) {
-      let stringValue = ethTx[field].toString();
-      ethTx[field] = Buffer.from(stringValue.replace(/^0x/, '').padStart(2, '0'), 'hex');
+      const stringValue = ethTx[field].toString();
+      const padLength = field === 'value' ? 16 : 2;
+      ethTx[field] = Buffer.from(stringValue.replace(/^0x/, '').padStart(padLength, '0'), 'hex');
     }
   }
 
