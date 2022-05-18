@@ -49,17 +49,20 @@ class Pool {
     this.NUM_NODES = 39;
 
     this.timeNow = Math.floor(new Date().getTime() / 1000);
+    this.on = jest.fn();
   }
 
   /**
    * Mocks Pool.connect, returns a client object with query and release methods
-   * @return {{release: release, query: (function(*, *): any)}}
+   * @return {{release: release, query: (function(*, *): any), on: on, off: off}}
    */
   connect() {
     const that = this;
     return {
       query: (...args) => that.query(...args),
-      release: () => {},
+      release: jest.fn(),
+      on: jest.fn(),
+      off: jest.fn(),
     };
   }
 

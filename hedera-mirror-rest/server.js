@@ -106,6 +106,9 @@ if (config.db.tls.enabled) {
 
 const Pool = getPoolClass(isTestEnv());
 const pool = new Pool(poolConfig);
+pool.on('error', (error) => {
+  logger.error(`error event emitted on pg pool. ${error.stack}`);
+});
 global.pool = pool;
 
 // Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
