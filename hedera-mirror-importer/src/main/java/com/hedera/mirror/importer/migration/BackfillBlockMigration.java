@@ -32,6 +32,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
+
 @Named
 @Log4j2
 public class BackfillBlockMigration extends AsyncJavaMigration {
@@ -66,10 +68,12 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
             "where consensus_end = :consensusEnd";
 
     private static final String SET_TRANSACTION_INDEX_SQL = "with indexed as ( " +
-            "select consensus_timestamp, row_number() over (order by consensus_timestamp) - 1 as index " +
-            "from transaction " +
-            "where consensus_timestamp >= :consensusStart and consensus_timestamp <= :consensusEnd " +
-            "order by consensus_timestamp) " +
+            "  select consensus_timestamp, row_number() over (order by consensus_timestamp) - 1 as index " +
+            "  from transaction " +
+            "  where consensus_timestamp >= :consensusStart" +
+            "    and consensus_timestamp <= :consensusEnd " +
+            "    and index is null " +
+            "  order by consensus_timestamp) " +
             "update transaction t " +
             "set index = indexed.index " +
             "from indexed " +
@@ -130,18 +134,9 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
     }
 
     private byte[] aggregateBloomFilters(List<byte[]> bloomFilters) {
-        if (bloomFilters.isEmpty()) {
-            return null;
-        }
-
-        var bloomFilter = bloomFilters.get(0);
-        for (var current : bloomFilters.subList(1, bloomFilters.size())) {
-            for (int i = 0; i < bloomFilter.length; i++) {
-                bloomFilter[i] |= current[i];
-            }
-        }
-
-        return bloomFilter;
+        var aggregator = new LogsBloomAggregator();
+        bloomFilters.forEach(aggregator::aggregate);
+        return aggregator.getBloom();
     }
 
     /**
@@ -176,13 +171,11 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
 
                 var bloomFilters = jdbcTemplate.queryForList(SELECT_BLOOM_FILTERS_IN_RECORD_FILE,
                         timestampRangeParameterSource, byte[].class);
-                var recordFileBloomFilter = aggregateBloomFilters(bloomFilters);
-                if (recordFileBloomFilter != null) {
-                    var bloomFilterParameterSource = new MapSqlParameterSource()
-                            .addValue("consensusEnd", timestampRange.getConsensusEnd())
-                            .addValue("bloomFilter", recordFileBloomFilter);
-                    jdbcTemplate.update(SET_RECORD_FILE_BLOOM_FILTER, bloomFilterParameterSource);
-                }
+                var aggregatedBloomFilter = aggregateBloomFilters(bloomFilters);
+                var bloomFilterParameterSource = new MapSqlParameterSource()
+                        .addValue("consensusEnd", timestampRange.getConsensusEnd())
+                        .addValue("bloomFilter", aggregatedBloomFilter);
+                jdbcTemplate.update(SET_RECORD_FILE_BLOOM_FILTER, bloomFilterParameterSource);
 
                 // gas used
                 jdbcTemplate.update(SET_RECORD_FILE_GAS_USED_SQL, timestampRangeParameterSource);

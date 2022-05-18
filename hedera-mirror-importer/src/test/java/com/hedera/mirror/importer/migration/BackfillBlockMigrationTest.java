@@ -48,6 +48,14 @@ public class BackfillBlockMigrationTest extends IntegrationTest {
 
     @Test
     void migrate() {
+        // given
+        // record files in timestamp ascending order:
+        // - a record file with gas and bloom filter populated
+        var recordFileIndex = domainBuilder.id();
+        var timestamp = domainBuilder.timestamp();
 
+        var recordFile1 = domainBuilder.recordFile().customize(r -> r.index(recordFileIndex)).persist();
+        // - a record file without gas / bloom filter and there is no contract result from the transactions
+        // - a record file without gas / bloom filter and there are contract results from the transactions
     }
 }
