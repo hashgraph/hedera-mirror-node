@@ -32,7 +32,7 @@ import com.hedera.mirror.common.domain.Aliasable;
 @javax.persistence.Entity
 @NoArgsConstructor
 @SuperBuilder
-public class Entity extends AbstractEntity implements Aliasable  {
+public class Entity extends AbstractEntity implements Aliasable {
 
     @Column(updatable = false)
     @ToString.Exclude

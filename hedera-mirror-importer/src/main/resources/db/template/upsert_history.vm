@@ -1,24 +1,25 @@
+## @formatter:off
 with existing as (
-  insert into $historyTable ($insertColumns)
-  select $existingColumns
-  from $finalTable e
-  join $tempTable t on $idJoin
-  group by ${idColumns}
-  order by ${idColumns}, e.timestamp_range
-  returning *
+  select $existingColumnsAs, t.*
+  from $tempTable t
+  left join $finalTable e on $idJoin
 ),
-history as (
+existing_history as (
+  insert into $historyTable ($insertColumns)
+  select distinct on ($conflictColumns) $existingColumns
+  from existing
+  where e_timestamp_range is not null and timestamp_range is not null
+  order by $conflictColumns, timestamp_range asc
+),
+temp_history as (
   insert into $historyTable ($insertColumns)
   select distinct $coalesceColumns
-  from $tempTable t
-  left join existing e on $idJoin
-  where upper(t.timestamp_range) is not null
-  returning *
+  from existing
+  where timestamp_range is not null and upper(timestamp_range) is not null
 )
 insert into $finalTable ($insertColumns)
 select $coalesceColumns
-from $tempTable t
-left join existing e on $idJoin
-where upper(t.timestamp_range) is null
+from existing
+where (e_timestamp_range is not null and timestamp_range is null) or (timestamp_range is not null and upper(timestamp_range) is null)
 on conflict ($conflictColumns)
 do update set $updateColumns

@@ -23,25 +23,19 @@ package com.hedera.mirror.importer.repository.upsert;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import javax.annotation.Resource;
-import org.assertj.core.api.InstanceOfAssertFactories;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.entity.CryptoAllowance;
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.NftAllowance;
-import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.importer.IntegrationTest;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
 
-    @Resource
-    private UpsertQueryGeneratorFactory factory;
-
-    @Resource
-    private NftUpsertQueryGenerator nftUpsertQueryGenerator;
+    private final UpsertQueryGeneratorFactory factory;
+    private final NftUpsertQueryGenerator nftUpsertQueryGenerator;
 
     @Test
     void unsupportedClass() {
@@ -59,108 +53,5 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
     void getGenericGenerator() {
         assertThat(factory.get(Contract.class)).isInstanceOf(GenericUpsertQueryGenerator.class);
     }
-
-    @Test
-    void contract() {
-        String allColumns = "auto_renew_account_id,auto_renew_period,created_timestamp,deleted,evm_address," +
-                "expiration_timestamp,file_id,id,initcode,key,max_automatic_token_associations,memo,num,obtainer_id," +
-                "permanent_removal,proxy_account_id,public_key,realm,shard,timestamp_range,type";
-        String nullableColumns = "auto_renew_account_id,auto_renew_period,created_timestamp,deleted,evm_address," +
-                "expiration_timestamp,file_id,initcode,key,max_automatic_token_associations,obtainer_id," +
-                "permanent_removal,proxy_account_id,public_key";
-        String updatableColumns = "auto_renew_account_id,auto_renew_period,deleted,expiration_timestamp,key," +
-                "max_automatic_token_associations,memo,obtainer_id,permanent_removal,proxy_account_id,public_key," +
-                "timestamp_range";
-
-        assertThat(factory.createEntity(Contract.class))
-                .isNotNull()
-                .returns("contract", UpsertEntity::getTableName)
-                .returns(true, e -> e.getUpsertable().history())
-                .returns("id", e -> e.columns(UpsertColumn::isId, "{0}"))
-                .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
-                .returns(allColumns, e -> e.columns("{0}"))
-                .returns(nullableColumns, e -> e.columns(UpsertColumn::isNullable, "{0}"))
-                .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
-                .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(21);
-    }
-
-    @Test
-    void entity() {
-        String allColumns = "alias,auto_renew_account_id,auto_renew_period,created_timestamp,deleted,ethereum_nonce," +
-                "evm_address,expiration_timestamp,id,key,max_automatic_token_associations,memo,num,proxy_account_id," +
-                "public_key,realm,receiver_sig_required,shard,submit_key,timestamp_range,type";
-        String nullableColumns = "alias,auto_renew_account_id,auto_renew_period,created_timestamp,deleted,ethereum_nonce," +
-                "evm_address,expiration_timestamp,key,max_automatic_token_associations,proxy_account_id,public_key," +
-                "receiver_sig_required,submit_key";
-        String updatableColumns = "auto_renew_account_id,auto_renew_period,deleted,ethereum_nonce,expiration_timestamp," +
-                "key,max_automatic_token_associations,memo,proxy_account_id,public_key,receiver_sig_required," +
-                "submit_key,timestamp_range";
-
-        assertThat(factory.createEntity(Entity.class))
-                .isNotNull()
-                .returns("entity", UpsertEntity::getTableName)
-                .returns(true, e -> e.getUpsertable().history())
-                .returns("id", e -> e.columns(UpsertColumn::isId, "{0}"))
-                .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
-                .returns(allColumns, e -> e.columns("{0}"))
-                .returns(nullableColumns, e -> e.columns(UpsertColumn::isNullable, "{0}"))
-                .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
-                .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(21);
-    }
-
-    @Test
-    void cryptoAllowance() {
-        String allColumns = "amount,owner,payer_account_id,spender,timestamp_range";
-        String updatableColumns = "amount,payer_account_id,timestamp_range";
-
-        assertThat(factory.createEntity(CryptoAllowance.class))
-                .isNotNull()
-                .returns("crypto_allowance", UpsertEntity::getTableName)
-                .returns(true, e -> e.getUpsertable().history())
-                .returns("owner,spender", e -> e.columns(UpsertColumn::isId, "{0}"))
-                .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
-                .returns(allColumns, e -> e.columns("{0}"))
-                .returns("", e -> e.columns(UpsertColumn::isNullable, "{0}"))
-                .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
-                .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(allColumns.split(",").length);
-    }
-
-    @Test
-    void nftAllowance() {
-        String allColumns = "approved_for_all,owner,payer_account_id,spender,timestamp_range,token_id";
-        String updatableColumns = "approved_for_all,payer_account_id,timestamp_range";
-
-        assertThat(factory.createEntity(NftAllowance.class))
-                .isNotNull()
-                .returns("nft_allowance", UpsertEntity::getTableName)
-                .returns(true, e -> e.getUpsertable().history())
-                .returns("owner,spender,token_id", e -> e.columns(UpsertColumn::isId, "{0}"))
-                .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
-                .returns(allColumns, e -> e.columns("{0}"))
-                .returns("", e -> e.columns(UpsertColumn::isNullable, "{0}"))
-                .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
-                .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(allColumns.split(",").length);
-    }
-
-    @Test
-    void tokenAllowance() {
-        String allColumns = "amount,owner,payer_account_id,spender,timestamp_range,token_id";
-        String updatableColumns = "amount,payer_account_id,timestamp_range";
-
-        assertThat(factory.createEntity(TokenAllowance.class))
-                .isNotNull()
-                .returns("token_allowance", UpsertEntity::getTableName)
-                .returns(true, e -> e.getUpsertable().history())
-                .returns("owner,spender,token_id", e -> e.columns(UpsertColumn::isId, "{0}"))
-                .returns("timestamp_range", e -> e.columns(UpsertColumn::isHistory, "{0}"))
-                .returns(allColumns, e -> e.columns("{0}"))
-                .returns("", e -> e.columns(UpsertColumn::isNullable, "{0}"))
-                .returns(updatableColumns, e -> e.columns(UpsertColumn::isUpdatable, "{0}"))
-                .extracting(UpsertEntity::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(allColumns.split(",").length);
-    }
 }
+
