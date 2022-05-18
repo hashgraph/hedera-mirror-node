@@ -20,47 +20,66 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.MirrorProperties;
+import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
+import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
+import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
 
-import com.hedera.mirror.importer.repository.RecordFileRepository;
-
+import com.google.common.base.Stopwatch;
+import java.util.Map;
+import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
-import javax.inject.Named;
 
-import java.util.Map;
-
-import static com.hedera.mirror.importer.MirrorProperties.*;
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.MAINNET;
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
-    private static final MigrationVersion MINIMUM_REQUIRED_VERSION = MigrationVersion.fromVersion("1.58.5");
+    static final Map<HederaNetwork, Pair<Long, Long>> BLOCK_NUMBER_MAPPING = Map.of(
+            TESTNET, Pair.of(1652845062036835000L, 21032844L),
+            MAINNET, Pair.of(1652844985819887057L, 32510021L)
+    );
 
     private final JdbcTemplate jdbcTemplate;
-
     private final MirrorProperties mirrorProperties;
-
-    private static final Map<HederaNetwork, Pair<Long, Long>> CONSENSUS_END_BLOCK_NUMBER_PER_NET =
-            Map.of(
-                    TESTNET, Pair.of(1651523056529307198L, 20494237L),
-                    MAINNET, Pair.of( 1651522971766268772L, 31850269L));
-
     private final RecordFileRepository recordFileRepository;
 
     @Override
+    public Integer getChecksum() {
+        return 2; // Change this if this migration should be rerun
+    }
+
+    @Override
+    public String getDescription() {
+        return "Updates the incorrect index from the record file table when necessary";
+    }
+
+    @Override
+    protected MigrationVersion getMinimumVersion() {
+        return MigrationVersion.fromVersion("1.58.5");
+    }
+
+    @Override
+    public MigrationVersion getVersion() {
+        return null;
+    }
+
+    @Override
     protected void doMigrate() {
-        if (shouldNotMigrateOnCurrentNetwork()) {
-            return ;
+        var network = mirrorProperties.getNetwork();
+        var consensusEndAndBlockNumber = BLOCK_NUMBER_MAPPING.get(network);
+
+        if (consensusEndAndBlockNumber == null) {
+            log.info("No block migration necessary for {} network", network);
+            return;
         }
-        var consensusEndAndBlockNumber = CONSENSUS_END_BLOCK_NUMBER_PER_NET.get(mirrorProperties.getNetwork());
+
         long correctConsensusEnd = consensusEndAndBlockNumber.getKey();
         long correctBlockNumber = consensusEndAndBlockNumber.getValue();
 
@@ -70,33 +89,10 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
                 .ifPresent(blockNumber -> updateRecordFilesBlockNumber(correctBlockNumber, blockNumber));
     }
 
-    private boolean shouldNotMigrateOnCurrentNetwork() {
-        HederaNetwork currentNetwork = mirrorProperties.getNetwork();
-        return currentNetwork != TESTNET && currentNetwork != MAINNET;
-    }
-
     private void updateRecordFilesBlockNumber(long correctBlockNumber, long incorrectBlockNumber) {
         long offset = correctBlockNumber - incorrectBlockNumber;
-        jdbcTemplate.update("update record_file set index = index + ?", offset);
-    }
-
-    @Override
-    public MigrationVersion getVersion() {
-        return null;
-    }
-
-    @Override
-    protected MigrationVersion getMinimumVersion() {
-        return MINIMUM_REQUIRED_VERSION;
-    }
-
-    @Override
-    public Integer getChecksum() {
-        return 1;
-    }
-
-    @Override
-    public String getDescription() {
-        return "Updates the incorrect index from the record file table when necessary.";
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        long count = jdbcTemplate.update("update record_file set index = index + ?", offset);
+        log.info("Updated {} blocks with offset {} in {}", count, offset, stopwatch);
     }
 }
