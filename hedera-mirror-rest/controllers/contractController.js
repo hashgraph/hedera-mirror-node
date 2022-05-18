@@ -843,7 +843,8 @@ class ContractController extends BaseController {
       logger.debug(`getContractResultsByTimestamp returning partial content`);
     }
 
-    res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
+    this.setContractResultsResponse(
+      res,
       contractResults[0],
       recordFile,
       transaction,
@@ -947,7 +948,8 @@ class ContractController extends BaseController {
       throw new NotFoundError();
     }
 
-    res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
+    this.setContractResultsResponse(
+      res,
       contractResults[0],
       recordFile,
       transaction,
@@ -961,6 +963,25 @@ class ContractController extends BaseController {
       res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
       logger.debug(`getContractResultsByTransactionId returning partial content`);
     }
+  };
+
+  setContractResultsResponse = (
+    res,
+    contractResult,
+    recordFile,
+    transaction,
+    contractLogs,
+    contractStateChanges,
+    fileData
+  ) => {
+    res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
+      contractResult,
+      recordFile,
+      transaction,
+      contractLogs,
+      contractStateChanges,
+      fileData
+    );
   };
 }
 

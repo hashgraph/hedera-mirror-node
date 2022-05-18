@@ -27,7 +27,6 @@ const ContractResultViewModel = require('./contractResultViewModel');
 const {TransactionResult, TransactionType} = require('../model');
 const utils = require('../utils');
 const EntityId = require('../entityId');
-const long = require('long');
 
 /**
  * Contract result details view model
@@ -50,8 +49,6 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
   constructor(contractResult, recordFile, transaction, contractLogs, contractStateChanges, fileData) {
     super(contractResult);
 
-    let txHash = transaction.transactionHash;
-
     this.block_hash = utils.addHexPrefix(recordFile.hash);
     this.block_number = recordFile.index;
     this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
@@ -59,10 +56,37 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.transaction_index = transaction.index;
     this.nonce = transaction.nonce;
 
+    this.state_changes = contractStateChanges.map(
+      (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
+    );
+    this.status =
+      transaction.result === ContractResultDetailsViewModel._FAIL_PROTO_ID
+        ? ContractResultDetailsViewModel._SUCCESS_RESULT
+        : ContractResultDetailsViewModel._FAIL_RESULT;
+
+    // default eth related values
+    this.access_list = null;
+    this.block_gas_used = null;
+    this.chain_id = null;
+    this.gas_price = null;
+    this.max_fee_per_gas = null;
+    this.max_priority_fee_per_gas = null;
+    this.r = null;
+    this.s = null;
+    this.type = null;
+    this.v = null;
+
     if (`${transaction.type}` === TransactionType.getProtoId('ETHEREUMTRANSACTION')) {
       this.access_list = transaction.accessList ? utils.addHexPrefix(transaction.accessList) : null;
+      this.amount = !_.isNil(transaction.value)
+        ? parseInt(Buffer.from(transaction.value, 'utf8').toString(), 16)
+        : null;
+      this.block_gas_used = recordFile.gasUsed;
       this.chain_id = transaction.chainId ? utils.addHexPrefix(transaction.chainId) : null;
+      this.from = !_.isNil(contractResult.senderId) ? EntityId.parse(contractResult.senderId).toEvmAddress() : null;
+      this.gas_limit = !_.isNil(transaction.gasLimit) ? transaction.gasLimit : null;
       this.gas_price = transaction.gasPrice ? utils.addHexPrefix(transaction.gasPrice) : null;
+      this.hash = utils.addHexPrefix(Buffer.from(transaction.ethHash, 'utf8').toString());
       this.max_fee_per_gas = transaction.maxFeePerGas ? utils.addHexPrefix(transaction.maxFeePerGas) : null;
       this.max_priority_fee_per_gas = transaction.maxPriorityFeePerGas
         ? utils.addHexPrefix(transaction.maxPriorityFeePerGas)
@@ -72,16 +96,6 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       this.type = transaction.ethType || null;
       this.v = transaction.recoveryId;
 
-      txHash = _.isNil(transaction.ethHash) ? transaction.transactionHash : transaction.ethHash;
-
-      if (!_.isNil(transaction.value)) {
-        this.amount = long.fromValue(Buffer.from(transaction.value, 'utf8').toString()).toNumber();
-      }
-
-      if (!_.isNil(contractResult.senderId)) {
-        this.from = EntityId.parse(contractResult.senderId).toEvmAddress();
-      }
-
       if (!_.isNil(transaction.callData)) {
         this.function_parameters = utils.addHexPrefix(transaction.callData);
       } else {
@@ -89,31 +103,9 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
           this.function_parameters = utils.toHexString(fileData.file_data, true);
         }
       }
-
-      if (!_.isNil(transaction.gasLimit)) {
-        this.gas_limit = transaction.gasLimit;
-      }
-    } else {
-      this.access_list = null;
-      this.chain_id = null;
-      this.gas_price = null;
-      this.max_fee_per_gas = null;
-      this.max_priority_fee_per_gas = null;
-      this.r = null;
-      this.s = null;
-      this.type = null;
-      this.v = null;
     }
 
-    this.hash = utils.toHexString(txHash, true);
-
-    this.state_changes = contractStateChanges.map(
-      (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
-    );
-    this.status =
-      transaction.result === ContractResultDetailsViewModel._FAIL_PROTO_ID
-        ? ContractResultDetailsViewModel._SUCCESS_RESULT
-        : ContractResultDetailsViewModel._FAIL_RESULT;
+    this.hash = this.hash || utils.toHexString(transaction.transactionHash, true);
   }
 }
 

@@ -33,7 +33,7 @@
         "gas_limit": 987654,
         "gas_used": 123,
         "payer_account_id": 8001,
-        "sender_id": 7001
+        "sender_id": 8001
       }
     ],
     "contractlogs": [
@@ -78,6 +78,7 @@
       },
       {
         "index": 17,
+        "gas_used": 50000000,
         "consensus_start": 167654000123450,
         "consensus_end": 167654000123460,
         "hash": "6ceecd8bb224da491"
@@ -92,15 +93,16 @@
     "transactions": [
       {
         "consensus_timestamp": 167654000123456,
+        "nonce": 1,
         "payerAccountId": "8001",
         "transaction_hash": "519a008fabde4d",
-        "valid_start_timestamp": 167654000123400,
-        "nonce": 1,
-        "type": 14
+        "type": 50,
+        "valid_start_timestamp": 167654000123400
       }
     ],
     "ethereumtransactions": [
       {
+        "call_data": "0x0505",
         "consensus_timestamp": 167654000123456,
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
         "signature_r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c043",
@@ -110,7 +112,7 @@
         "access_list": "0xabcd",
         "chain_id": "0x0127",
         "call_data_id": "5001",
-        "value": 10000,
+        "value": "0x2710",
         "gas_limit": 15000
       }
     ],
@@ -144,22 +146,23 @@
   ],
   "responseStatus": 200,
   "responseJson": {
-    "access_list": null,
-    "amount": 30,
+    "access_list": "0xabcd",
+    "amount": 10000,
+    "block_gas_used": 50000000,
     "block_hash": "0x6ceecd8bb224da491",
     "block_number": 17,
     "bloom": "0x0505",
     "call_result": "0x0606",
-    "chain_id": null,
+    "chain_id": "0x0127",
     "contract_id": "0.0.5001",
     "created_contract_ids": ["0.0.7001"],
     "error_message": null,
     "from": "0x0000000000000000000000000000000000001f41",
-    "function_parameters": "0x0707",
-    "gas_limit": 987654,
-    "gas_price": null,
+    "function_parameters": "0x0505",
+    "gas_limit": 15000,
+    "gas_price": "0x4a817c800",
     "gas_used": 123,
-    "hash": "0x3531396130303866616264653464",
+    "hash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
     "logs": [
       {
         "address": "0x0000000000000000000000000000000000001389",
@@ -186,12 +189,12 @@
         ]
       }
     ],
-    "max_fee_per_gas": null,
-    "max_priority_fee_per_gas": null,
+    "max_fee_per_gas": "0x5",
+    "max_priority_fee_per_gas": "0x100",
     "nonce": 1,
-    "r": null,
+    "r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c043",
     "result": "SUCCESS",
-    "s": null,
+    "s": "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b355",
     "state_changes": [
       {
         "address": "0x0000000000000000000000000000000000001389",
@@ -212,7 +215,7 @@
     "timestamp": "167654.000123456",
     "to": "0x0000000000000000000000000000000000001389",
     "transaction_index": 1,
-    "type": null,
-    "v": null
+    "type": 2,
+    "v": 1
   }
 }

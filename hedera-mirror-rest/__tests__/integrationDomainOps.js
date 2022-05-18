@@ -1223,6 +1223,7 @@ const addNft = async (nft) => {
 const addRecordFile = async (recordFileInput) => {
   const insertFields = [
     'bytes',
+    'gas_used',
     'consensus_end',
     'consensus_start',
     'count',
@@ -1243,6 +1244,7 @@ const addRecordFile = async (recordFileInput) => {
 
   const recordFile = {
     bytes: Buffer.from([1, 1, 2, 2, 3, 3]),
+    gas_used: 0,
     consensus_end: 1628751573995691000,
     consensus_start: 1628751572000852000,
     count: 1200,

@@ -33,7 +33,7 @@
         "gas_limit": 987654,
         "gas_used": 123,
         "payer_account_id": 8001,
-        "sender_id": 7001
+        "sender_id": 8001
       }
     ],
     "contractlogs": [
@@ -78,6 +78,7 @@
       },
       {
         "index": 17,
+        "gas_used": 50000000,
         "consensus_start": 167654000123450,
         "consensus_end": 167654000123460,
         "hash": "6ceecd8bb224da491"
@@ -92,11 +93,11 @@
     "transactions": [
       {
         "consensus_timestamp": 167654000123456,
+        "nonce": 1,
         "payerAccountId": "8001",
         "transaction_hash": "519a008fabde4d",
-        "valid_start_timestamp": 167654000123400,
-        "nonce": 1,
-        "type": 50
+        "type": 50,
+        "valid_start_timestamp": 167654000123400
       }
     ],
     "ethereumtransactions": [
@@ -110,8 +111,8 @@
         "access_list": "0xabcd",
         "chain_id": "0x0127",
         "call_data_id": "5001",
-        "call_data": "0xcdcd77c000000000001",
-        "value": 10000,
+        "call_data": "0x0606",
+        "value": "0x2710",
         "gas_limit": 15000
       }
     ],
@@ -147,6 +148,7 @@
   "responseJson": {
     "access_list": "0xabcd",
     "amount": 10000,
+    "block_gas_used": 50000000,
     "block_hash": "0x6ceecd8bb224da491",
     "block_number": 17,
     "bloom": "0x0505",
@@ -155,12 +157,12 @@
     "contract_id": "0.0.5001",
     "created_contract_ids": ["0.0.7001"],
     "error_message": null,
-    "from": "0x0000000000000000000000000000000000001b59",
-    "function_parameters": "0xcdcd77c000000000001",
+    "from": "0x0000000000000000000000000000000000001f41",
+    "function_parameters": "0x0606",
     "gas_limit": 15000,
     "gas_price": "0x4a817c800",
     "gas_used": 123,
-    "hash": "0x34613536336166333363343837316235316138623130386161326665316464353238306133306466623732333631373061653565356537393537656236333932",
+    "hash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
     "logs": [
       {
         "address": "0x0000000000000000000000000000000000001389",
