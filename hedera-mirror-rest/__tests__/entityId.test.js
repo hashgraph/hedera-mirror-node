@@ -76,13 +76,39 @@ describe('EntityId isValidEntityId tests', () => {
   test('Verify valid for max encoded ID', () => {
     expect(EntityId.isValidEntityId(2n ** 63n - 1n)).toBe(true);
   });
+  test('Verify valid for parsable evm address', () => {
+    expect(EntityId.isValidEntityId('0x0000000100000000000000020000000000000007')).toBe(true);
+    expect(EntityId.isValidEntityId('0000000100000000000000020000000000000007')).toBe(true);
+  });
+  test('Verify valid for parsable evm address', () => {
+    expect(EntityId.isValidEntityId('0x0000000100000000000000020000000000000007')).toBe(true);
+    expect(EntityId.isValidEntityId('0000000100000000000000020000000000000007')).toBe(true);
+  });
+  test('Verify valid for non-parsable evm address', () => {
+    expect(EntityId.isValidEntityId('0x71eaa748d5252be68c1185588beca495459fdba4')).toBe(true);
+    expect(EntityId.isValidEntityId('71eaa748d5252be68c1185588beca495459fdba4')).toBe(true);
+  });
+  test('Verify valid for parsable evm address with shard and realm', () => {
+    expect(EntityId.isValidEntityId('0.0.0000000100000000000000020000000000000007')).toBe(true);
+  });
+  test('Verify valid for non-parsable evm address with shard and realm', () => {
+    expect(EntityId.isValidEntityId('0.0.71eaa748d5252be68c1185588beca495459fdba4')).toBe(true);
+  });
+  test('Verify invalid for parsable evm address and disallow evm address', () => {
+    expect(EntityId.isValidEntityId('0x0000000100000000000000020000000000000007', false)).toBe(false);
+    expect(EntityId.isValidEntityId('0000000100000000000000020000000000000007', false)).toBe(false);
+  });
+  test('Verify valid for non-parsable evm address and disallow evm address', () => {
+    expect(EntityId.isValidEntityId('0x71eaa748d5252be68c1185588beca495459fdba4', false)).toBe(false);
+    expect(EntityId.isValidEntityId('71eaa748d5252be68c1185588beca495459fdba4', false)).toBe(false);
+  });
 });
 
 describe('EntityId parse from entityId string', () => {
   const specs = [
     {
       entityIdStr: '0.0.0',
-      expected: EntityId.of(0, 0, 0),
+      expected: EntityId.of(0, 0, 0, null),
     },
     {
       entityIdStr: '0.0.4294967295',
@@ -114,23 +140,23 @@ describe('EntityId parse from entityId string', () => {
     },
     {
       entityIdStr: '0x0000000000000000000000000000000000000001',
+      options: {paramName: constants.filterKeys.FROM},
       expected: EntityId.of(0, 0, 1),
-      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: '0000000000000000000000000000000000000001',
+      options: {paramName: constants.filterKeys.CONTRACT_ID},
       expected: EntityId.of(0, 0, 1),
-      paramName: constants.filterKeys.CONTRACT_ID,
     },
     {
       entityIdStr: '0x0000000100000000000000020000000000000003',
+      options: {paramName: constants.filterKeys.FROM},
       expected: EntityId.of(1, 2, 3),
-      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: '0x00007fff000000000000ffff00000000ffffffff',
+      options: {paramName: constants.filterKeys.FROM},
       expected: EntityId.of(32767, 65535, 4294967295),
-      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: '0.0.000000000000000000000000000000000186Fb1b',
@@ -146,30 +172,54 @@ describe('EntityId parse from entityId string', () => {
     },
     {
       entityIdStr: '0x000000000000000000000000000000000186Fb1b',
+      options: {paramName: constants.filterKeys.FROM},
       expected: EntityId.of(0, 0, 25623323),
-      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: null,
-      isNullable: true,
+      options: {isNullable: true},
       expected: EntityId.of(null, null, null),
     },
     {
-      isNullable: true,
+      options: {isNullable: true},
       expected: EntityId.of(null, null, null),
+    },
+    {
+      entityIdStr: '0000000100000000000000020000000000000007',
+      expected: EntityId.of(1, 2, 7),
+    },
+    {
+      entityIdStr: '0x0000000100000000000000020000000000000007',
+      expected: EntityId.of(1, 2, 7),
+    },
+    {
+      entityIdStr: '1.2.0000000100000000000000020000000000000007',
+      expected: EntityId.of(1, 2, 7),
+    },
+    {
+      entityIdStr: '71eaa748d5252be68c1185588beca495459fdba4',
+      expected: EntityId.of(null, null, null, '71eaa748d5252be68c1185588beca495459fdba4'),
+    },
+    {
+      entityIdStr: '0x71eaa748d5252be68c1185588beca495459fdba4',
+      expected: EntityId.of(null, null, null, '71eaa748d5252be68c1185588beca495459fdba4'),
+    },
+    {
+      entityIdStr: '1.2.71eaa748d5252be68c1185588beca495459fdba4',
+      expected: EntityId.of(1, 2, null, '71eaa748d5252be68c1185588beca495459fdba4'),
     },
     {
       entityIdStr: null,
-      isNullable: false,
+      options: {isNullable: false},
       expectErr: true,
     },
     {
-      isNullable: false,
+      options: {isNullable: false},
       expectErr: true,
     },
     {
       entityIdStr: '0.1.x',
-      paramName: 'demo param',
+      options: {paramName: 'demo param'},
       expectErr: true,
     },
     {
@@ -193,40 +243,49 @@ describe('EntityId parse from entityId string', () => {
       expectErr: true,
     },
     {
-      entityIdStr: '0x',
+      entityIdStr: '32768.65536.4294967296',
       expectErr: true,
-      paramName: constants.filterKeys.FROM,
+    },
+    {
+      entityIdStr: '0x',
+      options: {paramName: constants.filterKeys.FROM},
+      expectErr: true,
     },
     {
       entityIdStr: '0x010203',
+      options: {paramName: constants.filterKeys.FROM},
       expectErr: true,
-      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: '0x00000001000000000000000200000000000000034',
+      options: {paramName: constants.filterKeys.FROM},
       expectErr: true,
-      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: '0x2540be3f6001fffffffffffff001fffffffffffff', // 9999999990, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER
+      options: {paramName: constants.filterKeys.FROM},
       expectErr: true,
-      paramName: constants.filterKeys.FROM,
     },
     {
       entityIdStr: '0x10000000000000000000000000000000000000000', // ffffffffffffffffffffffffffffffffffffffff + 1
+      options: {paramName: constants.filterKeys.FROM},
       expectErr: true,
-      paramName: constants.filterKeys.FROM,
+    },
+    {
+      entityIdStr: '2.3.0000000100000000000000020000000000000007',
+      expectErr: true,
     },
   ];
 
   for (const spec of specs) {
-    const {entityIdStr, paramName, isNullable, expectErr, expected} = spec;
+    let {entityIdStr, options, expected, expectErr} = spec;
+    options = options || {};
     test(`${entityIdStr}`, () => {
       if (!expectErr) {
-        expect(EntityId.parse(entityIdStr, paramName, isNullable).toString()).toEqual(expected.toString());
+        expect(EntityId.parse(entityIdStr, options).toString()).toEqual(expected.toString());
       } else {
         expect(() => {
-          EntityId.parse(entityIdStr, paramName, isNullable);
+          EntityId.parse(entityIdStr, options);
         }).toThrowErrorMatchingSnapshot();
       }
     });
@@ -306,12 +365,16 @@ describe('EntityId parse from encoded entityId', () => {
       expectErr: true,
     },
     {
+      encodedId: 9223372036854775808n, // 32768.0.0
+      expectErr: true,
+    },
+    {
       encodedId: null,
-      isNullable: true,
+      options: {isNullable: true},
       expected: EntityId.of(null, null, null),
     },
     {
-      isNullable: true,
+      options: {isNullable: true},
       expected: EntityId.of(null, null, null),
     },
     {
@@ -324,13 +387,14 @@ describe('EntityId parse from encoded entityId', () => {
   ];
 
   for (const spec of specs) {
-    const {encodedId, isNullable, expectErr, expected} = spec;
+    let {encodedId, options, expectErr, expected} = spec;
+    options = options || {};
     test(`${encodedId}`, () => {
       if (!expectErr) {
-        expect(EntityId.parse(encodedId, '', isNullable).toString()).toEqual(expected.toString());
+        expect(EntityId.parse(encodedId, options).toString()).toEqual(expected.toString());
       } else {
         expect(() => {
-          EntityId.parse(encodedId, isNullable);
+          EntityId.parse(encodedId, options);
         }).toThrowError(InvalidArgumentError);
       }
     });
@@ -338,6 +402,8 @@ describe('EntityId parse from encoded entityId', () => {
 });
 
 describe('EntityId toEvmAddress', () => {
+  const evmAddress = '71eaa748d5252be68c1185588beca495459fdba4';
+
   test('0.0.0', () => {
     expect(EntityId.of(0, 0, 0).toEvmAddress()).toEqual('0x0000000000000000000000000000000000000000');
   });
@@ -347,9 +413,19 @@ describe('EntityId toEvmAddress', () => {
   });
 
   test('32767.65535.4294967295', () => {
-    expect(EntityId.of(32767n, 65535n, 4294967295n, constants.EvmAddressType.NO_SHARD_REALM).toEvmAddress()).toEqual(
+    expect(EntityId.of(32767n, 65535n, 4294967295n).toEvmAddress()).toEqual(
       '0x00007fff000000000000ffff00000000ffffffff'
     );
+  });
+
+  test(evmAddress, () => {
+    const actual = EntityId.of(null, null, null, evmAddress).toEvmAddress();
+    expect(actual).toEqual(`0x${evmAddress}`);
+  });
+
+  test(`0.1.${evmAddress}`, () => {
+    const actual = EntityId.of(0, 1, null, evmAddress).toEvmAddress();
+    expect(actual).toEqual(`0x${evmAddress}`);
   });
 });
 
@@ -364,6 +440,18 @@ describe('EntityId toString', () => {
 
   test('32767.65535.4294967295', () => {
     expect(EntityId.of(32767, 65535, 4294967295).toString()).toEqual('32767.65535.4294967295');
+  });
+
+  test('71eaa748d5252be68c1185588beca495459fdba4', () => {
+    expect(EntityId.of(null, null, null, '71eaa748d5252be68c1185588beca495459fdba4').toString()).toEqual(
+      '71eaa748d5252be68c1185588beca495459fdba4'
+    );
+  });
+
+  test('0.0.71eaa748d5252be68c1185588beca495459fdba4', () => {
+    expect(EntityId.of(0n, 0n, null, '71eaa748d5252be68c1185588beca495459fdba4').toString()).toEqual(
+      '0.0.71eaa748d5252be68c1185588beca495459fdba4'
+    );
   });
 });
 
@@ -401,6 +489,6 @@ describe('EntityId encoding', () => {
   });
 
   test('nullable', () => {
-    expect(EntityId.parse(null, true).getEncodedId()).toBeNull();
+    expect(EntityId.parse(null, {isNullable: true}).getEncodedId()).toBeNull();
   });
 });

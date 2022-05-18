@@ -168,13 +168,13 @@ class TokenAllowanceController extends BaseController {
   }
 
   /**
-   * Handler function for /accounts/:accountAliasOrAccountId/allowances/tokens API
+   * Handler function for /accounts/:idOrAliasOrEvmAddress/allowances/tokens API
    * @param {Request} req HTTP request object
    * @param {Response} res HTTP response object
    * @returns {Promise<void>}
    */
   getAccountTokenAllowances = async (req, res) => {
-    const accountId = await EntityService.getEncodedIdAccountIdOrAlias(req.params.accountAliasOrAccountId);
+    const accountId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
     const filters = utils.buildAndValidateFilters(req.query);
     const query = this.extractTokenMultiUnionQuery(filters, accountId);
     const tokenAllowances = await TokenAllowanceService.getAccountTokenAllowances(query);

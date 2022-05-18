@@ -34,7 +34,7 @@ class ContractResultViewModel {
    * @param {ContractResult} contractResult
    */
   constructor(contractResult) {
-    const contractId = EntityId.parse(contractResult.contractId, true);
+    const contractId = EntityId.parse(contractResult.contractId, {isNullable: true});
     this.amount = contractResult.amount;
     this.bloom = utils.toHexString(contractResult.bloom, true);
     this.call_result = utils.toHexString(contractResult.callResult, true);

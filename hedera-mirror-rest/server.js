@@ -106,6 +106,9 @@ if (config.db.tls.enabled) {
 
 const Pool = getPoolClass(isTestEnv());
 const pool = new Pool(poolConfig);
+pool.on('error', (error) => {
+  logger.error(`error event emitted on pg pool. ${error.stack}`);
+});
 global.pool = pool;
 
 // Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
@@ -147,7 +150,7 @@ if (config.metrics.enabled) {
 
 // accounts routes
 app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
-app.getAsync(`${apiPrefix}/accounts/:accountAliasOrAccountId`, accounts.getOneAccount);
+app.getAsync(`${apiPrefix}/accounts/:${constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS}`, accounts.getOneAccount);
 app.useAsync(`${apiPrefix}/${AccountRoutes.resource}`, AccountRoutes.router);
 
 // balances routes

@@ -34,7 +34,7 @@ router.getAsync('/:contractId/results/logs', ContractController.getContractLogsB
 router.getAsync('/:contractId/results/:consensusTimestamp([0-9.]+)', ContractController.getContractResultsByTimestamp);
 router.getAsync('/results', ContractController.getContractResults);
 router.getAsync('/results/logs', ContractController.getContractLogs);
-router.getAsync('/results/:transactionId([0-9.-]*)', ContractController.getContractResultsByTransactionId);
+router.getAsync('/results/:transactionIdOrHash', ContractController.getContractResultsByTransactionIdOrHash);
 
 module.exports = {
   resource,

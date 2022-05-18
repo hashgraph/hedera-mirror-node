@@ -9,9 +9,6 @@
         "num": 18
       },
       {
-        "num": 20
-      },
-      {
         "num": 21
       }
     ],
@@ -81,12 +78,16 @@
     "contracts": [
       {
         "num": 19
+      },
+      {
+        "evm_address": "4af4714503e4f85795962a89ec63d672b9f2bb9a",
+        "num": 20
       }
     ],
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/accounts?account.id=gte:0.0.18&account.id=lt:0.0.21&limit=2",
+  "url": "/api/v1/accounts?account.id=gte:0.0.18&account.id=lt:0.0.21&limit=3",
   "responseStatus": 200,
   "responseJson": {
     "accounts": [
@@ -107,6 +108,8 @@
         },
         "account": "0.0.18",
         "alias": null,
+        "ethereum_nonce": null,
+        "evm_address": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -123,6 +126,35 @@
         },
         "account": "0.0.19",
         "alias": null,
+        "ethereum_nonce": null,
+        "evm_address": "0x0000000000000000000000000000000000000013",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "deleted": false,
+        "max_automatic_token_associations": 0,
+        "memo": "contract memo",
+        "receiver_sig_required": null
+      },
+      {
+        "balance": {
+          "balance": 100,
+          "timestamp": "0.000002345",
+          "tokens": [
+            {
+              "balance": 362,
+              "token_id": "0.0.99998"
+            },
+            {
+              "balance": 335,
+              "token_id": "0.0.99999"
+            }
+          ]
+        },
+        "account": "0.0.20",
+        "alias": null,
+        "ethereum_nonce": null,
+        "evm_address": "0x4af4714503e4f85795962a89ec63d672b9f2bb9a",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -133,7 +165,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/accounts?account.id=lt:0.0.21&account.id=gt:0.0.19&limit=2"
+      "next": "/api/v1/accounts?account.id=lt:0.0.21&account.id=gt:0.0.20&limit=3"
     }
   }
 }

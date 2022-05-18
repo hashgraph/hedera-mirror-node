@@ -36,7 +36,7 @@ class ContractLogViewModel extends ContractLogResultsViewModel {
   constructor(contractLog) {
     super(contractLog);
     Object.assign(this, {
-      root_contract_id: EntityId.parse(contractLog.rootContractId, true).toString(),
+      root_contract_id: EntityId.parse(contractLog.rootContractId, {isNullable: true}).toString(),
       timestamp: utils.nsToSecNs(contractLog.consensusTimestamp),
     });
   }

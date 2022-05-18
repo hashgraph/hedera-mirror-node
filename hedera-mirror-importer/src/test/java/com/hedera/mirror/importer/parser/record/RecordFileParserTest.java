@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,21 +20,25 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
@@ -44,17 +48,15 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamFile;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
-import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 
 class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser> {
 
@@ -66,6 +68,10 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
 
     @Mock(lenient = true)
     private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+
+    private DomainBuilder domainBuilder = new DomainBuilder();
+
+    private RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
 
     private long count = 0;
 
@@ -101,31 +107,8 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     @Override
     protected StreamFile getStreamFile() {
         long id = ++count;
-        Instant instant = Instant.ofEpochSecond(0L, id);
-        String filename = StreamFilename.getFilename(parserProperties.getStreamType(), DATA, instant);
-        recordItem = recordItem(id);
-
-        RecordFile recordFile = new RecordFile();
-        recordFile.setBytes(new byte[] {0, 1, 2});
-        recordFile.setConsensusEnd(id);
-        recordFile.setConsensusStart(id);
-        recordFile.setConsensusEnd(id);
-        recordFile.setCount(id);
-        recordFile.setDigestAlgorithm(DigestAlgorithm.SHA384);
-        recordFile.setFileHash("fileHash" + id);
-        recordFile.setHapiVersionMajor(0);
-        recordFile.setHapiVersionMinor(23);
-        recordFile.setHapiVersionPatch(0);
-        recordFile.setHash("hash" + id);
-        recordFile.setLoadEnd(id);
-        recordFile.setLoadStart(id);
-        recordFile.setName(filename);
-        recordFile.setNodeAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT));
-        recordFile.setPreviousHash("previousHash" + (id - 1));
-        recordFile.setVersion(1);
-        recordFile.setItems(Flux.just(recordItem));
-
-        return recordFile;
+        recordItem = cryptoTransferRecordItem(id);
+        return getStreamFile(Flux.just(recordItem), id);
     }
 
     @Override
@@ -166,8 +149,55 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         assertPostParseStreamFile(recordFile, true);
     }
 
+    @Test
+    void totalGasUsedMustBeCorrect() {
+        when(mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType()))
+                .thenReturn(DateRangeFilter.all());
+
+        long timestamp = ++count;
+        ContractFunctionResult contractFunctionResult1 = contractFunctionResult(
+                10000000000L, new byte[] { 0, 6, 4, 0, 5, 7, 2 });
+        RecordItem recordItem1 = contractCreate(contractFunctionResult1, timestamp, 0);
+
+        ContractFunctionResult contractFunctionResult2 = contractFunctionResult(
+                100000000000L, new byte[] { 3, 5, 1, 7, 4, 4, 0 });
+        RecordItem recordItem2 = contractCall(contractFunctionResult2, timestamp, 0);
+
+        ContractFunctionResult contractFunctionResult3 = contractFunctionResult(
+                1000000000000L, new byte[] { 0, 1, 1, 2, 2, 6, 0 });
+        RecordItem recordItem3 = ethereumTransaction(contractFunctionResult3, timestamp, 0);
+
+        ContractFunctionResult contractFunctionResult4 = contractFunctionResult(
+                1000000000000L, new byte[] { 0, 1, 1, 2, 2, 6, 0 });
+        RecordItem recordItem4 = ethereumTransaction(contractFunctionResult4, timestamp, 1);
+
+        RecordFile recordFile = getStreamFile(Flux.just(recordItem1, recordItem2, recordItem3, recordItem4), timestamp);
+
+        parser.parse(recordFile);
+
+        byte[] expectedLogBloom = new byte[] {
+                3, 7, 5, 7, 7, 7, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        };
+        assertAll(
+                () -> assertEquals(10000000000L + 100000000000L + 1000000000000L, recordFile.getGasUsed()),
+                () -> assertArrayEquals(expectedLogBloom, recordFile.getLogsBloom()),
+                () -> verify(recordStreamFileListener, times(1)).onStart(),
+                () -> verify(recordStreamFileListener, times(1)).onEnd(recordFile),
+                () -> verify(recordItemListener, times(1)).onItem(recordItem1),
+                () -> verify(recordItemListener, times(1)).onItem(recordItem2),
+                () -> verify(recordItemListener, times(1)).onItem(recordItem3)
+        );
+    }
+
     @ParameterizedTest(name = "startDate with offset {0}ns")
-    @CsvSource({"-1", "0", "1"})
+    @CsvSource({ "-1", "0", "1" })
     void startDate(long offset) {
         // given
         RecordFile recordFile = (RecordFile) getStreamFile();
@@ -188,9 +218,41 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         assertPostParseStreamFile(recordFile, true);
     }
 
-    private RecordItem recordItem(long timestamp) {
+    private RecordItem contractCall(ContractFunctionResult contractFunctionResult, long timestamp,
+            int transactionIdNonce) {
+        return recordItemBuilder
+                .contractCall()
+                .record(builder -> builder.setContractCallResult(contractFunctionResult)
+                        .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
+                        .setTransactionID(TransactionID.newBuilder().setNonce(transactionIdNonce).build())
+                )
+                .build();
+    }
+
+    private RecordItem contractCreate(ContractFunctionResult contractFunctionResult, long timestamp,
+            int transactionIdNonce) {
+        return recordItemBuilder
+                .contractCreate()
+                .record(builder -> builder.setContractCreateResult(contractFunctionResult)
+                        .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
+                        .setTransactionID(TransactionID.newBuilder().setNonce(transactionIdNonce).build())
+                )
+                .build();
+    }
+
+    private ContractFunctionResult contractFunctionResult(long gasUsed, byte[] logBloom) {
+        return ContractFunctionResult.newBuilder()
+                .setGasUsed(gasUsed)
+                .setBloom(ByteString.copyFrom(logBloom))
+                .build();
+    }
+
+    private RecordItem cryptoTransferRecordItem(long timestamp) {
         CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder().build();
         TransactionBody transactionBody = TransactionBody.newBuilder().setCryptoTransfer(cryptoTransfer).build();
+        TransactionRecord transactionRecord = TransactionRecord.newBuilder()
+                .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
+                .build();
         SignedTransaction signedTransaction = SignedTransaction.newBuilder()
                 .setBodyBytes(transactionBody.toByteString())
                 .setSigMap(SignatureMap.newBuilder().build())
@@ -198,9 +260,31 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(signedTransaction.toByteString())
                 .build();
-        TransactionRecord transactionRecord = TransactionRecord.newBuilder()
-                .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
+        return RecordItem.builder()
+                .record(transactionRecord)
+                .transactionBytes(transaction.toByteArray())
                 .build();
-        return new RecordItem(transaction, transactionRecord);
+    }
+
+    private RecordItem ethereumTransaction(ContractFunctionResult contractFunctionResult, long timestamp,
+            int transactionIdNonce) {
+        return recordItemBuilder
+                .ethereumTransaction(true)
+                .record(builder -> builder.setContractCallResult(contractFunctionResult)
+                        .setConsensusTimestamp(Timestamp.newBuilder().setNanos((int) timestamp))
+                        .setTransactionID(TransactionID.newBuilder().setNonce(transactionIdNonce).build())
+                )
+                .build();
+    }
+
+    private RecordFile getStreamFile(final Flux<RecordItem> items, final long timestamp) {
+        return domainBuilder
+                .recordFile()
+                .customize(recordFileBuilder -> recordFileBuilder.bytes(new byte[] { 0, 1, 2 })
+                        .consensusEnd(timestamp)
+                        .consensusStart(timestamp)
+                        .items(items)
+                )
+                .get();
     }
 }

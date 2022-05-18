@@ -23,6 +23,9 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.ListMultimap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -96,7 +99,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<CryptoAllowance> cryptoAllowances;
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
-    private final Collection<Entity> entities;
+    private final ListMultimap<Long, Entity> entities;
     private final Collection<EthereumTransaction> ethereumTransactions;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
@@ -113,7 +116,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     // maps of upgradable domains
     private final Map<Long, Contract> contractState;
-    private final Map<Long, Entity> entityState;
     private final Map<CryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<NftId, Nft> nfts;
     private final Map<NftAllowance.Id, NftAllowance> nftAllowanceState;
@@ -148,7 +150,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cryptoAllowances = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
-        entities = new ArrayList<>();
+        entities = ArrayListMultimap.create();
         ethereumTransactions = new ArrayList<>();
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
@@ -165,7 +167,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         contractState = new HashMap<>();
         cryptoAllowanceState = new HashMap<>();
-        entityState = new HashMap<>();
         nfts = new HashMap<>();
         nftAllowanceState = new HashMap<>();
         schedules = new HashMap<>();
@@ -210,7 +211,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             cryptoTransfers.clear();
             customFees.clear();
             entities.clear();
-            entityState.clear();
             ethereumTransactions.clear();
             fileData.clear();
             liveHashes.clear();
@@ -260,7 +260,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // insert operations with conflict management
             batchPersister.persist(contracts);
             batchPersister.persist(cryptoAllowances);
-            batchPersister.persist(entities);
+            batchPersister.persist(entities.values());
             batchPersister.persist(nftAllowances);
             batchPersister.persist(tokens.values());
             // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
@@ -337,8 +337,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return;
         }
 
-        Entity merged = entityState.merge(entity.getId(), entity, this::mergeEntity);
-        entities.add(merged);
+        var list = entities.get(entity.getId());
+        var previous = Iterables.getLast(list, null);
+        var merged = mergeEntity(previous, entity);
+        if (previous != merged) {
+            list.add(merged);
+        }
+        if (previous != null && !previous.isHistory() && list.size() > 1) {
+            list.remove(list.size() - 2);
+        }
     }
 
     @Override
@@ -495,6 +502,17 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private Entity mergeEntity(Entity previous, Entity current) {
+        // This is the first entity with this ID in the record file, so no need to merge
+        if (previous == null) {
+            return current;
+        }
+
+        // This entity should not trigger a history record, so just copy non-history fields to previous
+        if (!current.isHistory()) {
+            previous.setEthereumNonce(current.getEthereumNonce());
+            return previous;
+        }
+
         mergeAbstractEntity(previous, current);
 
         if (current.getEthereumNonce() == null) {

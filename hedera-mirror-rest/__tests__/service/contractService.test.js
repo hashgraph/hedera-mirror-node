@@ -76,7 +76,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with t as (select * from transaction where transaction.nonce = $2)
+    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.nonce = $2)
       select cr.*
       from contract_result cr
       left join t on cr.consensus_timestamp = t.consensus_timestamp
@@ -96,7 +96,7 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with t as (select * from transaction where transaction.index = $2)
+    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.index = $2)
       select cr.*
       from contract_result cr
       left join t on cr.consensus_timestamp = t.consensus_timestamp

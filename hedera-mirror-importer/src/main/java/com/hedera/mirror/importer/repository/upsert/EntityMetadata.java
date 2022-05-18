@@ -32,13 +32,13 @@ import com.hedera.mirror.common.domain.Upsertable;
  * Contains the metadata associated with an @Upsertable entity. Used to generate dynamic upsert SQL.
  */
 @Value
-class UpsertEntity {
+class EntityMetadata {
 
     private final String tableName;
     private final Upsertable upsertable;
-    private final Set<UpsertColumn> columns;
+    private final Set<ColumnMetadata> columns;
 
-    public String column(Predicate<UpsertColumn> filter, String pattern) {
+    public String column(Predicate<ColumnMetadata> filter, String pattern) {
         return columns.stream()
                 .filter(filter)
                 .findFirst()
@@ -50,11 +50,11 @@ class UpsertEntity {
         return columns(c -> true, pattern, ",");
     }
 
-    public String columns(Predicate<UpsertColumn> filter, String pattern) {
+    public String columns(Predicate<ColumnMetadata> filter, String pattern) {
         return columns(filter, pattern, ",");
     }
 
-    public String columns(Predicate<UpsertColumn> filter, String pattern, String separator) {
+    public String columns(Predicate<ColumnMetadata> filter, String pattern, String separator) {
         return columns.stream()
                 .filter(filter)
                 .map(c -> MessageFormat.format(pattern, c.getName(), c.getDefaultValue()))

@@ -34,7 +34,7 @@ class ContractResultStateChangeViewModel {
    * @param {ContractStateChange} contractStateChange
    */
   constructor(contractStateChange) {
-    const contractId = EntityId.parse(contractStateChange.contractId, constants.filterKeys.CONTRACTID);
+    const contractId = EntityId.parse(contractStateChange.contractId, {paramName: constants.filterKeys.CONTRACTID});
     this.address = contractId.toEvmAddress();
     this.contract_id = contractId.toString();
     this.slot = utils.toHexString(contractStateChange.slot, true, 64);

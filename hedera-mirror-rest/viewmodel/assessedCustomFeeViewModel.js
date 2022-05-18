@@ -34,7 +34,7 @@ class AssessedCustomFeeViewModel {
   constructor(assessedCustomFee) {
     this.amount = assessedCustomFee.amount;
     this.collector_account_id = EntityId.parse(assessedCustomFee.collectorAccountId).toString();
-    this.token_id = EntityId.parse(assessedCustomFee.tokenId, true).toString();
+    this.token_id = EntityId.parse(assessedCustomFee.tokenId, {isNullable: true}).toString();
 
     if (assessedCustomFee.effectivePayerAccountIds != null) {
       this.effective_payer_account_ids = assessedCustomFee.effectivePayerAccountIds.map((payer) =>

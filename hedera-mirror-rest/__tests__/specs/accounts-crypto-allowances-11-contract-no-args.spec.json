@@ -1,0 +1,114 @@
+{
+  "description": "Account api call for all crypto allowances of a contract",
+  "setup": {
+    "accounts": [
+      {
+        "num": 2001
+      },
+      {
+        "num": 3001
+      },
+      {
+        "num": 4001
+      },
+      {
+        "num": 5001
+      }
+    ],
+    "contracts": [
+      {
+        "num": 1001,
+        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57"
+      }
+    ],
+    "cryptoAllowances": [
+      {
+        "amount": 33,
+        "owner": 1001,
+        "payer_account_id": 1001,
+        "spender": 2001,
+        "timestamp_range": "[1234567890000000001,)"
+      },
+      {
+        "amount": 44,
+        "owner": 1001,
+        "payer_account_id": 2001,
+        "spender": 3001,
+        "timestamp_range": "[1234567890000000002,)"
+      },
+      {
+        "amount": 55,
+        "owner": 2001,
+        "payer_account_id": 2001,
+        "spender": 3001,
+        "timestamp_range": "[1234567890000000003,)"
+      },
+      {
+        "amount": 66,
+        "owner": 1001,
+        "payer_account_id": 2001,
+        "spender": 4001,
+        "timestamp_range": "[1234567890000000004,)"
+      },
+      {
+        "amount": 9223372036854775807,
+        "owner": 1001,
+        "payer_account_id": 2001,
+        "spender": 5001,
+        "timestamp_range": "[1234567890000000005,)"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/accounts/1001/allowances/crypto",
+    "/api/v1/accounts/0.1001/allowances/crypto",
+    "/api/v1/accounts/0.0.1001/allowances/crypto",
+    "/api/v1/accounts/ebb9a1be370150759408cd7af48e9eda2b8ead57/allowances/crypto",
+    "/api/v1/accounts/0xebb9a1be370150759408cd7af48e9eda2b8ead57/allowances/crypto",
+    "/api/v1/accounts/0.0.ebb9a1be370150759408cd7af48e9eda2b8ead57/allowances/crypto"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "allowances": [
+      {
+        "amount_granted": 9223372036854775807,
+        "owner": "0.0.1001",
+        "spender": "0.0.5001",
+        "timestamp": {
+          "from": "1234567890.000000005",
+          "to": null
+        }
+      },
+      {
+        "amount_granted": 66,
+        "owner": "0.0.1001",
+        "spender": "0.0.4001",
+        "timestamp": {
+          "from": "1234567890.000000004",
+          "to": null
+        }
+      },
+      {
+        "amount_granted": 44,
+        "owner": "0.0.1001",
+        "spender": "0.0.3001",
+        "timestamp": {
+          "from": "1234567890.000000002",
+          "to": null
+        }
+      },
+      {
+        "amount_granted": 33,
+        "owner": "0.0.1001",
+        "spender": "0.0.2001",
+        "timestamp": {
+          "from": "1234567890.000000001",
+          "to": null
+        }
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

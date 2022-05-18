@@ -52,7 +52,7 @@ const validateConsensusTimestampParam = (consensusTimestamp) => {
  */
 const validateGetSequenceMessageParams = (topicId, seqNum) => {
   const badParams = [];
-  if (!EntityId.isValidEntityId(topicId)) {
+  if (!EntityId.isValidEntityId(topicId, false)) {
     badParams.push(constants.filterKeys.TOPIC_ID);
   }
 
@@ -69,7 +69,7 @@ const validateGetSequenceMessageParams = (topicId, seqNum) => {
  * Verify topicId and sequencenumber meet entity num and limit format
  */
 const validateGetTopicMessagesParams = (topicId) => {
-  if (!EntityId.isValidEntityId(topicId)) {
+  if (!EntityId.isValidEntityId(topicId, false)) {
     throw InvalidArgumentError.forParams(constants.filterKeys.TOPIC_ID);
   }
 };
