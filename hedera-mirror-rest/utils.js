@@ -164,7 +164,6 @@ const isValidEthHash = (hash) => {
   return ethHashPattern.test(hash);
 };
 
-
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
 
 const addressBookFileIdPattern = ['101', '0.101', '0.0.101', '102', '0.102', '0.0.102'];
@@ -867,6 +866,19 @@ const toHexString = (byteArray, addPrefix = false, padLength = undefined) => {
   return modifiers.reduce((v, f) => f(v), encoded);
 };
 
+const toHexStringQuantity = (byteArray) => {
+  let hex = toHexString(byteArray, true);
+  if (hex.length > 3) {
+    hex = hex.replace('0x0', '0x');
+  }
+
+  return hex;
+};
+
+const toHexStringNonQuantity = (byteArray) => {
+  return toHexString(byteArray, true, 2);
+};
+
 // These match protobuf encoded hex strings. The prefixes listed check if it's a primitive key, a key list with one
 // primitive key, or a 1/1 threshold key, respectively.
 const PATTERN_ECDSA = /^(3a21|32250a233a21|2a29080112250a233a21)([A-Fa-f0-9]{66})$/;
@@ -1385,6 +1397,8 @@ module.exports = {
   secNsToNs,
   secNsToSeconds,
   toHexString,
+  toHexStringNonQuantity,
+  toHexStringQuantity,
   validateReq,
   isValidBlockHash,
 };

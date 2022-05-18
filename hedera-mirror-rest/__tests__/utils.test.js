@@ -1102,6 +1102,113 @@ describe('Utils toHexString tests', () => {
   });
 });
 
+describe('Utils toHexStringNonQuantity tests', () => {
+  const specs = [
+    {
+      name: '0',
+      args: [[0]],
+      expected: '0x00',
+    },
+    {
+      name: '1',
+      args: [[1]],
+      expected: '0x01',
+    },
+    {
+      name: '65',
+      args: [[65]],
+      expected: '0x41',
+    },
+    {
+      name: '1024',
+      args: [[4, 0]],
+      expected: '0x0400',
+    },
+    {
+      name: 'byteArray',
+      args: [[1, 2, 0xab]],
+      expected: '0x0102ab',
+    },
+    {
+      name: 'empty array',
+      args: [[]],
+      expected: hexPrefix,
+    },
+    {
+      name: 'null',
+      args: [null],
+      expected: hexPrefix,
+    },
+    {
+      name: 'undefined',
+      args: [undefined],
+      expected: hexPrefix,
+    },
+    {
+      name: 'hash',
+      args: [Buffer.from('4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392', 'hex')],
+      expected: '0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392',
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(spec.name, () => {
+      expect(utils.toHexStringNonQuantity(...spec.args)).toEqual(spec.expected);
+    });
+  });
+});
+
+describe('Utils toHexStringQuantity tests', () => {
+  const specs = [
+    {
+      name: '0',
+      args: [[0]],
+      expected: '0x0',
+    },
+    {
+      name: '1',
+      args: [[1]],
+      expected: '0x1',
+    },
+    {
+      name: '65',
+      args: [[65]],
+      expected: '0x41',
+    },
+    {
+      name: '1024',
+      args: [[4, 0]],
+      expected: '0x400',
+    },
+    {
+      name: 'byteArray',
+      args: [[1, 2, 0xab]],
+      expected: '0x102ab',
+    },
+    {
+      name: 'empty array',
+      args: [[]],
+      expected: hexPrefix,
+    },
+    {
+      name: 'null',
+      args: [null],
+      expected: hexPrefix,
+    },
+    {
+      name: 'undefined',
+      args: [undefined],
+      expected: hexPrefix,
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(spec.name, () => {
+      expect(utils.toHexStringQuantity(...spec.args)).toEqual(spec.expected);
+    });
+  });
+});
+
 describe('Utils getLimitParamValue', () => {
   test('undefined', () => {
     expect(getLimitParamValue(undefined)).toEqual(responseLimit.default);

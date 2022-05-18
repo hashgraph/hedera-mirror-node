@@ -430,7 +430,7 @@ const addEthereumTransaction = async (ethereumTransaction) => {
     consensus_timestamp: '187654000123456',
     data: '0x000000000',
     gas_limit: 1000000,
-    gas_price: '0x4a817c800',
+    gas_price: '0x4a817c80',
     hash: '0x0000000000000000000000000000000000000000000000000000000000000123',
     max_fee_per_gas: null,
     max_gas_allowance: 10000,
@@ -452,6 +452,28 @@ const addEthereumTransaction = async (ethereumTransaction) => {
   };
 
   const insertFields = Object.keys(ethTx);
+
+  const byteaFields = [
+    'access_list',
+    'call_data',
+    'chain_id',
+    'data',
+    'gas_price',
+    'hash',
+    'max_fee_per_gas',
+    'max_priority_fee_per_gas',
+    'signature_r',
+    'signature_s',
+    'signature_v',
+    'to_address',
+    'value',
+  ];
+  for (let field of byteaFields) {
+    if (!_.isNull(ethTx[field])) {
+      let stringValue = ethTx[field].toString();
+      ethTx[field] = Buffer.from(stringValue.replace(/^0x/, '').padStart(2, '0'), 'hex');
+    }
+  }
 
   await insertDomainObject('ethereum_transaction', insertFields, ethTx);
 };

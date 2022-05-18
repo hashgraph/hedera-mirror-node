@@ -1492,6 +1492,12 @@ components:
               nullable: true
               type: string
               example: '0xabcd'
+            block_gas_used:
+              description: The total amount of gas used in the block
+              example: "0x6ceecd8bb224da491"
+              format: int64
+              nullable: true
+              type: integer
             block_hash:
               description: The hex encoded block (record file chain) hash
               example: "0x6ceecd8bb224da491"
@@ -1532,6 +1538,7 @@ components:
             nonce:
               description: The nonce of the wrapped ethereum transaction
               nullable: true
+              format: int64
               type: integer
               example: 1
             r:
@@ -1549,6 +1556,7 @@ components:
             transaction_index:
               description: The position of the transaction in the block
               nullable: true
+              format: int64
               type: integer
               example: 1
             type:

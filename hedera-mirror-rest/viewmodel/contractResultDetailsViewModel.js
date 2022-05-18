@@ -77,36 +77,30 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.v = null;
 
     if (`${transaction.type}` === TransactionType.getProtoId('ETHEREUMTRANSACTION')) {
-      this.access_list = transaction.accessList ? utils.addHexPrefix(transaction.accessList) : null;
-      this.amount = !_.isNil(transaction.value)
-        ? parseInt(Buffer.from(transaction.value, 'utf8').toString(), 16)
-        : null;
+      this.access_list = utils.toHexStringNonQuantity(transaction.accessList);
+      this.amount = parseInt(transaction.value.toString('hex'), 16);
       this.block_gas_used = recordFile.gasUsed;
-      this.chain_id = transaction.chainId ? utils.addHexPrefix(transaction.chainId) : null;
+      this.chain_id = utils.toHexStringQuantity(transaction.chainId);
       this.from = !_.isNil(contractResult.senderId) ? EntityId.parse(contractResult.senderId).toEvmAddress() : null;
       this.gas_limit = !_.isNil(transaction.gasLimit) ? transaction.gasLimit : null;
-      this.gas_price = transaction.gasPrice ? utils.addHexPrefix(transaction.gasPrice) : null;
-      this.hash = utils.addHexPrefix(Buffer.from(transaction.ethHash, 'utf8').toString());
-      this.max_fee_per_gas = transaction.maxFeePerGas ? utils.addHexPrefix(transaction.maxFeePerGas) : null;
-      this.max_priority_fee_per_gas = transaction.maxPriorityFeePerGas
-        ? utils.addHexPrefix(transaction.maxPriorityFeePerGas)
-        : null;
-      this.r = transaction.signatureR ? utils.addHexPrefix(transaction.signatureR) : null;
-      this.s = transaction.signatureS ? utils.addHexPrefix(transaction.signatureS) : null;
+      this.gas_price = utils.toHexStringQuantity(transaction.gasPrice);
+      this.hash = utils.toHexStringNonQuantity(transaction.ethHash);
+      this.max_fee_per_gas = utils.toHexStringQuantity(transaction.maxFeePerGas);
+      this.max_priority_fee_per_gas = utils.toHexStringQuantity(transaction.maxPriorityFeePerGas);
+      this.r = utils.toHexStringNonQuantity(transaction.signatureR);
+      this.s = utils.toHexStringNonQuantity(transaction.signatureS);
       this.type = transaction.ethType;
       this.v = transaction.recoveryId;
 
       if (!_.isNil(transaction.callData)) {
-        this.function_parameters = utils.addHexPrefix(transaction.callData);
-      } else {
-        if (!contractResult.functionParameters.length && !_.isNil(fileData)) {
-          this.function_parameters = utils.toHexString(fileData.file_data, true);
-        }
+        this.function_parameters = utils.toHexStringNonQuantity(transaction.callData);
+      } else if (!contractResult.functionParameters.length && !_.isNil(fileData)) {
+        this.function_parameters = utils.toHexStringNonQuantity(fileData.file_data);
       }
     }
 
     // if no ethereum hash default to hashgraph hash
-    this.hash = this.hash || utils.toHexString(transaction.transactionHash, true);
+    this.hash = this.hash || utils.toHexStringNonQuantity(transaction.transactionHash);
   }
 }
 
