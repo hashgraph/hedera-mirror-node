@@ -20,7 +20,7 @@ jobs:
         with:
           cache: 'maven'
           distribution: 'temurin'
-          java-version: 17.0.3
+          java-version: 17
 
       - name: Vulnerability check
         run: ./mvnw dependency-check:aggregate
@@ -40,7 +40,7 @@ jobs:
         with:
           cache: 'maven'
           distribution: 'temurin'
-          java-version: 17.0.3
+          java-version: 17
 
       - name: Cache SonarCloud dependencies
         uses: actions/cache@v2
