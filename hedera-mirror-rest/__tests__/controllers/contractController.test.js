@@ -1295,8 +1295,8 @@ describe('getContractLogsPaginationFilters', () => {
         ...defaultExpected,
         paginationFilters: [
           [
-            {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '5'},
             {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '5'},
           ],
         ],
         paginationOrder: constants.orderFilterValues.DESC,
@@ -1317,8 +1317,8 @@ describe('getContractLogsPaginationFilters', () => {
         ...defaultExpected,
         paginationFilters: [
           [
-            {key: constants.filterKeys.INDEX, operator: utils.opsMap.gt, value: '5'},
             {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.gt, value: '5'},
           ],
         ],
         paginationOrder: constants.orderFilterValues.ASC,
@@ -1339,8 +1339,8 @@ describe('getContractLogsPaginationFilters', () => {
         ...defaultExpected,
         paginationFilters: [
           [
-            {key: constants.filterKeys.INDEX, operator: utils.opsMap.gt, value: '0'},
             {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.gt, value: '0'},
           ],
           [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1'}],
         ],
@@ -1361,11 +1361,11 @@ describe('getContractLogsPaginationFilters', () => {
       expected: {
         ...defaultExpected,
         paginationFilters: [
-          [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '1'}],
           [
-            {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '5'},
             {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '5'},
           ],
+          [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '1'}],
         ],
         paginationOrder: constants.orderFilterValues.DESC,
       },
@@ -1386,8 +1386,8 @@ describe('getContractLogsPaginationFilters', () => {
         ...defaultExpected,
         paginationFilters: [
           [
-            {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '0'},
             {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '0'},
           ],
         ],
         paginationOrder: constants.orderFilterValues.ASC,
@@ -1408,8 +1408,8 @@ describe('getContractLogsPaginationFilters', () => {
         ...defaultExpected,
         paginationFilters: [
           [
-            {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '0'},
             {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '0'},
           ],
           [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1'}],
         ],
@@ -1430,11 +1430,11 @@ describe('getContractLogsPaginationFilters', () => {
       expected: {
         ...defaultExpected,
         paginationFilters: [
-          [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '1'}],
           [
-            {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '0'},
             {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '0'},
           ],
+          [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '1'}],
         ],
         paginationOrder: constants.orderFilterValues.DESC,
       },
@@ -1455,8 +1455,8 @@ describe('getContractLogsPaginationFilters', () => {
         ...defaultExpected,
         paginationFilters: [
           [
-            {key: constants.filterKeys.INDEX, operator: utils.opsMap.gte, value: '0'},
             {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1'},
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.gte, value: '0'},
           ],
           [
             {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1'},
@@ -1483,12 +1483,12 @@ describe('getContractLogsPaginationFilters', () => {
         ...defaultExpected,
         paginationFilters: [
           [
-            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1'},
-            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '3'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '3'},
+            {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '3'},
           ],
           [
-            {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '3'},
-            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '3'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '3'},
+            {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1'},
           ],
         ],
         paginationOrder: constants.orderFilterValues.DESC,
@@ -1584,11 +1584,11 @@ describe('extractContractLogsPaginationQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: [
-          [defaultContractLogCondition, 'cl.index > $2', 'cl.consensus_timestamp = $3'],
+          [defaultContractLogCondition, 'cl.consensus_timestamp = $2', 'cl.index > $3'],
           [defaultContractLogCondition, 'cl.consensus_timestamp > $4'],
         ],
         paginationOrder: constants.orderFilterValues.ASC,
-        params: [defaultContractId, '1', '2', '2'],
+        params: [defaultContractId, '2', '1', '2'],
       },
     },
     {
@@ -1616,11 +1616,11 @@ describe('extractContractLogsPaginationQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: [
-          [defaultContractLogCondition, 'cl.index > $2', 'cl.consensus_timestamp = $3'],
+          [defaultContractLogCondition, 'cl.consensus_timestamp = $2', 'cl.index > $3'],
           [defaultContractLogCondition, 'cl.consensus_timestamp > $4', 'cl.consensus_timestamp <= $5'],
         ],
         paginationOrder: constants.orderFilterValues.ASC,
-        params: [defaultContractId, '1', '2', '2', '3'],
+        params: [defaultContractId, '2', '1', '2', '3'],
       },
     },
     {
@@ -1658,7 +1658,7 @@ describe('extractContractLogsPaginationQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: [
-          [defaultContractLogCondition, 'cl.topic0 in ($2,$3)', 'cl.index > $4', 'cl.consensus_timestamp = $5'],
+          [defaultContractLogCondition, 'cl.topic0 in ($2,$3)', 'cl.consensus_timestamp = $4', 'cl.index > $5'],
           [
             defaultContractLogCondition,
             'cl.topic0 in ($2,$3)',
@@ -1667,7 +1667,7 @@ describe('extractContractLogsPaginationQuery', () => {
           ],
         ],
         paginationOrder: constants.orderFilterValues.ASC,
-        params: [defaultContractId, Buffer.from('11', 'hex'), Buffer.from('13', 'hex'), '1', '2', '2', '3'],
+        params: [defaultContractId, Buffer.from('11', 'hex'), Buffer.from('13', 'hex'), '2', '1', '2', '3'],
       },
     },
     {
@@ -1694,11 +1694,11 @@ describe('extractContractLogsPaginationQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: [
-          ['cl.index > $1', 'cl.consensus_timestamp = $2'],
+          ['cl.consensus_timestamp = $1', 'cl.index > $2'],
           ['cl.consensus_timestamp > $3', 'cl.consensus_timestamp <= $4'],
         ],
         paginationOrder: constants.orderFilterValues.ASC,
-        params: ['1', '2', '2', '3'],
+        params: ['2', '1', '2', '3'],
       },
     },
   ];

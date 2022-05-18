@@ -658,75 +658,85 @@ class ContractController extends BaseController {
   };
 
   getContractLogsPaginationFilters = (indexBound, timestampBound, defaultOrder) => {
-    const lower = [];
-    const upper = [];
-    let paginationOrder = defaultOrder;
+    const [hasTimestampGte, hasTimestampLte, hasTimestampGt, hasTimestampLt] = [
+      timestampBound.hasLower() && timestampBound.lower.operator === utils.opsMap.gte,
+      timestampBound.hasUpper() && timestampBound.upper.operator === utils.opsMap.lte,
+      timestampBound.hasLower() && timestampBound.lower.operator === utils.opsMap.gt,
+      timestampBound.hasUpper() && timestampBound.upper.operator === utils.opsMap.lt,
+    ];
+    const paginationResult = {
+      paginationFilters: [],
+      paginationOrder: defaultOrder,
+    };
 
-    if (timestampBound.hasLower() && timestampBound.hasUpper() && indexBound.isEmpty()) {
-      // timestamp range is provided but index is missing
-      lower.push(timestampBound.lower, timestampBound.upper);
-    } else {
-      if (timestampBound.hasLower()) {
-        // split timestamp and index into 2 parts if both operators are compatible
-        // timestamp >= & index =/>/>=
-        if (timestampBound.lower.operator === utils.opsMap.gte && (indexBound.hasEqual() || indexBound.hasLower())) {
-          lower.push(indexBound.lower, indexBound.equal, {...timestampBound.lower, operator: utils.opsMap.eq});
-          upper.push({...timestampBound.lower, operator: utils.opsMap.gt});
-        } else {
-          // use timestamp only, index is not compatible
-          lower.push(timestampBound.lower);
-        }
-        if (!indexBound.hasUpper()) {
-          // ASC order for index >/>=/= & timestamp >=
-          paginationOrder = constants.orderFilterValues.ASC;
-        }
-      }
-
-      if (timestampBound.hasUpper()) {
-        // split timestamp and index into 2 parts if both operators are compatible
-        // timestamp <= & index =/</<=
-        if (timestampBound.upper.operator === utils.opsMap.lte && (indexBound.hasEqual() || indexBound.hasUpper())) {
-          upper.push(indexBound.upper, indexBound.equal, {...timestampBound.upper, operator: utils.opsMap.eq});
-          lower.push({...timestampBound.upper, operator: utils.opsMap.lt});
-        } else {
-          // use timestamp only, index is not compatible
-          upper.push(timestampBound.upper);
-        }
-        if (!indexBound.hasLower()) {
-          // DESC order for index =/</<= & timestamp <=
-          paginationOrder = constants.orderFilterValues.DESC;
-        }
-      }
-
-      if (timestampBound.hasEqual()) {
-        // timestamp has no lower or upper bound, so
-        // use the default filters as they are supplied by the user
-        lower.push(
-          indexBound.lower,
-          indexBound.equal,
-          indexBound.upper,
-          timestampBound.lower,
-          timestampBound.equal,
-          timestampBound.upper
-        );
-        // if timestamp and index have no bounds, use the default order
-        if (indexBound.hasLower()) {
-          // ASC order for index >/>=/= & timestamp =
-          paginationOrder = constants.orderFilterValues.ASC;
-        }
-        if (indexBound.hasUpper()) {
-          // DESC order for index =/</<= & timestamp =
-          paginationOrder = constants.orderFilterValues.DESC;
-        }
-      }
+    // index is missing, no matter what timestamp operators are, only one bound is needed
+    if (!timestampBound.isEmpty() && indexBound.isEmpty()) {
+      paginationResult.paginationFilters = [[timestampBound.lower, timestampBound.equal, timestampBound.upper]];
+      paginationResult.paginationOrder = hasTimestampGt
+        ? constants.orderFilterValues.ASC
+        : paginationResult.paginationOrder;
+      paginationResult.paginationOrder = hasTimestampLt
+        ? constants.orderFilterValues.DESC
+        : paginationResult.paginationOrder;
+      // lte and gte are with bigger priority than gt and lt
+      paginationResult.paginationOrder = hasTimestampGte
+        ? constants.orderFilterValues.ASC
+        : paginationResult.paginationOrder;
+      paginationResult.paginationOrder = hasTimestampLte
+        ? constants.orderFilterValues.DESC
+        : paginationResult.paginationOrder;
+      // if timestamp range is provided and both operators are with the same weight, use default order
+      paginationResult.paginationOrder =
+        (hasTimestampGte && hasTimestampLte) || (hasTimestampGt && hasTimestampLt)
+          ? defaultOrder
+          : paginationResult.paginationOrder;
     }
 
-    return {
-      paginationFilters: [lower.filter((f) => !_.isNil(f)), upper.filter((f) => !_.isNil(f))].filter(
-        (filters) => !_.isEmpty(filters)
-      ),
-      paginationOrder,
-    };
+    // timestamp =, only one bound is needed
+    // skip, if paginationFilters are already populated by another case
+    if (_.isEmpty(paginationResult.paginationFilters) && timestampBound.hasEqual()) {
+      paginationResult.paginationFilters = [
+        [timestampBound.equal, indexBound.lower, indexBound.equal, indexBound.upper],
+      ];
+      // order is determined by the index operator
+      paginationResult.paginationOrder = indexBound.hasLower()
+        ? constants.orderFilterValues.ASC
+        : paginationResult.paginationOrder;
+      paginationResult.paginationOrder = indexBound.hasUpper()
+        ? constants.orderFilterValues.DESC
+        : paginationResult.paginationOrder;
+    }
+
+    // timestamp >= & index =/>/>=, order is ASC
+    // split the filters into two bounds
+    // if index has upper bound, then should be matched in the next check
+    // skip, if paginationFilters are already populated by another case
+    if (_.isEmpty(paginationResult.paginationFilters) && hasTimestampGte && !indexBound.hasUpper()) {
+      paginationResult.paginationFilters = [
+        [{...timestampBound.lower, operator: utils.opsMap.eq}, indexBound.lower, indexBound.equal],
+        [{...timestampBound.lower, operator: utils.opsMap.gt}, timestampBound.upper],
+      ];
+      paginationResult.paginationOrder = constants.orderFilterValues.ASC;
+    }
+
+    // timestamp <= & index =/</<=, order is DESC
+    // split the filters into two bounds
+    // if index has lower bound, then it should have been matched in the previous check
+    // skip, if paginationFilters are already populated by another case
+    if (_.isEmpty(paginationResult.paginationFilters) && hasTimestampLte && !indexBound.hasLower()) {
+      paginationResult.paginationFilters = [
+        [{...timestampBound.upper, operator: utils.opsMap.eq}, indexBound.upper, indexBound.equal],
+        [{...timestampBound.upper, operator: utils.opsMap.lt}, timestampBound.lower],
+      ];
+      paginationResult.paginationOrder = constants.orderFilterValues.DESC;
+    }
+
+    // removes empty values if any
+    paginationResult.paginationFilters = paginationResult.paginationFilters
+      .map((pFilters) => pFilters.filter((f) => !_.isNil(f)))
+      .filter((pFilters) => !_.isEmpty(pFilters));
+
+    return paginationResult;
   };
 
   extractContractLogsPaginationQuery = (filters, contractId) => {
