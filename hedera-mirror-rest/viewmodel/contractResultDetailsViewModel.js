@@ -22,10 +22,12 @@
 
 const _ = require('lodash');
 const {toBigIntBE} = require('bigint-buffer');
+
 const ContractLogResultsViewModel = require('./contractResultLogViewModel');
 const ContractResultStateChangeViewModel = require('./contractResultStateChangeViewModel');
 const ContractResultViewModel = require('./contractResultViewModel');
-const {TransactionResult, TransactionType} = require('../model');
+const {TransactionResult} = require('../model');
+const {TINYBAR_IN_WEIBAR} = require('../constants');
 const utils = require('../utils');
 const EntityId = require('../entityId');
 
@@ -33,7 +35,7 @@ const EntityId = require('../entityId');
  * Contract result details view model
  */
 class ContractResultDetailsViewModel extends ContractResultViewModel {
-  static _FAIL_PROTO_ID = Number.parseInt(TransactionResult.getSuccessProtoId());
+  static _SUCCESS_PROTO_ID = Number.parseInt(TransactionResult.getSuccessProtoId());
   static _SUCCESS_RESULT = '0x1';
   static _FAIL_RESULT = '0x0';
 
@@ -61,13 +63,13 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
     );
     this.status =
-      transaction.result === ContractResultDetailsViewModel._FAIL_PROTO_ID
+      transaction.result === ContractResultDetailsViewModel._SUCCESS_PROTO_ID
         ? ContractResultDetailsViewModel._SUCCESS_RESULT
         : ContractResultDetailsViewModel._FAIL_RESULT;
 
     // default eth related values
     this.access_list = null;
-    this.block_gas_used = null;
+    this.block_gas_used = recordFile.gasUsed !== null && recordFile.gasUsed !== -1 ? recordFile.gasUsed : null;
     this.chain_id = null;
     this.gas_price = null;
     this.max_fee_per_gas = null;
@@ -80,8 +82,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     if (!_.isNil(transaction.type)) {
       this.access_list = utils.toHexStringNonQuantity(transaction.accessList);
-      this.amount = toBigIntBE(transaction.value);
-      this.block_gas_used = recordFile.gasUsed;
+      this.amount = transaction.value && toBigIntBE(transaction.value) / TINYBAR_IN_WEIBAR;
       this.chain_id = utils.toHexStringQuantity(transaction.chainId);
 
       if (!_.isNil(contractResult.senderId)) {

@@ -1486,7 +1486,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/ContractResult'
         - type: object
-          properties:            
+          properties:
             access_list:
               description: The hex encoded access_list of the wrapped ethereum transaction
               nullable: true
@@ -1494,7 +1494,7 @@ components:
               example: '0xabcd'
             block_gas_used:
               description: The total amount of gas used in the block
-              example: "0x6ceecd8bb224da491"
+              example: 2000
               format: int64
               nullable: true
               type: integer
@@ -1510,8 +1510,8 @@ components:
               nullable: true
               type: integer
             chain_id:
-              description: The hex encoded chain_id of the wrapped ethereum transaction  
-              nullable: true            
+              description: The hex encoded chain_id of the wrapped ethereum transaction
+              nullable: true
               type: string
               example: '0x0127'
             hash:
@@ -1568,7 +1568,7 @@ components:
               description: The recovery_id of the wrapped ethereum transaction
               nullable: true
               type: integer
-              example: 1              
+              example: 1
     ContractResultLog:
       type: object
       properties:
@@ -3440,10 +3440,10 @@ components:
           - $ref: '#/components/schemas/TransactionIdStr'
       required: true
       description: Transaction Id or a 32 byte hash with optional 0x prefix
-      examples: 
+      examples:
         trahsactionId:
           value: 0.0.10-1234567890-000000000
-        transactionHash:        
+        transactionHash:
           value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
-        transactionHashWith0xPrefix:        
+        transactionHashWith0xPrefix:
           value: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'

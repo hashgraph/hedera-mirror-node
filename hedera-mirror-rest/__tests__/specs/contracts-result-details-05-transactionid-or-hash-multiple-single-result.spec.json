@@ -99,28 +99,32 @@
         "consensus_timestamp": 167654000123456,
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
         "payer_account_id": "8001",
-        "value": "0x5"
+        "value": "0x0001158e460913d00000",
+        "_value_description": "20000000000000000000 weibars = 2000000000 tinybars"
       },
       {
         "call_data": "0x0707",
         "consensus_timestamp": 167654000123457,
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393",
         "payer_account_id": "8001",
-        "value": "0x5"
+        "value": "0x0001a055690d9db80000",
+        "_value_description": "30000000000000000000 weibars = 3000000000 tinybars"
       },
       {
         "call_data": "0x0808",
         "consensus_timestamp": 167654000123458,
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6394",
         "payer_account_id": "8001",
-        "value": "0x5"
+        "value": "0x00022b1c8c1227a00000",
+        "_value_description": "40000000000000000000 weibars = 4000000000 tinybars"
       },
       {
         "call_data": "0x0909",
         "consensus_timestamp": 167654000123459,
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6395",
         "payer_account_id": "8001",
-        "value": "0x5"
+        "value": "0x0002b5e3af16b1880000",
+        "_value_description": "50000000000000000000 weibars = 5000000000 tinybars"
       }
     ]
   },
@@ -133,7 +137,7 @@
   "responseStatus": 200,
   "responseJson": {
     "access_list": "0x",
-    "amount": 5,
+    "amount": 2000000000,
     "block_gas_used": 50000000,
     "block_hash": "0x6ceecd8bb224da491",
     "block_number": 17,

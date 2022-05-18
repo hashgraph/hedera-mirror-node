@@ -61,18 +61,21 @@
         "index": 16,
         "consensus_start": 167654000123439,
         "consensus_end": 167654000123449,
+        "gas_used": -1,
         "hash": "f292e5624f6f4cf8c134c9"
       },
       {
         "index": 17,
         "consensus_start": 167654000123450,
         "consensus_end": 167654000123460,
+        "gas_used": -1,
         "hash": "6ceecd8bb224da491"
       },
       {
         "index": 18,
         "consensus_start": 167654000123461,
         "consensus_end": 167654000123470,
+        "gas_used": -1,
         "hash": "e19f4a235bee1e6bb19258b"
       }
     ],

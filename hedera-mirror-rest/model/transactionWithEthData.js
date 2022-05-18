@@ -24,7 +24,7 @@ const Transaction = require('./transaction');
 
 class TransactionWithEthData extends Transaction {
   /**
-   * Parses ethereumTransaction table columns into the transaction object
+   * Parses transaction table and ethereum_transaction columns into the TransactionWithEthData object
    */
   constructor(txWithEthData) {
     super(txWithEthData);

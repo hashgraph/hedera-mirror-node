@@ -25,7 +25,6 @@ const _ = require('lodash');
 const constants = require('../constants');
 const Contract = require('../model/contract');
 const Transaction = require('../model/transaction');
-const EthereumTransaction = require('../model/ethereumTransaction');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
   response: {

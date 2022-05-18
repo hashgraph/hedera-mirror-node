@@ -112,8 +112,9 @@
         "chain_id": "0x0127",
         "call_data_id": "5001",
         "call_data": "0x0606",
-        "value": "0x2710",
-        "gas_limit": 15000
+        "gas_limit": 15000,
+        "value": "0x0001a055690d9db80000",
+        "_value_description": "30000000000000000000 weibars = 3000000000 tinybars"
       }
     ],
     "filedata": [
@@ -147,7 +148,7 @@
   "responseStatus": 200,
   "responseJson": {
     "access_list": "0xabcd",
-    "amount": 10000,
+    "amount": 3000000000,
     "block_gas_used": 50000000,
     "block_hash": "0x6ceecd8bb224da491",
     "block_number": 17,

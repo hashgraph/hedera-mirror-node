@@ -422,6 +422,8 @@ const addEntity = async (defaults, entity) => {
 };
 
 const addEthereumTransaction = async (ethereumTransaction) => {
+  // any attribute starting with '_' is not a db column
+  ethereumTransaction = _.omitBy(ethereumTransaction, (v, k) => k.startsWith('_'));
   const localDefaults = {
     access_list: null,
     call_data_id: null,
