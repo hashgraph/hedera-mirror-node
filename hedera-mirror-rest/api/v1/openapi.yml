@@ -1486,7 +1486,12 @@ components:
       allOf:
         - $ref: '#/components/schemas/ContractResult'
         - type: object
-          properties:
+          properties:            
+            access_list:
+              description: The hex encoded access_list of the wrapped ethereum transaction
+              nullable: true
+              type: string
+              example: '0xabcd'
             block_hash:
               description: The hex encoded block (record file chain) hash
               example: "0x6ceecd8bb224da491"
@@ -1498,58 +1503,64 @@ components:
               format: int64
               nullable: true
               type: integer
+            chain_id:
+              description: The hex encoded chain_id of the wrapped ethereum transaction  
+              nullable: true            
+              type: string
+              example: '0x0127'
             hash:
               description: The hex encoded transaction hash
               example: "0x3531396130303866616264653464"
               type: string
-            logs:
-              $ref: '#/components/schemas/ContractResultLogs'
-            state_changes:
-              $ref: '#/components/schemas/ContractResultStateChanges'
-            access_list:
-              description: The hex encoded access_list of the wrapped ethereum transaction
-              type: string
-              example: '0xabcd'
-            chain_id:
-              description: The hex encoded chain_id of the wrapped ethereum transaction              
-              type: string
-              example: '0x0127'
             gas_price:
               description: The hex encoded gas_price of the wrapped ethereum transaction
+              nullable: true
               type: string
               example: '0x4a817c800'
+            logs:
+              $ref: '#/components/schemas/ContractResultLogs'
             max_fee_per_gas:
               description: The hex encoded max_fee_per_gas of the wrapped ethereum transaction
+              nullable: true
               type: string
               example: '0x5'
             max_priority_fee_per_gas:
               description: The hex encoded max_priority_fee_per_gas of the wrapped ethereum transaction
+              nullable: true
               type: string
               example: '0x100'
             nonce:
               description: The nonce of the wrapped ethereum transaction
+              nullable: true
               type: integer
               example: 1
             r:
               description: The hex encoded signature_r of the wrapped ethereum transaction
+              nullable: true
               type: string
               example: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c043'
             s:
               description: The hex encoded signature_s of the wrapped ethereum transaction
+              nullable: true
               type: string
               example: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b355'
-            v:
-              description: The recovery_id of the wrapped ethereum transaction
-              type: integer
-              example: 1              
+            state_changes:
+              $ref: '#/components/schemas/ContractResultStateChanges'
             transaction_index:
               description: The position of the transaction in the block
+              nullable: true
               type: integer
               example: 1
             type:
               description: The type of the wrapped ethereum transaction, 0 (Pre-Eip1559) or 2 (Post-Eip1559)
+              nullable: true
               type: integer
               example: 2
+            v:
+              description: The recovery_id of the wrapped ethereum transaction
+              nullable: true
+              type: integer
+              example: 1              
     ContractResultLog:
       type: object
       properties:

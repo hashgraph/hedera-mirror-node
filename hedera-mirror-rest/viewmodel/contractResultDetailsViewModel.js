@@ -93,7 +93,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
         : null;
       this.r = transaction.signatureR ? utils.addHexPrefix(transaction.signatureR) : null;
       this.s = transaction.signatureS ? utils.addHexPrefix(transaction.signatureS) : null;
-      this.type = transaction.ethType || null;
+      this.type = transaction.ethType;
       this.v = transaction.recoveryId;
 
       if (!_.isNil(transaction.callData)) {
@@ -105,6 +105,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       }
     }
 
+    // if no ethereum hash default to hashgraph hash
     this.hash = this.hash || utils.toHexString(transaction.transactionHash, true);
   }
 }
