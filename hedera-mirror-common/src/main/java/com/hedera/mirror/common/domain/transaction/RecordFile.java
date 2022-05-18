@@ -20,6 +20,9 @@ package com.hedera.mirror.common.domain.transaction;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.time.Instant;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -36,11 +39,13 @@ import lombok.ToString;
 import org.springframework.data.util.Version;
 import reactor.core.publisher.Flux;
 
+import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
 
 @Builder(toBuilder = true)
 @Data
@@ -72,6 +77,13 @@ public class RecordFile implements StreamFile<RecordItem> {
     @ToString.Exclude
     private String fileHash;
 
+    private long gasUsed = 0L;
+
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    @Transient
+    private transient final LogsBloomAggregator logsBloomAggregator = new LogsBloomAggregator();
+
     private Integer hapiVersionMajor;
 
     private Integer hapiVersionMinor;
@@ -91,6 +103,9 @@ public class RecordFile implements StreamFile<RecordItem> {
     private Long loadEnd;
 
     private Long loadStart;
+
+    @ToString.Exclude
+    private byte[] logsBloom;
 
     @ToString.Exclude
     @Transient
@@ -118,5 +133,34 @@ public class RecordFile implements StreamFile<RecordItem> {
         }
 
         return new Version(hapiVersionMajor, hapiVersionMinor, hapiVersionPatch);
+    }
+
+    public void finishLoad(long count) {
+        this.count = count;
+        loadEnd = Instant.now().getEpochSecond();
+        logsBloom = logsBloomAggregator.getBloom();
+    }
+
+    public void processItem(final RecordItem recordItem) {
+        // if the record item is not the parent.
+        if (recordItem.getRecord().getTransactionID().getNonce() != 0L) {
+            return;
+        }
+        var contractResult = getContractFunctionResult(recordItem.getRecord());
+        if (contractResult == null) {
+            return;
+        }
+        gasUsed += contractResult.getGasUsed();
+        logsBloomAggregator.aggregate(DomainUtils.toBytes(contractResult.getBloom()));
+    }
+
+    private ContractFunctionResult getContractFunctionResult(TransactionRecord record) {
+        if (record.hasContractCreateResult()) {
+            return record.getContractCreateResult();
+        }
+        if (record.hasContractCallResult()) {
+            return record.getContractCallResult();
+        }
+        return null;
     }
 }

@@ -38,11 +38,11 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
 
     private static final String UPSERT_HISTORY_TEMPLATE = "/db/template/upsert_history.vm";
 
-    private final UpsertEntity upsertEntity;
+    private final EntityMetadata metadata;
 
     @Override
     public String getCreateTempIndexQuery() {
-        String columns = upsertEntity.columns(UpsertColumn::isId, "{0}");
+        String columns = metadata.columns(ColumnMetadata::isId, "{0}");
         return MessageFormat.format("create index if not exists {0}_idx on {0} ({1})",
                 getTemporaryTableName(), columns);
     }
@@ -50,17 +50,17 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
     @Override
     public String getCreateTempTableQuery() {
         return String.format("create temporary table if not exists %s on commit drop as table %s limit 0",
-                getTemporaryTableName(), upsertEntity.getTableName());
+                getTemporaryTableName(), metadata.getTableName());
     }
 
     @Override
     public String getFinalTableName() {
-        return upsertEntity.getTableName();
+        return metadata.getTableName();
     }
 
     /**
      * Constructs an upsert query using a velocity template with replacement variables for table and column names
-     * constructed from the `UpsertEntity` metadata.
+     * constructed from the `EntityMetadata` metadata.
      *
      * @return the upsert query
      */
@@ -71,7 +71,7 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
         velocityEngine.setProperty("resource.loader.class.class", ClasspathResourceLoader.class.getName());
         velocityEngine.init();
 
-        String templatePath = upsertEntity.getUpsertable().history() ? UPSERT_HISTORY_TEMPLATE : UPSERT_TEMPLATE;
+        String templatePath = metadata.getUpsertable().history() ? UPSERT_HISTORY_TEMPLATE : UPSERT_TEMPLATE;
         Template template = velocityEngine.getTemplate(templatePath);
 
         VelocityContext velocityContext = new VelocityContext();
@@ -79,16 +79,16 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
         velocityContext.put("historyTable", getFinalTableName() + "_history");
         velocityContext.put("tempTable", getTemporaryTableName());
 
-        // Columns: {0} is column name and {1} is column default. t is the temporary table alias and e is the existing.
-        velocityContext.put("coalesceColumns", upsertEntity.columns("coalesce(t.{0}, e.{0}, {1})"));
-        velocityContext.put("conflictColumns", upsertEntity.columns(UpsertColumn::isId, "{0}"));
-        velocityContext.put("existingColumns", closeRange(upsertEntity.columns("e.{0}")));
-        velocityContext.put("idColumns", upsertEntity.columns(UpsertColumn::isId, "e.{0}"));
-        velocityContext.put("idJoin", upsertEntity.columns(UpsertColumn::isId, "e.{0} = t.{0}", " and "));
-        velocityContext.put("insertColumns", upsertEntity.columns("{0}"));
-        velocityContext.put("notNullableColumn",
-                upsertEntity.column(c -> !c.isNullable() && !c.isId(), "coalesce(t.{0}, e.{0}) is not null"));
-        velocityContext.put("updateColumns", upsertEntity.columns(UpsertColumn::isUpdatable, "{0} = excluded.{0}"));
+        // {0} is column name and {1} is column default. t or blank is the temporary table alias and e is the existing.
+        velocityContext.put("coalesceColumns", metadata.columns("coalesce({0}, e_{0}, {1})"));
+        velocityContext.put("conflictColumns", metadata.columns(ColumnMetadata::isId, "{0}"));
+        velocityContext.put("existingColumns", closeRange(metadata.columns("e_{0}")));
+        velocityContext.put("existingColumnsAs", metadata.columns("e.{0} as e_{0}"));
+        velocityContext.put("idJoin", metadata.columns(ColumnMetadata::isId, "e.{0} = t.{0}", " and "));
+        velocityContext.put("insertColumns", metadata.columns("{0}"));
+        velocityContext.put("notNullableColumn", metadata.column(c -> !c.isNullable() && !c.isId(),
+                "coalesce({0}, e_{0}) is not null"));
+        velocityContext.put("updateColumns", metadata.columns(ColumnMetadata::isUpdatable, "{0} = excluded.{0}"));
 
         StringWriter writer = new StringWriter();
         template.merge(velocityContext, writer);
@@ -106,7 +106,7 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
     }
 
     private String closeRange(String input) {
-        return input.replace("e.timestamp_range",
-                "int8range(min(lower(e.timestamp_range)), min(lower(t.timestamp_range))) as timestamp_range");
+        return input.replace("e_timestamp_range",
+                "int8range(lower(e_timestamp_range), lower(timestamp_range)) as timestamp_range");
     }
 }

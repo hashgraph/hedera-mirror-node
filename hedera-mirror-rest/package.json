@@ -23,8 +23,8 @@
     "@awaitjs/express": "^0.9.0",
     "@godaddy/terminus": "^4.10.2",
     "@hashgraph/proto": "^2.4.2",
-    "asn1js": "^2.4.0",
-    "aws-sdk": "^2.1130.0",
+    "asn1js": "^3.0.3",
+    "aws-sdk": "^2.1136.0",
     "body-parser": "^1.20.0",
     "compression": "^1.7.4",
     "cors": "^2.8.5",
@@ -37,9 +37,9 @@
     "json-bigint": "^1.0.0",
     "json-schema": "^0.4.0",
     "lodash": "^4.17.21",
-    "log4js": "^6.4.6",
+    "log4js": "^6.4.7",
     "long": "^5.2.0",
-    "mathjs": "^10.5.2",
+    "mathjs": "^10.5.3",
     "mem": "^8.1.1",
     "minimist": "^1.2.6",
     "parse-duration": "^1.0.2",
@@ -50,7 +50,7 @@
     "quick-lru": "^5.1.1",
     "rfc4648": "^1.5.1",
     "swagger-stats": "^0.99.2",
-    "swagger-ui-express": "^4.3.0"
+    "swagger-ui-express": "^4.4.0"
   },
   "bundledDependencies": [
     "@awaitjs/express",
@@ -93,7 +93,7 @@
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-jest": "^26.1.5",
+    "eslint-plugin-jest": "^26.2.2",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-security": "^1.5.0",
@@ -111,7 +111,7 @@
     "rewire": "^6.0.0",
     "sinon": "^14.0.0",
     "supertest": "^6.2.3",
-    "testcontainers": "^8.10.0"
+    "testcontainers": "^8.10.1"
   },
   "jest": {
     "collectCoverage": true,

@@ -25,6 +25,11 @@ import com.google.common.collect.Range;
 
 public interface History {
 
+    @JsonIgnore
+    default boolean isHistory() {
+        return getTimestampRange() != null;
+    }
+
     Range<Long> getTimestampRange();
 
     void setTimestampRange(Range<Long> timestampRange);
@@ -46,6 +51,9 @@ public interface History {
     }
 
     default void setTimestampUpper(long timestampUpper) {
-        setTimestampRange(Range.closedOpen(getTimestampLower(), timestampUpper));
+        var timestampLower = getTimestampLower();
+        if (timestampLower != null) {
+            setTimestampRange(Range.closedOpen(timestampLower, timestampUpper));
+        }
     }
 }
