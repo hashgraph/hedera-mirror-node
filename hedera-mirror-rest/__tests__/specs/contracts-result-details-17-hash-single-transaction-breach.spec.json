@@ -14,12 +14,14 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001
+        "payer_account_id": 8001,
+        "sender_id": 8001
       }
     ],
     "recordFiles": [
       {
         "index": 17,
+        "gas_used": 50000000,
         "consensus_start": 167654000123450,
         "consensus_end": 167654000123460,
         "hash": "6ceecd8bb224da491"
@@ -30,14 +32,15 @@
         "consensus_timestamp": 167654000123456,
         "payerAccountId": "8001",
         "transaction_hash": "519a008fabde4d",
+        "type": 50,
         "valid_start_timestamp": 167654000123400
       },
       {
         "consensus_timestamp": 167654000123457,
         "payerAccountId": "8001",
         "transaction_hash": "519a008fabde5d",
-        "valid_start_timestamp": 167654000123400,
-        "result": 11
+        "type": 50,
+        "valid_start_timestamp": 167654000123401
       },
       {
         "consensus_timestamp": 167654000123458,
@@ -56,12 +59,18 @@
     ],
     "ethereumtransactions": [
       {
+        "call_data": "0x0606",
         "consensus_timestamp": 167654000123456,
-        "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392"
+        "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+        "value": "0x0001158e460913d00000",
+        "_value_description": "2000000000000000000 weibars = 200000000 tinybars"
       },
       {
+        "call_data": "0x0707",
         "consensus_timestamp": 167654000123457,
-        "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392"
+        "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+        "value": "0x0001158e460913d00000",
+        "_value_description": "20000000000000000000 weibars = 2000000000 tinybars"
       }
     ]
   },
@@ -69,26 +78,14 @@
     "/api/v1/contracts/results/4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
     "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392"
   ],
-  "responseStatus": 200,
+  "responseStatus": 500,
   "responseJson": {
-    "amount": 30,
-    "block_hash": "0x6ceecd8bb224da491",
-    "block_number": 17,
-    "bloom": "0x0505",
-    "call_result": "0x0606",
-    "contract_id": "0.0.5001",
-    "created_contract_ids": ["0.0.7001"],
-    "error_message": null,
-    "from": "0x0000000000000000000000000000000000001f41",
-    "function_parameters": "0x0707",
-    "gas_limit": 987654,
-    "gas_used": 123,
-    "hash": "0x3531396130303866616264653464",
-    "logs": [],
-    "result": "SUCCESS",
-    "state_changes": [],
-    "status": "0x1",
-    "timestamp": "167654.000123456",
-    "to": "0x0000000000000000000000000000000000001389"
+    "_status": {
+      "messages": [
+        {
+          "message": "Internal error"
+        }
+      ]
+    }
   }
 }
