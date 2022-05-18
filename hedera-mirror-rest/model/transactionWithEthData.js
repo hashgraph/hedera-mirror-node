@@ -32,16 +32,16 @@ class TransactionWithEthData extends Transaction {
     this.callData = txWithEthData.call_data;
     this.callDataId = txWithEthData.call_data_id;
     this.chainId = txWithEthData.chain_id;
+    this.ethHash = txWithEthData.ethhash;
     this.gasPrice = txWithEthData.gas_price;
     this.gasLimit = txWithEthData.gas_limit;
     this.maxFeePerGas = txWithEthData.max_fee_per_gas;
     this.maxPriorityFeePerGas = txWithEthData.max_priority_fee_per_gas;
+    this.nonce = txWithEthData.nonce;
     this.signatureR = txWithEthData.signature_r;
     this.signatureS = txWithEthData.signature_s;
     this.recoveryId = txWithEthData.recovery_id;
     this.value = txWithEthData.value;
-    this.ethType = txWithEthData.ethtype;
-    this.ethHash = txWithEthData.ethhash;
   }
 }
 

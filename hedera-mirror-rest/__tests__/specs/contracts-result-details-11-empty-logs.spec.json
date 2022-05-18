@@ -111,7 +111,7 @@
     "logs": [],
     "max_fee_per_gas": null,
     "max_priority_fee_per_gas": null,
-    "nonce": 0,
+    "nonce": null,
     "r": null,
     "result": "SUCCESS",
     "s": null,

@@ -55,7 +55,6 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
     this.result = TransactionResult.getName(transaction.result);
     this.transaction_index = transaction.index;
-    this.nonce = transaction.nonce;
 
     this.state_changes = contractStateChanges.map(
       (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
@@ -76,8 +75,9 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.s = null;
     this.type = null;
     this.v = null;
+    this.nonce = null;
 
-    if (`${transaction.type}` === TransactionType.getProtoId('ETHEREUMTRANSACTION')) {
+    if (!_.isNil(transaction.ethHash)) {
       this.access_list = utils.toHexStringNonQuantity(transaction.accessList);
       this.amount = toBigIntBE(transaction.value);
       this.block_gas_used = recordFile.gasUsed;
@@ -88,9 +88,10 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       this.hash = utils.toHexStringNonQuantity(transaction.ethHash);
       this.max_fee_per_gas = utils.toHexStringQuantity(transaction.maxFeePerGas);
       this.max_priority_fee_per_gas = utils.toHexStringQuantity(transaction.maxPriorityFeePerGas);
+      this.nonce = transaction.nonce;
       this.r = utils.toHexStringNonQuantity(transaction.signatureR);
       this.s = utils.toHexStringNonQuantity(transaction.signatureS);
-      this.type = transaction.ethType;
+      this.type = transaction.type;
       this.v = transaction.recoveryId;
 
       if (!_.isNil(transaction.callData)) {
@@ -98,10 +99,9 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       } else if (!contractResult.functionParameters.length && !_.isNil(fileData)) {
         this.function_parameters = utils.toHexStringNonQuantity(fileData.file_data);
       }
+    } else {
+      this.hash = utils.toHexStringNonQuantity(transaction.transactionHash);
     }
-
-    // if no ethereum hash default to hashgraph hash
-    this.hash = this.hash || utils.toHexStringNonQuantity(transaction.transactionHash);
   }
 }
 

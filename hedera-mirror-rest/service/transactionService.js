@@ -49,6 +49,7 @@ class TransactionService extends BaseService {
         ${EthereumTransaction.HASH},
         ${EthereumTransaction.MAX_FEE_PER_GAS},
         ${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS},
+        ${EthereumTransaction.NONCE},
         ${EthereumTransaction.SIGNATURE_R},
         ${EthereumTransaction.SIGNATURE_S},
         ${EthereumTransaction.TYPE},
@@ -68,10 +69,11 @@ class TransactionService extends BaseService {
       ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} as ethHash,
       ${EthereumTransaction.getFullName(EthereumTransaction.MAX_FEE_PER_GAS)},
       ${EthereumTransaction.getFullName(EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS)},
+      ${EthereumTransaction.getFullName(EthereumTransaction.NONCE)},
       ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)},
       ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_R)},
       ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)},
-      ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)} as ethType,
+      ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)},
       ${EthereumTransaction.getFullName(EthereumTransaction.VALUE)}
   `;
 
@@ -81,8 +83,6 @@ class TransactionService extends BaseService {
       ${Transaction.getFullName(Transaction.RESULT)},
       ${Transaction.getFullName(Transaction.TRANSACTION_HASH)},
       ${Transaction.getFullName(Transaction.INDEX)},
-      ${Transaction.getFullName(Transaction.NONCE)},
-      ${Transaction.getFullName(Transaction.TYPE)},
       ${this.ethTransactionSelectedFields}
     from ${Transaction.tableName} ${Transaction.tableAlias}
     left join ${EthereumTransaction.tableAlias}
@@ -98,8 +98,6 @@ class TransactionService extends BaseService {
     ${Transaction.getFullName(Transaction.RESULT)},
     ${Transaction.getFullName(Transaction.TRANSACTION_HASH)},
     ${Transaction.getFullName(Transaction.INDEX)},
-    ${Transaction.getFullName(Transaction.NONCE)},
-    ${Transaction.getFullName(Transaction.TYPE)},
     ${this.ethTransactionSelectedFields}
     from ${Transaction.tableName} ${Transaction.tableAlias}
     left join ${EthereumTransaction.tableAlias}
