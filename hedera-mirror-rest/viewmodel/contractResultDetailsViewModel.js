@@ -55,6 +55,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
     this.result = TransactionResult.getName(transaction.result);
     this.transaction_index = transaction.index;
+    this.hash = utils.toHexStringNonQuantity(transaction.transactionHash);
 
     this.state_changes = contractStateChanges.map(
       (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
@@ -77,7 +78,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.v = null;
     this.nonce = null;
 
-    if (!_.isNil(transaction.ethHash)) {
+    if (!_.isNil(transaction.type)) {
       this.access_list = utils.toHexStringNonQuantity(transaction.accessList);
       this.amount = toBigIntBE(transaction.value);
       this.block_gas_used = recordFile.gasUsed;
@@ -85,7 +86,6 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       this.from = !_.isNil(contractResult.senderId) ? EntityId.parse(contractResult.senderId).toEvmAddress() : null;
       this.gas_limit = !_.isNil(transaction.gasLimit) ? transaction.gasLimit : null;
       this.gas_price = utils.toHexStringQuantity(transaction.gasPrice);
-      this.hash = utils.toHexStringNonQuantity(transaction.ethHash);
       this.max_fee_per_gas = utils.toHexStringQuantity(transaction.maxFeePerGas);
       this.max_priority_fee_per_gas = utils.toHexStringQuantity(transaction.maxPriorityFeePerGas);
       this.nonce = transaction.nonce;
@@ -99,8 +99,6 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       } else if (!contractResult.functionParameters.length && !_.isNil(fileData)) {
         this.function_parameters = utils.toHexStringNonQuantity(fileData.file_data);
       }
-    } else {
-      this.hash = utils.toHexStringNonQuantity(transaction.transactionHash);
     }
   }
 }

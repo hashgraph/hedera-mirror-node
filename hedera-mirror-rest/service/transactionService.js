@@ -81,7 +81,10 @@ class TransactionService extends BaseService {
     select
       ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
       ${Transaction.getFullName(Transaction.RESULT)},
-      ${Transaction.getFullName(Transaction.TRANSACTION_HASH)},
+      coalesce(
+        ${EthereumTransaction.getFullName(EthereumTransaction.HASH)},
+        ${Transaction.getFullName(Transaction.TRANSACTION_HASH)}
+      ) as ${Transaction.TRANSACTION_HASH},
       ${Transaction.getFullName(Transaction.INDEX)},
       ${this.ethTransactionSelectedFields}
     from ${Transaction.tableName} ${Transaction.tableAlias}
@@ -96,7 +99,10 @@ class TransactionService extends BaseService {
     ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)},
     ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
     ${Transaction.getFullName(Transaction.RESULT)},
-    ${Transaction.getFullName(Transaction.TRANSACTION_HASH)},
+    coalesce(
+        ${EthereumTransaction.getFullName(EthereumTransaction.HASH)},
+      ${Transaction.getFullName(Transaction.TRANSACTION_HASH)}
+    ) as ${Transaction.TRANSACTION_HASH},
     ${Transaction.getFullName(Transaction.INDEX)},
     ${this.ethTransactionSelectedFields}
     from ${Transaction.tableName} ${Transaction.tableAlias}

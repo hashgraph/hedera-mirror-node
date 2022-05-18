@@ -32,7 +32,6 @@ class TransactionWithEthData extends Transaction {
     this.callData = txWithEthData.call_data;
     this.callDataId = txWithEthData.call_data_id;
     this.chainId = txWithEthData.chain_id;
-    this.ethHash = txWithEthData.ethhash;
     this.gasPrice = txWithEthData.gas_price;
     this.gasLimit = txWithEthData.gas_limit;
     this.maxFeePerGas = txWithEthData.max_fee_per_gas;
