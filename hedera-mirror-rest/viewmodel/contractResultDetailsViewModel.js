@@ -83,8 +83,14 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       this.amount = toBigIntBE(transaction.value);
       this.block_gas_used = recordFile.gasUsed;
       this.chain_id = utils.toHexStringQuantity(transaction.chainId);
-      this.from = !_.isNil(contractResult.senderId) ? EntityId.parse(contractResult.senderId).toEvmAddress() : null;
-      this.gas_limit = !_.isNil(transaction.gasLimit) ? transaction.gasLimit : null;
+
+      if (!_.isNil(contractResult.senderId)) {
+        this.from = EntityId.parse(contractResult.senderId).toEvmAddress();
+      }
+
+      if (!_.isNil(transaction.gasLimit)) {
+        this.gas_limit = transaction.gasLimit;
+      }
       this.gas_price = utils.toHexStringQuantity(transaction.gasPrice);
       this.max_fee_per_gas = utils.toHexStringQuantity(transaction.maxFeePerGas);
       this.max_priority_fee_per_gas = utils.toHexStringQuantity(transaction.maxPriorityFeePerGas);
