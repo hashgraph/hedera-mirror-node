@@ -21,6 +21,7 @@
 'use strict';
 
 const _ = require('lodash');
+const {toBigIntBE} = require('bigint-buffer');
 const ContractLogResultsViewModel = require('./contractResultLogViewModel');
 const ContractResultStateChangeViewModel = require('./contractResultStateChangeViewModel');
 const ContractResultViewModel = require('./contractResultViewModel');
@@ -78,7 +79,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     if (`${transaction.type}` === TransactionType.getProtoId('ETHEREUMTRANSACTION')) {
       this.access_list = utils.toHexStringNonQuantity(transaction.accessList);
-      this.amount = transaction.value.readBigInt64BE();
+      this.amount = toBigIntBE(transaction.value);
       this.block_gas_used = recordFile.gasUsed;
       this.chain_id = utils.toHexStringQuantity(transaction.chainId);
       this.from = !_.isNil(contractResult.senderId) ? EntityId.parse(contractResult.senderId).toEvmAddress() : null;
