@@ -16,7 +16,6 @@
     </parent>
 
     <properties>
-        <java.version>${java.version}</java.version>
         <repackage.classifier/>
         <spring-native.version>0.11.4</spring-native.version>
     </properties>
