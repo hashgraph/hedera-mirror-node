@@ -6,7 +6,7 @@ FROM ubuntu:20.04 as builder
 ARG DEBIAN_FRONTEND=noninteractive
 # GIT_REF can be a branch or a tag
 ARG GIT_REF=main
-RUN apt-get update && apt-get install -y gcc git openjdk-11-jdk-headless
+RUN apt-get update && apt-get install -y gcc git openjdk-17-jdk-headless
 RUN git clone -b ${GIT_REF} --depth 1 https://github.com/hashgraph/hedera-mirror-node
 WORKDIR /hedera-mirror-node
 RUN ./mvnw clean package -DskipTests -pl hedera-mirror-importer,hedera-mirror-rosetta
@@ -34,7 +34,7 @@ RUN apt-get update \
     && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8 \
     && echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
     && apt-get update \
-    && apt-get install -y postgresql-${PG_VERSION} postgresql-client-${PG_VERSION} supervisor openjdk-11-jre-headless \
+    && apt-get install -y postgresql-${PG_VERSION} postgresql-client-${PG_VERSION} supervisor openjdk-17-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app /app
