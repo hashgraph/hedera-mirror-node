@@ -59,7 +59,7 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(ints = { BATCH_SIZE, BATCH_SIZE + 10 })
+    @ValueSource(ints = {BATCH_SIZE, BATCH_SIZE + 10})
     void migrate(int totalTransactions) {
         // given
         var transactions = new ArrayList<EthereumTransaction>();

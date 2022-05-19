@@ -4,7 +4,7 @@ The Mirror Node can be run [locally](#running-locally) or via [Docker](#running-
 
 ## Building
 
-To run locally, first build the project using Java. Ensure you have OpenJDK 11 installed, then run the following command
+To run locally, first build the project using Java. Ensure you have OpenJDK 17 installed, then run the following command
 from the top level directory. This will compile a runnable mirror node JAR file in the `target` directory.
 
 ```console
@@ -15,7 +15,7 @@ from the top level directory. This will compile a runnable mirror node JAR file 
 
 ### Database Setup
 
-In addition to OpenJDK 11, you will need to install a [PostgreSQL](https://postgresql.org) database and initialize it.
+In addition to OpenJDK 17, you will need to install a [PostgreSQL](https://postgresql.org) database and initialize it.
 
 Since [Flyway](https://flywaydb.org) will manage the database schema, the only required step is to run the database
 initialization script. Locate the SQL script at `hedera-mirror-importer/src/main/resources/db/scripts/init.sh` and edit

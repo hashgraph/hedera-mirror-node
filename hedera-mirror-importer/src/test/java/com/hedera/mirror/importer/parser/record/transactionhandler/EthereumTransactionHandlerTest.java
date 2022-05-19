@@ -94,7 +94,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertThat(transactionHandler.getType()).isEqualTo(TransactionType.ETHEREUMTRANSACTION);
     }
 
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     @ParameterizedTest
     void getEntityId(boolean create) {
         var recordItem = recordItemBuilder.ethereumTransaction(create).build();
@@ -104,14 +104,14 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedId);
     }
 
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     @ParameterizedTest
     void updateTransaction(boolean create) {
         var fileId = EntityId.of(999L, EntityType.FILE);
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
         var gasLimit = ethereumTransaction.getGasLimit();
-        var expectedValue = new BigInteger(ethereumTransaction.getValue()).divide(
-                WEIBARS_TO_TINYBARS_BIGINT).toByteArray();
+        var expectedValue = new BigInteger(ethereumTransaction.getValue())
+                .divide(WEIBARS_TO_TINYBARS_BIGINT).toByteArray();
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
 
         var recordItem = recordItemBuilder.ethereumTransaction(create)
@@ -157,7 +157,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(entityListener, never()).onEntity(any());
     }
 
-    @ValueSource(booleans = { true, false })
+    @ValueSource(booleans = {true, false})
     @ParameterizedTest
     void updateTransactionSkipNonceOnFailure(boolean create) {
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
@@ -202,8 +202,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var transaction = new Transaction();
         doThrow(InvalidDatasetException.class).when(ethereumTransactionParser).decode(any());
 
-        assertThatThrownBy(() -> transactionHandler.updateTransaction(transaction, recordItem)).isInstanceOf(
-                InvalidDatasetException.class);
+        assertThatThrownBy(() -> transactionHandler.updateTransaction(transaction, recordItem))
+                .isInstanceOf(InvalidDatasetException.class);
         verify(entityListener, never()).onEntity(any());
         verify(entityListener, never()).onEthereumTransaction(any());
     }

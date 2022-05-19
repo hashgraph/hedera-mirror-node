@@ -18,7 +18,7 @@ jobs:
         with:
           cache: 'maven'
           distribution: 'temurin'
-          java-version: 11
+          java-version: 17
 
       - name: Maven package
         run: ./mvnw.cmd package -DskipTests

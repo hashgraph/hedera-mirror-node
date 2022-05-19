@@ -34,7 +34,7 @@ import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
 
 @Log4j2
 @Named
-@RequiredArgsConstructor(onConstructor_ = { @Lazy })
+@RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigration {
 
     public static final int BATCH_SIZE = 1000;
@@ -50,6 +50,16 @@ public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigr
             "where consensus_timestamp = :consensusTimestamp";
 
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+
+    @Override
+    public String getDescription() {
+        return "Convert ethereum transaction value from weibar to tinybar";
+    }
+
+    @Override
+    public MigrationVersion getVersion() {
+        return MigrationVersion.fromVersion("1.60.0");
+    }
 
     @Override
     protected void doMigrate() {
@@ -85,16 +95,6 @@ public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigr
         }
 
         log.info("Successfully converted value from weibar to tinybar for {} transactions in {}", count, stopwatch);
-    }
-
-    @Override
-    public MigrationVersion getVersion() {
-        return MigrationVersion.fromVersion("1.60.0");
-    }
-
-    @Override
-    public String getDescription() {
-        return "Convert ethereum transaction from weibar to tinybar";
     }
 
     @Value

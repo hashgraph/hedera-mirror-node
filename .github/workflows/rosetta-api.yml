@@ -22,6 +22,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Install JDK
+        uses: actions/setup-java@v2
+        with:
+          cache: 'maven'
+          distribution: 'temurin'
+          java-version: 17
+
       - name: Cache dependencies
         uses: actions/cache@v2
         with:
