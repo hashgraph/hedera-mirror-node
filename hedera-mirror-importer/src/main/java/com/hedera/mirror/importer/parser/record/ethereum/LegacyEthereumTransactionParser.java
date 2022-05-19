@@ -50,7 +50,7 @@ public class LegacyEthereumTransactionParser implements EthereumTransactionParse
                 .gasPrice(rlpItems.get(1).asBytes())
                 .gasLimit(rlpItems.get(2).asLong())
                 .toAddress(rlpItems.get(3).data())
-                .value(rlpItems.get(4).asBigInt().toByteArray())
+                .valueInWeibar(rlpItems.get(4).asBigInt())
                 .callData(rlpItems.get(5).data())
                 .type(LEGACY_TYPE_BYTE);
 

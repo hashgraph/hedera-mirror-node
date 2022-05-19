@@ -117,10 +117,12 @@ class EthereumTransactionHandler implements TransactionHandler {
         }
     }
 
-    private void convertGasWeiToTinyBars(EthereumTransaction ethereumTransaction) {
-        ethereumTransaction.setGasLimit(WeiBarTinyBarConverter.INSTANCE.weiBarToTinyBar(ethereumTransaction.getGasLimit()));
-        ethereumTransaction.setGasPrice(WeiBarTinyBarConverter.INSTANCE.weiBarToTinyBar(ethereumTransaction.getGasPrice()));
-        ethereumTransaction.setMaxFeePerGas(WeiBarTinyBarConverter.INSTANCE.weiBarToTinyBar(ethereumTransaction.getMaxFeePerGas()));
-        ethereumTransaction.setMaxPriorityFeePerGas(WeiBarTinyBarConverter.INSTANCE.weiBarToTinyBar(ethereumTransaction.getMaxPriorityFeePerGas()));
+    private void convertGasWeiToTinyBars(EthereumTransaction transaction) {
+        var converter = WeiBarTinyBarConverter.INSTANCE;
+        transaction.setGasLimit(converter.weiBarToTinyBar(transaction.getGasLimit()));
+        transaction.setGasPrice(converter.weiBarToTinyBar(transaction.getGasPrice()));
+        transaction.setMaxFeePerGas(converter.weiBarToTinyBar(transaction.getMaxFeePerGas()));
+        transaction.setMaxPriorityFeePerGas(converter.weiBarToTinyBar(transaction.getMaxPriorityFeePerGas()));
+        transaction.setValue(converter.weiBarToTinyBar(transaction.getValueInWeibar()));
     }
 }
