@@ -20,16 +20,15 @@ package com.hedera.mirror.common.converter;
  * ‍
  */
 
+import java.math.BigInteger;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-
-import java.math.BigInteger;
 
 class WeiBarTinyBarConverterTest {
     private static final WeiBarTinyBarConverter converter = WeiBarTinyBarConverter.INSTANCE;
     private static final Long defaultGas = 1234567890123L;
     private static final byte[] defaultGasBytes = BigInteger.valueOf(defaultGas).toByteArray();
-
+    
     @Test
     void byteArrayWeiBarToTinyBar() {
         Assertions.assertThat(converter.weiBarToTinyBar((byte[]) null)).isNull();

@@ -30,7 +30,6 @@ import java.util.List;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,23 +48,14 @@ import com.hedera.mirror.importer.parser.record.ethereum.Eip1559EthereumTransact
 @TestPropertySource(properties = "spring.flyway.target=1.59.2")
 class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
 
-    private static final String REVERT_TABLE_CHANGE_SQL = "alter table if exists ethereum_transaction " +
-            "drop column value, " +
-            "add column value bytea null";
-
     private final ConvertEthereumTransactionValueMigration convertEthereumTransactionValueMigration;
 
     private final JdbcTemplate jdbcTemplate;
 
-    @AfterEach
-    void cleanup() {
-        jdbcTemplate.update(REVERT_TABLE_CHANGE_SQL);
-    }
-
     @Test
     void empty() {
         convertEthereumTransactionValueMigration.doMigrate();
-        assertThat(findAllMigratedEthereumTransactions()).isEmpty();
+        assertThat(findAllEthereumTransactions()).isEmpty();
     }
 
     @ParameterizedTest
@@ -73,14 +63,19 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
     void migrate(int totalTransactions) {
         // given
         var transactions = new ArrayList<EthereumTransaction>();
-        var expectedTransactions = new ArrayList<MigratedEthereumTransaction>();
+        var expectedTransactions = new ArrayList<EthereumTransaction>();
+
         // first transaction has null value
         transactions.add(ethereumTransaction(null));
-        expectedTransactions.add(toMigratedEthereumTransaction(transactions.get(0), null));
+        expectedTransactions.add(transactions.get(0));
+
         for (int i = 1; i < totalTransactions; i++) {
-            var transaction = ethereumTransaction((long) i);
+            var value = BigInteger.valueOf(i);
+            var transaction = ethereumTransaction(toWeibar(value));
             transactions.add(transaction);
-            expectedTransactions.add(toMigratedEthereumTransaction(transaction, (long) i));
+
+            var expectedTransaction = transaction.toBuilder().value(value.toByteArray()).build();
+            expectedTransactions.add(expectedTransaction);
         }
         persistEthereumTransactions(transactions);
 
@@ -88,12 +83,11 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
         convertEthereumTransactionValueMigration.doMigrate();
 
         // then
-        var actual = findAllMigratedEthereumTransactions();
-        assertThat(actual).containsExactlyInAnyOrderElementsOf(expectedTransactions);
+        assertThat(findAllEthereumTransactions()).containsExactlyInAnyOrderElementsOf(expectedTransactions);
     }
 
-    private EthereumTransaction ethereumTransaction(Long value) {
-        var builder = EthereumTransaction.builder()
+    private EthereumTransaction ethereumTransaction(byte[] value) {
+        return EthereumTransaction.builder()
                 .consensusTimestamp(domainBuilder.timestamp())
                 .data(domainBuilder.bytes(32))
                 .gasLimit(20_000_000L)
@@ -103,16 +97,14 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
                 .payerAccountId(domainBuilder.id())
                 .signatureR(domainBuilder.bytes(32))
                 .signatureS(domainBuilder.bytes(32))
-                .type(Eip1559EthereumTransactionParser.EIP1559_TYPE_BYTE);
-        if (value != null) {
-            builder.value(BigInteger.valueOf(value).multiply(WEIBARS_TO_TINYBARS_BIGINT).toByteArray());
-        }
-        return builder.build();
+                .value(value)
+                .type(Eip1559EthereumTransactionParser.EIP1559_TYPE_BYTE)
+                .build();
     }
 
-    private List<MigratedEthereumTransaction> findAllMigratedEthereumTransactions() {
+    private List<EthereumTransaction> findAllEthereumTransactions() {
         return jdbcTemplate.query("select * from ethereum_transaction",
-                (rs, index) -> MigratedEthereumTransaction.builder()
+                (rs, index) -> EthereumTransaction.builder()
                         .consensusTimestamp(rs.getLong("consensus_timestamp"))
                         .data(rs.getBytes("data"))
                         .gasLimit(rs.getLong("gas_limit"))
@@ -123,7 +115,7 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
                         .signatureR(rs.getBytes("signature_r"))
                         .signatureS(rs.getBytes("signature_s"))
                         .type(rs.getInt("type"))
-                        .value(rs.getObject("value", Long.class))
+                        .value(rs.getBytes("value"))
                         .build());
     }
 
@@ -150,23 +142,11 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
         );
     }
 
-    private MigratedEthereumTransaction toMigratedEthereumTransaction(EthereumTransaction transaction, Long value) {
-        return MigratedEthereumTransaction.builder()
-                .consensusTimestamp(transaction.getConsensusTimestamp())
-                .data(transaction.getData())
-                .gasLimit(transaction.getGasLimit())
-                .hash(transaction.getHash())
-                .maxGasAllowance(transaction.getMaxGasAllowance())
-                .nonce(transaction.getNonce())
-                .payerAccountId(transaction.getPayerAccountId())
-                .signatureR(transaction.getSignatureR())
-                .signatureS(transaction.getSignatureS())
-                .type(transaction.getType())
-                .value(value)
-                .build();
+    private byte[] toWeibar(BigInteger value) {
+        return value.multiply(WEIBARS_TO_TINYBARS_BIGINT).toByteArray();
     }
 
-    @Builder
+    @Builder(toBuilder = true)
     @Data
     private static class EthereumTransaction {
         private Long consensusTimestamp;
@@ -180,21 +160,5 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
         private byte[] signatureS;
         private Integer type;
         private byte[] value;
-    }
-
-    @Builder
-    @Data
-    private static class MigratedEthereumTransaction {
-        private Long consensusTimestamp;
-        private byte[] data;
-        private Long gasLimit;
-        private byte[] hash;
-        private Long maxGasAllowance;
-        private Long nonce;
-        private Long payerAccountId;
-        private byte[] signatureR;
-        private byte[] signatureS;
-        private Integer type;
-        private Long value;
     }
 }

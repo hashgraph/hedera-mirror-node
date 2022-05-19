@@ -20,11 +20,11 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import java.math.BigInteger;
-import java.util.Collections;
+import com.google.common.base.Stopwatch;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
+import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -32,22 +32,16 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
 
+@Log4j2
 @Named
 @RequiredArgsConstructor(onConstructor_ = { @Lazy })
 public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigration {
 
     public static final int BATCH_SIZE = 1000;
 
-    private static final String DROP_COLUMN_SQL = "alter table if exists ethereum_transaction " +
-            "drop column value_in_weibar";
-
-    private static final String RENAME_ADD_COLUMN_SQL = "alter table if exists ethereum_transaction " +
-            "rename column value to value_in_weibar; " +
-            "alter table if exists ethereum_transaction add column value bigint null";
-
-    private static final String SELECT_NON_NULL_VALUE_SQL = "select consensus_timestamp, value_in_weibar " +
+    private static final String SELECT_NON_NULL_VALUE_SQL = "select consensus_timestamp, value " +
             "from ethereum_transaction " +
-            "where consensus_timestamp > :consensusTimestamp and value_in_weibar is not null " +
+            "where consensus_timestamp > :consensusTimestamp and value is not null " +
             "order by consensus_timestamp " +
             "limit :limit";
 
@@ -59,11 +53,11 @@ public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigr
 
     @Override
     protected void doMigrate() {
-        namedParameterJdbcTemplate.update(RENAME_ADD_COLUMN_SQL, Collections.emptyMap());
-
         var converter = WeiBarTinyBarConverter.INSTANCE;
-        var lastConsensusTimestamp = 0L;
+        long count = 0L;
+        var lastConsensusTimestamp = -1L;
         var paramSource = new MapSqlParameterSource().addValue("limit", BATCH_SIZE);
+        var stopwatch = Stopwatch.createStarted();
 
         while (true) {
             paramSource.addValue("consensusTimestamp", lastConsensusTimestamp);
@@ -73,10 +67,9 @@ public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigr
                 var paramSources = new MapSqlParameterSource[transactions.size()];
                 int index = 0;
                 for (var transaction : transactions) {
-                    var value = new BigInteger(transaction.getValueInWeibar());
                     paramSources[index] = new MapSqlParameterSource()
                             .addValue("consensusTimestamp", transaction.getConsensusTimestamp())
-                            .addValue("value", converter.weiBarToTinyBar(value));
+                            .addValue("value", converter.weiBarToTinyBar(transaction.getValue()));
                     index++;
                 }
 
@@ -84,12 +77,14 @@ public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigr
                 namedParameterJdbcTemplate.batchUpdate(SET_CONVERTED_VALUE_SQL, paramSources);
             }
 
+            count += transactions.size();
+
             if (transactions.size() < BATCH_SIZE) {
                 break;
             }
         }
 
-        namedParameterJdbcTemplate.update(DROP_COLUMN_SQL, Collections.emptyMap());
+        log.info("Successfully converted value from weibar to tinybar for {} transactions in {}", count, stopwatch);
     }
 
     @Override
@@ -99,12 +94,12 @@ public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigr
 
     @Override
     public String getDescription() {
-        return "Convert ethereum transaction from weibar to tinybar and change column data type to bigint";
+        return "Convert ethereum transaction from weibar to tinybar";
     }
 
     @Value
     private static class EthereumTransaction {
         private Long consensusTimestamp;
-        private byte[] valueInWeibar;
+        private byte[] value;
     }
 }

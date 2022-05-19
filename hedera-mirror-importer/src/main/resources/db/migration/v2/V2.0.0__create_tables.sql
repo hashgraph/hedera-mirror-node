@@ -261,7 +261,7 @@ create table if not exists ethereum_transaction
     signature_v              bytea    null,
     to_address               bytea    null,
     type                     smallint not null,
-    value                    bigint   null
+    value                    bytea    null
 );
 comment on table ethereum_transaction is 'Ethereum transaction details';
 

@@ -22,8 +22,6 @@
 
 const MAX_INT32 = 2147483647;
 
-const TINYBAR_IN_WEIBAR = 10_000_000_000n;
-
 // url query filer keys
 const filterKeys = {
   ACCOUNT_BALANCE: 'account.balance',
@@ -204,7 +202,6 @@ const queryParamOperatorPatterns = {
 
 module.exports = {
   MAX_INT32,
-  TINYBAR_IN_WEIBAR,
   characterEncoding,
   cloudProviders,
   cryptoTransferType,

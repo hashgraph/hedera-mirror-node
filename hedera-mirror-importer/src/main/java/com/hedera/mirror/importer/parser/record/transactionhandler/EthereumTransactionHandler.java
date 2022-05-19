@@ -123,6 +123,6 @@ class EthereumTransactionHandler implements TransactionHandler {
         transaction.setGasPrice(converter.weiBarToTinyBar(transaction.getGasPrice()));
         transaction.setMaxFeePerGas(converter.weiBarToTinyBar(transaction.getMaxFeePerGas()));
         transaction.setMaxPriorityFeePerGas(converter.weiBarToTinyBar(transaction.getMaxPriorityFeePerGas()));
-        transaction.setValue(converter.weiBarToTinyBar(transaction.getValueInWeibar()));
+        transaction.setValue(converter.weiBarToTinyBar(transaction.getValue()));
     }
 }
