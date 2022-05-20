@@ -73,7 +73,7 @@ public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigr
             paramSource.addValue("consensusTimestamp", lastConsensusTimestamp);
             var transactions = namedParameterJdbcTemplate.query(SELECT_NON_NULL_VALUE_SQL, paramSource,
                     (rs, index) -> new EthereumTransaction(rs.getLong(1), rs.getBytes(2)));
-            if (transactions.size() > 0) {
+            if (!transactions.isEmpty()) {
                 var paramSources = new MapSqlParameterSource[transactions.size()];
                 int index = 0;
                 for (var transaction : transactions) {
