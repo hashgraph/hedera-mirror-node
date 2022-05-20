@@ -52,6 +52,7 @@ import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
+import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountKey;
@@ -119,6 +120,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Map<CryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<NftId, Nft> nfts;
     private final Map<NftAllowance.Id, NftAllowance> nftAllowanceState;
+    private final Map<NftTransferId, NftTransfer> nftTransferState;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
     private final Map<TokenAllowance.Id, TokenAllowance> tokenAllowanceState;
@@ -169,6 +171,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cryptoAllowanceState = new HashMap<>();
         nfts = new HashMap<>();
         nftAllowanceState = new HashMap<>();
+        nftTransferState = new HashMap<>();
         schedules = new HashMap<>();
         tokens = new HashMap<>();
         tokenAccountState = new HashMap<>();
@@ -218,6 +221,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nfts.clear();
             nftAllowances.clear();
             nftAllowanceState.clear();
+            nftTransferState.clear();
             nftTransfers.clear();
             schedules.clear();
             topicMessages.clear();
@@ -271,7 +275,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // transfers operations should be last to ensure insert logic completeness, entities should already exist
             batchPersister.persist(nonFeeTransfers);
-            batchPersister.persist(nftTransfers);
+            batchPersister.persist(nftTransferState.values());
             batchPersister.persist(tokenTransfers);
 
             // handle the transfers from token dissociate transactions after nft is processed
@@ -376,7 +380,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
-        nftTransfers.add(nftTransfer);
+        nftTransferState.merge(nftTransfer.getId(), nftTransfer, this::mergeNftTransfer);
     }
 
     @Override
@@ -558,6 +562,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cachedNft.setSpender(newNft.getSpender());
 
         return cachedNft;
+    }
+
+    private NftTransfer mergeNftTransfer(NftTransfer cachedNftTransfer, NftTransfer newNftTransfer) {
+        // flatten multi receiver transfers
+        if (newNftTransfer.getReceiverAccountId() != null && cachedNftTransfer.getReceiverAccountId() != newNftTransfer.getReceiverAccountId()) {
+            cachedNftTransfer.setReceiverAccountId(newNftTransfer.getReceiverAccountId());
+        }
+
+        return cachedNftTransfer;
     }
 
     private NftAllowance mergeNftAllowance(NftAllowance previous, NftAllowance current) {
