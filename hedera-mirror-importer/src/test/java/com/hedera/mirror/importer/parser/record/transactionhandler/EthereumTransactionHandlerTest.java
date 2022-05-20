@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static com.hedera.mirror.common.converter.WeiBarTinyBarConverter.WEIBARS_TO_TINYBARS;
+import static com.hedera.mirror.common.converter.WeiBarTinyBarConverter.WEIBARS_TO_TINYBARS_BIGINT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -37,6 +38,7 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.math.BigInteger;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -108,6 +110,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var fileId = EntityId.of(999L, EntityType.FILE);
         var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
         var gasLimit = ethereumTransaction.getGasLimit();
+        var expectedValue = new BigInteger(ethereumTransaction.getValue())
+                .divide(WEIBARS_TO_TINYBARS_BIGINT).toByteArray();
         doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
 
         var recordItem = recordItemBuilder.ethereumTransaction(create)
@@ -127,7 +131,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(gasLimit / WEIBARS_TO_TINYBARS, EthereumTransaction::getGasLimit)
                 .returns(DomainUtils.toBytes(ETHEREUM_HASH), EthereumTransaction::getHash)
                 .returns(body.getMaxGasAllowance(), EthereumTransaction::getMaxGasAllowance)
-                .returns(recordItem.getPayerAccountId(), EthereumTransaction::getPayerAccountId);
+                .returns(recordItem.getPayerAccountId(), EthereumTransaction::getPayerAccountId)
+                .returns(expectedValue, EthereumTransaction::getValue);
 
         var functionResult = getContractFunctionResult(recordItem.getRecord(), create);
         var senderId = functionResult.getSenderId().getAccountNum();
@@ -197,7 +202,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var transaction = new Transaction();
         doThrow(InvalidDatasetException.class).when(ethereumTransactionParser).decode(any());
 
-        assertThatThrownBy(() -> transactionHandler.updateTransaction(transaction, recordItem)).isInstanceOf(InvalidDatasetException.class);
+        assertThatThrownBy(() -> transactionHandler.updateTransaction(transaction, recordItem))
+                .isInstanceOf(InvalidDatasetException.class);
         verify(entityListener, never()).onEntity(any());
         verify(entityListener, never()).onEthereumTransaction(any());
     }

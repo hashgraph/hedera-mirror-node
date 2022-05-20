@@ -113,8 +113,8 @@
         "call_data_id": "5001",
         "call_data": "0x0606",
         "gas_limit": 15000,
-        "value": "0x0001a055690d9db80000",
-        "_value_description": "30000000000000000000 weibars = 3000000000 tinybars"
+        "value": "0x00B2D05E00",
+        "_value_description": "3000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00"
       }
     ],
     "filedata": [
