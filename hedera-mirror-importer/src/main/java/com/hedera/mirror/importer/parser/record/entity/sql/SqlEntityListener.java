@@ -105,7 +105,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftAllowance> nftAllowances;
-    private final Collection<NftTransfer> nftTransfers;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
     private final Collection<TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
@@ -157,7 +156,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftAllowances = new ArrayList<>();
-        nftTransfers = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
         tokenAccounts = new ArrayList<>();
         tokenAllowances = new ArrayList<>();
@@ -222,7 +220,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nftAllowances.clear();
             nftAllowanceState.clear();
             nftTransferState.clear();
-            nftTransfers.clear();
             schedules.clear();
             topicMessages.clear();
             tokenAccounts.clear();
