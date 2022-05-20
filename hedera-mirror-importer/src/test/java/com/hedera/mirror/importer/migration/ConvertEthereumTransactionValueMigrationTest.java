@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.migration;
  */
 
 import static com.hedera.mirror.common.converter.WeiBarTinyBarConverter.WEIBARS_TO_TINYBARS_BIGINT;
-import static com.hedera.mirror.importer.migration.ConvertEthereumTransactionValueMigration.BATCH_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigInteger;
@@ -32,8 +31,6 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
@@ -58,25 +55,27 @@ class ConvertEthereumTransactionValueMigrationTest extends IntegrationTest {
         assertThat(findAllEthereumTransactions()).isEmpty();
     }
 
-    @ParameterizedTest
-    @ValueSource(ints = {BATCH_SIZE, BATCH_SIZE + 10})
-    void migrate(int totalTransactions) {
+    @Test
+    void migrate() {
         // given
         var transactions = new ArrayList<EthereumTransaction>();
         var expectedTransactions = new ArrayList<EthereumTransaction>();
 
-        // first transaction has null value
+        // transaction value is null
         transactions.add(ethereumTransaction(null));
         expectedTransactions.add(transactions.get(0));
 
-        for (int i = 1; i < totalTransactions; i++) {
-            var value = BigInteger.valueOf(i);
-            var transaction = ethereumTransaction(toWeibar(value));
-            transactions.add(transaction);
+        var tinybar = BigInteger.valueOf(1);
+        var transaction = ethereumTransaction(toWeibar(tinybar));
+        transactions.add(transaction);
+        expectedTransactions.add(transaction.toBuilder().value(tinybar.toByteArray()).build());
 
-            var expectedTransaction = transaction.toBuilder().value(value.toByteArray()).build();
-            expectedTransactions.add(expectedTransaction);
-        }
+        // larger than an unsigned long can hold
+        tinybar = new BigInteger("700000000000000000", 16);
+        transaction = ethereumTransaction(toWeibar(tinybar));
+        transactions.add(transaction);
+        expectedTransactions.add(transaction.toBuilder().value(tinybar.toByteArray()).build());
+
         persistEthereumTransactions(transactions);
 
         // when
