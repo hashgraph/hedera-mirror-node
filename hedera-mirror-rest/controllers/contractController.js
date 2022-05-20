@@ -504,7 +504,7 @@ class ContractController extends BaseController {
 
     if (blockFilter) {
       let blockData;
-      if (blockFilter.key == constants.filterKeys.BLOCK_NUMBER) {
+      if (blockFilter.key === constants.filterKeys.BLOCK_NUMBER) {
         blockData = await RecordFileService.getRecordFileBlockDetailsFromIndex(blockFilter.value);
       } else {
         blockData = await RecordFileService.getRecordFileBlockDetailsFromHash(blockFilter.value);
@@ -903,7 +903,7 @@ class ContractController extends BaseController {
 
     // extract filters from query param
     const {transactionIdOrHash} = req.params;
-    let transactions = [];
+    let transactions;
     // When getting transactions, exclude duplicate transactions. there can be at most one
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
