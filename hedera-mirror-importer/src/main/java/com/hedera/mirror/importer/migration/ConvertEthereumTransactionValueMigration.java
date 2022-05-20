@@ -35,7 +35,7 @@ public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigr
 
     private static final String SELECT_NON_NULL_VALUE_SQL = "select consensus_timestamp, value " +
             "from ethereum_transaction " +
-            "where value is not null " +
+            "where value is not null and length(value) > 0 " +
             "order by consensus_timestamp";
 
     private static final String SET_TINYBAR_VALUE_SQL = "update ethereum_transaction " +
