@@ -20,15 +20,19 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
 
+@Log4j2
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigration {
@@ -57,6 +61,8 @@ public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigr
     @Override
     protected void doMigrate() {
         var converter = WeiBarTinyBarConverter.INSTANCE;
+        var count = new AtomicLong(0);
+        var stopwatch = Stopwatch.createStarted();
 
         jdbcTemplate.query(SELECT_NON_NULL_VALUE_SQL, rs -> {
             var consensusTimestamp = rs.getLong(1);
@@ -64,6 +70,10 @@ public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigr
             var tinybar = converter.weiBarToTinyBar(weibar);
             jdbcTemplate.update(SET_TINYBAR_VALUE_SQL,
                     Map.of("consensusTimestamp", consensusTimestamp, "value", tinybar));
+            count.incrementAndGet();
         });
+
+        log.info("Successfully converted value from weibar to tinybar for {} ethereum transactions in {}",
+                count.get(), stopwatch);
     }
 }
