@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.BeanCreationNotAllowedException;
@@ -563,7 +564,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private NftTransfer mergeNftTransfer(NftTransfer cachedNftTransfer, NftTransfer newNftTransfer) {
         // flatten multi receiver transfers
-        if (newNftTransfer.getReceiverAccountId() != null && cachedNftTransfer.getReceiverAccountId() != newNftTransfer.getReceiverAccountId()) {
+        if (!Objects.equals(cachedNftTransfer.getReceiverAccountId(), newNftTransfer.getReceiverAccountId())) {
             cachedNftTransfer.setReceiverAccountId(newNftTransfer.getReceiverAccountId());
         }
 
