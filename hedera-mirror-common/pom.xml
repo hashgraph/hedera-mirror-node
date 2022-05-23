@@ -30,9 +30,9 @@
             <version>${protobuf.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.hedera.hashgraph</groupId>
-            <artifactId>hedera-protobuf-java-api</artifactId>
-            <version>${hedera-protobuf.version}</version>
+            <groupId>com.github.hashgraph</groupId>
+            <artifactId>hedera-protobufs-java</artifactId>
+            <version>a219b3a</version>
             <exclusions>
                 <exclusion>
                     <groupId>*</groupId>
