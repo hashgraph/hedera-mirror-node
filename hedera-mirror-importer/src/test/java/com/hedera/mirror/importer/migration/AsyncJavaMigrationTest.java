@@ -25,7 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Resource;
-import lombok.AllArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -58,7 +57,7 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = { ", -1", "-1, -2", "1, 1", "2, -1" })
+    @CsvSource(value = {", -1", "-1, -2", "1, 1", "2, -1"})
     void getChecksum(Integer existing, Integer expected) {
         addMigrationHistory(new MigrationHistory(existing, 1000));
         var migration = new TestAsyncJavaMigration(jdbcTemplate, schema, 1, false);
@@ -112,7 +111,6 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     }
 
     @lombok.Value
-    @AllArgsConstructor
     private static class MigrationHistory {
         private Integer checksum;
         private int installedRank;
@@ -131,15 +129,15 @@ class AsyncJavaMigrationTest extends IntegrationTest {
         }
 
         @Override
+        public String getDescription() {
+            return TEST_MIGRATION_DESCRIPTION;
+        }
+
+        @Override
         protected void migrateAsync() {
             if (error) {
                 throw new RuntimeException();
             }
-        }
-
-        @Override
-        public String getDescription() {
-            return TEST_MIGRATION_DESCRIPTION;
         }
     }
 }
