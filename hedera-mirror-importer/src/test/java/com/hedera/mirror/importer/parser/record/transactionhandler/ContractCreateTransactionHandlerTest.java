@@ -260,6 +260,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         assertContract(contractId, timestamp, t -> assertThat(t)
                 .returns(false, Contract::isDeclineReward)
                 .returns(accountID.getAccountNum(), Contract::getStakedAccountId)
+
         );
     }
 
@@ -537,7 +538,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         .returns(contractId.getShardNum(), Contract::getShard)
                         .returns(CONTRACT, Contract::getType)
                         .returns(Range.atLeast(timestamp), Contract::getTimestampRange)
-                        .returns(null, Contract::getObtainerId),
+                        .returns(null, Contract::getObtainerId)
+                        .satisfies(c -> assertThat(c.getStakePeriodStart()).isNotNull()),
                 () -> extraAssert.accept(t)
         )));
     }
