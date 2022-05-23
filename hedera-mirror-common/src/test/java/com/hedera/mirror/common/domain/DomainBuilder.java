@@ -397,7 +397,7 @@ public class DomainBuilder {
                 .gasUsed(100L)
                 .hash(text(96))
                 .index(id())
-                .logsBloom(bytes(LogsBloomAggregator.BYTE_SIZE))
+                .logsBloom(bloomFilter())
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
                 .name(now.toString().replace(':', '_') + ".rcd")
@@ -509,6 +509,10 @@ public class DomainBuilder {
                 .signature(bytes(32))
                 .type(SignaturePair.SignatureCase.ED25519.getNumber());
         return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public byte[] bloomFilter() {
+        return bytes(LogsBloomAggregator.BYTE_SIZE);
     }
 
     // Helper methods

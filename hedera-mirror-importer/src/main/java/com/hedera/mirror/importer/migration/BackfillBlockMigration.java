@@ -22,13 +22,12 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Named;
-import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -42,6 +41,7 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
             "from contract_result " +
             "where consensus_timestamp >= :consensusStart " +
             "  and consensus_timestamp <= :consensusEnd " +
+            "  and bloom is not null " +
             "  and length(bloom) > 0 " +
             "order by consensus_timestamp";
 
@@ -125,12 +125,12 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.59.1");
+        return MigrationVersion.fromVersion("1.60.1");
     }
 
     @Override
     protected int getSuccessChecksum() {
-        return 2; // Change this if this migration should be rerun
+        return 1; // Change this if this migration should be rerun
     }
 
     private byte[] aggregateBloomFilters(List<byte[]> bloomFilters) {
@@ -150,38 +150,28 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
             return transactionTemplate.execute((status) -> {
                 var timestampRange = jdbcTemplate.query(
                         SELECT_PREVIOUS_RECORD_FILE_TIMESTAMP_RANGE,
-                        new MapSqlParameterSource().addValue("lastConsensusEnd", lastConsensusEnd),
-                        (rs) -> {
-                            if (!rs.next()) {
-                                return null;
-                            }
-
-                            var range = new RecordFileTimestampRange();
-                            range.setConsensusEnd(rs.getLong("consensus_end"));
-                            range.setConsensusStart(rs.getLong("consensus_start"));
-                            return range;
-                        });
+                        Map.of("lastConsensusEnd", lastConsensusEnd),
+                        (rs) -> rs.next() ? new RecordFileTimestampRange(rs.getLong("consensus_start"),
+                                rs.getLong("consensus_end")) : null);
                 if (timestampRange == null) {
                     return null;
                 }
-
-                var timestampRangeParameterSource = new MapSqlParameterSource()
-                        .addValue("consensusStart", timestampRange.getConsensusStart())
-                        .addValue("consensusEnd", timestampRange.getConsensusEnd());
+                
+                var timestampRangeParams = Map.of("consensusStart", timestampRange.getConsensusStart(),
+                        "consensusEnd", timestampRange.getConsensusEnd());
 
                 var bloomFilters = jdbcTemplate.queryForList(SELECT_BLOOM_FILTERS_IN_RECORD_FILE,
-                        timestampRangeParameterSource, byte[].class);
+                        timestampRangeParams, byte[].class);
                 var aggregatedBloomFilter = aggregateBloomFilters(bloomFilters);
-                var bloomFilterParameterSource = new MapSqlParameterSource()
-                        .addValue("consensusEnd", timestampRange.getConsensusEnd())
-                        .addValue("bloomFilter", aggregatedBloomFilter);
-                jdbcTemplate.update(SET_RECORD_FILE_BLOOM_FILTER, bloomFilterParameterSource);
+                var bloomFilterParams = Map.of("consensusEnd", timestampRange.getConsensusEnd(),
+                        "bloomFilter", aggregatedBloomFilter);
+                jdbcTemplate.update(SET_RECORD_FILE_BLOOM_FILTER, bloomFilterParams);
 
                 // gas used
-                jdbcTemplate.update(SET_RECORD_FILE_GAS_USED_SQL, timestampRangeParameterSource);
+                jdbcTemplate.update(SET_RECORD_FILE_GAS_USED_SQL, timestampRangeParams);
 
                 // transaction index
-                jdbcTemplate.update(SET_TRANSACTION_INDEX_SQL, timestampRangeParameterSource);
+                jdbcTemplate.update(SET_TRANSACTION_INDEX_SQL, timestampRangeParams);
 
                 return timestampRange.getConsensusEnd();
             });
@@ -191,9 +181,9 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
         }
     }
 
-    @Data
+    @lombok.Value
     private static class RecordFileTimestampRange {
-        Long consensusStart;
-        Long consensusEnd;
+        private Long consensusStart;
+        private Long consensusEnd;
     }
 }
