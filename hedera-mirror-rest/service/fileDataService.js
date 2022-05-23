@@ -47,7 +47,7 @@ class FileDataService extends BaseService {
       group by ${FileData.ENTITY_ID}
       order by ${FileData.CONSENSUS_TIMESTAMP} desc
     )
-    select 
+    select
       max(${FileData.tableAlias}.${FileData.CONSENSUS_TIMESTAMP}) as ${FileData.CONSENSUS_TIMESTAMP},
       string_agg(encode(${FileData.getFullName(FileData.FILE_DATA)}, 'escape'), '' order by ${FileData.getFullName(
     FileData.CONSENSUS_TIMESTAMP

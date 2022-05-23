@@ -504,7 +504,7 @@ class ContractController extends BaseController {
 
     if (blockFilter) {
       let blockData;
-      if (blockFilter.key == constants.filterKeys.BLOCK_NUMBER) {
+      if (blockFilter.key === constants.filterKeys.BLOCK_NUMBER) {
         blockData = await RecordFileService.getRecordFileBlockDetailsFromIndex(blockFilter.value);
       } else {
         blockData = await RecordFileService.getRecordFileBlockDetailsFromHash(blockFilter.value);
@@ -832,18 +832,25 @@ class ContractController extends BaseController {
       throw new NotFoundError();
     }
 
+    let fileData = null;
+    if (!_.isNil(transaction.callDataId)) {
+      fileData = await FileDataService.getLatestFileDataContents(transaction.callDataId, {whereQuery: []});
+    }
+
     if (_.isNil(contractResults[0].callResult)) {
       // set 206 partial response
       res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
       logger.debug(`getContractResultsByTimestamp returning partial content`);
     }
 
-    res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
+    this.setContractResultsResponse(
+      res,
       contractResults[0],
       recordFile,
       transaction,
       contractLogs,
-      contractStateChanges
+      contractStateChanges,
+      fileData
     );
   };
 
@@ -896,10 +903,10 @@ class ContractController extends BaseController {
 
     // extract filters from query param
     const {transactionIdOrHash} = req.params;
-    let transactions = [];
+    let transactions;
     // When getting transactions, exclude duplicate transactions. there can be at most one
     if (utils.isValidEthHash(transactionIdOrHash)) {
-      const ethHash = transactionIdOrHash.replace('0x', '');
+      const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
       // get transactions using ethereum hash and nonce
       transactions = await TransactionService.getTransactionDetailsFromEthHash(ethHash, duplicateTransactionResult);
     } else {
@@ -932,16 +939,23 @@ class ContractController extends BaseController {
       ContractService.getContractStateChangesByTimestamps(transaction.consensusTimestamp),
     ]);
 
+    let fileData = null;
+    if (!_.isNil(transaction.callDataId)) {
+      fileData = await FileDataService.getLatestFileDataContents(transaction.callDataId, {whereQuery: []});
+    }
+
     if (contractResults.length === 0) {
       throw new NotFoundError();
     }
 
-    res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
+    this.setContractResultsResponse(
+      res,
       contractResults[0],
       recordFile,
       transaction,
       contractLogs,
-      contractStateChanges
+      contractStateChanges,
+      fileData
     );
 
     if (_.isNil(contractResults[0].callResult)) {
@@ -949,6 +963,25 @@ class ContractController extends BaseController {
       res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
       logger.debug(`getContractResultsByTransactionId returning partial content`);
     }
+  };
+
+  setContractResultsResponse = (
+    res,
+    contractResult,
+    recordFile,
+    transaction,
+    contractLogs,
+    contractStateChanges,
+    fileData
+  ) => {
+    res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
+      contractResult,
+      recordFile,
+      transaction,
+      contractLogs,
+      contractStateChanges,
+      fileData
+    );
   };
 }
 

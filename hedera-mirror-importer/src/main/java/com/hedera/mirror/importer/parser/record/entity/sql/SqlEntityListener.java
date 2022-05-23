@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.BeanCreationNotAllowedException;
@@ -52,6 +53,7 @@ import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
+import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenAccountKey;
@@ -104,7 +106,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftAllowance> nftAllowances;
-    private final Collection<NftTransfer> nftTransfers;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
     private final Collection<TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
@@ -119,6 +120,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Map<CryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<NftId, Nft> nfts;
     private final Map<NftAllowance.Id, NftAllowance> nftAllowanceState;
+    private final Map<NftTransferId, NftTransfer> nftTransferState;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
     private final Map<TokenAllowance.Id, TokenAllowance> tokenAllowanceState;
@@ -155,7 +157,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftAllowances = new ArrayList<>();
-        nftTransfers = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
         tokenAccounts = new ArrayList<>();
         tokenAllowances = new ArrayList<>();
@@ -169,6 +170,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cryptoAllowanceState = new HashMap<>();
         nfts = new HashMap<>();
         nftAllowanceState = new HashMap<>();
+        nftTransferState = new HashMap<>();
         schedules = new HashMap<>();
         tokens = new HashMap<>();
         tokenAccountState = new HashMap<>();
@@ -218,7 +220,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nfts.clear();
             nftAllowances.clear();
             nftAllowanceState.clear();
-            nftTransfers.clear();
+            nftTransferState.clear();
             schedules.clear();
             topicMessages.clear();
             tokenAccounts.clear();
@@ -271,7 +273,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // transfers operations should be last to ensure insert logic completeness, entities should already exist
             batchPersister.persist(nonFeeTransfers);
-            batchPersister.persist(nftTransfers);
+            batchPersister.persist(nftTransferState.values());
             batchPersister.persist(tokenTransfers);
 
             // handle the transfers from token dissociate transactions after nft is processed
@@ -376,7 +378,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
-        nftTransfers.add(nftTransfer);
+        nftTransferState.merge(nftTransfer.getId(), nftTransfer, this::mergeNftTransfer);
     }
 
     @Override
@@ -558,6 +560,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cachedNft.setSpender(newNft.getSpender());
 
         return cachedNft;
+    }
+
+    private NftTransfer mergeNftTransfer(NftTransfer cachedNftTransfer, NftTransfer newNftTransfer) {
+        // flatten multi receiver transfers
+        if (!Objects.equals(cachedNftTransfer.getReceiverAccountId(), newNftTransfer.getReceiverAccountId())) {
+            cachedNftTransfer.setReceiverAccountId(newNftTransfer.getReceiverAccountId());
+        }
+
+        return cachedNftTransfer;
     }
 
     private NftAllowance mergeNftAllowance(NftAllowance previous, NftAllowance current) {

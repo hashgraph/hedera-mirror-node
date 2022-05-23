@@ -25,7 +25,6 @@ const _ = require('lodash');
 const constants = require('../constants');
 const Contract = require('../model/contract');
 const Transaction = require('../model/transaction');
-const EthereumTransaction = require('../model/ethereumTransaction');
 const {ContractLog, ContractResult, ContractStateChange} = require('../model');
 const {
   response: {
@@ -77,7 +76,8 @@ class ContractService extends BaseService {
     ${ContractResult.FUNCTION_PARAMETERS},
     ${ContractResult.GAS_LIMIT},
     ${ContractResult.GAS_USED},
-    ${ContractResult.PAYER_ACCOUNT_ID}
+    ${ContractResult.PAYER_ACCOUNT_ID},
+    ${ContractResult.SENDER_ID}
     from ${ContractResult.tableName}`;
 
   static contractStateChangesQuery = `select

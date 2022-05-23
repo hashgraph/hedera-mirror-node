@@ -34,4 +34,4 @@ maintainers:
 name: hedera-mirror-common
 sources:
   - https://github.com/hashgraph/hedera-mirror-node
-version: 0.44.0-SNAPSHOT
+version: 0.45.0-SNAPSHOT

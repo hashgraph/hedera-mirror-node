@@ -25,7 +25,7 @@ import java.math.BigInteger;
 public class WeiBarTinyBarConverter {
     public static final WeiBarTinyBarConverter INSTANCE = new WeiBarTinyBarConverter();
     public static final Long WEIBARS_TO_TINYBARS = 10_000_000_000L;
-    static final BigInteger WEIBARS_TO_TINYBARS_BIGINT = BigInteger.valueOf(WEIBARS_TO_TINYBARS);
+    public static final BigInteger WEIBARS_TO_TINYBARS_BIGINT = BigInteger.valueOf(WEIBARS_TO_TINYBARS);
 
     public byte[] weiBarToTinyBar(byte[] weibar) {
         return weibar == null ? null : new BigInteger(weibar).divide(WEIBARS_TO_TINYBARS_BIGINT).toByteArray();

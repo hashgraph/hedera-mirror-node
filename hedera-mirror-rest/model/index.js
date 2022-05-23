@@ -51,4 +51,5 @@ module.exports = {
   TransactionId: require('./transactionId'),
   TransactionResult: require('./transactionResult'),
   TransactionType: require('./transactionType'),
+  TransactionWithEthData: require('./transactionWithEthData'),
 };

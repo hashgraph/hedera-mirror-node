@@ -422,6 +422,8 @@ const addEntity = async (defaults, entity) => {
 };
 
 const addEthereumTransaction = async (ethereumTransaction) => {
+  // any attribute starting with '_' is not a db column
+  ethereumTransaction = _.omitBy(ethereumTransaction, (v, k) => k.startsWith('_'));
   const localDefaults = {
     access_list: null,
     call_data_id: null,
@@ -430,7 +432,7 @@ const addEthereumTransaction = async (ethereumTransaction) => {
     consensus_timestamp: '187654000123456',
     data: '0x000000000',
     gas_limit: 1000000,
-    gas_price: '0x4a817c800',
+    gas_price: '0x4a817c80',
     hash: '0x0000000000000000000000000000000000000000000000000000000000000123',
     max_fee_per_gas: null,
     max_gas_allowance: 10000,
@@ -442,7 +444,7 @@ const addEthereumTransaction = async (ethereumTransaction) => {
     signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
     signature_v: '0x1b',
     to_address: null,
-    type: 1,
+    type: 2,
     value: '0x0',
   };
 
@@ -452,6 +454,28 @@ const addEthereumTransaction = async (ethereumTransaction) => {
   };
 
   const insertFields = Object.keys(ethTx);
+
+  const byteaFields = [
+    'access_list',
+    'call_data',
+    'chain_id',
+    'data',
+    'gas_price',
+    'hash',
+    'max_fee_per_gas',
+    'max_priority_fee_per_gas',
+    'signature_r',
+    'signature_s',
+    'signature_v',
+    'to_address',
+    'value',
+  ];
+  for (const field of byteaFields) {
+    if (!_.isNull(ethTx[field])) {
+      const stringValue = ethTx[field].toString();
+      ethTx[field] = Buffer.from(stringValue.replace(/^0x/, '').padStart(2, '0'), 'hex');
+    }
+  }
 
   await insertDomainObject('ethereum_transaction', insertFields, ethTx);
 };
@@ -805,6 +829,7 @@ const addContractResult = async (contractResultInput) => {
     'gas_limit',
     'gas_used',
     'payer_account_id',
+    'sender_id',
   ];
 
   const contractResult = {
@@ -1222,6 +1247,7 @@ const addNft = async (nft) => {
 const addRecordFile = async (recordFileInput) => {
   const insertFields = [
     'bytes',
+    'gas_used',
     'consensus_end',
     'consensus_start',
     'count',
@@ -1242,6 +1268,7 @@ const addRecordFile = async (recordFileInput) => {
 
   const recordFile = {
     bytes: Buffer.from([1, 1, 2, 2, 3, 3]),
+    gas_used: 0,
     consensus_end: 1628751573995691000,
     consensus_start: 1628751572000852000,
     count: 1200,

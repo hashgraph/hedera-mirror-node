@@ -42,6 +42,7 @@ class RecordFile {
   static COUNT = 'count';
   static DIGEST_ALGORITHM = 'digest_algorithm';
   static FILE_HASH = 'file_hash';
+  static GAS_USED = 'gas_used';
   static INDEX = 'index';
   static HAPI_VERSION_MAJOR = 'hapi_version_major';
   static HAPI_VERSION_MINOR = 'hapi_version_minor';

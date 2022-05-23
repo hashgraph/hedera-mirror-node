@@ -55,7 +55,7 @@
     </parent>
 
     <properties>
-        <besu.version>22.4.0</besu.version>
+        <besu.version>22.4.1</besu.version>
         <dependency-check.version>7.1.0</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.39.1</docker-maven-plugin.version>
@@ -64,7 +64,7 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.1.8</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.2.0</embedded.testcontainers.version>
         <flyway.version>8.5.9</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
@@ -74,13 +74,13 @@
         <hedera-protobuf.version>0.26.0</hedera-protobuf.version>
         <hibernate-types.version>2.16.2</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
-        <java.version>11</java.version>
+        <java.version>17</java.version>
         <javax.version>1</javax.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.1</msgpack.version>
         <protobuf.version>3.20.1</protobuf.version>
-        <release.version>0.57.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.44.0-SNAPSHOT</release.chartVersion>
+        <release.version>0.58.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
+        <release.chartVersion>0.45.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
         <!--suppress UnresolvedMavenProperty -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
