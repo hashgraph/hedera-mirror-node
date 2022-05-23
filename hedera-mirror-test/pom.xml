@@ -18,7 +18,7 @@
     <properties>
         <cucumber.version>7.3.4</cucumber.version>
         <cucumber-reporting.version>7.3.0</cucumber-reporting.version>
-        <hedera-sdk.version>2.12.0</hedera-sdk.version>
+        <hedera-sdk.version>2.14.0</hedera-sdk.version>
         <junit-platform.version>1.8.2</junit-platform.version>
         <skipTests>true</skipTests>
     </properties>
