@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -119,7 +120,20 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         // for child transactions initCode and FileID are located in parent ContractCreate/EthereumTransaction types
         updateChildFromParent(contract, recordItem);
 
+        updateContractStakingInfo(contract, transactionBody);
+
         entityListener.onContract(contract);
+    }
+
+    private void updateContractStakingInfo(Contract contract, ContractCreateTransactionBody transactionBody) {
+        contract.setDeclineReward(transactionBody.getDeclineReward());
+        if (transactionBody.getStakedIdCase() == ContractCreateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID) {
+            EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
+            contract.updateAccountId(accountId);
+        } else {
+            contract.setStakedNodeId(transactionBody.getStakedNodeId());
+        }
+        contract.startNewStakingPeriod();
     }
 
     @Override

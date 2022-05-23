@@ -383,6 +383,10 @@ public class RecordItemBuilder {
         return AccountID.newBuilder().setAccountNum(id()).build();
     }
 
+    public AccountID accountId(long accountNum) {
+        return AccountID.newBuilder().setAccountNum(accountNum).build();
+    }
+
     public ByteString bytes(int length) {
         byte[] bytes = randomBytes(length);
         return ByteString.copyFrom(bytes);

@@ -243,8 +243,47 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         );
     }
 
+    @Test
+    void updateTransactionSuccessfulStakingInfoForAccountStaking() {
+        final AccountID accountID = recordItemBuilder.accountId(1L);
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearAutoRenewAccountId()
+                        .setDeclineReward(false)
+                        .setStakedAccountId(accountID))
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(false, Contract::isDeclineReward)
+                .returns(accountID.getAccountNum(), Contract::getStakedAccountId)
+        );
+    }
+
+    @Test
+    void updateTransactionSuccessfulStakingInfoForNodeStaking() {
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearAutoRenewAccountId()
+                        .setDeclineReward(false)
+                        .setStakedNodeId(1L))
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, t -> assertThat(t)
+                .returns(false, Contract::isDeclineReward)
+                .returns(1L, Contract::getStakedNodeId)
+        );
+    }
+
     @ParameterizedTest(name = "{0}")
-    @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "ERROR"})
+    @EnumSource(value = PartialDataAction.class, names = { "DEFAULT", "ERROR" })
     void updateTransactionThrowsWithAliasNotFound(PartialDataAction partialDataAction) {
         // given
         recordParserProperties.setPartialDataAction(partialDataAction);
