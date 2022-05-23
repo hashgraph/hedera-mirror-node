@@ -24,7 +24,7 @@
     "@godaddy/terminus": "^4.10.2",
     "@hashgraph/proto": "^2.4.2",
     "asn1js": "^3.0.5",
-    "aws-sdk": "^2.1136.0",
+    "aws-sdk": "^2.1140.0",
     "bigint-buffer": "^1.1.5",
     "body-parser": "^1.20.0",
     "compression": "^1.7.4",
