@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.common.collect.Range;
+import com.google.protobuf.BoolValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
@@ -46,10 +47,12 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.PartialDataAction;
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -119,6 +122,41 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive())
+        );
+    }
+
+    @Test
+    void updateTransactionWithNewStakedNodeId() {
+        AccountID accountId = recordItemBuilder.accountId(1L);
+        RecordItem withStakedNodeIdSet = recordItemBuilder.contractUpdate()
+                .transactionBody(body -> body.setStakedAccountId(accountId))
+                .build();
+        setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
+                .returns(1, Contract::getStakedAccountId)
+                .extracting(Contract::getStakePeriodStart)
+                .isNull()
+        );
+    }
+
+    @Test
+    void updateTransactionWithNewStakingPeriod() {
+        RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
+        RecordItem withDeclineValueSet = recordItemBuilder.contractUpdate()
+                .transactionBody(body -> body.setDeclineReward(BoolValue.of(true)))
+                .build();
+        setupForContractUpdateTransactionTest(withDeclineValueSet, t -> assertThat(t)
+                .returns(true, Contract::isDeclineReward)
+                .extracting(Contract::getStakePeriodStart)
+                .isNotNull()
+        );
+
+        RecordItem withStakedNodeIdSet = recordItemBuilder.contractUpdate()
+                .transactionBody(body -> body.setStakedNodeId(1L))
+                .build();
+        setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
+                .returns(1, Contract::getStakedNodeId)
+                .extracting(Contract::getStakePeriodStart)
+                .isNotNull()
         );
     }
 
@@ -257,5 +295,14 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         .returns(CONTRACT, Contract::getType),
                 () -> extraAssert.accept(t)
         )));
+    }
+
+    private void setupForContractUpdateTransactionTest(RecordItem recordItem, Consumer<Contract> extraAssertions) {
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction().
+                customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
+        when(entityIdService.lookup(any(AccountID.class))).thenReturn(EntityIdEndec.decode(10L, ACCOUNT));
+        transactionHandler.updateTransaction(transaction, recordItem);
     }
 }

@@ -21,9 +21,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -101,6 +103,27 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
             contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
+        updateContractStakingInfo(contract, transactionBody);
+
         entityListener.onContract(contract);
+    }
+
+    private void updateContractStakingInfo(AbstractEntity entity, ContractUpdateTransactionBody transactionBody) {
+        if (transactionBody.hasDeclineReward()) {
+            entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
+        }
+
+        boolean isStakedNodeIdSet = ContractUpdateTransactionBody.StakedIdCase.STAKED_NODE_ID ==
+                transactionBody.getStakedIdCase();
+        if (isStakedNodeIdSet) {
+            entity.setStakedNodeId(transactionBody.getStakedNodeId());
+        } else if (ContractUpdateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID == transactionBody.getStakedIdCase()) {
+            entity.updateAccountId(EntityId.of(transactionBody.getStakedAccountId()));
+        }
+
+        // If the stake node id or the decline reward value has changed, we start a new stake period.
+        if (isStakedNodeIdSet || transactionBody.hasDeclineReward()) {
+            entity.startNewStakingPeriod();
+        }
     }
 }
