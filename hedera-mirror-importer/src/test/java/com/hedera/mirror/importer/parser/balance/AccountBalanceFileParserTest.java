@@ -28,6 +28,7 @@ import com.google.common.primitives.Longs;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
@@ -166,15 +167,15 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     }
 
     void assertAccountBalanceFile(AccountBalanceFile accountBalanceFile, List<AccountBalance> accountBalances) {
-        List<TokenBalance> tokenBalances = accountBalances.stream()
+        Map<TokenBalance.Id, TokenBalance> tokenBalances = accountBalances.stream()
                 .map(AccountBalance::getTokenBalances)
                 .flatMap(Collection::stream)
-                .collect(Collectors.toList());
+                .collect(Collectors.toMap(TokenBalance::getId, t -> t, (previous, current) -> previous));
 
         assertThat(accountBalanceFile.getBytes()).isNull();
         assertThat(accountBalanceFile.getItems()).isNull();
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(accountBalances);
-        assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenBalances);
+        assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenBalances.values());
 
         if (parserProperties.isEnabled()) {
             assertThat(accountBalanceFileRepository.findById(accountBalanceFile.getConsensusTimestamp()))
@@ -214,7 +215,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         AccountBalance accountBalance = new AccountBalance();
         accountBalance.setBalance(offset);
         accountBalance.setId(new AccountBalance.Id(timestamp, accountId));
-        accountBalance.setTokenBalances(List.of(tokenBalance));
+        accountBalance.setTokenBalances(List.of(tokenBalance, tokenBalance));
         return accountBalance;
     }
 }

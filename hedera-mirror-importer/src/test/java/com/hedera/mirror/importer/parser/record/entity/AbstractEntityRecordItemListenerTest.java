@@ -295,7 +295,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     protected TransactionRecord buildTransactionRecordWithNoTransactions(
             Consumer<TransactionRecord.Builder> customBuilder, TransactionBody transactionBody, int status
-    ){
+    ) {
         TransactionRecord.Builder recordBuilder = TransactionRecord.newBuilder();
         recordBuilder.setConsensusTimestamp(Utility.instantToTimestamp(Instant.now()));
         recordBuilder.setMemoBytes(ByteString.copyFromUtf8(transactionBody.getMemo()));
@@ -397,6 +397,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setAutoRenewPeriod(autoRenewPeriod);
         entity.setCreatedTimestamp(createdTimestamp);
         entity.setDeleted(deleted);
+        entity.setEthereumNonce(0L);
         entity.setExpirationTimestamp(expiryTimeNs);
         entity.setMemo(memo);
         entity.setTimestampLower(modifiedTimestamp);
