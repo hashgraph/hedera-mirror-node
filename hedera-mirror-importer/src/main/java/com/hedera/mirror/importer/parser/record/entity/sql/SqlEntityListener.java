@@ -29,6 +29,7 @@ import com.google.common.collect.ListMultimap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import javax.inject.Named;
@@ -56,6 +57,7 @@ import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAccountId;
 import com.hedera.mirror.common.domain.token.TokenAccountKey;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
@@ -107,7 +109,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
-    private final Collection<TokenAccount> tokenAccounts;
+    private final Map<TokenAccountId, TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
     private final Collection<TokenTransfer> tokenDissociateTransfers;
     private final Collection<TokenTransfer> tokenTransfers;
@@ -158,7 +160,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         liveHashes = new ArrayList<>();
         nftAllowances = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
-        tokenAccounts = new ArrayList<>();
+        tokenAccounts = new LinkedHashMap<>();
         tokenAllowances = new ArrayList<>();
         tokenDissociateTransfers = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
@@ -266,7 +268,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(nftAllowances);
             batchPersister.persist(tokens.values());
             // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
-            batchPersister.persist(tokenAccounts);
+            batchPersister.persist(tokenAccounts.values());
             batchPersister.persist(tokenAllowances);
             batchPersister.persist(nfts.values()); // persist nft after token entity
             batchPersister.persist(schedules.values());
@@ -400,9 +402,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
+        if (tokenAccounts.containsKey(tokenAccount.getId())) {
+            return;
+        }
+
         var key = new TokenAccountKey(tokenAccount.getId().getTokenId(), tokenAccount.getId().getAccountId());
         TokenAccount merged = tokenAccountState.merge(key, tokenAccount, this::mergeTokenAccount);
-        tokenAccounts.add(merged);
+        tokenAccounts.put(merged.getId(), merged);
     }
 
     @Override
