@@ -103,9 +103,9 @@ public abstract class AbstractEntity implements History {
     @Column(updatable = false)
     private Long shard;
 
-    private long stakedAccountId;
+    private Long stakedAccountId;
 
-    private long stakedNodeId;
+    private Long stakedNodeId;
 
     private Long stakePeriodStart;
 
