@@ -25,7 +25,9 @@ import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcess
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.inject.Named;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -87,11 +89,15 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
 
         if (filter.filter(accountBalanceFile.getConsensusTimestamp())) {
             List<AccountBalance> accountBalances = new ArrayList<>(batchSize);
-            List<TokenBalance> tokenBalances = new ArrayList<>(batchSize);
+            Map<TokenBalance.Id, TokenBalance> tokenBalances = new HashMap<>(batchSize);
 
             count = accountBalanceFile.getItems().doOnNext(accountBalance -> {
                 accountBalances.add(accountBalance);
-                tokenBalances.addAll(accountBalance.getTokenBalances());
+                for (var tokenBalance : accountBalance.getTokenBalances()) {
+                    if (tokenBalances.putIfAbsent(tokenBalance.getId(), tokenBalance) != null) {
+                        log.warn("Skipping duplicate token balance: {}", tokenBalance);
+                    }
+                }
 
                 if (accountBalances.size() >= batchSize) {
                     batchPersister.persist(accountBalances);
@@ -99,13 +105,13 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
                 }
 
                 if (tokenBalances.size() >= batchSize) {
-                    batchPersister.persist(tokenBalances);
+                    batchPersister.persist(tokenBalances.values());
                     tokenBalances.clear();
                 }
             }).count().block();
 
             batchPersister.persist(accountBalances);
-            batchPersister.persist(tokenBalances);
+            batchPersister.persist(tokenBalances.values());
         }
 
         Instant loadEnd = Instant.now();

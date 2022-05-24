@@ -36,8 +36,8 @@
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
         "nonce": 5,
         "payer_account_id": "8001",
-        "value": "0x0001a055690d9db80000",
-        "_value_description": "30000000000000000000 weibars = 3000000000 tinybars"
+        "value": "0x00B2D05E00",
+        "_value_description": "3000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00"
       }
     ]
   },

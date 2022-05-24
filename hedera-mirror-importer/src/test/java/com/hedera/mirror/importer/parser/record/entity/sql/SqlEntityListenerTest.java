@@ -972,6 +972,48 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onNftTransferMultiReceiverSingleTimestamp() {
+        String tokenId = "0.0.1";
+        long timestamp = 1L;
+        long serialNumber = 5L;
+        String originalSenderId = "0.0.10";
+        String firstReceipientId = "0.0.11";
+        String secondReceipientId = "0.0.12";
+        String finalReceipientId = "0.0.13";
+        NftTransfer nftTransfer1 = getNftTransfer(timestamp, tokenId, serialNumber, firstReceipientId,
+                originalSenderId);
+        NftTransfer nftTransfer2 = getNftTransfer(timestamp, tokenId, serialNumber, secondReceipientId,
+                firstReceipientId);
+        NftTransfer nftTransfer3 = getNftTransfer(timestamp, tokenId, serialNumber, finalReceipientId,
+                secondReceipientId);
+
+        // when
+        sqlEntityListener.onNftTransfer(nftTransfer1);
+        sqlEntityListener.onNftTransfer(nftTransfer2);
+        sqlEntityListener.onNftTransfer(nftTransfer3);
+        completeFileAndCommit();
+
+        // then
+        NftTransfer mergedNftTransfer = getNftTransfer(timestamp, tokenId, serialNumber, finalReceipientId,
+                originalSenderId);
+        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(mergedNftTransfer);
+    }
+
+    @Test
+    void onNftTransferDuplicates() {
+        NftTransfer nftTransfer1 = getNftTransfer(1L, "0.0.1", 1L, "0.0.2", "0.0.3");
+
+        // when
+        sqlEntityListener.onNftTransfer(nftTransfer1);
+        sqlEntityListener.onNftTransfer(nftTransfer1);
+        sqlEntityListener.onNftTransfer(nftTransfer1);
+        completeFileAndCommit();
+
+        // then
+        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(nftTransfer1);
+    }
+
+    @Test
     void onToken() {
         Token token1 = getToken(EntityId.of("0.0.3", TOKEN), EntityId.of("0.0.5", ACCOUNT), 1L, 1L);
         Token token2 = getToken(EntityId.of("0.0.7", TOKEN), EntityId.of("0.0.11", ACCOUNT), 2L, 2L);
@@ -1083,6 +1125,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         sqlEntityListener.onTokenAccount(tokenAccount1);
+        sqlEntityListener.onTokenAccount(tokenAccount1);
         sqlEntityListener.onTokenAccount(tokenAccount2);
         completeFileAndCommit();
 
@@ -1106,6 +1149,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         sqlEntityListener.onTokenAccount(associate);
+        sqlEntityListener.onTokenAccount(dissociate);
         sqlEntityListener.onTokenAccount(dissociate);
         completeFileAndCommit();
 
