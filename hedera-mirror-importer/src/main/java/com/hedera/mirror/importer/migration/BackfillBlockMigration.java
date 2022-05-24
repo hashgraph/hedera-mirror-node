@@ -147,16 +147,16 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
      */
     private Long backfillRecordFile(long lastConsensusEnd) {
         try {
-            return transactionTemplate.execute((status) -> {
+            return transactionTemplate.execute(status -> {
                 var timestampRange = jdbcTemplate.query(
                         SELECT_PREVIOUS_RECORD_FILE_TIMESTAMP_RANGE,
                         Map.of("lastConsensusEnd", lastConsensusEnd),
-                        (rs) -> rs.next() ? new RecordFileTimestampRange(rs.getLong("consensus_start"),
+                        rs -> rs.next() ? new RecordFileTimestampRange(rs.getLong("consensus_start"),
                                 rs.getLong("consensus_end")) : null);
                 if (timestampRange == null) {
                     return null;
                 }
-                
+
                 var timestampRangeParams = Map.of("consensusStart", timestampRange.getConsensusStart(),
                         "consensusEnd", timestampRange.getConsensusEnd());
 

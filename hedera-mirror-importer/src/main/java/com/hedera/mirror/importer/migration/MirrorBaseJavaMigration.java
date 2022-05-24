@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import java.io.IOException;
-import javax.inject.Named;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.api.MigrationVersion;

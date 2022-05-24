@@ -23,8 +23,6 @@ package com.hedera.mirror.importer.migration;
 import java.io.IOException;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -51,8 +49,6 @@ abstract class AsyncJavaMigration extends MirrorBaseJavaMigration {
             "set checksum = :checksum " +
             "from last " +
             "where f.installed_rank = last.installed_rank";
-
-    protected final Logger log = LogManager.getLogger(getClass());
 
     protected final NamedParameterJdbcTemplate jdbcTemplate;
 
@@ -108,7 +104,7 @@ abstract class AsyncJavaMigration extends MirrorBaseJavaMigration {
     private boolean hasFlywaySchemaHistoryTable() {
         var exists = jdbcTemplate.queryForObject(CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL, Map.of("schema", schema),
                 Boolean.class);
-        return exists != null ? exists : false;
+        return exists != null && exists;
     }
 
     private void onSuccess() {
