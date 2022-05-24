@@ -94,7 +94,9 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
             count = accountBalanceFile.getItems().doOnNext(accountBalance -> {
                 accountBalances.add(accountBalance);
                 for (var tokenBalance : accountBalance.getTokenBalances()) {
-                    tokenBalances.put(tokenBalance.getId(), tokenBalance);
+                    if (tokenBalances.putIfAbsent(tokenBalance.getId(), tokenBalance) != null) {
+                        log.warn("Skipping duplicate token balance: {}", tokenBalance);
+                    }
                 }
 
                 if (accountBalances.size() >= batchSize) {
