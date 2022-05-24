@@ -1090,6 +1090,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         sqlEntityListener.onTokenAccount(tokenAccount1);
+        sqlEntityListener.onTokenAccount(tokenAccount1);
         sqlEntityListener.onTokenAccount(tokenAccount2);
         completeFileAndCommit();
 
@@ -1113,6 +1114,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         sqlEntityListener.onTokenAccount(associate);
+        sqlEntityListener.onTokenAccount(dissociate);
         sqlEntityListener.onTokenAccount(dissociate);
         completeFileAndCommit();
 
