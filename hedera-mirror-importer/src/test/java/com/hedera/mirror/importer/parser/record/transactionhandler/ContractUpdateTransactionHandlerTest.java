@@ -129,20 +129,19 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     void updateTransactionWithNewStakedAccountId() {
         AccountID accountId = recordItemBuilder.accountId(1L);
         RecordItem withStakedNodeIdSet = recordItemBuilder.contractUpdate()
-                .transactionBody(body -> body.setStakedAccountId(accountId))
+                .transactionBody(body -> body.clear().setStakedAccountId(accountId))
                 .build();
         setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
-                .returns(1, Contract::getStakedAccountId)
+                .returns(1L, Contract::getStakedAccountId)
                 .returns(false, Contract::isDeclineReward)
                 .returns(null, Contract::getStakedNodeId)
-                .returns(null, Contract::getStakedAccountId)
                 .extracting(Contract::getStakePeriodStart)
                 .isNull()
         );
     }
 
     @Test
-    void updateTransactionWithNewStakingPeriod() {
+    void updateTransactionStartNewStakingPeriodAfterDeclineRewardChanged() {
         RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
         RecordItem withDeclineValueSet = recordItemBuilder.contractUpdate()
                 .transactionBody(body -> body.setDeclineReward(BoolValue.of(true)))
@@ -154,12 +153,15 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .extracting(Contract::getStakePeriodStart)
                 .isNotNull()
         );
+    }
 
+    @Test
+    void updateTransactionStartNewStakingPeriodAfterNodeIdChanged() {
         RecordItem withStakedNodeIdSet = recordItemBuilder.contractUpdate()
                 .transactionBody(body -> body.setStakedNodeId(1L))
                 .build();
         setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
-                .returns(1, Contract::getStakedNodeId)
+                .returns(1L, Contract::getStakedNodeId)
                 .returns(null, Contract::getStakedAccountId)
                 .returns(false, Contract::isDeclineReward)
                 .extracting(Contract::getStakePeriodStart)
@@ -307,9 +309,13 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     private void setupForContractUpdateTransactionTest(RecordItem recordItem, Consumer<Contract> extraAssertions) {
         var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().
-                customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp)
+                        .entityId(contractId)
+                )
+                .get();
         when(entityIdService.lookup(any(AccountID.class))).thenReturn(EntityIdEndec.decode(10L, ACCOUNT));
         transactionHandler.updateTransaction(transaction, recordItem);
+        assertContractUpdate(timestamp, contractId, extraAssertions);
     }
 }
