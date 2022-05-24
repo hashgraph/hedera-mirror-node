@@ -59,7 +59,22 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Test
-    void updateTransactionWithNewStakingPeriod() {
+    void updateTransactionWithNewStakedAccountId() {
+        AccountID accountId = recordItemBuilder.accountId(1L);
+        RecordItem withStakedNodeIdSet = recordItemBuilder.cryptoUpdate()
+                .transactionBody(body -> body.clear().setStakedAccountId(accountId))
+                .build();
+        setupForCrytoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
+                .returns(1L, Entity::getStakedAccountId)
+                .returns(false, Entity::isDeclineReward)
+                .returns(null, Entity::getStakedNodeId)
+                .extracting(Entity::getStakePeriodStart)
+                .isNull()
+        );
+    }
+
+    @Test
+    void updateTransactionStartStakingPeriodAfterDeclineRewardChanged() {
         RecordItem withDeclineValueSet = recordItemBuilder.cryptoUpdate()
                 .transactionBody(body -> body.clear()
                         .setDeclineReward(BoolValue.of(true))
@@ -71,16 +86,19 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(null, Entity::getStakedAccountId)
                 .extracting(Entity::getStakePeriodStart)
                 .isNotNull());
+    }
 
-//        RecordItem withStakedNodeIdSet = recordItemBuilder.contractUpdate()
-//                .transactionBody(body -> body.setStakedNodeId(1L))
-//                .build();
-//        setupForCrytoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
-//                .returns(1, Contract::getStakedNodeId)
-//                .returns(null, Contract::getStakedAccountId)
-//                .returns(false, Contract::isDeclineReward)
-//                .extracting(Contract::getStakePeriodStart)
-//                .isNotNull());
+    @Test
+    void updateTransactionStartStakingPeriodAfterNodeIdChanged() {
+        RecordItem withStakedNodeIdSet = recordItemBuilder.cryptoUpdate()
+                .transactionBody(body -> body.setStakedNodeId(1L))
+                .build();
+        setupForCrytoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
+                .returns(1L, Entity::getStakedNodeId)
+                .returns(null, Entity::getStakedAccountId)
+                .returns(false, Entity::isDeclineReward)
+                .extracting(Entity::getStakePeriodStart)
+                .isNotNull());
     }
 
     private void assertCryptoUpdate(long timestamp, Consumer<Entity> extraAssert) {
