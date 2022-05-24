@@ -1,5 +1,5 @@
 apiVersion: v2
-appVersion: "0.57.1"
+appVersion: "0.57.2"
 dependencies:
   - name: loki
     condition: loki.enabled
@@ -34,4 +34,4 @@ maintainers:
 name: hedera-mirror-common
 sources:
   - https://github.com/hashgraph/hedera-mirror-node
-version: 0.44.1
+version: 0.44.2
