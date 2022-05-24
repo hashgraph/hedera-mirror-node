@@ -46,6 +46,7 @@ import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -295,6 +296,15 @@ public class RecordItemBuilder {
                         .addSerialNumbers(3L)
                         .setTokenId(tokenId()));
         return new Builder<>(TransactionType.CRYPTODELETEALLOWANCE, builder);
+    }
+
+    public Builder<CryptoUpdateTransactionBody.Builder> cryptoUpdate() {
+        var builder = CryptoUpdateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(duration(30))
+                .setKey(key())
+                .setProxyAccountID(accountId())
+                .setReceiverSigRequired(false);
+        return new Builder<>(TransactionType.CRYPTOUPDATEACCOUNT, builder);
     }
 
     @SneakyThrows
