@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import javax.inject.Named;
 
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -87,8 +86,7 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
         entityListener.onEntity(entity);
     }
 
-    private void updateEntityStakingInfo(final AbstractEntity entity,
-            final CryptoUpdateTransactionBody transactionBody) {
+    private void updateEntityStakingInfo(Entity entity, CryptoUpdateTransactionBody transactionBody) {
         if (transactionBody.hasDeclineReward()) {
             entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
         }
