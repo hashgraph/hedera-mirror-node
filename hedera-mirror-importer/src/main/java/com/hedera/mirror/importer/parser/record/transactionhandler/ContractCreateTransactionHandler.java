@@ -126,6 +126,10 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     private void updateContractStakingInfo(Contract contract, ContractCreateTransactionBody transactionBody) {
+        // this contract has no staking
+        if (transactionBody.getStakedIdCase() == ContractCreateTransactionBody.StakedIdCase.STAKEDID_NOT_SET) {
+            return;
+        }
         contract.setDeclineReward(transactionBody.getDeclineReward());
         if (transactionBody.getStakedIdCase() == ContractCreateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID) {
             EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
