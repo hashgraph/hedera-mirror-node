@@ -33,6 +33,7 @@ const {assertSqlQueryEqual} = require('../testutils');
 const utils = require('../../utils');
 const {Contract} = require('../../model');
 const {FileDataService} = require('../../service');
+const Bound = require('../../controllers/bound');
 
 const contractFields = [
   Contract.AUTO_RENEW_ACCOUNT_ID,
@@ -52,6 +53,20 @@ const contractFields = [
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
 const contractWithInitcodeFields = [...contractFields, Contract.getFullName(Contract.INITCODE)];
+
+const timestampEq1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1002'};
+const timestampGt1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1002'};
+const timestampGte1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: '1002'};
+const timestampEq1005Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1005'};
+const timestampLt1005Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lt, value: '1005'};
+const timestampLte1005Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: '1005'};
+
+const indexEq2Filter = {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '2'};
+const indexGt2Filter = {key: constants.filterKeys.INDEX, operator: utils.opsMap.gt, value: '2'};
+const indexGte2Filter = {key: constants.filterKeys.INDEX, operator: utils.opsMap.gte, value: '2'};
+const indexEq5Filter = {key: constants.filterKeys.INDEX, operator: utils.opsMap.eq, value: '5'};
+const indexLt5Filter = {key: constants.filterKeys.INDEX, operator: utils.opsMap.lt, value: '5'};
+const indexLte5Filter = {key: constants.filterKeys.INDEX, operator: utils.opsMap.lte, value: '5'};
 
 const emptyFilterString = 'empty filters';
 const primaryContractFilter = 'cr.contract_id = $1';
@@ -626,419 +641,6 @@ describe('validateContractIdParam', () => {
   });
 });
 
-const defaultContractLogCondition = 'cl.contract_id = $1';
-describe('extractContractLogsQuery - by Id', () => {
-  const defaultContractId = 1;
-  const defaultExpected = {
-    conditions: [defaultContractLogCondition],
-    params: [defaultContractId],
-    timestampOrder: constants.orderFilterValues.DESC,
-    indexOrder: constants.orderFilterValues.DESC,
-    limit: defaultLimit,
-  };
-  const specs = [
-    {
-      name: emptyFilterString,
-      input: {filter: [], contractId: defaultContractId},
-      expected: {
-        ...defaultExpected,
-      },
-    },
-    {
-      name: 'index',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.INDEX,
-            operator: utils.opsMap.eq,
-            value: '2',
-          },
-        ],
-        contractId: defaultContractId,
-      },
-      expected: {
-        ...defaultExpected,
-        conditions: [defaultContractLogCondition, 'cl.index = $2'],
-        params: [defaultContractId, '2'],
-      },
-    },
-    {
-      name: 'timestamp',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.eq,
-            value: '1001',
-          },
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.eq,
-            value: '1002',
-          },
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.gt,
-            value: '1000',
-          },
-        ],
-        contractId: defaultContractId,
-      },
-      expected: {
-        ...defaultExpected,
-        conditions: [defaultContractLogCondition, 'cl.consensus_timestamp > $2', 'cl.consensus_timestamp in ($3,$4)'],
-        params: [defaultContractId, '1000', '1001', '1002'],
-      },
-    },
-    {
-      name: 'topics',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.TOPIC0,
-            operator: utils.opsMap.eq,
-            value: '0x0011',
-          },
-          {
-            key: constants.filterKeys.TOPIC0,
-            operator: utils.opsMap.eq,
-            value: '0x000013',
-          },
-          {
-            key: constants.filterKeys.TOPIC2,
-            operator: utils.opsMap.eq,
-            value: '0x140',
-          },
-          {
-            key: constants.filterKeys.TOPIC3,
-            operator: utils.opsMap.eq,
-            value: '0000150',
-          },
-          {
-            key: constants.filterKeys.TOPIC3,
-            operator: utils.opsMap.eq,
-            value: '0000150',
-          },
-        ],
-        contractId: defaultContractId,
-      },
-      expected: {
-        ...defaultExpected,
-        conditions: [defaultContractLogCondition, 'cl.topic0 in ($2,$3)', 'cl.topic2 in ($4)', 'cl.topic3 in ($5,$6)'],
-        params: [
-          defaultContractId,
-          Buffer.from('11', 'hex'),
-          Buffer.from('13', 'hex'),
-          Buffer.from('0140', 'hex'),
-          Buffer.from('0150', 'hex'),
-          Buffer.from('0150', 'hex'),
-        ],
-      },
-    },
-    {
-      name: 'limit',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.LIMIT,
-            operator: utils.opsMap.eq,
-            value: 20,
-          },
-        ],
-        contractId: defaultContractId,
-      },
-      expected: {
-        ...defaultExpected,
-        limit: 20,
-      },
-    },
-    {
-      name: 'order asc',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.ORDER,
-            operator: utils.opsMap.eq,
-            value: constants.orderFilterValues.ASC,
-          },
-        ],
-        contractId: defaultContractId,
-      },
-      expected: {
-        ...defaultExpected,
-        timestampOrder: constants.orderFilterValues.ASC,
-        indexOrder: constants.orderFilterValues.ASC,
-      },
-    },
-    {
-      name: 'order desc',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.ORDER,
-            operator: utils.opsMap.eq,
-            value: constants.orderFilterValues.DESC,
-          },
-        ],
-        contractId: defaultContractId,
-      },
-      expected: {
-        ...defaultExpected,
-        timestampOrder: constants.orderFilterValues.DESC,
-        indexOrder: constants.orderFilterValues.DESC,
-      },
-    },
-  ];
-  const errorSpecs = [
-    {
-      name: 'timestamp not equal operator',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.ne,
-            value: constants.orderFilterValues.DESC,
-          },
-        ],
-        contractId: defaultContractId,
-      },
-      errorMessage: 'Not equals operator not supported for timestamp param',
-    },
-    {
-      name: 'multiple index',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.INDEX,
-            operator: utils.opsMap.lt,
-            value: '1',
-          },
-          {
-            key: constants.filterKeys.INDEX,
-            operator: utils.opsMap.gt,
-            value: '2',
-          },
-        ],
-        contractId: defaultContractId,
-      },
-      errorMessage: 'Multiple params not allowed for index',
-    },
-  ];
-  specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(contracts.extractContractLogsQuery(spec.input.filter, spec.input.contractId)).toEqual(spec.expected);
-    });
-  });
-
-  errorSpecs.forEach((spec) => {
-    test(`error - ${spec.name}`, () => {
-      expect(() =>
-        contracts.extractContractLogsQuery(spec.input.filter, spec.input.contractId)
-      ).toThrowErrorMatchingSnapshot();
-    });
-  });
-});
-
-describe('extractContractLogsQuery - no Id specified', () => {
-  const defaultExpected = {
-    conditions: [],
-    params: [],
-    timestampOrder: constants.orderFilterValues.DESC,
-    indexOrder: constants.orderFilterValues.DESC,
-    limit: defaultLimit,
-  };
-  const specs = [
-    {
-      name: emptyFilterString,
-      input: {filter: []},
-      expected: {
-        ...defaultExpected,
-      },
-    },
-    {
-      name: 'index',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.INDEX,
-            operator: utils.opsMap.eq,
-            value: '2',
-          },
-        ],
-      },
-      expected: {
-        ...defaultExpected,
-        conditions: ['cl.index = $1'],
-        params: ['2'],
-      },
-    },
-    {
-      name: 'timestamp',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.eq,
-            value: '1001',
-          },
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.eq,
-            value: '1002',
-          },
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.gt,
-            value: '1000',
-          },
-        ],
-      },
-      expected: {
-        ...defaultExpected,
-        conditions: ['cl.consensus_timestamp > $1', 'cl.consensus_timestamp in ($2,$3)'],
-        params: ['1000', '1001', '1002'],
-      },
-    },
-    {
-      name: 'topics',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.TOPIC0,
-            operator: utils.opsMap.eq,
-            value: '0x0011',
-          },
-          {
-            key: constants.filterKeys.TOPIC0,
-            operator: utils.opsMap.eq,
-            value: '0x000013',
-          },
-          {
-            key: constants.filterKeys.TOPIC2,
-            operator: utils.opsMap.eq,
-            value: '0x140',
-          },
-          {
-            key: constants.filterKeys.TOPIC3,
-            operator: utils.opsMap.eq,
-            value: '0000150',
-          },
-          {
-            key: constants.filterKeys.TOPIC3,
-            operator: utils.opsMap.eq,
-            value: '0000150',
-          },
-        ],
-      },
-      expected: {
-        ...defaultExpected,
-        conditions: ['cl.topic0 in ($1,$2)', 'cl.topic2 in ($3)', 'cl.topic3 in ($4,$5)'],
-        params: [
-          Buffer.from('11', 'hex'),
-          Buffer.from('13', 'hex'),
-          Buffer.from('0140', 'hex'),
-          Buffer.from('0150', 'hex'),
-          Buffer.from('0150', 'hex'),
-        ],
-      },
-    },
-    {
-      name: 'limit',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.LIMIT,
-            operator: utils.opsMap.eq,
-            value: 20,
-          },
-        ],
-      },
-      expected: {
-        ...defaultExpected,
-        limit: 20,
-      },
-    },
-    {
-      name: 'order asc',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.ORDER,
-            operator: utils.opsMap.eq,
-            value: constants.orderFilterValues.ASC,
-          },
-        ],
-      },
-      expected: {
-        ...defaultExpected,
-        timestampOrder: constants.orderFilterValues.ASC,
-        indexOrder: constants.orderFilterValues.ASC,
-      },
-    },
-    {
-      name: 'order desc',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.ORDER,
-            operator: utils.opsMap.eq,
-            value: constants.orderFilterValues.DESC,
-          },
-        ],
-      },
-      expected: {
-        ...defaultExpected,
-        timestampOrder: constants.orderFilterValues.DESC,
-        indexOrder: constants.orderFilterValues.DESC,
-      },
-    },
-  ];
-  const errorSpecs = [
-    {
-      name: 'timestamp not equal operator',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.TIMESTAMP,
-            operator: utils.opsMap.ne,
-            value: constants.orderFilterValues.DESC,
-          },
-        ],
-      },
-      errorMessage: 'Not equals operator not supported for timestamp param',
-    },
-    {
-      name: 'multiple index',
-      input: {
-        filter: [
-          {
-            key: constants.filterKeys.INDEX,
-            operator: utils.opsMap.lt,
-            value: '1',
-          },
-          {
-            key: constants.filterKeys.INDEX,
-            operator: utils.opsMap.gt,
-            value: '2',
-          },
-        ],
-      },
-      errorMessage: 'Multiple params not allowed for index',
-    },
-  ];
-  specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(contracts.extractContractLogsQuery(spec.input.filter)).toEqual(spec.expected);
-    });
-  });
-
-  errorSpecs.forEach((spec) => {
-    test(`error - ${spec.name}`, () => {
-      expect(() => contracts.extractContractLogsQuery(spec.input.filter)).toThrowErrorMatchingSnapshot();
-    });
-  });
-});
-
 describe('checkTimestampsForTopics', () => {
   test('no topic params', () => {
     expect(() => contracts.checkTimestampsForTopics([])).not.toThrow();
@@ -1142,5 +744,797 @@ describe('checkTimestampsForTopics', () => {
       },
     ];
     expect(() => contracts.checkTimestampsForTopics(filters)).toThrowErrorMatchingSnapshot();
+  });
+});
+
+const defaultContractLogCondition = 'cl.contract_id = $1';
+describe('extractContractLogsMultiUnionQuery - positive', () => {
+  const defaultContractId = 1;
+  const defaultExpected = {
+    bounds: {
+      [constants.filterKeys.INDEX]: new Bound(),
+      [constants.filterKeys.TIMESTAMP]: new Bound(),
+    },
+    boundKeys: {
+      primary: constants.filterKeys.TIMESTAMP,
+      secondary: constants.filterKeys.INDEX,
+    },
+    lower: [],
+    inner: [],
+    upper: [],
+    conditions: [defaultContractLogCondition],
+    params: [defaultContractId],
+    timestampOrder: constants.orderFilterValues.DESC,
+    indexOrder: constants.orderFilterValues.DESC,
+    limit: defaultLimit,
+  };
+  const specs = [
+    {
+      name: emptyFilterString,
+      input: {filter: [], contractId: defaultContractId},
+      expected: {
+        ...defaultExpected,
+      },
+    },
+    {
+      name: 'no index & timestmap =',
+      input: {
+        filter: [timestampEq1002Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          ...defaultExpected.bounds,
+          [constants.filterKeys.TIMESTAMP]: Bound.create({equal: timestampEq1002Filter}),
+        },
+        lower: [timestampEq1002Filter],
+      },
+    },
+    {
+      name: 'no index & timestmap >',
+      input: {
+        filter: [timestampGt1002Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          ...defaultExpected.bounds,
+          [constants.filterKeys.TIMESTAMP]: Bound.create({lower: timestampGt1002Filter}),
+        },
+        lower: [timestampGt1002Filter],
+      },
+    },
+    {
+      name: 'no index & timestmap >=',
+      input: {
+        filter: [timestampGte1002Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          ...defaultExpected.bounds,
+          [constants.filterKeys.TIMESTAMP]: Bound.create({lower: timestampGte1002Filter}),
+        },
+        lower: [timestampGte1002Filter],
+      },
+    },
+    {
+      name: 'no index & timestmap <',
+      input: {
+        filter: [timestampLt1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          ...defaultExpected.bounds,
+          [constants.filterKeys.TIMESTAMP]: Bound.create({upper: timestampLt1005Filter}),
+        },
+        lower: [timestampLt1005Filter],
+      },
+    },
+    {
+      name: 'no index & timestmap <=',
+      input: {
+        filter: [timestampLte1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          ...defaultExpected.bounds,
+          [constants.filterKeys.TIMESTAMP]: Bound.create({upper: timestampLte1005Filter}),
+        },
+        lower: [timestampLte1005Filter],
+      },
+    },
+    {
+      name: 'no index & timestmap > & timestamp <',
+      input: {
+        filter: [timestampGt1002Filter, timestampLt1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          ...defaultExpected.bounds,
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGt1002Filter,
+            upper: timestampLt1005Filter,
+          }),
+        },
+        lower: [timestampGt1002Filter, timestampLt1005Filter],
+      },
+    },
+    {
+      name: 'no index & timestmap >= & timestamp <=',
+      input: {
+        filter: [timestampGte1002Filter, timestampLte1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          ...defaultExpected.bounds,
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGte1002Filter,
+            upper: timestampLte1005Filter,
+          }),
+        },
+        lower: [timestampGte1002Filter, timestampLte1005Filter],
+      },
+    },
+    {
+      name: 'index = & timestmap =',
+      input: {
+        filter: [indexEq2Filter, timestampEq1002Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({equal: indexEq2Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({equal: timestampEq1002Filter}),
+        },
+        lower: [timestampEq1002Filter, indexEq2Filter],
+      },
+    },
+    {
+      name: 'index > & timestmap =',
+      input: {
+        filter: [indexGt2Filter, timestampEq1002Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({lower: indexGt2Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({equal: timestampEq1002Filter}),
+        },
+        lower: [timestampEq1002Filter, indexGt2Filter],
+      },
+    },
+    {
+      name: 'index >= & timestmap =',
+      input: {
+        filter: [indexGte2Filter, timestampEq1002Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({lower: indexGte2Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({equal: timestampEq1002Filter}),
+        },
+        lower: [timestampEq1002Filter, indexGte2Filter],
+      },
+    },
+    {
+      name: 'index < & timestmap =',
+      input: {
+        filter: [indexLt5Filter, timestampEq1002Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({upper: indexLt5Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({equal: timestampEq1002Filter}),
+        },
+        lower: [timestampEq1002Filter, indexLt5Filter],
+      },
+    },
+    {
+      name: 'index <= & timestmap =',
+      input: {
+        filter: [indexLte5Filter, timestampEq1002Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({upper: indexLte5Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({equal: timestampEq1002Filter}),
+        },
+        lower: [timestampEq1002Filter, indexLte5Filter],
+      },
+    },
+    {
+      name: 'index > & timestmap =>',
+      input: {
+        filter: [indexGt2Filter, timestampGte1002Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({lower: indexGt2Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({lower: timestampGte1002Filter}),
+        },
+        lower: [timestampEq1002Filter, indexGt2Filter],
+        inner: [timestampGt1002Filter],
+      },
+    },
+    {
+      name: 'index >= & timestmap =>',
+      input: {
+        filter: [indexGte2Filter, timestampGte1002Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({lower: indexGte2Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({lower: timestampGte1002Filter}),
+        },
+        lower: [timestampEq1002Filter, indexGte2Filter],
+        inner: [timestampGt1002Filter],
+      },
+    },
+    {
+      name: 'index < & timestmap <=',
+      input: {
+        filter: [indexLt5Filter, timestampLte1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({upper: indexLt5Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({upper: timestampLte1005Filter}),
+        },
+        upper: [timestampEq1005Filter, indexLt5Filter],
+        inner: [timestampLt1005Filter],
+      },
+    },
+    {
+      name: 'index <= & timestmap <=',
+      input: {
+        filter: [indexLte5Filter, timestampLte1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({upper: indexLte5Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({upper: timestampLte1005Filter}),
+        },
+        upper: [timestampEq1005Filter, indexLte5Filter],
+        inner: [timestampLt1005Filter],
+      },
+    },
+    {
+      name: 'index > & timestmap >= & timestamp <',
+      input: {
+        filter: [indexGt2Filter, timestampGte1002Filter, timestampLt1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({lower: indexGt2Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGte1002Filter,
+            upper: timestampLt1005Filter,
+          }),
+        },
+        lower: [timestampEq1002Filter, indexGt2Filter],
+        inner: [timestampGt1002Filter, timestampLt1005Filter],
+      },
+    },
+    {
+      name: 'index > & timestmap >= & timestamp <=',
+      input: {
+        filter: [indexGt2Filter, timestampGte1002Filter, timestampLte1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({lower: indexGt2Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGte1002Filter,
+            upper: timestampLte1005Filter,
+          }),
+        },
+        lower: [timestampEq1002Filter, indexGt2Filter],
+        inner: [timestampGt1002Filter, timestampLte1005Filter],
+      },
+    },
+    {
+      name: 'index >= & timestmap >= & timestamp <',
+      input: {
+        filter: [indexGte2Filter, timestampGte1002Filter, timestampLt1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({lower: indexGte2Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGte1002Filter,
+            upper: timestampLt1005Filter,
+          }),
+        },
+        lower: [timestampEq1002Filter, indexGte2Filter],
+        inner: [timestampGt1002Filter, timestampLt1005Filter],
+      },
+    },
+
+    {
+      name: 'index >= & timestmap >= & timestamp <=',
+      input: {
+        filter: [indexGte2Filter, timestampGte1002Filter, timestampLte1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({lower: indexGte2Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGte1002Filter,
+            upper: timestampLte1005Filter,
+          }),
+        },
+        lower: [timestampEq1002Filter, indexGte2Filter],
+        inner: [timestampGt1002Filter, timestampLte1005Filter],
+      },
+    },
+
+    {
+      name: 'index < & timestmap > & timestamp <=',
+      input: {
+        filter: [indexLt5Filter, timestampGt1002Filter, timestampLte1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({upper: indexLt5Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGt1002Filter,
+            upper: timestampLte1005Filter,
+          }),
+        },
+        inner: [timestampGt1002Filter, timestampLt1005Filter],
+        upper: [timestampEq1005Filter, indexLt5Filter],
+      },
+    },
+    {
+      name: 'index <= & timestmap > & timestamp <=',
+      input: {
+        filter: [indexLte5Filter, timestampGt1002Filter, timestampLte1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({upper: indexLte5Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGt1002Filter,
+            upper: timestampLte1005Filter,
+          }),
+        },
+        inner: [timestampGt1002Filter, timestampLt1005Filter],
+        upper: [timestampEq1005Filter, indexLte5Filter],
+      },
+    },
+    {
+      name: 'index < & timestmap >= & timestamp <=',
+      input: {
+        filter: [indexLt5Filter, timestampGte1002Filter, timestampLte1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({upper: indexLt5Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGte1002Filter,
+            upper: timestampLte1005Filter,
+          }),
+        },
+        inner: [timestampGte1002Filter, timestampLt1005Filter],
+        upper: [timestampEq1005Filter, indexLt5Filter],
+      },
+    },
+    {
+      name: 'index <= & timestmap >= & timestamp <=',
+      input: {
+        filter: [indexLte5Filter, timestampGte1002Filter, timestampLte1005Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({upper: indexLte5Filter}),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGte1002Filter,
+            upper: timestampLte1005Filter,
+          }),
+        },
+        inner: [timestampGte1002Filter, timestampLt1005Filter],
+        upper: [timestampEq1005Filter, indexLte5Filter],
+      },
+    },
+    {
+      name: 'index > & timestmap >= & timestamp <= & index <',
+      input: {
+        filter: [indexGt2Filter, timestampGte1002Filter, timestampLte1005Filter, indexLt5Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({
+            lower: indexGt2Filter,
+            upper: indexLt5Filter,
+          }),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGte1002Filter,
+            upper: timestampLte1005Filter,
+          }),
+        },
+        lower: [timestampEq1002Filter, indexGt2Filter],
+        inner: [timestampGt1002Filter, timestampLt1005Filter],
+        upper: [timestampEq1005Filter, indexLt5Filter],
+      },
+    },
+
+    {
+      name: 'index > & timestmap >= & timestamp <= & index <=',
+      input: {
+        filter: [indexGt2Filter, timestampGte1002Filter, timestampLte1005Filter, indexLte5Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({
+            lower: indexGt2Filter,
+            upper: indexLte5Filter,
+          }),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGte1002Filter,
+            upper: timestampLte1005Filter,
+          }),
+        },
+        lower: [timestampEq1002Filter, indexGt2Filter],
+        inner: [timestampGt1002Filter, timestampLt1005Filter],
+        upper: [timestampEq1005Filter, indexLte5Filter],
+      },
+    },
+    {
+      name: 'index >= & timestmap >= & timestamp <= & index <',
+      input: {
+        filter: [indexGte2Filter, timestampGte1002Filter, timestampLte1005Filter, indexLt5Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({
+            lower: indexGte2Filter,
+            upper: indexLt5Filter,
+          }),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGte1002Filter,
+            upper: timestampLte1005Filter,
+          }),
+        },
+        lower: [timestampEq1002Filter, indexGte2Filter],
+        inner: [timestampGt1002Filter, timestampLt1005Filter],
+        upper: [timestampEq1005Filter, indexLt5Filter],
+      },
+    },
+    {
+      name: 'index >= & timestmap >= & timestamp <= & index <=',
+      input: {
+        filter: [indexGte2Filter, timestampGte1002Filter, timestampLte1005Filter, indexLte5Filter],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition],
+        params: [defaultContractId],
+        bounds: {
+          [constants.filterKeys.INDEX]: Bound.create({
+            lower: indexGte2Filter,
+            upper: indexLte5Filter,
+          }),
+          [constants.filterKeys.TIMESTAMP]: Bound.create({
+            lower: timestampGte1002Filter,
+            upper: timestampLte1005Filter,
+          }),
+        },
+        lower: [timestampEq1002Filter, indexGte2Filter],
+        inner: [timestampGt1002Filter, timestampLt1005Filter],
+        upper: [timestampEq1005Filter, indexLte5Filter],
+      },
+    },
+    {
+      name: 'topics',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.TOPIC0,
+            operator: utils.opsMap.eq,
+            value: '0x0011',
+          },
+          {
+            key: constants.filterKeys.TOPIC0,
+            operator: utils.opsMap.eq,
+            value: '0x000013',
+          },
+          {
+            key: constants.filterKeys.TOPIC2,
+            operator: utils.opsMap.eq,
+            value: '0x140',
+          },
+          {
+            key: constants.filterKeys.TOPIC3,
+            operator: utils.opsMap.eq,
+            value: '0000150',
+          },
+          {
+            key: constants.filterKeys.TOPIC3,
+            operator: utils.opsMap.eq,
+            value: '0000150',
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [defaultContractLogCondition, 'cl.topic0 in ($2,$3)', 'cl.topic2 in ($4)', 'cl.topic3 in ($5,$6)'],
+        params: [
+          defaultContractId,
+          Buffer.from('11', 'hex'),
+          Buffer.from('13', 'hex'),
+          Buffer.from('0140', 'hex'),
+          Buffer.from('0150', 'hex'),
+          Buffer.from('0150', 'hex'),
+        ],
+      },
+    },
+    {
+      name: 'limit',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.LIMIT,
+            operator: utils.opsMap.eq,
+            value: 20,
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        limit: 20,
+      },
+    },
+    {
+      name: 'order asc',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.ORDER,
+            operator: utils.opsMap.eq,
+            value: constants.orderFilterValues.ASC,
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        timestampOrder: constants.orderFilterValues.ASC,
+        indexOrder: constants.orderFilterValues.ASC,
+      },
+    },
+    {
+      name: 'order desc',
+      input: {
+        filter: [
+          {
+            key: constants.filterKeys.ORDER,
+            operator: utils.opsMap.eq,
+            value: constants.orderFilterValues.DESC,
+          },
+        ],
+        contractId: defaultContractId,
+      },
+      expected: {
+        ...defaultExpected,
+        timestampOrder: constants.orderFilterValues.DESC,
+        indexOrder: constants.orderFilterValues.DESC,
+      },
+    },
+  ];
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(contracts.extractContractLogsMultiUnionQuery(spec.input.filter, spec.input.contractId)).toEqual(
+        spec.expected
+      );
+    });
+  });
+});
+
+describe('extractContractLogsMultiUnionQuery - negative', () => {
+  const specs = [
+    {
+      name: 'index & no timestamp',
+      input: {
+        filter: [indexGt2Filter],
+      },
+    },
+    {
+      name: 'index > & timestamp <',
+      input: {
+        filter: [indexGt2Filter, timestampLt1005Filter],
+      },
+    },
+    {
+      name: 'index > & timestamp <=',
+      input: {
+        filter: [indexGt2Filter, timestampLte1005Filter],
+      },
+    },
+    {
+      name: 'index > & timestamp >',
+      input: {
+        filter: [indexGt2Filter, timestampGt1002Filter],
+      },
+    },
+    {
+      name: 'index >= & timestamp <',
+      input: {
+        filter: [indexGte2Filter, timestampLt1005Filter],
+      },
+    },
+    {
+      name: 'index >= & timestamp <=',
+      input: {
+        filter: [indexGte2Filter, timestampLte1005Filter],
+      },
+    },
+    {
+      name: 'index >= & timestamp >',
+      input: {
+        filter: [indexGte2Filter, timestampGt1002Filter],
+      },
+    },
+
+    {
+      name: 'index < & timestamp >',
+      input: {
+        filter: [indexLt5Filter, timestampGt1002Filter],
+      },
+    },
+    {
+      name: 'index < & timestamp >=',
+      input: {
+        filter: [indexLt5Filter, timestampGte1002Filter],
+      },
+    },
+    {
+      name: 'index < & timestamp <',
+      input: {
+        filter: [
+          indexLt5Filter,
+          {
+            key: constants.filterKeys.TIMESTAMP,
+            operator: utils.opsMap.lt,
+            value: '1002',
+          },
+        ],
+      },
+    },
+    {
+      name: 'index <= & timestamp <',
+      input: {
+        filter: [indexLte5Filter, timestampLt1005Filter],
+      },
+    },
+    {
+      name: 'index <= & timestamp >=',
+      input: {
+        filter: [indexLte5Filter, timestampGte1002Filter],
+      },
+    },
+    {
+      name: 'index <= & timestamp >',
+      input: {
+        filter: [indexLte5Filter, timestampGt1002Filter],
+      },
+    },
+    {
+      name: 'index = & timestamp not =',
+      input: {
+        filter: [indexEq2Filter, timestampGt1002Filter],
+      },
+    },
+    {
+      name: 'index > & index < & timestamp <=',
+      input: {
+        filter: [indexGt2Filter, indexLt5Filter, timestampLte1005Filter],
+      },
+    },
+    {
+      name: 'timestamp = & timestamp =',
+      input: {
+        filter: [timestampEq1005Filter, timestampEq1002Filter],
+      },
+    },
+  ];
+  specs.forEach((spec) => {
+    test(`error - ${spec.name}`, () => {
+      expect(() => contracts.extractContractLogsMultiUnionQuery(spec.input.filter, spec.input.contractId)).toThrow();
+    });
   });
 });

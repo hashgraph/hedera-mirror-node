@@ -4,6 +4,9 @@
   "urls": ["/api/v1/contracts/0.0.1000/results/logs"],
   "responseStatus": 200,
   "responseJson": {
-    "logs": []
+    "logs": [],
+    "links": {
+      "next": null
+    }
   }
 }

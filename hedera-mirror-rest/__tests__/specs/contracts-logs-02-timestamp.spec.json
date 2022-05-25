@@ -45,9 +45,9 @@
     ]
   },
   "urls": [
-    "/api/v1/contracts/0.0.1000/results/logs?timestamp=1639010151.000000000&timestamp=1639010141.000000000",
+    "/api/v1/contracts/0.0.1000/results/logs?timestamp=gte:1639010141.000000000&timestamp=lte:1639010151.000000000",
     "/api/v1/contracts/0.0.1000/results/logs?timestamp=gte:1639010131.000000000&timestamp=lt:1669010141.000000000",
-    "/api/v1/contracts/abbcccddddeeeeeefffffff000000068fed9dddd/results/logs?timestamp=1639010151.000000000&timestamp=1639010141.000000000",
+    "/api/v1/contracts/abbcccddddeeeeeefffffff000000068fed9dddd/results/logs?timestamp=gte:1639010141.000000000&timestamp=lte:1639010151.000000000",
     "/api/v1/contracts/abbcccddddeeeeeefffffff000000068fed9dddd/results/logs?timestamp=gte:1639010131.000000000&timestamp=lt:1669010141.000000000"
   ],
   "responseStatus": 200,
@@ -98,6 +98,9 @@
           "0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67"
         ]
       }
-    ]
+    ],
+    "links": {
+      "next": null
+    }
   }
 }
