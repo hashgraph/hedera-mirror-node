@@ -454,9 +454,12 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onEntityWithHistoryAndNonHistoryUpdates(boolean nonceBefore) {
         // given
         Entity entity = domainBuilder.entity().persist();
-        Entity entityNonce = entity.toEntityId().toEntity();
-        entityNonce.setEthereumNonce(100L);
-        entityNonce.setTimestampRange(null);
+        Entity entityNonce1 = entity.toEntityId().toEntity();
+        entityNonce1.setEthereumNonce(100L);
+        entityNonce1.setTimestampRange(null);
+
+        Entity entityNonce2 = TestUtils.clone(entityNonce1);
+        entityNonce2.setEthereumNonce(101L);
 
         Entity entityDeleted = entity.toEntityId().toEntity();
         entityDeleted.setDeleted(true);
@@ -464,18 +467,20 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         if (nonceBefore) {
-            sqlEntityListener.onEntity(entityNonce);
+            sqlEntityListener.onEntity(entityNonce1);
+            sqlEntityListener.onEntity(entityNonce2);
             sqlEntityListener.onEntity(entityDeleted);
         } else {
             sqlEntityListener.onEntity(entityDeleted);
-            sqlEntityListener.onEntity(entityNonce);
+            sqlEntityListener.onEntity(entityNonce1);
+            sqlEntityListener.onEntity(entityNonce2);
         }
         completeFileAndCommit();
 
         // then
         Entity entityMerged = TestUtils.clone(entity);
         entityMerged.setDeleted(entityDeleted.getDeleted());
-        entityMerged.setEthereumNonce(entityNonce.getEthereumNonce());
+        entityMerged.setEthereumNonce(entityNonce2.getEthereumNonce());
         entityMerged.setTimestampRange(entityDeleted.getTimestampRange());
         entity.setTimestampUpper(entityDeleted.getTimestampLower());
 
@@ -1124,6 +1129,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         sqlEntityListener.onTokenAccount(tokenAccount1);
+        sqlEntityListener.onTokenAccount(tokenAccount1);
         sqlEntityListener.onTokenAccount(tokenAccount2);
         completeFileAndCommit();
 
@@ -1147,6 +1153,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         sqlEntityListener.onTokenAccount(associate);
+        sqlEntityListener.onTokenAccount(dissociate);
         sqlEntityListener.onTokenAccount(dissociate);
         completeFileAndCommit();
 
