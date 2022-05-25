@@ -43,6 +43,8 @@ class BlockViewModel {
       from: utils.nsToSecNs(recordFile.consensusStart),
       to: utils.nsToSecNs(recordFile.consensusEnd),
     };
+    this.gas_used = recordFile.gasUsed;
+    this.logs_bloom = utils.toHexStringNonQuantity(recordFile.logsBloom);
   }
 }
 
