@@ -178,6 +178,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             insertTransferList(recordItem);
         }
 
+        // insert staking reward transfers even on failure
         insertStakingRewardTransfers(recordItem);
 
         // handle scheduled transaction, even on failure
@@ -402,12 +403,11 @@ public class EntityRecordItemListener implements RecordItemListener {
         var consensusTimestamp = recordItem.getConsensusTimestamp();
 
         for (var aa : recordItem.getRecord().getPaidStakingRewardsList()) {
-            var transfer = new StakingRewardTransfer();
             var accountId = EntityId.of(aa.getAccountID());
+            var transfer = new StakingRewardTransfer();
             transfer.setAmount(aa.getAmount());
             transfer.setPayerAccountId(recordItem.getPayerAccountId());
             transfer.setId(new StakingRewardTransfer.Id(consensusTimestamp, accountId));
-
             entityListener.onStakingRewardTransfer(transfer);
 
             var entity = (Entity) accountId.toEntity();

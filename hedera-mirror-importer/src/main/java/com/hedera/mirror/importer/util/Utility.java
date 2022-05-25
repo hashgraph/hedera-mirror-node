@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
@@ -119,7 +120,7 @@ public class Utility {
     }
 
     public static long getEpochDay(long timestamp) {
-        return LocalDate.from(Instant.ofEpochSecond(0, timestamp)).toEpochDay();
+        return LocalDate.ofInstant(Instant.ofEpochSecond(0, timestamp), ZoneOffset.UTC).toEpochDay();
     }
 
     /**

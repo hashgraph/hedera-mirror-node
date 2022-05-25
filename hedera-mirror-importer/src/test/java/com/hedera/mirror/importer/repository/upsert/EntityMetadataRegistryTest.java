@@ -42,13 +42,13 @@ class EntityMetadataRegistryTest extends IntegrationTest {
     void lookup() {
         var all = "auto_renew_account_id,auto_renew_period,created_timestamp,deleted,evm_address," +
                 "expiration_timestamp,file_id,id,initcode,key,max_automatic_token_associations,memo,num,obtainer_id," +
-                "permanent_removal,proxy_account_id,public_key,realm,shard,timestamp_range,type";
+                "permanent_removal,proxy_account_id,public_key,realm,shard,stake_period_start,timestamp_range,type";
         var nullable = "auto_renew_account_id,auto_renew_period,created_timestamp,deleted,evm_address," +
                 "expiration_timestamp,file_id,initcode,key,max_automatic_token_associations,obtainer_id," +
-                "permanent_removal,proxy_account_id,public_key";
+                "permanent_removal,proxy_account_id,public_key,stake_period_start";
         var updatable = "auto_renew_account_id,auto_renew_period,deleted,expiration_timestamp,key," +
                 "max_automatic_token_associations,memo,obtainer_id,permanent_removal,proxy_account_id,public_key," +
-                "timestamp_range";
+                "stake_period_start,timestamp_range";
 
         var contract = domainBuilder.contract().get();
         var newValue = -99999L;
@@ -63,7 +63,7 @@ class EntityMetadataRegistryTest extends IntegrationTest {
                 .returns(nullable, e -> e.columns(ColumnMetadata::isNullable, "{0}"))
                 .returns(updatable, e -> e.columns(ColumnMetadata::isUpdatable, "{0}"))
                 .extracting(EntityMetadata::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(21)
+                .hasSize(22)
                 .first(InstanceOfAssertFactories.type(ColumnMetadata.class))
                 .returns("auto_renew_account_id", ColumnMetadata::getName)
                 .returns(Long.class, ColumnMetadata::getType)
