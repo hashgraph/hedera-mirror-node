@@ -68,139 +68,261 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
     void getInsertQueryHistory() {
         UpsertQueryGenerator generator = factory.get(Contract.class);
         assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
-        assertThat(format(generator.getInsertQuery())).isEqualTo(format("with existing as (" +
-                "  select" +
-                "    e.auto_renew_account_id as e_auto_renew_account_id," +
-                "    e.auto_renew_period as e_auto_renew_period," +
-                "    e.created_timestamp as e_created_timestamp," +
-                "    e.deleted as e_deleted," +
-                "    e.evm_address as e_evm_address," +
-                "    e.expiration_timestamp as e_expiration_timestamp," +
-                "    e.file_id as e_file_id," +
-                "    e.id as e_id," +
-                "    e.initcode as e_initcode," +
-                "    e.key as e_key," +
-                "    e.max_automatic_token_associations as e_max_automatic_token_associations," +
-                "    e.memo as e_memo," +
-                "    e.num as e_num," +
-                "    e.obtainer_id as e_obtainer_id," +
-                "    e.permanent_removal as e_permanent_removal," +
-                "    e.proxy_account_id as e_proxy_account_id," +
-                "    e.public_key as e_public_key," +
-                "    e.realm as e_realm," +
-                "    e.shard as e_shard," +
-                "    e.timestamp_range as e_timestamp_range," +
-                "    e.type as e_type," +
-                "    t.*" +
-                "  from contract_temp t" +
-                "  left join contract e on e.id = t.id" +
-                ")," +
-                "existing_history as (" +
-                "  insert into contract_history (" +
-                "    auto_renew_account_id,auto_renew_period, created_timestamp, deleted, evm_address," +
-                "    expiration_timestamp, file_id, id, initcode, key, max_automatic_token_associations, memo, " +
-                "    num, obtainer_id, permanent_removal, proxy_account_id, public_key, realm, shard, " +
-                "    timestamp_range,type" +
-                "  )" +
-                "  select" +
-                "    distinct on (id) e_auto_renew_account_id," +
-                "    e_auto_renew_period," +
-                "    e_created_timestamp," +
-                "    e_deleted," +
-                "    e_evm_address," +
-                "    e_expiration_timestamp," +
-                "    e_file_id," +
-                "    e_id," +
-                "    e_initcode," +
-                "    e_key," +
-                "    e_max_automatic_token_associations," +
-                "    e_memo," +
-                "    e_num," +
-                "    e_obtainer_id," +
-                "    e_permanent_removal," +
-                "    e_proxy_account_id," +
-                "    e_public_key," +
-                "    e_realm," +
-                "    e_shard," +
-                "    int8range(lower(e_timestamp_range), lower(timestamp_range)) as timestamp_range," +
-                "    e_type" +
-                "  from existing" +
-                "  where e_timestamp_range is not null and timestamp_range is not null" +
-                "  order by id, timestamp_range asc" +
-                ")," +
-                "temp_history as (" +
-                "  insert into contract_history (" +
-                "    auto_renew_account_id, auto_renew_period, created_timestamp, deleted, evm_address," +
-                "    expiration_timestamp, file_id, id, initcode, key, max_automatic_token_associations, memo, num," +
-                "    obtainer_id, permanent_removal,proxy_account_id, public_key, realm, shard, timestamp_range, type" +
-                "  )" +
-                "  select distinct" +
-                "    coalesce(auto_renew_account_id, e_auto_renew_account_id, null)," +
-                "    coalesce(auto_renew_period, e_auto_renew_period, null)," +
-                "    coalesce(created_timestamp, e_created_timestamp, null)," +
-                "    coalesce(deleted, e_deleted, null)," +
-                "    coalesce(evm_address, e_evm_address, null)," +
-                "    coalesce(expiration_timestamp, e_expiration_timestamp, null)," +
-                "    coalesce(file_id, e_file_id, null)," +
-                "    coalesce(id, e_id, null)," +
-                "    coalesce(initcode, e_initcode, null)," +
-                "    coalesce(key, e_key, null)," +
-                "    coalesce(max_automatic_token_associations, e_max_automatic_token_associations, null)," +
-                "    coalesce(memo, e_memo, '')," +
-                "    coalesce(num, e_num, null)," +
-                "    coalesce(obtainer_id, e_obtainer_id, null)," +
-                "    coalesce(permanent_removal, e_permanent_removal, null)," +
-                "    coalesce(proxy_account_id, e_proxy_account_id, null)," +
-                "    coalesce(public_key, e_public_key, null)," +
-                "    coalesce(realm, e_realm, null)," +
-                "    coalesce(shard, e_shard, null)," +
-                "    coalesce(timestamp_range, e_timestamp_range, null)," +
-                "    coalesce(type, e_type, 'CONTRACT')" +
-                "  from existing" +
-                "  where timestamp_range is not null and upper(timestamp_range) is not null" +
-                ")" +
-                "insert into contract (" +
-                "  auto_renew_account_id, auto_renew_period, created_timestamp, deleted, evm_address," +
-                "  expiration_timestamp, file_id, id, initcode, key, max_automatic_token_associations, memo, num," +
-                "  obtainer_id, permanent_removal, proxy_account_id, public_key, realm, shard, timestamp_range, type" +
-                ")" +
-                "select" +
-                "  coalesce(auto_renew_account_id, e_auto_renew_account_id, null)," +
-                "  coalesce(auto_renew_period, e_auto_renew_period, null)," +
-                "  coalesce(created_timestamp, e_created_timestamp, null)," +
-                "  coalesce(deleted, e_deleted, null)," +
-                "  coalesce(evm_address, e_evm_address, null)," +
-                "  coalesce(expiration_timestamp, e_expiration_timestamp, null)," +
-                "  coalesce(file_id, e_file_id, null)," +
-                "  coalesce(id, e_id, null)," +
-                "  coalesce(initcode, e_initcode, null)," +
-                "  coalesce(key, e_key, null)," +
-                "  coalesce(max_automatic_token_associations, e_max_automatic_token_associations, null)," +
-                "  coalesce(memo, e_memo, '')," +
-                "  coalesce(num, e_num, null)," +
-                "  coalesce(obtainer_id, e_obtainer_id, null)," +
-                "  coalesce(permanent_removal, e_permanent_removal, null)," +
-                "  coalesce(proxy_account_id, e_proxy_account_id, null)," +
-                "  coalesce(public_key, e_public_key, null)," +
-                "  coalesce(realm, e_realm, null)," +
-                "  coalesce(shard, e_shard, null)," +
-                "  coalesce(timestamp_range, e_timestamp_range, null)," +
-                "  coalesce(type, e_type, 'CONTRACT')" +
-                "from existing " +
-                "where (e_timestamp_range is not null and timestamp_range is null) or " +
-                "(timestamp_range is not null and upper(timestamp_range) is null) on conflict (id) do " +
-                "update set" +
-                "  auto_renew_account_id = excluded.auto_renew_account_id," +
-                "  auto_renew_period = excluded.auto_renew_period," +
-                "  deleted = excluded.deleted," +
-                "  expiration_timestamp = excluded.expiration_timestamp," +
-                "  key = excluded.key," +
-                "  max_automatic_token_associations = excluded.max_automatic_token_associations," +
-                "  memo = excluded.memo," +
-                "  obtainer_id = excluded.obtainer_id," +
-                "  permanent_removal = excluded.permanent_removal," +
-                "  proxy_account_id = excluded.proxy_account_id," +
-                "  public_key = excluded.public_key," +
+        assertThat(format(generator.getInsertQuery())).isEqualTo(format("with existing as (\n" +
+                "  select\n" +
+                "    e.auto_renew_account_id as e_auto_renew_account_id,\n" +
+                "    e.auto_renew_period as e_auto_renew_period,\n" +
+                "    e.created_timestamp as e_created_timestamp,\n" +
+                "    e.decline_reward as e_decline_reward,\n" +
+                "    e.deleted as e_deleted,\n" +
+                "    e.evm_address as e_evm_address,\n" +
+                "    e.expiration_timestamp as e_expiration_timestamp,\n" +
+                "    e.file_id as e_file_id,\n" +
+                "    e.id as e_id,\n" +
+                "    e.initcode as e_initcode,\n" +
+                "    e.key as e_key,\n" +
+                "    e.max_automatic_token_associations as e_max_automatic_token_associations,\n" +
+                "    e.memo as e_memo,\n" +
+                "    e.num as e_num,\n" +
+                "    e.obtainer_id as e_obtainer_id,\n" +
+                "    e.permanent_removal as e_permanent_removal,\n" +
+                "    e.proxy_account_id as e_proxy_account_id,\n" +
+                "    e.public_key as e_public_key,\n" +
+                "    e.realm as e_realm,\n" +
+                "    e.shard as e_shard,\n" +
+                "    e.stake_period_start as e_stake_period_start,\n" +
+                "    e.staked_account_id as e_staked_account_id,\n" +
+                "    e.staked_node_id as e_staked_node_id,\n" +
+                "    e.timestamp_range as e_timestamp_range,\n" +
+                "    e.type as e_type,\n" +
+                "    t.*\n" +
+                "  from\n" +
+                "    contract_temp t\n" +
+                "    left join contract e on e.id = t.id\n" +
+                "),\n" +
+                "existing_history as (\n" +
+                "  insert into\n" +
+                "    contract_history (\n" +
+                "      auto_renew_account_id,\n" +
+                "      auto_renew_period,\n" +
+                "      created_timestamp,\n" +
+                "      decline_reward,\n" +
+                "      deleted,\n" +
+                "      evm_address,\n" +
+                "      expiration_timestamp,\n" +
+                "      file_id,\n" +
+                "      id,\n" +
+                "      initcode,\n" +
+                "      key,\n" +
+                "      max_automatic_token_associations,\n" +
+                "      memo,\n" +
+                "      num,\n" +
+                "      obtainer_id,\n" +
+                "      permanent_removal,\n" +
+                "      proxy_account_id,\n" +
+                "      public_key,\n" +
+                "      realm,\n" +
+                "      shard,\n" +
+                "      stake_period_start,\n" +
+                "      staked_account_id,\n" +
+                "      staked_node_id,\n" +
+                "      timestamp_range,\n" +
+                "      type\n" +
+                "    )\n" +
+                "  select\n" +
+                "    distinct on (id) e_auto_renew_account_id,\n" +
+                "    e_auto_renew_period,\n" +
+                "    e_created_timestamp,\n" +
+                "    e_decline_reward,\n" +
+                "    e_deleted,\n" +
+                "    e_evm_address,\n" +
+                "    e_expiration_timestamp,\n" +
+                "    e_file_id,\n" +
+                "    e_id,\n" +
+                "    e_initcode,\n" +
+                "    e_key,\n" +
+                "    e_max_automatic_token_associations,\n" +
+                "    e_memo,\n" +
+                "    e_num,\n" +
+                "    e_obtainer_id,\n" +
+                "    e_permanent_removal,\n" +
+                "    e_proxy_account_id,\n" +
+                "    e_public_key,\n" +
+                "    e_realm,\n" +
+                "    e_shard,\n" +
+                "    e_stake_period_start,\n" +
+                "    e_staked_account_id,\n" +
+                "    e_staked_node_id,\n" +
+                "    int8range(lower(e_timestamp_range), lower(timestamp_range)) as timestamp_range,\n" +
+                "    e_type\n" +
+                "  from\n" +
+                "    existing\n" +
+                "  where\n" +
+                "    e_timestamp_range is not null\n" +
+                "    and timestamp_range is not null\n" +
+                "  order by\n" +
+                "    id,\n" +
+                "    timestamp_range asc\n" +
+                "),\n" +
+                "temp_history as (\n" +
+                "  insert into\n" +
+                "    contract_history (\n" +
+                "      auto_renew_account_id,\n" +
+                "      auto_renew_period,\n" +
+                "      created_timestamp,\n" +
+                "      decline_reward,\n" +
+                "      deleted,\n" +
+                "      evm_address,\n" +
+                "      expiration_timestamp,\n" +
+                "      file_id,\n" +
+                "      id,\n" +
+                "      initcode,\n" +
+                "      key,\n" +
+                "      max_automatic_token_associations,\n" +
+                "      memo,\n" +
+                "      num,\n" +
+                "      obtainer_id,\n" +
+                "      permanent_removal,\n" +
+                "      proxy_account_id,\n" +
+                "      public_key,\n" +
+                "      realm,\n" +
+                "      shard,\n" +
+                "      stake_period_start,\n" +
+                "      staked_account_id,\n" +
+                "      staked_node_id,\n" +
+                "      timestamp_range,\n" +
+                "      type\n" +
+                "    )\n" +
+                "  select\n" +
+                "    distinct coalesce(\n" +
+                "      auto_renew_account_id,\n" +
+                "      e_auto_renew_account_id,\n" +
+                "      null\n" +
+                "    ),\n" +
+                "    coalesce(auto_renew_period, e_auto_renew_period, null),\n" +
+                "    coalesce(created_timestamp, e_created_timestamp, null),\n" +
+                "    coalesce(decline_reward, e_decline_reward, false),\n" +
+                "    coalesce(deleted, e_deleted, null),\n" +
+                "    coalesce(evm_address, e_evm_address, null),\n" +
+                "    coalesce(expiration_timestamp, e_expiration_timestamp, null),\n" +
+                "    coalesce(file_id, e_file_id, null),\n" +
+                "    coalesce(id, e_id, null),\n" +
+                "    coalesce(initcode, e_initcode, null),\n" +
+                "    coalesce(key, e_key, null),\n" +
+                "    coalesce(\n" +
+                "      max_automatic_token_associations,\n" +
+                "      e_max_automatic_token_associations,\n" +
+                "      null\n" +
+                "    ),\n" +
+                "    coalesce(memo, e_memo, ''),\n" +
+                "    coalesce(num, e_num, null),\n" +
+                "    coalesce(obtainer_id, e_obtainer_id, null),\n" +
+                "    coalesce(permanent_removal, e_permanent_removal, null),\n" +
+                "    coalesce(proxy_account_id, e_proxy_account_id, null),\n" +
+                "    coalesce(public_key, e_public_key, null),\n" +
+                "    coalesce(realm, e_realm, null),\n" +
+                "    coalesce(shard, e_shard, null),\n" +
+                "    coalesce(stake_period_start, e_stake_period_start, null),\n" +
+                "    coalesce(staked_account_id, e_staked_account_id, null),\n" +
+                "    coalesce(staked_node_id, e_staked_node_id, null),\n" +
+                "    coalesce(timestamp_range, e_timestamp_range, null),\n" +
+                "    coalesce(type, e_type, 'CONTRACT')\n" +
+                "  from\n" +
+                "    existing\n" +
+                "  where\n" +
+                "    timestamp_range is not null\n" +
+                "    and upper(timestamp_range) is not null\n" +
+                ")\n" +
+                "insert into\n" +
+                "  contract (\n" +
+                "    auto_renew_account_id,\n" +
+                "    auto_renew_period,\n" +
+                "    created_timestamp,\n" +
+                "    decline_reward,\n" +
+                "    deleted,\n" +
+                "    evm_address,\n" +
+                "    expiration_timestamp,\n" +
+                "    file_id,\n" +
+                "    id,\n" +
+                "    initcode,\n" +
+                "    key,\n" +
+                "    max_automatic_token_associations,\n" +
+                "    memo,\n" +
+                "    num,\n" +
+                "    obtainer_id,\n" +
+                "    permanent_removal,\n" +
+                "    proxy_account_id,\n" +
+                "    public_key,\n" +
+                "    realm,\n" +
+                "    shard,\n" +
+                "    stake_period_start,\n" +
+                "    staked_account_id,\n" +
+                "    staked_node_id,\n" +
+                "    timestamp_range,\n" +
+                "    type\n" +
+                "  )\n" +
+                "select\n" +
+                "  coalesce(\n" +
+                "    auto_renew_account_id,\n" +
+                "    e_auto_renew_account_id,\n" +
+                "    null\n" +
+                "  ),\n" +
+                "  coalesce(auto_renew_period, e_auto_renew_period, null),\n" +
+                "  coalesce(created_timestamp, e_created_timestamp, null),\n" +
+                "  coalesce(decline_reward, e_decline_reward, false),\n" +
+                "  coalesce(deleted, e_deleted, null),\n" +
+                "  coalesce(evm_address, e_evm_address, null),\n" +
+                "  coalesce(expiration_timestamp, e_expiration_timestamp, null),\n" +
+                "  coalesce(file_id, e_file_id, null),\n" +
+                "  coalesce(id, e_id, null),\n" +
+                "  coalesce(initcode, e_initcode, null),\n" +
+                "  coalesce(key, e_key, null),\n" +
+                "  coalesce(\n" +
+                "    max_automatic_token_associations,\n" +
+                "    e_max_automatic_token_associations,\n" +
+                "    null\n" +
+                "  ),\n" +
+                "  coalesce(memo, e_memo, ''),\n" +
+                "  coalesce(num, e_num, null),\n" +
+                "  coalesce(obtainer_id, e_obtainer_id, null),\n" +
+                "  coalesce(permanent_removal, e_permanent_removal, null),\n" +
+                "  coalesce(proxy_account_id, e_proxy_account_id, null),\n" +
+                "  coalesce(public_key, e_public_key, null),\n" +
+                "  coalesce(realm, e_realm, null),\n" +
+                "  coalesce(shard, e_shard, null),\n" +
+                "  coalesce(stake_period_start, e_stake_period_start, null),\n" +
+                "  coalesce(staked_account_id, e_staked_account_id, null),\n" +
+                "  coalesce(staked_node_id, e_staked_node_id, null),\n" +
+                "  coalesce(timestamp_range, e_timestamp_range, null),\n" +
+                "  coalesce(type, e_type, 'CONTRACT')\n" +
+                "from\n" +
+                "  existing\n" +
+                "where\n" +
+                "  (\n" +
+                "    e_timestamp_range is not null\n" +
+                "    and timestamp_range is null\n" +
+                "  )\n" +
+                "  or (\n" +
+                "    timestamp_range is not null\n" +
+                "    and upper(timestamp_range) is null\n" +
+                "  ) on conflict (id) do\n" +
+                "update\n" +
+                "set\n" +
+                "  auto_renew_account_id = excluded.auto_renew_account_id,\n" +
+                "  auto_renew_period = excluded.auto_renew_period,\n" +
+                "  decline_reward = excluded.decline_reward,\n" +
+                "  deleted = excluded.deleted,\n" +
+                "  expiration_timestamp = excluded.expiration_timestamp,\n" +
+                "  key = excluded.key,\n" +
+                "  max_automatic_token_associations = excluded.max_automatic_token_associations,\n" +
+                "  memo = excluded.memo,\n" +
+                "  obtainer_id = excluded.obtainer_id,\n" +
+                "  permanent_removal = excluded.permanent_removal,\n" +
+                "  proxy_account_id = excluded.proxy_account_id,\n" +
+                "  public_key = excluded.public_key,\n" +
+                "  stake_period_start = excluded.stake_period_start,\n" +
+                "  staked_account_id = excluded.staked_account_id,\n" +
+                "  staked_node_id = excluded.staked_node_id,\n" +
                 "  timestamp_range = excluded.timestamp_range"));
     }
 
