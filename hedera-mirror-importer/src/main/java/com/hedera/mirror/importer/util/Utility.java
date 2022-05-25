@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Arrays;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
@@ -115,6 +116,10 @@ public class Utility {
         } catch (Exception e) {
             log.error("Error archiving file to {}", destination, e);
         }
+    }
+
+    public static long getEpochDay(long timestamp) {
+        return LocalDate.from(Instant.ofEpochSecond(0, timestamp)).toEpochDay();
     }
 
     /**

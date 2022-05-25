@@ -42,6 +42,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -104,6 +105,9 @@ public interface EntityListener {
     }
 
     default void onSchedule(Schedule schedule) throws ImporterException {
+    }
+
+    default void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) throws ImporterException {
     }
 
     default void onToken(Token token) throws ImporterException {

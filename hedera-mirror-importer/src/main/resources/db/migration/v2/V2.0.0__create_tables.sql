@@ -395,6 +395,16 @@ create table if not exists schedule
 );
 comment on table schedule is 'Schedule entity entries';
 
+-- staking reward transfer
+create table if not exists staking_reward_transfer
+(
+    account_id          bigint not null,
+    amount              bigint not null,
+    consensus_timestamp bigint not null,
+    payer_account_id    bigint not null
+);
+comment on table staking_reward_transfer is 'Staking reward transfers';
+
 -- token
 create table if not exists token
 (

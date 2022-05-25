@@ -62,6 +62,7 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
@@ -84,6 +85,7 @@ import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -103,6 +105,7 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.FileDataRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
@@ -174,6 +177,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
             insertTransferList(recordItem);
         }
+
+        insertStakingRewardTransfers(recordItem);
 
         // handle scheduled transaction, even on failure
         if (transaction.isScheduled()) {
@@ -390,6 +395,25 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isClaims()) {
             byte[] liveHash = DomainUtils.toBytes(transactionBody.getLiveHash().getHash());
             entityListener.onLiveHash(new LiveHash(consensusTimestamp, liveHash));
+        }
+    }
+
+    private void insertStakingRewardTransfers(RecordItem recordItem) {
+        var consensusTimestamp = recordItem.getConsensusTimestamp();
+
+        for (var aa : recordItem.getRecord().getPaidStakingRewardsList()) {
+            var transfer = new StakingRewardTransfer();
+            var accountId = EntityId.of(aa.getAccountID());
+            transfer.setAmount(aa.getAmount());
+            transfer.setPayerAccountId(recordItem.getPayerAccountId());
+            transfer.setId(new StakingRewardTransfer.Id(consensusTimestamp, accountId));
+
+            entityListener.onStakingRewardTransfer(transfer);
+
+            var entity = (Entity) accountId.toEntity();
+            entity.setStakePeriodStart(Utility.getEpochDay(consensusTimestamp));
+            entity.setTimestampRange(null); // Don't trigger a history row
+            entityListener.onEntity(entity);
         }
     }
 

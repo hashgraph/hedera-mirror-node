@@ -142,8 +142,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private static Stream<Arguments> provideParamsContractHistory() {
-        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {
-        };
+        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {};
         Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[] {1, 2, 3, 4});
         return Stream.of(
                 Arguments.of("fileId", emptyCustomizer, 1),

@@ -23,9 +23,6 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
 import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.ListMultimap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -66,6 +63,7 @@ import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.domain.EntityIdService;
@@ -101,12 +99,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<CryptoAllowance> cryptoAllowances;
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
-    private final ListMultimap<Long, Entity> entities;
+    private final Collection<Entity> entities;
     private final Collection<EthereumTransaction> ethereumTransactions;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
+    private final Collection<StakingRewardTransfer> stakingRewardTransfers;
     private final Collection<TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
     private final Collection<TokenTransfer> tokenDissociateTransfers;
@@ -118,6 +117,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // maps of upgradable domains
     private final Map<Long, Contract> contractState;
     private final Map<CryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
+    private final Map<Long, Entity> entityState;
     private final Map<NftId, Nft> nfts;
     private final Map<NftAllowance.Id, NftAllowance> nftAllowanceState;
     private final Map<NftTransferId, NftTransfer> nftTransferState;
@@ -152,12 +152,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cryptoAllowances = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
-        entities = ArrayListMultimap.create();
+        entities = new ArrayList<>();
         ethereumTransactions = new ArrayList<>();
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftAllowances = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
+        stakingRewardTransfers = new ArrayList<>();
         tokenAccounts = new ArrayList<>();
         tokenAllowances = new ArrayList<>();
         tokenDissociateTransfers = new ArrayList<>();
@@ -168,6 +169,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         contractState = new HashMap<>();
         cryptoAllowanceState = new HashMap<>();
+        entityState = new HashMap<>();
         nfts = new HashMap<>();
         nftAllowanceState = new HashMap<>();
         nftTransferState = new HashMap<>();
@@ -213,10 +215,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             cryptoTransfers.clear();
             customFees.clear();
             entities.clear();
+            entityState.clear();
             ethereumTransactions.clear();
             fileData.clear();
             liveHashes.clear();
             nonFeeTransfers.clear();
+            stakingRewardTransfers.clear();
             nfts.clear();
             nftAllowances.clear();
             nftAllowanceState.clear();
@@ -262,7 +266,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // insert operations with conflict management
             batchPersister.persist(contracts);
             batchPersister.persist(cryptoAllowances);
-            batchPersister.persist(entities.values());
+            batchPersister.persist(entities);
             batchPersister.persist(nftAllowances);
             batchPersister.persist(tokens.values());
             // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
@@ -274,6 +278,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // transfers operations should be last to ensure insert logic completeness, entities should already exist
             batchPersister.persist(nonFeeTransfers);
             batchPersister.persist(nftTransferState.values());
+            batchPersister.persist(stakingRewardTransfers);
             batchPersister.persist(tokenTransfers);
 
             // handle the transfers from token dissociate transactions after nft is processed
@@ -298,7 +303,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onContract(Contract contract) {
         entityIdService.notify(contract);
         Contract merged = contractState.merge(contract.getId(), contract, this::mergeContract);
-        contracts.add(merged);
+        if (merged == contract) {
+            contracts.add(merged);
+        }
     }
 
     @Override
@@ -339,14 +346,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return;
         }
 
-        var list = entities.get(entity.getId());
-        var previous = Iterables.getLast(list, null);
-        var merged = mergeEntity(previous, entity);
-        if (previous != merged) {
-            list.add(merged);
-        }
-        if (previous != null && !previous.isHistory() && list.size() > 1) {
-            list.remove(list.size() - 2);
+        var merged = entityState.merge(entity.getId(), entity, this::mergeEntity);
+        if (merged == entity) {
+            entities.add(entity);
         }
     }
 
@@ -390,6 +392,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onSchedule(Schedule schedule) throws ImporterException {
         // schedules could experience multiple updates in a single record file, handle updates in memory for this case
         schedules.merge(schedule.getScheduleId(), schedule, this::mergeSchedule);
+    }
+
+    @Override
+    public void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) throws ImporterException {
+        stakingRewardTransfers.add(stakingRewardTransfer);
     }
 
     @Override
@@ -440,62 +447,88 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionSignatures.add(transactionSignature);
     }
 
-    private <T extends AbstractEntity> T mergeAbstractEntity(T previous, T current) {
-        // Copy non-updatable fields from previous
-        current.setCreatedTimestamp(previous.getCreatedTimestamp());
-        current.setEvmAddress(previous.getEvmAddress());
-
-        if (current.getAutoRenewPeriod() == null) {
-            current.setAutoRenewPeriod(previous.getAutoRenewPeriod());
+    private <T extends AbstractEntity> T mergeAbstractEntity(T src, T dest) {
+        if (dest.getAutoRenewPeriod() == null) {
+            dest.setAutoRenewPeriod(src.getAutoRenewPeriod());
         }
 
-        if (current.getAutoRenewAccountId() == null) {
-            current.setAutoRenewAccountId(previous.getAutoRenewAccountId());
+        if (dest.getAutoRenewAccountId() == null) {
+            dest.setAutoRenewAccountId(src.getAutoRenewAccountId());
         }
 
-        if (current.getDeleted() == null) {
-            current.setDeleted(previous.getDeleted());
+        if (dest.getCreatedTimestamp() == null) {
+            dest.setCreatedTimestamp(src.getCreatedTimestamp());
         }
 
-        if (current.getExpirationTimestamp() == null) {
-            current.setExpirationTimestamp(previous.getExpirationTimestamp());
+        if (dest.getDeleted() == null) {
+            dest.setDeleted(src.getDeleted());
         }
 
-        if (current.getKey() == null) {
-            current.setKey(previous.getKey());
+        if (dest.getEvmAddress() == null) {
+            dest.setEvmAddress(src.getEvmAddress());
         }
 
-        if (current.getMemo() == null) {
-            current.setMemo(previous.getMemo());
+        if (dest.getExpirationTimestamp() == null) {
+            dest.setExpirationTimestamp(src.getExpirationTimestamp());
         }
 
-        if (current.getProxyAccountId() == null) {
-            current.setProxyAccountId(previous.getProxyAccountId());
+        if (dest.getKey() == null) {
+            dest.setKey(src.getKey());
         }
 
-        previous.setTimestampUpper(current.getTimestampLower());
-        return current;
+        if (dest.getMemo() == null) {
+            dest.setMemo(src.getMemo());
+        }
+
+        if (dest.getProxyAccountId() == null) {
+            dest.setProxyAccountId(src.getProxyAccountId());
+        }
+
+        if (dest.getStakePeriodStart() == null) {
+            dest.setStakePeriodStart(src.getStakePeriodStart());
+        }
+
+        if (!dest.isHistory() && src.isHistory()) {
+            // src and dest are reversed, i.e., src is a snapshot after dest. However, because dest is already added
+            // into the collection to be persisted into db, we need to copy the timestamp range to dest
+            dest.setTimestampRange(src.getTimestampRange());
+        } else if (dest.isHistory() && src.isHistory()) {
+            src.setTimestampUpper(dest.getTimestampLower());
+        }
+
+        return dest;
     }
 
-    private Contract mergeContract(Contract previous, Contract current) {
-        mergeAbstractEntity(previous, current);
-
-        current.setFileId(previous.getFileId());
-        current.setInitcode(previous.getInitcode());
-
-        if (current.getMaxAutomaticTokenAssociations() == null) {
-            current.setMaxAutomaticTokenAssociations(previous.getMaxAutomaticTokenAssociations());
+    private Contract mergeContract(Contract src, Contract dest) {
+        if (shouldReverseMerge(src, dest)) {
+            var tmp = src;
+            src = dest;
+            dest = tmp;
         }
 
-        if (current.getObtainerId() == null) {
-            current.setObtainerId(previous.getObtainerId());
+        mergeAbstractEntity(src, dest);
+
+        if (dest.getFileId() == null) {
+            dest.setFileId(src.getFileId());
         }
 
-        if (current.getPermanentRemoval() == null) {
-            current.setPermanentRemoval(previous.getPermanentRemoval());
+        if (dest.getInitcode() == null) {
+            dest.setInitcode(src.getInitcode());
         }
 
-        return current;
+        if (dest.getMaxAutomaticTokenAssociations() == null) {
+            dest.setMaxAutomaticTokenAssociations(src.getMaxAutomaticTokenAssociations());
+        }
+
+        if (dest.getObtainerId() == null) {
+            dest.setObtainerId(src.getObtainerId());
+        }
+
+        if (dest.getPermanentRemoval() == null) {
+            dest.setPermanentRemoval(src.getPermanentRemoval());
+        }
+
+        return dest;
     }
 
     private CryptoAllowance mergeCryptoAllowance(CryptoAllowance previous, CryptoAllowance current) {
@@ -503,37 +536,43 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         return current;
     }
 
-    private Entity mergeEntity(Entity previous, Entity current) {
-        // This is the first entity with this ID in the record file, so no need to merge
-        if (previous == null) {
-            return current;
+    private boolean shouldReverseMerge(AbstractEntity src, AbstractEntity dest) {
+        // Reverse the merge if any of the two entities does not have timestamp range, i.e., update the existing
+        // object in the map. The other half logic checks if the merged object is the existing one, and if so no new
+        // object is added to the collection which has the domain objects being persisted into db
+        return !(src.isHistory() && dest.isHistory());
+    }
+
+    private Entity mergeEntity(Entity src, Entity dest) {
+        if (shouldReverseMerge(src, dest)) {
+            var tmp = src;
+            src = dest;
+            dest = tmp;
+//
+//            if (src.getEthereumNonce() != null) {
+//                dest.setEthereumNonce(src.getEthereumNonce());
+//            }
         }
 
-        // This entity should not trigger a history record, so just copy non-history fields to previous
-        if (!current.isHistory()) {
-            previous.setEthereumNonce(current.getEthereumNonce());
-            return previous;
+        mergeAbstractEntity(src, dest);
+
+        if (dest.getEthereumNonce() == null) {
+            dest.setEthereumNonce(src.getEthereumNonce());
         }
 
-        mergeAbstractEntity(previous, current);
-
-        if (current.getEthereumNonce() == null) {
-            current.setEthereumNonce(previous.getEthereumNonce());
+        if (dest.getMaxAutomaticTokenAssociations() == null) {
+            dest.setMaxAutomaticTokenAssociations(src.getMaxAutomaticTokenAssociations());
         }
 
-        if (current.getMaxAutomaticTokenAssociations() == null) {
-            current.setMaxAutomaticTokenAssociations(previous.getMaxAutomaticTokenAssociations());
+        if (dest.getReceiverSigRequired() == null) {
+            dest.setReceiverSigRequired(src.getReceiverSigRequired());
         }
 
-        if (current.getReceiverSigRequired() == null) {
-            current.setReceiverSigRequired(previous.getReceiverSigRequired());
+        if (dest.getSubmitKey() == null) {
+            dest.setSubmitKey(src.getSubmitKey());
         }
 
-        if (current.getSubmitKey() == null) {
-            current.setSubmitKey(previous.getSubmitKey());
-        }
-
-        return current;
+        return dest;
     }
 
     private Nft mergeNft(Nft cachedNft, Nft newNft) {

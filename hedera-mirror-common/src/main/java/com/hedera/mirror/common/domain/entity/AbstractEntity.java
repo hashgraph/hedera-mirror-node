@@ -99,6 +99,8 @@ public abstract class AbstractEntity implements History {
     @Column(updatable = false)
     private Long shard;
 
+    private Long stakePeriodStart;
+
     @Column(updatable = false)
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")

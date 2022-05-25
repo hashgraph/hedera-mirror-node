@@ -71,7 +71,7 @@
         <grpc.version>1.46.0</grpc.version>
         <guava.version>31.1-jre</guava.version>
         <headlong.version>6.3.1</headlong.version>
-        <hedera-protobuf.version>0.26.0</hedera-protobuf.version>
+        <hedera-protobuf.version>0.27.0-staking-SNAPSHOT</hedera-protobuf.version>
         <hibernate-types.version>2.16.2</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>17</java.version>
