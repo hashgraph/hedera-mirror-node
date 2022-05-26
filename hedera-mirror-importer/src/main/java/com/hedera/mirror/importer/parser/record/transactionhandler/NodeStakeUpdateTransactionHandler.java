@@ -63,7 +63,7 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         // The transaction's consensus timestamp is in the current staking period, so epochDay is current. The rewardRate
-        // in the protobuf is for the previous staking period. As a result, the new rewardSum created would be for the
+        // in the protobuf is for the previous staking period. As a result, the new calculated rewardSum is for the
         // previous staking period, it's accumulated on top of the rewardSum of the staking period before the previous.
         var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
         var epochDay = Utility.getEpochDay(recordItem.getConsensusTimestamp()); // the new staking period
