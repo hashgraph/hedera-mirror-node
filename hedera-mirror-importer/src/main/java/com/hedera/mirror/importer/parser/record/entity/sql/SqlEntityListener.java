@@ -413,6 +413,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
         if (tokenAccounts.containsKey(tokenAccount.getId())) {
+            log.warn("Skipping duplicate token account association: {}", tokenAccount);
             return;
         }
 
