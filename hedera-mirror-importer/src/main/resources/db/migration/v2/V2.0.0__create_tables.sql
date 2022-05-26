@@ -102,6 +102,7 @@ create table if not exists contract
     public_key                       character varying              null,
     realm                            bigint                         not null,
     shard                            bigint                         not null,
+    stake_period_start               bigint                         null,
     timestamp_range                  int8range                      not null,
     type                             entity_type default 'CONTRACT' not null
 );
@@ -227,6 +228,7 @@ create table if not exists entity
     realm                            bigint            not null,
     receiver_sig_required            boolean           null,
     shard                            bigint            not null,
+    stake_period_start               bigint            null,
     submit_key                       bytea             null,
     timestamp_range                  int8range         not null,
     type                             entity_type       not null
