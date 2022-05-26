@@ -25,6 +25,7 @@ import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_HBARS;
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Named;
@@ -89,7 +90,7 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             nodeStake.setStakingPeriod(stakingPeriod);
             entityListener.onNodeStake(nodeStake);
 
-            double rewardSum = baseRewardSum.getOrDefault(nodeId, 0L);
+            double rewardSum = Optional.ofNullable(baseRewardSum.getOrDefault(nodeId, 0L)).orElse(0L);
             var previousStakeRewarded = previousStake.getOrDefault(nodeId, EMPTY_NODE_STAKE).getStakeRewarded();
             if (rewardRate > 0 && previousTotalStakeRewarded > 0 && previousStakeRewarded > 0) {
                 // TODO: waiting on HIP update so we can get correct previous total stake rewarded and the node's
