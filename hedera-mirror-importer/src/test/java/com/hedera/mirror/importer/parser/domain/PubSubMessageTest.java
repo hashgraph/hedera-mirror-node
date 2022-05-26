@@ -186,7 +186,8 @@ class PubSubMessageTest {
                 "  \"assessedCustomFees\":[]," +
                 "  \"automaticTokenAssociations\":[]," +
                 "  \"alias\":\"\"," +
-                "  \"ethereumHash\":\"YWJjZGVm\"" +
+                "  \"ethereumHash\":\"YWJjZGVm\"," +
+                "  \"paidStakingRewards\": []" +
                 "}";
     }
 
@@ -233,6 +234,7 @@ class PubSubMessageTest {
                 "    \"isApproval\": false" +
                 "  } ]" +
                 "}";
+
         JSONAssert.assertEquals(expected, actual, true);
     }
 
