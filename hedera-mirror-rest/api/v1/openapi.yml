@@ -672,7 +672,7 @@ paths:
       operationId: getTopicMessageByIdAndSequenceNumber
       parameters:
         - $ref: '#/components/parameters/topicIdPathParam'
-        - name: sequencenumber
+        - name: sequenceNumber
           in: path
           required: true
           description: Topic message sequence number
@@ -1936,9 +1936,14 @@ components:
         count:
           type: integer
           minimum: 0
+        gas_used:
+          type: integer
+          minimum: 0
         hapi_version:
           type: string
         hash:
+          type: string
+        logs_bloom:
           type: string
         name:
           type: string
@@ -1959,8 +1964,10 @@ components:
               $ref: '#/components/schemas/TimestampRange'
       example:
         count: 3
+        gas_used: 300000
         hapi_version: "0.11.0"
         hash: "0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b"
+        logs_bloom: "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
         name: "2022-05-03T06_46_26.060890949Z.rcd"
         number: 77
         previous_hash: "0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b"
