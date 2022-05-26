@@ -20,20 +20,18 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
-
-import lombok.RequiredArgsConstructor;
-import org.assertj.core.api.InstanceOfAssertFactories;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerTest {
@@ -65,8 +63,7 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                         .returns(nodeStake.getStakeRewarded(), NodeStake::getStakeRewarded)
                         .returns(stakingPeriod, NodeStake::getStakingPeriod)
                         .returns(nodeStake.getStake(), NodeStake::getStakeTotal)
-                        .extracting(NodeStake::getRewardSum, InstanceOfAssertFactories.LONG)
-                        .isPositive()
+                        .returns(null, NodeStake::getRewardSum)
         );
     }
 }

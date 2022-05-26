@@ -392,12 +392,12 @@ public class DomainBuilder {
 
     public DomainWrapper<NodeStake, NodeStake.NodeStakeBuilder> nodeStake() {
         var stake = id() * TINYBARS_IN_HBARS;
+        long timestamp = timestamp();
         var builder = NodeStake.builder()
-                .consensusTimestamp(timestamp())
-                .epochDay(LocalDate.now(ZoneId.of("UTC")).toEpochDay())
+                .consensusTimestamp(timestamp)
+                .epochDay(getEpochDay(timestamp))
                 .nodeId(id())
-                .rewardRate(id())
-                .rewardSum(id() + TINYBARS_IN_HBARS)
+                .rewardRate(id() * TINYBARS_IN_HBARS)
                 .stake(stake)
                 .stakeRewarded(stake - 100L)
                 .stakingPeriod(timestamp());
@@ -596,6 +596,11 @@ public class DomainBuilder {
 
     public long timestamp() {
         return DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id();
+    }
+
+    private long getEpochDay(long timestamp) {
+        return LocalDate.ofInstant(Instant.ofEpochSecond(0, timestamp), ZoneId.of("UTC")).atStartOfDay()
+                .toLocalDate().toEpochDay();
     }
 
     private int transactionIndex() {

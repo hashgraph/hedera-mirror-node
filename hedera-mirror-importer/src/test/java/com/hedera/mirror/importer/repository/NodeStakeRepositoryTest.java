@@ -38,4 +38,20 @@ class NodeStakeRepositoryTest extends AbstractRepositoryTest {
         domainBuilder.nodeStake().customize(n -> n.epochDay(0L)).persist(); // Unrelated
         assertThat(repository.findByEpochDay(epochDay)).containsExactlyInAnyOrder(nodeStake1, nodeStake2);
     }
+
+    @Test
+    void setRewardSum() {
+        var nodeStake = domainBuilder.nodeStake().persist();
+        repository.setRewardSum(nodeStake.getEpochDay(), nodeStake.getNodeId(), 200L);
+        nodeStake.setRewardSum(200L);
+        assertThat(repository.findAll()).containsOnly(nodeStake);
+    }
+
+    @Test
+    void setRewardSumToNonExisting() {
+        var nodeStake = domainBuilder.nodeStake().persist();
+        repository.setRewardSum(nodeStake.getEpochDay() + 1, nodeStake.getNodeId(), 200L);
+        repository.setRewardSum(nodeStake.getEpochDay(), nodeStake.getNodeId() + 1, 200L);
+        assertThat(repository.findAll()).containsOnly(nodeStake);
+    }
 }
