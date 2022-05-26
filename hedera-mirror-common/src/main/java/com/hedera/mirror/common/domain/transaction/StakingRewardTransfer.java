@@ -20,6 +20,7 @@ package com.hedera.mirror.common.domain.transaction;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import java.io.Serializable;
 import javax.persistence.Convert;
@@ -52,9 +53,16 @@ public class StakingRewardTransfer implements Persistable<StakingRewardTransfer.
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
+    public StakingRewardTransfer(EntityId accountId, long amount, long consensusTimestamp, EntityId payerAccountId) {
+        this.amount = amount;
+        this.id = new StakingRewardTransfer.Id(consensusTimestamp, accountId);
+        this.payerAccountId = payerAccountId;
+    }
+
+    @JsonIgnore
     @Override
     public boolean isNew() {
-        return false;
+        return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
 
     @Data

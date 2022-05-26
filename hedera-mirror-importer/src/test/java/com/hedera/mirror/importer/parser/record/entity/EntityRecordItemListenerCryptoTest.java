@@ -29,9 +29,6 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
-
-import com.hedera.mirror.importer.util.UtilityTest;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
@@ -82,9 +79,12 @@ import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.PartialDataAction;
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
@@ -92,6 +92,7 @@ import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.mirror.importer.util.UtilityTest;
 
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
@@ -405,6 +406,64 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         );
     }
 
+    @Test
+    void cryptoTransferWithPaidStakingRewards() {
+        // given
+        var receiver1 = domainBuilder.entity().persist();
+        var receiver2 = domainBuilder.entity().persist();
+        var sender = domainBuilder.entity().persist();
+        var receiver1Id = AccountID.newBuilder().setAccountNum(receiver1.getNum()).build();
+        var receiver2Id = AccountID.newBuilder().setAccountNum(receiver2.getNum()).build();
+        var senderId = AccountID.newBuilder().setAccountNum(sender.getNum()).build();
+        var timestamp = 1653506322000111222L; // 19137 days since epoch
+        var stakePeriodStart = 19137L;
+
+        var recordItem = recordItemBuilder.cryptoTransfer().transactionBody(b -> b.setTransfers(TransferList.newBuilder()
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(senderId).setAmount(-20L))
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiver1Id).setAmount(5L))
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiver2Id).setAmount(-15L))))
+                .record(r -> {
+                    // preserve the tx fee paid by the payer and received by the node and the fee collector
+                    // sender only gets deducted 15, since it gets a 5 reward payout
+                    // receiver1 gets 9, since it gets a 4 reward payout
+                    // receiver2 gets no reward
+                    var paidStakingRewards = List.of(
+                            AccountAmount.newBuilder().setAccountID(senderId).setAmount(5L).build(),
+                            AccountAmount.newBuilder().setAccountID(receiver1Id).setAmount(4L).build()
+                    );
+
+                    var transferList = r.getTransferList().toBuilder()
+                            .addAccountAmounts(AccountAmount.newBuilder().setAccountID(senderId).setAmount(-15L))
+                            .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiver1Id).setAmount(9L))
+                            .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiver2Id).setAmount(15L))
+                            .addAccountAmounts(AccountAmount.newBuilder()
+                                    .setAccountID(RecordItemBuilder.STAKING_REWARD_ACCOUNT).setAmount(-9L));
+                    r.setConsensusTimestamp(TestUtils.toTimestamp(timestamp))
+                            .setTransferList(transferList)
+                            .addAllPaidStakingRewards(paidStakingRewards);
+                })
+                .build();
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        sender.setStakePeriodStart(stakePeriodStart);
+        receiver1.setStakePeriodStart(stakePeriodStart);
+
+        assertAll(
+                () -> assertEquals(0, contractRepository.count()),
+                // 3 for fee, 3 for hbar transfers, and 1 for reward payout from 0.0.800
+                () -> assertEquals(7, cryptoTransferRepository.count()),
+                () -> assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(sender, receiver1, receiver2),
+                () -> assertThat(stakingRewardTransferRepository.findAll()).containsExactlyInAnyOrder(
+                        new StakingRewardTransfer(sender.toEntityId(), 5L, timestamp, recordItem.getPayerAccountId()),
+                        new StakingRewardTransfer(receiver1.toEntityId(), 4L, timestamp, recordItem.getPayerAccountId())
+                ),
+                () -> assertEquals(1, transactionRepository.count())
+        );
+    }
+
     /**
      * Github issue #483
      */
@@ -443,8 +502,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         bodyBuilder.getCryptoUpdateAccountBuilder().setProxyAccountID(AccountID.getDefaultInstance());
         transactionBody = bodyBuilder.build();
         transaction = Transaction.newBuilder().setSignedTransactionBytes(SignedTransaction.newBuilder()
-                .setBodyBytes(transactionBody.toByteString())
-                .build().toByteString())
+                        .setBodyBytes(transactionBody.toByteString())
+                        .build().toByteString())
                 .build();
         TransactionRecord record = transactionRecordSuccess(transactionBody);
 
@@ -730,12 +789,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     @Test
-    void cryptoTransferHasCorrectIsApprovalValue(){
-        final long[] accountNums = {PAYER.getAccountNum(),PAYER2.getAccountNum(),PAYER3.getAccountNum()};
-        final long[] amounts = {210,-300,15};
+    void cryptoTransferHasCorrectIsApprovalValue() {
+        final long[] accountNums = {PAYER.getAccountNum(), PAYER2.getAccountNum(), PAYER3.getAccountNum()};
+        final long[] amounts = {210, -300, 15};
         final boolean[] isApprovals = {false, true, false};
         Transaction transaction = buildTransaction(r -> {
-            for (int i = 0; i < accountNums.length; i++){
+            for (int i = 0; i < accountNums.length; i++) {
                 var accountAmount = accountAmount(accountNums[i], amounts[i]).setIsApproval(isApprovals[i]).build();
                 r.getCryptoTransferBuilder()
                         .getTransfersBuilder()
@@ -744,7 +803,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         });
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = buildTransactionRecordWithNoTransactions(builder -> {
-            for (int i = 0; i < accountNums.length; i++){
+            for (int i = 0; i < accountNums.length; i++) {
                 var accountAmount = accountAmount(accountNums[i], amounts[i]).setIsApproval(false).build();
                 builder.getTransferListBuilder()
                         .addAccountAmounts(accountAmount);
@@ -758,7 +817,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(amounts.length, cryptoTransferRepository.count()),
                 () -> {
-                    for (var cryptoTransfer : cryptoTransferRepository.findAll()){
+                    for (var cryptoTransfer : cryptoTransferRepository.findAll()) {
                         for (int i = 0; i < isApprovals.length; i++) {
                             if (cryptoTransfer.getEntityId() != accountNums[i]) {
                                 continue;
@@ -1030,8 +1089,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private List<NftAllowance> customizeNftAllowances(Timestamp consensusTimestamp, List<Nft> expectedNfts) {
         var delegatingSpender = recordItemBuilder.accountId();
         var owner = recordItemBuilder.accountId();
-        var spender1 =  recordItemBuilder.accountId();
-        var spender2 =  recordItemBuilder.accountId();
+        var spender1 = recordItemBuilder.accountId();
+        var spender2 = recordItemBuilder.accountId();
         var tokenId = recordItemBuilder.tokenId();
         var nft1 = Nft.builder()
                 .id(new NftId(1L, EntityId.of(tokenId)))

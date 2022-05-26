@@ -82,6 +82,7 @@ import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -208,6 +209,7 @@ public class DomainBuilder {
                 .num(id)
                 .realm(0L)
                 .shard(0L)
+                .stakePeriodStart(1L)
                 .timestampRange(Range.atLeast(timestamp))
                 .type(CONTRACT);
 
@@ -412,6 +414,14 @@ public class DomainBuilder {
                 .scheduleId(entityId(SCHEDULE).getId())
                 .transactionBody(bytes(64))
                 .waitForExpiry(true);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<StakingRewardTransfer, StakingRewardTransfer.StakingRewardTransferBuilder> stakingRewardTransfer() {
+        var builder = StakingRewardTransfer.builder()
+                .amount(id())
+                .id(new StakingRewardTransfer.Id(timestamp(), entityId(ACCOUNT)))
+                .payerAccountId(entityId(ACCOUNT));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

@@ -304,10 +304,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onContract(Contract contract) {
         entityIdService.notify(contract);
-        // if the existing contract or the new contract has no history, don't change the object in the map and don't
-        // add merged to the list
         Contract merged = contractState.merge(contract.getId(), contract, this::mergeContract);
         if (merged == contract) {
+            // only add the merged object to the collection if the state is replaced with the new contract object, i.e.,
+            // attributes only in the previous state are merged into the new contract object
             contracts.add(merged);
         }
     }
@@ -350,10 +350,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return;
         }
 
-        // if the existing entity or the new entity has no history, don't change the object in the map and don't
-        // add merged to the list
         Entity merged = entityState.merge(entity.getId(), entity, this::mergeEntity);
         if (merged == entity) {
+            // only add the merged object to the collection if the state is replaced with the new entity object, i.e.,
+            // attributes only in the previous state are merged into the new entity object
             entities.add(entity);
         }
     }
@@ -459,6 +459,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private <T extends AbstractEntity> T mergeAbstractEntity(T previous, T current) {
+        // This entity should not trigger a history record, so just copy common non-history fields, if set, to previous
         if (!current.isHistory()) {
             if (current.getStakePeriodStart() != null) {
                 previous.setStakePeriodStart(current.getStakePeriodStart());
@@ -466,7 +467,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return previous;
         }
 
-        // if previous doesn't have history, merge reversely from current to previous
+        // If previous doesn't have history, merge reversely from current to previous
         var src = previous.isHistory() ? previous : current;
         var dest = previous.isHistory() ? current : previous;
 
@@ -521,7 +522,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Contract mergeContract(Contract previous, Contract current) {
         var merged = mergeAbstractEntity(previous, current);
 
-        // merge consistently
+        // Merge consistently
         var src = merged == current ? previous : current;
         var dest = merged == current ? current : previous;
 
@@ -551,7 +552,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Entity mergeEntity(Entity previous, Entity current) {
         var merged = mergeAbstractEntity(previous, current);
 
-        // This entity should not trigger a history record, so just copy non-history fields to previous
+        // This entity should not trigger a history record, so just copy non-history fields, if set, to previous
         if (!current.isHistory()) {
             if (current.getEthereumNonce() != null) {
                 previous.setEthereumNonce(current.getEthereumNonce());
@@ -559,7 +560,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return previous;
         }
 
-        // merge consistently
+        // Merge consistently
         var src = merged == current ? previous : current;
         var dest = merged == current ? current : previous;
 

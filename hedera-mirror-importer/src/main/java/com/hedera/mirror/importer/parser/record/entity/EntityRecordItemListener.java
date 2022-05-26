@@ -62,8 +62,10 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -410,10 +412,20 @@ public class EntityRecordItemListener implements RecordItemListener {
             transfer.setId(new StakingRewardTransfer.Id(consensusTimestamp, accountId));
             entityListener.onStakingRewardTransfer(transfer);
 
-            var entity = (Entity) accountId.toEntity();
-            entity.setStakePeriodStart(Utility.getEpochDay(consensusTimestamp));
-            entity.setTimestampRange(null); // Don't trigger a history row
-            entityListener.onEntity(entity);
+            // The staking reward may be paid to either an account or a contract. Create non-history updates
+            // with the new stake reward start for both an account entity and a contract, the upsert sql
+            // will only update one depending on the actual type of the entity.
+            Entity account = accountId.toEntity();
+            var stakePeriodStart = Utility.getEpochDay(consensusTimestamp);
+            account.setStakePeriodStart(stakePeriodStart);
+            account.setTimestampRange(null); // Don't trigger a history row
+            entityListener.onEntity(account);
+
+            Contract contract = EntityId.of(account.getShard(), account.getRealm(), account.getNum(),
+                    EntityType.CONTRACT).toEntity();
+            contract.setStakePeriodStart(stakePeriodStart);
+            contract.setTimestampRange(null); // Don't trigger a history row
+            entityListener.onContract(contract);
         }
     }
 

@@ -30,6 +30,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hederahashgraph.api.proto.java.AccountAmount;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -75,6 +77,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -610,6 +613,57 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         );
     }
 
+    @Test
+    void contractCallToExistingWithPaidStakingRewards() {
+        // given
+        var setupResult = setupContract(CONTRACT_ID, ContractIdType.PLAIN, true, false);
+
+        var timestamp = 1653506322000111222L; // 19137 days since epoch
+        var stakePeriodStart = 19137L;
+
+        // now call
+        var transaction = contractCallTransaction(setupResult.protoContractId);
+        var transactionBody = getTransactionBody(transaction);
+        var record = getContractTransactionRecord(transactionBody, ContractTransactionType.CALL);
+        var contractCallTransactionBody = transactionBody.getContractCall();
+        var amount = contractCallTransactionBody.getAmount();
+        var contractAccountId = AccountID.newBuilder().setAccountNum(CONTRACT_ID.getContractNum()).build();
+        var contractAmount = AccountAmount.newBuilder()
+                .setAccountID(contractAccountId).setAmount(amount + 15L); // with 15 reward payout
+        var stakingRewardAmount = AccountAmount.newBuilder()
+                .setAccountID(RecordItemBuilder.STAKING_REWARD_ACCOUNT).setAmount(-15L);
+        var transferList = record.getTransferList().toBuilder()
+                .addAccountAmounts(contractAmount)
+                .addAccountAmounts(stakingRewardAmount);
+        var paidRewardTransfer = AccountAmount.newBuilder().setAccountID(contractAccountId).setAmount(15L);
+        record = record.toBuilder().setConsensusTimestamp(TestUtils.toTimestamp(timestamp))
+                .setTransferList(transferList).addPaidStakingRewards(paidRewardTransfer).build();
+        var recordItem = new RecordItem(transaction, record);
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        var contract = setupResult.contract;
+        contract.setStakePeriodStart(stakePeriodStart);
+        Contract newContract = EntityId.of(CREATED_CONTRACT_ID).toEntity();
+        newContract.setCreatedTimestamp(timestamp);
+        newContract.setDeleted(false);
+        newContract.setMaxAutomaticTokenAssociations(0);
+        newContract.setMemo("");
+        newContract.setTimestampLower(timestamp);
+
+        assertAll(
+                () -> assertEquals(0, entityRepository.count()),
+                () -> assertEquals(1, transactionRepository.count()),
+                () -> assertEquals(1, contractResultRepository.count()),
+                () -> assertEquals(5, cryptoTransferRepository.count()),
+                () -> assertTransactionAndRecord(transactionBody, recordItem.getRecord()),
+                () -> assertContractCallResult(contractCallTransactionBody, recordItem.getRecord()),
+                () -> assertThat(contractRepository.findAll()).containsExactlyInAnyOrder(contract, newContract)
+        );
+    }
+
     @ParameterizedTest
     @EnumSource(ContractIdType.class)
     void contractCallToNew(ContractIdType contractIdType) {
@@ -956,7 +1010,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .toByteArray() : null;
 
                 contractStateChanges.filteredOn(c -> c.getConsensusTimestamp() == consensusTimestamp
-                        && c.getContractId() == contractId.getId() && Arrays.equals(c.getSlot(), slot))
+                                && c.getContractId() == contractId.getId() && Arrays.equals(c.getSlot(), slot))
                         .hasSize(1)
                         .first()
                         .returns(storageChange.getValueRead().toByteArray(), ContractStateChange::getValueRead)
