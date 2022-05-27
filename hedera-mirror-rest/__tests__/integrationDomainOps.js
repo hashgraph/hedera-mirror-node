@@ -1290,6 +1290,8 @@ const addRecordFile = async (recordFileInput) => {
     ...recordFileInput,
   };
   recordFile.bytes = recordFileInput.bytes != null ? Buffer.from(recordFileInput.bytes) : recordFile.bytes;
+  recordFile.logs_bloom =
+    recordFileInput.logs_bloom != null ? Buffer.from(recordFileInput.logs_bloom, 'hex') : recordFile.logs_bloom;
 
   await insertDomainObject('record_file', insertFields, recordFile);
 };
