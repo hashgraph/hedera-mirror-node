@@ -21,12 +21,9 @@ package com.hedera.mirror.common.domain.transaction;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import java.io.Serializable;
-import javax.persistence.Convert;
-import javax.persistence.Embeddable;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
+import javax.persistence.IdClass;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,29 +31,31 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
 @Data
 @Entity
+@IdClass(StakingRewardTransfer.Id.class)
 @NoArgsConstructor
 public class StakingRewardTransfer implements Persistable<StakingRewardTransfer.Id> {
 
+    @javax.persistence.Id
+    private long accountId;
+
     private long amount;
 
-    @EmbeddedId
-    @JsonUnwrapped
-    private Id id;
+    @javax.persistence.Id
+    private long consensusTimestamp;
 
-    @Convert(converter = AccountIdConverter.class)
-    private EntityId payerAccountId;
+    private long payerAccountId;
 
-    public StakingRewardTransfer(EntityId accountId, long amount, long consensusTimestamp, EntityId payerAccountId) {
-        this.amount = amount;
-        this.id = new StakingRewardTransfer.Id(consensusTimestamp, accountId);
-        this.payerAccountId = payerAccountId;
+    @JsonIgnore
+    @Override
+    public Id getId() {
+        Id id = new Id();
+        id.setAccountId(accountId);
+        id.setConsensusTimestamp(consensusTimestamp);
+        return id;
     }
 
     @JsonIgnore
@@ -66,16 +65,11 @@ public class StakingRewardTransfer implements Persistable<StakingRewardTransfer.
     }
 
     @Data
-    @Embeddable
-    @AllArgsConstructor
-    @NoArgsConstructor
     public static class Id implements Serializable {
-
         private static final long serialVersionUID = 1129458229846263861L;
 
-        private long consensusTimestamp;
+        private long accountId;
 
-        @Convert(converter = AccountIdConverter.class)
-        private EntityId accountId;
+        private long consensusTimestamp;
     }
 }

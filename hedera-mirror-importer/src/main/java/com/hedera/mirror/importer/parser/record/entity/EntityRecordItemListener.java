@@ -403,13 +403,15 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private void insertStakingRewardTransfers(RecordItem recordItem) {
         var consensusTimestamp = recordItem.getConsensusTimestamp();
+        var payerAccountId = recordItem.getPayerAccountId().getId();
 
         for (var aa : recordItem.getRecord().getPaidStakingRewardsList()) {
             var accountId = EntityId.of(aa.getAccountID());
             var transfer = new StakingRewardTransfer();
+            transfer.setAccountId(accountId.getId());
             transfer.setAmount(aa.getAmount());
-            transfer.setPayerAccountId(recordItem.getPayerAccountId());
-            transfer.setId(new StakingRewardTransfer.Id(consensusTimestamp, accountId));
+            transfer.setConsensusTimestamp(consensusTimestamp);
+            transfer.setPayerAccountId(payerAccountId);
             entityListener.onStakingRewardTransfer(transfer);
 
             // The staking reward may be paid to either an account or a contract. Create non-history updates

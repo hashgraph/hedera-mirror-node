@@ -419,9 +419,10 @@ public class DomainBuilder {
 
     public DomainWrapper<StakingRewardTransfer, StakingRewardTransfer.StakingRewardTransferBuilder> stakingRewardTransfer() {
         var builder = StakingRewardTransfer.builder()
+                .accountId(id())
                 .amount(id())
-                .id(new StakingRewardTransfer.Id(timestamp(), entityId(ACCOUNT)))
-                .payerAccountId(entityId(ACCOUNT));
+                .consensusTimestamp(timestamp())
+                .payerAccountId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

@@ -451,14 +451,25 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         sender.setStakePeriodStart(stakePeriodStart);
         receiver1.setStakePeriodStart(stakePeriodStart);
 
+        var payerAccountId = recordItem.getPayerAccountId().getId();
+        var expectedStakingRewardTransfer1 = new StakingRewardTransfer();
+        expectedStakingRewardTransfer1.setAccountId(sender.getId());
+        expectedStakingRewardTransfer1.setAmount(5L);
+        expectedStakingRewardTransfer1.setConsensusTimestamp(timestamp);
+        expectedStakingRewardTransfer1.setPayerAccountId(payerAccountId);
+        var expectedStakingRewardTransfer2 = new StakingRewardTransfer();
+        expectedStakingRewardTransfer2.setAccountId(receiver1.getId());
+        expectedStakingRewardTransfer2.setAmount(4L);
+        expectedStakingRewardTransfer2.setConsensusTimestamp(timestamp);
+        expectedStakingRewardTransfer2.setPayerAccountId(payerAccountId);
+
         assertAll(
                 () -> assertEquals(0, contractRepository.count()),
                 // 3 for fee, 3 for hbar transfers, and 1 for reward payout from 0.0.800
                 () -> assertEquals(7, cryptoTransferRepository.count()),
                 () -> assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(sender, receiver1, receiver2),
                 () -> assertThat(stakingRewardTransferRepository.findAll()).containsExactlyInAnyOrder(
-                        new StakingRewardTransfer(sender.toEntityId(), 5L, timestamp, recordItem.getPayerAccountId()),
-                        new StakingRewardTransfer(receiver1.toEntityId(), 4L, timestamp, recordItem.getPayerAccountId())
+                        expectedStakingRewardTransfer1, expectedStakingRewardTransfer2
                 ),
                 () -> assertEquals(1, transactionRepository.count())
         );
