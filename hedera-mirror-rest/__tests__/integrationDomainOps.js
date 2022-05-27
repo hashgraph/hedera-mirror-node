@@ -1286,7 +1286,7 @@ const addRecordFile = async (recordFileInput) => {
     node_account_id: 3,
     prev_hash: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     version: 5,
-    logs_bloom: Buffer.from(new Array(256).fill(0)),
+    logs_bloom: Buffer.alloc(0),
     ...recordFileInput,
   };
   recordFile.bytes = recordFileInput.bytes != null ? Buffer.from(recordFileInput.bytes) : recordFile.bytes;

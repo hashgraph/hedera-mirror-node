@@ -672,7 +672,7 @@ paths:
       operationId: getTopicMessageByIdAndSequenceNumber
       parameters:
         - $ref: '#/components/parameters/topicIdPathParam'
-        - name: sequenceNumber
+        - name: sequencenumber
           in: path
           required: true
           description: Topic message sequence number
@@ -1944,6 +1944,8 @@ components:
         hash:
           type: string
         logs_bloom:
+          description: A hex encoded 256-byte array with 0x prefix
+          nullable: true
           type: string
         name:
           type: string
