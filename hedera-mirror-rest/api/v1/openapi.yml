@@ -1947,6 +1947,7 @@ components:
           description: A hex encoded 256-byte array with 0x prefix
           nullable: true
           type: string
+          pattern: ^0x[0-9a-fA-F]{512}$
         name:
           type: string
         number:
