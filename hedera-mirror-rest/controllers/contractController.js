@@ -286,6 +286,33 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
 };
 
 /**
+ * If 2 timestamp query filters are present with the same value
+ * Overwrites the Request query object to contain a single timestamp filter
+ * eg. timestamp=gte:A&timestamp=lte:A -> timestamp=A
+ *
+ * @param {Request} req
+ * @returns {void}
+ */
+const alterTimestampRangeInReq = (req) => {
+  const timestamps = utils.buildAndValidateFilters(req.query).filter((f) => f.key === constants.filterKeys.TIMESTAMP);
+  const ops = [utils.opsMap.gte, utils.opsMap.lte];
+  const firstTimestamp = _.first(timestamps);
+  const secondTimestamp = _.last(timestamps);
+
+  // checks the special cases only
+  // all other checks will be handled by the other logic
+  if (
+    timestamps.length === 2 &&
+    firstTimestamp.value === secondTimestamp.value &&
+    firstTimestamp.operator !== secondTimestamp.operator &&
+    ops.includes(firstTimestamp.operator) &&
+    ops.includes(secondTimestamp.operator)
+  ) {
+    req.query[constants.filterKeys.TIMESTAMP] = utils.nsToSecNs(firstTimestamp.value);
+  }
+};
+
+/**
  * Modifies the default filterValidityChecks logic to support special rules for operators of BLOCK_NUMBER
  * @param {String} param Parameter to be validated
  * @param {String} opAndVal operator:value to be validated
@@ -791,6 +818,7 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractLogsById = async (req, res) => {
+    alterTimestampRangeInReq(req);
     // get sql filter query, params, limit and limit query from query filters
     const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req);
     checkTimestampsForTopics(filters);
@@ -818,6 +846,7 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractLogs = async (req, res) => {
+    alterTimestampRangeInReq(req);
     // get sql filter query, params, limit and limit query from query filters
     const filters = utils.buildAndValidateFilters(req.query);
     checkTimestampsForTopics(filters);
@@ -1095,6 +1124,7 @@ if (utils.isTestEnv()) {
       getLastNonceParamValue,
       validateContractIdAndConsensusTimestampParam,
       validateContractIdParam,
+      alterTimestampRangeInReq,
     }
   );
 }

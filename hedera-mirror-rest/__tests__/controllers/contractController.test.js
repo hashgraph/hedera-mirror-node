@@ -1538,3 +1538,71 @@ describe('extractContractLogsMultiUnionQuery - negative', () => {
     });
   });
 });
+
+describe('alterTimestampRangeInReq', () => {
+  const inputQuery = {
+    limit: '1',
+    index: '10',
+  };
+  const expectedQuery = {...inputQuery};
+  const timestamp34 = '1651061427.731522534';
+  const timestamp99 = '1651061427.731522599';
+  const specs = [
+    {
+      name: 'no timestamp',
+      input: {
+        req: {query: inputQuery},
+      },
+      expected: {query: expectedQuery},
+    },
+    {
+      name: 'timestamp = 34',
+      input: {
+        req: {query: {...inputQuery, timestamp: timestamp34}},
+      },
+      expected: {query: {...expectedQuery, timestamp: timestamp34}},
+    },
+    {
+      name: 'timestamp => 34 & timestamp < 34',
+      input: {
+        req: {query: {...inputQuery, timestamp: [`gte:${timestamp34}`, `lt:${timestamp34}`]}},
+      },
+      expected: {query: {...expectedQuery, timestamp: [`gte:${timestamp34}`, `lt:${timestamp34}`]}},
+    },
+    {
+      name: 'timestamp > 34 & timestamp < 34',
+      input: {
+        req: {query: {...inputQuery, timestamp: [`gt:${timestamp34}`, `lt:${timestamp34}`]}},
+      },
+      expected: {query: {...expectedQuery, timestamp: [`gt:${timestamp34}`, `lt:${timestamp34}`]}},
+    },
+    {
+      name: 'timestamp => 34 & timestamp <= 99',
+      input: {
+        req: {query: {...inputQuery, timestamp: [`gte:${timestamp34}`, `lte:${timestamp99}`]}},
+      },
+      expected: {query: {...expectedQuery, timestamp: [`gte:${timestamp34}`, `lte:${timestamp99}`]}},
+    },
+    {
+      name: 'timestamp => 99 & timestamp <= 34',
+      input: {
+        req: {query: {...inputQuery, timestamp: [`gte:${timestamp99}`, `lte:${timestamp34}`]}},
+      },
+      expected: {query: {...expectedQuery, timestamp: [`gte:${timestamp99}`, `lte:${timestamp34}`]}},
+    },
+    {
+      name: 'timestamp => 34 & timestamp <= 34',
+      input: {
+        req: {query: {...inputQuery, timestamp: [`gte:${timestamp34}`, `lte:${timestamp34}`]}},
+      },
+      expected: {query: {...expectedQuery, timestamp: timestamp34}},
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(spec.name, () => {
+      contracts.alterTimestampRangeInReq(spec.input.req);
+      expect(spec.input.req).toEqual(spec.expected);
+    });
+  });
+});

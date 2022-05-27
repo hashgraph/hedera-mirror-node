@@ -188,37 +188,8 @@ class BaseController {
       // the secondary param has bound or no secondary param at all
       lastValues[boundKeys.secondary] = {value: lastRow[boundKeys.secondary]};
     }
-    const nextLink = utils.getPaginationLink(req, false, lastValues, order);
 
-    // the requested url and the generated next link must have differences in their query params
-    // otherwise, no next link should be returned
-    if (this.compareTwoUrlQueryParamsForDifferences(req.originalUrl, nextLink)) {
-      return nextLink;
-    }
-
-    return null;
-  }
-
-  /**
-   * Compares two urls for differences in their query params.
-   * Returns true if diff is found, false if not
-   *
-   * @param {string} originalUrl The original url
-   * @param {string} comparedUrl The url to compare to
-   * @returns {boolean}
-   */
-  compareTwoUrlQueryParamsForDifferences(originalUrl, comparedUrl) {
-    const originalUrlQuery = originalUrl.split('?')[1];
-    const originalUrlSearchParams = new URLSearchParams(originalUrlQuery);
-    let comparedQueryString = comparedUrl.split('?')[1];
-
-    // removes all matching params
-    for (const [key, value] of originalUrlSearchParams.entries()) {
-      const rexp = new RegExp(`\\??${key}=${value}\\&?`, 'gi');
-      comparedQueryString = comparedQueryString.replace(rexp, '');
-    }
-
-    return comparedQueryString.length > 0;
+    return utils.getPaginationLink(req, false, lastValues, order);
   }
 }
 
