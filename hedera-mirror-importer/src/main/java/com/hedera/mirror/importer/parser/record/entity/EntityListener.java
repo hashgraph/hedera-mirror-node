@@ -107,7 +107,7 @@ public interface EntityListener {
     default void onSchedule(Schedule schedule) throws ImporterException {
     }
 
-    default void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) throws ImporterException {
+    default void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) {
     }
 
     default void onToken(Token token) throws ImporterException {

@@ -401,7 +401,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) throws ImporterException {
+    public void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) {
         stakingRewardTransfers.add(stakingRewardTransfer);
     }
 

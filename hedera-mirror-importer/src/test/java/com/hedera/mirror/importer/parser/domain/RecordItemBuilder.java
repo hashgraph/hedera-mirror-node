@@ -380,7 +380,7 @@ public class RecordItemBuilder {
     }
 
     // Helper methods
-    private AccountAmount accountAmount(AccountID accountID, long amount) {
+    public AccountAmount accountAmount(AccountID accountID, long amount) {
         return AccountAmount.newBuilder().setAccountID(accountID).setAmount(amount).build();
     }
 

@@ -47,6 +47,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
@@ -471,6 +472,60 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertThat(stakingRewardTransferRepository.findAll()).containsExactlyInAnyOrder(
                         expectedStakingRewardTransfer1, expectedStakingRewardTransfer2
                 ),
+                () -> assertEquals(1, transactionRepository.count())
+        );
+    }
+
+    @Test
+    void cryptoTransferFailedWithPaidStakingRewards() {
+        // given
+        var payer = domainBuilder.entity().persist();
+        var receiver = domainBuilder.entity().persist();
+        var sender = domainBuilder.entity().persist();
+        var payerId = AccountID.newBuilder().setAccountNum(payer.getNum()).build();
+        var receiverId = AccountID.newBuilder().setAccountNum(receiver.getNum()).build();
+        var senderId = AccountID.newBuilder().setAccountNum(sender.getNum()).build();
+        var timestamp = 1653506322000111222L; // 19137 days since epoch
+        var stakePeriodStart = 19137L;
+
+        // Transaction failed with INSUFFICIENT_ACCOUNT_BALANCE because sender's balance is less than the indented
+        // transfer amount. However, the transaction payer has a balance change and there is pending reward for the payer
+        // account, so there will be a reward payout for the transaction payer.
+        var transactionId = TransactionID.newBuilder().setAccountID(payerId)
+                .setTransactionValidStart(TestUtils.toTimestamp(timestamp - 200L)).build();
+        var recordItem = recordItemBuilder.cryptoTransfer().transactionBody(b -> b.setTransfers(TransferList.newBuilder()
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(senderId).setAmount(-20L))
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiverId).setAmount(20L))))
+                .transactionBodyWrapper(b -> b.setTransactionID(transactionId))
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(timestamp))
+                        .setTransactionID(transactionId)
+                        .setTransferList(TransferList.newBuilder()
+                                .addAccountAmounts(recordItemBuilder.accountAmount(payerId, -2800L))
+                                .addAccountAmounts(recordItemBuilder.accountAmount(NODE, 1000L))
+                                .addAccountAmounts(recordItemBuilder.accountAmount(TREASURY, 2000L))
+                                .addAccountAmounts(recordItemBuilder.accountAmount(
+                                        RecordItemBuilder.STAKING_REWARD_ACCOUNT, -200L)))
+                        .addPaidStakingRewards(recordItemBuilder.accountAmount(payerId, 200L))
+                        .getReceiptBuilder().setStatus(ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE))
+                .build();
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        payer.setStakePeriodStart(stakePeriodStart);
+
+        var expectedStakingRewardTransfer = new StakingRewardTransfer();
+        expectedStakingRewardTransfer.setAccountId(payer.getId());
+        expectedStakingRewardTransfer.setAmount(200L);
+        expectedStakingRewardTransfer.setConsensusTimestamp(timestamp);
+        expectedStakingRewardTransfer.setPayerAccountId(payer.getId());
+
+        assertAll(
+                () -> assertEquals(0, contractRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
+                () -> assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(payer, sender, receiver),
+                () -> assertThat(stakingRewardTransferRepository.findAll()).containsOnly(expectedStakingRewardTransfer),
                 () -> assertEquals(1, transactionRepository.count())
         );
     }

@@ -156,7 +156,7 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
-    public void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) throws ImporterException {
+    public void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) {
         onEach(EntityListener::onStakingRewardTransfer, stakingRewardTransfer);
     }
 
