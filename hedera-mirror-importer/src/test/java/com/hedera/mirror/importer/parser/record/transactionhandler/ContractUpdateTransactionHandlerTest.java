@@ -135,8 +135,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(1L, Contract::getStakedAccountId)
                 .returns(false, Contract::isDeclineReward)
                 .returns(null, Contract::getStakedNodeId)
-                .extracting(Contract::getStakePeriodStart)
-                .isNull()
+                .returns(-1L, Contract::getStakePeriodStart)
         );
     }
 

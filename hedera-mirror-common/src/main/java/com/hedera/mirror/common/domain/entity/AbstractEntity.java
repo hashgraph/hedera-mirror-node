@@ -135,10 +135,14 @@ public abstract class AbstractEntity implements History {
         stakePeriodStart = LocalDate.now(ZoneId.of("UTC")).toEpochDay();
     }
 
-    public void updateAccountId(EntityId accountId) {
+    public void setStakedAccountId(Long stakedAccountId) {
+        stakedAccountId = stakedNodeId;
+    }
+
+    public void setStakedAccountId(EntityId accountId) {
         stakedAccountId = AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId);
         // if the staked account id has changed, we clear the stake period.
-        stakePeriodStart = null;
+        stakePeriodStart = -1L;
     }
 
     // Necessary since Lombok doesn't use our setters for builders

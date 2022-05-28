@@ -118,7 +118,7 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
         if (isStakedNodeIdSet) {
             entity.setStakedNodeId(transactionBody.getStakedNodeId());
         } else if (ContractUpdateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID == transactionBody.getStakedIdCase()) {
-            entity.updateAccountId(EntityId.of(transactionBody.getStakedAccountId()));
+            entity.setStakedAccountId(EntityId.of(transactionBody.getStakedAccountId()));
         }
 
         // If the stake node id or the decline reward value has changed, we start a new stake period.

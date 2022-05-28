@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
+import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID;
+
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import javax.inject.Named;
 
@@ -126,14 +129,14 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     private void updateContractStakingInfo(Contract contract, ContractCreateTransactionBody transactionBody) {
+        contract.setDeclineReward(transactionBody.getDeclineReward());
         // this contract has no staking
-        if (transactionBody.getStakedIdCase() == ContractCreateTransactionBody.StakedIdCase.STAKEDID_NOT_SET) {
+        if (transactionBody.getStakedIdCase() == STAKEDID_NOT_SET) {
             return;
         }
-        contract.setDeclineReward(transactionBody.getDeclineReward());
-        if (transactionBody.getStakedIdCase() == ContractCreateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID) {
+        if (transactionBody.getStakedIdCase() == STAKED_ACCOUNT_ID) {
             EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
-            contract.updateAccountId(accountId);
+            contract.setStakedAccountId(accountId);
         } else {
             contract.setStakedNodeId(transactionBody.getStakedNodeId());
         }

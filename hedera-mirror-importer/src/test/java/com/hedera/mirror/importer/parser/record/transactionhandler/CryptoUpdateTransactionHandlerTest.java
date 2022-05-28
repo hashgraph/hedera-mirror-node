@@ -68,8 +68,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(1L, Entity::getStakedAccountId)
                 .returns(false, Entity::isDeclineReward)
                 .returns(null, Entity::getStakedNodeId)
-                .extracting(Entity::getStakePeriodStart)
-                .isNull()
+                .returns(-1L, Entity::getStakePeriodStart)
         );
     }
 

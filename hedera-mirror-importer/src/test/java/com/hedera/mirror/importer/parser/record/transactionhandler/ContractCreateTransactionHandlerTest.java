@@ -248,7 +248,6 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         final AccountID accountID = recordItemBuilder.accountId(1L);
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.clearAutoRenewAccountId()
-                        .setDeclineReward(false)
                         .setStakedAccountId(accountID))
                 .build();
         var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
@@ -268,7 +267,6 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     void updateTransactionSuccessfulStakingInfoForNodeStaking() {
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.clearAutoRenewAccountId()
-                        .setDeclineReward(false)
                         .setStakedNodeId(1L))
                 .build();
         var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
@@ -538,8 +536,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         .returns(contractId.getShardNum(), Contract::getShard)
                         .returns(CONTRACT, Contract::getType)
                         .returns(Range.atLeast(timestamp), Contract::getTimestampRange)
-                        .returns(null, Contract::getObtainerId)
-                        .satisfies(c -> assertThat(c.getStakePeriodStart()).isNotNull()),
+                        .returns(null, Contract::getObtainerId),
                 () -> extraAssert.accept(t)
         )));
     }
