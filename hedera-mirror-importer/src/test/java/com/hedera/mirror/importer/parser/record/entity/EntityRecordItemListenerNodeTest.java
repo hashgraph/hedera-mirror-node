@@ -58,12 +58,12 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                         .returns(recordItem.getConsensusTimestamp(), NodeStake::getConsensusTimestamp)
                         .returns(LocalDate.now(ZoneId.of("UTC")).toEpochDay(), NodeStake::getEpochDay)
                         .returns(nodeStake.getNodeId(), NodeStake::getNodeId)
-                        .returns(transactionBody.getRewardRate(), NodeStake::getRewardRate)
+                        .returns(null, NodeStake::getRewardRate)
+                        .returns(null, NodeStake::getRewardSum)
                         .returns(nodeStake.getStake(), NodeStake::getStake)
                         .returns(nodeStake.getStakeRewarded(), NodeStake::getStakeRewarded)
                         .returns(stakingPeriod, NodeStake::getStakingPeriod)
                         .returns(nodeStake.getStake(), NodeStake::getStakeTotal)
-                        .returns(null, NodeStake::getRewardSum)
         );
     }
 }

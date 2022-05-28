@@ -35,6 +35,7 @@ public interface NodeStakeRepository extends CrudRepository<NodeStake, NodeStake
 
     @Modifying
     @Transactional
-    @Query(value = "update node_stake set reward_sum= ?3 where epoch_day = ?1 and node_id = ?2", nativeQuery = true)
-    void setRewardSum(long epochDay, long nodeId, long rewardSum);
+    @Query(value = "update node_stake set reward_rate = ?3, reward_sum= ?4 where epoch_day = ?1 and node_id = ?2",
+            nativeQuery = true)
+    void setReward(long epochDay, long nodeId, long rewardRate, long rewardSum);
 }

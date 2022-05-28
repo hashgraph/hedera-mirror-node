@@ -61,6 +61,9 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
     private ArgumentCaptor<Long> nodeIdArgCaptor;
 
     @Captor
+    private ArgumentCaptor<Long> rewardRateArgCaptor;
+
+    @Captor
     private ArgumentCaptor<Long> rewardSumArgCaptor;
 
     @Override
@@ -96,13 +99,13 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
         var nodeStakeProto = transactionBody.getNodeStakeList().get(0);
         var nodeId = nodeStakeProto.getNodeId();
+        var rewardRate = transactionBody.getRewardRate();
         var stakingPeriod = DomainUtils.timestampInNanosMax(transactionBody.getEndOfStakingPeriod());
         var epochDay = Utility.getEpochDay(recordItem.getConsensusTimestamp());
         var expectedNodeStake = NodeStake.builder()
                 .consensusTimestamp(recordItem.getConsensusTimestamp())
                 .epochDay(epochDay)
                 .nodeId(nodeStakeProto.getNodeId())
-                .rewardRate(transactionBody.getRewardRate())
                 .stake(nodeStakeProto.getStake())
                 .stakeRewarded(nodeStakeProto.getStakeRewarded())
                 .stakeTotal(nodeStakeProto.getStake())
@@ -116,7 +119,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
 
         // then
         verify(entityListener).onNodeStake(assertArg(n -> assertThat(n).isEqualTo(expectedNodeStake)));
-        verify(nodeStakeRepository).setRewardSum(epochDay - 1, nodeId, 0L);
+        verify(nodeStakeRepository).setReward(epochDay - 1, nodeId, rewardRate, 0L);
     }
 
     @ParameterizedTest
@@ -149,7 +152,6 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .consensusTimestamp(previousTimestamp)
                 .epochDay(previousEpochDay)
                 .nodeId(1L)
-                .rewardRate(3000L)
                 .stake(2500L)
                 .stakeRewarded(previousNodeStakeRewarded1)
                 .stakeTotal(4000L)
@@ -159,7 +161,6 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .consensusTimestamp(previousTimestamp)
                 .epochDay(previousEpochDay)
                 .nodeId(2L)
-                .rewardRate(3000L)
                 .stake(1500L)
                 .stakeRewarded(previousNodeStakeRewarded2)
                 .stakeTotal(4000L)
@@ -203,7 +204,6 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .consensusTimestamp(currentTimestamp)
                 .epochDay(epochDay)
                 .nodeId(1L)
-                .rewardRate(rewardRateTinyBars)
                 .stake(3000L)
                 .stakeRewarded(1000L)
                 .stakeTotal(8000L)
@@ -213,7 +213,6 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .consensusTimestamp(currentTimestamp)
                 .epochDay(epochDay)
                 .nodeId(2L)
-                .rewardRate(rewardRateTinyBars)
                 .stake(5000L)
                 .stakeRewarded(2000L)
                 .stakeTotal(8000L)
@@ -228,11 +227,13 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         // then
         verify(entityListener, times(2)).onNodeStake(nodeStakeArgCaptor.capture());
         assertThat(nodeStakeArgCaptor.getAllValues()).containsExactlyInAnyOrder(expectedNodeStake1, expectedNodeStake2);
-        verify(nodeStakeRepository, times(2)).setRewardSum(epochDayArgCaptor.capture(), nodeIdArgCaptor.capture(),
-                rewardSumArgCaptor.capture());
+        verify(nodeStakeRepository, times(2)).setReward(epochDayArgCaptor.capture(), nodeIdArgCaptor.capture(),
+                rewardRateArgCaptor.capture(), rewardSumArgCaptor.capture());
         assertAll(
                 () -> assertThat(epochDayArgCaptor.getAllValues()).containsExactly(previousEpochDay, previousEpochDay),
                 () -> assertThat(nodeIdArgCaptor.getAllValues()).containsExactly(1L, 2L),
+                () -> assertThat(rewardRateArgCaptor.getAllValues()).containsExactly(rewardRateTinyBars,
+                        rewardRateTinyBars),
                 () -> assertThat(rewardSumArgCaptor.getAllValues()).containsExactly(expectedRewardSum1,
                         expectedRewardSum2)
         );

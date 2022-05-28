@@ -83,7 +83,6 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             nodeStake.setConsensusTimestamp(recordItem.getConsensusTimestamp());
             nodeStake.setEpochDay(epochDay);
             nodeStake.setNodeId(nodeId);
-            nodeStake.setRewardRate(rewardRate);
             nodeStake.setStake(nodeStakeProto.getStake());
             nodeStake.setStakeRewarded(nodeStakeProto.getStakeRewarded());
             nodeStake.setStakeTotal(stakeTotal);
@@ -98,7 +97,7 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
                 rewardSum += rewardRate * (double) previousStakeRewarded /
                         previousTotalStakeRewarded / TINYBARS_IN_HBARS;
             }
-            nodeStakeRepository.setRewardSum(epochDay - 1, nodeId, (long) rewardSum);
+            nodeStakeRepository.setReward(epochDay - 1, nodeId, rewardRate, (long) rewardSum);
         }
     }
 

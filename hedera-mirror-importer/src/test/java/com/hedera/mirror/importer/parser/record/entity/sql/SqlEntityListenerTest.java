@@ -964,6 +964,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(nftTransfer1);
     }
 
+    @Test
     void onNodeStake() {
         // given
         var nodeStake1 = domainBuilder.nodeStake().get();
