@@ -36,5 +36,8 @@
     "log4js": "^6.5.2",
     "node-fetch": "^2.6.7",
     "yargs": "^17.5.1"
+  },
+  "overrides": {
+    "protobufjs": "6.11.3"
   }
 }
