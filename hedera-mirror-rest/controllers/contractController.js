@@ -961,7 +961,12 @@ class ContractController extends BaseController {
 
     const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
-      results: rows.map((row) => new ContractResultViewModel(row)),
+      results: rows.map((row) => {
+        return {
+          ...new ContractResultViewModel(row),
+          hash: row.hash ? utils.toHexString(row.hash, true) : null,
+        };
+      }),
       links: {
         next: null,
       },
