@@ -22,8 +22,26 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
+      - name: NPM cache
+        uses: actions/cache@v2
+        with:
+          key: ${{ runner.os }}-node-${{ hashFiles('./package-lock.json', './check-state-proof/package-lock.json', 'monitoring/monitor_apis/package-lock.json') }}
+          path: |
+            ~/.npm
+            .node-flywaydb
+          restore-keys: ${{ runner.os }}-node-
+
+      - name: Install REST dependencies
+        run: ./mvnw compile -pl hedera-mirror-rest
+
       - name: Vulnerability check
         run: ./mvnw dependency-check:aggregate
+
+      - name: Upload report
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          path: target/dependency-check-report.html
 
   sonar:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')

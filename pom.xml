@@ -196,7 +196,16 @@
                     <artifactId>dependency-check-maven</artifactId>
                     <version>${dependency-check.version}</version>
                     <configuration>
+                        <enableExperimental>true</enableExperimental>
                         <failBuildOnCVSS>8</failBuildOnCVSS>
+                        <scanSet>
+                            <fileSet>
+                                <directory>${maven.multiModuleProjectDirectory}/hedera-mirror-rest/check-state-proof</directory>
+                            </fileSet>
+                            <fileSet>
+                                <directory>${maven.multiModuleProjectDirectory}/hedera-mirror-rest/monitor_apis</directory>
+                            </fileSet>
+                        </scanSet>
                         <suppressionFiles>
                             <suppressionFile>${maven.multiModuleProjectDirectory}/suppressions.xml</suppressionFile>
                         </suppressionFiles>
