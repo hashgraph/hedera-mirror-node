@@ -1939,6 +1939,8 @@ components:
         gas_used:
           type: integer
           minimum: 0
+          format: int64
+          nullable: true
         hapi_version:
           type: string
         hash:

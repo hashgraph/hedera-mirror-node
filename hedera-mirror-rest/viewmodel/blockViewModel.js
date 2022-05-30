@@ -44,15 +44,7 @@ class BlockViewModel {
       to: utils.nsToSecNs(recordFile.consensusEnd),
     };
     this.gas_used = recordFile.gasUsed === -1 ? null : recordFile.gasUsed;
-
-    if (recordFile.logsBloom === null) {
-      this.logs_bloom = null;
-    } else {
-      this.logs_bloom =
-        recordFile.logsBloom.length === 0
-          ? utils.toHexStringNonQuantity(Buffer.alloc(256))
-          : utils.toHexStringNonQuantity(recordFile.logsBloom);
-    }
+    this.logs_bloom = recordFile.logsBloom ? utils.toHexString(recordFile.logsBloom, true, 512) : null;
   }
 }
 

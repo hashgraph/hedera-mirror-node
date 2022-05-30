@@ -62,4 +62,22 @@ describe('BlockViewModel', () => {
   test('default', () => {
     expect(new BlockViewModel(defaultRecordFile)).toEqual(defaultExpected);
   });
+
+  test('default with nullable logs_bloom', () => {
+    expect(new BlockViewModel(new RecordFile({logs_bloom: null})).logs_bloom).toStrictEqual(null);
+  });
+
+  test('default with empty logs_bloom', () => {
+    expect(new BlockViewModel(new RecordFile({logs_bloom: Buffer.alloc(0)})).logs_bloom).toStrictEqual('0x');
+  });
+
+  test('default with logs_bloom filled with zeros', () => {
+    expect(new BlockViewModel(new RecordFile({logs_bloom: Buffer.alloc(256)})).logs_bloom).toStrictEqual(
+      '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+    );
+  });
+
+  test('default with gas_used = -1', () => {
+    expect(new BlockViewModel(new RecordFile({gas_used: -1})).logs_bloom).toStrictEqual(null);
+  });
 });
