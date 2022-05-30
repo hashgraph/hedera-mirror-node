@@ -58,7 +58,7 @@
         <besu.version>22.4.1</besu.version>
         <dependency-check.version>7.1.0</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
-        <docker-maven-plugin.version>0.39.1</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.40.0</docker-maven-plugin.version>
         <docker.architecture>amd64</docker.architecture>
         <docker.os>linux</docker.os>
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
@@ -78,7 +78,7 @@
         <javax.version>1</javax.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.1</msgpack.version>
-        <protobuf.version>3.20.1</protobuf.version>
+        <protobuf.version>3.21.1</protobuf.version>
         <release.version>0.58.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
         <release.chartVersion>0.45.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
