@@ -909,7 +909,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         } else {
             contractAssert.returns(expected.getStakedNodeId(), Contract::getStakedNodeId)
                     .returns(null, Contract::getStakedAccountId)
-                    .returns(Utility.getEpochDay(consensusTimestamp.getNanos()), Contract::getStakePeriodStart);
+                    .returns(Utility.getEpochDay(DomainUtils.timestampInNanosMax(consensusTimestamp)),
+                            Contract::getStakePeriodStart);
         }
         return contractAssert;
     }
