@@ -15,16 +15,13 @@
     "test": "jest --testPathPattern='__tests__/.*\\.test\\.js'"
   },
   "author": "Hedera Mirror Node Team",
-  "comments": {
-    "dependencies": "minimist & json-schema are transitive dependencies but we explicitly mark them as a dependency to bring in a non-vulnerable version"
-  },
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
     "@godaddy/terminus": "^4.10.2",
     "@hashgraph/proto": "^2.4.2",
     "asn1js": "^3.0.5",
-    "aws-sdk": "^2.1140.0",
+    "aws-sdk": "^2.1145.0",
     "bigint-buffer": "^1.1.5",
     "body-parser": "^1.20.0",
     "compression": "^1.7.4",
@@ -36,17 +33,15 @@
     "ip-anonymize": "^0.1.0",
     "js-yaml": "^4.1.0",
     "json-bigint": "^1.0.0",
-    "json-schema": "^0.4.0",
     "lodash": "^4.17.21",
-    "log4js": "^6.5.1",
+    "log4js": "^6.5.2",
     "long": "^5.2.0",
-    "mathjs": "^10.5.3",
+    "mathjs": "^10.6.0",
     "mem": "^8.1.1",
-    "minimist": "^1.2.6",
     "parse-duration": "^1.0.2",
     "pg": "~8.7.3",
     "pg-range": "^1.1.1",
-    "prom-client": "^14.0.1",
+    "prom-client": "^13.1.0",
     "qs": "^6.10.3",
     "quick-lru": "^5.1.1",
     "rfc4648": "^1.5.1",
@@ -70,13 +65,11 @@
     "ip-anonymize",
     "js-yaml",
     "json-bigint",
-    "json-schema",
     "lodash",
     "log4js",
     "long",
     "mathjs",
     "mem",
-    "minimist",
     "parse-duration",
     "pg",
     "pg-range",
@@ -95,7 +88,7 @@
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-jest": "^26.2.2",
+    "eslint-plugin-jest": "^26.4.5",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.0.0",
     "eslint-plugin-security": "^1.5.0",
@@ -135,6 +128,11 @@
   },
   "jest-junit": {
     "outputDirectory": "target/jest-junit"
+  },
+  "overrides": {
+    "json-schema": "0.4.0",
+    "multer": "1.4.4-lts.1",
+    "protobufjs": "6.11.3"
   },
   "prettier": {
     "bracketSpacing": false,

@@ -33,8 +33,11 @@
     "glob": "^8.0.3",
     "jest": "^28.1.0",
     "lodash": "^4.17.21",
-    "log4js": "^6.5.1",
+    "log4js": "^6.5.2",
     "node-fetch": "^2.6.7",
     "yargs": "^17.5.1"
+  },
+  "overrides": {
+    "protobufjs": "6.11.3"
   }
 }
