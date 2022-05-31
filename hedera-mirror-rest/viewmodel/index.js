@@ -41,4 +41,5 @@ module.exports = {
   TopicMessageViewModel: require('./topicMessageViewModel'),
   TransactionIdViewModel: require('./transactionIdViewModel'),
   BlockViewModel: require('./blockViewModel'),
+  FeeScheduleViewModel: require('./feeScheduleViewModel'),
 };

@@ -141,3 +141,45 @@ describe('FileDataService.getLatestFileDataContents tests', () => {
     );
   });
 });
+
+const feeScheduleFileId = 111;
+const feeScheduleFiles = [
+  {
+    consensus_timestamp: 1,
+    entity_id: 111,
+    file_data: '0a240a0908541a051a0340de010a0808061a041a02406f0a0908071a051a0340cd0212020801',
+    transaction_type: 17,
+  },
+];
+
+const expectedCreatedFile = {
+  timestamp: 1,
+  current_feeSchedule: [
+    {
+      fees: [{servicedata: {gas: 222}, subType: 0}],
+      hederaFunctionality: 84,
+    },
+    {
+      fees: [{servicedata: {gas: 111}, subType: 0}],
+      hederaFunctionality: 6,
+    },
+    {
+      fees: [{servicedata: {gas: 333}, subType: 0}],
+      hederaFunctionality: 7,
+    },
+  ],
+  next_feeSchedule: [],
+};
+
+describe('FileDataService.getFeeSchedule - Row match w latest', () => {
+  test('FileDataService.getFeeSchedule - No match', async () => {
+    await expect(FileDataService.getFeeSchedule({whereQuery: []})).resolves.toBeNull();
+  });
+
+  // test('FileDataService.getFeeSchedule - Row match w "created" tx', async () => {
+  //   await integrationDomainOps.loadFileData(feeScheduleFiles);
+  //   await expect(FileDataService.getFeeSchedule({whereQuery: []})).resolves.toMatchObject({
+  //     expectedCreatedFile
+  //   });
+  // });
+});
