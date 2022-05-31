@@ -30,6 +30,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -65,6 +66,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.data.util.Version;
 
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -114,6 +116,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     if (!hasAutoRenewAccount) {
                         b.clearAutoRenewAccountId();
                     }
+                    b.clearAutoRenewAccountId()
+                            .setDeclineReward(true)
+                            .setStakedAccountId(AccountID.newBuilder().setAccountNum(1L).build());
                 })
                 .build();
         var record = recordItem.getRecord();
@@ -138,6 +143,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         // no child tx, creates a single contract with evm address set
         byte[] evmAddress = domainBuilder.evmAddress();
         RecordItem recordItem = recordItemBuilder.contractCreate(CONTRACT_ID)
+                .transactionBody(t -> t.setDeclineReward(false).setStakedNodeId(1L))
                 .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
                         .clearCreatedContractIDs()
                         .addCreatedContractIDs(CONTRACT_ID)
@@ -828,7 +834,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         byte[] evmAddress = contractCreateResult.hasEvmAddress() ?
                 DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()) : null;
         EntityId createdId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
-        assertThat(contractRepository.findById(createdId.getId()))
+        var contractAssert = assertThat(contractRepository.findById(createdId.getId()))
                 .get()
                 .returns(recordItem.getConsensusTimestamp(), Contract::getCreatedTimestamp)
                 .returns(false, Contract::getDeleted)
@@ -838,6 +844,20 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(createdId.getEntityNum(), Contract::getNum)
                 .returns(createdId.getShardNum(), Contract::getShard)
                 .returns(createdId.getType(), Contract::getType);
+
+        var contractCreateInstance = recordItem.getTransactionBody().getContractCreateInstance();
+        contractAssert.returns(contractCreateInstance.getDeclineReward(), Contract::isDeclineReward)
+                .extracting(Contract::getStakePeriodStart)
+                .isNotNull();
+        if (contractCreateInstance.hasStakedAccountId()) {
+            long accountId = AccountIdConverter.INSTANCE.convertToDatabaseColumn(
+                    EntityId.of(contractCreateInstance.getStakedAccountId()));
+            contractAssert.returns(accountId, Contract::getStakedAccountId)
+                    .returns(null, Contract::getStakedNodeId);
+        } else {
+            contractAssert.returns(contractCreateInstance.getStakedNodeId(), Contract::getStakedNodeId)
+                    .returns(null, Contract::getStakedAccountId);
+        }
     }
 
     private ObjectAssert<Contract> assertContractEntity(ContractUpdateTransactionBody expected,
