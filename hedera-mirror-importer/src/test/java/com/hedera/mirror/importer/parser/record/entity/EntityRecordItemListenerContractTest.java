@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
+import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -846,9 +847,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(createdId.getType(), Contract::getType);
 
         var contractCreateInstance = recordItem.getTransactionBody().getContractCreateInstance();
-        contractAssert.returns(contractCreateInstance.getDeclineReward(), Contract::isDeclineReward)
-                .extracting(Contract::getStakePeriodStart)
-                .isNotNull();
+        contractAssert.returns(contractCreateInstance.getDeclineReward(), Contract::isDeclineReward);
+
+        if (contractCreateInstance.getStakedIdCase() == STAKEDID_NOT_SET) {
+            return;
+        }
+
+        contractAssert.extracting(Contract::getStakePeriodStart).isNotNull();
+
         if (contractCreateInstance.hasStakedAccountId()) {
             long accountId = AccountIdConverter.INSTANCE.convertToDatabaseColumn(
                     EntityId.of(contractCreateInstance.getStakedAccountId()));
