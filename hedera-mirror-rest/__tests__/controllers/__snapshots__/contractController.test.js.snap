@@ -8,14 +8,6 @@ exports[`checkTimestampsForTopics topic1 param one timestamp gt 1`] = `"Cannot s
 
 exports[`checkTimestampsForTopics topic2 param one timestamp lt 1`] = `"Cannot search topics without a valid timestamp range: Timestamp range must have gt (or gte) and lt (or lte)"`;
 
-exports[`extractContractLogsQuery - by Id error - multiple index 1`] = `"Multiple params not allowed for index"`;
-
-exports[`extractContractLogsQuery - by Id error - timestamp not equal operator 1`] = `"Not equals operator not supported for timestamp param"`;
-
-exports[`extractContractLogsQuery - no Id specified error - multiple index 1`] = `"Multiple params not allowed for index"`;
-
-exports[`extractContractLogsQuery - no Id specified error - timestamp not equal operator 1`] = `"Not equals operator not supported for timestamp param"`;
-
 exports[`validateContractIdAndConsensusTimestampParam invalid case - {"contractId":"1","consensusTimestamp":"y"} 1`] = `
 Array [
   "Invalid parameter: timestamp",

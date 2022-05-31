@@ -48,6 +48,7 @@ const {
 const {httpStatusCodes} = require('../constants');
 
 const BaseController = require('./baseController');
+const Bound = require('./bound');
 
 const contractSelectFields = [
   Contract.AUTO_RENEW_ACCOUNT_ID,
@@ -282,6 +283,33 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
   ]
     .filter((q) => q !== '')
     .join('\n');
+};
+
+/**
+ * If 2 timestamp query filters are present with the same value
+ * Overwrites the Request query object to contain a single timestamp filter
+ * eg. timestamp=gte:A&timestamp=lte:A -> timestamp=A
+ *
+ * @param {Request} req
+ * @returns {void}
+ */
+const alterTimestampRangeInReq = (req) => {
+  const timestamps = utils.buildAndValidateFilters(req.query).filter((f) => f.key === constants.filterKeys.TIMESTAMP);
+  const ops = [utils.opsMap.gte, utils.opsMap.lte];
+  const firstTimestamp = _.first(timestamps);
+  const secondTimestamp = _.last(timestamps);
+
+  // checks the special cases only
+  // all other checks will be handled by the other logic
+  if (
+    timestamps.length === 2 &&
+    firstTimestamp.value === secondTimestamp.value &&
+    firstTimestamp.operator !== secondTimestamp.operator &&
+    ops.includes(firstTimestamp.operator) &&
+    ops.includes(secondTimestamp.operator)
+  ) {
+    req.query[constants.filterKeys.TIMESTAMP] = utils.nsToSecNs(firstTimestamp.value);
+  }
 };
 
 /**
@@ -552,14 +580,73 @@ class ContractController extends BaseController {
       limit: limit,
     };
   };
+
+  validateContractLogsBounds = (timestampBound, indexBound) => {
+    for (const bound of [timestampBound, indexBound]) {
+      if (bound.hasBound() && bound.hasEqual()) {
+        throw new InvalidArgumentError(`Can't support both range and equal`);
+      }
+    }
+
+    if (timestampBound.isEmpty() && !indexBound.isEmpty()) {
+      throw new InvalidArgumentError(
+        `Cannot search by ${constants.filterKeys.INDEX} without a ${constants.filterKeys.TIMESTAMP} parameter filter`
+      );
+    }
+
+    if (
+      indexBound.hasLower() &&
+      !timestampBound.hasEqual() &&
+      (!timestampBound.hasLower() || timestampBound.lower.operator === utils.opsMap.gt)
+    ) {
+      // invalid ops: index >/>= & timestamp </<=/>
+      throw new InvalidArgumentError(`Timestamp must have gte or eq operator`);
+    }
+
+    if (
+      indexBound.hasUpper() &&
+      !timestampBound.hasEqual() &&
+      (!timestampBound.hasUpper() || timestampBound.upper.operator === utils.opsMap.lt)
+    ) {
+      // invalid ops: index </<= & timestamp >/>=/<
+      throw new InvalidArgumentError(`Timestamp must have lte or eq operator`);
+    }
+
+    if (indexBound.hasEqual() && !timestampBound.hasEqual()) {
+      throw new InvalidArgumentError(`Timestamp must have eq operator`);
+    }
+  };
+
   /**
-   * Extracts SQL where conditions, params, order, and limit
+   * Extends base getLowerFilters function and adds a special case to
+   * extract contract logs lower filters
+   * @param {Bound} timestampBound
+   * @param {Bound} indexBound
+   * @returns {{key: string, operator: string, value: *}[]}
+   */
+  getContractLogsLowerFilters = (timestampBound, indexBound) => {
+    let filters = this.getLowerFilters(timestampBound, indexBound);
+
+    if (!_.isEmpty(filters)) {
+      return filters;
+    }
+
+    // timestamp has equal and index has bound/equal
+    // only lower bound is used, inner and upper are not needed
+    if (timestampBound.hasEqual() && (indexBound.hasBound() || indexBound.hasEqual())) {
+      filters = [timestampBound.equal, indexBound.lower, indexBound.equal, indexBound.upper];
+    }
+
+    return filters.filter((f) => !_.isNil(f));
+  };
+  /**
+   * Extracts multiple queries to be combined in union
    *
    * @param {[]} filters parsed and validated filters
-   * @param {string} contractId encoded contract ID
-   * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
+   * @param {string|undefined} contractId encoded contract ID
+   * @return {{bounds: {string: Bound},boundKeys: {{primary:string,secondary:string}}, lower: *[], inner: *[], upper: *[], conditions: [], params: [], timestampOrder: 'asc'|'desc', indexOrder: 'asc'|'desc', limit: number}}
    */
-  extractContractLogsQuery = (filters, contractId) => {
+  extractContractLogsMultiUnionQuery = (filters, contractId) => {
     let limit = defaultLimit;
     let timestampOrder = constants.orderFilterValues.DESC;
     let indexOrder = constants.orderFilterValues.DESC;
@@ -571,10 +658,14 @@ class ContractController extends BaseController {
       params.push(contractId);
     }
 
-    const oneOperatorValues = {};
-
+    const indexBound = new Bound();
+    const timestampBound = new Bound();
+    const bounds = {
+      [constants.filterKeys.INDEX]: indexBound,
+      [constants.filterKeys.TIMESTAMP]: timestampBound,
+    };
+    const boundKeys = {primary: constants.filterKeys.TIMESTAMP, secondary: constants.filterKeys.INDEX};
     const keyFullNames = {
-      [constants.filterKeys.TIMESTAMP]: ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP),
       [constants.filterKeys.TOPIC0]: ContractLog.getFullName(ContractLog.TOPIC0),
       [constants.filterKeys.TOPIC1]: ContractLog.getFullName(ContractLog.TOPIC1),
       [constants.filterKeys.TOPIC2]: ContractLog.getFullName(ContractLog.TOPIC2),
@@ -582,7 +673,6 @@ class ContractController extends BaseController {
     };
 
     const inValues = {
-      [constants.filterKeys.TIMESTAMP]: [],
       [constants.filterKeys.TOPIC0]: [],
       [constants.filterKeys.TOPIC1]: [],
       [constants.filterKeys.TOPIC2]: [],
@@ -592,12 +682,11 @@ class ContractController extends BaseController {
     for (const filter of filters) {
       switch (filter.key) {
         case constants.filterKeys.INDEX:
-          if (oneOperatorValues[filter.key]) {
-            throw new InvalidArgumentError(`Multiple params not allowed for ${filter.key}`);
+        case constants.filterKeys.TIMESTAMP:
+          if (filter.operator === utils.opsMap.ne) {
+            throw new InvalidArgumentError(`Not equals operator not supported for ${filter.key} param`);
           }
-          params.push(filter.value);
-          conditions.push(`${ContractLog.getFullName(filter.key)}${filter.operator}$${params.length}`);
-          oneOperatorValues[filter.key] = true;
+          bounds[filter.key].parse(filter);
           break;
         case constants.filterKeys.LIMIT:
           limit = filter.value;
@@ -605,19 +694,6 @@ class ContractController extends BaseController {
         case constants.filterKeys.ORDER:
           timestampOrder = filter.value;
           indexOrder = filter.value;
-          break;
-        case constants.filterKeys.TIMESTAMP:
-          if (filter.operator === utils.opsMap.ne) {
-            throw new InvalidArgumentError('Not equals operator not supported for timestamp param');
-          }
-          this.updateConditionsAndParamsWithInValues(
-            filter,
-            inValues[filter.key],
-            params,
-            conditions,
-            keyFullNames[filter.key],
-            conditions.length + 1
-          );
           break;
         case constants.filterKeys.TOPIC0:
         case constants.filterKeys.TOPIC1:
@@ -642,12 +718,19 @@ class ContractController extends BaseController {
       }
     }
 
+    this.validateContractLogsBounds(timestampBound, indexBound);
+
     // update query with repeated values
     Object.keys(keyFullNames).forEach((filterKey) => {
       this.updateQueryFiltersWithInValues(params, conditions, inValues[filterKey], keyFullNames[filterKey]);
     });
 
     return {
+      bounds,
+      boundKeys,
+      lower: this.getContractLogsLowerFilters(timestampBound, indexBound),
+      inner: this.getInnerFilters(timestampBound, indexBound),
+      upper: this.getUpperFilters(timestampBound, indexBound),
       conditions,
       params,
       timestampOrder,
@@ -735,18 +818,24 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractLogsById = async (req, res) => {
+    alterTimestampRangeInReq(req);
     // get sql filter query, params, limit and limit query from query filters
     const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req);
     checkTimestampsForTopics(filters);
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
-    const {conditions, params, timestampOrder, indexOrder, limit} = this.extractContractLogsQuery(filters, contractId);
+    const query = this.extractContractLogsMultiUnionQuery(filters, contractId);
 
-    const rows = await ContractService.getContractLogs(conditions, params, timestampOrder, indexOrder, limit);
+    const rows = await ContractService.getContractLogs(query);
+
+    const logs = rows.map((row) => new ContractLogViewModel(row));
 
     res.locals[constants.responseDataLabel] = {
-      logs: rows.map((row) => new ContractLogViewModel(row)),
+      logs,
+      links: {
+        next: this.getPaginationLink(req, logs, query.bounds, query.boundKeys, query.limit, query.timestampOrder),
+      },
     };
   };
 
@@ -757,16 +846,22 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractLogs = async (req, res) => {
+    alterTimestampRangeInReq(req);
     // get sql filter query, params, limit and limit query from query filters
     const filters = utils.buildAndValidateFilters(req.query);
     checkTimestampsForTopics(filters);
 
-    const {conditions, params, timestampOrder, indexOrder, limit} = this.extractContractLogsQuery(filters);
+    const query = this.extractContractLogsMultiUnionQuery(filters);
 
-    const rows = await ContractService.getContractLogs(conditions, params, timestampOrder, indexOrder, limit);
+    const rows = await ContractService.getContractLogs(query);
+
+    const logs = rows.map((row) => new ContractLogViewModel(row));
 
     res.locals[constants.responseDataLabel] = {
-      logs: rows.map((row) => new ContractLogViewModel(row)),
+      logs,
+      links: {
+        next: this.getPaginationLink(req, logs, query.bounds, query.boundKeys, query.limit, query.timestampOrder),
+      },
     };
   };
 
@@ -1018,7 +1113,7 @@ module.exports = exportControllerMethods([
 if (utils.isTestEnv()) {
   Object.assign(
     module.exports,
-    exportControllerMethods(['extractContractLogsQuery', 'extractContractResultsByIdQuery']),
+    exportControllerMethods(['extractContractResultsByIdQuery', 'extractContractLogsMultiUnionQuery']),
     {
       checkTimestampsForTopics,
       extractSqlFromContractFilters,
@@ -1029,6 +1124,7 @@ if (utils.isTestEnv()) {
       getLastNonceParamValue,
       validateContractIdAndConsensusTimestampParam,
       validateContractIdParam,
+      alterTimestampRangeInReq,
     }
   );
 }
