@@ -59,6 +59,7 @@ import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
@@ -250,16 +251,11 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transactionBody(b -> b.clearAutoRenewAccountId()
                         .setStakedAccountId(accountID))
                 .build();
-        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
-        var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction()
-                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
-                .get();
-        transactionHandler.updateTransaction(transaction, recordItem);
-        assertContract(contractId, timestamp, t -> assertThat(t)
+        setupForContractCreateTransactionTest(recordItem, t -> assertThat(t)
                 .returns(false, Contract::isDeclineReward)
                 .returns(accountID.getAccountNum(), Contract::getStakedAccountId)
-
+                .extracting(Contract::getStakePeriodStart)
+                .isNotNull()
         );
     }
 
@@ -269,15 +265,26 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .transactionBody(b -> b.clearAutoRenewAccountId()
                         .setStakedNodeId(1L))
                 .build();
-        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
-        var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction()
-                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
-                .get();
-        transactionHandler.updateTransaction(transaction, recordItem);
-        assertContract(contractId, timestamp, t -> assertThat(t)
+        setupForContractCreateTransactionTest(recordItem, t -> assertThat(t)
                 .returns(false, Contract::isDeclineReward)
                 .returns(1L, Contract::getStakedNodeId)
+                .extracting(Contract::getStakePeriodStart)
+                .isNotNull()
+        );
+    }
+
+    @Test
+    void updateTransactionSuccessfulStakingInfoForDeclineReward() {
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(b -> b.clearAutoRenewAccountId()
+                        .setStakedNodeId(1L)
+                        .setDeclineReward(true))
+                .build();
+        setupForContractCreateTransactionTest(recordItem, t -> assertThat(t)
+                .returns(true, Contract::isDeclineReward)
+                .returns(1L, Contract::getStakedNodeId)
+                .extracting(Contract::getStakePeriodStart)
+                .isNotNull()
         );
     }
 
@@ -539,5 +546,15 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         .returns(null, Contract::getObtainerId),
                 () -> extraAssert.accept(t)
         )));
+    }
+
+    private void setupForContractCreateTransactionTest(RecordItem recordItem, Consumer<Contract> extraAssertions) {
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId, timestamp, extraAssertions);
     }
 }
