@@ -289,7 +289,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @ParameterizedTest(name = "{0}")
-    @EnumSource(value = PartialDataAction.class, names = { "DEFAULT", "ERROR" })
+    @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "ERROR"})
     void updateTransactionThrowsWithAliasNotFound(PartialDataAction partialDataAction) {
         // given
         recordParserProperties.setPartialDataAction(partialDataAction);
