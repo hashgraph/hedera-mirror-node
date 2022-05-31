@@ -31,6 +31,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
@@ -81,12 +82,13 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
             entity.setReceiverSigRequired(transactionBody.getReceiverSigRequired());
         }
 
-        updateEntityStakingInfo(entity, transactionBody);
+        updateEntityStakingInfo(recordItem.getConsensusTimestamp(), entity, transactionBody);
 
         entityListener.onEntity(entity);
     }
 
-    private void updateEntityStakingInfo(Entity entity, CryptoUpdateTransactionBody transactionBody) {
+    private void updateEntityStakingInfo(long consensusTimestamp, Entity entity,
+            CryptoUpdateTransactionBody transactionBody) {
         if (transactionBody.hasDeclineReward()) {
             entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
         }
@@ -101,7 +103,7 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
 
         // If the stake node id or the decline reward value has changed, we start a new stake period.
         if (isStakedNodeIdSet || transactionBody.hasDeclineReward()) {
-            entity.startNewStakingPeriod();
+            entity.setStakePeriodStart(Utility.getEpochDay(consensusTimestamp));
         }
     }
 }

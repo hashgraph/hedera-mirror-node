@@ -36,6 +36,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
@@ -106,12 +107,13 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
             contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
-        updateContractStakingInfo(contract, transactionBody);
+        updateContractStakingInfo(recordItem.getConsensusTimestamp(), contract, transactionBody);
 
         entityListener.onContract(contract);
     }
 
-    private void updateContractStakingInfo(AbstractEntity entity, ContractUpdateTransactionBody transactionBody) {
+    private void updateContractStakingInfo(long consensusTimestamp, AbstractEntity entity,
+            ContractUpdateTransactionBody transactionBody) {
         if (transactionBody.hasDeclineReward()) {
             entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
         }
@@ -125,7 +127,7 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
 
         // If the stake node id or the decline reward value has changed, we start a new stake period.
         if (isStakedNodeIdSet || transactionBody.hasDeclineReward()) {
-            entity.startNewStakingPeriod();
+            entity.setStakePeriodStart(Utility.getEpochDay(consensusTimestamp));
         }
     }
 }

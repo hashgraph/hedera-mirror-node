@@ -54,6 +54,7 @@ import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.util.Utility;
 
 class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -149,8 +150,8 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(true, Contract::isDeclineReward)
                 .returns(null, Contract::getStakedNodeId)
                 .returns(null, Contract::getStakedAccountId)
-                .extracting(Contract::getStakePeriodStart)
-                .isNotNull()
+                .returns(Utility.getEpochDay(withDeclineValueSet.getConsensusTimestamp()),
+                        Contract::getStakePeriodStart)
         );
     }
 
@@ -163,8 +164,8 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(1L, Contract::getStakedNodeId)
                 .returns(null, Contract::getStakedAccountId)
                 .returns(false, Contract::isDeclineReward)
-                .extracting(Contract::getStakePeriodStart)
-                .isNotNull()
+                .returns(Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()),
+                        Contract::getStakePeriodStart)
         );
     }
 

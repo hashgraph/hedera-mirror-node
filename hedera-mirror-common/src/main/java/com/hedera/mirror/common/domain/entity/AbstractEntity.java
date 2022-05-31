@@ -25,8 +25,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
 import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
-import java.time.LocalDate;
-import java.time.ZoneId;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.EnumType;
@@ -129,10 +127,6 @@ public abstract class AbstractEntity implements History {
 
     public EntityId toEntityId() {
         return new EntityId(shard, realm, num, type);
-    }
-
-    public void startNewStakingPeriod() {
-        stakePeriodStart = LocalDate.now(ZoneId.of("UTC")).toEpochDay();
     }
 
     // Used only by frameworks/libs. Do not use this method.

@@ -860,7 +860,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             return;
         }
 
-        contractAssert.extracting(Contract::getStakePeriodStart).isNotNull();
+        contractAssert.returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Contract::getStakePeriodStart);
 
         if (contractCreateInstance.hasStakedAccountId()) {
             long accountId = AccountIdConverter.INSTANCE.convertToDatabaseColumn(
@@ -905,13 +905,11 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     EntityId.of(expected.getStakedAccountId()));
             contractAssert.returns(expectedAccountId, Contract::getStakedAccountId)
                     .returns(null, Contract::getStakedNodeId)
-                    .extracting(Contract::getStakePeriodStart)
-                    .isNull();
+                    .returns(-1L, Contract::getStakePeriodStart);
         } else {
             contractAssert.returns(expected.getStakedNodeId(), Contract::getStakedNodeId)
                     .returns(null, Contract::getStakedAccountId)
-                    .extracting(Contract::getStakePeriodStart)
-                    .isNotNull();
+                    .returns(Utility.getEpochDay(consensusTimestamp.getNanos()), Contract::getStakePeriodStart);
         }
         return contractAssert;
     }

@@ -38,6 +38,7 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
@@ -123,12 +124,13 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         // for child transactions initCode and FileID are located in parent ContractCreate/EthereumTransaction types
         updateChildFromParent(contract, recordItem);
 
-        updateContractStakingInfo(contract, transactionBody);
+        updateContractStakingInfo(recordItem.getConsensusTimestamp(), contract, transactionBody);
 
         entityListener.onContract(contract);
     }
 
-    private void updateContractStakingInfo(Contract contract, ContractCreateTransactionBody transactionBody) {
+    private void updateContractStakingInfo(long consensusTimestamp, Contract contract,
+            ContractCreateTransactionBody transactionBody) {
         contract.setDeclineReward(transactionBody.getDeclineReward());
         // this contract has no staking
         if (transactionBody.getStakedIdCase() == STAKEDID_NOT_SET) {
@@ -140,7 +142,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         } else {
             contract.setStakedNodeId(transactionBody.getStakedNodeId());
         }
-        contract.startNewStakingPeriod();
+        contract.setStakePeriodStart(Utility.getEpochDay(consensusTimestamp));
     }
 
     @Override

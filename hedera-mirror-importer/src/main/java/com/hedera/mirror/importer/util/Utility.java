@@ -33,6 +33,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Arrays;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
@@ -50,13 +52,16 @@ import com.hedera.mirror.importer.exception.ParserException;
 public class Utility {
 
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
+
+    public static final ZoneId ZONE_UTC = ZoneId.of("UTC");
     private static final ECCurve SECP256K1_CURVE = new SecP256K1Curve();
 
     /**
      * Converts an ECDSA secp256k1 alias to a 20 byte EVM address by taking the keccak hash of it. Logic copied from
      * services' AliasManager.
      *
-     * @param alias the bytes representing a serialized Key protobuf
+     * @param alias
+     *         the bytes representing a serialized Key protobuf
      * @return the 20 byte EVM address
      */
     public static byte[] aliasToEvmAddress(byte[] alias) {
@@ -115,6 +120,18 @@ public class Utility {
         } catch (Exception e) {
             log.error("Error archiving file to {}", destination, e);
         }
+    }
+
+    /**
+     * Gets epoch day from the timestamp in nanos.
+     *
+     * @param timestamp
+     *         The timestamp in nanos
+     * @return The epoch day
+     */
+    public static long getEpochDay(long timestamp) {
+        return LocalDate.ofInstant(Instant.ofEpochSecond(0, timestamp), ZONE_UTC).atStartOfDay()
+                .toLocalDate().toEpochDay();
     }
 
     /**
