@@ -135,7 +135,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
                 .returns(1L, Contract::getStakedAccountId)
                 .returns(false, Contract::isDeclineReward)
-                .returns(null, Contract::getStakedNodeId)
+                .returns(-1L, Contract::getStakedNodeId)
                 .returns(-1L, Contract::getStakePeriodStart)
         );
     }
@@ -162,7 +162,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .build();
         setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
                 .returns(1L, Contract::getStakedNodeId)
-                .returns(null, Contract::getStakedAccountId)
+                .returns(-1L, Contract::getStakedAccountId)
                 .returns(false, Contract::isDeclineReward)
                 .returns(Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()),
                         Contract::getStakePeriodStart)

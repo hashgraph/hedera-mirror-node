@@ -866,10 +866,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             long accountId = AccountIdConverter.INSTANCE.convertToDatabaseColumn(
                     EntityId.of(contractCreateInstance.getStakedAccountId()));
             contractAssert.returns(accountId, Contract::getStakedAccountId)
-                    .returns(null, Contract::getStakedNodeId);
+                    .returns(-1L, Contract::getStakedNodeId);
         } else {
             contractAssert.returns(contractCreateInstance.getStakedNodeId(), Contract::getStakedNodeId)
-                    .returns(null, Contract::getStakedAccountId);
+                    .returns(-1L, Contract::getStakedAccountId);
         }
     }
 

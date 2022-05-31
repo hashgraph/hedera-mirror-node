@@ -139,13 +139,13 @@ public abstract class AbstractEntity implements History {
         // if the staked account id has changed, we clear the stake period.
         stakePeriodStart = -1L;
 
-        stakedNodeId = null;
+        stakedNodeId = -1L;
     }
 
     public void setStakedNodeId(final Long stakedNodeId) {
         this.stakedNodeId = stakedNodeId;
 
-        stakedAccountId = null;
+        stakedAccountId = -1L;
     }
 
     // Necessary since Lombok doesn't use our setters for builders
