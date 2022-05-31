@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKED_NODE_ID;
+
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import javax.inject.Named;
@@ -113,11 +116,10 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
             entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
         }
 
-        boolean isStakedNodeIdSet = ContractUpdateTransactionBody.StakedIdCase.STAKED_NODE_ID ==
-                transactionBody.getStakedIdCase();
+        boolean isStakedNodeIdSet = STAKED_NODE_ID == transactionBody.getStakedIdCase();
         if (isStakedNodeIdSet) {
             entity.setStakedNodeId(transactionBody.getStakedNodeId());
-        } else if (ContractUpdateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID == transactionBody.getStakedIdCase()) {
+        } else if (STAKED_ACCOUNT_ID == transactionBody.getStakedIdCase()) {
             entity.setStakedAccountId(EntityId.of(transactionBody.getStakedAccountId()));
         }
 
