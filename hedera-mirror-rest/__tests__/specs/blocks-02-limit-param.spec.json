@@ -58,8 +58,10 @@
     "blocks": [
       {
         "count": 7,
+        "gas_used": 0,
         "hapi_version": "0.22.3",
         "hash": "0xff527f51f2b3a39d40fe1c855c883ccf2ad89aa3603f89be01e9a3ab24d0aa6e9a0252b9c6e2a92b54e8ab16e7cbffec",
+        "logs_bloom": "0x",
         "name": "2022-04-27T13_01_43.097772635Z.rcd",
         "number": 19,
         "previous_hash": "0x67b077229142aacb6baf56f31093ebc1a01955da048811c9d26cf9ebb7a26627a241fb610b92936528bbd76b943200a8",
