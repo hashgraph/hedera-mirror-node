@@ -21,7 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
-import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
+import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -284,7 +284,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                                      Long expectedAutoRenewAccount) {
         // first create the contract
         SetupResult setupResult = setupContract(CONTRACT_ID, contractIdType, true, true, c -> {
-            c.obtainerId(null);
+            c.obtainerId(null)
+                    .declineReward(true)
+                    .stakedAccountId(1L);
             if (newAutoRenewAccount == null) {
                 c.autoRenewAccountId(expectedAutoRenewAccount);
             }
@@ -321,7 +323,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         // first create the contract
         EntityId contractId = EntityId.of(CONTRACT_ID);
         Contract contract = domainBuilder.contract()
-                .customize(c -> c.obtainerId(null).id(contractId.getId()).num(contractId.getEntityNum()))
+                .customize(c ->
+                        c.obtainerId(null)
+                                .id(contractId.getId())
+                                .num(contractId.getEntityNum())
+                                .stakedNodeId(1L)
+                )
                 .persist();
 
         // now update
@@ -849,7 +856,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var contractCreateInstance = recordItem.getTransactionBody().getContractCreateInstance();
         contractAssert.returns(contractCreateInstance.getDeclineReward(), Contract::isDeclineReward);
 
-        if (contractCreateInstance.getStakedIdCase() == STAKEDID_NOT_SET) {
+        if (contractCreateInstance.getStakedIdCase() == ContractCreateTransactionBody.StakedIdCase.STAKEDID_NOT_SET) {
             return;
         }
 
@@ -874,7 +881,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var expectedMaxAutomaticTokenAssociations = expected.hasMaxAutomaticTokenAssociations() ?
                 expected.getMaxAutomaticTokenAssociations().getValue() : null;
 
-        return assertThat(contract)
+        var contractAssert = assertThat(contract)
                 .isNotNull()
                 .returns(expected.getAutoRenewPeriod().getSeconds(), Contract::getAutoRenewPeriod)
                 .returns(false, Contract::getDeleted)
@@ -886,7 +893,27 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(null, Contract::getObtainerId)
                 .returns(EntityId.of(expected.getProxyAccountID()), Contract::getProxyAccountId)
                 .returns(DomainUtils.getPublicKey(adminKey), Contract::getPublicKey)
-                .returns(EntityType.CONTRACT, Contract::getType);
+                .returns(EntityType.CONTRACT, Contract::getType)
+                .returns(expected.getDeclineReward().getValue(), Contract::isDeclineReward);
+
+        if (expected.getStakedIdCase() == STAKEDID_NOT_SET) {
+            return contractAssert;
+        }
+
+        if (expected.hasStakedAccountId()) {
+            long expectedAccountId = AccountIdConverter.INSTANCE.convertToDatabaseColumn(
+                    EntityId.of(expected.getStakedAccountId()));
+            contractAssert.returns(expectedAccountId, Contract::getStakedAccountId)
+                    .returns(null, Contract::getStakedNodeId)
+                    .extracting(Contract::getStakePeriodStart)
+                    .isNull();
+        } else {
+            contractAssert.returns(expected.getStakedNodeId(), Contract::getStakedNodeId)
+                    .returns(null, Contract::getStakedAccountId)
+                    .extracting(Contract::getStakePeriodStart)
+                    .isNotNull();
+        }
+        return contractAssert;
     }
 
     private void assertContractCreateResult(ContractCreateTransactionBody transactionBody, TransactionRecord record) {
