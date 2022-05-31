@@ -1,0 +1,84 @@
+{
+  "description": "Contracts logs api calls with invalid index and timestamp operators",
+  "setup": {
+    "contractlogs": [
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 0,
+        "topic0": [10],
+        "topic1": [11]
+      },
+      {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "index": 1,
+        "topic0": [10],
+        "topic1": [11]
+      },
+      {
+        "consensus_timestamp": 1639010151000000000,
+        "contract_id": 1004,
+        "index": 0,
+        "topic0": [10],
+        "topic1": [11]
+      }
+    ]
+  },
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/contracts/results/logs?&index=gt:0&timestamp=lt:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?&index=gte:0&timestamp=lt:1639010151.000000000&limit=3&order=desc",
+        "/api/v1/contracts/results/logs?&index=gte:0&timestamp=lte:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?&index=gt:0&timestamp=lte:1639010151.000000000&limit=3&order=desc"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Timestamp must have gte or eq operator"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/contracts/results/logs?&index=lt:0&timestamp=gt:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?&index=lte:0&timestamp=gt:1639010151.000000000&limit=3&order=desc",
+        "/api/v1/contracts/results/logs?&index=lte:0&timestamp=gte:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?&index=lt:0&timestamp=gte:1639010151.000000000&limit=3&order=desc"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Timestamp must have lte or eq operator"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/contracts/results/logs?&index=0&timestamp=gt:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?&index=0&timestamp=gte:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?&index=0&timestamp=lt:1639010151.000000000&limit=3&order=asc",
+        "/api/v1/contracts/results/logs?&index=0&timestamp=lte:1639010151.000000000&limit=3&order=asc"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Timestamp must have eq operator"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
