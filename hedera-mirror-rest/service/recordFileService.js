@@ -66,7 +66,8 @@ class RecordFileService extends BaseService {
   static blocksQuery = `select
     ${RecordFile.COUNT}, ${RecordFile.HASH}, ${RecordFile.NAME}, ${RecordFile.PREV_HASH}, ${RecordFile.BYTES},
     ${RecordFile.HAPI_VERSION_MAJOR}, ${RecordFile.HAPI_VERSION_MINOR}, ${RecordFile.HAPI_VERSION_PATCH},
-    ${RecordFile.INDEX}, ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}
+    ${RecordFile.INDEX}, ${RecordFile.CONSENSUS_START}, ${RecordFile.CONSENSUS_END}, ${RecordFile.GAS_USED},
+    ${RecordFile.LOGS_BLOOM}
     from ${RecordFile.tableName}
   `;
 

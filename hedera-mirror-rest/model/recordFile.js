@@ -54,6 +54,7 @@ class RecordFile {
   static NODE_ACCOUNT_ID = 'node_account_id';
   static PREV_HASH = 'prev_hash';
   static VERSION = 'version';
+  static LOGS_BLOOM = 'logs_bloom';
 
   /**
    * Gets full column name with table alias prepended.
