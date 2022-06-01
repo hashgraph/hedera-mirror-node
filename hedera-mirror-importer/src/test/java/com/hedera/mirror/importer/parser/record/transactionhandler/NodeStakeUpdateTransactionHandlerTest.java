@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_HBARS;
+import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.doReturn;
@@ -134,7 +134,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         // given
         var nodeStakeProto1 = recordItemBuilder.nodeStake().setNodeId(1L).setStake(3000L).setStakeRewarded(1000L);
         var nodeStakeProto2 = recordItemBuilder.nodeStake().setNodeId(2L).setStake(5000L).setStakeRewarded(2000L);
-        var rewardRateTinyBars = rewardRate * TINYBARS_IN_HBARS;
+        var rewardRateTinyBars = rewardRate * TINYBARS_IN_ONE_HBAR;
         var recordItem = recordItemBuilder.nodeStakeUpdate()
                 .transactionBody(t -> t.setRewardRate(rewardRateTinyBars)
                         .clearNodeStake()

@@ -355,8 +355,7 @@ create table if not exists node_stake
     stake               bigint not null,
     stake_rewarded      bigint not null,
     stake_total         bigint not null,
-    staking_period      bigint not null,
-    primary key (epoch_day, node_id)
+    staking_period      bigint not null
 );
 comment on table node_stake is 'Node staking information';
 

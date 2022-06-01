@@ -20,12 +20,10 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_HBARS;
+import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
-import java.time.ZoneId;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Named;
@@ -45,7 +43,6 @@ import com.hedera.mirror.importer.util.Utility;
 @RequiredArgsConstructor
 class NodeStakeUpdateTransactionHandler implements TransactionHandler {
 
-    static final ZoneId ZONE_UTC = ZoneId.of("UTC");
     private static final NodeStake EMPTY_NODE_STAKE = new NodeStake();
 
     private final EntityListener entityListener;
@@ -63,19 +60,20 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
 
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        // The transaction's consensus timestamp is in the current staking period, so epochDay is current. The rewardRate
-        // in the protobuf is for the previous staking period. As a result, the new calculated rewardSum is for the
-        // previous staking period, it's accumulated on top of the rewardSum of the staking period before the previous.
+        // The transaction's consensus timestamp is in the current staking period, so epochDay is current. The
+        // rewardRate in the protobuf is for the previous staking period. As a result, the new calculated rewardSum
+        // is for the previous staking period, it's accumulated on top of the rewardSum of the staking period before
+        // the previous.
         var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
-        var epochDay = Utility.getEpochDay(recordItem.getConsensusTimestamp()); // the new staking period
+        long epochDay = Utility.getEpochDay(recordItem.getConsensusTimestamp()); // the new staking period
         // The node reward sum of the period before previous
         var baseRewardSum = getRewardSum(epochDay - 2);
         var previousStake = getStake(epochDay - 1);
         long previousTotalStakeRewarded = previousStake.values().stream().map(NodeStake::getStakeRewarded)
                 .reduce(0L, Long::sum);
-        var rewardRate = transactionBody.getRewardRate();
+        long rewardRate = transactionBody.getRewardRate();
         long stakingPeriod = DomainUtils.timestampInNanosMax(transactionBody.getEndOfStakingPeriod());
-        var stakeTotal = getStakeTotal(transactionBody);
+        long stakeTotal = getStakeTotal(transactionBody);
 
         for (var nodeStakeProto : transactionBody.getNodeStakeList()) {
             long nodeId = nodeStakeProto.getNodeId();
@@ -89,13 +87,13 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             nodeStake.setStakingPeriod(stakingPeriod);
             entityListener.onNodeStake(nodeStake);
 
-            double rewardSum = Optional.ofNullable(baseRewardSum.getOrDefault(nodeId, 0L)).orElse(0L);
-            var previousStakeRewarded = previousStake.getOrDefault(nodeId, EMPTY_NODE_STAKE).getStakeRewarded();
+            double rewardSum = baseRewardSum.getOrDefault(nodeId, 0L);
+            long previousStakeRewarded = previousStake.getOrDefault(nodeId, EMPTY_NODE_STAKE).getStakeRewarded();
             if (rewardRate > 0 && previousTotalStakeRewarded > 0 && previousStakeRewarded > 0) {
                 // TODO: waiting on HIP update so we can get correct previous total stake rewarded and the node's
                 // previous stake rewarded by multiplying node's stake / total_stake
                 rewardSum += rewardRate * (double) previousStakeRewarded /
-                        previousTotalStakeRewarded / TINYBARS_IN_HBARS;
+                        previousTotalStakeRewarded / TINYBARS_IN_ONE_HBAR;
             }
             nodeStakeRepository.setReward(epochDay - 1, nodeId, rewardRate, (long) rewardSum);
         }

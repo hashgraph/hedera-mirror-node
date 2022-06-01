@@ -26,7 +26,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
 import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
-import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_HBARS;
+import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
@@ -391,7 +391,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<NodeStake, NodeStake.NodeStakeBuilder> nodeStake() {
-        var stake = id() * TINYBARS_IN_HBARS;
+        var stake = id() * TINYBARS_IN_ONE_HBAR;
         long timestamp = timestamp();
         var builder = NodeStake.builder()
                 .consensusTimestamp(timestamp)

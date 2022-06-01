@@ -23,8 +23,6 @@ package com.hedera.mirror.importer.parser.record.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.time.LocalDate;
-import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerTest {
@@ -56,7 +55,7 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                         .first()
                         .isNotNull()
                         .returns(recordItem.getConsensusTimestamp(), NodeStake::getConsensusTimestamp)
-                        .returns(LocalDate.now(ZoneId.of("UTC")).toEpochDay(), NodeStake::getEpochDay)
+                        .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), NodeStake::getEpochDay)
                         .returns(nodeStake.getNodeId(), NodeStake::getNodeId)
                         .returns(null, NodeStake::getRewardRate)
                         .returns(null, NodeStake::getRewardSum)
