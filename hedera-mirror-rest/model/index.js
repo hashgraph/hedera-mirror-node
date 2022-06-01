@@ -52,4 +52,5 @@ module.exports = {
   TransactionResult: require('./transactionResult'),
   TransactionType: require('./transactionType'),
   TransactionWithEthData: require('./transactionWithEthData'),
+  FeeSchedule: require('./feeSchedule'),
 };
