@@ -1552,6 +1552,7 @@ components:
         hash:
           description: A hex encoded 32 byte hash and it is only populated for Ethereum transaction case
           example: "0xfebbaa29c513d124a6377246ea3506ad917d740c21a88f61a1c55ba338fc2bb1"
+          nullable: true
           type: string
         result:
           description: The result of the transaction
