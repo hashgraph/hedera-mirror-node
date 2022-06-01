@@ -475,7 +475,7 @@ paths:
   /api/v1/network/fees:
     get:
       summary: Get the network fees
-      description: Returns the estimated gas in tinybars per each transaction type. Default order is ASC
+      description: Returns the estimated gas in tinybars per each transaction type. Default order is ASC. Currently only `ContractCall`, `ContractCreate` and `EthereumTransaction` transaction types are supported.
       operationId: getNetworkFees
       parameters:
         - $ref: '#/components/parameters/timestampQueryParam'

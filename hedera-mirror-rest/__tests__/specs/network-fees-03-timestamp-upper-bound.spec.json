@@ -1,5 +1,5 @@
 {
-  "description": "Network fees with upper bound timestamp",
+  "description": "Network fees with inner and upper bound timestamp",
   "setup": {
     "filedata": [
       {

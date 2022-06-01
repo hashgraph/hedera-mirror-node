@@ -1,5 +1,5 @@
 {
-  "description": "Network fees with no unsupported ne timestamp arg",
+  "description": "Network fees with unsupported ne timestamp arg",
   "setup": {},
   "url": "/api/v1/network/fees?timestamp=ne:4",
   "responseStatus": 400,
