@@ -87,6 +87,7 @@
         "function_parameters": "0x0707",
         "gas_limit": 987654,
         "gas_used": 123,
+        "hash": null,
         "timestamp": "987654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
       }

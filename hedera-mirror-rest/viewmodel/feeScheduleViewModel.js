@@ -61,7 +61,7 @@ class FeeScheduleViewModel {
         const gasPrice = _.result(fee, 'servicedata.gas.toNumber');
         const tinyBars = utils.convertGasPriceToTinyBars(gasPrice, hbarRate, centRate);
 
-        // make sure the gas price is converted successfully, otherwise something is wrong with gasPrive or exchange rate, so skip the current fee
+        // make sure the gas price is converted successfully, otherwise something is wrong with gasPrice or exchange rate, so skip the current fee
         if (_.isNil(tinyBars)) {
           return null;
         }
