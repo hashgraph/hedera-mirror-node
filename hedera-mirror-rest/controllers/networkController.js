@@ -21,7 +21,6 @@
 'use strict';
 
 const _ = require('lodash');
-
 const {
   network: {unreleasedSupplyAccounts: defaultUnreleasedSupplyAccounts},
 } = require('../config');
@@ -32,7 +31,12 @@ const BaseController = require('./baseController');
 
 const {AddressBookEntry, FileData} = require('../model');
 const {FileDataService, NetworkNodeService} = require('../service');
-const {ExchangeRateSetViewModel, NetworkNodeViewModel, NetworkSupplyViewModel} = require('../viewmodel');
+const {
+  ExchangeRateSetViewModel,
+  NetworkNodeViewModel,
+  NetworkSupplyViewModel,
+  FeeScheduleViewModel,
+} = require('../viewmodel');
 
 // errors
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
@@ -124,11 +128,12 @@ class NetworkController extends BaseController {
     };
   };
 
-  extractExchangeRateQuery = (filters) => {
+  extractFileDataQuery = (filters) => {
     // get latest rate only. Since logic pulls most recent items order and limit are ommitted in filterQuery
     const filterQuery = {
       whereQuery: [],
     };
+    let order = constants.orderFilterValues.ASC;
 
     for (const filter of filters) {
       if (_.isNil(filter)) {
@@ -149,9 +154,13 @@ class NetworkController extends BaseController {
 
         filterQuery.whereQuery.push(FileDataService.getFilterWhereCondition(FileData.CONSENSUS_TIMESTAMP, filter));
       }
+
+      if (filter.key === constants.filterKeys.ORDER) {
+        order = filter.value;
+      }
     }
 
-    return filterQuery;
+    return {filterQuery, order};
   };
 
   /**
@@ -164,9 +173,9 @@ class NetworkController extends BaseController {
     // extract filters from query param
     const filters = utils.buildAndValidateFilters(req.query);
 
-    const filterQueries = this.extractExchangeRateQuery(filters);
+    const {filterQuery} = this.extractFileDataQuery(filters);
 
-    const exchangeRate = await FileDataService.getExchangeRate(filterQueries);
+    const exchangeRate = await FileDataService.getExchangeRate(filterQuery);
 
     if (_.isNil(exchangeRate)) {
       throw new NotFoundError('Not found');
@@ -241,6 +250,28 @@ class NetworkController extends BaseController {
 
     res.locals[constants.responseDataLabel] = new NetworkSupplyViewModel(rows[0], NetworkController.totalSupply);
     logger.debug(`getSupply returning ${rows.length} entries`);
+  };
+
+  /**
+   * Handler function for /network/fees API.
+   * @param {Request} req HTTP request object
+   * @param {Response} res HTTP response object
+   * @return {Promise<void>}
+   */
+  getFees = async (req, res) => {
+    const filters = utils.buildAndValidateFilters(req.query);
+    const {filterQuery, order} = this.extractFileDataQuery(filters);
+
+    const [exchangeRate, feeSchedule] = await Promise.all([
+      FileDataService.getExchangeRate(filterQuery),
+      FileDataService.getFeeSchedule(filterQuery),
+    ]);
+
+    if (_.isNil(exchangeRate) || _.isNil(feeSchedule)) {
+      throw new NotFoundError('Not found');
+    }
+
+    res.locals[constants.responseDataLabel] = new FeeScheduleViewModel(feeSchedule, exchangeRate, order);
   };
 }
 

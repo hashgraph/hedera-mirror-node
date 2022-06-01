@@ -184,9 +184,12 @@ describe('validateExtractNetworkNodesQuery throw', () => {
   });
 });
 
-describe('extractExchangeRateQuery', () => {
+describe('extractFileDataQuery', () => {
   const defaultExpected = {
-    whereQuery: [],
+    filterQuery: {
+      whereQuery: [],
+    },
+    order: constants.orderFilterValues.ASC,
   };
 
   const specs = [
@@ -212,12 +215,14 @@ describe('extractExchangeRateQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        whereQuery: [
-          {
-            query: `${FileData.CONSENSUS_TIMESTAMP}  < `,
-            param: 2,
-          },
-        ],
+        filterQuery: {
+          whereQuery: [
+            {
+              query: `${FileData.CONSENSUS_TIMESTAMP}  < `,
+              param: 2,
+            },
+          ],
+        },
       },
     },
     {
@@ -233,12 +238,14 @@ describe('extractExchangeRateQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        whereQuery: [
-          {
-            query: `${FileData.CONSENSUS_TIMESTAMP}  <= `,
-            param: 2,
-          },
-        ],
+        filterQuery: {
+          whereQuery: [
+            {
+              query: `${FileData.CONSENSUS_TIMESTAMP}  <= `,
+              param: 2,
+            },
+          ],
+        },
       },
     },
     {
@@ -254,12 +261,14 @@ describe('extractExchangeRateQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        whereQuery: [
-          {
-            query: `${FileData.CONSENSUS_TIMESTAMP}  > `,
-            param: 2,
-          },
-        ],
+        filterQuery: {
+          whereQuery: [
+            {
+              query: `${FileData.CONSENSUS_TIMESTAMP}  > `,
+              param: 2,
+            },
+          ],
+        },
       },
     },
     {
@@ -275,19 +284,21 @@ describe('extractExchangeRateQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        whereQuery: [
-          {
-            query: `${FileData.CONSENSUS_TIMESTAMP}  >= `,
-            param: 2,
-          },
-        ],
+        filterQuery: {
+          whereQuery: [
+            {
+              query: `${FileData.CONSENSUS_TIMESTAMP}  >= `,
+              param: 2,
+            },
+          ],
+        },
       },
     },
   ];
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      expect(networkCtrl.extractExchangeRateQuery(spec.input.filters)).toEqual(spec.expected);
+      expect(networkCtrl.extractFileDataQuery(spec.input.filters)).toEqual(spec.expected);
     });
   });
 });
