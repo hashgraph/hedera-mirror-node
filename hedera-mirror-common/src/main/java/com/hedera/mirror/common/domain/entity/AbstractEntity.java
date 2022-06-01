@@ -131,7 +131,7 @@ public abstract class AbstractEntity implements History {
 
     // Used only by frameworks/libs. Do not use this method.
     public void setStakedAccountId(Long stakedAccountId) {
-        stakedAccountId = stakedNodeId;
+        this.stakedAccountId = stakedAccountId;
     }
 
     public void setStakedAccountId(EntityId accountId) {
