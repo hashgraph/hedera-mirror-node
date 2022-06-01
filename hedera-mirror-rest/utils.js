@@ -1349,14 +1349,16 @@ const conflictingPathParam = (req, paramName, possibleConflicts = []) => {
 
 /**
  * Converts gas price into tiny bars
- * the minimum tiny bar returned is 1 by default
  *
- * @param {number} tinyCents
+ * @param {number} gasPrice
  * @param {number} hbarPerTinyCent
  * @param {number} centsPerHbar
- * @returns {number}
+ * @returns {number|null} `null` if the gasPrice cannot be converted. The minimum `number` returned is 1
  */
 const convertGasPriceToTinyBars = (gasPrice, hbarsPerTinyCent, centsPerHbar) => {
+  if ([gasPrice, hbarsPerTinyCent, centsPerHbar].some((n) => !_.isNumber(n))) {
+    return null;
+  }
   const tinyCentsBN = math.bignumber(gasPrice / FeeSchedule.FEE_DIVISOR_FACTOR);
   const hbarMultiplierBN = math.bignumber(hbarsPerTinyCent);
   const centsDivisorBN = math.bignumber(centsPerHbar);
@@ -1439,5 +1441,6 @@ if (isTestEnv()) {
     parseInteger,
     validateAndParseFilters,
     validateFilters,
+    convertGasPriceToTinyBars,
   });
 }

@@ -22,7 +22,7 @@
 
 const _ = require('lodash');
 const {
-  proto: {HederaFunctionality, SubType},
+  proto: {HederaFunctionality},
 } = require('@hashgraph/proto');
 const utils = require('../utils');
 const constants = require('../constants');
@@ -33,7 +33,11 @@ const constants = require('../constants');
 class FeeScheduleViewModel {
   static currentLabel = 'current_';
   static nextLabel = 'next_';
-
+  static enabledTxTypesMap = {
+    [HederaFunctionality.ContractCall]: 'ContractCall',
+    [HederaFunctionality.ContractCreate]: 'ContractCreate',
+    [HederaFunctionality.EthereumTransaction]: 'EthereumTransaction',
+  };
   /**
    * Constructs fee schedule view model
    *
@@ -47,21 +51,27 @@ class FeeScheduleViewModel {
     const schedule = feeSchedule[`${prefix}feeSchedule`];
     const hbarRate = exchangeRate[`${prefix}hbar`];
     const centRate = exchangeRate[`${prefix}cent`];
-    const transactionTypesMap = {
-      [HederaFunctionality.ContractCall]: 'ContractCall',
-      [HederaFunctionality.ContractCreate]: 'ContractCreate',
-      [HederaFunctionality.EthereumTransaction]: 'EthereumTransaction',
-    };
 
     this.fees = schedule
-      .filter(({hederaFunctionality}) => _.keys(transactionTypesMap).includes(hederaFunctionality.toString()))
+      .filter(({hederaFunctionality}) =>
+        _.keys(FeeScheduleViewModel.enabledTxTypesMap).includes(hederaFunctionality.toString())
+      )
       .map(({fees, hederaFunctionality}) => {
-        const fee = _.find(fees, (fee) => fee.subType === SubType.DEFAULT);
+        const fee = _.first(fees);
+        const gasPrice = _.result(fee, 'servicedata.gas.toNumber');
+        const tinyBars = utils.convertGasPriceToTinyBars(gasPrice, hbarRate, centRate);
+
+        // make sure the gas price is converted successfully, otherwise something is wrong with gasPrive or exchange rate, so skip the current fee
+        if (_.isNil(tinyBars)) {
+          return null;
+        }
+
         return {
-          gas: utils.convertGasPriceToTinyBars(fee.servicedata.gas, hbarRate, centRate),
-          transaction_type: transactionTypesMap[hederaFunctionality],
+          gas: tinyBars,
+          transaction_type: FeeScheduleViewModel.enabledTxTypesMap[hederaFunctionality],
         };
       })
+      .filter((f) => !_.isNil(f))
       .sort((curr, next) => {
         // localCompare by default sorts the array in ascending order, so when its multiplied by -1 the sort order is reversed
         const sortOrder = order === constants.orderFilterValues.ASC ? 1 : -1;

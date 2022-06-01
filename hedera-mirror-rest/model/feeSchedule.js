@@ -38,23 +38,10 @@ class FeeSchedule {
       throw new FileDecodeError(error.message);
     }
 
-    this.current_feeSchedule = this._normalize(currentAndNextFeeSchedule.currentFeeSchedule);
-    this.next_feeSchedule = this._normalize(currentAndNextFeeSchedule.nextFeeSchedule);
+    this.current_feeSchedule = _.get(currentAndNextFeeSchedule, 'currentFeeSchedule.transactionFeeSchedule') || [];
+    this.next_feeSchedule = _.get(currentAndNextFeeSchedule, 'nextFeeSchedule.transactionFeeSchedule') || [];
     this.timestamp = feeSchedule.consensus_timestamp;
   }
-
-  _normalize = (feeSchedule) => {
-    const transactionFeeSchedule = _.get(feeSchedule, 'transactionFeeSchedule') || [];
-    return transactionFeeSchedule.map(({fees, hederaFunctionality}) => ({
-      hederaFunctionality,
-      fees: fees.map((fee) => ({
-        servicedata: {
-          gas: fee.servicedata.gas.low,
-        },
-        subType: fee.subType,
-      })),
-    }));
-  };
 }
 
 module.exports = FeeSchedule;

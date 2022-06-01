@@ -262,8 +262,10 @@ class NetworkController extends BaseController {
     const filters = utils.buildAndValidateFilters(req.query);
     const {filterQuery, order} = this.extractFileDataQuery(filters);
 
-    const exchangeRate = await FileDataService.getExchangeRate(filterQuery);
-    const feeSchedule = await FileDataService.getFeeSchedule(filterQuery);
+    const [exchangeRate, feeSchedule] = await Promise.all([
+      FileDataService.getExchangeRate(filterQuery),
+      FileDataService.getFeeSchedule(filterQuery),
+    ]);
 
     if (_.isNil(exchangeRate) || _.isNil(feeSchedule)) {
       throw new NotFoundError('Not found');
