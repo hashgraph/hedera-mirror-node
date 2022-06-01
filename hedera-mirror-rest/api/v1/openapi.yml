@@ -472,6 +472,29 @@ paths:
           $ref: '#/components/responses/ServiceUnavailableError'
       tags:
         - network
+  /api/v1/network/fees:
+    get:
+      summary: Get the network fees
+      description: Returns the estimated gas in tinybars per each transaction type. Default order is ASC
+      operationId: getNetworkFees
+      parameters:
+        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkFeesResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/ServiceUnavailableError'
+      tags:
+        - network
   /api/v1/network/nodes:
     get:
       summary: Get the network address book nodes
@@ -1100,6 +1123,13 @@ components:
           $ref: '#/components/schemas/ExchangeRate'
         next_rate:
           $ref: '#/components/schemas/ExchangeRate'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+    NetworkFeesResponse:
+      type: object
+      properties:
+        fees:
+          $ref: '#/components/schemas/NetworkFees'
         timestamp:
           $ref: '#/components/schemas/Timestamp'
     NetworkNodesResponse:
@@ -1859,6 +1889,19 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/NetworkNode'
+    NetworkFee:
+      type: object
+      properties:
+        gas:
+          description: gas cost in tinybars
+          type: number
+        transaction_type:
+          description: type of the transaction
+          type: string
+    NetworkFees:
+      type: array
+      items:
+        $ref: '#/components/schemas/NetworkFee'
     Nft:
       type: object
       properties:
