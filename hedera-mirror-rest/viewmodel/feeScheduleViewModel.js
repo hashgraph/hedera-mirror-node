@@ -74,7 +74,7 @@ class FeeScheduleViewModel {
       .filter((f) => !_.isNil(f))
       .sort((curr, next) => {
         // localCompare by default sorts the array in ascending order, so when its multiplied by -1 the sort order is reversed
-        const sortOrder = order === constants.orderFilterValues.ASC ? 1 : -1;
+        const sortOrder = order.toLowerCase() === constants.orderFilterValues.ASC ? 1 : -1;
         return curr.transaction_type.localeCompare(next.transaction_type) * sortOrder;
       });
 
