@@ -1948,6 +1948,7 @@ components:
       properties:
         gas:
           description: gas cost in tinybars
+          format: int64
           type: number
         transaction_type:
           description: type of the transaction
