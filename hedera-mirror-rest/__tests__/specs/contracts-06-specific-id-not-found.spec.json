@@ -1,7 +1,22 @@
 {
   "description": "Contract api calls for a specific contract using contract id, not found",
-  "setup": {},
-  "url": ["/api/v1/contracts/0.0.6001", "/api/v1/contracts/60f3f640a8508fc6a86d45df051962668e1e8ac7"],
+  "setup": {
+    "contracts": [
+      {
+        "created_timestamp": "987654000123456",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "924569",
+        "timestamp_range": "[987654000123456,)"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/0.0.6001",
+    "/api/v1/contracts/60f3f640a8508fc6a86d45df051962668e1e8ac7",
+    "/api/v1/contracts/1.1.924569",
+    "/api/v1/contracts/24.42.924569"
+  ],
   "responseStatus": 404,
   "responseJson": {
     "_status": {
