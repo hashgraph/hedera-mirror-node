@@ -232,7 +232,7 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
     params.push(...evmAddressParams);
     conditions.push(...evmAddressConditions);
   } else {
-    const encodedId = EntityId.parse(_.last(contractIdParam.split('.'))).getEncodedId();
+    const encodedId = EntityId.parse(contractIdParam).getEncodedId();
     params.push(encodedId);
     conditions.push(`${Contract.getFullName(Contract.ID)} = $${params.length}`);
   }
