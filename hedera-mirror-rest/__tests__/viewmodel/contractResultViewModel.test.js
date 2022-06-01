@@ -47,6 +47,7 @@ describe('ContractResultViewModel', () => {
     function_parameters: '0x01020304',
     gas_limit: 6000,
     gas_used: 3500,
+    hash: null,
     timestamp: '900.123456789',
     to: '0x00000000000000000000000000000000000005dc',
   };
@@ -78,6 +79,7 @@ describe('ContractResultViewModel', () => {
       error_message: null,
       function_parameters: '0x',
       gas_used: null,
+      hash: null,
       to: null,
     });
   });
