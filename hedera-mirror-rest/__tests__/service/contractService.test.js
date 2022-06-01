@@ -40,8 +40,9 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `select cr.*
-      from contract_result cr
+    const expected = `with etht as (select hash,consensus_timestamp from ethereum_transaction)
+      select cr.*,etht.hash from contract_result cr
+      left join etht on cr.consensus_timestamp = etht.consensus_timestamp
       where cr.contract_id = $1
       order by cr.consensus_timestamp asc
       limit $2`;
@@ -57,8 +58,9 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `select cr.*
-      from contract_result cr
+    const expected = `with etht as (select hash,consensus_timestamp from ethereum_transaction)
+      select cr.*,etht.hash from contract_result cr
+      left join etht on cr.consensus_timestamp = etht.consensus_timestamp
       where cr.contract_id = $1
         and cr.consensus_timestamp > $2
         and cr.payer_account_id = $3
@@ -76,14 +78,15 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.nonce = $2)
-      select cr.*
-      from contract_result cr
-      left join t on cr.consensus_timestamp = t.consensus_timestamp
-      where cr.contract_id = $1
-        and t.nonce = $2
-      order by cr.consensus_timestamp asc
-      limit $3`;
+    const expected = `with etht as (select hash,consensus_timestamp from ethereum_transaction) ,
+        t as (select consensus_timestamp,index,nonce from transaction where transaction.nonce = $2)
+        select cr.*,etht.hash from contract_result cr
+        left join etht on cr.consensus_timestamp = etht.consensus_timestamp
+        left join t on cr.consensus_timestamp = t.consensus_timestamp
+        where cr.contract_id = $1 and t.nonce = $2
+        order by cr.consensus_timestamp asc
+        limit $3
+    `;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 10, 5]);
   });
@@ -96,14 +99,15 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.index = $2)
-      select cr.*
-      from contract_result cr
-      left join t on cr.consensus_timestamp = t.consensus_timestamp
-      where cr.contract_id = $1
-        and t.index = $2
-      order by cr.consensus_timestamp asc
-      limit $3`;
+    const expected = `with etht as (select hash,consensus_timestamp from ethereum_transaction) ,
+        t as (select consensus_timestamp,index,nonce from transaction where transaction.index = $2)
+        select cr.*,etht.hash from contract_result cr
+        left join etht on cr.consensus_timestamp = etht.consensus_timestamp
+        left join t on cr.consensus_timestamp = t.consensus_timestamp
+        where cr.contract_id = $1 and t.index = $2
+        order by cr.consensus_timestamp asc
+        limit $3
+    `;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 10, 5]);
   });

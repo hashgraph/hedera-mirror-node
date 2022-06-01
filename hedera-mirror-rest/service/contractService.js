@@ -24,8 +24,7 @@ const _ = require('lodash');
 
 const constants = require('../constants');
 const Contract = require('../model/contract');
-const Transaction = require('../model/transaction');
-const {ContractLog, ContractResult, ContractStateChange} = require('../model');
+const {ContractLog, ContractResult, ContractStateChange, Transaction, EthereumTransaction} = require('../model');
 const {
   response: {
     limit: {default: defaultLimit},
@@ -47,11 +46,12 @@ class ContractService extends BaseService {
     super();
   }
 
-  static detailedContractResultsQuery = `select ${ContractResult.tableAlias}.*
+  static detailedContractResultsWithEthereumTransactionHashQuery = `select ${ContractResult.tableAlias}.*,
+  ${EthereumTransaction.tableAlias}.${EthereumTransaction.HASH}
   from ${ContractResult.tableName} ${ContractResult.tableAlias}
   `;
 
-  static transactionTableCTE = `with ${Transaction.tableAlias} as (
+  static transactionTableCTE = `, ${Transaction.tableAlias} as (
       select
       ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.INDEX}, ${Transaction.NONCE}
       from ${Transaction.tableName}
@@ -59,9 +59,21 @@ class ContractService extends BaseService {
     )
   `;
 
+  static ethereumTransactionTableCTE = `with ${EthereumTransaction.tableAlias} as (
+      select ${EthereumTransaction.HASH}, ${EthereumTransaction.CONSENSUS_TIMESTAMP}
+      from ${EthereumTransaction.tableName}
+    )
+  `;
+
   static joinTransactionTable = `left join ${Transaction.tableAlias}
   on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
     Transaction.CONSENSUS_TIMESTAMP
+  )}
+  `;
+
+  static joinEthereumTransactionTable = `left join ${EthereumTransaction.tableAlias}
+  on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${EthereumTransaction.getFullName(
+    EthereumTransaction.CONSENSUS_TIMESTAMP
   )}
   `;
 
@@ -143,10 +155,12 @@ class ContractService extends BaseService {
     }
 
     const query = [
+      ContractService.ethereumTransactionTableCTE,
       joinTransactionTable
         ? ContractService.transactionTableCTE.replace('$where', transactionWhereClauses.join(' and '))
         : '',
-      ContractService.detailedContractResultsQuery,
+      ContractService.detailedContractResultsWithEthereumTransactionHashQuery,
+      ContractService.joinEthereumTransactionTable,
       joinTransactionTable ? ContractService.joinTransactionTable : '',
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
       super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
@@ -165,7 +179,12 @@ class ContractService extends BaseService {
   ) {
     const [query, params] = this.getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
     const rows = await super.getRows(query, params, 'getContractResultsByIdAndFilters');
-    return rows.map((cr) => new ContractResult(cr));
+    return rows.map((cr) => {
+      return {
+        ...new ContractResult(cr),
+        hash: cr.hash,
+      };
+    });
   }
 
   /**
