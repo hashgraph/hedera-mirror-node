@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
-
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -419,7 +418,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var timestamp = 1653506322000111222L; // 19137 days since epoch
         var stakePeriodStart = 19137L;
 
-        var recordItem = recordItemBuilder.cryptoTransfer().transactionBody(b -> b.setTransfers(TransferList.newBuilder()
+        var recordItem = recordItemBuilder.cryptoTransfer()
+                .transactionBody(b -> b.setTransfers(TransferList.newBuilder()
                         .addAccountAmounts(AccountAmount.newBuilder().setAccountID(senderId).setAmount(-20L))
                         .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiver1Id).setAmount(5L))
                         .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiver2Id).setAmount(-15L))))
@@ -452,7 +452,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         sender.setStakePeriodStart(stakePeriodStart);
         receiver1.setStakePeriodStart(stakePeriodStart);
 
-        var payerAccountId = recordItem.getPayerAccountId().getId();
+        var payerAccountId = recordItem.getPayerAccountId();
         var expectedStakingRewardTransfer1 = new StakingRewardTransfer();
         expectedStakingRewardTransfer1.setAccountId(sender.getId());
         expectedStakingRewardTransfer1.setAmount(5L);
@@ -489,11 +489,13 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var stakePeriodStart = 19137L;
 
         // Transaction failed with INSUFFICIENT_ACCOUNT_BALANCE because sender's balance is less than the indented
-        // transfer amount. However, the transaction payer has a balance change and there is pending reward for the payer
+        // transfer amount. However, the transaction payer has a balance change and there is pending reward for the
+        // payer
         // account, so there will be a reward payout for the transaction payer.
         var transactionId = TransactionID.newBuilder().setAccountID(payerId)
                 .setTransactionValidStart(TestUtils.toTimestamp(timestamp - 200L)).build();
-        var recordItem = recordItemBuilder.cryptoTransfer().transactionBody(b -> b.setTransfers(TransferList.newBuilder()
+        var recordItem = recordItemBuilder.cryptoTransfer()
+                .transactionBody(b -> b.setTransfers(TransferList.newBuilder()
                         .addAccountAmounts(AccountAmount.newBuilder().setAccountID(senderId).setAmount(-20L))
                         .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiverId).setAmount(20L))))
                 .transactionBodyWrapper(b -> b.setTransactionID(transactionId))
@@ -519,7 +521,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         expectedStakingRewardTransfer.setAccountId(payer.getId());
         expectedStakingRewardTransfer.setAmount(200L);
         expectedStakingRewardTransfer.setConsensusTimestamp(timestamp);
-        expectedStakingRewardTransfer.setPayerAccountId(payer.getId());
+        expectedStakingRewardTransfer.setPayerAccountId(payer.toEntityId());
 
         assertAll(
                 () -> assertEquals(0, contractRepository.count()),

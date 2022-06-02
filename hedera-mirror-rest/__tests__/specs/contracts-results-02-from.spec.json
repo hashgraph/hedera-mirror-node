@@ -93,6 +93,7 @@
         "function_parameters": "0x010102020303",
         "gas_limit": 1000,
         "gas_used": 10,
+        "hash": null,
         "timestamp": "987654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
       }

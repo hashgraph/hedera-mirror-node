@@ -24,8 +24,7 @@ const _ = require('lodash');
 
 const constants = require('../constants');
 const Contract = require('../model/contract');
-const Transaction = require('../model/transaction');
-const {ContractLog, ContractResult, ContractStateChange} = require('../model');
+const {ContractLog, ContractResult, ContractStateChange, Transaction, EthereumTransaction} = require('../model');
 const {
   response: {
     limit: {default: defaultLimit},
@@ -47,11 +46,12 @@ class ContractService extends BaseService {
     super();
   }
 
-  static detailedContractResultsQuery = `select ${ContractResult.tableAlias}.*
+  static detailedContractResultsWithEthereumTransactionHashQuery = `select ${ContractResult.tableAlias}.*,
+  ${EthereumTransaction.tableAlias}.${EthereumTransaction.HASH}
   from ${ContractResult.tableName} ${ContractResult.tableAlias}
   `;
 
-  static transactionTableCTE = `with ${Transaction.tableAlias} as (
+  static transactionTableCTE = `, ${Transaction.tableAlias} as (
       select
       ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.INDEX}, ${Transaction.NONCE}
       from ${Transaction.tableName}
@@ -59,9 +59,21 @@ class ContractService extends BaseService {
     )
   `;
 
+  static ethereumTransactionTableCTE = `with ${EthereumTransaction.tableAlias} as (
+      select ${EthereumTransaction.HASH}, ${EthereumTransaction.CONSENSUS_TIMESTAMP}
+      from ${EthereumTransaction.tableName}
+    )
+  `;
+
   static joinTransactionTable = `left join ${Transaction.tableAlias}
   on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
     Transaction.CONSENSUS_TIMESTAMP
+  )}
+  `;
+
+  static joinEthereumTransactionTable = `left join ${EthereumTransaction.tableAlias}
+  on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${EthereumTransaction.getFullName(
+    EthereumTransaction.CONSENSUS_TIMESTAMP
   )}
   `;
 
@@ -121,6 +133,11 @@ class ContractService extends BaseService {
     },
   ];
 
+  static contractLogsPaginationColumns = {
+    [constants.filterKeys.TIMESTAMP]: ContractLog.CONSENSUS_TIMESTAMP,
+    [constants.filterKeys.INDEX]: ContractLog.INDEX,
+  };
+
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
     const params = whereParams;
     let joinTransactionTable = false;
@@ -138,10 +155,12 @@ class ContractService extends BaseService {
     }
 
     const query = [
+      ContractService.ethereumTransactionTableCTE,
       joinTransactionTable
         ? ContractService.transactionTableCTE.replace('$where', transactionWhereClauses.join(' and '))
         : '',
-      ContractService.detailedContractResultsQuery,
+      ContractService.detailedContractResultsWithEthereumTransactionHashQuery,
+      ContractService.joinEthereumTransactionTable,
       joinTransactionTable ? ContractService.joinTransactionTable : '',
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
       super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
@@ -160,7 +179,12 @@ class ContractService extends BaseService {
   ) {
     const [query, params] = this.getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit);
     const rows = await super.getRows(query, params, 'getContractResultsByIdAndFilters');
-    return rows.map((cr) => new ContractResult(cr));
+    return rows.map((cr) => {
+      return {
+        ...new ContractResult(cr),
+        hash: cr.hash,
+      };
+    });
   }
 
   /**
@@ -185,51 +209,66 @@ class ContractService extends BaseService {
   }
 
   /**
-   * Builds a query for retrieving contract logs based on contract id and various filters
-   *
-   * @param whereConditions the conditions to build a where clause out of
-   * @param whereParams the parameters for the where clause
-   * @param timestampOrder the sorting order for field consensus_timestamp
-   * @param indexOrder the sorting order for field index
-   * @param limit the limit parameter for the query
-   * @returns {(string|*)[]} the build query and the parameters for the query
+   * Build sql query for retrieving contract logs
+   * @param query
+   * @returns {[string, *[]]}
    */
-  getContractLogsQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit) {
-    const params = whereParams;
+  getContractLogsQuery({lower, inner, upper, params, conditions, timestampOrder, indexOrder, limit}) {
+    params.push(limit);
     const orderClause = super.getOrderByQuery(
       OrderSpec.from(ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP), timestampOrder),
       OrderSpec.from(ContractLog.getFullName(ContractLog.INDEX), indexOrder)
     );
-    const query = [
-      ContractService.contractLogsQuery,
-      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
-      orderClause,
-      super.getLimitQuery(params.length + 1),
-    ].join('\n');
-    params.push(limit);
+    const orderClauseNoAlias = super.getOrderByQuery(
+      OrderSpec.from(ContractLog.CONSENSUS_TIMESTAMP, timestampOrder),
+      OrderSpec.from(ContractLog.INDEX, indexOrder)
+    );
+    const limitClause = super.getLimitQuery(params.length);
 
-    return [query, params];
+    const subQueries = [lower, inner, upper]
+      .filter((filters) => filters.length !== 0)
+      .map((filters) =>
+        super.buildSelectQuery(
+          ContractService.contractLogsQuery,
+          params,
+          conditions,
+          orderClause,
+          limitClause,
+          filters.map((filter) => ({
+            ...filter,
+            column: ContractLog.getFullName(ContractService.contractLogsPaginationColumns[filter.key]),
+          }))
+        )
+      );
+
+    let sqlQuery;
+    if (subQueries.length === 0) {
+      // if all three filters are empty, the subqueries will be empty too, just create the query with empty filters
+      sqlQuery = super.buildSelectQuery(
+        ContractService.contractLogsQuery,
+        params,
+        conditions,
+        orderClause,
+        limitClause
+      );
+    } else if (subQueries.length === 1) {
+      sqlQuery = subQueries[0];
+    } else {
+      sqlQuery = [subQueries.map((q) => `(${q})`).join('\nunion\n'), orderClauseNoAlias, limitClause].join('\n');
+    }
+
+    return [sqlQuery, params];
   }
 
   /**
    * Retrieves contract logs based on contract id and various filters
    *
-   * @param whereConditions the conditions to build a where clause out of
-   * @param whereParams the parameters for the where clause
-   * @param timestampOrder the sorting order for field consensus_timestamp
-   * @param indexOrder the sorting order for field index
-   * @param limit the limit parameter for the query
-   * @returns {Promise<*[]|*>} the result of the getContractLogs query
+   * @param query
+   * @returns {Promise<ContractLog[]>} the result of the getContractLogs query
    */
-  async getContractLogs(
-    whereConditions = [],
-    whereParams = [],
-    timestampOrder = orderFilterValues.DESC,
-    indexOrder = orderFilterValues.DESC,
-    limit = defaultLimit
-  ) {
-    const [query, params] = this.getContractLogsQuery(whereConditions, whereParams, timestampOrder, indexOrder, limit);
-    const rows = await super.getRows(query, params, 'getContractLogs');
+  async getContractLogs(query) {
+    const [sqlQuery, params] = this.getContractLogsQuery(query);
+    const rows = await super.getRows(sqlQuery, params, 'getContractLogs');
     return rows.map((cr) => new ContractLog(cr));
   }
 
