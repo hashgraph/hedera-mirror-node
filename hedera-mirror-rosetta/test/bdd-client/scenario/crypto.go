@@ -23,10 +23,10 @@ package scenario
 import (
 	"context"
 	"encoding/hex"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/cucumber/godog"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
