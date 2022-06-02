@@ -1554,6 +1554,9 @@ class SqlEntityListenerTest extends IntegrationTest {
         entity.setShard(0L);
         entity.setSubmitKey(submitKey != null ? submitKey.toByteArray() : null);
         entity.setType(ACCOUNT);
+        entity.setStakedAccountId(-1L);
+        entity.setStakedNodeId(-1L);
+        entity.setStakePeriodStart(-1L);
         if (memo != null) {
             entity.setMemo(memo);
         }

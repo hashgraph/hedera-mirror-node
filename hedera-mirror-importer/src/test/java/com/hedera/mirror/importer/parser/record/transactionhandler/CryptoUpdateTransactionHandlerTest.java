@@ -96,7 +96,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         setupForCrytoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
                 .returns(1L, Entity::getStakedNodeId)
                 .returns(-1L, Entity::getStakedAccountId)
-                .returns(false, Entity::isDeclineReward)
+                .returns(true, Entity::isDeclineReward)
                 .extracting(Entity::getStakePeriodStart)
                 .isNotNull());
     }

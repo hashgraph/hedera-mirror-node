@@ -144,12 +144,16 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     void updateTransactionStartNewStakingPeriodAfterDeclineRewardChanged() {
         RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
         RecordItem withDeclineValueSet = recordItemBuilder.contractUpdate()
-                .transactionBody(body -> body.setDeclineReward(BoolValue.of(true)))
+                .transactionBody(body -> body.setDeclineReward(BoolValue.of(false))
+                        .clearStakedAccountId()
+                        .clearStakedNodeId())
                 .build();
         setupForContractUpdateTransactionTest(withDeclineValueSet, t -> assertThat(t)
-                .returns(true, Contract::isDeclineReward)
-                .returns(-1, Contract::getStakedNodeId)
-                .returns(-1, Contract::getStakedAccountId)
+                .returns(false, Contract::isDeclineReward)
+                // since the contract is not being saved in the database,
+                // it does not have the default values of -1 for the staking fields.
+                .returns(null, Contract::getStakedNodeId)
+                .returns(null, Contract::getStakedAccountId)
                 .returns(Utility.getEpochDay(withDeclineValueSet.getConsensusTimestamp()),
                         Contract::getStakePeriodStart)
         );
@@ -163,7 +167,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         setupForContractUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
                 .returns(1L, Contract::getStakedNodeId)
                 .returns(-1L, Contract::getStakedAccountId)
-                .returns(false, Contract::isDeclineReward)
+                .returns(true, Contract::isDeclineReward)
                 .returns(Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()),
                         Contract::getStakePeriodStart)
         );
