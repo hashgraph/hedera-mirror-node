@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import lombok.RequiredArgsConstructor;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -43,6 +44,7 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
         var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
         var nodeStake = transactionBody.getNodeStakeList().get(0);
         var stakingPeriod = DomainUtils.timestampInNanosMax(transactionBody.getEndOfStakingPeriod());
+        var epochDay = Utility.getEpochDay(recordItem.getConsensusTimestamp()) - 1L;
 
         parseRecordItemAndCommit(recordItem);
 
@@ -55,14 +57,15 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                         .first()
                         .isNotNull()
                         .returns(recordItem.getConsensusTimestamp(), NodeStake::getConsensusTimestamp)
-                        .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), NodeStake::getEpochDay)
+                        .returns(epochDay, NodeStake::getEpochDay)
                         .returns(nodeStake.getNodeId(), NodeStake::getNodeId)
-                        .returns(null, NodeStake::getRewardRate)
-                        .returns(null, NodeStake::getRewardSum)
+                        .returns(transactionBody.getRewardRate(), NodeStake::getRewardRate)
                         .returns(nodeStake.getStake(), NodeStake::getStake)
                         .returns(nodeStake.getStakeRewarded(), NodeStake::getStakeRewarded)
                         .returns(stakingPeriod, NodeStake::getStakingPeriod)
                         .returns(nodeStake.getStake(), NodeStake::getStakeTotal)
+                        .extracting(NodeStake::getRewardSum, InstanceOfAssertFactories.LONG)
+                        .isPositive()
         );
     }
 }

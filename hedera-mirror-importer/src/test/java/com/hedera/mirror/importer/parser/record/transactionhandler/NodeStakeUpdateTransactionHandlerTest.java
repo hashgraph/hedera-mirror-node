@@ -22,15 +22,16 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.Collections;
 import java.util.List;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -42,7 +43,6 @@ import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -52,19 +52,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
     private NodeStakeRepository nodeStakeRepository;
 
     @Captor
-    private ArgumentCaptor<NodeStake> nodeStakeArgCaptor;
-
-    @Captor
-    private ArgumentCaptor<Long> epochDayArgCaptor;
-
-    @Captor
-    private ArgumentCaptor<Long> nodeIdArgCaptor;
-
-    @Captor
-    private ArgumentCaptor<Long> rewardRateArgCaptor;
-
-    @Captor
-    private ArgumentCaptor<Long> rewardSumArgCaptor;
+    private ArgumentCaptor<NodeStake> nodeStakes;
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -98,42 +86,45 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         var recordItem = recordItemBuilder.nodeStakeUpdate().build();
         var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
         var nodeStakeProto = transactionBody.getNodeStakeList().get(0);
-        var nodeId = nodeStakeProto.getNodeId();
-        var rewardRate = transactionBody.getRewardRate();
         var stakingPeriod = DomainUtils.timestampInNanosMax(transactionBody.getEndOfStakingPeriod());
-        var epochDay = Utility.getEpochDay(recordItem.getConsensusTimestamp());
-        var expectedNodeStake = NodeStake.builder()
-                .consensusTimestamp(recordItem.getConsensusTimestamp())
-                .epochDay(epochDay)
-                .nodeId(nodeStakeProto.getNodeId())
-                .stake(nodeStakeProto.getStake())
-                .stakeRewarded(nodeStakeProto.getStakeRewarded())
-                .stakeTotal(nodeStakeProto.getStake())
-                .stakingPeriod(stakingPeriod)
-                .build();
-        doReturn(Collections.emptyList()).when(nodeStakeRepository).findByEpochDay(epochDay - 1L);
-        doReturn(Collections.emptyList()).when(nodeStakeRepository).findByEpochDay(epochDay - 2L);
+        var nodeStake = domainBuilder.nodeStake().customize(n -> n.nodeId(nodeStakeProto.getNodeId())).get();
+        long epochDay = Utility.getEpochDay(recordItem.getConsensusTimestamp()) - 1L;
+        doReturn(List.of(nodeStake)).when(nodeStakeRepository).findByEpochDay(epochDay - 1L);
 
         // when
         transactionHandler.updateTransaction(null, recordItem);
 
         // then
-        verify(entityListener).onNodeStake(assertArg(n -> assertThat(n).isEqualTo(expectedNodeStake)));
-        verify(nodeStakeRepository).setReward(epochDay - 1, nodeId, rewardRate, 0L);
+        verify(entityListener).onNodeStake(nodeStakes.capture());
+        assertThat(nodeStakes.getAllValues())
+                .hasSize(1)
+                .first()
+                .returns(recordItem.getConsensusTimestamp(), NodeStake::getConsensusTimestamp)
+                .returns(epochDay, NodeStake::getEpochDay)
+                .returns(nodeStakeProto.getNodeId(), NodeStake::getNodeId)
+                .returns(transactionBody.getRewardRate(), NodeStake::getRewardRate)
+                .returns(nodeStakeProto.getStake(), NodeStake::getStake)
+                .returns(nodeStakeProto.getStakeRewarded(), NodeStake::getStakeRewarded)
+                .returns(stakingPeriod, NodeStake::getStakingPeriod)
+                .returns(nodeStakeProto.getStake(), NodeStake::getStakeTotal)
+                .extracting(NodeStake::getRewardSum, InstanceOfAssertFactories.LONG)
+                .isPositive();
     }
 
-    @ParameterizedTest
     @CsvSource(value = {
-            "6000, 2000, 1000, 4000, 2000",
-            "0, 2000, 1000, 0, 0",
-            "3000, 0, 1000, 0, 3000",
-            "3000, 0, 0, 0, 0"
+            "6000, 2000, 1000, 4100, 2200",
+            "0, 2000, 1000, 100, 200",
+            "3000, 0, 1000, 100, 3200",
+            "3000, 0, 0, 100, 200"
     })
-    void updateTransactionRewardSum(long rewardRate, long previousNodeStakeRewarded1, long previousNodeStakeRewarded2,
-                                    long expectedDeltaNodeReward1, long expectedDeltaNodeReward2) {
+    @ParameterizedTest
+    void updateTransactionRewardSum(long rewardRate, long previousStakeRewarded1, long previousStakeRewarded2,
+                                    long rewardSum1, long rewardSum2) {
         // given
-        var nodeStakeProto1 = recordItemBuilder.nodeStake().setNodeId(1L).setStake(3000L).setStakeRewarded(1000L);
-        var nodeStakeProto2 = recordItemBuilder.nodeStake().setNodeId(2L).setStake(5000L).setStakeRewarded(2000L);
+        var nodeStakeProto1 = recordItemBuilder.nodeStake().setNodeId(1L).setStake(3000L)
+                .setStakeRewarded(previousStakeRewarded1);
+        var nodeStakeProto2 = recordItemBuilder.nodeStake().setNodeId(2L).setStake(5000L)
+                .setStakeRewarded(previousStakeRewarded2);
         var rewardRateTinyBars = rewardRate * TINYBARS_IN_ONE_HBAR;
         var recordItem = recordItemBuilder.nodeStakeUpdate()
                 .transactionBody(t -> t.setRewardRate(rewardRateTinyBars)
@@ -141,101 +132,50 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                         .addNodeStake(nodeStakeProto1.build())
                         .addNodeStake(nodeStakeProto2.build()))
                 .build();
-        var currentTimestamp = recordItem.getConsensusTimestamp();
-        var epochDay = Utility.getEpochDay(currentTimestamp);
-        var previousTimestamp = currentTimestamp - RecordItemBuilder.NANOS_IN_DAY;
-
-        // previous, note the reward sum for previous is null, once the node stake update tx is processed, it'll be
-        // updated
-        var previousEpochDay = epochDay - 1;
-        var previousNodeStake1 = NodeStake.builder()
-                .consensusTimestamp(previousTimestamp)
-                .epochDay(previousEpochDay)
-                .nodeId(1L)
-                .stake(2500L)
-                .stakeRewarded(previousNodeStakeRewarded1)
-                .stakeTotal(4000L)
-                .stakingPeriod(previousTimestamp - 10L)
-                .build();
-        var previousNodeStake2 = NodeStake.builder()
-                .consensusTimestamp(previousTimestamp)
-                .epochDay(previousEpochDay)
-                .nodeId(2L)
-                .stake(1500L)
-                .stakeRewarded(previousNodeStakeRewarded2)
-                .stakeTotal(4000L)
-                .stakingPeriod(previousTimestamp - 10L)
-                .build();
-        doReturn(List.of(previousNodeStake1, previousNodeStake2))
-                .when(nodeStakeRepository).findByEpochDay(previousEpochDay);
-
-        // the period before previous
-        var baseEpochDay = previousEpochDay - 1;
-        var baseTimestamp = previousTimestamp - RecordItemBuilder.NANOS_IN_DAY;
-        var baseRewardSum1 = 100L;
-        var baseNodeStake1 = NodeStake.builder()
-                .consensusTimestamp(baseTimestamp)
-                .epochDay(baseEpochDay)
-                .nodeId(1L)
-                .rewardRate(2000L)
-                .rewardSum(baseRewardSum1)
-                .stake(1500)
-                .stakeRewarded(800L)
-                .stakeTotal(2300L)
-                .stakingPeriod(baseTimestamp - 10L)
-                .build();
-        var baseRewardSum2 = 300L;
-        var baseNodeStake2 = NodeStake.builder()
-                .consensusTimestamp(baseTimestamp)
-                .epochDay(baseEpochDay)
-                .nodeId(2L)
-                .rewardRate(2000L)
-                .rewardSum(baseRewardSum2)
-                .stake(800L)
-                .stakeRewarded(600L)
-                .stakeTotal(2300L)
-                .stakingPeriod(baseTimestamp - 10L)
-                .build();
-        doReturn(List.of(baseNodeStake1, baseNodeStake2)).when(nodeStakeRepository).findByEpochDay(baseEpochDay);
-
-        var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
-        var stakingPeriod = DomainUtils.timestampInNanosMax(transactionBody.getEndOfStakingPeriod());
-        var expectedNodeStake1 = NodeStake.builder()
-                .consensusTimestamp(currentTimestamp)
-                .epochDay(epochDay)
-                .nodeId(1L)
-                .stake(3000L)
-                .stakeRewarded(1000L)
-                .stakeTotal(8000L)
-                .stakingPeriod(stakingPeriod)
-                .build();
-        var expectedNodeStake2 = NodeStake.builder()
-                .consensusTimestamp(currentTimestamp)
-                .epochDay(epochDay)
-                .nodeId(2L)
-                .stake(5000L)
-                .stakeRewarded(2000L)
-                .stakeTotal(8000L)
-                .stakingPeriod(stakingPeriod)
-                .build();
-        var expectedRewardSum1 = baseRewardSum1 + expectedDeltaNodeReward1;
-        var expectedRewardSum2 = baseRewardSum2 + expectedDeltaNodeReward2;
+        long epochDay = Utility.getEpochDay(recordItem.getConsensusTimestamp()) - 1L;
+        var nodeStake1 = NodeStake.builder().nodeId(1L).rewardSum(100L).build();
+        var nodeStake2 = NodeStake.builder().nodeId(2L).rewardSum(200L).build();
+        doReturn(List.of(nodeStake1, nodeStake2)).when(nodeStakeRepository).findByEpochDay(epochDay - 1L);
 
         // when
         transactionHandler.updateTransaction(null, recordItem);
 
         // then
-        verify(entityListener, times(2)).onNodeStake(nodeStakeArgCaptor.capture());
-        assertThat(nodeStakeArgCaptor.getAllValues()).containsExactlyInAnyOrder(expectedNodeStake1, expectedNodeStake2);
-        verify(nodeStakeRepository, times(2)).setReward(epochDayArgCaptor.capture(), nodeIdArgCaptor.capture(),
-                rewardRateArgCaptor.capture(), rewardSumArgCaptor.capture());
-        assertAll(
-                () -> assertThat(epochDayArgCaptor.getAllValues()).containsExactly(previousEpochDay, previousEpochDay),
-                () -> assertThat(nodeIdArgCaptor.getAllValues()).containsExactly(1L, 2L),
-                () -> assertThat(rewardRateArgCaptor.getAllValues()).containsExactly(rewardRateTinyBars,
-                        rewardRateTinyBars),
-                () -> assertThat(rewardSumArgCaptor.getAllValues()).containsExactly(expectedRewardSum1,
-                        expectedRewardSum2)
-        );
+        verify(entityListener, times(2)).onNodeStake(nodeStakes.capture());
+        assertThat(nodeStakes.getAllValues())
+                .hasSize(2)
+                .allSatisfy(n -> assertThat(n.getEpochDay()).isEqualTo(epochDay))
+                .extracting(NodeStake::getRewardSum)
+                .containsExactly(rewardSum1, rewardSum2);
+    }
+
+    @Test
+    void updateTransactionNoStake() {
+        // given
+        var recordItem = recordItemBuilder.nodeStakeUpdate().transactionBody(b -> b.clearNodeStake()).build();
+
+        // when
+        transactionHandler.updateTransaction(null, recordItem);
+
+        // then
+        verify(entityListener, never()).onNodeStake(any());
+    }
+
+    @Test
+    void updateTransactionNoPreviousStake() {
+        // given
+        var recordItem = recordItemBuilder.nodeStakeUpdate().build();
+        var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
+        long epochDay = Utility.getEpochDay(recordItem.getConsensusTimestamp()) - 1L;
+        doReturn(List.of()).when(nodeStakeRepository).findByEpochDay(epochDay - 1L);
+
+        // when
+        transactionHandler.updateTransaction(null, recordItem);
+
+        // then
+        var stake = transactionBody.getNodeStake(0).getStake();
+        verify(entityListener).onNodeStake(nodeStakes.capture());
+        assertThat(nodeStakes.getAllValues())
+                .allMatch(n -> n.getRewardSum() == transactionBody.getRewardRate() / TINYBARS_IN_ONE_HBAR);
     }
 }

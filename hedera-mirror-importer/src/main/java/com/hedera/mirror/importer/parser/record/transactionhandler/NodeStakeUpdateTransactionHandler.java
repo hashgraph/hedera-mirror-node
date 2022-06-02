@@ -22,9 +22,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 
-import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -43,8 +41,6 @@ import com.hedera.mirror.importer.util.Utility;
 @RequiredArgsConstructor
 class NodeStakeUpdateTransactionHandler implements TransactionHandler {
 
-    private static final NodeStake EMPTY_NODE_STAKE = new NodeStake();
-
     private final EntityListener entityListener;
     private final NodeStakeRepository nodeStakeRepository;
 
@@ -60,58 +56,49 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
 
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        // The transaction's consensus timestamp is in the current staking period, so epochDay is current. The
-        // rewardRate in the protobuf is for the previous staking period. As a result, the new calculated rewardSum
-        // is for the previous staking period, it's accumulated on top of the rewardSum of the staking period before
-        // the previous.
+        // We subtract one since we get stake update in current day, but it applies to previous day
+        long epochDay = Utility.getEpochDay(recordItem.getConsensusTimestamp()) - 1L;
         var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
-        long epochDay = Utility.getEpochDay(recordItem.getConsensusTimestamp()); // the new staking period
-        // The node reward sum of the period before previous
-        var baseRewardSum = getRewardSum(epochDay - 2);
-        var previousStake = getStake(epochDay - 1);
-        long previousTotalStakeRewarded = previousStake.values().stream().map(NodeStake::getStakeRewarded)
-                .reduce(0L, Long::sum);
+        var previousRewardSum = getRewardSum(epochDay - 1L);
         long rewardRate = transactionBody.getRewardRate();
         long stakingPeriod = DomainUtils.timestampInNanosMax(transactionBody.getEndOfStakingPeriod());
-        long stakeTotal = getStakeTotal(transactionBody);
+        long stakeRewardedUsedTotal = 0L;
+        long stakeTotal = 0L;
+
+        for (var nodeStakeProto : transactionBody.getNodeStakeList()) {
+            long stake = nodeStakeProto.getStake();
+            stakeRewardedUsedTotal += Math.min(nodeStakeProto.getStakeRewarded(), stake);
+            stakeTotal += stake;
+        }
 
         for (var nodeStakeProto : transactionBody.getNodeStakeList()) {
             long nodeId = nodeStakeProto.getNodeId();
+            long stake = nodeStakeProto.getStake();
+            long stakeRewarded = nodeStakeProto.getStakeRewarded();
+            double rewardSum = previousRewardSum.getOrDefault(nodeId, 0L);
+
+            if (stakeRewardedUsedTotal > 0) {
+                long stakedRewardedUsed = Math.min(stakeRewarded, stake);
+                rewardSum += rewardRate * (double) stakedRewardedUsed / stakeRewardedUsedTotal / TINYBARS_IN_ONE_HBAR;
+            }
+
             NodeStake nodeStake = new NodeStake();
             nodeStake.setConsensusTimestamp(recordItem.getConsensusTimestamp());
             nodeStake.setEpochDay(epochDay);
             nodeStake.setNodeId(nodeId);
-            nodeStake.setStake(nodeStakeProto.getStake());
-            nodeStake.setStakeRewarded(nodeStakeProto.getStakeRewarded());
+            nodeStake.setRewardRate(rewardRate);
+            nodeStake.setRewardSum((long) rewardSum);
+            nodeStake.setStake(stake);
+            nodeStake.setStakeRewarded(stakeRewarded);
             nodeStake.setStakeTotal(stakeTotal);
             nodeStake.setStakingPeriod(stakingPeriod);
             entityListener.onNodeStake(nodeStake);
-
-            double rewardSum = baseRewardSum.getOrDefault(nodeId, 0L);
-            long previousStakeRewarded = previousStake.getOrDefault(nodeId, EMPTY_NODE_STAKE).getStakeRewarded();
-            if (rewardRate > 0 && previousTotalStakeRewarded > 0 && previousStakeRewarded > 0) {
-                // TODO: waiting on HIP update so we can get correct previous total stake rewarded and the node's
-                // previous stake rewarded by multiplying node's stake / total_stake
-                rewardSum += rewardRate * (double) previousStakeRewarded /
-                        previousTotalStakeRewarded / TINYBARS_IN_ONE_HBAR;
-            }
-            nodeStakeRepository.setReward(epochDay - 1, nodeId, rewardRate, (long) rewardSum);
         }
     }
 
-    private Map<Long, NodeStake> getStake(long epochDay) {
+    private Map<Long, Long> getRewardSum(long epochDay) {
         return nodeStakeRepository.findByEpochDay(epochDay)
                 .stream()
-                .collect(Collectors.toMap(NodeStake::getNodeId, Function.identity()));
-    }
-
-    // Sum node stake to get total stake
-    private long getStakeTotal(NodeStakeUpdateTransactionBody transactionBody) {
-        return transactionBody.getNodeStakeList().stream().map(n -> n.getStake()).reduce(0L, Long::sum);
-    }
-
-    private Map<Long, Long> getRewardSum(long epochDay) {
-        return getStake(epochDay).values().stream()
                 .collect(Collectors.toMap(NodeStake::getNodeId, NodeStake::getRewardSum));
     }
 }

@@ -22,13 +22,14 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class NodeStakeRepositoryTest extends AbstractRepositoryTest {
 
-    @Resource
-    private NodeStakeRepository repository;
+    private final NodeStakeRepository repository;
 
     @Test
     void findByEpochDay() {
@@ -37,22 +38,5 @@ class NodeStakeRepositoryTest extends AbstractRepositoryTest {
         var nodeStake2 = domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay)).persist();
         domainBuilder.nodeStake().customize(n -> n.epochDay(0L)).persist(); // Unrelated
         assertThat(repository.findByEpochDay(epochDay)).containsExactlyInAnyOrder(nodeStake1, nodeStake2);
-    }
-
-    @Test
-    void setReward() {
-        var nodeStake = domainBuilder.nodeStake().persist();
-        repository.setReward(nodeStake.getEpochDay(), nodeStake.getNodeId(), 2000L, 200L);
-        nodeStake.setRewardRate(2000L);
-        nodeStake.setRewardSum(200L);
-        assertThat(repository.findAll()).containsOnly(nodeStake);
-    }
-
-    @Test
-    void setRewardToNonExisting() {
-        var nodeStake = domainBuilder.nodeStake().persist();
-        repository.setReward(nodeStake.getEpochDay() + 1, nodeStake.getNodeId(), 2000L, 200L);
-        repository.setReward(nodeStake.getEpochDay(), nodeStake.getNodeId() + 1, 2000L, 200L);
-        assertThat(repository.findAll()).containsOnly(nodeStake);
     }
 }

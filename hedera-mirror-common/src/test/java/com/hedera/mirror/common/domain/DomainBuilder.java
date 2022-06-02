@@ -397,6 +397,8 @@ public class DomainBuilder {
                 .consensusTimestamp(timestamp)
                 .epochDay(getEpochDay(timestamp))
                 .nodeId(id())
+                .rewardRate(id())
+                .rewardSum(id() + TINYBARS_IN_ONE_HBAR)
                 .stake(stake)
                 .stakeRewarded(stake - 100L)
                 .stakingPeriod(timestamp());

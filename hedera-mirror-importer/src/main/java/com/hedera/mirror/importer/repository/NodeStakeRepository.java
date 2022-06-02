@@ -21,8 +21,6 @@ package com.hedera.mirror.importer.repository;
  */
 
 import java.util.Collection;
-import javax.transaction.Transactional;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
@@ -32,10 +30,4 @@ public interface NodeStakeRepository extends CrudRepository<NodeStake, NodeStake
 
     @Query("from NodeStake where epochDay = ?1")
     Collection<NodeStake> findByEpochDay(long epochDay);
-
-    @Modifying
-    @Transactional
-    @Query(value = "update node_stake set reward_rate = ?3, reward_sum= ?4 where epoch_day = ?1 and node_id = ?2",
-            nativeQuery = true)
-    void setReward(long epochDay, long nodeId, long rewardRate, long rewardSum);
 }
