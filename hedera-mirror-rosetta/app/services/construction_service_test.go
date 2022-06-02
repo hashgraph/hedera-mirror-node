@@ -436,7 +436,7 @@ func TestConstructionDerive(t *testing.T) {
 				CurveType: rTypes.Edwards25519,
 			},
 			expected: &rTypes.ConstructionDeriveResponse{
-				AccountIdentifier: &rTypes.AccountIdentifier{Address: hex.EncodeToString(ed25519PublicKey.BytesRaw())},
+				AccountIdentifier: &rTypes.AccountIdentifier{Address: "0x" + hex.EncodeToString(ed25519PublicKey.BytesRaw())},
 			},
 		},
 		{

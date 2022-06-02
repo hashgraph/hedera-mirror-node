@@ -218,7 +218,7 @@ func TestAccountIdString(t *testing.T) {
 		{
 			name:     "Alias",
 			input:    ed25519AliasAccountId,
-			expected: hex.EncodeToString(ed25519PublicKey.BytesRaw()),
+			expected: "0x" + hex.EncodeToString(ed25519PublicKey.BytesRaw()),
 		},
 		{
 			name:     "Non-alias",
@@ -243,7 +243,7 @@ func TestAccountIdToRosetta(t *testing.T) {
 		{
 			name:     "Alias",
 			input:    ed25519AliasAccountId,
-			expected: &types.AccountIdentifier{Address: hex.EncodeToString(ed25519PublicKey.BytesRaw())},
+			expected: &types.AccountIdentifier{Address: "0x" + hex.EncodeToString(ed25519PublicKey.BytesRaw())},
 		},
 		{
 			name:     "Non-alias",

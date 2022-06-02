@@ -27,6 +27,7 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/pkg/errors"
 )
@@ -73,7 +74,7 @@ func (a AccountId) IsZero() bool {
 
 func (a AccountId) String() string {
 	if a.HasAlias() {
-		return hex.EncodeToString(a.alias)
+		return tools.SafeAddHexPrefix(hex.EncodeToString(a.alias))
 	}
 	return a.accountId.String()
 }
