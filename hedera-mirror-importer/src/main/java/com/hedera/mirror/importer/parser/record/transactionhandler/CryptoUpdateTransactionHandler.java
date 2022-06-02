@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 import static com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID;
 import static com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.StakedIdCase.STAKED_NODE_ID;
 
@@ -97,12 +98,10 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
             entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
         }
 
-        boolean isStakedNodeIdSet = STAKED_NODE_ID ==
-                transactionBody.getStakedIdCase();
-        if (isStakedNodeIdSet) {
+        if (transactionBody.getStakedIdCase() == STAKED_NODE_ID) {
             entity.setStakedNodeId(transactionBody.getStakedNodeId());
             entity.setStakedAccountId(-1L);
-        } else if (STAKED_ACCOUNT_ID == transactionBody.getStakedIdCase()) {
+        } else if (transactionBody.getStakedIdCase() == STAKED_ACCOUNT_ID) {
             EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
             entity.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
 
@@ -113,7 +112,7 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
         }
 
         // If the stake node id or the decline reward value has changed, we start a new stake period.
-        if (isStakedNodeIdSet || transactionBody.hasDeclineReward()) {
+        if (transactionBody.getStakedIdCase() != STAKEDID_NOT_SET || transactionBody.hasDeclineReward()) {
             entity.setStakePeriodStart(Utility.getEpochDay(consensusTimestamp));
         }
     }

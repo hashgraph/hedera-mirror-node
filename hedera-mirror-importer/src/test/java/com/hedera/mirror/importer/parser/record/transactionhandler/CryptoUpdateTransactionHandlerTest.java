@@ -38,6 +38,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.util.Utility;
 
 class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -68,7 +69,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(1L, Entity::getStakedAccountId)
                 .returns(false, Entity::isDeclineReward)
                 .returns(-1L, Entity::getStakedNodeId)
-                .returns(-1L, Entity::getStakePeriodStart)
+                .returns(Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()), Entity::getStakePeriodStart)
         );
     }
 
