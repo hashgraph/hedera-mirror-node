@@ -279,6 +279,10 @@ func (c Client) Submit(ctx context.Context, operations []*types.Operation, signe
 			NetworkIdentifier: c.network,
 			SignedTransaction: combineResponse.SignedTransaction,
 		}
+
+		log.Infof("Submit Context: %s", ctx)
+		log.Infof("Submit Request: %s", submitRequest)
+
 		submitResponse, rosettaErr, err := onlineConstructor.ConstructionSubmit(ctx, submitRequest)
 		if err1 := c.handleError("Failed to handle submit request", rosettaErr, err); err1 != nil {
 			return false, rosettaErr, err
