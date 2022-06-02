@@ -23,6 +23,7 @@ package scenario
 import (
 	"context"
 	"encoding/hex"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/cucumber/godog"
@@ -215,7 +216,7 @@ func (c *cryptoFeature) generateKey() error {
 		return err
 	}
 	c.newAccountKey = &sk
-	c.aliasAddress = hex.EncodeToString(sk.PublicKey().BytesRaw())
+	c.aliasAddress = tools.SafeAddHexPrefix(hex.EncodeToString(sk.PublicKey().BytesRaw()))
 	log.Debug("Generated private key for new account")
 	return nil
 }
