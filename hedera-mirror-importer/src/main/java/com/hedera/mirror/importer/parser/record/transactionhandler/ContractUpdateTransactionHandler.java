@@ -27,6 +27,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import javax.inject.Named;
 
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -121,8 +122,15 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
         boolean isStakedNodeIdSet = STAKED_NODE_ID == transactionBody.getStakedIdCase();
         if (isStakedNodeIdSet) {
             entity.setStakedNodeId(transactionBody.getStakedNodeId());
+            entity.setStakedAccountId(-1L);
         } else if (STAKED_ACCOUNT_ID == transactionBody.getStakedIdCase()) {
-            entity.setStakedAccountId(EntityId.of(transactionBody.getStakedAccountId()));
+            EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
+            entity.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
+
+            // if the staked account id has changed, we clear the stake period.
+            entity.setStakePeriodStart(-1L);
+
+            entity.setStakedNodeId(-1L);
         }
 
         // If the stake node id or the decline reward value has changed, we start a new stake period.

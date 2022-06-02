@@ -20,9 +20,13 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID;
+import static com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.StakedIdCase.STAKED_NODE_ID;
+
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import javax.inject.Named;
 
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -93,12 +97,19 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
             entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
         }
 
-        boolean isStakedNodeIdSet = CryptoUpdateTransactionBody.StakedIdCase.STAKED_NODE_ID ==
+        boolean isStakedNodeIdSet = STAKED_NODE_ID ==
                 transactionBody.getStakedIdCase();
         if (isStakedNodeIdSet) {
             entity.setStakedNodeId(transactionBody.getStakedNodeId());
-        } else if (CryptoUpdateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID == transactionBody.getStakedIdCase()) {
-            entity.setStakedAccountId(EntityId.of(transactionBody.getStakedAccountId()));
+            entity.setStakedAccountId(-1L);
+        } else if (STAKED_ACCOUNT_ID == transactionBody.getStakedIdCase()) {
+            EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
+            entity.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
+
+            // if the staked account id has changed, we clear the stake period.
+            entity.setStakePeriodStart(-1L);
+
+            entity.setStakedNodeId(-1L);
         }
 
         // If the stake node id or the decline reward value has changed, we start a new stake period.

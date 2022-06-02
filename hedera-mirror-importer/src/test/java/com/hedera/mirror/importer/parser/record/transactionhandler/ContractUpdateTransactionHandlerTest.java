@@ -148,8 +148,8 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .build();
         setupForContractUpdateTransactionTest(withDeclineValueSet, t -> assertThat(t)
                 .returns(true, Contract::isDeclineReward)
-                .returns(null, Contract::getStakedNodeId)
-                .returns(null, Contract::getStakedAccountId)
+                .returns(-1, Contract::getStakedNodeId)
+                .returns(-1, Contract::getStakedAccountId)
                 .returns(Utility.getEpochDay(withDeclineValueSet.getConsensusTimestamp()),
                         Contract::getStakePeriodStart)
         );

@@ -128,26 +128,7 @@ public abstract class AbstractEntity implements History {
     public EntityId toEntityId() {
         return new EntityId(shard, realm, num, type);
     }
-
-    // Used only by frameworks/libs. Do not use this method.
-    public void setStakedAccountId(Long stakedAccountId) {
-        this.stakedAccountId = stakedAccountId;
-    }
-
-    public void setStakedAccountId(EntityId accountId) {
-        stakedAccountId = AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId);
-        // if the staked account id has changed, we clear the stake period.
-        stakePeriodStart = -1L;
-
-        stakedNodeId = -1L;
-    }
-
-    public void setStakedNodeId(final Long stakedNodeId) {
-        this.stakedNodeId = stakedNodeId;
-
-        stakedAccountId = -1L;
-    }
-
+    
     // Necessary since Lombok doesn't use our setters for builders
     public abstract static class AbstractEntityBuilder<C, B extends AbstractEntityBuilder> {
         public B key(byte[] key) {

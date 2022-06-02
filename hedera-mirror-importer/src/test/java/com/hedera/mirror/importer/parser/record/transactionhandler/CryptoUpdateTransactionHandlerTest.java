@@ -67,7 +67,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         setupForCrytoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
                 .returns(1L, Entity::getStakedAccountId)
                 .returns(false, Entity::isDeclineReward)
-                .returns(null, Entity::getStakedNodeId)
+                .returns(-1L, Entity::getStakedNodeId)
                 .returns(-1L, Entity::getStakePeriodStart)
         );
     }
@@ -81,6 +81,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .build();
         setupForCrytoUpdateTransactionTest(withDeclineValueSet, t -> assertThat(t)
                 .returns(true, Entity::isDeclineReward)
+                // in this case both are still null, because we are not saving it into the database.
                 .returns(null, Entity::getStakedNodeId)
                 .returns(null, Entity::getStakedAccountId)
                 .extracting(Entity::getStakePeriodStart)
@@ -94,7 +95,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .build();
         setupForCrytoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
                 .returns(1L, Entity::getStakedNodeId)
-                .returns(null, Entity::getStakedAccountId)
+                .returns(-1L, Entity::getStakedAccountId)
                 .returns(false, Entity::isDeclineReward)
                 .extracting(Entity::getStakePeriodStart)
                 .isNotNull());
