@@ -21,8 +21,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
-import static com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID;
-import static com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.StakedIdCase.STAKED_NODE_ID;
 
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import javax.inject.Named;
@@ -98,17 +96,20 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
             entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
         }
 
-        if (transactionBody.getStakedIdCase() == STAKED_NODE_ID) {
-            entity.setStakedNodeId(transactionBody.getStakedNodeId());
-            entity.setStakedAccountId(-1L);
-        } else if (transactionBody.getStakedIdCase() == STAKED_ACCOUNT_ID) {
-            EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
-            entity.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
+        switch (transactionBody.getStakedIdCase()) {
+            case STAKED_NODE_ID:
+                entity.setStakedNodeId(transactionBody.getStakedNodeId());
+                entity.setStakedAccountId(-1L);
+                break;
+            case STAKED_ACCOUNT_ID:
+                EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
+                entity.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
 
-            // if the staked account id has changed, we clear the stake period.
-            entity.setStakePeriodStart(-1L);
+                // if the staked account id has changed, we clear the stake period.
+                entity.setStakePeriodStart(-1L);
 
-            entity.setStakedNodeId(-1L);
+                entity.setStakedNodeId(-1L);
+                break;
         }
 
         // If the stake node id or the decline reward value has changed, we start a new stake period.

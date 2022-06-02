@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
-import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.StakedIdCase.STAKED_ACCOUNT_ID;
 
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import javax.inject.Named;
@@ -137,18 +136,23 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         if (transactionBody.getStakedIdCase() == STAKEDID_NOT_SET) {
             return;
         }
-        if (transactionBody.getStakedIdCase() == STAKED_ACCOUNT_ID) {
-            EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
-            contract.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
 
-            // if the staked account id has changed, we clear the stake period.
-            contract.setStakePeriodStart(-1L);
+        switch (transactionBody.getStakedIdCase()) {
+            case STAKED_NODE_ID:
+                contract.setStakedNodeId(transactionBody.getStakedNodeId());
+                contract.setStakedAccountId(-1L);
+                break;
+            case STAKED_ACCOUNT_ID:
+                EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
+                contract.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
 
-            contract.setStakedNodeId(-1L);
-        } else {
-            contract.setStakedNodeId(transactionBody.getStakedNodeId());
-            contract.setStakedAccountId(-1L);
+                // if the staked account id has changed, we clear the stake period.
+                contract.setStakePeriodStart(-1L);
+
+                contract.setStakedNodeId(-1L);
+                break;
         }
+
         contract.setStakePeriodStart(Utility.getEpochDay(consensusTimestamp));
     }
 
