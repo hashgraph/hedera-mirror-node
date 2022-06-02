@@ -246,7 +246,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Test
     void updateTransactionSuccessfulStakingInfoForAccountStaking() {
-        final AccountID accountID = recordItemBuilder.accountId(1L);
+        final AccountID accountID = AccountID.newBuilder().setAccountNum(1L).build();
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.clearAutoRenewAccountId()
                         .setStakedAccountId(accountID))
