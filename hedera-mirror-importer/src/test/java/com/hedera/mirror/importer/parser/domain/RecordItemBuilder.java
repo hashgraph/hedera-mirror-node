@@ -156,7 +156,8 @@ public class RecordItemBuilder {
                 .setNewRealmAdminKey(key())
                 .setProxyAccountID(accountId())
                 .setRealmID(REALM_ID)
-                .setShardID(SHARD_ID);
+                .setShardID(SHARD_ID)
+                .setStakedNodeId(1L);
 
         return new Builder<>(TransactionType.CONTRACTCREATEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId))
@@ -221,7 +222,9 @@ public class RecordItemBuilder {
                 .setExpirationTime(timestamp())
                 .setMaxAutomaticTokenAssociations(Int32Value.of(10))
                 .setMemoWrapper(StringValue.of(text(16)))
-                .setProxyAccountID(accountId());
+                .setProxyAccountID(accountId())
+                .setDeclineReward(BoolValue.of(true))
+                .setStakedAccountId(accountId());
 
         return new Builder<>(TransactionType.CONTRACTUPDATEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId));
@@ -303,7 +306,9 @@ public class RecordItemBuilder {
                 .setAutoRenewPeriod(duration(30))
                 .setKey(key())
                 .setProxyAccountID(accountId())
-                .setReceiverSigRequired(false);
+                .setReceiverSigRequired(false)
+                .setStakedNodeId(1L)
+                .setDeclineReward(BoolValue.of(true));
         return new Builder<>(TransactionType.CRYPTOUPDATEACCOUNT, builder);
     }
 
