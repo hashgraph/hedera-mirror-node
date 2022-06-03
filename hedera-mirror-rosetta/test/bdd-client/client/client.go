@@ -199,11 +199,15 @@ func (c Client) Submit(ctx context.Context, operations []*types.Operation, signe
 	onlineConstructor := c.onlineClient.ConstructionAPI
 
 	if signers == nil {
+		log.Infof("signers nil")
 		operator := c.operators[0]
 		signers = map[string]hedera.PrivateKey{operator.Id.String(): operator.PrivateKey}
 	} else {
 		for signerId := range signers {
-			accountId, _ := hedera.AccountIDFromString(signerId)
+			accountId, errorHere := hedera.AccountIDFromString(signerId)
+			log.Infof("accountId: %s", accountId)
+			log.Infof("error: %s", errorHere)
+
 			operatorKey, ok := c.privateKeys[accountId]
 			if ok {
 				signers[signerId] = operatorKey
@@ -250,6 +254,7 @@ func (c Client) Submit(ctx context.Context, operations []*types.Operation, signe
 		signatures := make([]*types.Signature, 0)
 		for _, signingPayload := range payloadsResponse.Payloads {
 			signerAddress := signingPayload.AccountIdentifier.Address
+			log.Infof("signerAddress: %s", signerAddress)
 			key := signers[signerAddress]
 			signature := key.Sign(signingPayload.Bytes)
 			signatures = append(signatures, &types.Signature{
