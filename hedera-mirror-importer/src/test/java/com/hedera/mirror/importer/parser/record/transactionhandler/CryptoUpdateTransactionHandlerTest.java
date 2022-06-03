@@ -60,7 +60,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Test
-    void updateTransactionWithNewStakedAccountId() {
+    void updateTransactionStakedAccountId() {
         AccountID accountId = AccountID.newBuilder().setAccountNum(1L).build();
         RecordItem withStakedNodeIdSet = recordItemBuilder.cryptoUpdate()
                 .transactionBody(body -> body.clear().setStakedAccountId(accountId))
@@ -74,7 +74,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Test
-    void updateTransactionStartStakingPeriodAfterDeclineRewardChanged() {
+    void updateTransactionDeclineReward() {
         RecordItem withDeclineValueSet = recordItemBuilder.cryptoUpdate()
                 .transactionBody(body -> body.clear()
                         .setDeclineReward(BoolValue.of(true))
@@ -90,7 +90,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Test
-    void updateTransactionStartStakingPeriodAfterNodeIdChanged() {
+    void updateTransactionStakedNodeId() {
         RecordItem withStakedNodeIdSet = recordItemBuilder.cryptoUpdate()
                 .transactionBody(body -> body.setStakedNodeId(1L))
                 .build();

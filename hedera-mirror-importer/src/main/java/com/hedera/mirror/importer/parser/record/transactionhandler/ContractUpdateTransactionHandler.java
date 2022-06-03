@@ -23,12 +23,10 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -107,36 +105,33 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
             contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
-        updateContractStakingInfo(recordItem.getConsensusTimestamp(), contract, transactionBody);
-
+        updateStakingInfo(recordItem, contract);
         entityListener.onContract(contract);
     }
 
-    private void updateContractStakingInfo(long consensusTimestamp, AbstractEntity entity,
-            ContractUpdateTransactionBody transactionBody) {
+    private void updateStakingInfo(RecordItem recordItem, Contract contract) {
+        var transactionBody = recordItem.getTransactionBody().getContractUpdateInstance();
         if (transactionBody.hasDeclineReward()) {
-            entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
+            contract.setDeclineReward(transactionBody.getDeclineReward().getValue());
         }
 
         switch (transactionBody.getStakedIdCase()) {
             case STAKED_NODE_ID:
-                entity.setStakedNodeId(transactionBody.getStakedNodeId());
-                entity.setStakedAccountId(-1L);
+                contract.setStakedNodeId(transactionBody.getStakedNodeId());
+                contract.setStakedAccountId(-1L);
                 break;
             case STAKED_ACCOUNT_ID:
                 EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
-                entity.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
-
-                // if the staked account id has changed, we clear the stake period.
-                entity.setStakePeriodStart(-1L);
-
-                entity.setStakedNodeId(-1L);
+                contract.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
+                contract.setStakedNodeId(-1L);
+                break;
+            case STAKEDID_NOT_SET:
                 break;
         }
 
         // If the stake node id or the decline reward value has changed, we start a new stake period.
         if (transactionBody.getStakedIdCase() != STAKEDID_NOT_SET || transactionBody.hasDeclineReward()) {
-            entity.setStakePeriodStart(Utility.getEpochDay(consensusTimestamp));
+            contract.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
         }
     }
 }

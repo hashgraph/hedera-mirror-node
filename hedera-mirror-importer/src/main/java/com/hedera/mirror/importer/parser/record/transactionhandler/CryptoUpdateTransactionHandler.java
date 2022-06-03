@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
@@ -85,13 +84,13 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
             entity.setReceiverSigRequired(transactionBody.getReceiverSigRequired());
         }
 
-        updateEntityStakingInfo(recordItem.getConsensusTimestamp(), entity, transactionBody);
-
+        updateStakingInfo(recordItem, entity);
         entityListener.onEntity(entity);
     }
 
-    private void updateEntityStakingInfo(long consensusTimestamp, Entity entity,
-            CryptoUpdateTransactionBody transactionBody) {
+    private void updateStakingInfo(RecordItem recordItem, Entity entity) {
+        var transactionBody = recordItem.getTransactionBody().getCryptoUpdateAccount();
+
         if (transactionBody.hasDeclineReward()) {
             entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
         }
@@ -104,17 +103,15 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
             case STAKED_ACCOUNT_ID:
                 EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
                 entity.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
-
-                // if the staked account id has changed, we clear the stake period.
-                entity.setStakePeriodStart(-1L);
-
                 entity.setStakedNodeId(-1L);
+                break;
+            case STAKEDID_NOT_SET:
                 break;
         }
 
         // If the stake node id or the decline reward value has changed, we start a new stake period.
         if (transactionBody.getStakedIdCase() != STAKEDID_NOT_SET || transactionBody.hasDeclineReward()) {
-            entity.setStakePeriodStart(Utility.getEpochDay(consensusTimestamp));
+            entity.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
         }
     }
 }

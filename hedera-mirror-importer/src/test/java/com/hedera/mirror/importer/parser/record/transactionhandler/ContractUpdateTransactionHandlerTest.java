@@ -127,7 +127,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Test
-    void updateTransactionWithNewStakedAccountId() {
+    void updateTransactionStakedAccountId() {
         AccountID accountId = AccountID.newBuilder().setAccountNum(1L).build();
         RecordItem withStakedNodeIdSet = recordItemBuilder.contractUpdate()
                 .transactionBody(body -> body.clear().setStakedAccountId(accountId))
@@ -142,7 +142,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Test
-    void updateTransactionStartNewStakingPeriodAfterDeclineRewardChanged() {
+    void updateTransactionDeclineReward() {
         RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
         RecordItem withDeclineValueSet = recordItemBuilder.contractUpdate()
                 .transactionBody(body -> body.setDeclineReward(BoolValue.of(false))
@@ -161,7 +161,7 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Test
-    void updateTransactionStartNewStakingPeriodAfterNodeIdChanged() {
+    void updateTransactionStakedNodeId() {
         RecordItem withStakedNodeIdSet = recordItemBuilder.contractUpdate()
                 .transactionBody(body -> body.setStakedNodeId(1L))
                 .build();

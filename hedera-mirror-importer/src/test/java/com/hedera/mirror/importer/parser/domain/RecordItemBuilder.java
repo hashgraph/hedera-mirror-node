@@ -148,6 +148,7 @@ public class RecordItemBuilder {
                 .setAutoRenewAccountId(accountId())
                 .setAutoRenewPeriod(duration(30))
                 .setConstructorParameters(bytes(64))
+                .setDeclineReward(true)
                 .setFileID(fileId())
                 .setGas(10_000L)
                 .setInitialBalance(20_000L)
@@ -219,11 +220,11 @@ public class RecordItemBuilder {
                 .setAutoRenewAccountId(accountId())
                 .setAutoRenewPeriod(duration(30))
                 .setContractID(contractId)
+                .setDeclineReward(BoolValue.of(true))
                 .setExpirationTime(timestamp())
                 .setMaxAutomaticTokenAssociations(Int32Value.of(10))
                 .setMemoWrapper(StringValue.of(text(16)))
                 .setProxyAccountID(accountId())
-                .setDeclineReward(BoolValue.of(true))
                 .setStakedAccountId(accountId());
 
         return new Builder<>(TransactionType.CONTRACTUPDATEINSTANCE, transactionBody)
@@ -275,6 +276,7 @@ public class RecordItemBuilder {
     public Builder<CryptoCreateTransactionBody.Builder> cryptoCreate() {
         var builder = CryptoCreateTransactionBody.newBuilder()
                 .setAutoRenewPeriod(duration(30))
+                .setDeclineReward(true)
                 .setInitialBalance(1000L)
                 .setKey(key())
                 .setMaxAutomaticTokenAssociations(2)
@@ -282,8 +284,10 @@ public class RecordItemBuilder {
                 .setProxyAccountID(accountId())
                 .setRealmID(REALM_ID)
                 .setReceiverSigRequired(false)
-                .setShardID(SHARD_ID);
-        return new Builder<>(TransactionType.CRYPTOCREATEACCOUNT, builder);
+                .setShardID(SHARD_ID)
+                .setStakedNodeId(1L);
+        return new Builder<>(TransactionType.CRYPTOCREATEACCOUNT, builder)
+                .receipt(r -> r.setAccountID(accountId()));
     }
 
     public Builder<CryptoDeleteAllowanceTransactionBody.Builder> cryptoDeleteAllowance() {
@@ -302,14 +306,17 @@ public class RecordItemBuilder {
     }
 
     public Builder<CryptoUpdateTransactionBody.Builder> cryptoUpdate() {
+        var accountId = accountId();
         var builder = CryptoUpdateTransactionBody.newBuilder()
                 .setAutoRenewPeriod(duration(30))
+                .setAccountIDToUpdate(accountId)
+                .setDeclineReward(BoolValue.of(true))
                 .setKey(key())
                 .setProxyAccountID(accountId())
                 .setReceiverSigRequired(false)
-                .setStakedNodeId(1L)
-                .setDeclineReward(BoolValue.of(true));
-        return new Builder<>(TransactionType.CRYPTOUPDATEACCOUNT, builder);
+                .setStakedNodeId(1L);
+        return new Builder<>(TransactionType.CRYPTOUPDATEACCOUNT, builder)
+                .receipt(r -> r.setAccountID(accountId));
     }
 
     @SneakyThrows

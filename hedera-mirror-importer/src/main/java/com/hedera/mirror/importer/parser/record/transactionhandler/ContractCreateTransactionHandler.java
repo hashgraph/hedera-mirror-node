@@ -20,9 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
-
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
@@ -76,6 +73,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     @Override
+    @SuppressWarnings("java:S1874")
     protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
         if (!entityProperties.getPersist().isContracts()) {
             return;
@@ -123,21 +121,18 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
         // for child transactions initCode and FileID are located in parent ContractCreate/EthereumTransaction types
         updateChildFromParent(contract, recordItem);
-
-        updateContractStakingInfo(recordItem.getConsensusTimestamp(), contract, transactionBody);
+        updateStakingInfo(recordItem, contract);
 
         entityListener.onContract(contract);
     }
 
-    private void updateContractStakingInfo(long consensusTimestamp, Contract contract,
-            ContractCreateTransactionBody transactionBody) {
+    private void updateStakingInfo(RecordItem recordItem, Contract contract) {
+        var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
         contract.setDeclineReward(transactionBody.getDeclineReward());
-        // this contract has no staking
-        if (transactionBody.getStakedIdCase() == STAKEDID_NOT_SET) {
-            return;
-        }
 
         switch (transactionBody.getStakedIdCase()) {
+            case STAKEDID_NOT_SET:
+                return;
             case STAKED_NODE_ID:
                 contract.setStakedNodeId(transactionBody.getStakedNodeId());
                 contract.setStakedAccountId(-1L);
@@ -145,15 +140,11 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             case STAKED_ACCOUNT_ID:
                 EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
                 contract.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
-
-                // if the staked account id has changed, we clear the stake period.
-                contract.setStakePeriodStart(-1L);
-
                 contract.setStakedNodeId(-1L);
                 break;
         }
 
-        contract.setStakePeriodStart(Utility.getEpochDay(consensusTimestamp));
+        contract.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
     }
 
     @Override

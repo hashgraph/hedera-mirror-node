@@ -26,7 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -51,6 +50,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -68,10 +69,14 @@ import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
+import com.hedera.mirror.importer.util.Utility;
 
 class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private final EntityProperties entityProperties = new EntityProperties();
+
+    @Captor
+    private ArgumentCaptor<Contract> contracts;
 
     @Mock(lenient = true)
     protected EthereumTransactionParser ethereumTransactionParser;
@@ -245,47 +250,45 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Test
-    void updateTransactionSuccessfulStakingInfoForAccountStaking() {
+    void updateTransactionStakedAccountId() {
+        // given
         final AccountID accountID = AccountID.newBuilder().setAccountNum(1L).build();
         var recordItem = recordItemBuilder.contractCreate()
-                .transactionBody(b -> b.clearAutoRenewAccountId()
-                        .setStakedAccountId(accountID))
+                .transactionBody(b -> b.clearAutoRenewAccountId().setDeclineReward(false).setStakedAccountId(accountID))
                 .build();
-        setupForContractCreateTransactionTest(recordItem, t -> assertThat(t)
+
+        // when
+        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+
+        // then
+        verify(entityListener).onContract(contracts.capture());
+        assertThat(contracts.getValue())
+                .isNotNull()
                 .returns(false, Contract::isDeclineReward)
                 .returns(accountID.getAccountNum(), Contract::getStakedAccountId)
-                .extracting(Contract::getStakePeriodStart)
-                .isNotNull()
-        );
+                .returns(-1L, Contract::getStakedNodeId)
+                .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Contract::getStakePeriodStart);
     }
 
     @Test
-    void updateTransactionSuccessfulStakingInfoForNodeStaking() {
+    void updateTransactionStakedNodeId() {
+        // given
+        var nodeId = 1L;
         var recordItem = recordItemBuilder.contractCreate()
-                .transactionBody(b -> b.clearAutoRenewAccountId()
-                        .setStakedNodeId(1L))
+                .transactionBody(b -> b.clearAutoRenewAccountId().setDeclineReward(true).setStakedNodeId(nodeId))
                 .build();
-        setupForContractCreateTransactionTest(recordItem, t -> assertThat(t)
-                .returns(false, Contract::isDeclineReward)
-                .returns(1L, Contract::getStakedNodeId)
-                .extracting(Contract::getStakePeriodStart)
-                .isNotNull()
-        );
-    }
 
-    @Test
-    void updateTransactionSuccessfulStakingInfoForDeclineReward() {
-        var recordItem = recordItemBuilder.contractCreate()
-                .transactionBody(b -> b.clearAutoRenewAccountId()
-                        .setStakedNodeId(1L)
-                        .setDeclineReward(true))
-                .build();
-        setupForContractCreateTransactionTest(recordItem, t -> assertThat(t)
+        // when
+        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+
+        // then
+        verify(entityListener).onContract(contracts.capture());
+        assertThat(contracts.getValue())
+                .isNotNull()
                 .returns(true, Contract::isDeclineReward)
-                .returns(1L, Contract::getStakedNodeId)
-                .extracting(Contract::getStakePeriodStart)
-                .isNotNull()
-        );
+                .returns(-1L, Contract::getStakedAccountId)
+                .returns(nodeId, Contract::getStakedNodeId)
+                .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Contract::getStakePeriodStart);
     }
 
     @ParameterizedTest(name = "{0}")
@@ -525,36 +528,33 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     private void assertContract(EntityId contractId, long timestamp, Consumer<Contract> extraAssert) {
-        verify(entityListener, times(1)).onContract(assertArg(t -> assertAll(
-                () -> assertThat(t)
-                        .isNotNull()
-                        .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
-                        .returns(timestamp, Contract::getCreatedTimestamp)
-                        .returns(false, Contract::getDeleted)
-                        .returns(null, Contract::getExpirationTimestamp)
-                        .returns(contractId.getId(), Contract::getId)
-                        .satisfies(c -> assertThat(c.getKey()).isNotEmpty())
-                        .satisfies(c -> assertThat(c.getMaxAutomaticTokenAssociations()).isPositive())
-                        .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
-                        .returns(contractId.getEntityNum(), Contract::getNum)
-                        .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive())
-                        .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
-                        .returns(contractId.getRealmNum(), Contract::getRealm)
-                        .returns(contractId.getShardNum(), Contract::getShard)
-                        .returns(CONTRACT, Contract::getType)
-                        .returns(Range.atLeast(timestamp), Contract::getTimestampRange)
-                        .returns(null, Contract::getObtainerId),
-                () -> extraAssert.accept(t)
-        )));
+        verify(entityListener).onContract(contracts.capture());
+        assertThat(contracts.getValue())
+                .isNotNull()
+                .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
+                .returns(timestamp, Contract::getCreatedTimestamp)
+                .returns(false, Contract::getDeleted)
+                .returns(null, Contract::getExpirationTimestamp)
+                .returns(contractId.getId(), Contract::getId)
+                .satisfies(c -> assertThat(c.getKey()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getMaxAutomaticTokenAssociations()).isPositive())
+                .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
+                .returns(contractId.getEntityNum(), Contract::getNum)
+                .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive())
+                .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
+                .returns(contractId.getRealmNum(), Contract::getRealm)
+                .returns(contractId.getShardNum(), Contract::getShard)
+                .returns(CONTRACT, Contract::getType)
+                .returns(Range.atLeast(timestamp), Contract::getTimestampRange)
+                .returns(null, Contract::getObtainerId)
+                .satisfies(extraAssert);
     }
 
-    private void setupForContractCreateTransactionTest(RecordItem recordItem, Consumer<Contract> extraAssertions) {
-        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
-        var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction()
-                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+    private Transaction transaction(RecordItem recordItem) {
+        var entityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var consensusTimestamp = recordItem.getConsensusTimestamp();
+        return domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(consensusTimestamp).entityId(entityId))
                 .get();
-        transactionHandler.updateTransaction(transaction, recordItem);
-        assertContract(contractId, timestamp, extraAssertions);
     }
 }
