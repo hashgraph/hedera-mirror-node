@@ -36,6 +36,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 
+import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -106,6 +107,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
     private final Collection<NftAllowance> nftAllowances;
+    private final Collection<NodeStake> nodeStakes;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
     private final Map<TokenAccountId, TokenAccount> tokenAccounts;
@@ -159,6 +161,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftAllowances = new ArrayList<>();
+        nodeStakes = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
         stakingRewardTransfers = new ArrayList<>();
         tokenAccounts = new LinkedHashMap<>();
@@ -227,6 +230,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nftAllowances.clear();
             nftAllowanceState.clear();
             nftTransferState.clear();
+            nodeStakes.clear();
             schedules.clear();
             topicMessages.clear();
             tokenAccounts.clear();
@@ -261,6 +265,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(ethereumTransactions);
             batchPersister.persist(fileData);
             batchPersister.persist(liveHashes);
+            batchPersister.persist(nodeStakes);
             batchPersister.persist(topicMessages);
             batchPersister.persist(transactions);
             batchPersister.persist(transactionSignatures);
@@ -387,6 +392,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
         nftTransferState.merge(nftTransfer.getId(), nftTransfer, this::mergeNftTransfer);
+    }
+
+    @Override
+    public void onNodeStake(NodeStake nodeStake) {
+        nodeStakes.add(nodeStake);
     }
 
     @Override

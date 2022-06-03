@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import javax.inject.Named;
 
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -34,6 +35,7 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
+import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
@@ -71,6 +73,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     @Override
+    @SuppressWarnings("java:S1874")
     protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
         if (!entityProperties.getPersist().isContracts()) {
             return;
@@ -118,8 +121,30 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
         // for child transactions initCode and FileID are located in parent ContractCreate/EthereumTransaction types
         updateChildFromParent(contract, recordItem);
+        updateStakingInfo(recordItem, contract);
 
         entityListener.onContract(contract);
+    }
+
+    private void updateStakingInfo(RecordItem recordItem, Contract contract) {
+        var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+        contract.setDeclineReward(transactionBody.getDeclineReward());
+
+        switch (transactionBody.getStakedIdCase()) {
+            case STAKEDID_NOT_SET:
+                return;
+            case STAKED_NODE_ID:
+                contract.setStakedNodeId(transactionBody.getStakedNodeId());
+                contract.setStakedAccountId(-1L);
+                break;
+            case STAKED_ACCOUNT_ID:
+                EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
+                contract.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
+                contract.setStakedNodeId(-1L);
+                break;
+        }
+
+        contract.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
     }
 
     @Override

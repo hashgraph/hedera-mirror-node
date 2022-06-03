@@ -119,8 +119,17 @@ public class Utility {
         }
     }
 
+    /**
+     * Gets epoch day from the timestamp in nanos.
+     *
+     * @param timestamp The timestamp in nanos
+     * @return The epoch day
+     */
     public static long getEpochDay(long timestamp) {
-        return LocalDate.ofInstant(Instant.ofEpochSecond(0, timestamp), ZoneOffset.UTC).toEpochDay();
+        return LocalDate.ofInstant(Instant.ofEpochSecond(0, timestamp), ZoneOffset.UTC)
+                .atStartOfDay()
+                .toLocalDate()
+                .toEpochDay();
     }
 
     /**

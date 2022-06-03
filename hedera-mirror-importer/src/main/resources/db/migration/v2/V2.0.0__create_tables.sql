@@ -86,6 +86,7 @@ create table if not exists contract
     auto_renew_account_id            bigint                         null,
     auto_renew_period                bigint                         null,
     created_timestamp                bigint                         null,
+    decline_reward                   boolean     default false      not null,
     deleted                          boolean                        null,
     evm_address                      bytea                          null,
     expiration_timestamp             bigint                         null,
@@ -102,7 +103,9 @@ create table if not exists contract
     public_key                       character varying              null,
     realm                            bigint                         not null,
     shard                            bigint                         not null,
-    stake_period_start               bigint                         null,
+    staked_account_id                bigint                         not null,
+    staked_node_id                   bigint                         not null,
+    stake_period_start               bigint                         not null,
     timestamp_range                  int8range                      not null,
     type                             entity_type default 'CONTRACT' not null
 );
@@ -210,28 +213,31 @@ comment on table custom_fee is 'HTS Custom fees';
 -- entity
 create table if not exists entity
 (
-    alias                            bytea             null,
-    auto_renew_account_id            bigint            null,
-    auto_renew_period                bigint            null,
-    created_timestamp                bigint            null,
-    deleted                          boolean           null,
-    ethereum_nonce                   bigint  default 0 null,
-    evm_address                      bytea             null,
-    expiration_timestamp             bigint            null,
-    id                               bigint            not null,
-    key                              bytea             null,
-    max_automatic_token_associations integer           null,
-    memo                             text default ''   not null,
-    num                              bigint            not null,
-    proxy_account_id                 bigint            null,
-    public_key                       character varying null,
-    realm                            bigint            not null,
-    receiver_sig_required            boolean           null,
-    shard                            bigint            not null,
-    stake_period_start               bigint            null,
-    submit_key                       bytea             null,
-    timestamp_range                  int8range         not null,
-    type                             entity_type       not null
+    alias                            bytea                 null,
+    auto_renew_account_id            bigint                null,
+    auto_renew_period                bigint                null,
+    created_timestamp                bigint                null,
+    decline_reward                   boolean default false not null,
+    deleted                          boolean               null,
+    ethereum_nonce                   bigint  default 0     null,
+    evm_address                      bytea                 null,
+    expiration_timestamp             bigint                null,
+    id                               bigint                not null,
+    key                              bytea                 null,
+    max_automatic_token_associations integer               null,
+    memo                             text    default ''    not null,
+    num                              bigint                not null,
+    proxy_account_id                 bigint                null,
+    public_key                       character varying     null,
+    realm                            bigint                not null,
+    receiver_sig_required            boolean               null,
+    shard                            bigint                not null,
+    staked_account_id                bigint                not null,
+    staked_node_id                   bigint                not null,
+    stake_period_start               bigint                not null,
+    submit_key                       bytea                 null,
+    timestamp_range                  int8range             not null,
+    type                             entity_type           not null
 );
 comment on table entity is 'Network entity with state';
 
@@ -305,15 +311,15 @@ create table if not exists live_hash
 -- nft
 create table if not exists nft
 (
-    account_id                  bigint,
-    created_timestamp           bigint,
-    delegating_spender          bigint default null,
-    deleted                     boolean,
-    metadata                    bytea,
-    modified_timestamp          bigint not null,
-    serial_number               bigint not null,
-    spender                     bigint default null,
-    token_id                    bigint not null
+    account_id         bigint,
+    created_timestamp  bigint,
+    delegating_spender bigint default null,
+    deleted            boolean,
+    metadata           bytea,
+    modified_timestamp bigint not null,
+    serial_number      bigint not null,
+    spender            bigint default null,
+    token_id           bigint not null
 );
 comment on table nft is 'Non-Fungible Tokens (NFTs) minted on network';
 
@@ -346,6 +352,20 @@ create table if not exists nft_transfer
     token_id            bigint  not null
 );
 comment on table nft_transfer is 'Crypto account nft transfers';
+
+create table if not exists node_stake
+(
+    consensus_timestamp bigint not null,
+    epoch_day           bigint not null,
+    node_id             bigint not null,
+    reward_rate         bigint not null,
+    reward_sum          bigint not null,
+    stake               bigint not null,
+    stake_rewarded      bigint not null,
+    stake_total         bigint not null,
+    staking_period      bigint not null
+);
+comment on table node_stake is 'Node staking information';
 
 -- non_fee_transfer
 create table if not exists non_fee_transfer

@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.google.protobuf.ByteString;
 import javax.inject.Named;
 
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -53,6 +54,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
     }
 
     @Override
+    @SuppressWarnings("java:S1874")
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
 
@@ -78,6 +80,29 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
         entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
         entity.setMemo(transactionBody.getMemo());
         entity.setReceiverSigRequired(transactionBody.getReceiverSigRequired());
+
+        updateStakingInfo(recordItem, entity);
         entityListener.onEntity(entity);
+    }
+
+    private void updateStakingInfo(RecordItem recordItem, Entity entity) {
+        var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
+        entity.setDeclineReward(transactionBody.getDeclineReward());
+
+        switch (transactionBody.getStakedIdCase()) {
+            case STAKEDID_NOT_SET:
+                return;
+            case STAKED_NODE_ID:
+                entity.setStakedNodeId(transactionBody.getStakedNodeId());
+                entity.setStakedAccountId(-1L);
+                break;
+            case STAKED_ACCOUNT_ID:
+                EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
+                entity.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
+                entity.setStakedNodeId(-1L);
+                break;
+        }
+
+        entity.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
     }
 }
