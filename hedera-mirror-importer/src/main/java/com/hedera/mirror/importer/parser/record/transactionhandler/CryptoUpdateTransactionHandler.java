@@ -96,6 +96,8 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
         }
 
         switch (transactionBody.getStakedIdCase()) {
+            case STAKEDID_NOT_SET:
+                break;
             case STAKED_NODE_ID:
                 entity.setStakedNodeId(transactionBody.getStakedNodeId());
                 entity.setStakedAccountId(-1L);
@@ -104,8 +106,6 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
                 EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
                 entity.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
                 entity.setStakedNodeId(-1L);
-                break;
-            case STAKEDID_NOT_SET:
                 break;
         }
 

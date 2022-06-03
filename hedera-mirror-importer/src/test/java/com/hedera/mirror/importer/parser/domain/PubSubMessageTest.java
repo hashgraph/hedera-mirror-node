@@ -234,7 +234,6 @@ class PubSubMessageTest {
                 "    \"isApproval\": false" +
                 "  } ]" +
                 "}";
-
         JSONAssert.assertEquals(expected, actual, true);
     }
 

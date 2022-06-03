@@ -217,11 +217,11 @@ public class DomainBuilder {
                 .num(id)
                 .realm(0L)
                 .shard(0L)
-                .timestampRange(Range.atLeast(timestamp))
-                .type(CONTRACT)
                 .stakePeriodStart(-1L)
                 .stakedAccountId(-1L)
-                .stakedNodeId(-1L);
+                .stakedNodeId(-1L)
+                .timestampRange(Range.atLeast(timestamp))
+                .type(CONTRACT);
 
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -312,12 +312,12 @@ public class DomainBuilder {
                 .realm(0L)
                 .receiverSigRequired(false)
                 .shard(0L)
-                .submitKey(key())
-                .timestampRange(Range.atLeast(timestamp))
-                .type(ACCOUNT)
                 .stakePeriodStart(-1L)
                 .stakedNodeId(-1L)
-                .stakedAccountId(-1L);
+                .stakedAccountId(-1L)
+                .submitKey(key())
+                .timestampRange(Range.atLeast(timestamp))
+                .type(ACCOUNT);
 
         return new DomainWrapperImpl<>(builder, builder::build);
     }

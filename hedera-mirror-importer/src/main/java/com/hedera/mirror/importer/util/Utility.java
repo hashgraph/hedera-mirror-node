@@ -52,7 +52,6 @@ import com.hedera.mirror.importer.exception.ParserException;
 public class Utility {
 
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
-
     private static final ECCurve SECP256K1_CURVE = new SecP256K1Curve();
 
     /**
