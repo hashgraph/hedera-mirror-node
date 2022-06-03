@@ -186,7 +186,8 @@ class PubSubMessageTest {
                 "  \"assessedCustomFees\":[]," +
                 "  \"automaticTokenAssociations\":[]," +
                 "  \"alias\":\"\"," +
-                "  \"ethereumHash\":\"YWJjZGVm\"" +
+                "  \"ethereumHash\":\"YWJjZGVm\"," +
+                "  \"paidStakingRewards\":[]" +
                 "}";
     }
 
