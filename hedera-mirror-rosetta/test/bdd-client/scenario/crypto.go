@@ -93,8 +93,6 @@ func (c *cryptoFeature) createCryptoAccountByAlias(ctx context.Context) error {
 	}
 
 	log.Infof("Transfer some hbar to new alias %s", c.aliasAddress)
-	log.Infof("Transfer some hbar to Account %s", getRosettaAccountIdentifier(testClient.GetOperator(0).Id))
-	log.Infof("Operations Alias Account %s", &types.AccountIdentifier{Address: c.aliasAddress})
 	operations := []*types.Operation{
 		{
 			OperationIdentifier: &types.OperationIdentifier{Index: 0},

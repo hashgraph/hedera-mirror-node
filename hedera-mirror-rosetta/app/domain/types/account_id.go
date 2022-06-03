@@ -30,8 +30,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/pkg/errors"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type AccountId struct {
@@ -76,7 +74,6 @@ func (a AccountId) IsZero() bool {
 
 func (a AccountId) String() string {
 	if a.HasAlias() {
-		log.Infof("Alias is being returned: %s", tools.SafeAddHexPrefix(hex.EncodeToString(a.alias)))
 		return tools.SafeAddHexPrefix(hex.EncodeToString(a.alias))
 	}
 	return a.accountId.String()

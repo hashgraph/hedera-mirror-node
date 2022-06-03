@@ -25,8 +25,6 @@ import (
 	"github.com/cucumber/godog"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/bdd-client/client"
 	"github.com/hashgraph/hedera-sdk-go/v2"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -68,7 +66,5 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 }
 
 func getRosettaAccountIdentifier(accountId hedera.AccountID) *types.AccountIdentifier {
-	log.Infof("getRosettaAccountIdentifier: %s", &types.AccountIdentifier{Address: accountId.String()})
-
 	return &types.AccountIdentifier{Address: accountId.String()}
 }

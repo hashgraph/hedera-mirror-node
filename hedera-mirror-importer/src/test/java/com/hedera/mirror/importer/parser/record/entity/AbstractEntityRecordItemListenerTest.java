@@ -403,7 +403,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setTimestampLower(modifiedTimestamp);
         entity.setKey(adminKeyBytes);
         entity.setSubmitKey(submitKeyBytes);
-
+        entity.setStakedAccountId(-1L);
+        entity.setStakedNodeId(-1L);
+        entity.setStakePeriodStart(-1L);
         return entity;
     }
 
@@ -439,12 +441,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected void assertEntity(AbstractEntity expected) {
         AbstractEntity actual = getEntity(expected.toEntityId());
         assertThat(actual).isEqualTo(expected);
-    }
-
-    protected <T extends AbstractEntity> T getEntityWithDefaultMemo(EntityId entityId) {
-        T entity = entityId.toEntity();
-        entity.setMemo("");
-        return entity;
     }
 
     private RecordFile recordFile(long consensusStart, long consensusEnd, String filename) {
