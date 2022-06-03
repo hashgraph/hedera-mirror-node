@@ -47,6 +47,7 @@ import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -152,6 +153,7 @@ public class RecordItemBuilder {
                 .setAutoRenewAccountId(accountId())
                 .setAutoRenewPeriod(duration(30))
                 .setConstructorParameters(bytes(64))
+                .setDeclineReward(true)
                 .setFileID(fileId())
                 .setGas(10_000L)
                 .setInitialBalance(20_000L)
@@ -160,7 +162,8 @@ public class RecordItemBuilder {
                 .setNewRealmAdminKey(key())
                 .setProxyAccountID(accountId())
                 .setRealmID(REALM_ID)
-                .setShardID(SHARD_ID);
+                .setShardID(SHARD_ID)
+                .setStakedNodeId(1L);
 
         return new Builder<>(TransactionType.CONTRACTCREATEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId))
@@ -222,10 +225,12 @@ public class RecordItemBuilder {
                 .setAutoRenewAccountId(accountId())
                 .setAutoRenewPeriod(duration(30))
                 .setContractID(contractId)
+                .setDeclineReward(BoolValue.of(true))
                 .setExpirationTime(timestamp())
                 .setMaxAutomaticTokenAssociations(Int32Value.of(10))
                 .setMemoWrapper(StringValue.of(text(16)))
-                .setProxyAccountID(accountId());
+                .setProxyAccountID(accountId())
+                .setStakedAccountId(accountId());
 
         return new Builder<>(TransactionType.CONTRACTUPDATEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId));
@@ -276,6 +281,7 @@ public class RecordItemBuilder {
     public Builder<CryptoCreateTransactionBody.Builder> cryptoCreate() {
         var builder = CryptoCreateTransactionBody.newBuilder()
                 .setAutoRenewPeriod(duration(30))
+                .setDeclineReward(true)
                 .setInitialBalance(1000L)
                 .setKey(key())
                 .setMaxAutomaticTokenAssociations(2)
@@ -283,8 +289,10 @@ public class RecordItemBuilder {
                 .setProxyAccountID(accountId())
                 .setRealmID(REALM_ID)
                 .setReceiverSigRequired(false)
-                .setShardID(SHARD_ID);
-        return new Builder<>(TransactionType.CRYPTOCREATEACCOUNT, builder);
+                .setShardID(SHARD_ID)
+                .setStakedNodeId(1L);
+        return new Builder<>(TransactionType.CRYPTOCREATEACCOUNT, builder)
+                .receipt(r -> r.setAccountID(accountId()));
     }
 
     public Builder<CryptoDeleteAllowanceTransactionBody.Builder> cryptoDeleteAllowance() {
@@ -300,6 +308,20 @@ public class RecordItemBuilder {
                         .addSerialNumbers(3L)
                         .setTokenId(tokenId()));
         return new Builder<>(TransactionType.CRYPTODELETEALLOWANCE, builder);
+    }
+
+    public Builder<CryptoUpdateTransactionBody.Builder> cryptoUpdate() {
+        var accountId = accountId();
+        var builder = CryptoUpdateTransactionBody.newBuilder()
+                .setAutoRenewPeriod(duration(30))
+                .setAccountIDToUpdate(accountId)
+                .setDeclineReward(BoolValue.of(true))
+                .setKey(key())
+                .setProxyAccountID(accountId())
+                .setReceiverSigRequired(false)
+                .setStakedNodeId(1L);
+        return new Builder<>(TransactionType.CRYPTOUPDATEACCOUNT, builder)
+                .receipt(r -> r.setAccountID(accountId));
     }
 
     @SneakyThrows

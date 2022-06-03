@@ -217,6 +217,9 @@ public class DomainBuilder {
                 .num(id)
                 .realm(0L)
                 .shard(0L)
+                .stakePeriodStart(-1L)
+                .stakedAccountId(-1L)
+                .stakedNodeId(-1L)
                 .timestampRange(Range.atLeast(timestamp))
                 .type(CONTRACT);
 
@@ -309,6 +312,9 @@ public class DomainBuilder {
                 .realm(0L)
                 .receiverSigRequired(false)
                 .shard(0L)
+                .stakePeriodStart(-1L)
+                .stakedNodeId(-1L)
+                .stakedAccountId(-1L)
                 .submitKey(key())
                 .timestampRange(Range.atLeast(timestamp))
                 .type(ACCOUNT);

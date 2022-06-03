@@ -73,6 +73,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    e.auto_renew_account_id as e_auto_renew_account_id," +
                 "    e.auto_renew_period as e_auto_renew_period," +
                 "    e.created_timestamp as e_created_timestamp," +
+                "    e.decline_reward as e_decline_reward," +
                 "    e.deleted as e_deleted," +
                 "    e.evm_address as e_evm_address," +
                 "    e.expiration_timestamp as e_expiration_timestamp," +
@@ -89,23 +90,50 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    e.public_key as e_public_key," +
                 "    e.realm as e_realm," +
                 "    e.shard as e_shard," +
+                "    e.stake_period_start as e_stake_period_start," +
+                "    e.staked_account_id as e_staked_account_id," +
+                "    e.staked_node_id as e_staked_node_id," +
                 "    e.timestamp_range as e_timestamp_range," +
                 "    e.type as e_type," +
                 "    t.*" +
-                "  from contract_temp t" +
-                "  left join contract e on e.id = t.id" +
+                "  from" +
+                "    contract_temp t" +
+                "    left join contract e on e.id = t.id" +
                 ")," +
                 "existing_history as (" +
-                "  insert into contract_history (" +
-                "    auto_renew_account_id,auto_renew_period, created_timestamp, deleted, evm_address," +
-                "    expiration_timestamp, file_id, id, initcode, key, max_automatic_token_associations, memo, " +
-                "    num, obtainer_id, permanent_removal, proxy_account_id, public_key, realm, shard, " +
-                "    timestamp_range,type" +
-                "  )" +
+                "  insert into" +
+                "    contract_history (" +
+                "      auto_renew_account_id," +
+                "      auto_renew_period," +
+                "      created_timestamp," +
+                "      decline_reward," +
+                "      deleted," +
+                "      evm_address," +
+                "      expiration_timestamp," +
+                "      file_id," +
+                "      id," +
+                "      initcode," +
+                "      key," +
+                "      max_automatic_token_associations," +
+                "      memo," +
+                "      num," +
+                "      obtainer_id," +
+                "      permanent_removal," +
+                "      proxy_account_id," +
+                "      public_key," +
+                "      realm," +
+                "      shard," +
+                "      stake_period_start," +
+                "      staked_account_id," +
+                "      staked_node_id," +
+                "      timestamp_range," +
+                "      type" +
+                "    )" +
                 "  select" +
                 "    distinct on (id) e_auto_renew_account_id," +
                 "    e_auto_renew_period," +
                 "    e_created_timestamp," +
+                "    e_decline_reward," +
                 "    e_deleted," +
                 "    e_evm_address," +
                 "    e_expiration_timestamp," +
@@ -122,22 +150,58 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    e_public_key," +
                 "    e_realm," +
                 "    e_shard," +
+                "    e_stake_period_start," +
+                "    e_staked_account_id," +
+                "    e_staked_node_id," +
                 "    int8range(lower(e_timestamp_range), lower(timestamp_range)) as timestamp_range," +
                 "    e_type" +
-                "  from existing" +
-                "  where e_timestamp_range is not null and timestamp_range is not null" +
-                "  order by id, timestamp_range asc" +
+                "  from" +
+                "    existing" +
+                "  where" +
+                "    e_timestamp_range is not null" +
+                "    and timestamp_range is not null" +
+                "  order by" +
+                "    id," +
+                "    timestamp_range asc" +
                 ")," +
                 "temp_history as (" +
-                "  insert into contract_history (" +
-                "    auto_renew_account_id, auto_renew_period, created_timestamp, deleted, evm_address," +
-                "    expiration_timestamp, file_id, id, initcode, key, max_automatic_token_associations, memo, num," +
-                "    obtainer_id, permanent_removal,proxy_account_id, public_key, realm, shard, timestamp_range, type" +
-                "  )" +
-                "  select distinct" +
-                "    coalesce(auto_renew_account_id, e_auto_renew_account_id, null)," +
+                "  insert into" +
+                "    contract_history (" +
+                "      auto_renew_account_id," +
+                "      auto_renew_period," +
+                "      created_timestamp," +
+                "      decline_reward," +
+                "      deleted," +
+                "      evm_address," +
+                "      expiration_timestamp," +
+                "      file_id," +
+                "      id," +
+                "      initcode," +
+                "      key," +
+                "      max_automatic_token_associations," +
+                "      memo," +
+                "      num," +
+                "      obtainer_id," +
+                "      permanent_removal," +
+                "      proxy_account_id," +
+                "      public_key," +
+                "      realm," +
+                "      shard," +
+                "      stake_period_start," +
+                "      staked_account_id," +
+                "      staked_node_id," +
+                "      timestamp_range," +
+                "      type" +
+                "    )" +
+                "  select" +
+                "    distinct coalesce(" +
+                "      auto_renew_account_id," +
+                "      e_auto_renew_account_id," +
+                "      null" +
+                "    )," +
                 "    coalesce(auto_renew_period, e_auto_renew_period, null)," +
                 "    coalesce(created_timestamp, e_created_timestamp, null)," +
+                "    coalesce(decline_reward, e_decline_reward, false)," +
                 "    coalesce(deleted, e_deleted, null)," +
                 "    coalesce(evm_address, e_evm_address, null)," +
                 "    coalesce(expiration_timestamp, e_expiration_timestamp, null)," +
@@ -145,7 +209,11 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    coalesce(id, e_id, null)," +
                 "    coalesce(initcode, e_initcode, null)," +
                 "    coalesce(key, e_key, null)," +
-                "    coalesce(max_automatic_token_associations, e_max_automatic_token_associations, null)," +
+                "    coalesce(" +
+                "      max_automatic_token_associations," +
+                "      e_max_automatic_token_associations," +
+                "      null" +
+                "    )," +
                 "    coalesce(memo, e_memo, '')," +
                 "    coalesce(num, e_num, null)," +
                 "    coalesce(obtainer_id, e_obtainer_id, null)," +
@@ -154,20 +222,54 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    coalesce(public_key, e_public_key, null)," +
                 "    coalesce(realm, e_realm, null)," +
                 "    coalesce(shard, e_shard, null)," +
+                "    coalesce(stake_period_start, e_stake_period_start, '-1')," +
+                "    coalesce(staked_account_id, e_staked_account_id, '-1')," +
+                "    coalesce(staked_node_id, e_staked_node_id, '-1')," +
                 "    coalesce(timestamp_range, e_timestamp_range, null)," +
                 "    coalesce(type, e_type, 'CONTRACT')" +
-                "  from existing" +
-                "  where timestamp_range is not null and upper(timestamp_range) is not null" +
+                "  from" +
+                "    existing" +
+                "  where" +
+                "    timestamp_range is not null" +
+                "    and upper(timestamp_range) is not null" +
                 ")" +
-                "insert into contract (" +
-                "  auto_renew_account_id, auto_renew_period, created_timestamp, deleted, evm_address," +
-                "  expiration_timestamp, file_id, id, initcode, key, max_automatic_token_associations, memo, num," +
-                "  obtainer_id, permanent_removal, proxy_account_id, public_key, realm, shard, timestamp_range, type" +
-                ")" +
+                "insert into" +
+                "  contract (" +
+                "    auto_renew_account_id," +
+                "    auto_renew_period," +
+                "    created_timestamp," +
+                "    decline_reward," +
+                "    deleted," +
+                "    evm_address," +
+                "    expiration_timestamp," +
+                "    file_id," +
+                "    id," +
+                "    initcode," +
+                "    key," +
+                "    max_automatic_token_associations," +
+                "    memo," +
+                "    num," +
+                "    obtainer_id," +
+                "    permanent_removal," +
+                "    proxy_account_id," +
+                "    public_key," +
+                "    realm," +
+                "    shard," +
+                "    stake_period_start," +
+                "    staked_account_id," +
+                "    staked_node_id," +
+                "    timestamp_range," +
+                "    type" +
+                "  )" +
                 "select" +
-                "  coalesce(auto_renew_account_id, e_auto_renew_account_id, null)," +
+                "  coalesce(" +
+                "    auto_renew_account_id," +
+                "    e_auto_renew_account_id," +
+                "    null" +
+                "  )," +
                 "  coalesce(auto_renew_period, e_auto_renew_period, null)," +
                 "  coalesce(created_timestamp, e_created_timestamp, null)," +
+                "  coalesce(decline_reward, e_decline_reward, false)," +
                 "  coalesce(deleted, e_deleted, null)," +
                 "  coalesce(evm_address, e_evm_address, null)," +
                 "  coalesce(expiration_timestamp, e_expiration_timestamp, null)," +
@@ -175,7 +277,11 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "  coalesce(id, e_id, null)," +
                 "  coalesce(initcode, e_initcode, null)," +
                 "  coalesce(key, e_key, null)," +
-                "  coalesce(max_automatic_token_associations, e_max_automatic_token_associations, null)," +
+                "  coalesce(" +
+                "    max_automatic_token_associations," +
+                "    e_max_automatic_token_associations," +
+                "    null" +
+                "  )," +
                 "  coalesce(memo, e_memo, '')," +
                 "  coalesce(num, e_num, null)," +
                 "  coalesce(obtainer_id, e_obtainer_id, null)," +
@@ -184,14 +290,27 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "  coalesce(public_key, e_public_key, null)," +
                 "  coalesce(realm, e_realm, null)," +
                 "  coalesce(shard, e_shard, null)," +
+                "  coalesce(stake_period_start, e_stake_period_start, '-1')," +
+                "  coalesce(staked_account_id, e_staked_account_id, '-1')," +
+                "  coalesce(staked_node_id, e_staked_node_id, '-1')," +
                 "  coalesce(timestamp_range, e_timestamp_range, null)," +
                 "  coalesce(type, e_type, 'CONTRACT')" +
-                "from existing " +
-                "where (e_timestamp_range is not null and timestamp_range is null) or " +
-                "(timestamp_range is not null and upper(timestamp_range) is null) on conflict (id) do " +
-                "update set" +
+                "from" +
+                "  existing" +
+                " where" +
+                "  (" +
+                "    e_timestamp_range is not null" +
+                "    and timestamp_range is null" +
+                "  )" +
+                "  or (" +
+                "    timestamp_range is not null" +
+                "    and upper(timestamp_range) is null" +
+                "  ) on conflict (id) do " +
+                "update " +
+                "set" +
                 "  auto_renew_account_id = excluded.auto_renew_account_id," +
                 "  auto_renew_period = excluded.auto_renew_period," +
+                "  decline_reward = excluded.decline_reward," +
                 "  deleted = excluded.deleted," +
                 "  expiration_timestamp = excluded.expiration_timestamp," +
                 "  key = excluded.key," +
@@ -201,6 +320,9 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "  permanent_removal = excluded.permanent_removal," +
                 "  proxy_account_id = excluded.proxy_account_id," +
                 "  public_key = excluded.public_key," +
+                "  stake_period_start = excluded.stake_period_start," +
+                "  staked_account_id = excluded.staked_account_id," +
+                "  staked_node_id = excluded.staked_node_id," +
                 "  timestamp_range = excluded.timestamp_range"));
     }
 

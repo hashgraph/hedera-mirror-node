@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
-
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -69,6 +68,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -399,7 +399,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         dbAccountEntity.getExpirationTimestamp()),
                 () -> assertEquals(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()),
                         dbAccountEntity.getTimestampLower()),
-                () -> assertFalse(dbAccountEntity.getReceiverSigRequired())
+                () -> assertFalse(dbAccountEntity.getReceiverSigRequired()),
+                () -> assertFalse(dbAccountEntity.isDeclineReward()),
+                () -> assertEquals(cryptoUpdateTransactionBody.getStakedNodeId(), dbAccountEntity.getStakedNodeId()),
+                () -> assertEquals(-1L, dbAccountEntity.getStakedAccountId()),
+                () -> assertEquals(Utility.getEpochDay(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp())),
+                        dbAccountEntity.getStakePeriodStart())
         );
     }
 
@@ -474,17 +479,27 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                     // *** THIS IS THE OVERFLOW WE WANT TO TEST ***
                     // This should result in the entity having a Long.MAX_VALUE or Long.MIN_VALUE expirations
                     // (the results of overflows).
-                    .setExpirationTime(Timestamp.newBuilder().setSeconds(seconds));
+                    .setExpirationTime(Timestamp.newBuilder().setSeconds(seconds))
+                    .setDeclineReward(BoolValue.of(true))
+                    .setStakedAccountId(AccountID.newBuilder().setAccountNum(1L).build());
         });
-        var record = transactionRecordSuccess(getTransactionBody(updateTransaction));
+        var transactionBody = getTransactionBody(updateTransaction);
+
+        var record = transactionRecordSuccess(transactionBody);
 
         parseRecordItemAndCommit(new RecordItem(updateTransaction, record));
 
         var dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
 
+        var entityId = EntityId.of(transactionBody.getCryptoUpdateAccount().getStakedAccountId());
+        long stakedAccountId = AccountIdConverter.INSTANCE.convertToDatabaseColumn(entityId);
+
         assertAll(
                 () -> assertEquals(2, transactionRepository.count()),
-                () -> assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpirationTimestamp())
+                () -> assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpirationTimestamp()),
+                () -> assertTrue(dbAccountEntity.isDeclineReward()),
+                () -> assertEquals(stakedAccountId, dbAccountEntity.getStakedAccountId()),
+                () -> assertEquals(-1L, dbAccountEntity.getStakedNodeId())
         );
     }
 
@@ -1151,15 +1166,25 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     private Transaction cryptoUpdateTransaction(AccountID accountNum) {
-        return buildTransaction(builder -> builder.getCryptoUpdateAccountBuilder()
-                .setAccountIDToUpdate(accountNum)
-                .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
-                .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
-                .setKey(keyFromString(KEY))
-                .setMaxAutomaticTokenAssociations(Int32Value.of(10))
-                .setMemo(StringValue.of("CryptoUpdateAccount memo"))
-                .setProxyAccountID(PROXY_UPDATE)
-                .setReceiverSigRequiredWrapper(BoolValue.of(false)));
+        return cryptoUpdateTransaction(accountNum, b -> {
+        });
+    }
+
+    private Transaction cryptoUpdateTransaction(AccountID accountNum,
+            Consumer<CryptoUpdateTransactionBody.Builder> custom) {
+        return buildTransaction(builder -> {
+            var cryptoBuilder = builder.getCryptoUpdateAccountBuilder()
+                    .setAccountIDToUpdate(accountNum)
+                    .setAutoRenewPeriod(Duration.newBuilder().setSeconds(1500L))
+                    .setExpirationTime(Utility.instantToTimestamp(Instant.now()))
+                    .setKey(keyFromString(KEY))
+                    .setMaxAutomaticTokenAssociations(Int32Value.of(10))
+                    .setMemo(StringValue.of("CryptoUpdateAccount memo"))
+                    .setProxyAccountID(PROXY_UPDATE)
+                    .setReceiverSigRequiredWrapper(BoolValue.of(false))
+                    .setStakedNodeId(1L);
+            custom.accept(cryptoBuilder);
+        });
     }
 
     private Transaction cryptoTransferTransaction() {

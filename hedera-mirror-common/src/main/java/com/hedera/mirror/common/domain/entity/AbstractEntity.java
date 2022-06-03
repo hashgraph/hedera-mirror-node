@@ -67,6 +67,8 @@ public abstract class AbstractEntity implements History {
     @Column(updatable = false)
     private Long createdTimestamp;
 
+    private boolean declineReward;
+
     private Boolean deleted;
 
     @Column(updatable = false)
@@ -99,6 +101,12 @@ public abstract class AbstractEntity implements History {
     @Column(updatable = false)
     private Long shard;
 
+    private Long stakedAccountId;
+
+    private Long stakedNodeId;
+
+    private Long stakePeriodStart;
+
     @Column(updatable = false)
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
@@ -120,7 +128,7 @@ public abstract class AbstractEntity implements History {
     public EntityId toEntityId() {
         return new EntityId(shard, realm, num, type);
     }
-
+    
     // Necessary since Lombok doesn't use our setters for builders
     public abstract static class AbstractEntityBuilder<C, B extends AbstractEntityBuilder> {
         public B key(byte[] key) {

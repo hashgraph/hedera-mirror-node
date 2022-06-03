@@ -403,7 +403,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setTimestampLower(modifiedTimestamp);
         entity.setKey(adminKeyBytes);
         entity.setSubmitKey(submitKeyBytes);
-
+        entity.setStakedAccountId(-1L);
+        entity.setStakedNodeId(-1L);
+        entity.setStakePeriodStart(-1L);
         return entity;
     }
 
