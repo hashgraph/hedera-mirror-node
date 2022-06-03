@@ -36,7 +36,6 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
-import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,12 +56,10 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
-import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -78,7 +75,6 @@ import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
@@ -94,6 +90,7 @@ import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
+import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
@@ -124,6 +121,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftTransferRepository nftTransferRepository;
+    private final NodeStakeRepository nodeStakeRepository;
     private final RecordFileRepository recordFileRepository;
     private final ScheduleRepository scheduleRepository;
     private final SqlEntityListener sqlEntityListener;
@@ -564,7 +562,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onTopicMessage() {
         // given
-        TopicMessage topicMessage = getTopicMessage();
+        TopicMessage topicMessage = domainBuilder.topicMessage().get();
 
         // when
         sqlEntityListener.onTopicMessage(topicMessage);
@@ -577,15 +575,16 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onFileData() {
         // given
-        FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
-                .of(0, 0, 111, EntityType.FILE), TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId());
+        var fileData1 = domainBuilder.fileData().get();
+        var fileData2 = domainBuilder.fileData().get();
 
         // when
-        sqlEntityListener.onFileData(expectedFileData);
+        sqlEntityListener.onFileData(fileData1);
+        sqlEntityListener.onFileData(fileData2);
         completeFileAndCommit();
 
         // then
-        assertThat(fileDataRepository.findAll()).containsExactlyInAnyOrder(expectedFileData);
+        assertThat(fileDataRepository.findAll()).containsExactlyInAnyOrder(fileData1, fileData2);
     }
 
     @Test
@@ -635,48 +634,6 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .isNotNull()
                 .extracting(Transaction::getIndex)
                 .isEqualTo(2);
-    }
-
-    @Test
-    void onEntityMerge() {
-        // given
-        Entity entity = getEntity(1, 1L, 1L, 0, "memo", keyFromString(KEY));
-        sqlEntityListener.onEntity(entity);
-
-        Entity entityAutoUpdated = getEntity(1, 5L);
-        Long autoRenewAccountId = 10L;
-        entityAutoUpdated.setAutoRenewAccountId(autoRenewAccountId);
-        entityAutoUpdated.setAutoRenewPeriod(360L);
-        sqlEntityListener.onEntity(entityAutoUpdated);
-
-        Entity entityExpirationUpdated = getEntity(1, 10L);
-        entityExpirationUpdated.setExpirationTimestamp(720L);
-        sqlEntityListener.onEntity(entityExpirationUpdated);
-
-        Entity entitySubmitKeyUpdated = getEntity(1, 15L);
-        entitySubmitKeyUpdated.setSubmitKey(keyFromString(KEY2).toByteArray());
-        sqlEntityListener.onEntity(entitySubmitKeyUpdated);
-
-        Entity entityMemoUpdated = getEntity(1, 20L);
-        entityMemoUpdated.setMemo("memo-updated");
-        sqlEntityListener.onEntity(entityMemoUpdated);
-
-        Entity entityMaxAutomaticTokenAssociationsUpdated = getEntity(1, 25L);
-        entityMaxAutomaticTokenAssociationsUpdated.setMaxAutomaticTokenAssociations(10);
-        sqlEntityListener.onEntity(entityMaxAutomaticTokenAssociationsUpdated);
-
-        Entity entityReceiverSigRequired = getEntity(1, 30L);
-        entityReceiverSigRequired.setReceiverSigRequired(true);
-        sqlEntityListener.onEntity(entityReceiverSigRequired);
-
-        // when
-        completeFileAndCommit();
-
-        // then
-        Entity expected = getEntity(1, 1L, 30L, "memo-updated", keyFromString(KEY), autoRenewAccountId, 360L, null,
-                720L, 10, true, keyFromString(KEY2));
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(expected);
-        assertThat(contractRepository.count()).isZero();
     }
 
     @Test
@@ -957,9 +914,9 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onNftTransfer() {
-        NftTransfer nftTransfer1 = getNftTransfer(1L, "0.0.1", 1L, "0.0.2", "0.0.3");
-        NftTransfer nftTransfer2 = getNftTransfer(2L, "0.0.1", 2L, "0.0.2", "0.0.3");
-        NftTransfer nftTransfer3 = getNftTransfer(3L, "0.0.2", 1L, "0.0.2", "0.0.3");
+        NftTransfer nftTransfer1 = domainBuilder.nftTransfer().get();
+        NftTransfer nftTransfer2 = domainBuilder.nftTransfer().get();
+        NftTransfer nftTransfer3 = domainBuilder.nftTransfer().get();
 
         // when
         sqlEntityListener.onNftTransfer(nftTransfer1);
@@ -973,19 +930,14 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onNftTransferMultiReceiverSingleTimestamp() {
-        String tokenId = "0.0.1";
-        long timestamp = 1L;
-        long serialNumber = 5L;
-        String originalSenderId = "0.0.10";
-        String firstReceipientId = "0.0.11";
-        String secondReceipientId = "0.0.12";
-        String finalReceipientId = "0.0.13";
-        NftTransfer nftTransfer1 = getNftTransfer(timestamp, tokenId, serialNumber, firstReceipientId,
-                originalSenderId);
-        NftTransfer nftTransfer2 = getNftTransfer(timestamp, tokenId, serialNumber, secondReceipientId,
-                firstReceipientId);
-        NftTransfer nftTransfer3 = getNftTransfer(timestamp, tokenId, serialNumber, finalReceipientId,
-                secondReceipientId);
+        var nftTransfer = domainBuilder.nftTransfer();
+        EntityId entity1 = EntityId.of("0.0.10", ACCOUNT);
+        EntityId entity2 = EntityId.of("0.0.11", ACCOUNT);
+        EntityId entity3 = EntityId.of("0.0.12", ACCOUNT);
+        EntityId entity4 = EntityId.of("0.0.13", ACCOUNT);
+        var nftTransfer1 = nftTransfer.customize(n -> n.senderAccountId(entity1).receiverAccountId(entity2)).get();
+        var nftTransfer2 = nftTransfer.customize(n -> n.senderAccountId(entity2).receiverAccountId(entity3)).get();
+        var nftTransfer3 = nftTransfer.customize(n -> n.senderAccountId(entity3).receiverAccountId(entity4)).get();
 
         // when
         sqlEntityListener.onNftTransfer(nftTransfer1);
@@ -994,14 +946,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        NftTransfer mergedNftTransfer = getNftTransfer(timestamp, tokenId, serialNumber, finalReceipientId,
-                originalSenderId);
+        var mergedNftTransfer = nftTransfer.customize(n -> n.senderAccountId(entity1).receiverAccountId(entity4)).get();
         assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(mergedNftTransfer);
     }
 
     @Test
     void onNftTransferDuplicates() {
-        NftTransfer nftTransfer1 = getNftTransfer(1L, "0.0.1", 1L, "0.0.2", "0.0.3");
+        NftTransfer nftTransfer1 = domainBuilder.nftTransfer().get();
 
         // when
         sqlEntityListener.onNftTransfer(nftTransfer1);
@@ -1011,6 +962,21 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(nftTransfer1);
+    }
+
+    @Test
+    void onNodeStake() {
+        // given
+        var nodeStake1 = domainBuilder.nodeStake().get();
+        var nodeStake2 = domainBuilder.nodeStake().get();
+
+        // when
+        sqlEntityListener.onNodeStake(nodeStake1);
+        sqlEntityListener.onNodeStake(nodeStake2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(nodeStakeRepository.findAll()).containsExactlyInAnyOrder(nodeStake1, nodeStake2);
     }
 
     @Test
@@ -1394,14 +1360,9 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onTokenTransfer() {
-        EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
-        EntityId tokenId2 = EntityId.of("0.0.7", TOKEN);
-        EntityId accountId1 = EntityId.of("0.0.5", ACCOUNT);
-        EntityId accountId2 = EntityId.of("0.0.9", ACCOUNT);
-
-        TokenTransfer tokenTransfer1 = getTokenTransfer(1000, 2L, tokenId1, accountId1);
-        TokenTransfer tokenTransfer2 = getTokenTransfer(50, 2L, tokenId2, accountId2);
-        TokenTransfer tokenTransfer3 = getTokenTransfer(-444, 4L, tokenId1, accountId1);
+        TokenTransfer tokenTransfer1 = domainBuilder.tokenTransfer().get();
+        TokenTransfer tokenTransfer2 = domainBuilder.tokenTransfer().get();
+        TokenTransfer tokenTransfer3 = domainBuilder.tokenTransfer().get();
 
         // when
         sqlEntityListener.onTokenTransfer(tokenTransfer1);
@@ -1523,62 +1484,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(recordFileRepository.findAll()).contains(recordFile);
     }
 
-    private Entity getEntity(long id, long modifiedTimestamp) {
-        return getEntity(id, null, modifiedTimestamp, null, null, null);
-    }
-
-    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp,
-                             Integer maxAutomaticTokenAssociations, String memo, Key adminKey) {
-        return getEntity(id, createdTimestamp, modifiedTimestamp, memo, adminKey, null, null, null, null,
-                maxAutomaticTokenAssociations, false, null);
-    }
-
-    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo,
-                             Key adminKey, Long autoRenewAccountId, Long autoRenewPeriod,
-                             Boolean deleted, Long expiryTimeNs, Integer maxAutomaticTokenAssociations,
-                             Boolean receiverSigRequired, Key submitKey) {
-        Entity entity = new Entity();
-        entity.setId(id);
-        entity.setAutoRenewAccountId(autoRenewAccountId);
-        entity.setAutoRenewPeriod(autoRenewPeriod);
-        entity.setCreatedTimestamp(createdTimestamp);
-        entity.setDeleted(deleted);
-        entity.setEthereumNonce(0L);
-        entity.setExpirationTimestamp(expiryTimeNs);
-        entity.setKey(adminKey != null ? adminKey.toByteArray() : null);
-        entity.setMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations);
-        entity.setTimestampLower(modifiedTimestamp);
-        entity.setNum(id);
-        entity.setRealm(0L);
-        entity.setReceiverSigRequired(receiverSigRequired);
-        entity.setShard(0L);
-        entity.setSubmitKey(submitKey != null ? submitKey.toByteArray() : null);
-        entity.setType(ACCOUNT);
-        entity.setStakedAccountId(-1L);
-        entity.setStakedNodeId(-1L);
-        entity.setStakePeriodStart(-1L);
-        if (memo != null) {
-            entity.setMemo(memo);
-        }
-        return entity;
-    }
-
-    private TopicMessage getTopicMessage() {
-        TopicMessage topicMessage = new TopicMessage();
-        topicMessage.setChunkNum(1);
-        topicMessage.setChunkTotal(2);
-        topicMessage.setConsensusTimestamp(1L);
-        topicMessage.setMessage("test message".getBytes());
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityType.ACCOUNT));
-        topicMessage.setRunningHash("running hash".getBytes());
-        topicMessage.setRunningHashVersion(2);
-        topicMessage.setSequenceNumber(1L);
-        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityType.TOPIC));
-        topicMessage.setValidStartTimestamp(4L);
-
-        return topicMessage;
-    }
-
     @SneakyThrows
     private Token getToken(EntityId tokenId, EntityId accountId, Long createdTimestamp, long modifiedTimestamp) {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
@@ -1634,16 +1539,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         return nft;
     }
 
-    private NftTransfer getNftTransfer(long consensusTimestamp, String tokenId, long serialNumber, String receiverId,
-                                       String senderId) {
-        NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, EntityId.of(tokenId, TOKEN)));
-        nftTransfer.setReceiverAccountId(EntityId.of(receiverId, ACCOUNT));
-        nftTransfer.setSenderAccountId(EntityId.of(senderId, ACCOUNT));
-        nftTransfer.setPayerAccountId(TRANSACTION_PAYER);
-        return nftTransfer;
-    }
-
     private TokenAccount getTokenAccount(EntityId tokenId, EntityId accountId, Long createdTimestamp,
                                          long modifiedTimeStamp, Boolean associated, Boolean autoAssociated,
                                          TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus) {
@@ -1654,13 +1549,5 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenAccount.setKycStatus(kycStatus);
         tokenAccount.setCreatedTimestamp(createdTimestamp);
         return tokenAccount;
-    }
-
-    private TokenTransfer getTokenTransfer(long amount, long consensusTimestamp, EntityId tokenId, EntityId accountId) {
-        TokenTransfer tokenTransfer = new TokenTransfer();
-        tokenTransfer.setAmount(amount);
-        tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
-        tokenTransfer.setPayerAccountId(TRANSACTION_PAYER);
-        return tokenTransfer;
     }
 }

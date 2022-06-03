@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.domain;
 
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ECDSA;
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ED25519;
+import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 
 import com.google.protobuf.BoolValue;
@@ -53,6 +54,8 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
+import com.hederahashgraph.api.proto.java.NodeStake;
+import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
@@ -102,10 +105,12 @@ public class RecordItemBuilder {
 
     public static final String LONDON_RAW_TX =
             "02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
+
     private static final AccountID NODE = AccountID.newBuilder().setAccountNum(3).build();
     private static final RealmID REALM_ID = RealmID.getDefaultInstance();
     private static final ShardID SHARD_ID = ShardID.getDefaultInstance();
     private static final AccountID TREASURY = AccountID.newBuilder().setAccountNum(98).build();
+
     private final AtomicLong id = new AtomicLong(1000L);
     private final Instant now = Instant.now();
     private final SecureRandom random = new SecureRandom();
@@ -342,11 +347,12 @@ public class RecordItemBuilder {
         }
     }
 
-    private StorageChange.Builder storageChange() {
-        return StorageChange.newBuilder()
-                .setSlot(bytes(32))
-                .setValueRead(bytes(32))
-                .setValueWritten(BytesValue.of(bytes(32)));
+    public Builder<NodeStakeUpdateTransactionBody.Builder> nodeStakeUpdate() {
+        var builder = NodeStakeUpdateTransactionBody.newBuilder()
+                .setEndOfStakingPeriod(timestamp())
+                .setRewardRate(id() * TINYBARS_IN_ONE_HBAR)
+                .addNodeStake(nodeStake());
+        return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);
     }
 
     public Builder<ScheduleCreateTransactionBody.Builder> scheduleCreate() {
@@ -451,8 +457,23 @@ public class RecordItemBuilder {
         }
     }
 
+    public NodeStake.Builder nodeStake() {
+        var stake = id() * TINYBARS_IN_ONE_HBAR;
+        return NodeStake.newBuilder()
+                .setNodeId(id())
+                .setStake(stake)
+                .setStakeRewarded(stake - 100L);
+    }
+
     public ScheduleID scheduleId() {
         return ScheduleID.newBuilder().setScheduleNum(id()).build();
+    }
+
+    private StorageChange.Builder storageChange() {
+        return StorageChange.newBuilder()
+                .setSlot(bytes(32))
+                .setValueRead(bytes(32))
+                .setValueWritten(BytesValue.of(bytes(32)));
     }
 
     public String text(int characters) {

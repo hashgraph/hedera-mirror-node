@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
+import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -147,6 +148,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
         onEach(EntityListener::onNftTransfer, nftTransfer);
+    }
+
+    @Override
+    public void onNodeStake(NodeStake nodeStake) {
+        onEach(EntityListener::onNodeStake, nodeStake);
     }
 
     @Override

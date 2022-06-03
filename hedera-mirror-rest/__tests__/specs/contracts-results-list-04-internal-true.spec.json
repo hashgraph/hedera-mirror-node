@@ -114,6 +114,7 @@
         "function_parameters": "0x0707",
         "gas_limit": 987654,
         "gas_used": 123,
+        "hash": null,
         "timestamp": "997654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
       },
@@ -128,6 +129,7 @@
         "function_parameters": "0x0707",
         "gas_limit": 987654,
         "gas_used": 123,
+        "hash": null,
         "timestamp": "987654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
       },
@@ -142,6 +144,7 @@
         "function_parameters": "0x0303",
         "gas_limit": 1234556,
         "gas_used": 987,
+        "hash": null,
         "timestamp": "187654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
       }

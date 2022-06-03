@@ -443,12 +443,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         assertThat(actual).isEqualTo(expected);
     }
 
-    protected <T extends AbstractEntity> T getEntityWithDefaultMemo(EntityId entityId) {
-        T entity = entityId.toEntity();
-        entity.setMemo("");
-        return entity;
-    }
-
     private RecordFile recordFile(long consensusStart, long consensusEnd, String filename) {
         return RecordFile.builder()
                 .consensusStart(consensusStart)

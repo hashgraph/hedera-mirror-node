@@ -26,16 +26,22 @@ import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
 import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
+import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -56,6 +62,7 @@ import org.springframework.transaction.support.TransactionOperations;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
+import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
@@ -69,6 +76,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
@@ -78,6 +86,7 @@ import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
@@ -345,6 +354,15 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<FileData, FileData.FileDataBuilder> fileData() {
+        var builder = FileData.builder()
+                .consensusTimestamp(timestamp())
+                .fileData(bytes(128))
+                .entityId(entityId(FILE))
+                .transactionType(TransactionType.FILECREATE.getProtoId());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<Nft, Nft.NftBuilder> nft() {
         var createdTimestamp = timestamp();
         var builder = Nft.builder()
@@ -375,6 +393,21 @@ public class DomainBuilder {
                 .payerAccountId(entityId(ACCOUNT))
                 .senderAccountId(entityId(ACCOUNT));
 
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<NodeStake, NodeStake.NodeStakeBuilder> nodeStake() {
+        var stake = id() * TINYBARS_IN_ONE_HBAR;
+        long timestamp = timestamp();
+        var builder = NodeStake.builder()
+                .consensusTimestamp(timestamp)
+                .epochDay(getEpochDay(timestamp))
+                .nodeId(id())
+                .rewardRate(id())
+                .rewardSum(id() + TINYBARS_IN_ONE_HBAR)
+                .stake(stake)
+                .stakeRewarded(stake - 100L)
+                .stakingPeriod(timestamp());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -481,6 +514,27 @@ public class DomainBuilder {
                 .type(TOPIC));
     }
 
+    public DomainWrapper<TopicMessage, TopicMessage.TopicMessageBuilder> topicMessage() {
+        var transactionId = TransactionID.newBuilder()
+                .setAccountID(AccountID.newBuilder().setAccountNum(id()))
+                .setTransactionValidStart(Timestamp.newBuilder().setSeconds(timestamp()))
+                .build()
+                .toByteArray();
+        var builder = TopicMessage.builder()
+                .chunkNum(1)
+                .chunkTotal(1)
+                .consensusTimestamp(timestamp())
+                .initialTransactionId(transactionId)
+                .message(bytes(128))
+                .payerAccountId(entityId(ACCOUNT))
+                .runningHashVersion(2)
+                .runningHash(bytes(48))
+                .sequenceNumber(id())
+                .topicId(entityId(TOPIC))
+                .validStartTimestamp(timestamp());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<Transaction, Transaction.TransactionBuilder> transaction() {
         var builder = Transaction.builder()
                 .chargedTxFee(10000000L)
@@ -549,6 +603,11 @@ public class DomainBuilder {
 
     public long timestamp() {
         return DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id();
+    }
+
+    private long getEpochDay(long timestamp) {
+        return LocalDate.ofInstant(Instant.ofEpochSecond(0, timestamp), ZoneId.of("UTC")).atStartOfDay()
+                .toLocalDate().toEpochDay();
     }
 
     private int transactionIndex() {

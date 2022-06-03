@@ -40,8 +40,9 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `select cr.*
-      from contract_result cr
+    const expected = `with etht as (select hash,consensus_timestamp from ethereum_transaction)
+      select cr.*,etht.hash from contract_result cr
+      left join etht on cr.consensus_timestamp = etht.consensus_timestamp
       where cr.contract_id = $1
       order by cr.consensus_timestamp asc
       limit $2`;
@@ -57,8 +58,9 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `select cr.*
-      from contract_result cr
+    const expected = `with etht as (select hash,consensus_timestamp from ethereum_transaction)
+      select cr.*,etht.hash from contract_result cr
+      left join etht on cr.consensus_timestamp = etht.consensus_timestamp
       where cr.contract_id = $1
         and cr.consensus_timestamp > $2
         and cr.payer_account_id = $3
@@ -76,14 +78,15 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.nonce = $2)
-      select cr.*
-      from contract_result cr
-      left join t on cr.consensus_timestamp = t.consensus_timestamp
-      where cr.contract_id = $1
-        and t.nonce = $2
-      order by cr.consensus_timestamp asc
-      limit $3`;
+    const expected = `with etht as (select hash,consensus_timestamp from ethereum_transaction) ,
+        t as (select consensus_timestamp,index,nonce from transaction where transaction.nonce = $2)
+        select cr.*,etht.hash from contract_result cr
+        left join etht on cr.consensus_timestamp = etht.consensus_timestamp
+        left join t on cr.consensus_timestamp = t.consensus_timestamp
+        where cr.contract_id = $1 and t.nonce = $2
+        order by cr.consensus_timestamp asc
+        limit $3
+    `;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 10, 5]);
   });
@@ -96,14 +99,15 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.index = $2)
-      select cr.*
-      from contract_result cr
-      left join t on cr.consensus_timestamp = t.consensus_timestamp
-      where cr.contract_id = $1
-        and t.index = $2
-      order by cr.consensus_timestamp asc
-      limit $3`;
+    const expected = `with etht as (select hash,consensus_timestamp from ethereum_transaction) ,
+        t as (select consensus_timestamp,index,nonce from transaction where transaction.index = $2)
+        select cr.*,etht.hash from contract_result cr
+        left join etht on cr.consensus_timestamp = etht.consensus_timestamp
+        left join t on cr.consensus_timestamp = t.consensus_timestamp
+        where cr.contract_id = $1 and t.index = $2
+        order by cr.consensus_timestamp asc
+        limit $3
+    `;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 10, 5]);
   });
@@ -112,13 +116,16 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
 const contractLogContractIdWhereClause = `cl.contract_id = $1`;
 describe('ContractService.getContractLogsQuery tests', () => {
   test('Verify simple query', async () => {
-    const [query, params] = ContractService.getContractLogsQuery(
-      [contractLogContractIdWhereClause],
-      [2],
-      'desc',
-      'asc',
-      5
-    );
+    const [query, params] = ContractService.getContractLogsQuery({
+      lower: [],
+      inner: [],
+      upper: [],
+      conditions: [contractLogContractIdWhereClause],
+      params: [2],
+      timestampOrder: 'desc',
+      indexOrder: 'asc',
+      limit: 5,
+    });
     assertSqlQueryEqual(
       query,
       `select
@@ -142,30 +149,28 @@ describe('ContractService.getContractLogsQuery tests', () => {
   });
 
   test('Verify additional conditions', async () => {
-    const [query, params] = ContractService.getContractLogsQuery(
-      [
+    const [query, params] = ContractService.getContractLogsQuery({
+      lower: [],
+      inner: [],
+      upper: [],
+      conditions: [
         `cl.contract_id  = $1`,
-        `cl.topic0 = $2`,
-        `cl.topic1 = $3`,
-        `cl.topic2 = $4`,
-        `cl.topic3 = $5`,
-        'cl.index = $6',
-        `cl.consensus_timestamp in ($7, $8)`,
+        `cl.topic0 in ($2)`,
+        `cl.topic1 in ($3)`,
+        `cl.topic2 in ($4)`,
+        `cl.topic3 in ($5)`,
       ],
-      [
+      params: [
         1002,
         Buffer.from('11', 'hex'),
         Buffer.from('12', 'hex'),
         Buffer.from('13', 'hex'),
         Buffer.from('14', 'hex'),
-        0,
-        20,
-        30,
       ],
-      'desc',
-      'desc',
-      5
-    );
+      timestampOrder: 'desc',
+      indexOrder: 'desc',
+      limit: 5,
+    });
     assertSqlQueryEqual(
       query,
       `select
@@ -181,15 +186,13 @@ describe('ContractService.getContractLogsQuery tests', () => {
        topic3
       from contract_log cl
       where cl.contract_id = $1
-        and cl.topic0 = $2
-        and cl.topic1 = $3
-        and cl.topic2 = $4
-        and cl.topic3 = $5
-        and cl.index = $6
-        and cl.consensus_timestamp in ($7, $8)
+        and cl.topic0 in ($2)
+        and cl.topic1 in ($3)
+        and cl.topic2 in ($4)
+        and cl.topic3 in ($5)
       order by cl.consensus_timestamp desc,
                cl.index desc
-      limit $9`
+      limit $6`
     );
     expect(params).toEqual([
       1002,
@@ -197,11 +200,150 @@ describe('ContractService.getContractLogsQuery tests', () => {
       Buffer.from('12', 'hex'),
       Buffer.from('13', 'hex'),
       Buffer.from('14', 'hex'),
-      0,
-      20,
-      30,
       5,
     ]);
+  });
+  test('Verify [lower, inner] filters', async () => {
+    const [query, params] = ContractService.getContractLogsQuery({
+      lower: [
+        {key: 'index', operator: ' >= ', value: '1'},
+        {key: 'timestamp', operator: ' = ', value: '1001'},
+      ],
+      inner: [{key: 'timestamp', operator: ' > ', value: '1001'}],
+      upper: [],
+      conditions: [`cl.contract_id  = $1`, `cl.topic0 in ($2)`],
+      params: [1002, Buffer.from('11', 'hex')],
+      timestampOrder: 'desc',
+      indexOrder: 'desc',
+      limit: 5,
+    });
+    assertSqlQueryEqual(
+      query,
+      `(select
+       bloom,
+       contract_id,
+       consensus_timestamp,
+       data,
+       index,
+       root_contract_id,
+       topic0,
+       topic1,
+       topic2,
+       topic3
+      from contract_log cl
+      where cl.contract_id = $1
+        and cl.topic0 in ($2)
+        and cl.index >= $4
+        and cl.consensus_timestamp = $5
+      order by cl.consensus_timestamp desc,
+               cl.index desc
+      limit $3) union (
+        select
+          bloom,
+          contract_id,
+          consensus_timestamp,
+          data,
+          index,
+          root_contract_id,
+          topic0,
+          topic1,
+          topic2,
+          topic3
+        from contract_log cl
+        where cl.contract_id = $1
+        and cl.topic0 in ($2)
+        and cl.consensus_timestamp > $6
+        order by cl.consensus_timestamp desc, cl.index desc
+        limit $3)
+      order by consensus_timestamp desc, index desc
+      limit $3`
+    );
+    expect(params).toEqual([1002, Buffer.from('11', 'hex'), 5, '1', '1001', '1001']);
+  });
+  test('Verify [lower, inner, upper] filters', async () => {
+    const [query, params] = ContractService.getContractLogsQuery({
+      lower: [
+        {key: 'index', operator: ' >= ', value: '1'},
+        {key: 'timestamp', operator: ' = ', value: '1001'},
+      ],
+      inner: [
+        {key: 'timestamp', operator: ' > ', value: '1001'},
+        {key: 'timestamp', operator: ' < ', value: '1005'},
+      ],
+      upper: [
+        {key: 'index', operator: ' <= ', value: '5'},
+        {key: 'timestamp', operator: ' = ', value: '1005'},
+      ],
+      conditions: [`cl.contract_id  = $1`, `cl.topic0 in ($2)`],
+      params: [1002, Buffer.from('11', 'hex')],
+      timestampOrder: 'desc',
+      indexOrder: 'desc',
+      limit: 5,
+    });
+    assertSqlQueryEqual(
+      query,
+      `(
+        select
+          bloom,
+          contract_id,
+          consensus_timestamp,
+          data,
+          index,
+          root_contract_id,
+          topic0,
+          topic1,
+          topic2,
+          topic3
+        from contract_log cl
+        where cl.contract_id = $1
+          and cl.topic0 in ($2)
+          and cl.index >= $4
+          and cl.consensus_timestamp = $5
+        order by cl.consensus_timestamp desc, cl.index desc
+        limit $3
+      ) union (
+        select
+          bloom,
+          contract_id,
+          consensus_timestamp,
+          data,
+          index,
+          root_contract_id,
+          topic0,
+          topic1,
+          topic2,
+          topic3
+        from contract_log cl
+        where cl.contract_id = $1
+        and cl.topic0 in ($2)
+        and cl.consensus_timestamp > $6
+        and cl.consensus_timestamp < $7
+        order by cl.consensus_timestamp desc, cl.index desc
+        limit $3
+      ) union (
+        select
+          bloom,
+          contract_id,
+          consensus_timestamp,
+          data,
+          index,
+          root_contract_id,
+          topic0,
+          topic1,
+          topic2,
+          topic3
+        from contract_log cl
+        where cl.contract_id = $1
+        and cl.topic0 in ($2)
+        and cl.index <= $8
+        and cl.consensus_timestamp = $9
+        order by cl.consensus_timestamp desc, cl.index desc
+        limit $3
+      )
+      order by consensus_timestamp desc, index desc
+      limit $3`
+    );
+    expect(params).toEqual([1002, Buffer.from('11', 'hex'), 5, '1', '1001', '1001', '1005', '5', '1005']);
   });
 });
 
@@ -502,10 +644,20 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
     expect(pickContractResultFields(actual)).toIncludeSameMembers(expected);
   });
 });
-
 describe('ContractService.getContractLogs tests', () => {
+  const defaultQuery = {
+    lower: [],
+    inner: [],
+    upper: [],
+    conditions: [],
+    params: [],
+    timestampOrder: 'desc',
+    indexOrder: 'desc',
+    limit: 100,
+  };
+
   test('No match', async () => {
-    const response = await ContractService.getContractLogs();
+    const response = await ContractService.getContractLogs(defaultQuery);
     expect(response).toEqual([]);
   });
 
@@ -525,7 +677,7 @@ describe('ContractService.getContractLogs tests', () => {
       },
     ];
 
-    const response = await ContractService.getContractLogs();
+    const response = await ContractService.getContractLogs({...defaultQuery, params: []});
     expect(response).toMatchObject(expectedContractLog);
   });
 
@@ -581,7 +733,11 @@ describe('ContractService.getContractLogs tests', () => {
       },
     ];
 
-    const response = await ContractService.getContractLogs([contractLogContractIdWhereClause], [3]);
+    const response = await ContractService.getContractLogs({
+      ...defaultQuery,
+      conditions: [contractLogContractIdWhereClause],
+      params: [3],
+    });
     expect(response).toMatchObject(expectedContractLog);
   });
 
@@ -621,29 +777,30 @@ describe('ContractService.getContractLogs tests', () => {
         contractId: 3,
       },
     ];
-    const response = await ContractService.getContractLogs(
-      [
-        contractLogContractIdWhereClause,
-        'cl.topic0 = $2',
-        'cl.topic1 = $3',
-        'cl.topic2 = $4',
-        'cl.topic3 = $5',
-        'cl.index = $6',
-        'cl.consensus_timestamp in ($7)',
+    const response = await ContractService.getContractLogs({
+      ...defaultQuery,
+      lower: [
+        {key: 'index', operator: ' = ', value: 1},
+        {key: 'timestamp', operator: ' = ', value: 20},
       ],
-      [
+      conditions: [
+        contractLogContractIdWhereClause,
+        'cl.topic0 in ($2)',
+        'cl.topic1 in ($3)',
+        'cl.topic2 in ($4)',
+        'cl.topic3 in ($5)',
+      ],
+      params: [
         3,
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
         'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
-        1,
-        20,
       ],
-      'desc',
-      'asc',
-      25
-    );
+      timestampOrder: 'desc',
+      indexOrder: 'asc',
+      limit: 25,
+    });
     expect(response).toMatchObject(expectedContractLog);
   });
 });

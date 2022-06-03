@@ -1648,3 +1648,37 @@ describe('Utils addHexPrefix tests', () => {
     });
   });
 });
+
+describe('Utils convertGasPriceToTinyBars tests', () => {
+  const defaultGasPrice = 11566419;
+  const defaultHbars = 30000;
+  const defaultCents = 285576;
+  const specs = [
+    {
+      name: 'no args',
+      args: [],
+      expected: null,
+    },
+    {
+      name: 'has undefined arg',
+      args: [defaultGasPrice, defaultHbars, undefined],
+      expected: null,
+    },
+    {
+      name: 'should return estimated tinybars',
+      args: [defaultGasPrice, defaultHbars, defaultCents],
+      expected: 1215,
+    },
+    {
+      name: 'should return the minimum tinybars',
+      args: [1, defaultHbars, defaultCents],
+      expected: 1,
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(spec.name, () => {
+      expect(utils.convertGasPriceToTinyBars(...spec.args)).toEqual(spec.expected);
+    });
+  });
+});
