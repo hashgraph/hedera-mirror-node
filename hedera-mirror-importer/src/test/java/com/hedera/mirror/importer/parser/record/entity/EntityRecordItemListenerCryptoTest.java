@@ -46,6 +46,7 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
@@ -79,9 +80,12 @@ import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.PartialDataAction;
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
@@ -405,6 +409,132 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(-1L, dbAccountEntity.getStakedAccountId()),
                 () -> assertEquals(Utility.getEpochDay(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp())),
                         dbAccountEntity.getStakePeriodStart())
+        );
+    }
+
+    @Test
+    void cryptoTransferWithPaidStakingRewards() {
+        // given
+        var receiver1 = domainBuilder.entity().persist();
+        var receiver2 = domainBuilder.entity().persist();
+        var sender = domainBuilder.entity().persist();
+        var receiver1Id = AccountID.newBuilder().setAccountNum(receiver1.getNum()).build();
+        var receiver2Id = AccountID.newBuilder().setAccountNum(receiver2.getNum()).build();
+        var senderId = AccountID.newBuilder().setAccountNum(sender.getNum()).build();
+        var timestamp = 1653506322000111222L; // 19137 days since epoch
+        var stakePeriodStart = 19137L;
+
+        var recordItem = recordItemBuilder.cryptoTransfer()
+                .transactionBody(b -> b.setTransfers(TransferList.newBuilder()
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(senderId).setAmount(-20L))
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiver1Id).setAmount(5L))
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiver2Id).setAmount(-15L))))
+                .record(r -> {
+                    // preserve the tx fee paid by the payer and received by the node and the fee collector
+                    // sender only gets deducted 15, since it gets a 5 reward payout
+                    // receiver1 gets 9, since it gets a 4 reward payout
+                    // receiver2 gets no reward
+                    var paidStakingRewards = List.of(
+                            AccountAmount.newBuilder().setAccountID(senderId).setAmount(5L).build(),
+                            AccountAmount.newBuilder().setAccountID(receiver1Id).setAmount(4L).build()
+                    );
+
+                    var transferList = r.getTransferList().toBuilder()
+                            .addAccountAmounts(AccountAmount.newBuilder().setAccountID(senderId).setAmount(-15L))
+                            .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiver1Id).setAmount(9L))
+                            .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiver2Id).setAmount(15L))
+                            .addAccountAmounts(AccountAmount.newBuilder()
+                                    .setAccountID(RecordItemBuilder.STAKING_REWARD_ACCOUNT).setAmount(-9L));
+                    r.setConsensusTimestamp(TestUtils.toTimestamp(timestamp))
+                            .setTransferList(transferList)
+                            .addAllPaidStakingRewards(paidStakingRewards);
+                })
+                .build();
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        sender.setStakePeriodStart(stakePeriodStart);
+        receiver1.setStakePeriodStart(stakePeriodStart);
+
+        var payerAccountId = recordItem.getPayerAccountId();
+        var expectedStakingRewardTransfer1 = new StakingRewardTransfer();
+        expectedStakingRewardTransfer1.setAccountId(sender.getId());
+        expectedStakingRewardTransfer1.setAmount(5L);
+        expectedStakingRewardTransfer1.setConsensusTimestamp(timestamp);
+        expectedStakingRewardTransfer1.setPayerAccountId(payerAccountId);
+        var expectedStakingRewardTransfer2 = new StakingRewardTransfer();
+        expectedStakingRewardTransfer2.setAccountId(receiver1.getId());
+        expectedStakingRewardTransfer2.setAmount(4L);
+        expectedStakingRewardTransfer2.setConsensusTimestamp(timestamp);
+        expectedStakingRewardTransfer2.setPayerAccountId(payerAccountId);
+
+        assertAll(
+                () -> assertEquals(0, contractRepository.count()),
+                // 3 for fee, 3 for hbar transfers, and 1 for reward payout from 0.0.800
+                () -> assertEquals(7, cryptoTransferRepository.count()),
+                () -> assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(sender, receiver1, receiver2),
+                () -> assertThat(stakingRewardTransferRepository.findAll()).containsExactlyInAnyOrder(
+                        expectedStakingRewardTransfer1, expectedStakingRewardTransfer2
+                ),
+                () -> assertEquals(1, transactionRepository.count())
+        );
+    }
+
+    @Test
+    void cryptoTransferFailedWithPaidStakingRewards() {
+        // given
+        var payer = domainBuilder.entity().persist();
+        var receiver = domainBuilder.entity().persist();
+        var sender = domainBuilder.entity().persist();
+        var payerId = AccountID.newBuilder().setAccountNum(payer.getNum()).build();
+        var receiverId = AccountID.newBuilder().setAccountNum(receiver.getNum()).build();
+        var senderId = AccountID.newBuilder().setAccountNum(sender.getNum()).build();
+        var timestamp = 1653506322000111222L; // 19137 days since epoch
+        var stakePeriodStart = 19137L;
+
+        // Transaction failed with INSUFFICIENT_ACCOUNT_BALANCE because sender's balance is less than the indented
+        // transfer amount. However, the transaction payer has a balance change and there is pending reward for the
+        // payer
+        // account, so there will be a reward payout for the transaction payer.
+        var transactionId = TransactionID.newBuilder().setAccountID(payerId)
+                .setTransactionValidStart(TestUtils.toTimestamp(timestamp - 200L)).build();
+        var recordItem = recordItemBuilder.cryptoTransfer()
+                .transactionBody(b -> b.setTransfers(TransferList.newBuilder()
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(senderId).setAmount(-20L))
+                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(receiverId).setAmount(20L))))
+                .transactionBodyWrapper(b -> b.setTransactionID(transactionId))
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(timestamp))
+                        .setTransactionID(transactionId)
+                        .setTransferList(TransferList.newBuilder()
+                                .addAccountAmounts(recordItemBuilder.accountAmount(payerId, -2800L))
+                                .addAccountAmounts(recordItemBuilder.accountAmount(NODE, 1000L))
+                                .addAccountAmounts(recordItemBuilder.accountAmount(TREASURY, 2000L))
+                                .addAccountAmounts(recordItemBuilder.accountAmount(
+                                        RecordItemBuilder.STAKING_REWARD_ACCOUNT, -200L)))
+                        .addPaidStakingRewards(recordItemBuilder.accountAmount(payerId, 200L))
+                        .getReceiptBuilder().setStatus(ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE))
+                .build();
+
+        // when
+        parseRecordItemAndCommit(recordItem);
+
+        // then
+        payer.setStakePeriodStart(stakePeriodStart);
+
+        var expectedStakingRewardTransfer = new StakingRewardTransfer();
+        expectedStakingRewardTransfer.setAccountId(payer.getId());
+        expectedStakingRewardTransfer.setAmount(200L);
+        expectedStakingRewardTransfer.setConsensusTimestamp(timestamp);
+        expectedStakingRewardTransfer.setPayerAccountId(payer.toEntityId());
+
+        assertAll(
+                () -> assertEquals(0, contractRepository.count()),
+                () -> assertEquals(4, cryptoTransferRepository.count()),
+                () -> assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(payer, sender, receiver),
+                () -> assertThat(stakingRewardTransferRepository.findAll()).containsOnly(expectedStakingRewardTransfer),
+                () -> assertEquals(1, transactionRepository.count())
         );
     }
 

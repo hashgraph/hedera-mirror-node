@@ -177,6 +177,10 @@ alter table schedule
 create index if not exists schedule__creator_account_id
     on schedule (creator_account_id desc);
 
+-- staking_reward_transfer
+alter table staking_reward_transfer
+    add constraint staking_reward_transfer__pk primary key (consensus_timestamp, account_id);
+
 -- token
 alter table token
     add constraint token__pk primary key (token_id);
