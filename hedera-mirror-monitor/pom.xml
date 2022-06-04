@@ -43,7 +43,7 @@
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
-            <artifactId>grpc-okhttp</artifactId>
+            <artifactId>grpc-netty</artifactId>
             <version>${grpc.version}</version>
         </dependency>
         <dependency>
