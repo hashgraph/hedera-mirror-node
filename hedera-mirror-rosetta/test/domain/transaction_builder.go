@@ -64,7 +64,7 @@ func NewTransactionBuilder(dbClient interfaces.DbClient, payer, validStartNs int
 		Result:               22,
 		TransactionHash:      randstr.Bytes(8),
 		Type:                 domain.TransactionTypeCryptoTransfer,
-		ValidDurationSeconds: 120,
+		ValidDurationSeconds: 180,
 		ValidStartNs:         validStartNs,
 	}
 	return &TransactionBuilder{dbClient: dbClient, transaction: transaction}
