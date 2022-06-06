@@ -37,10 +37,6 @@ public abstract class MirrorBaseJavaMigration implements JavaMigration {
         return false;
     }
 
-    public boolean isStateScript() {
-        return false;
-    }
-
     protected MigrationVersion getMinimumVersion() {
         return null;
     }

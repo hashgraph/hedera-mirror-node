@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
+import org.skyscreamer.jsonassert.JSONAssert;
+import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -83,9 +85,11 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
         assertThat(actualMessageMap.size()).isEqualTo(actualMessages.size());
         assertThat(expectedMessageMap.size()).isEqualTo(expectedMessages.size());
         for (Map.Entry<Long, String> messageEntry : expectedMessageMap.entrySet()) {
+            long consensusTimestamp = messageEntry.getKey();
             String expectedMessage = messageEntry.getValue();
-            String actualMessage = actualMessageMap.get(messageEntry.getKey());
-            assertThat(actualMessage).isEqualTo(expectedMessage);
+            String actualMessage = actualMessageMap.get(consensusTimestamp);
+            JSONAssert.assertEquals(String.format("%d", consensusTimestamp), expectedMessage, actualMessage,
+                    JSONCompareMode.STRICT);
         }
     }
 
