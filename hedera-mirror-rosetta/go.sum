@@ -693,8 +693,8 @@ github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQ
 github.com/oklog/ulid v1.3.1/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
 github.com/olekukonko/tablewriter v0.0.0-20170122224234-a0225b3f23b5/go.mod h1:vsDQFd/mU46D+Z4whnwzcISnGGzXWMclvtLoiIKAKIo=
 github.com/olekukonko/tablewriter v0.0.5/go.mod h1:hPp6KlRPjbx+hW8ykQs1w3UBbZlj6HuIJcUGPhkA7kY=
-github.com/onrik/gorm-logrus v0.3.0 h1:yZjk6nLwHj6a4V1nFDap1+ket7ZEU79jIiw2zvucbNE=
-github.com/onrik/gorm-logrus v0.3.0/go.mod h1:TuRBXNvssHLG9RBbd0eIstGf6KjI9Qqff4yUEFrGoPA=
+github.com/onrik/gorm-logrus v0.4.0 h1:8yvHA/e1noQcDStVXaBg0GrOy+loqEQbXcd56Rqe+Ok=
+github.com/onrik/gorm-logrus v0.4.0/go.mod h1:TuRBXNvssHLG9RBbd0eIstGf6KjI9Qqff4yUEFrGoPA=
 github.com/onsi/ginkgo v1.6.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.7.0/go.mod h1:lLunBs/Ym6LB5Z9jYTR76FiuTmxDTDusOGeTQH+WWjE=
 github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108oapk=
