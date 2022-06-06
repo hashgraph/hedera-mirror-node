@@ -54,7 +54,7 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
             "set logs_bloom = :bloomFilter " +
             "where consensus_end = :consensusEnd";
 
-    private static final String SET_RECORD_FILE_GAS_USED_SQL = "update record_file " +
+    private static final String SET_RECORD_FILE_GAS_USED = "update record_file " +
             "set gas_used = coalesce(gas.total, 0) " +
             "from (" +
             "  select sum(gas_used) as total " +
@@ -67,7 +67,7 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
             ") gas " +
             "where consensus_end = :consensusEnd";
 
-    private static final String SET_TRANSACTION_INDEX_SQL = "with indexed as ( " +
+    private static final String SET_TRANSACTION_INDEX = "with indexed as ( " +
             "  select consensus_timestamp, row_number() over (order by consensus_timestamp) - 1 as index " +
             "  from transaction " +
             "  where consensus_timestamp >= :consensusStart" +
@@ -125,7 +125,7 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.60.1");
+        return MigrationVersion.fromVersion("1.59.1");
     }
 
     @Override
@@ -168,10 +168,10 @@ public class BackfillBlockMigration extends AsyncJavaMigration {
                 jdbcTemplate.update(SET_RECORD_FILE_BLOOM_FILTER, bloomFilterParams);
 
                 // gas used
-                jdbcTemplate.update(SET_RECORD_FILE_GAS_USED_SQL, timestampRangeParams);
+                jdbcTemplate.update(SET_RECORD_FILE_GAS_USED, timestampRangeParams);
 
                 // transaction index
-                jdbcTemplate.update(SET_TRANSACTION_INDEX_SQL, timestampRangeParams);
+                jdbcTemplate.update(SET_TRANSACTION_INDEX, timestampRangeParams);
 
                 return timestampRange.getConsensusEnd();
             });
