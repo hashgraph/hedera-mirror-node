@@ -44,7 +44,7 @@
     "prom-client": "^13.1.0",
     "qs": "^6.10.3",
     "quick-lru": "^5.1.1",
-    "rfc4648": "^1.5.1",
+    "rfc4648": "^1.5.2",
     "swagger-stats": "^0.99.2",
     "swagger-ui-express": "^4.4.0"
   },
