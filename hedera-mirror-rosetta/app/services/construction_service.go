@@ -389,6 +389,7 @@ func (c *constructionAPIService) getIntMetadataValue(metadata map[string]interfa
 }
 
 func isValidDuration(validDuration int64) bool {
+	// A value of 0 indicates validDuration is unset
 	if (validDuration >= 0) && (validDuration <= 180) {
 		return true
 	} else {
