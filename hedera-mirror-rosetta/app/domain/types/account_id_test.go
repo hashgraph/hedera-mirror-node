@@ -353,6 +353,13 @@ func TestNewAccountIdFromStringAlias(t *testing.T) {
 			sdkAccountString: "0.0." + secp256k1PublicKey.String(),
 		},
 		{
+			input:            "0x" + ed25519AliasString,
+			curveType:        types.Edwards25519,
+			networkAlias:     concatBytes(ed25519PublicKeyProtoPrefix, ed25519PublicKey.BytesRaw()),
+			sdkAccountString: "0.1." + ed25519PublicKey.String(),
+			realm:            1,
+		},
+		{
 			input:     "",
 			expectErr: true,
 		},

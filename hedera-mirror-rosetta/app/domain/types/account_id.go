@@ -102,7 +102,7 @@ func NewAccountIdFromString(address string, shard, realm int64) (AccountId, erro
 		}
 		return AccountId{accountId: entityId}, nil
 	}
-	alias, err := hex.DecodeString(address)
+	alias, err := hex.DecodeString(tools.SafeRemoveHexPrefix(address))
 	if err != nil {
 		return AccountId{}, err
 	}
