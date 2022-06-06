@@ -23,7 +23,7 @@
     "http-errors": "^2.0.0",
     "lodash": "^4.17.21",
     "log4js": "^6.5.2",
-    "mathjs": "^10.6.0",
+    "mathjs": "^10.6.1",
     "node-fetch": "^2.6.7",
     "parse-duration": "^1.0.2",
     "pretty-ms": "^7.0.1"
