@@ -7,16 +7,6 @@
         <cpe>cpe:/a:www-sql_project:www-sql</cpe>
     </suppress>
     <suppress>
-        <notes>Conflates Spring Security version with separate spring-security-rsa utility version</notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-rsa@.*$</packageUrl>
-        <cpe>cpe:/a:vmware:springsource_spring_security</cpe>
-    </suppress>
-    <suppress>
-        <notes>Not using Spring Framework 5.0.5</notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework\.security/spring\-security\-crypto@.*$</packageUrl>
-        <cve>CVE-2018-1258</cve>
-    </suppress>
-    <suppress>
         <notes>Conflates spring-cloud-kubernetes-fabric8-config (client) with spring-cloud-config-server</notes>
         <packageUrl regex="true">
             ^pkg:maven/org\.springframework\.cloud/spring\-cloud(\-starter)?\-kubernetes\-fabric8\-.*$
@@ -25,27 +15,8 @@
         <cpe>cpe:/a:vmware:spring_cloud_config</cpe>
     </suppress>
     <suppress>
-        <notes>We limit our service accounts to not be able to modify pods, services or endpoints</notes>
-        <cve>CVE-2020-8554</cve>
-    </suppress>
-    <suppress>
         <notes>Conflates grpc version with reactive-grpc version</notes>
         <packageUrl regex="true">^pkg:maven/com\.salesforce\.servicelibs/react(ive|or)\-grpc\-.*$</packageUrl>
         <cpe>cpe:/a:grpc:grpc</cpe>
-    </suppress>
-    <suppress>
-        <notes>Applicable to Kubernetes Java client libraries but we are using the Fabric8 Kubernetes client</notes>
-        <packageUrl regex="true">^pkg:maven/io\.fabric8/openshift\-model@.*$</packageUrl>
-        <cve>CVE-2020-8570</cve>
-    </suppress>
-    <suppress>
-        <notes>Conflates netty-tcnative-classes version with netty</notes>
-        <packageUrl regex="true">^pkg:maven/io\.netty/netty\-tcnative\-classes.*$</packageUrl>
-        <cpe>cpe:/a:netty:netty</cpe>
-    </suppress>
-    <suppress>
-        <notes>Scan show spring-data-redis impacted but CVE is applicable to redis server not clients</notes>
-        <packageUrl regex="true">^pkg:maven/org\.springframework\.data/spring\-data\-redis@.*$</packageUrl>
-        <cve>CVE-2021-32626</cve>
     </suppress>
 </suppressions>

@@ -62,7 +62,10 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -84,6 +87,7 @@ import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -103,6 +107,7 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.FileDataRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
@@ -174,6 +179,9 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
             insertTransferList(recordItem);
         }
+
+        // insert staking reward transfers even on failure
+        insertStakingRewardTransfers(recordItem);
 
         // handle scheduled transaction, even on failure
         if (transaction.isScheduled()) {
@@ -390,6 +398,36 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isClaims()) {
             byte[] liveHash = DomainUtils.toBytes(transactionBody.getLiveHash().getHash());
             entityListener.onLiveHash(new LiveHash(consensusTimestamp, liveHash));
+        }
+    }
+
+    private void insertStakingRewardTransfers(RecordItem recordItem) {
+        var consensusTimestamp = recordItem.getConsensusTimestamp();
+        var payerAccountId = recordItem.getPayerAccountId();
+
+        for (var aa : recordItem.getRecord().getPaidStakingRewardsList()) {
+            var accountId = EntityId.of(aa.getAccountID());
+            var stakingRewardTransfer = new StakingRewardTransfer();
+            stakingRewardTransfer.setAccountId(accountId.getId());
+            stakingRewardTransfer.setAmount(aa.getAmount());
+            stakingRewardTransfer.setConsensusTimestamp(consensusTimestamp);
+            stakingRewardTransfer.setPayerAccountId(payerAccountId);
+            entityListener.onStakingRewardTransfer(stakingRewardTransfer);
+
+            // The staking reward may be paid to either an account or a contract. Create non-history updates
+            // with the new stake reward start for both an account entity and a contract, the upsert sql
+            // will only update one depending on the actual type of the entity.
+            Entity account = accountId.toEntity();
+            var stakePeriodStart = Utility.getEpochDay(consensusTimestamp);
+            account.setStakePeriodStart(stakePeriodStart);
+            account.setTimestampRange(null); // Don't trigger a history row
+            entityListener.onEntity(account);
+
+            Contract contract = EntityId.of(account.getShard(), account.getRealm(), account.getNum(),
+                    EntityType.CONTRACT).toEntity();
+            contract.setStakePeriodStart(stakePeriodStart);
+            contract.setTimestampRange(null); // Don't trigger a history row
+            entityListener.onContract(contract);
         }
     }
 

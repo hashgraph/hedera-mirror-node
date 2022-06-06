@@ -80,6 +80,34 @@ class BaseService {
 
     return rows[0];
   }
+
+  /**
+   * Builds a standard sql query that can be extended with an additional filters
+   *
+   * @param {string} selectFromTable
+   * @param {*[]} params
+   * @param {string[]} conditions
+   * @param {string} orderClause
+   * @param {string} limitClause
+   * @param {{key: string, operator: string, value: *, column: string}[]} filters
+   * @returns {(string|*)[]} the build query and the parameters for the query
+   */
+  buildSelectQuery(selectFromTable, params, conditions, orderClause, limitClause, filters = []) {
+    const whereConditions = [
+      ...conditions,
+      ...filters.map((filter) => {
+        params.push(filter.value);
+        return `${filter.column}${filter.operator}$${params.length}`;
+      }),
+    ];
+
+    return [
+      selectFromTable,
+      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
+      orderClause,
+      limitClause,
+    ].join('\n');
+  }
 }
 
 module.exports = BaseService;

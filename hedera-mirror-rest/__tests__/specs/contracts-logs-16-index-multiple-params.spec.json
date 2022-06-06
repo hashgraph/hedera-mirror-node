@@ -35,7 +35,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Multiple params not allowed for index"
+          "message": "Cannot search by index without a timestamp parameter filter"
         }
       ]
     }

@@ -23,7 +23,7 @@
 const _ = require('lodash');
 
 const BaseService = require('./baseService');
-const {Contract, ExchangeRate, FileData} = require('../model');
+const {Contract, ExchangeRate, FileData, FeeSchedule} = require('../model');
 const utils = require('../utils');
 
 /**
@@ -31,6 +31,7 @@ const utils = require('../utils');
  */
 class FileDataService extends BaseService {
   static exchangeRateFileId = 112;
+  static feeScheduleFileId = 111;
 
   // placeholders to support where filtering for inner and outer calls
   static filterInnerPlaceholder = '<filterInnerPlaceHolder>';
@@ -111,6 +112,12 @@ class FileDataService extends BaseService {
     const row = await this.getLatestFileDataContents(FileDataService.exchangeRateFileId, filterQueries);
 
     return _.isNil(row) ? null : new ExchangeRate(row);
+  };
+
+  getFeeSchedule = async (filterQueries) => {
+    const row = await this.getLatestFileDataContents(FileDataService.feeScheduleFileId, filterQueries);
+
+    return _.isNil(row) ? null : new FeeSchedule(row);
   };
 }
 

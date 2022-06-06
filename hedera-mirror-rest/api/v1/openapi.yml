@@ -394,11 +394,36 @@ paths:
   /api/v1/contracts/{contractIdOrAddress}/results/logs:
     get:
       summary: List contract logs from a contract on the network
-      description: >
+      description: |
         Search the logs of a specific contract across multiple contract calls. Chained logs are not
         included but can be found by calling `/api/v1/contracts/{contractId}/results/{timestamp}`
         or `/api/v1/contracts/results/{transactionId}`. When searching by topic a timestamp parameter must be supplied
         and span a time range of at most seven days.
+
+        ## Ordering
+        The order is governed by the combination of timestamp and index values. If the index param is omitted, the order is determined by the timestamp only.
+
+        Note: The default order for this API is currently DESC
+
+        ## Filtering
+        When filtering there are some restrictions enforced to ensure correctness and scalability.
+
+        **The table below defines the restrictions and support for the token allowances endpoint**
+
+        | Query Param   | Comparison Operator | Support | Description           | Example |
+        | ------------- | ------------------- | ------- | --------------------- | ------- |
+        | index         | eq                  | Y       | Single occurrence only. Requires the presence of timestamp | ?index=X |
+        |               | ne                  | N       | | |
+        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of timestamp | ?index=lte:X |
+        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of timestamp | ?index=gte:X |
+        | timestamp     | eq                  | Y       | Single occurrence only. | ?timestamp=Y
+        |               | ne                  | N       | | |
+        |               | lt(e)               | Y       | Single occurrence only. Optional second timestamp **gt(e)** | ?timestamp=lte:Y
+        |               | gt(e)               | Y       | Single occurrence only. Optional second timestamp **lt(e)** | ?timestamp=gte:Y
+
+
+        Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
+        
       operationId: listContractLogs
       parameters:
         - $ref: '#/components/parameters/contractIdPathParam'
@@ -424,11 +449,35 @@ paths:
   /api/v1/contracts/results/logs:
     get:
       summary: List contracts logs across many contracts on the network
-      description: >
+      description: |
         Search the logs across many contracts with multiple contract calls. Chained logs are not
         included but can be found by calling `/api/v1/contracts/{contractId}/results/{timestamp}`
         or `/api/v1/contracts/results/{transactionId}`. When searching by topic a timestamp parameter must be supplied
         and span a time range of at most seven days.
+        
+        ## Ordering
+        The order is governed by the combination of timestamp and index values. If the index param is omitted, the order is determined by the timestamp only.
+
+        Note: The default order for this API is currently DESC
+
+        ## Filtering
+        When filtering there are some restrictions enforced to ensure correctness and scalability.
+
+        **The table below defines the restrictions and support for the token allowances endpoint**
+
+        | Query Param   | Comparison Operator | Support | Description           | Example |
+        | ------------- | ------------------- | ------- | --------------------- | ------- |
+        | index         | eq                  | Y       | Single occurrence only. Requires the presence of timestamp | ?index=X |
+        |               | ne                  | N       | | |
+        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of timestamp | ?index=lte:X |
+        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of timestamp | ?index=gte:X |
+        | timestamp     | eq                  | Y       | Single occurrence only. | ?timestamp=Y
+        |               | ne                  | N       | | |
+        |               | lt(e)               | Y       | Single occurrence only. Optional second timestamp **gt(e)** | ?timestamp=lte:Y
+        |               | gt(e)               | Y       | Single occurrence only. Optional second timestamp **lt(e)** | ?timestamp=gte:Y
+
+
+        Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
       operationId: listContractsLogs
       parameters:
         - $ref: '#/components/parameters/logIndexQueryParam'
@@ -464,6 +513,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NetworkExchangeRateSetResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/ServiceUnavailableError'
+      tags:
+        - network
+  /api/v1/network/fees:
+    get:
+      summary: Get the network fees
+      description: Returns the estimated gas in tinybars per each transaction type. Default order is ASC. Currently only `ContractCall`, `ContractCreate` and `EthereumTransaction` transaction types are supported.
+      operationId: getNetworkFees
+      parameters:
+        - $ref: '#/components/parameters/timestampQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkFeesResponse'
         400:
           $ref: '#/components/responses/InvalidParameterError'
         404:
@@ -984,7 +1056,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.58.0-SNAPSHOT
+  version: 0.59.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1100,6 +1172,13 @@ components:
           $ref: '#/components/schemas/ExchangeRate'
         next_rate:
           $ref: '#/components/schemas/ExchangeRate'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+    NetworkFeesResponse:
+      type: object
+      properties:
+        fees:
+          $ref: '#/components/schemas/NetworkFees'
         timestamp:
           $ref: '#/components/schemas/Timestamp'
     NetworkNodesResponse:
@@ -1470,6 +1549,11 @@ components:
           format: int64
           nullable: true
           type: integer
+        hash:
+          description: A hex encoded 32 byte hash and it is only populated for Ethereum transaction case
+          example: "0xfebbaa29c513d124a6377246ea3506ad917d740c21a88f61a1c55ba338fc2bb1"
+          nullable: true
+          type: string
         result:
           description: The result of the transaction
           example: SUCCESS
@@ -1859,6 +1943,20 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/NetworkNode'
+    NetworkFee:
+      type: object
+      properties:
+        gas:
+          description: gas cost in tinybars
+          format: int64
+          type: number
+        transaction_type:
+          description: type of the transaction
+          type: string
+    NetworkFees:
+      type: array
+      items:
+        $ref: '#/components/schemas/NetworkFee'
     Nft:
       type: object
       properties:
@@ -1936,10 +2034,20 @@ components:
         count:
           type: integer
           minimum: 0
+        gas_used:
+          type: integer
+          minimum: 0
+          format: int64
+          nullable: true
         hapi_version:
           type: string
         hash:
           type: string
+        logs_bloom:
+          description: A hex encoded 256-byte array with 0x prefix
+          nullable: true
+          type: string
+          pattern: ^0x[0-9a-fA-F]{512}$
         name:
           type: string
         number:
@@ -1959,8 +2067,10 @@ components:
               $ref: '#/components/schemas/TimestampRange'
       example:
         count: 3
+        gas_used: 300000
         hapi_version: "0.11.0"
         hash: "0x3c08bbbee74d287b1dcd3f0ca6d1d2cb92c90883c4acf9747de9f3f3162ad25b999fc7e86699f60f2a3fb3ed9a646c6b"
+        logs_bloom: "0x00000020002000001000000000000000000000000000000000000000000010000000000004000000000000000000000000108000000000000000000080000000000004000000000000000000000000880000000000000000000101000000000000000000000000000000000000008000000000000400000080000000000001000000000000000000000000000000000000000000002000000000100000100000200000040000100000001000000000000000000000000000000001001000004000000000000000000001000000000000000000100000000000100000000000000000000000000000000000000000000000080000100800000000000000120080"
         name: "2022-05-03T06_46_26.060890949Z.rcd"
         number: 77
         previous_hash: "0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b"
@@ -2266,11 +2376,13 @@ components:
         - CRYPTODELETELIVEHASH
         - CRYPTOTRANSFER
         - CRYPTOUPDATEACCOUNT
+        - ETHEREUMTRANSACTION
         - FILEAPPEND
         - FILECREATE
         - FILEDELETE
         - FILEUPDATE
         - FREEZE
+        - NODESTAKEUPDATE
         - SCHEDULECREATE
         - SCHEDULEDELETE
         - SCHEDULESIGN
@@ -2891,8 +3003,30 @@ components:
       in: query
       description: Contract log index
       schema:
-        type: integer
-        minimum: 0
+        type: string
+        pattern: ^((eq|gt|gte|lt|lte):)?\d{1,10}$
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        indexNoOperator:
+          summary: Example of index equals with no operator
+          value: 2
+        indexEqOperator:
+          summary: Example of index equals with operator
+          value: eq:2
+        indexGtOperator:
+          summary: Example of index greater than operator
+          value: gt:2
+        indexGteOperator:
+          summary: Example of index greater than or equals operator
+          value: gte:2
+        indexLtOperator:
+          summary: Example of index less than operator
+          value: lt:2
+        indexLteOperator:
+          summary: Example of index less than or equals operator
+          value: lte:2
     limitQueryParam:
       name: limit
       in: query

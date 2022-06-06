@@ -67,6 +67,8 @@ public abstract class AbstractEntity implements History {
     @Column(updatable = false)
     private Long createdTimestamp;
 
+    private boolean declineReward;
+
     private Boolean deleted;
 
     @Column(updatable = false)
@@ -98,6 +100,12 @@ public abstract class AbstractEntity implements History {
 
     @Column(updatable = false)
     private Long shard;
+
+    private Long stakedAccountId;
+
+    private Long stakedNodeId;
+
+    private Long stakePeriodStart;
 
     @Column(updatable = false)
     @Enumerated(EnumType.STRING)

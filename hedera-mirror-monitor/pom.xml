@@ -18,7 +18,7 @@
         <commons-math3.version>3.6.1</commons-math3.version>
         <hedera-sdk.version>2.12.0</hedera-sdk.version>
         <meanbean.version>3.0.0-M9</meanbean.version>
-        <springdoc.version>1.6.8</springdoc.version>
+        <springdoc.version>1.6.9</springdoc.version>
     </properties>
 
     <dependencies>
@@ -43,7 +43,7 @@
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
-            <artifactId>grpc-okhttp</artifactId>
+            <artifactId>grpc-netty</artifactId>
             <version>${grpc.version}</version>
         </dependency>
         <dependency>

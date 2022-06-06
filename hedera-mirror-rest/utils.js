@@ -37,7 +37,7 @@ const contants = require('./constants');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
-const {TransactionResult, TransactionType} = require('./model');
+const {TransactionResult, TransactionType, FeeSchedule} = require('./model');
 const {keyTypes} = require('./constants');
 const pgRange = require('pg-range');
 
@@ -1347,6 +1347,27 @@ const conflictingPathParam = (req, paramName, possibleConflicts = []) => {
   pgRange.install(pg);
 })();
 
+/**
+ * Converts gas price into tiny bars
+ *
+ * @param {number} gasPrice
+ * @param {number} hbarPerTinyCent
+ * @param {number} centsPerHbar
+ * @returns {number|null} `null` if the gasPrice cannot be converted. The minimum `number` returned is 1
+ */
+const convertGasPriceToTinyBars = (gasPrice, hbarsPerTinyCent, centsPerHbar) => {
+  if ([gasPrice, hbarsPerTinyCent, centsPerHbar].some((n) => !_.isNumber(n))) {
+    return null;
+  }
+  const tinyCentsBN = math.bignumber(gasPrice / FeeSchedule.FEE_DIVISOR_FACTOR);
+  const hbarMultiplierBN = math.bignumber(hbarsPerTinyCent);
+  const centsDivisorBN = math.bignumber(centsPerHbar);
+  const hbarCentsBN = math.multiply(tinyCentsBN, hbarMultiplierBN);
+
+  const tinyBars = math.divide(hbarCentsBN, centsDivisorBN).toNumber();
+  return Math.round(Math.max(tinyBars, 1));
+};
+
 module.exports = {
   addHexPrefix,
   buildAndValidateFilters,
@@ -1406,6 +1427,7 @@ module.exports = {
   toHexStringQuantity,
   validateReq,
   isValidBlockHash,
+  convertGasPriceToTinyBars,
 };
 
 if (isTestEnv()) {
@@ -1419,5 +1441,6 @@ if (isTestEnv()) {
     parseInteger,
     validateAndParseFilters,
     validateFilters,
+    convertGasPriceToTinyBars,
   });
 }

@@ -63,6 +63,12 @@ public class UtilityTest {
                 .hasRootCauseExactlyInstanceOf(InvalidProtocolBufferException.class);
     }
 
+    @ParameterizedTest
+    @CsvSource(value = {"0,0", "86400000000000,1", "1653487416000000000,19137"})
+    void getEpochDay(long timestamp, long expected) {
+        assertThat(Utility.getEpochDay(timestamp)).isEqualTo(expected);
+    }
+
     @Test
     void getTopic() {
         ContractLoginfo contractLoginfo = ContractLoginfo.newBuilder()
