@@ -135,26 +135,16 @@
 
     <repositories>
         <repository>
+            <id>besu-repository</id>
+            <url>https://hyperledger.jfrog.io/artifactory/besu-maven/</url>
+        </repository>
+        <repository>
             <id>proto-staging</id>
             <name>Protobufs staging</name>
             <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1489</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
-        </repository>
-        <repository>
-            <id>ossrh-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>besu-repository</id>
-            <url>https://hyperledger.jfrog.io/artifactory/besu-maven/</url>
         </repository>
     </repositories>
 
