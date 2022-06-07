@@ -405,9 +405,9 @@ public class DomainBuilder {
                 .epochDay(getEpochDay(timestamp))
                 .nodeId(id())
                 .rewardRate(id())
-                .rewardSum(id() + TINYBARS_IN_ONE_HBAR)
                 .stake(stake)
                 .stakeRewarded(stake - 100L)
+                .stakeTotal(stake * 5)
                 .stakingPeriod(timestamp());
         return new DomainWrapperImpl<>(builder, builder::build);
     }

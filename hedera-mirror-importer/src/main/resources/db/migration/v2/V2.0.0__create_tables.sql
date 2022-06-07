@@ -359,7 +359,6 @@ create table if not exists node_stake
     epoch_day           bigint not null,
     node_id             bigint not null,
     reward_rate         bigint not null,
-    reward_sum          bigint not null,
     stake               bigint not null,
     stake_rewarded      bigint not null,
     stake_total         bigint not null,
