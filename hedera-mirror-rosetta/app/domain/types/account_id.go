@@ -102,6 +102,11 @@ func NewAccountIdFromString(address string, shard, realm int64) (AccountId, erro
 		}
 		return AccountId{accountId: entityId}, nil
 	}
+
+	if !strings.HasPrefix(address, tools.HexPrefix) {
+		return AccountId{}, errors.Errorf("Invalid Account Alias")
+	}
+
 	alias, err := hex.DecodeString(tools.SafeRemoveHexPrefix(address))
 	if err != nil {
 		return AccountId{}, err

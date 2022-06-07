@@ -340,19 +340,6 @@ func TestNewAccountIdFromStringAlias(t *testing.T) {
 		realm            int64
 	}{
 		{
-			input:            ed25519AliasString,
-			curveType:        types.Edwards25519,
-			networkAlias:     concatBytes(ed25519PublicKeyProtoPrefix, ed25519PublicKey.BytesRaw()),
-			sdkAccountString: "0.1." + ed25519PublicKey.String(),
-			realm:            1,
-		},
-		{
-			input:            secp256k1AliasString,
-			curveType:        types.Secp256k1,
-			networkAlias:     concatBytes(ecdsaSecp256k1PublicKeyProtoPrefix, secp256k1PublicKey.BytesRaw()),
-			sdkAccountString: "0.0." + secp256k1PublicKey.String(),
-		},
-		{
 			input:            "0x" + ed25519AliasString,
 			curveType:        types.Edwards25519,
 			networkAlias:     concatBytes(ed25519PublicKeyProtoPrefix, ed25519PublicKey.BytesRaw()),
@@ -360,19 +347,33 @@ func TestNewAccountIdFromStringAlias(t *testing.T) {
 			realm:            1,
 		},
 		{
+			input:            "0x" + secp256k1AliasString,
+			curveType:        types.Secp256k1,
+			networkAlias:     concatBytes(ecdsaSecp256k1PublicKeyProtoPrefix, secp256k1PublicKey.BytesRaw()),
+			sdkAccountString: "0.0." + secp256k1PublicKey.String(),
+		},
+		{
+			input:     ed25519AliasString,
+			expectErr: true,
+		},
+		{
 			input:     "",
 			expectErr: true,
 		},
 		{
-			input:     randstr.Hex(10),
+			input:     "0x",
 			expectErr: true,
 		},
 		{
-			input:     "xyz",
+			input:     "0x" + randstr.Hex(10),
 			expectErr: true,
 		},
 		{
-			input:     ed25519AliasString,
+			input:     "0xxyz",
+			expectErr: true,
+		},
+		{
+			input:     "0x" + ed25519AliasString,
 			shard:     -1,
 			realm:     -1,
 			expectErr: true,
