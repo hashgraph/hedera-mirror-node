@@ -82,7 +82,7 @@ func addTransaction(
 		Result:               result,
 		TransactionHash:      transactionHash,
 		Type:                 transactionType,
-		ValidDurationSeconds: 180,
+		ValidDurationSeconds: 120,
 		ValidStartNs:         validStartNs,
 	}
 	tdb.CreateDbRecords(dbClient, tx)

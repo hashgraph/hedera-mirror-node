@@ -783,7 +783,7 @@ func TestConstructionPayloadValidDuration(t *testing.T) {
 		On("Construct", defaultContext, mock.IsType(types.OperationSlice{})).
 		Return(hedera.NewTransferTransaction(), []types.AccountId{defaultCryptoAccountId1}, mocks.NilError)
 	metadata := map[string]interface{}{
-		metadataKeyValidStartNanos: "123456789000000123",
+		metadataKeyValidStartNanos:      "123456789000000123",
 		metadataKeyValidDurationSeconds: "60",
 	}
 	request := getPayloadsRequest(operations, payloadsRequestMetadata(metadata))
@@ -818,10 +818,6 @@ func TestConstructionPayloadsInvalidRequest(t *testing.T) {
 		{
 			name:      "InvalidValidDurationType",
 			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidDurationSeconds: 120}),
-		},
-		{
-			name:      "InvalidValidDurationType",
-			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidDurationSeconds: 180}),
 		},
 		{
 			name:      "ValidDurationTypeNotANumber",

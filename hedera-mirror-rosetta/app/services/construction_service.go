@@ -44,9 +44,10 @@ import (
 )
 
 const (
+	defaultValidDurationSeconds     = 180
 	metadataKeyValidDurationSeconds = "valid_duration"
-	metadataKeyValidStartNanos = "valid_start_nanos"
-	optionKeyOperationType     = "operation_type"
+	metadataKeyValidStartNanos      = "valid_start_nanos"
+	optionKeyOperationType          = "operation_type"
 )
 
 // constructionAPIService implements the server.ConstructionAPIServicer interface.
@@ -204,14 +205,11 @@ func (c *constructionAPIService) ConstructionPayloads(
 	request *rTypes.ConstructionPayloadsRequest,
 ) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
 	validDurationSeconds, rErr := c.getIntMetadataValue(request.Metadata, metadataKeyValidDurationSeconds)
-	if rErr != nil {
-		return nil, rErr
-	}
-	if !isValidDuration(validDurationSeconds) {
+	if rErr != nil || !isValidTransactionValidDuration(validDurationSeconds) {
 		return nil, errors.ErrInvalidArgument
 	}
 
-	validStartNanos, rErr :=  c.getIntMetadataValue(request.Metadata, metadataKeyValidStartNanos)
+	validStartNanos, rErr := c.getIntMetadataValue(request.Metadata, metadataKeyValidStartNanos)
 	if rErr != nil {
 		return nil, rErr
 	}
@@ -388,13 +386,9 @@ func (c *constructionAPIService) getIntMetadataValue(metadata map[string]interfa
 	return metadataValue, nil
 }
 
-func isValidDuration(validDuration int64) bool {
+func isValidTransactionValidDuration(validDuration int64) bool {
 	// A value of 0 indicates validDuration is unset
-	if (validDuration >= 0) && (validDuration <= 180) {
-		return true
-	} else {
-		return false
-	}
+	return validDuration >= 0 && validDuration <= 180
 }
 
 // NewConstructionAPIService creates a new instance of a constructionAPIService.
@@ -575,10 +569,10 @@ func transactionSetValidDuration(validDurationSeconds int64) updater {
 	return func(transaction interfaces.Transaction) *rTypes.Error {
 		if validDurationSeconds == 0 {
 			// Default to 180 seconds
-			validDurationSeconds = 180
+			validDurationSeconds = defaultValidDurationSeconds
 		}
 
-		_, err := hedera.TransactionSetTransactionValidDuration(transaction, time.Second * time.Duration(validDurationSeconds))
+		_, err := hedera.TransactionSetTransactionValidDuration(transaction, time.Second*time.Duration(validDurationSeconds))
 		if err != nil {
 			log.Errorf("Failed to set transaction valid duration: %s", err)
 			return errors.ErrInternalServerError
