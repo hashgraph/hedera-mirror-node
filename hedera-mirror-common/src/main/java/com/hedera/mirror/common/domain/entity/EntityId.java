@@ -140,8 +140,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
      */
     @Deprecated(since = "v0.49.0")
     public String entityIdToString() {
-        return String.format("%d.%d.%d", getShardNum(),
-                getRealmNum(), getEntityNum());
+        return String.format("%d.%d.%d", getShardNum(), getRealmNum(), getEntityNum());
     }
 
     @SuppressWarnings("deprecation")

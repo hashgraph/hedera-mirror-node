@@ -28,7 +28,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.springframework.data.domain.Persistable;
 
@@ -39,10 +43,13 @@ import com.hedera.mirror.common.converter.TopicIdConverter;
 import com.hedera.mirror.common.converter.TopicIdDeserializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE) // For builder
+@Builder(toBuilder = true)
 @Data
 @Entity
 @JsonTypeInfo(use = com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME)
 @JsonTypeName("TopicMessage")
+@NoArgsConstructor
 @ToString(exclude = {"initialTransactionId", "message", "runningHash"})
 public class TopicMessage implements Persistable<Long>, StreamMessage {
 

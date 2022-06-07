@@ -36,7 +36,6 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
-import org.bouncycastle.util.Strings;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -57,12 +56,10 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
-import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -78,7 +75,6 @@ import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
@@ -94,8 +90,10 @@ import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
+import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
+import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
@@ -124,10 +122,12 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftTransferRepository nftTransferRepository;
+    private final NodeStakeRepository nodeStakeRepository;
     private final RecordFileRepository recordFileRepository;
     private final ScheduleRepository scheduleRepository;
     private final SqlEntityListener sqlEntityListener;
     private final SqlProperties sqlProperties;
+    private final StakingRewardTransferRepository stakingRewardTransferRepository;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final TokenRepository tokenRepository;
@@ -142,8 +142,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private static Stream<Arguments> provideParamsContractHistory() {
-        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {
-        };
+        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {};
         Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[] {1, 2, 3, 4});
         return Stream.of(
                 Arguments.of("fileId", emptyCustomizer, 1),
@@ -262,6 +261,100 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(contractRepository.findAll()).containsExactly(mergedDelete);
         assertThat(findHistory(Contract.class)).containsExactly(mergedCreate, mergedUpdate);
         assertThat(entityRepository.count()).isZero();
+    }
+
+    @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    void onContractWithHistoryAndNonHistoryUpdates(boolean nonHistoryBefore) {
+        // given
+        Contract contract = domainBuilder.contract().persist();
+
+        Contract contractStakePeriodStart1 = contract.toEntityId().toEntity();
+        contractStakePeriodStart1.setStakePeriodStart(2L);
+        contractStakePeriodStart1.setTimestampRange(null);
+
+        Contract contractStakePeriodStart2 = contract.toEntityId().toEntity();
+        contractStakePeriodStart2.setStakePeriodStart(7L);
+        contractStakePeriodStart2.setTimestampRange(null);
+
+        Contract contractMemoUpdated = contract.toEntityId().toEntity();
+        contractMemoUpdated.setMemo(domainBuilder.text(16));
+        contractMemoUpdated.setTimestampLower(domainBuilder.timestamp());
+
+        // when
+        if (nonHistoryBefore) {
+            sqlEntityListener.onContract(contractStakePeriodStart1);
+            sqlEntityListener.onContract(contractStakePeriodStart2);
+            sqlEntityListener.onContract(contractMemoUpdated);
+        } else {
+            sqlEntityListener.onContract(contractMemoUpdated);
+            sqlEntityListener.onContract(contractStakePeriodStart1);
+            sqlEntityListener.onContract(contractStakePeriodStart2);
+        }
+        completeFileAndCommit();
+
+        // then
+        Contract contractMerged = TestUtils.clone(contract);
+        contractMerged.setMemo(contractMemoUpdated.getMemo());
+        contractMerged.setStakePeriodStart(contractStakePeriodStart2.getStakePeriodStart());
+        contractMerged.setTimestampRange(contractMemoUpdated.getTimestampRange());
+        contract.setTimestampUpper(contractMemoUpdated.getTimestampLower());
+
+        assertThat(contractRepository.findAll()).containsExactly(contractMerged);
+        assertThat(findHistory(Contract.class)).containsExactly(contract);
+    }
+
+    @Test
+    void onContractWithNonHistoryUpdates() {
+        // given
+        // Update to non-history field with existing contract should just update nonce
+        var existingContract = domainBuilder.contract().persist();
+
+        Contract existingContractStakePeriodStart1 = existingContract.toEntityId().toEntity();
+        existingContractStakePeriodStart1.setStakePeriodStart(2L);
+        existingContractStakePeriodStart1.setTimestampRange(null);
+
+        Contract existingContractStakePeriodStart2 = existingContract.toEntityId().toEntity();
+        existingContractStakePeriodStart2.setStakePeriodStart(5L);
+        existingContractStakePeriodStart2.setTimestampRange(null);
+
+        // Update to non-history field with partial data should be discarded
+        Contract nonExistingContract = domainBuilder.contract().get();
+
+        Contract nonExistingContractStakePeriodStart1 = nonExistingContract.toEntityId().toEntity();
+        nonExistingContractStakePeriodStart1.setStakePeriodStart(6L);
+        nonExistingContractStakePeriodStart1.setTimestampRange(null);
+
+        Contract nonExistingContractStakePeriodStart2 = nonExistingContract.toEntityId().toEntity();
+        nonExistingContractStakePeriodStart2.setStakePeriodStart(8L);
+        nonExistingContractStakePeriodStart2.setTimestampRange(null);
+
+        // when
+        sqlEntityListener.onContract(existingContractStakePeriodStart1);
+        sqlEntityListener.onContract(existingContractStakePeriodStart2);
+        sqlEntityListener.onContract(nonExistingContractStakePeriodStart1);
+        sqlEntityListener.onContract(nonExistingContractStakePeriodStart2);
+        completeFileAndCommit();
+
+        existingContract.setStakePeriodStart(existingContractStakePeriodStart2.getStakePeriodStart());
+        assertThat(contractRepository.findAll()).containsExactly(existingContract);
+
+        Contract existingContractStakePeriodStart3 = existingContract.toEntityId().toEntity();
+        existingContractStakePeriodStart3.setStakePeriodStart(10L);
+        existingContractStakePeriodStart3.setTimestampRange(null);
+
+        Contract nonExistingContractStakePeriodStart3 = domainBuilder.entityId(EntityType.CONTRACT).toEntity();
+        nonExistingContractStakePeriodStart3.setStakePeriodStart(12L);
+        nonExistingContractStakePeriodStart3.setTimestampRange(null);
+
+        sqlEntityListener.onContract(existingContractStakePeriodStart3);
+        sqlEntityListener.onContract(nonExistingContractStakePeriodStart3);
+        completeFileAndCommit();
+
+        // then
+        existingContract.setStakePeriodStart(existingContractStakePeriodStart3.getStakePeriodStart());
+        assertThat(contractRepository.findAll()).containsExactly(existingContract);
+        assertThat(findHistory(Contract.class)).isEmpty();
     }
 
     @Test
@@ -415,6 +508,14 @@ class SqlEntityListenerTest extends IntegrationTest {
         existingEntityNonce2.setEthereumNonce(101L);
         existingEntityNonce2.setTimestampRange(null);
 
+        Entity existingEntityStakePeriodStart1 = existingEntity.toEntityId().toEntity();
+        existingEntityStakePeriodStart1.setStakePeriodStart(2L);
+        existingEntityStakePeriodStart1.setTimestampRange(null);
+
+        Entity existingEntityStakePeriodStart2 = existingEntity.toEntityId().toEntity();
+        existingEntityStakePeriodStart2.setStakePeriodStart(5L);
+        existingEntityStakePeriodStart2.setTimestampRange(null);
+
         // Update to non-history field with partial data should be discarded
         Entity nonExistingEntity = domainBuilder.entity().get();
         Entity nonExistingEntityNonce1 = nonExistingEntity.toEntityId().toEntity();
@@ -425,60 +526,106 @@ class SqlEntityListenerTest extends IntegrationTest {
         nonExistingEntityNonce2.setEthereumNonce(201L);
         nonExistingEntityNonce2.setTimestampRange(null);
 
+        Entity nonExistingEntityStakePeriodStart1 = nonExistingEntity.toEntityId().toEntity();
+        nonExistingEntityStakePeriodStart1.setStakePeriodStart(6L);
+        nonExistingEntityStakePeriodStart1.setTimestampRange(null);
+
+        Entity nonExistingEntityStakePeriodStart2 = nonExistingEntity.toEntityId().toEntity();
+        nonExistingEntityStakePeriodStart2.setStakePeriodStart(8L);
+        nonExistingEntityStakePeriodStart2.setTimestampRange(null);
+
         // when
         sqlEntityListener.onEntity(existingEntityNonce1);
         sqlEntityListener.onEntity(existingEntityNonce2);
+        sqlEntityListener.onEntity(existingEntityStakePeriodStart1);
+        sqlEntityListener.onEntity(existingEntityStakePeriodStart2);
         sqlEntityListener.onEntity(nonExistingEntityNonce1);
         sqlEntityListener.onEntity(nonExistingEntityNonce2);
+        sqlEntityListener.onEntity(nonExistingEntityStakePeriodStart1);
+        sqlEntityListener.onEntity(nonExistingEntityStakePeriodStart2);
         completeFileAndCommit();
+
+        existingEntity.setEthereumNonce(existingEntityNonce2.getEthereumNonce());
+        existingEntity.setStakePeriodStart(existingEntityStakePeriodStart2.getStakePeriodStart());
+        assertThat(entityRepository.findAll()).containsExactly(existingEntity);
 
         Entity existingEntityNonce3 = existingEntity.toEntityId().toEntity();
         existingEntityNonce3.setEthereumNonce(102L);
         existingEntityNonce3.setTimestampRange(null);
 
+        Entity existingEntityStakePeriodStart3 = existingEntity.toEntityId().toEntity();
+        existingEntityStakePeriodStart3.setStakePeriodStart(10L);
+        existingEntityStakePeriodStart3.setTimestampRange(null);
+
         Entity nonExistingEntityNonce3 = domainBuilder.entityId(EntityType.ACCOUNT).toEntity();
         nonExistingEntityNonce3.setEthereumNonce(202L);
         nonExistingEntityNonce3.setTimestampRange(null);
 
+        Entity nonExistingEntityStakePeriodStart3 = domainBuilder.entityId(EntityType.ACCOUNT).toEntity();
+        nonExistingEntityStakePeriodStart3.setStakePeriodStart(12L);
+        nonExistingEntityStakePeriodStart3.setTimestampRange(null);
+
         sqlEntityListener.onEntity(existingEntityNonce3);
+        sqlEntityListener.onEntity(existingEntityStakePeriodStart3);
         sqlEntityListener.onEntity(nonExistingEntityNonce3);
+        sqlEntityListener.onEntity(nonExistingEntityStakePeriodStart3);
         completeFileAndCommit();
 
         // then
         existingEntity.setEthereumNonce(existingEntityNonce3.getEthereumNonce());
+        existingEntity.setStakePeriodStart(existingEntityStakePeriodStart3.getStakePeriodStart());
         assertThat(entityRepository.findAll()).containsExactly(existingEntity);
         assertThat(findHistory(Entity.class)).isEmpty();
     }
 
     @ValueSource(booleans = {true, false})
     @ParameterizedTest
-    void onEntityWithHistoryAndNonHistoryUpdates(boolean nonceBefore) {
+    void onEntityWithHistoryAndNonHistoryUpdates(boolean nonHistoryBefore) {
         // given
         Entity entity = domainBuilder.entity().persist();
-        Entity entityNonce = entity.toEntityId().toEntity();
-        entityNonce.setEthereumNonce(100L);
-        entityNonce.setTimestampRange(null);
+        Entity entityNonce1 = entity.toEntityId().toEntity();
+        entityNonce1.setEthereumNonce(100L);
+        entityNonce1.setTimestampRange(null);
 
-        Entity entityDeleted = entity.toEntityId().toEntity();
-        entityDeleted.setDeleted(true);
-        entityDeleted.setTimestampLower(domainBuilder.timestamp());
+        Entity entityStakePeriodStart1 = entity.toEntityId().toEntity();
+        entityStakePeriodStart1.setStakePeriodStart(2L);
+        entityStakePeriodStart1.setTimestampRange(null);
+
+        Entity entityNonce2 = entity.toEntityId().toEntity();
+        entityNonce2.setEthereumNonce(101L);
+        entityNonce2.setTimestampRange(null);
+
+        Entity entityStakePeriodStart2 = entity.toEntityId().toEntity();
+        entityStakePeriodStart2.setStakePeriodStart(7L);
+        entityStakePeriodStart2.setTimestampRange(null);
+
+        Entity entityMemoUpdated = entity.toEntityId().toEntity();
+        entityMemoUpdated.setMemo(domainBuilder.text(16));
+        entityMemoUpdated.setTimestampLower(domainBuilder.timestamp());
 
         // when
-        if (nonceBefore) {
-            sqlEntityListener.onEntity(entityNonce);
-            sqlEntityListener.onEntity(entityDeleted);
+        if (nonHistoryBefore) {
+            sqlEntityListener.onEntity(entityNonce1);
+            sqlEntityListener.onEntity(entityNonce2);
+            sqlEntityListener.onEntity(entityStakePeriodStart1);
+            sqlEntityListener.onEntity(entityStakePeriodStart2);
+            sqlEntityListener.onEntity(entityMemoUpdated);
         } else {
-            sqlEntityListener.onEntity(entityDeleted);
-            sqlEntityListener.onEntity(entityNonce);
+            sqlEntityListener.onEntity(entityMemoUpdated);
+            sqlEntityListener.onEntity(entityStakePeriodStart1);
+            sqlEntityListener.onEntity(entityNonce1);
+            sqlEntityListener.onEntity(entityStakePeriodStart2);
+            sqlEntityListener.onEntity(entityNonce2);
         }
         completeFileAndCommit();
 
         // then
         Entity entityMerged = TestUtils.clone(entity);
-        entityMerged.setDeleted(entityDeleted.getDeleted());
-        entityMerged.setEthereumNonce(entityNonce.getEthereumNonce());
-        entityMerged.setTimestampRange(entityDeleted.getTimestampRange());
-        entity.setTimestampUpper(entityDeleted.getTimestampLower());
+        entityMerged.setMemo(entityMemoUpdated.getMemo());
+        entityMerged.setEthereumNonce(entityNonce2.getEthereumNonce());
+        entityMerged.setStakePeriodStart(entityStakePeriodStart2.getStakePeriodStart());
+        entityMerged.setTimestampRange(entityMemoUpdated.getTimestampRange());
+        entity.setTimestampUpper(entityMemoUpdated.getTimestampLower());
 
         assertThat(entityRepository.findAll()).containsExactly(entityMerged);
         assertThat(findHistory(Entity.class)).containsExactly(entity);
@@ -564,7 +711,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onTopicMessage() {
         // given
-        TopicMessage topicMessage = getTopicMessage();
+        TopicMessage topicMessage = domainBuilder.topicMessage().get();
 
         // when
         sqlEntityListener.onTopicMessage(topicMessage);
@@ -577,15 +724,16 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onFileData() {
         // given
-        FileData expectedFileData = new FileData(11L, Strings.toByteArray("file data"), EntityId
-                .of(0, 0, 111, EntityType.FILE), TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId());
+        var fileData1 = domainBuilder.fileData().get();
+        var fileData2 = domainBuilder.fileData().get();
 
         // when
-        sqlEntityListener.onFileData(expectedFileData);
+        sqlEntityListener.onFileData(fileData1);
+        sqlEntityListener.onFileData(fileData2);
         completeFileAndCommit();
 
         // then
-        assertThat(fileDataRepository.findAll()).containsExactlyInAnyOrder(expectedFileData);
+        assertThat(fileDataRepository.findAll()).containsExactlyInAnyOrder(fileData1, fileData2);
     }
 
     @Test
@@ -635,48 +783,6 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .isNotNull()
                 .extracting(Transaction::getIndex)
                 .isEqualTo(2);
-    }
-
-    @Test
-    void onEntityMerge() {
-        // given
-        Entity entity = getEntity(1, 1L, 1L, 0, "memo", keyFromString(KEY));
-        sqlEntityListener.onEntity(entity);
-
-        Entity entityAutoUpdated = getEntity(1, 5L);
-        Long autoRenewAccountId = 10L;
-        entityAutoUpdated.setAutoRenewAccountId(autoRenewAccountId);
-        entityAutoUpdated.setAutoRenewPeriod(360L);
-        sqlEntityListener.onEntity(entityAutoUpdated);
-
-        Entity entityExpirationUpdated = getEntity(1, 10L);
-        entityExpirationUpdated.setExpirationTimestamp(720L);
-        sqlEntityListener.onEntity(entityExpirationUpdated);
-
-        Entity entitySubmitKeyUpdated = getEntity(1, 15L);
-        entitySubmitKeyUpdated.setSubmitKey(keyFromString(KEY2).toByteArray());
-        sqlEntityListener.onEntity(entitySubmitKeyUpdated);
-
-        Entity entityMemoUpdated = getEntity(1, 20L);
-        entityMemoUpdated.setMemo("memo-updated");
-        sqlEntityListener.onEntity(entityMemoUpdated);
-
-        Entity entityMaxAutomaticTokenAssociationsUpdated = getEntity(1, 25L);
-        entityMaxAutomaticTokenAssociationsUpdated.setMaxAutomaticTokenAssociations(10);
-        sqlEntityListener.onEntity(entityMaxAutomaticTokenAssociationsUpdated);
-
-        Entity entityReceiverSigRequired = getEntity(1, 30L);
-        entityReceiverSigRequired.setReceiverSigRequired(true);
-        sqlEntityListener.onEntity(entityReceiverSigRequired);
-
-        // when
-        completeFileAndCommit();
-
-        // then
-        Entity expected = getEntity(1, 1L, 30L, "memo-updated", keyFromString(KEY), autoRenewAccountId, 360L, null,
-                720L, 10, true, keyFromString(KEY2));
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(expected);
-        assertThat(contractRepository.count()).isZero();
     }
 
     @Test
@@ -957,9 +1063,9 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onNftTransfer() {
-        NftTransfer nftTransfer1 = getNftTransfer(1L, "0.0.1", 1L, "0.0.2", "0.0.3");
-        NftTransfer nftTransfer2 = getNftTransfer(2L, "0.0.1", 2L, "0.0.2", "0.0.3");
-        NftTransfer nftTransfer3 = getNftTransfer(3L, "0.0.2", 1L, "0.0.2", "0.0.3");
+        NftTransfer nftTransfer1 = domainBuilder.nftTransfer().get();
+        NftTransfer nftTransfer2 = domainBuilder.nftTransfer().get();
+        NftTransfer nftTransfer3 = domainBuilder.nftTransfer().get();
 
         // when
         sqlEntityListener.onNftTransfer(nftTransfer1);
@@ -973,19 +1079,14 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onNftTransferMultiReceiverSingleTimestamp() {
-        String tokenId = "0.0.1";
-        long timestamp = 1L;
-        long serialNumber = 5L;
-        String originalSenderId = "0.0.10";
-        String firstReceipientId = "0.0.11";
-        String secondReceipientId = "0.0.12";
-        String finalReceipientId = "0.0.13";
-        NftTransfer nftTransfer1 = getNftTransfer(timestamp, tokenId, serialNumber, firstReceipientId,
-                originalSenderId);
-        NftTransfer nftTransfer2 = getNftTransfer(timestamp, tokenId, serialNumber, secondReceipientId,
-                firstReceipientId);
-        NftTransfer nftTransfer3 = getNftTransfer(timestamp, tokenId, serialNumber, finalReceipientId,
-                secondReceipientId);
+        var nftTransfer = domainBuilder.nftTransfer();
+        EntityId entity1 = EntityId.of("0.0.10", ACCOUNT);
+        EntityId entity2 = EntityId.of("0.0.11", ACCOUNT);
+        EntityId entity3 = EntityId.of("0.0.12", ACCOUNT);
+        EntityId entity4 = EntityId.of("0.0.13", ACCOUNT);
+        var nftTransfer1 = nftTransfer.customize(n -> n.senderAccountId(entity1).receiverAccountId(entity2)).get();
+        var nftTransfer2 = nftTransfer.customize(n -> n.senderAccountId(entity2).receiverAccountId(entity3)).get();
+        var nftTransfer3 = nftTransfer.customize(n -> n.senderAccountId(entity3).receiverAccountId(entity4)).get();
 
         // when
         sqlEntityListener.onNftTransfer(nftTransfer1);
@@ -994,14 +1095,13 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        NftTransfer mergedNftTransfer = getNftTransfer(timestamp, tokenId, serialNumber, finalReceipientId,
-                originalSenderId);
+        var mergedNftTransfer = nftTransfer.customize(n -> n.senderAccountId(entity1).receiverAccountId(entity4)).get();
         assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(mergedNftTransfer);
     }
 
     @Test
     void onNftTransferDuplicates() {
-        NftTransfer nftTransfer1 = getNftTransfer(1L, "0.0.1", 1L, "0.0.2", "0.0.3");
+        NftTransfer nftTransfer1 = domainBuilder.nftTransfer().get();
 
         // when
         sqlEntityListener.onNftTransfer(nftTransfer1);
@@ -1011,6 +1111,38 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(nftTransfer1);
+    }
+
+    @Test
+    void onNodeStake() {
+        // given
+        var nodeStake1 = domainBuilder.nodeStake().get();
+        var nodeStake2 = domainBuilder.nodeStake().get();
+
+        // when
+        sqlEntityListener.onNodeStake(nodeStake1);
+        sqlEntityListener.onNodeStake(nodeStake2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(nodeStakeRepository.findAll()).containsExactlyInAnyOrder(nodeStake1, nodeStake2);
+    }
+
+    @Test
+    void onStakingRewardTransfer() {
+        // given
+        var transfer1 = domainBuilder.stakingRewardTransfer().get();
+        var transfer2 = domainBuilder.stakingRewardTransfer().get();
+        var transfer3 = domainBuilder.stakingRewardTransfer().get();
+
+        // when
+        sqlEntityListener.onStakingRewardTransfer(transfer1);
+        sqlEntityListener.onStakingRewardTransfer(transfer2);
+        sqlEntityListener.onStakingRewardTransfer(transfer3);
+        completeFileAndCommit();
+
+        // then
+        assertThat(stakingRewardTransferRepository.findAll()).containsExactlyInAnyOrder(transfer1, transfer2, transfer3);
     }
 
     @Test
@@ -1394,14 +1526,9 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onTokenTransfer() {
-        EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
-        EntityId tokenId2 = EntityId.of("0.0.7", TOKEN);
-        EntityId accountId1 = EntityId.of("0.0.5", ACCOUNT);
-        EntityId accountId2 = EntityId.of("0.0.9", ACCOUNT);
-
-        TokenTransfer tokenTransfer1 = getTokenTransfer(1000, 2L, tokenId1, accountId1);
-        TokenTransfer tokenTransfer2 = getTokenTransfer(50, 2L, tokenId2, accountId2);
-        TokenTransfer tokenTransfer3 = getTokenTransfer(-444, 4L, tokenId1, accountId1);
+        TokenTransfer tokenTransfer1 = domainBuilder.tokenTransfer().get();
+        TokenTransfer tokenTransfer2 = domainBuilder.tokenTransfer().get();
+        TokenTransfer tokenTransfer3 = domainBuilder.tokenTransfer().get();
 
         // when
         sqlEntityListener.onTokenTransfer(tokenTransfer1);
@@ -1523,59 +1650,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(recordFileRepository.findAll()).contains(recordFile);
     }
 
-    private Entity getEntity(long id, long modifiedTimestamp) {
-        return getEntity(id, null, modifiedTimestamp, null, null, null);
-    }
-
-    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp,
-                             Integer maxAutomaticTokenAssociations, String memo, Key adminKey) {
-        return getEntity(id, createdTimestamp, modifiedTimestamp, memo, adminKey, null, null, null, null,
-                maxAutomaticTokenAssociations, false, null);
-    }
-
-    private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo,
-                             Key adminKey, Long autoRenewAccountId, Long autoRenewPeriod,
-                             Boolean deleted, Long expiryTimeNs, Integer maxAutomaticTokenAssociations,
-                             Boolean receiverSigRequired, Key submitKey) {
-        Entity entity = new Entity();
-        entity.setId(id);
-        entity.setAutoRenewAccountId(autoRenewAccountId);
-        entity.setAutoRenewPeriod(autoRenewPeriod);
-        entity.setCreatedTimestamp(createdTimestamp);
-        entity.setDeleted(deleted);
-        entity.setEthereumNonce(0L);
-        entity.setExpirationTimestamp(expiryTimeNs);
-        entity.setKey(adminKey != null ? adminKey.toByteArray() : null);
-        entity.setMaxAutomaticTokenAssociations(maxAutomaticTokenAssociations);
-        entity.setTimestampLower(modifiedTimestamp);
-        entity.setNum(id);
-        entity.setRealm(0L);
-        entity.setReceiverSigRequired(receiverSigRequired);
-        entity.setShard(0L);
-        entity.setSubmitKey(submitKey != null ? submitKey.toByteArray() : null);
-        entity.setType(ACCOUNT);
-        if (memo != null) {
-            entity.setMemo(memo);
-        }
-        return entity;
-    }
-
-    private TopicMessage getTopicMessage() {
-        TopicMessage topicMessage = new TopicMessage();
-        topicMessage.setChunkNum(1);
-        topicMessage.setChunkTotal(2);
-        topicMessage.setConsensusTimestamp(1L);
-        topicMessage.setMessage("test message".getBytes());
-        topicMessage.setPayerAccountId(EntityId.of("0.1.1000", EntityType.ACCOUNT));
-        topicMessage.setRunningHash("running hash".getBytes());
-        topicMessage.setRunningHashVersion(2);
-        topicMessage.setSequenceNumber(1L);
-        topicMessage.setTopicId(EntityId.of("0.0.1001", EntityType.TOPIC));
-        topicMessage.setValidStartTimestamp(4L);
-
-        return topicMessage;
-    }
-
     @SneakyThrows
     private Token getToken(EntityId tokenId, EntityId accountId, Long createdTimestamp, long modifiedTimestamp) {
         var instr = "0011223344556677889900aabbccddeeff0011223344556677889900aabbccddeeff";
@@ -1631,16 +1705,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         return nft;
     }
 
-    private NftTransfer getNftTransfer(long consensusTimestamp, String tokenId, long serialNumber, String receiverId,
-                                       String senderId) {
-        NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransferId(consensusTimestamp, serialNumber, EntityId.of(tokenId, TOKEN)));
-        nftTransfer.setReceiverAccountId(EntityId.of(receiverId, ACCOUNT));
-        nftTransfer.setSenderAccountId(EntityId.of(senderId, ACCOUNT));
-        nftTransfer.setPayerAccountId(TRANSACTION_PAYER);
-        return nftTransfer;
-    }
-
     private TokenAccount getTokenAccount(EntityId tokenId, EntityId accountId, Long createdTimestamp,
                                          long modifiedTimeStamp, Boolean associated, Boolean autoAssociated,
                                          TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus) {
@@ -1651,13 +1715,5 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenAccount.setKycStatus(kycStatus);
         tokenAccount.setCreatedTimestamp(createdTimestamp);
         return tokenAccount;
-    }
-
-    private TokenTransfer getTokenTransfer(long amount, long consensusTimestamp, EntityId tokenId, EntityId accountId) {
-        TokenTransfer tokenTransfer = new TokenTransfer();
-        tokenTransfer.setAmount(amount);
-        tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
-        tokenTransfer.setPayerAccountId(TRANSACTION_PAYER);
-        return tokenTransfer;
     }
 }

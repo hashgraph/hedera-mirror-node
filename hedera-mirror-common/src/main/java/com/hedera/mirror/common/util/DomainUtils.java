@@ -48,6 +48,8 @@ import com.hedera.mirror.common.exception.InvalidEntityException;
 public class DomainUtils {
 
     public static final int EVM_ADDRESS_LENGTH = 20;
+    public static final long TINYBARS_IN_ONE_HBAR = 100_000_000L;
+
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
     private static final char NULL_CHARACTER = (char) 0;
     private static final char NULL_REPLACEMENT = '�'; // Standard replacement character 0xFFFD

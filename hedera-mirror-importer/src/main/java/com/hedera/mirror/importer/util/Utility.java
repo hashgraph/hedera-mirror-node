@@ -33,6 +33,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
@@ -115,6 +117,19 @@ public class Utility {
         } catch (Exception e) {
             log.error("Error archiving file to {}", destination, e);
         }
+    }
+
+    /**
+     * Gets epoch day from the timestamp in nanos.
+     *
+     * @param timestamp The timestamp in nanos
+     * @return The epoch day
+     */
+    public static long getEpochDay(long timestamp) {
+        return LocalDate.ofInstant(Instant.ofEpochSecond(0, timestamp), ZoneOffset.UTC)
+                .atStartOfDay()
+                .toLocalDate()
+                .toEpochDay();
     }
 
     /**

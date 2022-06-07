@@ -77,6 +77,7 @@ import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
 import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
+import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -133,6 +134,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
 
     @Resource
     protected RecordStreamFileListener recordStreamFileListener;
+
+    @Resource
+    protected StakingRewardTransferRepository stakingRewardTransferRepository;
 
     @Resource
     protected TopicMessageRepository topicMessageRepository;
@@ -403,7 +407,9 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setTimestampLower(modifiedTimestamp);
         entity.setKey(adminKeyBytes);
         entity.setSubmitKey(submitKeyBytes);
-
+        entity.setStakedAccountId(-1L);
+        entity.setStakedNodeId(-1L);
+        entity.setStakePeriodStart(-1L);
         return entity;
     }
 
@@ -439,12 +445,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected void assertEntity(AbstractEntity expected) {
         AbstractEntity actual = getEntity(expected.toEntityId());
         assertThat(actual).isEqualTo(expected);
-    }
-
-    protected <T extends AbstractEntity> T getEntityWithDefaultMemo(EntityId entityId) {
-        T entity = entityId.toEntity();
-        entity.setMemo("");
-        return entity;
     }
 
     private RecordFile recordFile(long consensusStart, long consensusEnd, String filename) {
