@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import lombok.RequiredArgsConstructor;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -59,13 +58,11 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                         .returns(recordItem.getConsensusTimestamp(), NodeStake::getConsensusTimestamp)
                         .returns(epochDay, NodeStake::getEpochDay)
                         .returns(nodeStake.getNodeId(), NodeStake::getNodeId)
-                        .returns(transactionBody.getRewardRate(), NodeStake::getRewardRate)
+                        .returns(nodeStake.getRewardRate(), NodeStake::getRewardRate)
                         .returns(nodeStake.getStake(), NodeStake::getStake)
                         .returns(nodeStake.getStakeRewarded(), NodeStake::getStakeRewarded)
                         .returns(stakingPeriod, NodeStake::getStakingPeriod)
                         .returns(nodeStake.getStake(), NodeStake::getStakeTotal)
-                        .extracting(NodeStake::getRewardSum, InstanceOfAssertFactories.LONG)
-                        .isPositive()
         );
     }
 }
