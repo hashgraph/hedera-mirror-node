@@ -33,17 +33,23 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.util.Utility;
 import com.hedera.mirror.importer.util.UtilityTest;
 
 class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
+    @Captor
+    private ArgumentCaptor<Entity> entities;
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -99,19 +105,65 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     @Test
+    void updateTransactionStakedAccountId() {
+        // given
+        final AccountID accountId = AccountID.newBuilder().setAccountNum(1L).build();
+        var recordItem = recordItemBuilder.cryptoCreate()
+                .transactionBody(b -> b.setDeclineReward(false).setStakedAccountId(accountId))
+                .build();
+
+        // when
+        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+
+        // then
+        verify(entityListener).onEntity(entities.capture());
+        assertThat(entities.getValue())
+                .isNotNull()
+                .returns(false, Entity::isDeclineReward)
+                .returns(accountId.getAccountNum(), Entity::getStakedAccountId)
+                .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
+    }
+
+    @Test
+    void updateTransactionStakedNodeId() {
+        // given
+        long nodeId = 1L;
+        var recordItem = recordItemBuilder.cryptoCreate()
+                .transactionBody(b -> b.setDeclineReward(true).setStakedNodeId(nodeId))
+                .build();
+
+        // when
+        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+
+        // then
+        verify(entityListener).onEntity(entities.capture());
+        assertThat(entities.getValue())
+                .isNotNull()
+                .returns(true, Entity::isDeclineReward)
+                .returns(nodeId, Entity::getStakedNodeId)
+                .returns(-1L, Entity::getStakedAccountId)
+                .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
+    }
+
+    @Test
     void updateAlias() {
         var alias = UtilityTest.ALIAS_ECDSA_SECP256K1;
         var recordItem = recordItemBuilder.cryptoCreate().record(r -> r.setAlias(DomainUtils.fromBytes(alias))).build();
-        var transaction = new Transaction();
-        transaction.setEntityId(EntityId.of(0L, 0L, 100L, EntityType.ACCOUNT));
 
-        transactionHandler.updateTransaction(transaction, recordItem);
+        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
-        ArgumentCaptor<Entity> captor = ArgumentCaptor.forClass(Entity.class);
-        verify(entityIdService).notify(captor.capture());
-        assertThat(captor.getValue())
+        verify(entityIdService).notify(entities.capture());
+        assertThat(entities.getValue())
                 .isNotNull()
                 .returns(alias, Entity::getAlias)
                 .returns(UtilityTest.EVM_ADDRESS, Entity::getEvmAddress);
+    }
+
+    private Transaction transaction(RecordItem recordItem) {
+        var entityId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        var consensusTimestamp = recordItem.getConsensusTimestamp();
+        return domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(consensusTimestamp).entityId(entityId))
+                .get();
     }
 }

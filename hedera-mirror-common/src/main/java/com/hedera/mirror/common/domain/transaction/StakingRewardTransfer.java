@@ -1,4 +1,4 @@
-package com.hedera.mirror.common.domain.file;
+package com.hedera.mirror.common.domain.transaction;
 
 /*-
  * ‌
@@ -21,51 +21,60 @@ package com.hedera.mirror.common.domain.file;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.io.Serializable;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
-import javax.persistence.Id;
+import javax.persistence.IdClass;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import org.springframework.data.domain.Persistable;
 
-import com.hedera.mirror.common.converter.FileIdConverter;
+import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 
-@Builder(toBuilder = true)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 @Data
 @Entity
+@IdClass(StakingRewardTransfer.Id.class)
 @NoArgsConstructor
-@AllArgsConstructor
-@ToString(exclude = "fileData")
-public class FileData implements Persistable<Long> {
+public class StakingRewardTransfer implements Persistable<StakingRewardTransfer.Id> {
 
-    @Id
-    private Long consensusTimestamp;
+    @javax.persistence.Id
+    private long accountId;
 
-    private byte[] fileData;
+    private long amount;
 
-    @Convert(converter = FileIdConverter.class)
-    private EntityId entityId;
+    @javax.persistence.Id
+    private long consensusTimestamp;
 
-    private Integer transactionType;
-
-    public boolean transactionTypeIsAppend() {
-        return transactionType == TransactionType.FILEAPPEND.getProtoId();
-    }
+    @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
 
     @JsonIgnore
     @Override
-    public Long getId() {
-        return consensusTimestamp;
+    public Id getId() {
+        Id id = new Id();
+        id.setAccountId(accountId);
+        id.setConsensusTimestamp(consensusTimestamp);
+        return id;
     }
 
     @JsonIgnore
     @Override
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
+    }
+
+    @Data
+    public static class Id implements Serializable {
+        private static final long serialVersionUID = 1129458229846263861L;
+
+        private long accountId;
+
+        private long consensusTimestamp;
     }
 }

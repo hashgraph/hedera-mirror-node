@@ -711,6 +711,9 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         topic.setEthereumNonce(0L);
         topic.setMemo(memo);
         topic.setType(EntityType.TOPIC);
+        topic.setStakedAccountId(-1L);
+        topic.setStakedNodeId(-1L);
+        topic.setStakePeriodStart(-1L);
         return topic;
     }
 

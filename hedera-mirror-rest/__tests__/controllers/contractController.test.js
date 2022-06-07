@@ -305,8 +305,7 @@ describe('getContractByIdOrAddressQuery', () => {
       name: 'latest',
       isCreate2Test: false,
       input: {timestampConditions: [], timestampParams: [1234, 5678], contractIdParam: '0.0.2'},
-      expectedParams: [1234, 5678, 2],
-      expectedQuery: (columnName) => `
+      expected: (columnName) => `
         with contract as (
           ${queryForTable({table: 'contract', columnName})}
         ), contract_file as (
@@ -322,12 +321,7 @@ describe('getContractByIdOrAddressQuery', () => {
         timestampParams: [5678, 1234],
         contractIdParam: '70f2b2914a2a4b783faefb75f459a580616fcb5e',
       },
-      expectedParams: [
-        5678,
-        1234,
-        Buffer.from([112, 242, 178, 145, 74, 42, 75, 120, 63, 174, 251, 117, 244, 89, 165, 128, 97, 111, 203, 94]),
-      ],
-      expectedQuery: (columnName) => `
+      expected: (columnName) => `
         with contract as (
             ${queryForTable({table: 'contract', extraConditions: timestampConditions, columnName})}
             union
@@ -347,12 +341,7 @@ describe('getContractByIdOrAddressQuery', () => {
         timestampParams: [1234, 5678],
         contractIdParam: '70f2b2914a2a4b783faefb75f459a580616fcb5e',
       },
-      expectedParams: [
-        1234,
-        5678,
-        Buffer.from([112, 242, 178, 145, 74, 42, 75, 120, 63, 174, 251, 117, 244, 89, 165, 128, 97, 111, 203, 94]),
-      ],
-      expectedQuery: (columnName) => `
+      expected: (columnName) => `
         with contract as (
           ${queryForTable({table: 'contract', columnName})}
         ), contract_file as (
@@ -364,8 +353,7 @@ describe('getContractByIdOrAddressQuery', () => {
       name: 'historical',
       isCreate2Test: false,
       input: {timestampConditions, timestampParams: [5678, 1234], contractIdParam: '0.0.1'},
-      expectedParams: [5678, 1234, 1],
-      expectedQuery: (columnName) => `
+      expected: (columnName) => `
         with contract as (
             ${queryForTable({table: 'contract', extraConditions: timestampConditions, columnName})}
             union
@@ -377,41 +365,13 @@ describe('getContractByIdOrAddressQuery', () => {
         )
         ${mainQuery}`,
     },
-    {
-      name: 'latest',
-      isCreate2Test: false,
-      input: {timestampConditions: [], timestampParams: [1234, 5678], contractIdParam: '0.0.924569'},
-      expectedParams: [1234, 5678, 924569],
-      expectedQuery: (columnName) => `
-        with contract as (
-          ${queryForTable({table: 'contract', columnName})}
-          ), contract_file as (
-          ${FileDataService.getContractInitCodeFiledataQuery()}
-          )
-          ${mainQuery}`,
-    },
-    {
-      name: 'latest',
-      isCreate2Test: false,
-      input: {timestampConditions: [], timestampParams: [1234, 5678], contractIdParam: '1.1.924569'},
-      expectedParams: [1234, 5678, 281479272602521],
-      expectedQuery: (columnName) => `
-        with contract as (
-          ${queryForTable({table: 'contract', columnName})}
-        ), contract_file as (
-            ${FileDataService.getContractInitCodeFiledataQuery()}
-        )
-        ${mainQuery}`,
-    },
   ];
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      const actualContract = contracts.getContractByIdOrAddressQuery(spec.input);
-      const actualQuery = actualContract.query;
-      const expectedQuery = spec.expectedQuery(spec.isCreate2Test ? Contract.EVM_ADDRESS : Contract.ID);
+      const actualQuery = contracts.getContractByIdOrAddressQuery(spec.input).query;
+      const expectedQuery = spec.expected(spec.isCreate2Test ? Contract.EVM_ADDRESS : Contract.ID);
       assertSqlQueryEqual(actualQuery, expectedQuery);
-      expect(actualContract.params).toEqual(spec.expectedParams);
     });
   });
 });

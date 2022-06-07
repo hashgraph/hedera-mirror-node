@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
+import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -49,6 +50,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -150,8 +152,18 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
+    public void onNodeStake(NodeStake nodeStake) {
+        onEach(EntityListener::onNodeStake, nodeStake);
+    }
+
+    @Override
     public void onSchedule(Schedule schedule) throws ImporterException {
         onEach(EntityListener::onSchedule, schedule);
+    }
+
+    @Override
+    public void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) {
+        onEach(EntityListener::onStakingRewardTransfer, stakingRewardTransfer);
     }
 
     @Override

@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -42,6 +43,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -100,10 +102,16 @@ public interface EntityListener {
     default void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
     }
 
+    default void onNodeStake(NodeStake nodeStake) {
+    }
+
     default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
     }
 
     default void onSchedule(Schedule schedule) throws ImporterException {
+    }
+
+    default void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) {
     }
 
     default void onToken(Token token) throws ImporterException {
