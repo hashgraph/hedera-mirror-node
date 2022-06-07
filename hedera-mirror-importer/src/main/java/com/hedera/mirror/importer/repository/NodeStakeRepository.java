@@ -20,14 +20,9 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Collection;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 
 public interface NodeStakeRepository extends CrudRepository<NodeStake, NodeStake.Id> {
-
-    @Query("from NodeStake where epochDay = ?1")
-    Collection<NodeStake> findByEpochDay(long epochDay);
 }
