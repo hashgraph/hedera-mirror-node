@@ -32,11 +32,8 @@ class NodeStakeRepositoryTest extends AbstractRepositoryTest {
     private final NodeStakeRepository repository;
 
     @Test
-    void findByEpochDay() {
-        var epochDay = 1L;
-        var nodeStake1 = domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay)).persist();
-        var nodeStake2 = domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay)).persist();
-        domainBuilder.nodeStake().customize(n -> n.epochDay(0L)).persist(); // Unrelated
-        assertThat(repository.findByEpochDay(epochDay)).containsExactlyInAnyOrder(nodeStake1, nodeStake2);
+    void findById() {
+        var expected = domainBuilder.nodeStake().persist();
+        assertThat(repository.findById(expected.getId())).get().isEqualTo(expected);
     }
 }
