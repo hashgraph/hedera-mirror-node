@@ -162,7 +162,11 @@ jobs:
             '.construction.prefunded_accounts=$accounts[0] | .construction.offline_url="${{ env.OFFLINE_URL }}"' \
             validation.json > /tmp/validation.json
 
-          mv /tmp/validation.json validation.json
+          # set start index to genesis index + 1
+          body="{\"network_identifier\": $(cat validation.json  | jq -c -M '.network')}"
+          startIndex=$(curl -sL -d "${body}" http://localhost:5700/network/status | jq '.genesis_block_identifier.index+1')
+          echo "Setting data start_index to $startIndex"
+          jq --argjson startIndex $startIndex '.data.start_index=$startIndex' /tmp/validation.json > validation.json
 
       - name: Run Rosetta CLI Validation
         working-directory: ./hedera-mirror-rosetta/scripts/validation
