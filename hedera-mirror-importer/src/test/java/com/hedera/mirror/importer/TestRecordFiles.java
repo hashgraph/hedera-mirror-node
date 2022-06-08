@@ -9,9 +9,9 @@ package com.hedera.mirror.importer;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,13 +24,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import com.hedera.mirror.common.domain.entity.EntityType;
-
 import lombok.experimental.UtilityClass;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 
 @UtilityClass
@@ -122,9 +120,30 @@ public class TestRecordFiles {
                 .previousHash(recordFileV5_1.getHash())
                 .version(5)
                 .build();
+        RecordFile recordFileV6 = RecordFile.builder()
+                .consensusStart(1653638827207961122L)
+                .consensusEnd(1653638827809355508L)
+                .count(2L)
+                .digestAlgorithm(digestAlgorithm)
+                .gasUsed(0L)
+                .fileHash(
+                        "464d441c41031f1807133dfc8aead4b3d9169da75f1b4bfb464ad115a63832bebe05a09be92ce297a96c0437350bcdda")
+                .hapiVersionMajor(0)
+                .hapiVersionMinor(0)
+                .hapiVersionPatch(0)
+                .hash
+                        ("b41b8deb574d40a15fa05645ea2de7c6b6e8ca14d34e24d7151ac75d64065077460c0376c5349179b1adfcf82b1f8d38")
+                .metadataHash(
+                        "0f814754a7f5b232eaf3531307a229df325b1c11b62df425571deabab37031c1465b9b0e84a43dd75c2be87b3288562d")
+                .name("2022-05-27T08_07_07.207961122Z.rcd")
+                .previousHash(
+                        "566beb39add5861c1b4541dae0e8d714a1c0e8d37d625d7d032694408a0780e8666e4b3e56ed9c7318ab78554ce1aa66")
+                .version(6)
+                .build();
         List<RecordFile> allFiles = List.of(recordFileV1_1, recordFileV1_2,
                 recordFileV2_1, recordFileV2_2,
-                recordFileV5_1, recordFileV5_2);
+                recordFileV5_1, recordFileV5_2,
+                recordFileV6);
         return Collections.unmodifiableMap(allFiles.stream().collect(Collectors.toMap(RecordFile::getName, rf -> rf)));
     }
 

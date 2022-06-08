@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.downloader.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,6 +29,7 @@ import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.reader.record.CompositeRecordFileReader;
+import com.hedera.mirror.importer.reader.record.ProtoRecordFileReader;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV1;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV2;
@@ -56,7 +57,7 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
     @Override
     protected Downloader getDownloader() {
         RecordFileReader recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(),
-                new RecordFileReaderImplV2(), new RecordFileReaderImplV5());
+                new RecordFileReaderImplV2(), new RecordFileReaderImplV5(), new ProtoRecordFileReader());
         return new RecordFileDownloader(s3AsyncClient, addressBookService,
                 (RecordDownloaderProperties) downloaderProperties, meterRegistry,
                 nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier, dateRangeProcessor);
