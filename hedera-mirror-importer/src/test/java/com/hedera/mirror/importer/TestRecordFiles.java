@@ -127,7 +127,7 @@ public class TestRecordFiles {
                 .digestAlgorithm(digestAlgorithm)
                 .gasUsed(0L)
                 .fileHash(
-                        "464d441c41031f1807133dfc8aead4b3d9169da75f1b4bfb464ad115a63832bebe05a09be92ce297a96c0437350bcdda")
+                        "90546c631475f15f955ff53622a6c7aec0d5a21247e332ff07299a50109ef38ef07d5d540a375f4bc0c99d73fb102851")
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(0)
                 .hapiVersionPatch(0)

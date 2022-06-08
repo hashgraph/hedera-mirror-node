@@ -85,13 +85,14 @@ public class ProtoRecordFileReader implements RecordFileReader {
     private RecordStreamFile readRecordStreamFile(InputStream inputStream, MessageDigest messageDigestFile)
             throws IOException {
         try {
-            int recordFileVersion = ByteBuffer.wrap(inputStream.readNBytes(4)).getInt();
+            var digestInputStream = new DigestInputStream(inputStream, messageDigestFile);
+            int recordFileVersion = ByteBuffer.wrap(digestInputStream.readNBytes(4)).getInt();
             if (recordFileVersion != VERSION) {
                 throw new InvalidStreamFileException(
                         format("Expected file with version %d, given %d.", VERSION, recordFileVersion));
             }
 
-            var bufferedInputStream = new BufferedInputStream(new DigestInputStream(inputStream, messageDigestFile));
+            var bufferedInputStream = new BufferedInputStream(digestInputStream);
 
             return RecordStreamFile.parseFrom(bufferedInputStream);
         }catch(InvalidProtocolBufferException e){
@@ -145,7 +146,6 @@ public class ProtoRecordFileReader implements RecordFileReader {
         var dataOutputStream = new DataOutputStream(pipedOutputStream);
 
         var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
-        dataOutputStream.writeInt(VERSION);
         dataOutputStream.writeInt(hapiProtoVersion.getMajor());
         dataOutputStream.writeInt(hapiProtoVersion.getMinor());
         dataOutputStream.writeInt(hapiProtoVersion.getPatch());
