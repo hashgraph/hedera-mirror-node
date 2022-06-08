@@ -436,7 +436,7 @@ func TestConstructionDerive(t *testing.T) {
 				CurveType: rTypes.Edwards25519,
 			},
 			expected: &rTypes.ConstructionDeriveResponse{
-				AccountIdentifier: &rTypes.AccountIdentifier{Address: hex.EncodeToString(ed25519PublicKey.BytesRaw())},
+				AccountIdentifier: &rTypes.AccountIdentifier{Address: "0x" + hex.EncodeToString(ed25519PublicKey.BytesRaw())},
 			},
 		},
 		{
@@ -732,9 +732,9 @@ func TestConstructionPayloads(t *testing.T) {
 		getOperation(0, types.OperationTypeCryptoTransfer, defaultCryptoAccountId1, defaultSendAmount),
 		getOperation(1, types.OperationTypeCryptoTransfer, defaultCryptoAccountId2, defaultReceiveAmount),
 	}
-	payloadBytes, _ := hex.DecodeString("0a0f0a0708959aef3a107b120418d8c307120218031880c2d72f2202087872020a00")
+	payloadBytes, _ := hex.DecodeString("0a0f0a0708959aef3a107b120418d8c307120218031880c2d72f220308b40172020a00")
 	expected := &rTypes.ConstructionPayloadsResponse{
-		UnsignedTransaction: "0x0a282a260a220a0f0a0708959aef3a107b120418d8c307120218031880c2d72f2202087872020a001200",
+		UnsignedTransaction: "0x0a292a270a230a0f0a0708959aef3a107b120418d8c307120218031880c2d72f220308b40172020a001200",
 		Payloads: []*rTypes.SigningPayload{
 			{
 				AccountIdentifier: defaultCryptoAccountId1.ToRosetta(),
@@ -760,6 +760,43 @@ func TestConstructionPayloads(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestConstructionPayloadValidDuration(t *testing.T) {
+	// given
+	operations := types.OperationSlice{
+		getOperation(0, types.OperationTypeCryptoTransfer, defaultCryptoAccountId1, defaultSendAmount),
+		getOperation(1, types.OperationTypeCryptoTransfer, defaultCryptoAccountId2, defaultReceiveAmount),
+	}
+	payloadBytes, _ := hex.DecodeString("0a0f0a0708959aef3a107b120418d8c307120218031880c2d72f2202083c72020a00")
+	expected := &rTypes.ConstructionPayloadsResponse{
+		UnsignedTransaction: "0x0a282a260a220a0f0a0708959aef3a107b120418d8c307120218031880c2d72f2202083c72020a001200",
+		Payloads: []*rTypes.SigningPayload{
+			{
+				AccountIdentifier: defaultCryptoAccountId1.ToRosetta(),
+				Bytes:             payloadBytes,
+				SignatureType:     rTypes.Ed25519,
+			},
+		},
+	}
+
+	mockConstructor := &mocks.MockTransactionConstructor{}
+	mockConstructor.
+		On("Construct", defaultContext, mock.IsType(types.OperationSlice{})).
+		Return(hedera.NewTransferTransaction(), []types.AccountId{defaultCryptoAccountId1}, mocks.NilError)
+	metadata := map[string]interface{}{
+		metadataKeyValidStartNanos:      "123456789000000123",
+		metadataKeyValidDurationSeconds: "60",
+	}
+	request := getPayloadsRequest(operations, payloadsRequestMetadata(metadata))
+	service, _ := NewConstructionAPIService(onlineBaseService, defaultNetwork, singleNode, 0, 0, mockConstructor)
+
+	// when
+	actual, e := service.ConstructionPayloads(defaultContext, request)
+
+	// then
+	assert.Nil(t, e)
+	assert.Equal(t, expected, actual)
+}
+
 func TestConstructionPayloadsInvalidRequest(t *testing.T) {
 	operations := types.OperationSlice{
 		getOperation(0, types.OperationTypeCryptoTransfer, defaultCryptoAccountId1, defaultSendAmount),
@@ -770,6 +807,22 @@ func TestConstructionPayloadsInvalidRequest(t *testing.T) {
 		name      string
 		customize func(*rTypes.ConstructionPayloadsRequest)
 	}{
+		{
+			name:      "ValidDurationOverMax",
+			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidDurationSeconds: "181"}),
+		},
+		{
+			name:      "ValidDurationUnderMin",
+			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidDurationSeconds: "-1"}),
+		},
+		{
+			name:      "InvalidValidDurationType",
+			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidDurationSeconds: 120}),
+		},
+		{
+			name:      "ValidDurationTypeNotANumber",
+			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidDurationSeconds: "abc"}),
+		},
 		{
 			name:      "InvalidValidStartNanosType",
 			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidStartNanos: 100}),
