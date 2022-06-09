@@ -1260,15 +1260,17 @@ const addRecordFile = async (recordFileInput) => {
     'hash',
     'load_end',
     'load_start',
+    'logs_bloom',
     'name',
     'node_account_id',
     'prev_hash',
+    'size',
     'version',
-    'logs_bloom',
   ];
 
+  const bytes = Buffer.from([1, 1, 2, 2, 3, 3]);
   const recordFile = {
-    bytes: Buffer.from([1, 1, 2, 2, 3, 3]),
+    bytes: bytes,
     gas_used: 0,
     consensus_end: 1628751573995691000,
     consensus_start: 1628751572000852000,
@@ -1287,6 +1289,7 @@ const addRecordFile = async (recordFileInput) => {
     prev_hash: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     version: 5,
     logs_bloom: Buffer.alloc(0),
+    size: bytes.length,
     ...recordFileInput,
   };
   recordFile.bytes = recordFileInput.bytes != null ? Buffer.from(recordFileInput.bytes) : recordFile.bytes;

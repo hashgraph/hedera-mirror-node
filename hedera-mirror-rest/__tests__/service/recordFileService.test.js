@@ -171,7 +171,8 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
       limit: 1,
     });
 
-    expect(blocks.length).toEqual(1);
+    expect(blocks).toHaveLength(1);
+    expect(blocks).expect(blocks.length).toEqual(1);
     expectToEqualId17(blocks[0]);
   });
 

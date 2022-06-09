@@ -9,9 +9,9 @@ package com.hedera.mirror.importer;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,13 +24,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import com.hedera.mirror.common.domain.entity.EntityType;
-
 import lombok.experimental.UtilityClass;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 
 @UtilityClass
@@ -50,6 +48,7 @@ public class TestRecordFiles {
                 .name("2019-07-01T14_13_00.317763Z.rcd")
                 .previousHash(
                         "f423447a3d5a531a07426070e511555283daae063706242590949116f717a0524e4dd18f9d64e66c73982d475401db04")
+                .size(4898)
                 .version(1)
                 .build();
         RecordFile recordFileV1_2 = RecordFile.builder()
@@ -62,6 +61,7 @@ public class TestRecordFiles {
                 .hash("1faf198f8fdbefa59bde191f214d73acdc4f5c0f434677a7edf9591b129e21aea90a5b3119d2802cee522e7be6bc8830")
                 .name("2019-07-01T14_29_00.302068Z.rcd")
                 .previousHash(recordFileV1_1.getFileHash())
+                .size(22347)
                 .version(1)
                 .build();
         RecordFile recordFileV2_1 = RecordFile.builder()
@@ -74,6 +74,7 @@ public class TestRecordFiles {
                 .hash("591558e059bd1629ee386c4e35a6875b4c67a096718f5d225772a651042715189414df7db5588495efb2a85dc4a0ffda")
                 .name("2019-08-30T18_10_00.419072Z.rcd")
                 .previousHash(digestAlgorithm.getEmptyHash())
+                .size(8515)
                 .version(2)
                 .build();
         RecordFile recordFileV2_2 = RecordFile.builder()
@@ -86,6 +87,7 @@ public class TestRecordFiles {
                 .hash("5ed51baeff204eb6a2a68b76bbaadcb9b6e7074676c1746b99681d075bef009e8d57699baaa6342feec4e83726582d36")
                 .name("2019-08-30T18_10_05.249678Z.rcd")
                 .previousHash(recordFileV2_1.getFileHash())
+                .size(6649)
                 .version(2)
                 .build();
         RecordFile recordFileV5_1 = RecordFile.builder()
@@ -103,6 +105,7 @@ public class TestRecordFiles {
                         "ffe56840b99145f7b3370367fa5784cbe225278afd1c4c078dfe5b950fee22e2b9e9a04bde32023c3ba07c057cb54406")
                 .name("2021-01-11T22_09_24.063739000Z.rcd")
                 .previousHash(digestAlgorithm.getEmptyHash())
+                .size(498)
                 .version(5)
                 .build();
         RecordFile recordFileV5_2 = RecordFile.builder()
@@ -120,6 +123,7 @@ public class TestRecordFiles {
                         "912869b5204ffbb7e437aaa6e7a09e9d53da98ead27942fdf7017e850827e857fadb1167e8877cfb8175883adcd74f7d")
                 .name("2021-01-11T22_09_34.097416003Z.rcd")
                 .previousHash(recordFileV5_1.getHash())
+                .size(498)
                 .version(5)
                 .build();
         List<RecordFile> allFiles = List.of(recordFileV1_1, recordFileV1_2,
@@ -142,6 +146,7 @@ public class TestRecordFiles {
                 .nodeAccountId(nodeAccountId)
                 .previousHash(
                         "d27ba83c736bfa2ffc9a6f062b27ea4856800bbbe820b77b32e08faf3d7475d81ef5a16f90ce065d35eefa999677edaa")
+                .size(389)
                 .version(2)
                 .build();
         RecordFile recordFileV5 = RecordFile.builder()
@@ -160,6 +165,7 @@ public class TestRecordFiles {
                 .name("2021-01-21T00_19_43.558496000Z.rcd")
                 .nodeAccountId(nodeAccountId)
                 .previousHash(recordFileV2.getHash())
+                .size(495)
                 .version(5)
                 .build();
         return List.of(recordFileV2, recordFileV5);

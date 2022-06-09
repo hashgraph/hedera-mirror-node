@@ -120,11 +120,21 @@ public class RecordFile implements StreamFile<RecordItem> {
     @ToString.Exclude
     private String previousHash;
 
+    private Integer size;
+
     private int version;
 
     @Override
     public StreamType getType() {
         return StreamType.RECORD;
+    }
+
+    @Override
+    public void setBytes(byte[] bytes) {
+        this.bytes = bytes;
+        if (bytes != null) {
+            this.size = bytes.length;
+        }
     }
 
     private Version hapiVersion() {
