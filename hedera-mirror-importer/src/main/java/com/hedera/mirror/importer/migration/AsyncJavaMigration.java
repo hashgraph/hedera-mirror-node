@@ -90,9 +90,9 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
     @Override
     protected void doMigrate() throws IOException {
-        int successChecksum = getSuccessChecksum();
-        if (successChecksum < 0) {
-            log.error("Migration skipped due to negative success checksum {}, please fix it and rerun", successChecksum);
+        int checksum = getSuccessChecksum();
+        if (checksum <= 0) {
+            log.error("Migration skipped due to non-positive success checksum {}, please fix it and rerun", checksum);
             return;
         }
 
@@ -124,6 +124,12 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
     protected abstract T getInitial();
 
+    /**
+     * Gets the success checksum to set for the migration in flyway schema history table. Note the checksum is required
+     * to be positive. If a non-positive value is provided, the migration will be skipped and an error is logged.
+     *
+     * @return The success checksum for the migration
+     */
     protected abstract int getSuccessChecksum();
 
     protected abstract T migratePartial(T last);

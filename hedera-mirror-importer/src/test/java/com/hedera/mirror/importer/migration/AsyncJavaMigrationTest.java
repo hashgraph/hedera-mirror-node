@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -95,9 +96,10 @@ class AsyncJavaMigrationTest extends IntegrationTest {
                 new MigrationHistory(-2, 1001));
     }
 
-    @Test
-    void migrateNegativeSuccessChecksum() throws Exception {
-        var migration = new TestAsyncJavaMigration(dbProperties, false, jdbcTemplate, -1, transactionOperations);
+    @ParameterizedTest
+    @ValueSource(ints = {0, -1})
+    void migrateNonPositiveSuccessChecksum(Integer checksum) throws Exception {
+        var migration = new TestAsyncJavaMigration(dbProperties, false, jdbcTemplate, checksum, transactionOperations);
         migration.doMigrate();
         Thread.sleep(500);
         assertThat(getAllMigrationHistory()).isEmpty();
