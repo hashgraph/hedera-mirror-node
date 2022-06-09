@@ -223,11 +223,11 @@ terminationGracePeriodSeconds: 60
 
 test:
   enabled: true
+  githubRef:
   image:
     pullPolicy: IfNotPresent
     repository: postman/newman
     tag: 5.3.1-alpine
-  githubRef:
 
 tolerations: []
 
