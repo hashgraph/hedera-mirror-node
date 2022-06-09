@@ -59,4 +59,4 @@ jobs:
             GIT_REF=${$GITHUB_HEAD_REF#refs/*/}
             HELM_EXTRA_SET_ARGS="--helm-extra-set-args=\"--set=rosetta.test.githubRef=${GIT_REF}\""
           fi
-          ct install --config .github/ct.yaml --charts=charts/hedera-mirror "${helmExtraSetArgs}"
+          ct install --config .github/ct.yaml --charts=charts/hedera-mirror "${HELM_EXTRA_SET_ARGS}"
