@@ -20,9 +20,17 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 
-public interface NodeStakeRepository extends CrudRepository<NodeStake, NodeStake.Id> {
+public interface NodeStakeRepository extends CrudRepository<NodeStake, NodeStake.Id>, RetentionRepository {
+
+    @Modifying
+    @Override
+    @Query(nativeQuery = true, value = "delete from node_stake where consensus_timestamp <= ?1 " +
+            "and epoch_day < (select max(epoch_day) from node_stake) - 366")
+    int prune(long consensusTimestamp);
 }

@@ -22,13 +22,14 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class AccountBalanceFileRepositoryTest extends AbstractRepositoryTest {
 
-    @Resource
-    private AccountBalanceFileRepository accountBalanceFileRepository;
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
 
     @Test
     void findLatest() {
@@ -66,5 +67,16 @@ class AccountBalanceFileRepositoryTest extends AbstractRepositoryTest {
                 file3.getConsensusTimestamp()))
                 .get()
                 .isEqualTo(file1);
+    }
+
+    @Test
+    void prune() {
+        domainBuilder.accountBalanceFile().persist();
+        var accountBalanceFile2 = domainBuilder.accountBalanceFile().persist();
+        var accountBalanceFile3 = domainBuilder.accountBalanceFile().persist();
+
+        accountBalanceFileRepository.prune(accountBalanceFile2.getConsensusTimestamp());
+
+        assertThat(accountBalanceFileRepository.findAll()).containsExactly(accountBalanceFile3);
     }
 }

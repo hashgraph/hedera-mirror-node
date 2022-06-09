@@ -68,15 +68,21 @@ import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractHistory;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
+import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.NftAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowanceHistory;
+import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -88,8 +94,11 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
+import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
+import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
+import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
@@ -198,6 +207,19 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<AssessedCustomFee, AssessedCustomFee.AssessedCustomFeeBuilder> assessedCustomFee() {
+        var id = new AssessedCustomFee.Id();
+        id.setCollectorAccountId(entityId(ACCOUNT));
+        id.setConsensusTimestamp(timestamp());
+        var builder = AssessedCustomFee.builder()
+                .amount(100L)
+                .effectivePayerAccountIds(List.of(entityId(ACCOUNT).getId()))
+                .id(id)
+                .payerAccountId(entityId(ACCOUNT))
+                .tokenId(entityId(TOKEN));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<Contract, Contract.ContractBuilder> contract() {
         long id = id();
         long timestamp = timestamp();
@@ -223,6 +245,36 @@ public class DomainBuilder {
                 .stakedNodeId(-1L)
                 .stakePeriodStart(-1L)
                 .timestampRange(Range.atLeast(timestamp))
+                .type(CONTRACT);
+
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<ContractHistory, ContractHistory.ContractHistoryBuilder> contractHistory() {
+        long id = id();
+        long timestamp = timestamp();
+
+        var builder = ContractHistory.builder()
+                .autoRenewAccountId(id())
+                .autoRenewPeriod(1800L)
+                .createdTimestamp(timestamp)
+                .deleted(false)
+                .evmAddress(evmAddress())
+                .expirationTimestamp(timestamp + 30_000_000L)
+                .fileId(entityId(FILE))
+                .id(id)
+                .key(key())
+                .maxAutomaticTokenAssociations(2)
+                .memo(text(16))
+                .obtainerId(entityId(CONTRACT))
+                .proxyAccountId(entityId(ACCOUNT))
+                .num(id)
+                .realm(0L)
+                .shard(0L)
+                .stakedAccountId(entityId(ACCOUNT).getId())
+                .stakedNodeId(-1L)
+                .stakePeriodStart(18980L)
+                .timestampRange(Range.closedOpen(timestamp, timestamp()))
                 .type(CONTRACT);
 
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -282,6 +334,16 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<CryptoAllowanceHistory, CryptoAllowanceHistory.CryptoAllowanceHistoryBuilder> cryptoAllowanceHistory() {
+        var builder = CryptoAllowanceHistory.builder()
+                .amount(10)
+                .owner(entityId(ACCOUNT).getId())
+                .payerAccountId(entityId(ACCOUNT))
+                .spender(entityId(ACCOUNT).getId())
+                .timestampRange(Range.closedOpen(timestamp(), timestamp()));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<CryptoTransfer, CryptoTransfer.CryptoTransferBuilder> cryptoTransfer() {
         var builder = CryptoTransfer.builder()
                 .amount(10L)
@@ -289,6 +351,24 @@ public class DomainBuilder {
                 .entityId(entityId(ACCOUNT).getId())
                 .isApproval(false)
                 .payerAccountId(entityId(ACCOUNT));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<CustomFee, CustomFee.CustomFeeBuilder> customFee() {
+        var id = new CustomFee.Id();
+        id.setCreatedTimestamp(timestamp());
+        id.setTokenId(entityId(TOKEN));
+        var builder = CustomFee.builder()
+                .amount(100L)
+                .amountDenominator(10L)
+                .id(id)
+                .collectorAccountId(entityId(ACCOUNT))
+                .denominatingTokenId(entityId(TOKEN))
+                .maximumAmount(1000L)
+                .minimumAmount(1L)
+                .netOfTransfers(true)
+                .royaltyDenominator(10L)
+                .royaltyNumerator(20L);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -314,11 +394,43 @@ public class DomainBuilder {
                 .realm(0L)
                 .receiverSigRequired(false)
                 .shard(0L)
-                .stakedNodeId(-1L)
                 .stakedAccountId(-1L)
+                .stakedNodeId(-1L)
                 .stakePeriodStart(-1L)
                 .submitKey(key())
                 .timestampRange(Range.atLeast(timestamp))
+                .type(ACCOUNT);
+
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<EntityHistory, EntityHistory.EntityHistoryBuilder> entityHistory() {
+        long id = id();
+        long timestamp = timestamp();
+
+        var builder = EntityHistory.builder()
+                .alias(key())
+                .autoRenewAccountId(id())
+                .autoRenewPeriod(1800L)
+                .createdTimestamp(timestamp)
+                .deleted(false)
+                .ethereumNonce(1L)
+                .evmAddress(evmAddress())
+                .expirationTimestamp(timestamp + 30_000_000L)
+                .id(id)
+                .key(key())
+                .maxAutomaticTokenAssociations(0)
+                .memo(text(16))
+                .proxyAccountId(entityId(ACCOUNT))
+                .num(id)
+                .realm(0L)
+                .receiverSigRequired(false)
+                .shard(0L)
+                .stakedAccountId(entityId(ACCOUNT).getId())
+                .stakedNodeId(-1L)
+                .stakePeriodStart(18980L)
+                .submitKey(key())
+                .timestampRange(Range.closedOpen(timestamp, timestamp()))
                 .type(ACCOUNT);
 
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -356,12 +468,38 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<EventFile, EventFile.EventFileBuilder> eventFile() {
+        long timestamp = timestamp();
+        var builder = EventFile.builder()
+                .bytes(bytes(128))
+                .consensusStart(timestamp)
+                .consensusEnd(timestamp + 1)
+                .count(1L)
+                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .fileHash(text(96))
+                .hash(text(96))
+                .loadEnd(now.plusSeconds(1).getEpochSecond())
+                .loadStart(now.getEpochSecond())
+                .name(now.toString().replace(':', '_') + ".rcd")
+                .nodeAccountId(entityId(ACCOUNT))
+                .previousHash(text(96))
+                .version(3);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<FileData, FileData.FileDataBuilder> fileData() {
         var builder = FileData.builder()
                 .consensusTimestamp(timestamp())
                 .fileData(bytes(128))
                 .entityId(entityId(FILE))
                 .transactionType(TransactionType.FILECREATE.getProtoId());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<LiveHash, LiveHash.LiveHashBuilder> liveHash() {
+        var builder = LiveHash.builder()
+                .consensusTimestamp(timestamp())
+                .livehash(bytes(64));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -384,6 +522,17 @@ public class DomainBuilder {
                 .payerAccountId(entityId(ACCOUNT))
                 .spender(entityId(ACCOUNT).getId())
                 .timestampRange(Range.atLeast(timestamp()))
+                .tokenId(entityId(TOKEN).getId());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<NftAllowanceHistory, NftAllowanceHistory.NftAllowanceHistoryBuilder> nftAllowanceHistory() {
+        var builder = NftAllowanceHistory.builder()
+                .approvedForAll(false)
+                .owner(entityId(ACCOUNT).getId())
+                .payerAccountId(entityId(ACCOUNT))
+                .spender(entityId(ACCOUNT).getId())
+                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
                 .tokenId(entityId(TOKEN).getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -429,6 +578,7 @@ public class DomainBuilder {
 
         long timestamp = timestamp();
         var builder = RecordFile.builder()
+                .bytes(bytes(128))
                 .consensusStart(timestamp)
                 .consensusEnd(timestamp + 1)
                 .count(1L)
@@ -497,6 +647,17 @@ public class DomainBuilder {
                 .payerAccountId(entityId(ACCOUNT))
                 .spender(entityId(ACCOUNT).getId())
                 .timestampRange(Range.atLeast(timestamp()))
+                .tokenId(entityId(TOKEN).getId());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TokenAllowanceHistory, TokenAllowanceHistory.TokenAllowanceHistoryBuilder> tokenAllowanceHistory() {
+        var builder = TokenAllowanceHistory.builder()
+                .amount(10L)
+                .owner(entityId(ACCOUNT).getId())
+                .payerAccountId(entityId(ACCOUNT))
+                .spender(entityId(ACCOUNT).getId())
+                .timestampRange(Range.closedOpen(timestamp(), timestamp()))
                 .tokenId(entityId(TOKEN).getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }

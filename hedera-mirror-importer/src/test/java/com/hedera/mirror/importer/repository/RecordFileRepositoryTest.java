@@ -22,24 +22,41 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
-    @Resource
-    private RecordFileRepository recordFileRepository;
+    private final RecordFileRepository recordFileRepository;
+
+    @Test
+    void findEarliest() {
+        assertThat(recordFileRepository.findEarliest()).isEmpty();
+
+        var recordFile1 = domainBuilder.recordFile().persist();
+        domainBuilder.recordFile().persist();
+        domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.findEarliest()).get().isEqualTo(recordFile1);
+    }
 
     @Test
     void findLatest() {
+        assertThat(recordFileRepository.findLatest()).isEmpty();
+
         domainBuilder.recordFile().persist();
         domainBuilder.recordFile().persist();
-        var expected = domainBuilder.recordFile().persist();
-        assertThat(recordFileRepository.findLatest()).get().isEqualTo(expected);
+        var recordFile3 = domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.findLatest()).get().isEqualTo(recordFile3);
     }
 
     @Test
     void findLatestMissingGasUsedBefore() {
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(100L)).isEmpty();
+
         var recordFile1 = domainBuilder.recordFile().customize(r -> r.gasUsed(-1)).persist();
         var recordFile2 = domainBuilder.recordFile().persist();
         var recordFile3 = domainBuilder.recordFile().customize(r -> r.gasUsed(-1)).persist();
@@ -55,7 +72,26 @@ class RecordFileRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    void findLatestMissingGasUsedBeforeEmpty() {
-        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(100L)).isEmpty();
+    void findNext() {
+        var recordFile1 = domainBuilder.recordFile().persist();
+        var recordFile2 = domainBuilder.recordFile().persist();
+        var recordFile3 = domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.findNext(0)).isEmpty();
+        assertThat(recordFileRepository.findNext(recordFile1.getConsensusEnd())).isEmpty();
+        assertThat(recordFileRepository.findNext(recordFile2.getConsensusEnd())).get().isEqualTo(recordFile1);
+        assertThat(recordFileRepository.findNext(recordFile3.getConsensusEnd())).get().isEqualTo(recordFile2);
+        assertThat(recordFileRepository.findNext(recordFile3.getConsensusEnd() + 1)).get().isEqualTo(recordFile3);
+    }
+
+    @Test
+    void prune() {
+        domainBuilder.recordFile().persist();
+        var recordFile2 = domainBuilder.recordFile().persist();
+        var recordFile3 = domainBuilder.recordFile().persist();
+
+        recordFileRepository.prune(recordFile2.getConsensusEnd());
+
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile3);
     }
 }

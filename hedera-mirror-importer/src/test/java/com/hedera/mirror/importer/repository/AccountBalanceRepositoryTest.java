@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,20 +25,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import javax.annotation.Resource;
-
-import com.hedera.mirror.common.domain.entity.EntityType;
-
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
 
-    @Resource
-    private AccountBalanceRepository accountBalanceRepository;
+    private final AccountBalanceRepository accountBalanceRepository;
 
     @Test
     void findByConsensusTimestamp() {
@@ -51,6 +50,17 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
         assertThat(result)
                 .usingRecursiveFieldByFieldElementComparator()
                 .containsExactlyInAnyOrder(accountBalance1, accountBalance2);
+    }
+
+    @Test
+    void prune() {
+        domainBuilder.accountBalance().persist();
+        var accountBalance2 = domainBuilder.accountBalance().persist();
+        var accountBalance3 = domainBuilder.accountBalance().persist();
+
+        accountBalanceRepository.prune(accountBalance2.getId().getConsensusTimestamp());
+
+        assertThat(accountBalanceRepository.findAll()).containsExactly(accountBalance3);
     }
 
     private AccountBalance create(long consensusTimestamp, int accountNum, long balance, int numberOfTokenBalances) {

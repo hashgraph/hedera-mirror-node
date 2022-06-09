@@ -393,11 +393,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private void insertCryptoAddLiveHash(long consensusTimestamp,
-                                         CryptoAddLiveHashTransactionBody transactionBody) {
+    private void insertCryptoAddLiveHash(long consensusTimestamp, CryptoAddLiveHashTransactionBody transactionBody) {
         if (entityProperties.getPersist().isClaims()) {
-            byte[] liveHash = DomainUtils.toBytes(transactionBody.getLiveHash().getHash());
-            entityListener.onLiveHash(new LiveHash(consensusTimestamp, liveHash));
+            LiveHash liveHash = new LiveHash();
+            liveHash.setConsensusTimestamp(consensusTimestamp);
+            liveHash.setLivehash(DomainUtils.toBytes(transactionBody.getLiveHash().getHash()));
+            entityListener.onLiveHash(liveHash);
         }
     }
 

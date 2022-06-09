@@ -18,6 +18,27 @@ The table below documents the database indexes with the usage in APIs / services
 | nft_transfer    | consensus_timestamp                                | Rosetta API | `/block/transaction`                                 | Used to join `nft_transfer` and `transaction` on `consensus_timestamp` equality                                                        |
 | transaction     | type, consensus_timestamp                          | REST API    | `/api/v1/transactions?type=:type&order=:order`       | Used to retrieve transactions filtered by `type` and sorted by `consensus_timestamp` to facilitate faster by-type transaction requests |
 
+## Retention
+
+On public networks, mirror nodes can generate tens of gigabytes worth of data every day and this rate is only projected
+to increase in the future. Mirror nodes support an optional data retention period that is disabled by default. If
+enabled, the data retention job purges historical data beyond a configured time period. By reducing the overall amount
+of data in the database it will save mirror node operators money and improve read/write performance. Only data
+associated with balance or transaction data is deleted. Cumulative entity information like accounts, contracts, etc. is
+not deleted.
+
+To enable retention, set the `hedera.mirror.importer.retention.enabled=true` property on the importer. A job will run
+every `hedera.mirror.importer.retention.frequency` with a default of one day to prune older data. To control how far
+back to prune data set the `hedera.mirror.importer.retention.period` appropriately. Keep in mind this retention period
+is relative to the timestamp of the last transaction in the database and not to the current wall-clock time. Data is
+deleted atomically one or more blocks at a time starting from the earliest block and increasing, so data should be
+consistent even when querying the earliest data.
+
+The first time the job is run it may take a long time to complete due to the potentially terabytes worth of data to
+purge. Subsequent runs should be much faster as it will only have to purge the data accumulated between the last run.
+It's recommend if enabling retention to increase the `temp_file_limit` property on PostgreSQL to a large amount like
+`2147483647kB`.
+
 ## Upgrade
 
 Data needs to be migrated for PostgreSQL major release upgrade. This section documents the steps to dump the existing

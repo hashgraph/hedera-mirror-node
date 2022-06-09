@@ -25,9 +25,9 @@ import javax.persistence.Entity;
 import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Transient;
-
-import com.hedera.mirror.common.domain.StreamFile;
-
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -36,9 +36,12 @@ import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 @Data
 @Entity
 @NoArgsConstructor

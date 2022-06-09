@@ -70,13 +70,13 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
-import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.repository.AssessedCustomFeeRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
@@ -108,6 +108,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
     private static final EntityId TRANSACTION_PAYER = EntityId.of("0.0.1000", ACCOUNT);
 
+    private final AssessedCustomFeeRepository assessedCustomFeeRepository;
     private final ContractLogRepository contractLogRepository;
     private final ContractRepository contractRepository;
     private final ContractResultRepository contractResultRepository;
@@ -142,7 +143,8 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private static Stream<Arguments> provideParamsContractHistory() {
-        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {};
+        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {
+        };
         Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[] {1, 2, 3, 4});
         return Stream.of(
                 Arguments.of("fileId", emptyCustomizer, 1),
@@ -185,6 +187,19 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         sqlProperties.setEnabled(true);
         assertThat(sqlEntityListener.isEnabled()).isTrue();
+    }
+
+    @Test
+    void onAssessedCustomFee() {
+        // given
+        var assessedCustomFee = domainBuilder.assessedCustomFee().get();
+
+        // when
+        sqlEntityListener.onAssessedCustomFee(assessedCustomFee);
+        completeFileAndCommit();
+
+        // then
+        assertThat(assessedCustomFeeRepository.findAll()).containsExactly(assessedCustomFee);
     }
 
     @Test
@@ -739,14 +754,14 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onLiveHash() {
         // given
-        LiveHash expectedLiveHash = new LiveHash(20L, "live hash".getBytes());
+        var liveHash = domainBuilder.liveHash().get();
 
         // when
-        sqlEntityListener.onLiveHash(expectedLiveHash);
+        sqlEntityListener.onLiveHash(liveHash);
         completeFileAndCommit();
 
         // then
-        assertThat(liveHashRepository.findAll()).containsExactlyInAnyOrder(expectedLiveHash);
+        assertThat(liveHashRepository.findAll()).containsExactly(liveHash);
     }
 
     @Test
@@ -1142,7 +1157,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        assertThat(stakingRewardTransferRepository.findAll()).containsExactlyInAnyOrder(transfer1, transfer2, transfer3);
+        assertThat(stakingRewardTransferRepository.findAll()).containsExactlyInAnyOrder(transfer1, transfer2,
+                transfer3);
     }
 
     @Test

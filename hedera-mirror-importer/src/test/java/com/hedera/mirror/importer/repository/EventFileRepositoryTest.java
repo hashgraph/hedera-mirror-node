@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,44 +23,32 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.DigestAlgorithm;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.event.EventFile;
-
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EventFileRepositoryTest extends AbstractRepositoryTest {
 
-    @Resource
-    private EventFileRepository eventFileRepository;
-
-    private long count = 0;
+    private final EventFileRepository eventFileRepository;
 
     @Test
     void findLatest() {
-        EventFile eventFile1 = eventFile();
-        EventFile eventFile2 = eventFile();
-        EventFile eventFile3 = eventFile();
+        var eventFile1 = domainBuilder.eventFile().get();
+        var eventFile2 = domainBuilder.eventFile().get();
+        var eventFile3 = domainBuilder.eventFile().get();
         eventFileRepository.saveAll(List.of(eventFile1, eventFile2, eventFile3));
         assertThat(eventFileRepository.findLatest()).get().isEqualTo(eventFile3);
     }
 
-    private EventFile eventFile() {
-        long id = ++count;
-        EventFile eventFile = new EventFile();
-        eventFile.setConsensusStart(id);
-        eventFile.setConsensusEnd(id);
-        eventFile.setCount(id);
-        eventFile.setDigestAlgorithm(DigestAlgorithm.SHA384);
-        eventFile.setFileHash("fileHash" + id);
-        eventFile.setHash("fileHash" + id);
-        eventFile.setLoadEnd(id);
-        eventFile.setLoadStart(id);
-        eventFile.setName(id + ".evt");
-        eventFile.setNodeAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT));
-        eventFile.setPreviousHash("fileHash" + id);
-        return eventFile;
+    @Test
+    void prune() {
+        domainBuilder.eventFile().persist();
+        var eventFile2 = domainBuilder.eventFile().persist();
+        var eventFile3 = domainBuilder.eventFile().persist();
+
+        eventFileRepository.prune(eventFile2.getConsensusEnd());
+
+        assertThat(eventFileRepository.findAll()).containsExactly(eventFile3);
     }
 }
