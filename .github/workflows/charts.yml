@@ -56,7 +56,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         run: |
           # GITHUB_HEAD_REF is only set when the triggering event is either pull_request or pull_request_target. If so
-          # pass an extra helm set arg to provide the correct github ref
+          # extract the PR branch from GITHUB_HEAD_REF and later pass it as githubRef to the rosetta test pod template
           echo "GIT_REF=${GITHUB_HEAD_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Install chart
