@@ -27,8 +27,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.hedera.mirror.common.util.DomainUtils;
-
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.io.File;
@@ -83,6 +81,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.TestUtils;
@@ -93,6 +92,7 @@ import com.hedera.mirror.importer.config.MetricsExecutionInterceptor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.reader.signature.CompositeSignatureFileReader;
+import com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
@@ -216,7 +216,7 @@ public abstract class AbstractDownloaderTest {
                 new MetricsExecutionInterceptor(meterRegistry)).s3CloudStorageClient();
 
         signatureFileReader = new CompositeSignatureFileReader(new SignatureFileReaderV2(),
-                new SignatureFileReaderV5());
+                new SignatureFileReaderV5(), new ProtoSignatureFileReader());
         nodeSignatureVerifier = new NodeSignatureVerifier(
                 addressBookService,
                 downloaderProperties.getCommon(),
