@@ -227,6 +227,7 @@ test:
     pullPolicy: IfNotPresent
     repository: postman/newman
     tag: 5.3.1-alpine
+  githubRef: '{{ regexReplaceAll "(\\d+\\.\\d+\\.\\d+(-\\w+)?)" .Chart.AppVersion "v${1}"'
 
 tolerations: []
 

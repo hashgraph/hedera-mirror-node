@@ -53,4 +53,10 @@ jobs:
       - name: Install chart
         run: |
           yq -i '(.global.image.registry="registry:5000") | (.global.image.tag="${{ env.IMAGE_TAG }}")' charts/hedera-mirror/ci/*.yaml
-          ct install --config .github/ct.yaml --charts=charts/hedera-mirror
+          if [ -n "$GITHUB_HEAD_REF" ]; then
+            # GITHUB_HEAD_REF is only set when the triggering event is either pull_request or pull_request_target. If so
+            # pass an extra helm set arg to provide the correct github ref
+            GIT_REF=${$GITHUB_HEAD_REF#refs/*/}
+            HELM_EXTRA_SET_ARGS="--helm-extra-set-args=\"--set=rosetta.test.githubRef=${GIT_REF}\""
+          fi
+          ct install --config .github/ct.yaml --charts=charts/hedera-mirror "${helmExtraSetArgs}"
