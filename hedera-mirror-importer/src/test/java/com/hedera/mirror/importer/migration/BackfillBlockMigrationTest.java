@@ -25,9 +25,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -40,17 +41,15 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @EnabledIfV1
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 public class BackfillBlockMigrationTest extends IntegrationTest {
 
-    @Resource
-    private BackfillBlockMigration backfillBlockMigration;
+    private final BackfillBlockMigration backfillBlockMigration;
 
-    @Resource
-    private RecordFileRepository recordFileRepository;
+    private final RecordFileRepository recordFileRepository;
 
-    @Resource
-    private TransactionRepository transactionRepository;
+    private final TransactionRepository transactionRepository;
 
     @Test
     void empty() {

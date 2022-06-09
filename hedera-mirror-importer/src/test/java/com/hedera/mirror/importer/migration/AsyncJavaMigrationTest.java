@@ -24,30 +24,34 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.transaction.support.TransactionOperations;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.db.DBProperties;
 
 @EnabledIfV1
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 class AsyncJavaMigrationTest extends IntegrationTest {
 
     private static final String TEST_MIGRATION_DESCRIPTION = "Async java migration for testing";
 
-    @Resource(name = "namedParameterJdbcTemplate")
-    private NamedParameterJdbcTemplate jdbcTemplate;
+    private final DBProperties dbProperties;
 
-    @Value("${hedera.mirror.importer.db.schema}")
-    private String schema;
+    private final NamedParameterJdbcTemplate jdbcTemplate;
+
+    private final TransactionOperations transactionOperations;
 
     private final String script = TestAsyncJavaMigration.class.getName();
 
@@ -57,10 +61,15 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @CsvSource(value = {", -1", "-1, -2", "1, 1", "2, -1"})
+    @CsvSource(value = {
+            ", -1",
+            "-1, -2",
+            "1, 1",
+            "2, -1"
+    })
     void getChecksum(Integer existing, Integer expected) {
         addMigrationHistory(new MigrationHistory(existing, 1000));
-        var migration = new TestAsyncJavaMigration(jdbcTemplate, schema, 1, false);
+        var migration = new TestAsyncJavaMigration(dbProperties, false, jdbcTemplate, 1, transactionOperations);
         assertThat(migration.getChecksum()).isEqualTo(expected);
     }
 
@@ -68,7 +77,7 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     void migrate() throws Exception {
         addMigrationHistory(new MigrationHistory(-1, 1000));
         addMigrationHistory(new MigrationHistory(-2, 1001));
-        var migration = new TestAsyncJavaMigration(jdbcTemplate, schema, 1, false);
+        var migration = new TestAsyncJavaMigration(dbProperties, false, jdbcTemplate, 1, transactionOperations);
         migration.doMigrate();
         Thread.sleep(500);
         assertThat(getAllMigrationHistory()).containsExactlyInAnyOrder(new MigrationHistory(-1, 1000),
@@ -79,11 +88,19 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     void migrateError() throws Exception {
         addMigrationHistory(new MigrationHistory(-1, 1000));
         addMigrationHistory(new MigrationHistory(-2, 1001));
-        var migration = new TestAsyncJavaMigration(jdbcTemplate, schema, 1, true);
+        var migration = new TestAsyncJavaMigration(dbProperties, true, jdbcTemplate, 1, transactionOperations);
         migration.doMigrate();
         Thread.sleep(500);
         assertThat(getAllMigrationHistory()).containsExactlyInAnyOrder(new MigrationHistory(-1, 1000),
                 new MigrationHistory(-2, 1001));
+    }
+
+    @Test
+    void migrateNegativeSuccessChecksum() throws Exception {
+        var migration = new TestAsyncJavaMigration(dbProperties, false, jdbcTemplate, -1, transactionOperations);
+        migration.doMigrate();
+        Thread.sleep(500);
+        assertThat(getAllMigrationHistory()).isEmpty();
     }
 
     private void addMigrationHistory(MigrationHistory migrationHistory) {
@@ -110,22 +127,22 @@ class AsyncJavaMigrationTest extends IntegrationTest {
         });
     }
 
-    @lombok.Value
+    @Value
     private static class MigrationHistory {
         private Integer checksum;
         private int installedRank;
     }
 
-    @lombok.Value
-    private static class TestAsyncJavaMigration extends AsyncJavaMigration {
+    @Value
+    private static class TestAsyncJavaMigration extends AsyncJavaMigration<Long> {
         private final boolean error;
         private final int successChecksum;
 
-        public TestAsyncJavaMigration(NamedParameterJdbcTemplate jdbcTemplate, String schema, int successChecksum,
-                                      boolean error) {
-            super(jdbcTemplate, schema);
-            this.successChecksum = successChecksum;
+        public TestAsyncJavaMigration(DBProperties dbProperties, boolean error, NamedParameterJdbcTemplate jdbcTemplate,
+                                      int successChecksum, TransactionOperations transactionOperations) {
+            super(jdbcTemplate, dbProperties.getSchema(), transactionOperations);
             this.error = error;
+            this.successChecksum = successChecksum;
         }
 
         @Override
@@ -134,10 +151,17 @@ class AsyncJavaMigrationTest extends IntegrationTest {
         }
 
         @Override
-        protected void migrateAsync() {
+        protected Long migratePartial(final Long last) {
             if (error) {
                 throw new RuntimeException();
             }
+
+            return null;
+        }
+
+        @Override
+        protected Long getInitial() {
+            return Long.MAX_VALUE;
         }
     }
 }

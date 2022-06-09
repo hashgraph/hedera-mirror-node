@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import java.io.IOException;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -28,11 +29,12 @@ import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import org.springframework.transaction.support.TransactionOperations;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 @RequiredArgsConstructor
-abstract class AsyncJavaMigration extends MirrorBaseJavaMigration {
+abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
     private static final String CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL = "select exists( " +
             "  select * from information_schema.tables " +
@@ -52,7 +54,9 @@ abstract class AsyncJavaMigration extends MirrorBaseJavaMigration {
 
     protected final NamedParameterJdbcTemplate jdbcTemplate;
 
-    private final CharSequence schema;
+    private final String schema;
+
+    private final TransactionOperations transactionOperations;
 
     @Override
     public Integer getChecksum() {
@@ -76,7 +80,7 @@ abstract class AsyncJavaMigration extends MirrorBaseJavaMigration {
         return null; // repeatable
     }
 
-    public <T> T queryForObjectOrNull(String sql, SqlParameterSource paramSource, Class<T> requiredType) {
+    public <O> O queryForObjectOrNull(String sql, SqlParameterSource paramSource, Class<O> requiredType) {
         try {
             return jdbcTemplate.queryForObject(sql, paramSource, requiredType);
         } catch (EmptyResultDataAccessException ex) {
@@ -86,6 +90,12 @@ abstract class AsyncJavaMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected void doMigrate() throws IOException {
+        int successChecksum = getSuccessChecksum();
+        if (successChecksum < 0) {
+            log.error("Migration skipped due to negative success checksum {}, please fix it and rerun", successChecksum);
+            return;
+        }
+
         Mono.fromRunnable(this::migrateAsync)
                 .subscribeOn(Schedulers.single())
                 .doOnSuccess(t -> onSuccess())
@@ -93,9 +103,30 @@ abstract class AsyncJavaMigration extends MirrorBaseJavaMigration {
                 .subscribe();
     }
 
-    protected abstract void migrateAsync();
+    protected void migrateAsync() {
+        long count = 0;
+        T last = getInitial();
+        var stopwatch = Stopwatch.createStarted();
+
+        try {
+            do {
+                final T previous = last;
+                last = transactionOperations.execute(t -> migratePartial(previous));
+                count++;
+            } while (last != null);
+
+            log.info("Successfully completed asynchronous migration with {} iterations in {}", count, stopwatch);
+        } catch (Exception e) {
+            log.error("Error executing asynchronous migration after {} iterations in {}", count, stopwatch);
+            throw e;
+        }
+    }
+
+    protected abstract T getInitial();
 
     protected abstract int getSuccessChecksum();
+
+    protected abstract T migratePartial(T last);
 
     private MapSqlParameterSource getSqlParamSource() {
         return new MapSqlParameterSource().addValue("className", getClass().getName());
