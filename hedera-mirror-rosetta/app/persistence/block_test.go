@@ -31,6 +31,8 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+const genesisBlockIndex int64 = 3
+
 var (
 	accountBalanceFiles = []*domain.AccountBalanceFile{
 		{
@@ -59,25 +61,25 @@ var (
 		ConsensusStartNanos: 91,
 		ConsensusEndNanos:   109,
 		Hash:                "genesis_record_file_hash",
-		Index:               0,
+		Index:               genesisBlockIndex,
 		ParentHash:          "genesis_record_file_hash",
-		ParentIndex:         0,
+		ParentIndex:         genesisBlockIndex,
 	}
 	expectedSecondBlock = &types.Block{
 		ConsensusStartNanos: 110,
 		ConsensusEndNanos:   129,
 		Hash:                "second_record_file_hash",
-		Index:               1,
+		Index:               genesisBlockIndex + 1,
 		ParentHash:          "genesis_record_file_hash",
-		ParentIndex:         0,
+		ParentIndex:         genesisBlockIndex,
 	}
 	expectedThirdBlock = &types.Block{
 		ConsensusStartNanos: 130,
 		ConsensusEndNanos:   145,
 		Hash:                "third_record_file_hash",
-		Index:               2,
+		Index:               genesisBlockIndex + 2,
 		ParentHash:          "second_record_file_hash",
-		ParentIndex:         1,
+		ParentIndex:         genesisBlockIndex + 1,
 	}
 	nodeEntityId = domain.MustDecodeEntityId(3)
 	recordFiles  = []*domain.RecordFile{
@@ -85,7 +87,7 @@ var (
 			ConsensusStart: 80,
 			ConsensusEnd:   100,
 			Hash:           "genesis_record_file_hash",
-			Index:          3,
+			Index:          genesisBlockIndex,
 			Name:           "genesis_record_file",
 			NodeAccountID:  nodeEntityId,
 			PrevHash:       "previous_record_file_hash",
@@ -94,7 +96,7 @@ var (
 			ConsensusStart: 110,
 			ConsensusEnd:   120,
 			Hash:           "second_record_file_hash",
-			Index:          4,
+			Index:          genesisBlockIndex + 1,
 			Name:           "second_record_file",
 			NodeAccountID:  nodeEntityId,
 			PrevHash:       "genesis_record_file_hash",
@@ -103,7 +105,7 @@ var (
 			ConsensusStart: 130,
 			ConsensusEnd:   145,
 			Hash:           "third_record_file_hash",
-			Index:          5,
+			Index:          genesisBlockIndex + 2,
 			Name:           "third_record_file",
 			NodeAccountID:  nodeEntityId,
 			PrevHash:       "second_record_file_hash",
@@ -114,7 +116,7 @@ var (
 		ConsensusStart: 50,
 		ConsensusEnd:   79,
 		Hash:           "previous_record_file_hash",
-		Index:          2,
+		Index:          genesisBlockIndex - 1,
 		Name:           "previous_record_file",
 		NodeAccountID:  nodeEntityId,
 		PrevHash:       "some_hash",
@@ -133,7 +135,7 @@ type blockRepositorySuite struct {
 
 func (suite *blockRepositorySuite) SetupTest() {
 	suite.integrationTest.SetupTest()
-	db.CreateDbRecords(dbClient, accountBalanceFiles, recordFiles)
+	db.CreateDbRecords(dbClient, accountBalanceFiles, recordFiles, recordFileBeforeGenesis)
 }
 
 func (suite *blockRepositorySuite) TestFindByHashGenesisBlock() {
@@ -158,6 +160,18 @@ func (suite *blockRepositorySuite) TestFindByHashNonGenesisBlock() {
 	// then
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), expectedSecondBlock, actual)
+}
+
+func (suite *blockRepositorySuite) TestFindByHashBlockBeforeGenesis() {
+	// given
+	repo := NewBlockRepository(dbClient)
+
+	// when
+	actual, err := repo.FindByHash(defaultContext, recordFileBeforeGenesis.Hash)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
 }
 
 func (suite *blockRepositorySuite) TestFindByHashNoAccountBalanceFile() {
@@ -215,7 +229,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierGenesisBlock() {
 	repo := NewBlockRepository(dbClient)
 
 	// when
-	actual, err := repo.FindByIdentifier(defaultContext, 0, expectedGenesisBlock.Hash)
+	actual, err := repo.FindByIdentifier(defaultContext, genesisBlockIndex, expectedGenesisBlock.Hash)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -232,6 +246,18 @@ func (suite *blockRepositorySuite) TestFindByIdentifierNonGenesisBlock() {
 	// then
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), expectedSecondBlock, actual)
+}
+
+func (suite *blockRepositorySuite) TestFindByIdentifierBlockBeforeGenesis() {
+	// given
+	repo := NewBlockRepository(dbClient)
+
+	// when
+	actual, err := repo.FindByIdentifier(defaultContext, recordFileBeforeGenesis.Index, recordFileBeforeGenesis.Hash)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
 }
 
 func (suite *blockRepositorySuite) TestFindByIdentifierInvalidArgument() {
@@ -333,7 +359,7 @@ func (suite *blockRepositorySuite) TestFindByIndexGenesisBlock() {
 	repo := NewBlockRepository(dbClient)
 
 	// when
-	actual, err := repo.FindByIndex(defaultContext, 0)
+	actual, err := repo.FindByIndex(defaultContext, genesisBlockIndex)
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -350,6 +376,18 @@ func (suite *blockRepositorySuite) TestFindByIndexNonGenesisBlock() {
 	// then
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), expectedSecondBlock, actual)
+}
+
+func (suite *blockRepositorySuite) TestFindByIndexBlockBeforeGenesis() {
+	// given
+	repo := NewBlockRepository(dbClient)
+
+	// when
+	actual, err := repo.FindByIndex(defaultContext, recordFileBeforeGenesis.Index)
+
+	// then
+	assert.Equal(suite.T(), errors.ErrBlockNotFound, err)
+	assert.Nil(suite.T(), actual)
 }
 
 func (suite *blockRepositorySuite) TestFindByIndexInvalidIndex() {
@@ -575,7 +613,6 @@ func (suite *blockRepositorySuite) TestRetrieveLatestDbConnectionError() {
 
 func TestRecordFileToBlock(t *testing.T) {
 	genesisConsensusStart := int64(110)
-	genesisIndex := int64(5)
 	tests := []struct {
 		name     string
 		input    recordBlock
@@ -587,13 +624,13 @@ func TestRecordFileToBlock(t *testing.T) {
 				ConsensusStart: 100,
 				ConsensusEnd:   200,
 				Hash:           "hash",
-				Index:          5,
+				Index:          genesisBlockIndex,
 				PrevHash:       "prev_hash",
 			},
 			&types.Block{
-				Index:               0,
+				Index:               genesisBlockIndex,
 				Hash:                "hash",
-				ParentIndex:         0,
+				ParentIndex:         genesisBlockIndex,
 				ParentHash:          "hash",
 				ConsensusStartNanos: genesisConsensusStart,
 				ConsensusEndNanos:   200,
@@ -609,9 +646,9 @@ func TestRecordFileToBlock(t *testing.T) {
 				PrevHash:       "prev_hash",
 			},
 			&types.Block{
-				Index:               3,
+				Index:               8,
 				Hash:                "hash",
-				ParentIndex:         2,
+				ParentIndex:         7,
 				ParentHash:          "prev_hash",
 				ConsensusStartNanos: 201,
 				ConsensusEndNanos:   300,
@@ -621,7 +658,7 @@ func TestRecordFileToBlock(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.input.ToBlock(genesisConsensusStart, genesisIndex))
+			assert.Equal(t, tt.expected, tt.input.ToBlock(genesisConsensusStart, genesisBlockIndex))
 		})
 	}
 }

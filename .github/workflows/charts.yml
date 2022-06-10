@@ -49,8 +49,15 @@ jobs:
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.2.1
+        with:
+          version: v3.6.0
+
+      - name: Set GIT_REF for pull request
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          # GITHUB_HEAD_REF is only set when the triggering event is either pull_request or pull_request_target. If so
+          # extract the PR branch from GITHUB_HEAD_REF and later pass it as githubRef to the rosetta test pod template
+          echo "GIT_REF=${GITHUB_HEAD_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Install chart
-        run: |
-          yq -i '(.global.image.registry="registry:5000") | (.global.image.tag="${{ env.IMAGE_TAG }}")' charts/hedera-mirror/ci/*.yaml
-          ct install --config .github/ct.yaml --charts=charts/hedera-mirror
+        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror --helm-extra-set-args="--set=global.image.registry=registry:5000 --set=global.image.tag=${IMAGE_TAG} --set=rosetta.test.githubRef=${GIT_REF}"
