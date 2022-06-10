@@ -20,55 +20,45 @@ package com.hedera.mirror.grpc.config;
  * ‍
  */
 
-import io.grpc.health.v1.HealthCheckRequest;
-import io.grpc.health.v1.HealthCheckResponse;
-import io.grpc.health.v1.HealthGrpc;
-import io.grpc.services.HealthStatusManager;
-import io.grpc.stub.StreamObserver;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import net.devh.boot.grpc.server.event.GrpcServerShutdownEvent;
+import net.devh.boot.grpc.server.event.GrpcServerStartedEvent;
+import net.devh.boot.grpc.server.event.GrpcServerTerminatedEvent;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.actuate.health.Status;
+import org.springframework.context.event.EventListener;
 
+@Log4j2
+@Named
 @RequiredArgsConstructor
 public class GrpcHealthIndicator implements HealthIndicator {
 
-    private final HealthStatusManager healthStatusManager;
-    private final String serviceName;
+    private final AtomicReference<Status> status = new AtomicReference(Status.UNKNOWN);
 
     @Override
     public Health health() {
-        HealthGrpc.HealthImplBase healthService = (HealthGrpc.HealthImplBase) healthStatusManager
-                .getHealthService();
-        HealthCheckRequest healthcheckRequest = HealthCheckRequest.newBuilder().setService(serviceName).build();
-        HealthStreamObserver healthStreamObserver = new HealthStreamObserver();
-        healthService.check(healthcheckRequest, healthStreamObserver);
-        return healthStreamObserver.getHealth();
+        return Health.status(status.get()).build();
     }
 
-    private class HealthStreamObserver implements StreamObserver<HealthCheckResponse> {
+    @EventListener
+    public void onStart(GrpcServerStartedEvent event) {
+        log.info("Started gRPC server on {}:{}", event.getAddress(), event.getPort());
+        status.set(Status.UP);
+    }
 
-        private Health.Builder health = Health.unknown();
+    @EventListener
+    public void onStop(GrpcServerShutdownEvent event) {
+        log.info("Stopping gRPC server");
+        status.set(Status.OUT_OF_SERVICE);
+    }
 
-        public Health getHealth() {
-            return health.build();
-        }
-
-        @Override
-        public void onNext(HealthCheckResponse healthCheckResponse) {
-            if (healthCheckResponse.getStatus() == HealthCheckResponse.ServingStatus.SERVING) {
-                health = health.up();
-            } else {
-                health = health.down();
-            }
-        }
-
-        @Override
-        public void onError(Throwable t) {
-            health = health.down(t);
-        }
-
-        @Override
-        public void onCompleted() {
-        }
+    @EventListener
+    public void onTermination(GrpcServerTerminatedEvent event) {
+        log.info("Stopped gRPC server");
+        status.set(Status.DOWN);
     }
 }

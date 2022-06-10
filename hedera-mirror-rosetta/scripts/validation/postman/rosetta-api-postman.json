@@ -143,6 +143,10 @@
                   "    pm.response.to.have.status(200);",
                   "    pm.response.to.be.ok;",
                   "    pm.response.to.be.json;",
+                  "    // set genesis index",
+                  "    const jsonData = pm.response.json();",
+                  "    const genesisIndex = jsonData.genesis_block_identifier.index;",
+                  "    pm.globals.set(\"genesis_index\", genesisIndex);",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -188,8 +192,9 @@
               "script": {
                 "id": "df376a22-cf8a-4663-bae8-1cf87d2f5d67",
                 "exec": [
+                  "const genesisIndex = pm.globals.get(\"genesis_index\");",
                   "const networkId = pm.globals.get(\"network_identifier\");",
-                  "",
+                  "pm.variables.set('genesisIndex', genesisIndex);",
                   "pm.variables.set('networkId', JSON.stringify(networkId.network_identifier));"
                 ],
                 "type": "text/javascript"
@@ -222,7 +227,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"network_identifier\": {{networkId}},\n    \"account_identifier\": {\n        \"address\": \"0.0.98\",\n        \"metadata\": {}\n    },\n    \"block_identifier\": {\n        \"index\": 1\n    }\n}",
+              "raw": "{\n    \"network_identifier\": {{networkId}},\n    \"account_identifier\": {\n        \"address\": \"0.0.98\",\n        \"metadata\": {}\n    },\n    \"block_identifier\": {\n        \"index\": {{genesisIndex}}\n    }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -256,8 +261,9 @@
               "script": {
                 "id": "d17cd4d5-94c6-4435-95ee-544d036a0514",
                 "exec": [
+                  "const genesisIndex = pm.globals.get(\"genesis_index\");",
                   "const networkId = pm.globals.get(\"network_identifier\");",
-                  "",
+                  "pm.variables.set('genesisIndex', genesisIndex);",
                   "pm.variables.set('networkId', JSON.stringify(networkId.network_identifier));"
                 ],
                 "type": "text/javascript"
@@ -293,7 +299,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"network_identifier\": {{networkId}},\n    \"block_identifier\": {\n        \"index\": 2\n    }\n}",
+              "raw": "{\n    \"network_identifier\": {{networkId}},\n    \"block_identifier\": {\n        \"index\": {{genesisIndex}}\n    }\n}",
               "options": {
                 "raw": {
                   "language": "json"

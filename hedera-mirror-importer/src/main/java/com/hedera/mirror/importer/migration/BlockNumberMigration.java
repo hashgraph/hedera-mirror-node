@@ -62,7 +62,7 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.58.5");
+        return MigrationVersion.fromVersion("1.61.1");
     }
 
     @Override

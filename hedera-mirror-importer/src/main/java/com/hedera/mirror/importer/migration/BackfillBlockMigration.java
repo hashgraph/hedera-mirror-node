@@ -76,7 +76,7 @@ public class BackfillBlockMigration extends AsyncJavaMigration<Long> {
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.59.1");
+        return MigrationVersion.fromVersion("1.61.1");
     }
 
     @Override

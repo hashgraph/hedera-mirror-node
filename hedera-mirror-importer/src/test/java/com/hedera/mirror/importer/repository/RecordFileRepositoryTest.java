@@ -47,10 +47,10 @@ class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
         assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile4.getConsensusEnd() + 1L)).get()
                 .isEqualTo(recordFile3);
-        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile3.getConsensusEnd())).get().isEqualTo(
-                recordFile1);
-        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile2.getConsensusEnd())).get().isEqualTo(
-                recordFile1);
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile3.getConsensusEnd())).get()
+                .isEqualTo(recordFile1);
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile2.getConsensusEnd())).get()
+                .isEqualTo(recordFile1);
         assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile1.getConsensusEnd())).isEmpty();
     }
 

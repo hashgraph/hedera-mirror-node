@@ -406,9 +406,9 @@ public class DomainBuilder {
                 .epochDay(getEpochDay(timestamp))
                 .nodeId(id())
                 .rewardRate(id())
-                .rewardSum(id() + TINYBARS_IN_ONE_HBAR)
                 .stake(stake)
                 .stakeRewarded(stake - 100L)
+                .stakeTotal(stake * 5)
                 .stakingPeriod(timestamp());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -442,6 +442,7 @@ public class DomainBuilder {
                 .loadStart(now.getEpochSecond())
                 .name(now.toString().replace(':', '_') + ".rcd")
                 .nodeAccountId(entityId(ACCOUNT))
+                .size(256 * 1024)
                 .previousHash(text(96));
         return new DomainWrapperImpl<>(builder, builder::build);
     }

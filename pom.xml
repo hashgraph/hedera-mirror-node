@@ -67,12 +67,12 @@
         <embedded.testcontainers.version>2.2.2</embedded.testcontainers.version>
         <flyway.version>8.5.9</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
-        <grpc-spring-boot.version>2.11.0.RELEASE</grpc-spring-boot.version>
+        <grpc-spring-boot.version>2.13.1.RELEASE</grpc-spring-boot.version>
         <grpc.version>1.47.0</grpc.version>
         <gson.version>2.8.9</gson.version> <!-- Temporary until Apache jclouds supports gson 2.9 -->
         <guava.version>31.1-jre</guava.version>
         <headlong.version>6.3.2</headlong.version>
-        <hedera-protobuf.version>0.27.0-staking-SNAPSHOT</hedera-protobuf.version>
+        <hedera-protobuf.version>0.27.0-alpha.4</hedera-protobuf.version>
         <hibernate-types.version>2.16.2</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>17</java.version>
@@ -135,18 +135,16 @@
 
     <repositories>
         <repository>
-            <id>ossrh-snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-        <repository>
             <id>besu-repository</id>
             <url>https://hyperledger.jfrog.io/artifactory/besu-maven/</url>
+        </repository>
+        <repository>
+            <id>proto-staging</id>
+            <name>Protobufs staging</name>
+            <url>https://oss.sonatype.org/content/repositories/comhederahashgraph-1489</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
     </repositories>
 
