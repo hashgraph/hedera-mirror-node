@@ -823,6 +823,18 @@ const secNsToSeconds = (secNs) => {
   return math.floor(Number(secNs));
 };
 
+/**
+ * Increment timestamp (nnnnnnnnnnnnnnnnnnn format) by 1 day and 1 second
+ * @return {String} (seconds.nnnnnnnnn format)
+ */
+const incrementTimestampByOneDay = (seconds) => {
+  if (_.isNil(seconds)) {
+    return null;
+  }
+
+  return nsToSecNs(math.add(math.bignumber(seconds.toString()), secNsToNs(86401)));
+};
+
 const randomBytesAsync = util.promisify(crypto.randomBytes);
 
 const randomString = async (length) => {
@@ -1387,6 +1399,7 @@ module.exports = {
   getPaginationLink,
   getPoolClass,
   gtGte,
+  incrementTimestampByOneDay,
   ipMask,
   isNonNegativeInt32,
   isRepeatedQueryParameterValidLength,

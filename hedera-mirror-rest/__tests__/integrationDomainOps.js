@@ -59,6 +59,7 @@ const setUp = async (testDataJson, sqlconn) => {
   await loadEthereumTransactions(testDataJson.ethereumtransactions);
   await loadFileData(testDataJson.filedata);
   await loadNfts(testDataJson.nfts);
+  await loadNodeStakes(testDataJson.nodestakes);
   await loadRecordFiles(testDataJson.recordFiles);
   await loadSchedules(testDataJson.schedules);
   await loadTopicMessages(testDataJson.topicmessages);
@@ -236,6 +237,16 @@ const loadNfts = async (nfts) => {
 
   for (const nft of nfts) {
     await addNft(nft);
+  }
+};
+
+const loadNodeStakes = async (nodeStakes) => {
+  if (nodeStakes == null) {
+    return;
+  }
+
+  for (const nodeStake of nodeStakes) {
+    await addNodeStake(nodeStake);
   }
 };
 
@@ -1244,6 +1255,35 @@ const addNft = async (nft) => {
   );
 };
 
+const addNodeStake = async (nodeStakeInput) => {
+  const insertFields = [
+    'consensus_timestamp',
+    'epoch_day',
+    'node_id',
+    'reward_rate',
+    'reward_sum',
+    'stake',
+    'stake_rewarded',
+    'stake_total',
+    'staking_period',
+  ];
+
+  const nodeStake = {
+    consensus_timestamp: 0,
+    epoch_day: 0,
+    node_id: 0,
+    reward_rate: 0,
+    reward_sum: 0,
+    stake: 0,
+    stake_rewarded: 0,
+    stake_total: 0,
+    staking_period: 0,
+    ...nodeStakeInput,
+  };
+
+  await insertDomainObject('node_stake', insertFields, nodeStake);
+};
+
 const addRecordFile = async (recordFileInput) => {
   const insertFields = [
     'bytes',
@@ -1323,6 +1363,7 @@ module.exports = {
   loadCryptoAllowances,
   loadEntities,
   loadFileData,
+  loadNodeStakes,
   loadRecordFiles,
   loadTransactions,
   loadContractLogs,
