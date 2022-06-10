@@ -60,5 +60,4 @@ jobs:
           echo "GIT_REF=${GITHUB_HEAD_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Install chart
-        run: |
         run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror --helm-extra-set-args="--set=global.image.registry=registry:5000 --set=global.image.tag=${IMAGE_TAG} --set=rosetta.test.githubRef=${GIT_REF}"
