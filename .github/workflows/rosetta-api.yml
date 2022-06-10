@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install JDK
         uses: actions/setup-java@v2
@@ -52,10 +52,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Set GIT_REF
         run: |
@@ -63,17 +63,15 @@ jobs:
           echo "GIT_REF=${GIT_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Build Mirror Node All-in-One Docker Image and Export
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           build-args: GIT_REF=${{ env.GIT_REF }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
           context: ./hedera-mirror-rosetta/build
           outputs: type=docker,dest=/tmp/${{ env.MODULE }}.tar
           tags: ${{ env.MODULE }}:latest
 
       - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ env.IMAGE }}
           path: /tmp/${{ env.MODULE }}.tar
@@ -91,21 +89,23 @@ jobs:
       ROSETTA_CLI_VERSION: v0.7.5
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 2  # retrieve the preceding commit so changed-files action can diff and get the changes
 
       - name: Get Changed Files
         id: changed-files-module
-        uses: tj-actions/changed-files@v11.5
+        uses: tj-actions/changed-files@v22.2
         with:
-          files: hedera-mirror-rosetta
+          files: |
+            .github/workflows/rosetta-api.yml
+            hedera-mirror-rosetta
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Download Artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ env.IMAGE }}
           path: /tmp
@@ -224,7 +224,7 @@ jobs:
     env:
       GO111MODULE: on
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: tmp
 
