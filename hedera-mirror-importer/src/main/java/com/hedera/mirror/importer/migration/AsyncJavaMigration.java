@@ -113,7 +113,7 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
                 final var previous = last;
                 last = transactionOperations.execute(t -> migratePartial(previous.get()));
                 count++;
-            } while (last.isPresent());
+            } while (last != null && last.isPresent());
 
             log.info("Successfully completed asynchronous migration with {} iterations in {}", count, stopwatch);
         } catch (Exception e) {
