@@ -121,29 +121,50 @@ public class TestRecordFiles {
                 .version(5)
                 .build();
         RecordFile recordFileV6 = RecordFile.builder()
-                .consensusStart(1653638827207961122L)
-                .consensusEnd(1653638827809355508L)
-                .count(2L)
+                .consensusStart(1654853260142166274L)
+                .consensusEnd(1654853261194437489L)
+                .count(5L)
                 .digestAlgorithm(digestAlgorithm)
                 .gasUsed(0L)
                 .fileHash(
-                        "90546c631475f15f955ff53622a6c7aec0d5a21247e332ff07299a50109ef38ef07d5d540a375f4bc0c99d73fb102851")
+                        "e7b39c9ebc8504ebbe4a8f459583179397f37da74cb19de55c874e89aa46badb702932a7f640cade253024aa8da118f9")
                 .hapiVersionMajor(0)
-                .hapiVersionMinor(0)
-                .hapiVersionPatch(0)
+                .hapiVersionMinor(27)
+                .hapiVersionPatch(1)
                 .hash
-                        ("b41b8deb574d40a15fa05645ea2de7c6b6e8ca14d34e24d7151ac75d64065077460c0376c5349179b1adfcf82b1f8d38")
+                        ("060be23c395a83971bbb379fe9c6f40c4f904fa1d3f22103acb32e7ebeb46098bcd78ea699ee04b133abd70d1e73176f")
                 .metadataHash(
-                        "0f814754a7f5b232eaf3531307a229df325b1c11b62df425571deabab37031c1465b9b0e84a43dd75c2be87b3288562d")
-                .name("2022-05-27T08_07_07.207961122Z.rcd")
+                        "e734625fec748eb8adc420ec852d80dea261e212b031610f41ecd57b6763d2baeb6da67ad59961e017db09b7cfe6704a")
+                .name("2022-06-10T09_27_40.142166274Z.rcd")
                 .previousHash(
-                        "566beb39add5861c1b4541dae0e8d714a1c0e8d37d625d7d032694408a0780e8666e4b3e56ed9c7318ab78554ce1aa66")
+                        "8edd88651a704a8ad439318f238bd95bcc1129dd322349b8889d918ca1b1deab3511b4bcb22af8e38dc008f3c54acbb0")
                 .version(6)
                 .build();
+        RecordFile recordFileV6Gzipped = RecordFile.builder()
+                .consensusStart(1654853260142166274L)
+                .consensusEnd(1654853261194437489L)
+                .count(5L)
+                .digestAlgorithm(digestAlgorithm)
+                .gasUsed(0L)
+                .fileHash(
+                        "e7b39c9ebc8504ebbe4a8f459583179397f37da74cb19de55c874e89aa46badb702932a7f640cade253024aa8da118f9")
+                .hapiVersionMajor(0)
+                .hapiVersionMinor(27)
+                .hapiVersionPatch(1)
+                .hash
+                        ("060be23c395a83971bbb379fe9c6f40c4f904fa1d3f22103acb32e7ebeb46098bcd78ea699ee04b133abd70d1e73176f")
+                .metadataHash(
+                        "e734625fec748eb8adc420ec852d80dea261e212b031610f41ecd57b6763d2baeb6da67ad59961e017db09b7cfe6704a")
+                .name("2022-06-10T09_27_40.142166274Z.rcd.gz")
+                .previousHash(
+                        "8edd88651a704a8ad439318f238bd95bcc1129dd322349b8889d918ca1b1deab3511b4bcb22af8e38dc008f3c54acbb0")
+                .version(6)
+                .build();
+
         List<RecordFile> allFiles = List.of(recordFileV1_1, recordFileV1_2,
                 recordFileV2_1, recordFileV2_2,
                 recordFileV5_1, recordFileV5_2,
-                recordFileV6);
+                recordFileV6, recordFileV6Gzipped);
         return Collections.unmodifiableMap(allFiles.stream().collect(Collectors.toMap(RecordFile::getName, rf -> rf)));
     }
 

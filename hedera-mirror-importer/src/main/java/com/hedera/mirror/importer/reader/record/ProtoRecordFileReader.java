@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.reader.record;
 
 import static java.lang.String.format;
 
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.SemanticVersion;
 import java.io.BufferedInputStream;
 import java.io.DataOutputStream;
@@ -82,8 +81,7 @@ public class ProtoRecordFileReader implements RecordFileReader {
         }
     }
 
-    private RecordStreamFile readRecordStreamFile(InputStream inputStream, MessageDigest messageDigestFile)
-            throws IOException {
+    private RecordStreamFile readRecordStreamFile(InputStream inputStream, MessageDigest messageDigestFile) {
         try {
             var digestInputStream = new DigestInputStream(inputStream, messageDigestFile);
             int recordFileVersion = ByteBuffer.wrap(digestInputStream.readNBytes(4)).getInt();
@@ -95,7 +93,7 @@ public class ProtoRecordFileReader implements RecordFileReader {
             var bufferedInputStream = new BufferedInputStream(digestInputStream);
 
             return RecordStreamFile.parseFrom(bufferedInputStream);
-        }catch(InvalidProtocolBufferException e){
+        } catch (IOException e) {
             throw new InvalidStreamFileException(e);
         }
     }
