@@ -135,7 +135,7 @@ type blockRepositorySuite struct {
 
 func (suite *blockRepositorySuite) SetupTest() {
 	suite.integrationTest.SetupTest()
-	db.CreateDbRecords(dbClient, accountBalanceFiles, recordFiles)
+	db.CreateDbRecords(dbClient, accountBalanceFiles, recordFiles, recordFileBeforeGenesis)
 }
 
 func (suite *blockRepositorySuite) TestFindByHashGenesisBlock() {
