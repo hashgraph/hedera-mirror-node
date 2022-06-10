@@ -97,13 +97,13 @@ public class BackfillBlockMigration extends AsyncJavaMigration<Long> {
                     "consensusEnd", recordFile.getConsensusEnd());
 
             var bloomAggregator = new LogsBloomAggregator();
-            AtomicLong gasUsed = new AtomicLong(0);
+            var gasUsedTotal = new AtomicLong(0);
             jdbcTemplate.query(SELECT_CONTRACT_RESULT, queryParams, rs -> {
                 bloomAggregator.aggregate(rs.getBytes("bloom"));
-                gasUsed.addAndGet(rs.getLong("gas_used"));
+                gasUsedTotal.addAndGet(rs.getLong("gas_used"));
             });
 
-            recordFile.setGasUsed(gasUsed.get());
+            recordFile.setGasUsed(gasUsedTotal.get());
             recordFile.setLogsBloom(bloomAggregator.getBloom());
             recordFileRepository.save(recordFile);
 
