@@ -353,7 +353,6 @@ const defaultExpectedNetworkNode102 = [
 
 describe('NetworkNodeService.getNetworkNodes tests', () => {
   test('NetworkNodeService.getNetworkNodes - No match', async () => {
-    const test = await NetworkNodeService.getNetworkNodes([], [2], 'asc', 5);
     await expect(NetworkNodeService.getNetworkNodes([], [2], 'asc', 5)).resolves.toStrictEqual([]);
   });
 

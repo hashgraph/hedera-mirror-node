@@ -63,7 +63,7 @@ class NetworkNodeService extends BaseService {
           ${AddressBookEntry.getFullName(AddressBookEntry.CONSENSUS_TIMESTAMP)} and
           ${AddressBookServiceEndpoint.getFullName(AddressBookServiceEndpoint.NODE_ID)} =
           ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)}
-       ), '[]') as service_endpoints
+      ), '[]') as service_endpoints
     from ${AddressBookEntry.tableName} ${AddressBookEntry.tableAlias}
     join ${AddressBook.tableAlias} on ${AddressBook.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP)} =
       ${AddressBookEntry.getFullName(AddressBookEntry.CONSENSUS_TIMESTAMP)}
