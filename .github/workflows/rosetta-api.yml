@@ -59,13 +59,21 @@ jobs:
 
       - name: Set GIT_REF
         run: |
-          GIT_REF=${GITHUB_HEAD_REF:-$GITHUB_REF}
-          echo "GIT_REF=${GIT_REF#refs/*/}" >> $GITHUB_ENV
+          if [ "{{ github.event_name }}" = "pull_request" ]; then
+            # for pull request, GITHUB_SHA is the last merge commit on the GITHUB_REF branch. We want to use
+            # the PR branch HEAD sha instead
+            GIT_REF="{{ github.event.pull_request.head.sha }}"
+          else
+            GIT_REF="${GITHUB_SHA}"
+          fi
+          echo "GIT_REF=${GIT_REF}" >> $GITHUB_ENV
 
       - name: Build Mirror Node All-in-One Docker Image and Export
         uses: docker/build-push-action@v3
         with:
           build-args: GIT_REF=${{ env.GIT_REF }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           context: ./hedera-mirror-rosetta/build
           outputs: type=docker,dest=/tmp/${{ env.MODULE }}.tar
           tags: ${{ env.MODULE }}:latest
