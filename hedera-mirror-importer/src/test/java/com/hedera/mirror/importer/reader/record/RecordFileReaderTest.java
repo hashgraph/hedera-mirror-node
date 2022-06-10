@@ -38,10 +38,7 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -54,11 +51,8 @@ abstract class RecordFileReaderTest {
 
     private static final Collection<RecordFile> ALL_RECORD_FILES = TestRecordFiles.getAll().values();
 
-    private static final String ethPath = "data/recordstreams/eth-0.26.0/record0.0.3";
     protected RecordFileReader recordFileReader;
     protected Path testPath;
-    @Value("classpath:data/recordstreams/eth-0.26.0/record0.0.3/*.rcd")
-    private Resource[] ethTestFiles;
 
     @BeforeEach
     void setup() throws Exception {
@@ -111,7 +105,6 @@ abstract class RecordFileReaderTest {
     @TestFactory
     Stream<DynamicTest> verifyRecordItemLinksInValidFile() {
         String template = "read file %s containing eth transactions";
-        var resourceResolver = new PathMatchingResourcePatternResolver();
 
         return DynamicTest.stream(
                 getFilteredFiles(false),
@@ -175,7 +168,7 @@ abstract class RecordFileReaderTest {
     protected Iterator<RecordFile> getFilteredFiles(boolean negate) {
         return ALL_RECORD_FILES.stream()
                 .filter((recordFile) -> negate ^ filterFile(recordFile.getVersion()))
-                .collect(Collectors.toList())
+                .toList()
                 .iterator();
     }
 

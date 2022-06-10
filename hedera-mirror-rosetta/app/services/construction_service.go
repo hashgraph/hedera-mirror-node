@@ -44,8 +44,10 @@ import (
 )
 
 const (
-	metadataKeyValidStartNanos = "valid_start_nanos"
-	optionKeyOperationType     = "operation_type"
+	defaultValidDurationSeconds     = 180
+	metadataKeyValidDurationSeconds = "valid_duration"
+	metadataKeyValidStartNanos      = "valid_start_nanos"
+	optionKeyOperationType          = "operation_type"
 )
 
 // constructionAPIService implements the server.ConstructionAPIServicer interface.
@@ -202,7 +204,12 @@ func (c *constructionAPIService) ConstructionPayloads(
 	ctx context.Context,
 	request *rTypes.ConstructionPayloadsRequest,
 ) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
-	validStartNanos, rErr := c.getValidStartNanos(request.Metadata)
+	validDurationSeconds, rErr := c.getIntMetadataValue(request.Metadata, metadataKeyValidDurationSeconds)
+	if rErr != nil || !isValidTransactionValidDuration(validDurationSeconds) {
+		return nil, errors.ErrInvalidArgument
+	}
+
+	validStartNanos, rErr := c.getIntMetadataValue(request.Metadata, metadataKeyValidStartNanos)
 	if rErr != nil {
 		return nil, rErr
 	}
@@ -222,6 +229,7 @@ func (c *constructionAPIService) ConstructionPayloads(
 		transaction,
 		transactionSetNodeAccountId(c.getRandomNodeAccountId()),
 		transactionSetTransactionId(payer, validStartNanos),
+		transactionSetValidDuration(validDurationSeconds),
 		transactionFreeze,
 	); rErr != nil {
 		return nil, rErr
@@ -361,21 +369,26 @@ func (c *constructionAPIService) getRandomNodeAccountId() hedera.AccountID {
 	return c.nodeAccountIds[index.Int64()]
 }
 
-func (c *constructionAPIService) getValidStartNanos(metadata map[string]interface{}) (int64, *rTypes.Error) {
-	var validStartNanos int64
-	if metadata != nil && metadata[metadataKeyValidStartNanos] != nil {
-		nanos, ok := metadata[metadataKeyValidStartNanos].(string)
+func (c *constructionAPIService) getIntMetadataValue(metadata map[string]interface{}, metadataKey string) (int64, *rTypes.Error) {
+	var metadataValue int64
+	if metadata != nil && metadata[metadataKey] != nil {
+		value, ok := metadata[metadataKey].(string)
 		if !ok {
-			return validStartNanos, errors.ErrInvalidArgument
+			return metadataValue, errors.ErrInvalidArgument
 		}
 
 		var err error
-		if validStartNanos, err = tools.ToInt64(nanos); err != nil || validStartNanos < 0 {
-			return validStartNanos, errors.ErrInvalidArgument
+		if metadataValue, err = tools.ToInt64(value); err != nil || metadataValue < 0 {
+			return metadataValue, errors.ErrInvalidArgument
 		}
 	}
 
-	return validStartNanos, nil
+	return metadataValue, nil
+}
+
+func isValidTransactionValidDuration(validDuration int64) bool {
+	// A value of 0 indicates validDuration is unset
+	return validDuration >= 0 && validDuration <= 180
 }
 
 // NewConstructionAPIService creates a new instance of a constructionAPIService.
@@ -546,6 +559,22 @@ func transactionSetTransactionId(payer hedera.AccountID, validStartNanos int64) 
 		}
 		if _, err := hedera.TransactionSetTransactionID(transaction, transactionId); err != nil {
 			log.Errorf("Failed to set transaction id: %s", err)
+			return errors.ErrInternalServerError
+		}
+		return nil
+	}
+}
+
+func transactionSetValidDuration(validDurationSeconds int64) updater {
+	return func(transaction interfaces.Transaction) *rTypes.Error {
+		if validDurationSeconds == 0 {
+			// Default to 180 seconds
+			validDurationSeconds = defaultValidDurationSeconds
+		}
+
+		_, err := hedera.TransactionSetTransactionValidDuration(transaction, time.Second*time.Duration(validDurationSeconds))
+		if err != nil {
+			log.Errorf("Failed to set transaction valid duration: %s", err)
 			return errors.ErrInternalServerError
 		}
 		return nil

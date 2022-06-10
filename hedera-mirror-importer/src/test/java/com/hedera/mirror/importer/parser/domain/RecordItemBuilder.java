@@ -355,7 +355,6 @@ public class RecordItemBuilder {
     public Builder<NodeStakeUpdateTransactionBody.Builder> nodeStakeUpdate() {
         var builder = NodeStakeUpdateTransactionBody.newBuilder()
                 .setEndOfStakingPeriod(timestamp())
-                .setRewardRate(id() * TINYBARS_IN_ONE_HBAR)
                 .addNodeStake(nodeStake());
         return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);
     }
@@ -466,6 +465,7 @@ public class RecordItemBuilder {
         var stake = id() * TINYBARS_IN_ONE_HBAR;
         return NodeStake.newBuilder()
                 .setNodeId(id())
+                .setRewardRate(id())
                 .setStake(stake)
                 .setStakeRewarded(stake - 100L);
     }

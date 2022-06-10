@@ -100,19 +100,18 @@ type recordBlock struct {
 
 func (rb *recordBlock) ToBlock(genesisConsensusStart int64, genesisIndex int64) *types.Block {
 	consensusStart := rb.ConsensusStart
-	index := rb.Index - genesisIndex
-	parentIndex := index - 1
 	parentHash := rb.PrevHash
+	parentIndex := rb.Index - 1
 
-	// Handle the edge case for querying first block
-	if parentIndex < 0 {
+	// Handle the edge case for querying genesis block
+	if rb.Index == genesisIndex {
 		consensusStart = genesisConsensusStart
-		parentIndex = 0      // Parent index should be 0, same as current block index
-		parentHash = rb.Hash // Parent hash should be same as current block hash
+		parentHash = rb.Hash   // Parent hash should be current block hash
+		parentIndex = rb.Index // Parent index should be current block index
 	}
 
 	return &types.Block{
-		Index:               index,
+		Index:               rb.Index,
 		Hash:                rb.Hash,
 		ParentIndex:         parentIndex,
 		ParentHash:          parentHash,
@@ -187,7 +186,7 @@ func (br *blockRepository) RetrieveGenesis(ctx context.Context) (*types.Block, *
 		return nil, err
 	}
 
-	return br.findBlockByIndex(ctx, 0)
+	return br.findBlockByIndex(ctx, br.genesisRecordFileIndex)
 }
 
 func (br *blockRepository) RetrieveLatest(ctx context.Context) (*types.Block, *rTypes.Error) {
@@ -211,11 +210,14 @@ func (br *blockRepository) RetrieveLatest(ctx context.Context) (*types.Block, *r
 }
 
 func (br *blockRepository) findBlockByIndex(ctx context.Context, index int64) (*types.Block, *rTypes.Error) {
+	if index < br.genesisRecordFileIndex {
+		return nil, hErrors.ErrBlockNotFound
+	}
+
 	db, cancel := br.dbClient.GetDbWithContext(ctx)
 	defer cancel()
 
 	rb := &recordBlock{}
-	index += br.genesisRecordFileIndex
 	if err := db.Raw(selectRecordBlockByIndex, sql.Named("index", index)).First(rb).Error; err != nil {
 		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
 	}
@@ -230,6 +232,11 @@ func (br *blockRepository) findBlockByHash(ctx context.Context, hash string) (*t
 	rb := &recordBlock{}
 	if err := db.Raw(selectByHashWithIndex, sql.Named("hash", hash)).First(rb).Error; err != nil {
 		return nil, handleDatabaseError(err, hErrors.ErrBlockNotFound)
+	}
+
+	if rb.Index < br.genesisRecordFileIndex {
+		log.Errorf("The block with hash %s is before the genesis block", hash)
+		return nil, hErrors.ErrBlockNotFound
 	}
 
 	return rb.ToBlock(br.genesisConsensusStart, br.genesisRecordFileIndex), nil

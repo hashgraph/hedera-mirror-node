@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
 import java.nio.file.Path;
@@ -31,10 +32,10 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 
 class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
 
@@ -67,9 +68,14 @@ class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
+        var expectedFileSizes = Map.of("2019-07-01T14_13_00.317763Z.rcd", 4898,
+                "2019-07-01T14_29_00.302068Z.rcd", 22347);
 
         downloader.download();
 
-        verifyStreamFiles(List.of("2019-07-01T14_13_00.317763Z.rcd", "2019-07-01T14_29_00.302068Z.rcd"));
+        verifyStreamFiles(List.of("2019-07-01T14_13_00.317763Z.rcd", "2019-07-01T14_29_00.302068Z.rcd"), s -> {
+            var recordFile = (RecordFile) s;
+            assertThat(recordFile.getSize()).isEqualTo(expectedFileSizes.get(recordFile.getName()));
+        });
     }
 }

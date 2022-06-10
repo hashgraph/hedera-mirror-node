@@ -120,6 +120,8 @@ public class RecordFile implements StreamFile<RecordItem> {
     @ToString.Exclude
     private String previousHash;
 
+    private Integer size;
+
     private int version;
 
     @Override

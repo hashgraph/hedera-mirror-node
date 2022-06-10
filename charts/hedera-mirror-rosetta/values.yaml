@@ -223,6 +223,7 @@ terminationGracePeriodSeconds: 60
 
 test:
   enabled: true
+  githubRef: ""
   image:
     pullPolicy: IfNotPresent
     repository: postman/newman
