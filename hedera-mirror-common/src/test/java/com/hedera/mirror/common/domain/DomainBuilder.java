@@ -439,6 +439,7 @@ public class DomainBuilder {
                 .loadStart(now.getEpochSecond())
                 .name(now.toString().replace(':', '_') + ".rcd")
                 .nodeAccountId(entityId(ACCOUNT))
+                .size(256 * 1024)
                 .previousHash(text(96));
         return new DomainWrapperImpl<>(builder, builder::build);
     }

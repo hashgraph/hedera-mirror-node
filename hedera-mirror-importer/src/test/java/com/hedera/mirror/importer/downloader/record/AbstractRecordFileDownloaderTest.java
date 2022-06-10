@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.downloader.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,5 +63,13 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
         return new RecordFileDownloader(s3AsyncClient, addressBookService,
                 (RecordDownloaderProperties) downloaderProperties, meterRegistry,
                 nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier, dateRangeProcessor);
+    }
+
+    @Override
+    protected void verifyStreamFiles(List<String> files) {
+        verifyStreamFiles(files, s -> {
+            var recordFile = (RecordFile) s;
+            assertThat(recordFile.getSize()).isEqualTo(recordFileMap.get(recordFile.getName()).getSize());
+        });
     }
 }

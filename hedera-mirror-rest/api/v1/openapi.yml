@@ -423,7 +423,7 @@ paths:
 
 
         Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
-        
+
       operationId: listContractLogs
       parameters:
         - $ref: '#/components/parameters/contractIdPathParam'
@@ -2074,7 +2074,7 @@ components:
         name: "2022-05-03T06_46_26.060890949Z.rcd"
         number: 77
         previous_hash: "0xf7d6481f659c866c35391ee230c374f163642ebf13a5e604e04a95a9ca48a298dc2dfa10f51bcbaab8ae23bc6d662a0b"
-        size: null
+        size: 8192
         timestamp:
           from: "1651560386.060890949"
           to: "1651560386.661997287"

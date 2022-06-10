@@ -398,6 +398,7 @@ create table if not exists record_file
     name               character varying(250) not null,
     node_account_id    bigint                 not null,
     prev_hash          character varying(96)  not null,
+    size               int                    null,
     version            int                    not null
 );
 comment on table record_file is 'Network record file stream entries';

@@ -34,7 +34,6 @@ import javax.inject.Named;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.codec.binary.Hex;
-import org.springframework.data.util.Version;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
@@ -66,11 +65,13 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
                 new BufferedInputStream(new DigestInputStream(streamFileData.getInputStream(), messageDigestFile)),
                 messageDigestMetadata);
              ValidatedDataInputStream vdis = new ValidatedDataInputStream(digestInputStream, filename)) {
+            byte[] bytes = streamFileData.getBytes();
             RecordFile recordFile = new RecordFile();
-            recordFile.setBytes(streamFileData.getBytes());
+            recordFile.setBytes(bytes);
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
             recordFile.setLoadStart(Instant.now().getEpochSecond());
             recordFile.setName(filename);
+            recordFile.setSize(bytes.length);
 
             readHeader(vdis, recordFile);
             readBody(vdis, digestInputStream, recordFile);
@@ -110,8 +111,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
         // read record stream objects
         while (!isHashObject(vdis, hashObjectClassId)) {
-            RecordStreamObject recordStreamObject = new RecordStreamObject(vdis, recordFile.getHapiVersion(),
-                    count);
+            RecordStreamObject recordStreamObject = new RecordStreamObject(vdis);
             var recordItem = RecordItem.builder()
                     .hapiVersion(recordFile.getHapiVersion())
                     .previous(lastRecordItem)
@@ -173,15 +173,11 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
 
         private static final int MAX_RECORD_LENGTH = 64 * 1024;
 
-        private final Version hapiVersion;
         private final byte[] recordBytes;
         private final byte[] transactionBytes;
-        private final int transactionBlockIndex;
 
-        RecordStreamObject(ValidatedDataInputStream vdis, Version hapiVersion, int transactionBlockIndex) {
+        RecordStreamObject(ValidatedDataInputStream vdis) {
             super(vdis);
-            this.hapiVersion = hapiVersion;
-            this.transactionBlockIndex = transactionBlockIndex;
 
             try {
                 recordBytes = vdis.readLengthAndBytes(1, MAX_RECORD_LENGTH, false, "record bytes");
