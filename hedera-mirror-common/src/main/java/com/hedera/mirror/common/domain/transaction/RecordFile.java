@@ -129,14 +129,6 @@ public class RecordFile implements StreamFile<RecordItem> {
         return StreamType.RECORD;
     }
 
-    @Override
-    public void setBytes(byte[] bytes) {
-        this.bytes = bytes;
-        if (bytes != null) {
-            this.size = bytes.length;
-        }
-    }
-
     private Version hapiVersion() {
         if (hapiVersionMajor == null || hapiVersionMinor == null || hapiVersionPatch == null) {
             return HAPI_VERSION_NOT_SET;

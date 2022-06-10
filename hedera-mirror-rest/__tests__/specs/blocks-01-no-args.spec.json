@@ -1,5 +1,12 @@
 {
   "description": "Get blocks with no arguments",
+  "extendedDescription": [
+    "The 4 record files are set up with 4 combinations of bytes and size values:",
+    "  - both bytes and size have value, the rest api should return the value from the size column",
+    "  - null bytes and size has value, the rest api should return the value from the size column",
+    "  - bytes has value and null size, the rest api should return the length of the bytes as size",
+    "  - both bytes and size are null, the rest api should return null for size"
+  ],
   "setup": {
     "recordFiles": [
       {

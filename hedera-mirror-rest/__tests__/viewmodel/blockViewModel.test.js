@@ -35,7 +35,6 @@ describe('BlockViewModel', () => {
     consensus_start: '1676540001234390000',
     consensus_end: '1676540001234490000',
     hash: 'fbd921184e229e2051280d827ba3b31599117af7eafba65dc0e5a998b70c48c0492bf793a150769b1b4fb2c9b7cb4c1c',
-    bytes: Buffer.from([1, 2, 3, 4]),
     gas_used: 300000,
     logs_bloom: Buffer.from(
       '00000020002000001000000000000000000000000000000000000000000010000000000004000000000000000000000000108000000000000000000080000000000004000000000000000000000000880000000000000000000101000000000000000000000000000000000000008000000000000400000080000000000001000000000000000000000000000000000000000000002000000000100000100000200000040000100000001000000000000000000000000000000001001000004000000000000000000001000000000000000000100000000000100000000000000000000000000000000000000000000000080000100800000000000000120080',
@@ -82,15 +81,7 @@ describe('BlockViewModel', () => {
     expect(new BlockViewModel(new RecordFile({gas_used: -1})).logs_bloom).toStrictEqual(null);
   });
 
-  test('no bytes no size', () => {
-    expect(new BlockViewModel(new RecordFile({bytes: null, size: null})).size).toEqual(null);
-  });
-
-  test('no bytes has size', () => {
-    expect(new BlockViewModel(new RecordFile({bytes: null, size: 6})).size).toEqual(6);
-  });
-
-  test('has bytes no size', () => {
-    expect(new BlockViewModel(new RecordFile({bytes: Buffer.from([1, 2]), size: null})).size).toEqual(2);
+  test('null size', () => {
+    expect(new BlockViewModel(new RecordFile({size: null})).size).toEqual(null);
   });
 });

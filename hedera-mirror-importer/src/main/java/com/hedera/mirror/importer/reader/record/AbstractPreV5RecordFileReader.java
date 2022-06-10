@@ -57,11 +57,13 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
 
         try (RecordFileDigest digest = getRecordFileDigest(streamFileData.getInputStream());
              ValidatedDataInputStream vdis = new ValidatedDataInputStream(digest.getDigestInputStream(), filename)) {
+            byte[] bytes = streamFileData.getBytes();
             RecordFile recordFile = new RecordFile();
             recordFile.setBytes(streamFileData.getBytes());
+            recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
             recordFile.setLoadStart(Instant.now().getEpochSecond());
             recordFile.setName(filename);
-            recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
+            recordFile.setSize(bytes.length);
 
             readHeader(vdis, recordFile);
             readBody(vdis, digest, recordFile);
@@ -106,7 +108,8 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
      * @param recordFile the {@link RecordFile} object
      * @throws IOException
      */
-    private void readBody(ValidatedDataInputStream vdis, RecordFileDigest digest, RecordFile recordFile) throws IOException {
+    private void readBody(ValidatedDataInputStream vdis, RecordFileDigest digest,
+                          RecordFile recordFile) throws IOException {
         int count = 0;
         long consensusStart = 0;
         long consensusEnd = 0;

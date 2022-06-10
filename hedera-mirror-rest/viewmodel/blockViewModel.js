@@ -38,7 +38,7 @@ class BlockViewModel {
     this.name = recordFile.name;
     this.number = recordFile.index;
     this.previous_hash = utils.addHexPrefix(recordFile.prevHash);
-    this.size = recordFile.size || (recordFile.bytes ? recordFile.bytes.length : null);
+    this.size = recordFile.size;
     this.timestamp = {
       from: utils.nsToSecNs(recordFile.consensusStart),
       to: utils.nsToSecNs(recordFile.consensusEnd),

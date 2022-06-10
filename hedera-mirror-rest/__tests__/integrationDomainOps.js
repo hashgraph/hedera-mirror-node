@@ -1270,7 +1270,7 @@ const addRecordFile = async (recordFileInput) => {
 
   const bytes = Buffer.from([1, 1, 2, 2, 3, 3]);
   const recordFile = {
-    bytes: bytes,
+    bytes,
     gas_used: 0,
     consensus_end: 1628751573995691000,
     consensus_start: 1628751572000852000,

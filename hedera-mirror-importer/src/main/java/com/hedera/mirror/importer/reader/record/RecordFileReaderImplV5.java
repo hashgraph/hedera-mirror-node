@@ -66,11 +66,13 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
                 new BufferedInputStream(new DigestInputStream(streamFileData.getInputStream(), messageDigestFile)),
                 messageDigestMetadata);
              ValidatedDataInputStream vdis = new ValidatedDataInputStream(digestInputStream, filename)) {
+            byte[] bytes = streamFileData.getBytes();
             RecordFile recordFile = new RecordFile();
-            recordFile.setBytes(streamFileData.getBytes());
+            recordFile.setBytes(bytes);
             recordFile.setDigestAlgorithm(DIGEST_ALGORITHM);
             recordFile.setLoadStart(Instant.now().getEpochSecond());
             recordFile.setName(filename);
+            recordFile.setSize(bytes.length);
 
             readHeader(vdis, recordFile);
             readBody(vdis, digestInputStream, recordFile);
