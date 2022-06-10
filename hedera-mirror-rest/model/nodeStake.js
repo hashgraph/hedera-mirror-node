@@ -29,7 +29,6 @@ class NodeStake {
     this.epochDay = nodeStake.epoch_day;
     this.nodeId = nodeStake.node_id;
     this.rewardRate = nodeStake.reward_rate;
-    this.rewardSum = nodeStake.reward_sum;
     this.stake = nodeStake.stake;
     this.stakeRewarded = nodeStake.stake_rewarded;
     this.stakeTotal = nodeStake.stake_total;
@@ -43,7 +42,6 @@ class NodeStake {
   static EPOCH_DAY = `epoch_day`;
   static NODE_ID = `node_id`;
   static REWARD_RATE = `reward_rate`;
-  static REWARD_SUM = `reward_sum`;
   static STAKE = `stake`;
   static STAKE_REWARDED = `stake_rewarded`;
   static STAKE_TOTAL = `stake_total`;
