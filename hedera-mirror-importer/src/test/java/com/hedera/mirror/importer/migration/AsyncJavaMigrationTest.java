@@ -21,9 +21,11 @@ package com.hedera.mirror.importer.migration;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.junit.jupiter.api.AfterEach;
@@ -100,8 +102,7 @@ class AsyncJavaMigrationTest extends IntegrationTest {
     @ValueSource(ints = {0, -1})
     void migrateNonPositiveSuccessChecksum(Integer checksum) throws Exception {
         var migration = new TestAsyncJavaMigration(dbProperties, false, jdbcTemplate, checksum, transactionOperations);
-        migration.doMigrate();
-        Thread.sleep(500);
+        assertThatThrownBy(migration::doMigrate).isInstanceOf(IllegalArgumentException.class);
         assertThat(getAllMigrationHistory()).isEmpty();
     }
 
@@ -153,12 +154,12 @@ class AsyncJavaMigrationTest extends IntegrationTest {
         }
 
         @Override
-        protected Long migratePartial(final Long last) {
+        protected Optional<Long> migratePartial(final Long last) {
             if (error) {
                 throw new RuntimeException();
             }
 
-            return null;
+            return Optional.empty();
         }
 
         @Override

@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.migration;
 import com.google.common.base.Stopwatch;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -92,8 +93,7 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
     protected void doMigrate() throws IOException {
         int checksum = getSuccessChecksum();
         if (checksum <= 0) {
-            log.error("Migration skipped due to non-positive success checksum {}, please fix it and rerun", checksum);
-            return;
+            throw new IllegalArgumentException(String.format("Invalid non-positive success checksum %d", checksum));
         }
 
         Mono.fromRunnable(this::migrateAsync)
@@ -105,15 +105,15 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
     protected void migrateAsync() {
         long count = 0;
-        T last = getInitial();
+        var last = Optional.of(getInitial());
         var stopwatch = Stopwatch.createStarted();
 
         try {
             do {
-                final T previous = last;
-                last = transactionOperations.execute(t -> migratePartial(previous));
+                final var previous = last;
+                last = transactionOperations.execute(t -> migratePartial(previous.get()));
                 count++;
-            } while (last != null);
+            } while (last.isPresent());
 
             log.info("Successfully completed asynchronous migration with {} iterations in {}", count, stopwatch);
         } catch (Exception e) {
@@ -126,13 +126,13 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
     /**
      * Gets the success checksum to set for the migration in flyway schema history table. Note the checksum is required
-     * to be positive. If a non-positive value is provided, the migration will be skipped and an error is logged.
+     * to be positive.
      *
      * @return The success checksum for the migration
      */
     protected abstract int getSuccessChecksum();
 
-    protected abstract T migratePartial(T last);
+    protected abstract Optional<T> migratePartial(T last);
 
     private MapSqlParameterSource getSqlParamSource() {
         return new MapSqlParameterSource().addValue("className", getClass().getName());

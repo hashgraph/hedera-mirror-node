@@ -21,6 +21,8 @@ package com.hedera.mirror.importer.migration;
  */
 
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
@@ -28,7 +30,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionOperations;
 
 import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
-import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.importer.db.DBProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
@@ -90,39 +91,26 @@ public class BackfillBlockMigration extends AsyncJavaMigration<Long> {
      * @return The consensus end of the processed record file or null if no record file is processed
      */
     @Override
-    protected Long migratePartial(Long lastConsensusEnd) {
-        return recordFileRepository.findLatestMissingGasUsedBefore(lastConsensusEnd)
-                .map(recordFile -> {
-                    var queryParams = Map.of("consensusStart", recordFile.getConsensusStart(),
-                            "consensusEnd", recordFile.getConsensusEnd());
+    protected Optional<Long> migratePartial(Long lastConsensusEnd) {
+        return recordFileRepository.findLatestMissingGasUsedBefore(lastConsensusEnd).map(recordFile -> {
+            var queryParams = Map.of("consensusStart", recordFile.getConsensusStart(),
+                    "consensusEnd", recordFile.getConsensusEnd());
 
-                    var contractResults = jdbcTemplate.query(SELECT_CONTRACT_RESULT, queryParams,
-                            (rs, rowNum) -> {
-                                var contractResult = new ContractResult();
-                                contractResult.setBloom(rs.getBytes("bloom"));
-                                contractResult.setGasUsed(rs.getLong("gas_used"));
-                                return contractResult;
-                            });
+            var bloomAggregator = new LogsBloomAggregator();
+            AtomicLong gasUsed = new AtomicLong(0);
+            jdbcTemplate.query(SELECT_CONTRACT_RESULT, queryParams, rs -> {
+                bloomAggregator.aggregate(rs.getBytes("bloom"));
+                gasUsed.addAndGet(rs.getLong("gas_used"));
+            });
 
-                    var bloomAggregator = new LogsBloomAggregator();
-                    long gasUsed = 0;
-                    for (var contractResult : contractResults) {
-                        bloomAggregator.aggregate(contractResult.getBloom());
+            recordFile.setGasUsed(gasUsed.get());
+            recordFile.setLogsBloom(bloomAggregator.getBloom());
+            recordFileRepository.save(recordFile);
 
-                        if (contractResult.getGasUsed() != null) {
-                            gasUsed += contractResult.getGasUsed();
-                        }
-                    }
+            // set transaction index for the transactions in the record file
+            jdbcTemplate.update(SET_TRANSACTION_INDEX, queryParams);
 
-                    recordFile.setGasUsed(gasUsed);
-                    recordFile.setLogsBloom(bloomAggregator.getBloom());
-                    recordFileRepository.save(recordFile);
-
-                    // set transaction index for the transactions in the record file
-                    jdbcTemplate.update(SET_TRANSACTION_INDEX, queryParams);
-
-                    return recordFile.getConsensusEnd();
-                })
-                .orElse(null);
+            return recordFile.getConsensusEnd();
+        });
     }
 }
