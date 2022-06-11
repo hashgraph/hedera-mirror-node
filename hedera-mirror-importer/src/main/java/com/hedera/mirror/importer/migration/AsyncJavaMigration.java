@@ -24,6 +24,7 @@ import com.google.common.base.Stopwatch;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -113,7 +114,7 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
                 final var previous = last;
                 last = transactionOperations.execute(t -> migratePartial(previous.get()));
                 count++;
-            } while (last != null && last.isPresent());
+            } while (last.isPresent());
 
             log.info("Successfully completed asynchronous migration with {} iterations in {}", count, stopwatch);
         } catch (Exception e) {
@@ -132,6 +133,7 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
      */
     protected abstract int getSuccessChecksum();
 
+    @Nonnull
     protected abstract Optional<T> migratePartial(T last);
 
     private MapSqlParameterSource getSqlParamSource() {

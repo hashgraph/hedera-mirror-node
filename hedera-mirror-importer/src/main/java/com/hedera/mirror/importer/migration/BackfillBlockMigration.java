@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.migration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
+import javax.annotation.Nonnull;
 import javax.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
@@ -90,6 +91,7 @@ public class BackfillBlockMigration extends AsyncJavaMigration<Long> {
      * @param lastConsensusEnd The consensus end timestamp of the last record file
      * @return The consensus end of the processed record file or null if no record file is processed
      */
+    @Nonnull
     @Override
     protected Optional<Long> migratePartial(Long lastConsensusEnd) {
         return recordFileRepository.findLatestMissingGasUsedBefore(lastConsensusEnd).map(recordFile -> {

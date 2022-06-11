@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.junit.jupiter.api.AfterEach;
@@ -153,6 +154,7 @@ class AsyncJavaMigrationTest extends IntegrationTest {
             return TEST_MIGRATION_DESCRIPTION;
         }
 
+        @Nonnull
         @Override
         protected Optional<Long> migratePartial(final Long last) {
             if (error) {
