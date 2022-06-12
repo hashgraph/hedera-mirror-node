@@ -21,6 +21,7 @@
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <commons-compress.version>1.21</commons-compress.version>
         <commons-io.version>2.11.0</commons-io.version>
+        <pulsar.version>2.10.0</pulsar.version>
         <s3proxy.version>2.0.0</s3proxy.version>
         <sql-formatter.version>2.0.3</sql-formatter.version>
         <testcontainers.version>1.17.2</testcontainers.version>
@@ -89,6 +90,11 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
             <version>${commons-compress.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.pulsar</groupId>
+            <artifactId>pulsar-client</artifactId>
+            <version>${pulsar.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.velocity</groupId>
