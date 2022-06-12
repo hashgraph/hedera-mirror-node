@@ -40,6 +40,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.time.Instant;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 class PulsarTopicsTest {
 
     private static final String PULSAR_BROKER_ROOT_URL = "pulsar://localhost:6650";
@@ -68,10 +72,15 @@ class PulsarTopicsTest {
         // declare success (falsely) if there is no Pulsar.
         if (!isPulsarAvailable) {
             System.out.println("publishMessagesTest: Pulsar is not available.");
+            assertNull("Expected no producer 1", producer1);
+            assertNull("Expected no producer 2", producer2);
             return;
         }
         producer2 = client.newProducer().topic(TEMPORARY_TOPIC_NAME).create();
         // send a message on each
+        assertNotNull("Expected non-null producer1", producer1);
+        assertNotNull("Expected non-null producer2", producer2);
+
         producer1.send(("Message on consistent topic " + CONSISTENT_TOPIC_NAME).getBytes());
         producer2.send(("Message on temporary topic " + TEMPORARY_TOPIC_NAME).getBytes());
         // close everything
@@ -85,6 +94,8 @@ class PulsarTopicsTest {
         // declare success (falsely) if there is no Pulsar.
         if (!isPulsarAvailable) {
             System.out.println("consumeMessagesTest: Pulsar is not available.");
+            assertNull("Expected no producer 1", producer1);
+            assertNull("Expected no producer 2", producer2);
             return;
         }
         Consumer consumer1 = client.newConsumer().topic(CONSISTENT_TOPIC_NAME).subscriptionName("my-sub-1")
@@ -92,7 +103,9 @@ class PulsarTopicsTest {
                 .subscriptionType(SubscriptionType.Shared).subscribe();
         try {
             Message message1 = consumer1.receive();
-            System.out.println("Message 1 received: " + new String(message1.getData()));
+            String data1 = new String(message1.getData());
+            System.out.println("Message 1 received: " + data1);
+            assertTrue("bad message 1", data1.startsWith("Message on consistent topic"));
             consumer1.acknowledge(message1);
         } catch (Exception e) {
             System.out.println("Message 1 not received: " + e.getMessage());
@@ -103,7 +116,9 @@ class PulsarTopicsTest {
                 .subscriptionType(SubscriptionType.Shared).subscribe();
         try {
             Message message2 = consumer2.receive();
-            System.out.println("Message 2 received: " + new String(message2.getData()));
+            String data2 = new String(message2.getData());
+            System.out.println("Message 2 received: " + data2);
+            assertTrue("bad message 2", data2.startsWith("Message on temporary topic"));
             consumer2.acknowledge(message2);
         } catch (Exception e) {
             System.out.println("Message 2 not received: " + e.getMessage());
