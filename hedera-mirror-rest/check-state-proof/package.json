@@ -34,7 +34,7 @@
     "jest": "^28.1.0",
     "lodash": "^4.17.21",
     "log4js": "^6.5.2",
-    "node-fetch": "^2.6.7",
+    "node-fetch": "^3.2.6",
     "yargs": "^17.5.1"
   },
   "overrides": {
