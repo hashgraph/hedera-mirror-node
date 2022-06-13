@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.reader.signature;
 import static java.lang.String.format;
 
 import java.io.IOException;
+import javax.inject.Named;
 
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFileData;
@@ -31,6 +32,7 @@ import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 import com.hedera.services.stream.proto.SignatureFile;
 import com.hedera.services.stream.proto.SignatureType;
 
+@Named
 public class ProtoSignatureFileReader implements SignatureFileReader {
     public static final int SIGNATURE_FILE_FORMAT_VERSION = 6;
 
@@ -41,12 +43,12 @@ public class ProtoSignatureFileReader implements SignatureFileReader {
             var signatureFile = SignatureFile.parseFrom(signatureFileData.getInputStream());
             if (!signatureFile.hasFileSignature()) {
                 throw new InvalidStreamFileException(
-                        format("The file %s does not have signature.", signatureFileData.getFilename()));
+                        format("The file %s does not have file signature.", signatureFileData.getFilename()));
             }
 
             if (!signatureFile.hasMetadataSignature()) {
                 throw new InvalidStreamFileException(
-                        format("The file %s does not have metadata signature.", signatureFileData.getFilename()));
+                        format("The file %s does not have file metadata signature.", signatureFileData.getFilename()));
             }
 
             var fileSignature = signatureFile.getFileSignature();
