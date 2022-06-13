@@ -120,7 +120,28 @@ public class TestRecordFiles {
                 .previousHash(recordFileV5_1.getHash())
                 .version(5)
                 .build();
-        RecordFile recordFileV6 = RecordFile.builder()
+
+        RecordFile recordFileV6_1 = RecordFile.builder()
+                .consensusStart(1655130654302946267L)
+                .consensusEnd(1655130655856526771L)
+                .count(4L)
+                .digestAlgorithm(digestAlgorithm)
+                .gasUsed(0L)
+                .fileHash(
+                        "50727100c40e186a48a29b6fc5f07cae8c5da433a49863e628231518f47b8414e89833ff03a1ba4fbca6c1a0ae9674c7")
+                .hapiVersionMajor(0)
+                .hapiVersionMinor(27)
+                .hapiVersionPatch(1)
+                .hash
+                        ("8ec417b736fda58696a5977c4d7c63faf9251b68e880ea3a63b8e0eb88bbd512dc4474b2f782326f674b3514fb5a359d")
+                .metadataHash(
+                        "7533f30649143845ef97687c093522cf27a655a8fa185d19f7d482af6329a79ad4ca36356c2a813b5af4893f6aaeb212")
+                .name("2022-06-13T14_30_52.248543793Z.rcd")
+                .previousHash(
+                        "e690150a545aa103e55fd65f13c416dc85aedc8db6e43899b34730b106d63453e3f4090720f2785bf44eb535d6b2d2eb")
+                .version(6)
+                .build();
+        RecordFile recordFileV6_2 = RecordFile.builder()
                 .consensusStart(1655130654302946267L)
                 .consensusEnd(1655130655856526771L)
                 .count(4L)
@@ -140,7 +161,7 @@ public class TestRecordFiles {
                         "e690150a545aa103e55fd65f13c416dc85aedc8db6e43899b34730b106d63453e3f4090720f2785bf44eb535d6b2d2eb")
                 .version(6)
                 .build();
-        RecordFile recordFileV6Gzipped = RecordFile.builder()
+        RecordFile recordFileV6_3 = RecordFile.builder()
                 .consensusStart(1655130654302946267L)
                 .consensusEnd(1655130655856526771L)
                 .count(4L)
@@ -164,7 +185,8 @@ public class TestRecordFiles {
         List<RecordFile> allFiles = List.of(recordFileV1_1, recordFileV1_2,
                 recordFileV2_1, recordFileV2_2,
                 recordFileV5_1, recordFileV5_2,
-                recordFileV6, recordFileV6Gzipped);
+                recordFileV6_1, recordFileV6_2,
+                recordFileV6_3);
         return Collections.unmodifiableMap(allFiles.stream().collect(Collectors.toMap(RecordFile::getName, rf -> rf)));
     }
 
