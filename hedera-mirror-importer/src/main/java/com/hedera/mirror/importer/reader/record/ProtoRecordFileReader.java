@@ -82,15 +82,13 @@ public class ProtoRecordFileReader implements RecordFileReader {
     }
 
     private RecordStreamFile readRecordStreamFile(InputStream inputStream, MessageDigest messageDigestFile) {
-        try {
-            var digestInputStream = new DigestInputStream(inputStream, messageDigestFile);
+        try (var digestInputStream = new DigestInputStream(inputStream, messageDigestFile);
+             var bufferedInputStream = new BufferedInputStream(digestInputStream)) {
             int recordFileVersion = ByteBuffer.wrap(digestInputStream.readNBytes(4)).getInt();
             if (recordFileVersion != VERSION) {
                 throw new InvalidStreamFileException(
                         format("Expected file with version %d, given %d.", VERSION, recordFileVersion));
             }
-
-            var bufferedInputStream = new BufferedInputStream(digestInputStream);
 
             return RecordStreamFile.parseFrom(bufferedInputStream);
         } catch (IOException e) {
