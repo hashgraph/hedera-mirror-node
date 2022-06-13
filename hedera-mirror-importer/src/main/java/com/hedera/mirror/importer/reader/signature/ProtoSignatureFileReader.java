@@ -32,7 +32,7 @@ import com.hedera.services.stream.proto.SignatureType;
  */
 
 public class ProtoSignatureFileReader implements SignatureFileReader {
-    public static int SIGNATURE_FILE_FORMAT_VERSION = 6;
+    public static final int SIGNATURE_FILE_FORMAT_VERSION = 6;
 
     @Override
     public FileStreamSignature read(StreamFileData signatureFileData) {

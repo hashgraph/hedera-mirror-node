@@ -129,7 +129,7 @@ public class ProtoRecordFileReader implements RecordFileReader {
         recordFile.setItems(Flux.fromIterable(items));
 
         recordFile.setConsensusStart(items.get(0).getConsensusTimestamp());
-        recordFile.setConsensusEnd(items.get(itemCounter-1).getConsensusTimestamp());
+        recordFile.setConsensusEnd(previousItem.getConsensusTimestamp());
 
         recordFile.setPreviousHash(Hex.encodeHexString(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray()));
         recordFile.setHash(Hex.encodeHexString(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray()));
