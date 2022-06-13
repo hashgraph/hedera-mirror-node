@@ -1,16 +1,5 @@
 package com.hedera.mirror.importer.reader.signature;
 
-import static java.lang.String.format;
-
-import java.io.IOException;
-
-import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-import com.hedera.mirror.importer.exception.SignatureFileParsingException;
-import com.hedera.services.stream.proto.SignatureFile;
-import com.hedera.services.stream.proto.SignatureType;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -30,6 +19,17 @@ import com.hedera.services.stream.proto.SignatureType;
  * limitations under the License.
  * ‍
  */
+
+import static java.lang.String.format;
+
+import java.io.IOException;
+
+import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
+import com.hedera.mirror.importer.exception.SignatureFileParsingException;
+import com.hedera.services.stream.proto.SignatureFile;
+import com.hedera.services.stream.proto.SignatureType;
 
 public class ProtoSignatureFileReader implements SignatureFileReader {
     public static final int SIGNATURE_FILE_FORMAT_VERSION = 6;
