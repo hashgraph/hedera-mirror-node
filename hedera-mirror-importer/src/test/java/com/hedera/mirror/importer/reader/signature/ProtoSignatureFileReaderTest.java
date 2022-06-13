@@ -57,12 +57,20 @@ public class ProtoSignatureFileReaderTest {
     static Stream<Arguments> readValidFileTestArgumentProvider(){
         var recordFile = TestUtils.getResource(
                 Path.of(
-                            "data","signature", "v6", "2022-06-13T14_30_54.302946267Z.rcd_sig"
+                                "data", "signature", "v6", "2022-06-13T14_30_54.302946267Z.rcd_sig"
+                        )
+                        .toString()
+        );
+
+        var recordFileGzipped = TestUtils.getResource(
+                Path.of(
+                                "data", "signature", "v6", "2022-06-13T14_30_54.302946267Z.rcd_sig.gz"
                         )
                         .toString()
         );
         return Stream.of(
-                Arguments.of(recordFile)
+                Arguments.of(recordFile),
+                Arguments.of(recordFileGzipped)
         );
     }
 }
