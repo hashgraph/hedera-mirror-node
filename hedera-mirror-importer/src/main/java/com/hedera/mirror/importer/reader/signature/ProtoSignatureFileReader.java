@@ -37,15 +37,14 @@ public class ProtoSignatureFileReader implements SignatureFileReader {
     @Override
     public FileStreamSignature read(StreamFileData signatureFileData) {
 
-        var inputStream = signatureFileData.getInputStream();
         try {
-            var signatureFile = SignatureFile.parseFrom(inputStream);
-            if(!signatureFile.hasFileSignature()){
+            var signatureFile = SignatureFile.parseFrom(signatureFileData.getInputStream());
+            if (!signatureFile.hasFileSignature()) {
                 throw new InvalidStreamFileException(
                         format("The file %s does not have signature.", signatureFileData.getFilename()));
             }
 
-            if(!signatureFile.hasMetadataSignature()){
+            if (!signatureFile.hasMetadataSignature()) {
                 throw new InvalidStreamFileException(
                         format("The file %s does not have metadata signature.", signatureFileData.getFilename()));
             }
@@ -69,7 +68,7 @@ public class ProtoSignatureFileReader implements SignatureFileReader {
     }
 
     private FileStreamSignature.SignatureType fromProtobufSigTypeToDomainSigType(SignatureType type) {
-        if(type != SignatureType.SHA_384_WITH_RSA){
+        if (type != SignatureType.SHA_384_WITH_RSA) {
             throw new SignatureFileParsingException(
                     format("The signature type %s is not supported", type));
         }

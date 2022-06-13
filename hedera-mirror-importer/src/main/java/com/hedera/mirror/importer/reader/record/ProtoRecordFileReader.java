@@ -27,16 +27,16 @@ import java.io.BufferedInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.nio.ByteBuffer;
 import java.security.DigestInputStream;
+import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import javax.inject.Named;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.output.NullOutputStream;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
@@ -139,25 +139,25 @@ public class ProtoRecordFileReader implements RecordFileReader {
 
     private MessageDigest computeMetadataHash(DigestAlgorithm algorithm, RecordStreamFile recordStreamFile)
             throws IOException {
-        var pipedOutputStream = new PipedOutputStream();
-        var pipedInputStream = new PipedInputStream(pipedOutputStream);
-        var dataOutputStream = new DataOutputStream(pipedOutputStream);
+        var digestOutputStream = new DigestOutputStream(NullOutputStream.NULL_OUTPUT_STREAM,
+                createMessageDigest(algorithm));
+        var dataOutputStream = new DataOutputStream(digestOutputStream);
 
         var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
+        dataOutputStream.writeInt(VERSION);
         dataOutputStream.writeInt(hapiProtoVersion.getMajor());
         dataOutputStream.writeInt(hapiProtoVersion.getMinor());
         dataOutputStream.writeInt(hapiProtoVersion.getPatch());
+
         dataOutputStream.write(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray());
         dataOutputStream.write(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray());
+
         dataOutputStream.writeLong(recordStreamFile.getBlockNumber());
 
-        pipedOutputStream.close();
+        dataOutputStream.flush();
         dataOutputStream.close();
 
-        var digestInputStream = new DigestInputStream(pipedInputStream, createMessageDigest(algorithm));
-        digestInputStream.readAllBytes();
-
-        return digestInputStream.getMessageDigest();
+        return digestOutputStream.getMessageDigest();
     }
 
     private MessageDigest createMessageDigest(DigestAlgorithm digestAlgorithm) {
