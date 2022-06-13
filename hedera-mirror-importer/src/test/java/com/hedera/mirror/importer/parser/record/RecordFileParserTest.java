@@ -156,19 +156,19 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
 
         long timestamp = ++count;
         ContractFunctionResult contractFunctionResult1 = contractFunctionResult(
-                10000000000L, new byte[] { 0, 6, 4, 0, 5, 7, 2 });
+                10000000000L, new byte[] {0, 6, 4, 0, 5, 7, 2});
         RecordItem recordItem1 = contractCreate(contractFunctionResult1, timestamp, 0);
 
         ContractFunctionResult contractFunctionResult2 = contractFunctionResult(
-                100000000000L, new byte[] { 3, 5, 1, 7, 4, 4, 0 });
+                100000000000L, new byte[] {3, 5, 1, 7, 4, 4, 0});
         RecordItem recordItem2 = contractCall(contractFunctionResult2, timestamp, 0);
 
         ContractFunctionResult contractFunctionResult3 = contractFunctionResult(
-                1000000000000L, new byte[] { 0, 1, 1, 2, 2, 6, 0 });
+                1000000000000L, new byte[] {0, 1, 1, 2, 2, 6, 0});
         RecordItem recordItem3 = ethereumTransaction(contractFunctionResult3, timestamp, 0);
 
         ContractFunctionResult contractFunctionResult4 = contractFunctionResult(
-                1000000000000L, new byte[] { 0, 1, 1, 2, 2, 6, 0 });
+                1000000000000L, new byte[] {0, 1, 1, 2, 2, 6, 0});
         RecordItem recordItem4 = ethereumTransaction(contractFunctionResult4, timestamp, 1);
 
         RecordFile recordFile = getStreamFile(Flux.just(recordItem1, recordItem2, recordItem3, recordItem4), timestamp);
@@ -197,7 +197,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     }
 
     @ParameterizedTest(name = "startDate with offset {0}ns")
-    @CsvSource({ "-1", "0", "1" })
+    @CsvSource({"-1", "0", "1"})
     void startDate(long offset) {
         // given
         RecordFile recordFile = (RecordFile) getStreamFile();
@@ -219,7 +219,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     }
 
     private RecordItem contractCall(ContractFunctionResult contractFunctionResult, long timestamp,
-            int transactionIdNonce) {
+                                    int transactionIdNonce) {
         return recordItemBuilder
                 .contractCall()
                 .record(builder -> builder.setContractCallResult(contractFunctionResult)
@@ -230,7 +230,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     }
 
     private RecordItem contractCreate(ContractFunctionResult contractFunctionResult, long timestamp,
-            int transactionIdNonce) {
+                                      int transactionIdNonce) {
         return recordItemBuilder
                 .contractCreate()
                 .record(builder -> builder.setContractCreateResult(contractFunctionResult)
@@ -267,7 +267,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     }
 
     private RecordItem ethereumTransaction(ContractFunctionResult contractFunctionResult, long timestamp,
-            int transactionIdNonce) {
+                                           int transactionIdNonce) {
         return recordItemBuilder
                 .ethereumTransaction(true)
                 .record(builder -> builder.setContractCallResult(contractFunctionResult)
@@ -280,9 +280,10 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     private RecordFile getStreamFile(final Flux<RecordItem> items, final long timestamp) {
         return domainBuilder
                 .recordFile()
-                .customize(recordFileBuilder -> recordFileBuilder.bytes(new byte[] { 0, 1, 2 })
+                .customize(recordFileBuilder -> recordFileBuilder.bytes(new byte[] {0, 1, 2})
                         .consensusEnd(timestamp)
                         .consensusStart(timestamp)
+                        .gasUsed(0L)
                         .items(items)
                 )
                 .get();

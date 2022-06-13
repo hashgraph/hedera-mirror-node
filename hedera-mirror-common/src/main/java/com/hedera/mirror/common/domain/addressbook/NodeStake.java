@@ -47,22 +47,20 @@ public class NodeStake implements Persistable<NodeStake.Id> {
     @javax.persistence.Id
     private long nodeId;
 
-    // The reward rate at the end of the staking period on epochDay
+    // The node's reward rate at the end of the staking period on epochDay
     private long rewardRate;
-
-    // The running reward sum including the staking period on epochDay
-    private long rewardSum;
 
     // The node consensus weight at the end of the staking period on epochDay
     private long stake;
 
-    // The sum of stake with declineReward == false at the end of the staking period on epochDay
+    // The sum of (balance + stakedToMe) for all accounts staked to this node with declineReward=false, at the end of
+    // the staking period on epochDay
     private long stakeRewarded;
 
     // The sum of all nodes' consensus weight at the end of the staking period on epochDay
     private long stakeTotal;
 
-    // The timestamp of the end of the previous staking period
+    // The timestamp of the end of the staking period on epochDay
     private long stakingPeriod;
 
     @JsonIgnore

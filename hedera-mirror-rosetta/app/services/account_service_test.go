@@ -22,6 +22,7 @@ package services
 
 import (
 	"encoding/hex"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
@@ -166,7 +167,7 @@ func (suite *accountServiceSuite) TestAliasAccountBalance() {
 	// given:
 	accountId := "0.0.100"
 	_, pk := tdomain.GenEd25519KeyPair()
-	alias := hex.EncodeToString(pk.BytesRaw())
+	alias := tools.SafeAddHexPrefix(hex.EncodeToString(pk.BytesRaw()))
 	metadata := map[string]interface{}{"account_id": accountId}
 	suite.mockBlockRepo.On("RetrieveLatest").Return(block(), mocks.NilError)
 	suite.mockAccountRepo.On("RetrieveBalanceAtBlock").Return(amount(), accountId, mocks.NilError)

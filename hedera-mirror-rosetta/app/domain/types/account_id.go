@@ -27,6 +27,7 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/pkg/errors"
 )
@@ -73,7 +74,7 @@ func (a AccountId) IsZero() bool {
 
 func (a AccountId) String() string {
 	if a.HasAlias() {
-		return hex.EncodeToString(a.alias)
+		return tools.SafeAddHexPrefix(hex.EncodeToString(a.alias))
 	}
 	return a.accountId.String()
 }
@@ -101,7 +102,12 @@ func NewAccountIdFromString(address string, shard, realm int64) (AccountId, erro
 		}
 		return AccountId{accountId: entityId}, nil
 	}
-	alias, err := hex.DecodeString(address)
+
+	if !strings.HasPrefix(address, tools.HexPrefix) {
+		return AccountId{}, errors.Errorf("Invalid Account Alias")
+	}
+
+	alias, err := hex.DecodeString(tools.SafeRemoveHexPrefix(address))
 	if err != nil {
 		return AccountId{}, err
 	}

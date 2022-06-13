@@ -22,18 +22,11 @@ package com.hedera.mirror.grpc.config;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
-import io.grpc.services.HealthStatusManager;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import net.devh.boot.grpc.server.serverfactory.GrpcServerConfigurer;
-import net.devh.boot.grpc.server.service.GrpcServiceDefinition;
-import net.devh.boot.grpc.server.service.GrpcServiceDiscoverer;
-import org.springframework.boot.actuate.health.CompositeHealthContributor;
-import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -43,20 +36,6 @@ import com.hedera.mirror.grpc.GrpcProperties;
 @Configuration
 @EntityScan({"com.hedera.mirror.common.domain.addressbook", "com.hedera.mirror.grpc.domain"})
 class GrpcConfiguration {
-
-    @Bean
-    CompositeHealthContributor grpcServices(GrpcServiceDiscoverer grpcServiceDiscoverer,
-                                            HealthStatusManager healthStatusManager) {
-
-        Map<String, HealthIndicator> healthIndicators = new LinkedHashMap<>();
-
-        for (GrpcServiceDefinition grpcService : grpcServiceDiscoverer.findGrpcServices()) {
-            String serviceName = grpcService.getDefinition().getServiceDescriptor().getName();
-            healthIndicators.put(serviceName, new GrpcHealthIndicator(healthStatusManager, serviceName));
-        }
-
-        return CompositeHealthContributor.fromMap(healthIndicators);
-    }
 
     @Bean
     GrpcServerConfigurer grpcServerConfigurer(GrpcProperties grpcProperties) {

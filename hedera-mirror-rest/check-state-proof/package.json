@@ -26,12 +26,12 @@
     "check-state-proof": "./index.js"
   },
   "dependencies": {
-    "@hashgraph/proto": "^2.4.2",
+    "@hashgraph/proto": "^2.5.0",
     "abort-controller": "^3.0.0",
     "boxen": "^5.1.2",
     "chalk": "^4.1.2",
     "glob": "^8.0.3",
-    "jest": "^28.1.0",
+    "jest": "^28.1.1",
     "lodash": "^4.17.21",
     "log4js": "^6.5.2",
     "node-fetch": "^2.6.7",

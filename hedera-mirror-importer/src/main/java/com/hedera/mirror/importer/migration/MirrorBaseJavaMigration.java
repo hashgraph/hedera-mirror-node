@@ -29,7 +29,7 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.migration.Context;
 import org.flywaydb.core.api.migration.JavaMigration;
 
-public abstract class MirrorBaseJavaMigration implements JavaMigration {
+abstract class MirrorBaseJavaMigration implements JavaMigration {
 
     protected final Logger log = LogManager.getLogger(getClass());
 
