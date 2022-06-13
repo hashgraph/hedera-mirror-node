@@ -56,7 +56,7 @@
 
     <properties>
         <besu.version>22.4.2</besu.version>
-        <dependency-check.version>7.1.0</dependency-check.version>
+        <dependency-check.version>7.1.1</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.40.0</docker-maven-plugin.version>
         <docker.architecture>amd64</docker.architecture>
