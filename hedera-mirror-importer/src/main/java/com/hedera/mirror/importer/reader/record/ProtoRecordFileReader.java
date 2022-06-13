@@ -106,14 +106,14 @@ public class ProtoRecordFileReader implements RecordFileReader {
     }
 
     private void readBody(RecordFile recordFile, RecordStreamFile recordStreamFile) {
-        if(recordStreamFile.getRecordStreamItemsCount() == 0){
+        if (recordStreamFile.getRecordStreamItemsCount() == 0) {
             throw new InvalidStreamFileException("No record stream objects in record file " + recordFile.getName());
         }
 
         var items = new ArrayList<RecordItem>(recordStreamFile.getRecordStreamItemsCount());
         RecordItem previousItem = null;
         int itemCounter = 0;
-        for(var recordStreamItem : recordStreamFile.getRecordStreamItemsList()){
+        for (var recordStreamItem : recordStreamFile.getRecordStreamItemsList()) {
             var recordItem = RecordItem.builder()
                     .hapiVersion(recordFile.getHapiVersion())
                     .previous(previousItem)
@@ -125,13 +125,14 @@ public class ProtoRecordFileReader implements RecordFileReader {
             previousItem = recordItem;
         }
 
-        recordFile.setCount((long)itemCounter);
+        recordFile.setCount((long) itemCounter);
         recordFile.setItems(Flux.fromIterable(items));
 
         recordFile.setConsensusStart(items.get(0).getConsensusTimestamp());
         recordFile.setConsensusEnd(previousItem.getConsensusTimestamp());
 
-        recordFile.setPreviousHash(Hex.encodeHexString(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray()));
+        recordFile.setPreviousHash(
+                Hex.encodeHexString(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray()));
         recordFile.setHash(Hex.encodeHexString(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray()));
     }
 
