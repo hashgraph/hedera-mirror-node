@@ -59,6 +59,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionOperations;
 
+import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
@@ -433,8 +434,10 @@ public class DomainBuilder {
                 .count(1L)
                 .digestAlgorithm(DigestAlgorithm.SHA384)
                 .fileHash(text(96))
+                .gasUsed(100L)
                 .hash(text(96))
                 .index(id())
+                .logsBloom(bloomFilter())
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
                 .name(now.toString().replace(':', '_') + ".rcd")
@@ -577,6 +580,10 @@ public class DomainBuilder {
                 .signature(bytes(32))
                 .type(SignaturePair.SignatureCase.ED25519.getNumber());
         return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public byte[] bloomFilter() {
+        return bytes(LogsBloomAggregator.BYTE_SIZE);
     }
 
     // Helper methods

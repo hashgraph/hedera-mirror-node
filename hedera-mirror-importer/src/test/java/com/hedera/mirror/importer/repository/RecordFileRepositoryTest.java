@@ -22,48 +22,40 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
-
-import com.hedera.mirror.common.domain.DigestAlgorithm;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 
 class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
     @Resource
     private RecordFileRepository recordFileRepository;
 
-    private long count = 0;
-
     @Test
     void findLatest() {
-        RecordFile recordFile1 = recordFile();
-        RecordFile recordFile2 = recordFile();
-        RecordFile recordFile3 = recordFile();
-        recordFileRepository.saveAll(List.of(recordFile1, recordFile2, recordFile3));
-        assertThat(recordFileRepository.findLatest()).get().isEqualTo(recordFile3);
+        domainBuilder.recordFile().persist();
+        domainBuilder.recordFile().persist();
+        var expected = domainBuilder.recordFile().persist();
+        assertThat(recordFileRepository.findLatest()).get().isEqualTo(expected);
     }
 
-    private RecordFile recordFile() {
-        long id = ++count;
-        return RecordFile.builder()
-                .consensusStart(id)
-                .consensusEnd(id)
-                .count(id)
-                .digestAlgorithm(DigestAlgorithm.SHA384)
-                .fileHash("fileHash" + id)
-                .hash("hash" + id)
-                .index(id)
-                .loadEnd(id)
-                .loadStart(id)
-                .name(id + ".rcd")
-                .nodeAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT))
-                .previousHash("previousHash" + (id - 1))
-                .size(1024)
-                .version(1)
-                .build();
+    @Test
+    void findLatestMissingGasUsedBefore() {
+        var recordFile1 = domainBuilder.recordFile().customize(r -> r.gasUsed(-1)).persist();
+        var recordFile2 = domainBuilder.recordFile().persist();
+        var recordFile3 = domainBuilder.recordFile().customize(r -> r.gasUsed(-1)).persist();
+        var recordFile4 = domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile4.getConsensusEnd() + 1L)).get()
+                .isEqualTo(recordFile3);
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile3.getConsensusEnd())).get()
+                .isEqualTo(recordFile1);
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile2.getConsensusEnd())).get()
+                .isEqualTo(recordFile1);
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile1.getConsensusEnd())).isEmpty();
+    }
+
+    @Test
+    void findLatestMissingGasUsedBeforeEmpty() {
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(100L)).isEmpty();
     }
 }
