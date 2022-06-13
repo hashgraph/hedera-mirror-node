@@ -4,19 +4,14 @@
 
 FROM ubuntu:20.04 as builder
 ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y gcc git openjdk-17-jdk-headless
 # GIT_REF can be a branch, a tag, or a 40-charater git commit hash
 ARG GIT_REF=main
 ARG REPO_URL=https://github.com/hashgraph/hedera-mirror-node
-RUN apt-get update && apt-get install -y gcc git openjdk-17-jdk-headless
-RUN /bin/bash -c 'if [[ ${GIT_REF} =~ ^[0-9a-f]{40}$ ]]; then \
-      mkdir hedera-mirror-node && cd hedera-mirror-node; \
-      git init; \
-      git remote add origin ${REPO_URL}; \
-      git fetch --depth 1 origin ${GIT_REF}; \
-      git reset --hard FETCH_HEAD; \
-    else \
-      git clone -b ${GIT_REF} --depth 1 ${REPO_URL}; \
-    fi'
+RUN git clone --depth 1 -n "${REPO_URL}" hedera-mirror-node \
+    && cd hedera-mirror-node \
+    && git fetch --depth 1 origin "${GIT_REF}" \
+    && git reset --hard FETCH_HEAD
 WORKDIR /hedera-mirror-node
 RUN ./mvnw clean package -DskipTests -pl hedera-mirror-importer,hedera-mirror-rosetta
 WORKDIR /app
@@ -46,7 +41,6 @@ RUN apt-get update \
     && apt-get install -y postgresql-${PG_VERSION} postgresql-client-${PG_VERSION} supervisor openjdk-17-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /app /app
 # Create users for importer and rosetta
 RUN useradd -s /bin/bash importer && useradd -s /bin/bash rosetta
 
@@ -64,4 +58,5 @@ WORKDIR /app
 
 # Expose the ports (DB)(Rosetta)
 EXPOSE 5432 5700
+COPY --from=builder /app /app
 ENTRYPOINT [ "./entrypoint.sh" ]
