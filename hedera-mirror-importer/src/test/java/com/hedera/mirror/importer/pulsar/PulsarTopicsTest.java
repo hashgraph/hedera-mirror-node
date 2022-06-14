@@ -29,6 +29,7 @@ package com.hedera.mirror.importer.pulsar;
 // in the future, an additional test will be added to verify the future behavior of the record importer
 // publishing to its own persistent topic.
 
+import lombok.extern.log4j.Log4j2;
 import org.apache.pulsar.client.api.Consumer;
 import org.apache.pulsar.client.api.Message;
 import org.apache.pulsar.client.api.Producer;
@@ -36,6 +37,7 @@ import org.apache.pulsar.client.api.PulsarClient;
 import org.apache.pulsar.client.api.PulsarClientException;
 import org.apache.pulsar.client.api.SubscriptionInitialPosition;
 import org.apache.pulsar.client.api.SubscriptionType;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.time.Instant;
@@ -44,89 +46,62 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+@Log4j2
 class PulsarTopicsTest {
 
     private static final String PULSAR_BROKER_ROOT_URL = "pulsar://localhost:6650";
-    private boolean isPulsarAvailable;
-    private PulsarClient client;
     private static final String CONSISTENT_TOPIC_NAME = "persistent://public/default/test-topic";
     private static final Instant NOW = Instant.now();
     private static final String TEMPORARY_TOPIC_NAME = "persistent://public/default/test-topic-temp-" + NOW.toString();
-    private Producer producer1;
-    private Producer producer2;
+    private static final String MESSAGE_1_PREFIX = "Message on consistent topic ";
+    private static final String MESSAGE_2_PREFIX = "Message on temporary topic ";
+
+    private PulsarClient client;
 
     @BeforeEach
-    void setup() {
-        try {
-            isPulsarAvailable = false;
-            client = PulsarClient.builder().serviceUrl(PULSAR_BROKER_ROOT_URL).build();
-            producer1 = client.newProducer().topic(CONSISTENT_TOPIC_NAME).create();
-            isPulsarAvailable = true;
-        } catch (PulsarClientException e) {
-            System.out.println("Can't instantiate pulsar -- " + e.getMessage());
+    void setup() throws PulsarClientException {
+        client = PulsarClient.builder().serviceUrl(PULSAR_BROKER_ROOT_URL).build();
+    }
+
+    @AfterEach
+    void tearDown() throws PulsarClientException {
+        if (client != null) {
+            client.close();
         }
     }
 
     @Test
-    void publishMessagesTest() throws Exception {
-        // declare success (falsely) if there is no Pulsar.
-        if (!isPulsarAvailable) {
-            System.out.println("publishMessagesTest: Pulsar is not available.");
-            assertNull("Expected no producer 1", producer1);
-            assertNull("Expected no producer 2", producer2);
-            return;
-        }
-        producer2 = client.newProducer().topic(TEMPORARY_TOPIC_NAME).create();
-        // send a message on each
-        assertNotNull("Expected non-null producer1", producer1);
-        assertNotNull("Expected non-null producer2", producer2);
+    void publishAndConsumeMessagesTest() throws Exception {
+        // For now, this will throw an Exception if there is no Pulsar.
+        // Replace with invocation of pulsar on testcontainer.
+	try (
+            Producer producer1 = client.newProducer().topic(CONSISTENT_TOPIC_NAME).create();
+            Producer producer2 = client.newProducer().topic(TEMPORARY_TOPIC_NAME).create();
+            Consumer consumer1 = client.newConsumer().topic(CONSISTENT_TOPIC_NAME).subscriptionName("my-sub-1")
+                    .subscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
+                    .subscriptionType(SubscriptionType.Shared).subscribe();
+            Consumer consumer2 = client.newConsumer().topic(TEMPORARY_TOPIC_NAME).subscriptionName("my-sub-2")
+                    .subscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
+                    .subscriptionType(SubscriptionType.Shared).subscribe();
+        ) {
+            // send a message on each
+            producer1.send((MESSAGE_1_PREFIX + CONSISTENT_TOPIC_NAME).getBytes());
+            producer2.send((MESSAGE_2_PREFIX + TEMPORARY_TOPIC_NAME).getBytes());
 
-        producer1.send(("Message on consistent topic " + CONSISTENT_TOPIC_NAME).getBytes());
-        producer2.send(("Message on temporary topic " + TEMPORARY_TOPIC_NAME).getBytes());
-        // close everything
-        producer1.close();
-        producer2.close();
-        client.close();
-    }
-
-    @Test
-    void consumeMessagesTest() throws Exception {
-        // declare success (falsely) if there is no Pulsar.
-        if (!isPulsarAvailable) {
-            System.out.println("consumeMessagesTest: Pulsar is not available.");
-            assertNull("Expected no producer 1", producer1);
-            assertNull("Expected no producer 2", producer2);
-            return;
-        }
-        Consumer consumer1 = client.newConsumer().topic(CONSISTENT_TOPIC_NAME).subscriptionName("my-sub-1")
-                .subscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
-                .subscriptionType(SubscriptionType.Shared).subscribe();
-        try {
+            // receive message on first topic, make sure it is as expected.
             Message message1 = consumer1.receive();
             String data1 = new String(message1.getData());
-            System.out.println("Message 1 received: " + data1);
-            assertTrue("bad message 1", data1.startsWith("Message on consistent topic"));
+            log.info("Message 1 received: {}", data1);
+            assertTrue("bad message 1", data1.startsWith(MESSAGE_1_PREFIX));
             consumer1.acknowledge(message1);
-        } catch (Exception e) {
-            System.out.println("Message 1 not received: " + e.getMessage());
-        }
 
-        Consumer consumer2 = client.newConsumer().topic(TEMPORARY_TOPIC_NAME).subscriptionName("my-sub-2")
-                .subscriptionInitialPosition(SubscriptionInitialPosition.Earliest)
-                .subscriptionType(SubscriptionType.Shared).subscribe();
-        try {
+            // receive message on second topic, make sure it is as expected.
             Message message2 = consumer2.receive();
             String data2 = new String(message2.getData());
-            System.out.println("Message 2 received: " + data2);
-            assertTrue("bad message 2", data2.startsWith("Message on temporary topic"));
+            log.info("Message 2 received: {}", data2);
+            assertTrue("bad message 2", data2.startsWith(MESSAGE_2_PREFIX));
             consumer2.acknowledge(message2);
-        } catch (Exception e) {
-            System.out.println("Message 2 not received: " + e.getMessage());
         }
-        // close everything
-        consumer1.close();
-        consumer2.close();
-        client.close();
     }
 
 }
