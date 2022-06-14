@@ -128,63 +128,63 @@ public class TestRecordFiles {
                 .build();
 
         RecordFile recordFileV6_1 = RecordFile.builder()
-                .consensusStart(1655130654302946267L)
-                .consensusEnd(1655130655856526771L)
-                .count(4L)
+                .consensusStart(1655218162456975294L)
+                .consensusEnd(1655218163859993584L)
+                .count(5L)
                 .digestAlgorithm(digestAlgorithm)
                 .gasUsed(0L)
                 .fileHash(
-                        "50727100c40e186a48a29b6fc5f07cae8c5da433a49863e628231518f47b8414e89833ff03a1ba4fbca6c1a0ae9674c7")
+                        "a455097616c72ef776b9c3bc47f76678c58dc4cec0631e8db7a1689b3780defe7d088081f66136153797e72af61ec756")
                 .hapiVersionMajor(0)
-                .hapiVersionMinor(27)
-                .hapiVersionPatch(1)
+                .hapiVersionMinor(0)
+                .hapiVersionPatch(0)
                 .hash
-                        ("8ec417b736fda58696a5977c4d7c63faf9251b68e880ea3a63b8e0eb88bbd512dc4474b2f782326f674b3514fb5a359d")
+                        ("c94a0d390b123d345d66b2d6ce9d23da1a0d41dc39d571eb559318280757fbc8e66688342245afe42aa158225f3b8e5c")
                 .metadataHash(
-                        "7533f30649143845ef97687c093522cf27a655a8fa185d19f7d482af6329a79ad4ca36356c2a813b5af4893f6aaeb212")
-                .name("2022-06-13T14_30_52.248543793Z.rcd")
+                        "3a74b1449b6d42f92ae8b363b48e739f422a21541ffc30418b80418d51f45c142a010a8e7ce0909d3b3fd500b39027b1")
+                .name("2022-06-14T14_49_22.456975294Z.rcd")
                 .previousHash(
-                        "e690150a545aa103e55fd65f13c416dc85aedc8db6e43899b34730b106d63453e3f4090720f2785bf44eb535d6b2d2eb")
+                        "14bb29bc7d6952ca85c3d9c2f9922d68897bd222cec99d5160809ba12a308c22dfa021e909aea2b55277b2dce3d96530")
                 .version(6)
                 .build();
         RecordFile recordFileV6_2 = RecordFile.builder()
-                .consensusStart(1655130654302946267L)
-                .consensusEnd(1655130655856526771L)
-                .count(4L)
+                .consensusStart(1655218168820707809L)
+                .consensusEnd(1655218169873064352L)
+                .count(3L)
                 .digestAlgorithm(digestAlgorithm)
                 .gasUsed(0L)
                 .fileHash(
-                        "50727100c40e186a48a29b6fc5f07cae8c5da433a49863e628231518f47b8414e89833ff03a1ba4fbca6c1a0ae9674c7")
+                        "92aed173298c4f34ffcf18793f7eacc57e94ad7ec391199d10ef8b91006fa06c4cb799ebc37be041cb489e7007ae82db")
                 .hapiVersionMajor(0)
-                .hapiVersionMinor(27)
-                .hapiVersionPatch(1)
+                .hapiVersionMinor(0)
+                .hapiVersionPatch(0)
                 .hash
-                        ("8ec417b736fda58696a5977c4d7c63faf9251b68e880ea3a63b8e0eb88bbd512dc4474b2f782326f674b3514fb5a359d")
+                        ("4cdadfeba44a66446b2b28e66c9407c6b31f569f3797cc60d3fbe8c1052738298ba883454e996f7c3d0d6a50b8326208")
                 .metadataHash(
-                        "7533f30649143845ef97687c093522cf27a655a8fa185d19f7d482af6329a79ad4ca36356c2a813b5af4893f6aaeb212")
-                .name("2022-06-13T14_30_54.302946267Z.rcd")
+                        "aae3e2cca10253b1a3a821192ecd24fa1f0a87404579425567a4c9c3a5c2dbfb180368238dc4b8d3f46f310dafcc7610")
+                .name("2022-06-14T14_49_28.820707809Z.rcd")
                 .previousHash(
-                        "e690150a545aa103e55fd65f13c416dc85aedc8db6e43899b34730b106d63453e3f4090720f2785bf44eb535d6b2d2eb")
+                        "9401962d02f89f592cafb9ab33e76ed3399cfd16410236b34886e46e8f705c584072228eb0de3f53a3c6d4641ac8937d")
                 .version(6)
                 .build();
         RecordFile recordFileV6_3 = RecordFile.builder()
-                .consensusStart(1655130654302946267L)
-                .consensusEnd(1655130655856526771L)
+                .consensusStart(1655218170374211670L)
+                .consensusEnd(1655218171927897766L)
                 .count(4L)
                 .digestAlgorithm(digestAlgorithm)
                 .gasUsed(0L)
                 .fileHash(
-                        "50727100c40e186a48a29b6fc5f07cae8c5da433a49863e628231518f47b8414e89833ff03a1ba4fbca6c1a0ae9674c7")
+                        "45213dc2dd6c61bdab36a3ace11fd2404e22b18b2b56b3c8d899762d2babc89978f1f2ce1c0e42b23668a9ab1a187a6f")
                 .hapiVersionMajor(0)
-                .hapiVersionMinor(27)
-                .hapiVersionPatch(1)
+                .hapiVersionMinor(0)
+                .hapiVersionPatch(0)
                 .hash
-                        ("8ec417b736fda58696a5977c4d7c63faf9251b68e880ea3a63b8e0eb88bbd512dc4474b2f782326f674b3514fb5a359d")
+                        ("cc20804f167c338efe2f044e1158eb200963231c72067a048ee7c49d86a365270ddeac86c250fcaa70c6196104af2b3b")
                 .metadataHash(
-                        "7533f30649143845ef97687c093522cf27a655a8fa185d19f7d482af6329a79ad4ca36356c2a813b5af4893f6aaeb212")
-                .name("2022-06-13T14_30_54.302946267Z.rcd.gz")
+                        "ad7499f864e4295824cd61d6b495bdac11fb0be4003d06ec32048f8a6b73035e7b3307373504a054599cc8c355e32fdf")
+                .name("2022-06-14T14_49_30.374211670Z.rcd.gz")
                 .previousHash(
-                        "e690150a545aa103e55fd65f13c416dc85aedc8db6e43899b34730b106d63453e3f4090720f2785bf44eb535d6b2d2eb")
+                        "4cdadfeba44a66446b2b28e66c9407c6b31f569f3797cc60d3fbe8c1052738298ba883454e996f7c3d0d6a50b8326208")
                 .version(6)
                 .build();
 
