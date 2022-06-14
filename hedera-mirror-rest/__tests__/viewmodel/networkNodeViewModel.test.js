@@ -65,16 +65,6 @@ describe('NetworkNodeViewModel', () => {
     node_cert_hash:
       '0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16',
     node_id: 0,
-    node_stake: {
-      reward_rate: 7,
-      stake: 12,
-      stake_rewarded: 4,
-      stake_total: 6,
-      staking_period: {
-        from: '1654290963.000000000',
-        to: '1654377364.000000000',
-      },
-    },
     public_key: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     service_endpoints: [
       {
@@ -86,6 +76,13 @@ describe('NetworkNodeViewModel', () => {
         port: 50212,
       },
     ],
+    stake: 12,
+    stake_rewarded: 4,
+    stake_total: 6,
+    staking_period: {
+      from: '1654204563.000000001',
+      to: '1654290963.000000000',
+    },
     timestamp: {
       from: '187654.000123457',
       to: null,
@@ -122,15 +119,12 @@ describe('NetworkNodeViewModel', () => {
       memo: null,
       node_cert_hash: '0x',
       public_key: '0x',
-      node_stake: {
-        reward_rate: null,
-        stake: null,
-        stake_rewarded: null,
-        stake_total: null,
-        staking_period: {
-          from: null,
-          to: null,
-        },
+      stake: null,
+      stake_rewarded: null,
+      stake_total: null,
+      staking_period: {
+        from: null,
+        to: null,
       },
     });
   });

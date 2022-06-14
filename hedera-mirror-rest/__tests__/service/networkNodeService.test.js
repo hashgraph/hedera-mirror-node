@@ -40,8 +40,8 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         order by start_consensus_timestamp desc limit 1
       ),
       ns as (
-        select consensus_timestamp,node_id,reward_rate,stake,stake_rewarded,stake_total,staking_period
-        from node_stake
+        select consensus_timestamp,node_id,stake,stake_rewarded,stake_total,staking_period
+        from node_stake where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
       )
       select
         abe.description,
@@ -53,7 +53,6 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         adb.file_id,
         adb.start_consensus_timestamp,
         adb.end_consensus_timestamp,
-        ns.reward_rate,
         ns.stake,
         ns.stake_rewarded,
         ns.stake_total,
@@ -69,7 +68,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         ) as service_endpoints
         from address_book_entry abe
         join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
-        left join ns on ns.consensus_timestamp = abe.consensus_timestamp and ns.node_id = abe.node_id
+        left join ns on abe.node_id = ns.node_id
         order by abe.node_id asc
         limit $2`;
     assertSqlQueryEqual(query, expected);
@@ -85,8 +84,8 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       order by start_consensus_timestamp desc limit 1
     ),
     ns as (
-      select consensus_timestamp,node_id,reward_rate,stake,stake_rewarded,stake_total,staking_period
-      from node_stake
+      select consensus_timestamp,node_id,stake,stake_rewarded,stake_total,staking_period
+      from node_stake where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
     )
     select
       abe.description,
@@ -98,7 +97,6 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       adb.file_id,
       adb.start_consensus_timestamp,
       adb.end_consensus_timestamp,
-      ns.reward_rate,
       ns.stake,
       ns.stake_rewarded,
       ns.stake_total,
@@ -114,7 +112,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       ) as service_endpoints
       from address_book_entry abe
       join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
-      left join ns on ns.consensus_timestamp = abe.consensus_timestamp and ns.node_id = abe.node_id
+      left join ns on abe.node_id = ns.node_id
       where abe.node_id = $2
       order by abe.node_id asc
       limit $3`;
@@ -203,7 +201,6 @@ const defaultNodeStakes = [
     consensus_timestamp: 1,
     epoch_day: 0,
     node_id: 0,
-    reward_rate: 1,
     stake: 1,
     stake_rewarded: 1,
     stake_total: 1,
@@ -213,7 +210,6 @@ const defaultNodeStakes = [
     consensus_timestamp: 1,
     epoch_day: 0,
     node_id: 1,
-    reward_rate: 2,
     stake: 2,
     stake_rewarded: 2,
     stake_total: 2,
@@ -223,7 +219,6 @@ const defaultNodeStakes = [
     consensus_timestamp: 2,
     epoch_day: 1,
     node_id: 0,
-    reward_rate: 3,
     stake: 3,
     stake_rewarded: 3,
     stake_total: 3,
@@ -233,7 +228,6 @@ const defaultNodeStakes = [
     consensus_timestamp: 2,
     epoch_day: 1,
     node_id: 1,
-    reward_rate: 4,
     stake: 4,
     stake_rewarded: 4,
     stake_total: 4,
@@ -261,11 +255,10 @@ const defaultExpectedNetworkNode101 = [
       },
     ],
     nodeStake: {
-      rewardRate: 2,
-      stake: 2,
-      stakeRewarded: 2,
-      stakeTotal: 2,
-      stakingPeriod: 2,
+      stake: 4,
+      stakeRewarded: 4,
+      stakeTotal: 4,
+      stakingPeriod: 4,
     },
   },
   {
@@ -287,11 +280,10 @@ const defaultExpectedNetworkNode101 = [
       },
     ],
     nodeStake: {
-      rewardRate: 1,
-      stake: 1,
-      stakeRewarded: 1,
-      stakeTotal: 1,
-      stakingPeriod: 1,
+      stake: 3,
+      stakeRewarded: 3,
+      stakeTotal: 3,
+      stakingPeriod: 3,
     },
   },
 ];
@@ -316,7 +308,6 @@ const defaultExpectedNetworkNode102 = [
       },
     ],
     nodeStake: {
-      rewardRate: 3,
       stake: 3,
       stakeRewarded: 3,
       stakeTotal: 3,
@@ -342,11 +333,63 @@ const defaultExpectedNetworkNode102 = [
       },
     ],
     nodeStake: {
-      rewardRate: 4,
       stake: 4,
       stakeRewarded: 4,
       stakeTotal: 4,
       stakingPeriod: 4,
+    },
+  },
+];
+
+const defaultExpectedNetworkNodeEmptyNodeStake = [
+  {
+    addressBook: {
+      endConsensusTimestamp: null,
+      fileId: 102,
+      startConsensusTimestamp: 2,
+    },
+    addressBookEntry: {
+      description: 'desc 3',
+      memo: '0.0.3',
+      nodeAccountId: 3,
+      nodeId: 0,
+    },
+    addressBookServiceEndpoints: [
+      {
+        ipAddressV4: '128.0.0.1',
+        port: 50212,
+      },
+    ],
+    nodeStake: {
+      stake: null,
+      stakeRewarded: null,
+      stakeTotal: null,
+      stakingPeriod: null,
+    },
+  },
+  {
+    addressBook: {
+      endConsensusTimestamp: null,
+      fileId: 102,
+      startConsensusTimestamp: 2,
+    },
+    addressBookEntry: {
+      description: 'desc 4',
+      memo: '0.0.4',
+      nodeAccountId: 4,
+      nodeId: 1,
+    },
+    addressBookServiceEndpoints: [
+      {
+        ipAddressV4: '128.0.0.2',
+        port: 50212,
+      },
+    ],
+    nodeStake: {
+      stake: null,
+      stakeRewarded: null,
+      stakeTotal: null,
+      stakingPeriod: null,
     },
   },
 ];
@@ -377,6 +420,16 @@ describe('NetworkNodeService.getNetworkNodes tests', () => {
       defaultExpectedNetworkNode102
     );
   });
+
+  test('NetworkNodeService.getNetworkNodes - Empty node stakes', async () => {
+    await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
+    await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
+    await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
+
+    await expect(NetworkNodeService.getNetworkNodes([], [102], 'asc', 5)).resolves.toMatchObject(
+      defaultExpectedNetworkNodeEmptyNodeStake
+    );
+  });
 });
 
 describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
@@ -404,11 +457,10 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
         },
       ],
       nodeStake: {
-        rewardRate: 1,
-        stake: 1,
-        stakeRewarded: 1,
-        stakeTotal: 1,
-        stakingPeriod: 1,
+        stake: 3,
+        stakeRewarded: 3,
+        stakeTotal: 3,
+        stakingPeriod: 3,
       },
     },
   ];
@@ -433,7 +485,6 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
         },
       ],
       nodeStake: {
-        rewardRate: 3,
         stake: 3,
         stakeRewarded: 3,
         stakeTotal: 3,

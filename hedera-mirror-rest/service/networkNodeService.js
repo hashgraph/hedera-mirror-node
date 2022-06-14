@@ -35,9 +35,11 @@ class NetworkNodeService extends BaseService {
       order by ${AddressBook.START_CONSENSUS_TIMESTAMP} desc limit 1
     ),
     ${NodeStake.tableAlias} as (
-      select ${NodeStake.CONSENSUS_TIMESTAMP}, ${NodeStake.NODE_ID}, ${NodeStake.REWARD_RATE}, ${NodeStake.STAKE},
-             ${NodeStake.STAKE_REWARDED}, ${NodeStake.STAKE_TOTAL}, ${NodeStake.STAKING_PERIOD}
+      select ${NodeStake.CONSENSUS_TIMESTAMP}, ${NodeStake.NODE_ID}, ${NodeStake.STAKE}, ${NodeStake.STAKE_REWARDED},
+             ${NodeStake.STAKE_TOTAL}, ${NodeStake.STAKING_PERIOD}
       from ${NodeStake.tableName}
+      where ${NodeStake.CONSENSUS_TIMESTAMP} =
+        (select max(${NodeStake.CONSENSUS_TIMESTAMP}) from ${NodeStake.tableName})
     )
     select ${AddressBookEntry.getFullName(AddressBookEntry.DESCRIPTION)},
       ${AddressBookEntry.getFullName(AddressBookEntry.MEMO)},
@@ -48,7 +50,6 @@ class NetworkNodeService extends BaseService {
       ${AddressBook.getFullName(AddressBook.FILE_ID)},
       ${AddressBook.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP)},
       ${AddressBook.getFullName(AddressBook.END_CONSENSUS_TIMESTAMP)},
-      ${NodeStake.getFullName(NodeStake.REWARD_RATE)},
       ${NodeStake.getFullName(NodeStake.STAKE)},
       ${NodeStake.getFullName(NodeStake.STAKE_REWARDED)},
       ${NodeStake.getFullName(NodeStake.STAKE_TOTAL)},
@@ -67,10 +68,8 @@ class NetworkNodeService extends BaseService {
     from ${AddressBookEntry.tableName} ${AddressBookEntry.tableAlias}
     join ${AddressBook.tableAlias} on ${AddressBook.getFullName(AddressBook.START_CONSENSUS_TIMESTAMP)} =
       ${AddressBookEntry.getFullName(AddressBookEntry.CONSENSUS_TIMESTAMP)}
-    left join ${NodeStake.tableAlias} on ${NodeStake.getFullName(NodeStake.CONSENSUS_TIMESTAMP)} =
-      ${AddressBookEntry.getFullName(AddressBookEntry.CONSENSUS_TIMESTAMP)} and
-      ${NodeStake.getFullName(NodeStake.NODE_ID)} =
-      ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)}`;
+    left join ${NodeStake.tableAlias} on ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)} =
+      ${NodeStake.getFullName(NodeStake.NODE_ID)}`;
 
   getNetworkNodes = async (whereConditions, whereParams, order, limit) => {
     const [query, params] = this.getNetworkNodesWithFiltersQuery(whereConditions, whereParams, order, limit);

@@ -1267,6 +1267,7 @@ const addNodeStake = async (nodeStakeInput) => {
     'staking_period',
   ];
 
+  const oneDayNs = 86400000000000;
   const nodeStake = {
     consensus_timestamp: 0,
     epoch_day: 0,
@@ -1275,7 +1276,7 @@ const addNodeStake = async (nodeStakeInput) => {
     stake: 0,
     stake_rewarded: 0,
     stake_total: 0,
-    staking_period: 0,
+    staking_period: oneDayNs,
     ...nodeStakeInput,
   };
 

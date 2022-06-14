@@ -42,20 +42,17 @@ class NetworkNodeViewModel {
     this.node_id = networkNode.addressBookEntry.nodeId;
     this.node_account_id = EntityId.parse(networkNode.addressBookEntry.nodeAccountId).toString();
     this.node_cert_hash = utils.addHexPrefix(utils.encodeUtf8(networkNode.addressBookEntry.nodeCertHash), true);
-    this.node_stake = {
-      reward_rate: networkNode.nodeStake.rewardRate,
-      stake: networkNode.nodeStake.stake,
-      stake_rewarded: networkNode.nodeStake.stakeRewarded,
-      stake_total: networkNode.nodeStake.stakeTotal,
-      staking_period: {
-        from: utils.nsToSecNs(networkNode.nodeStake.stakingPeriod),
-        to: utils.incrementTimestampByOneDay(networkNode.nodeStake.stakingPeriod),
-      },
-    };
     this.public_key = utils.addHexPrefix(networkNode.addressBookEntry.publicKey, true);
     this.service_endpoints = networkNode.addressBookServiceEndpoints.map(
       (x) => new AddressBookServiceEndpointViewModel(x)
     );
+    this.stake = networkNode.nodeStake.stake;
+    this.stake_rewarded = networkNode.nodeStake.stakeRewarded;
+    this.stake_total = networkNode.nodeStake.stakeTotal;
+    this.staking_period = {
+      from: utils.decrementTimestampByOneDay(networkNode.nodeStake.stakingPeriod),
+      to: utils.nsToSecNs(networkNode.nodeStake.stakingPeriod),
+    };
     this.timestamp = {
       from: utils.nsToSecNs(networkNode.addressBook.startConsensusTimestamp),
       to: utils.nsToSecNs(networkNode.addressBook.endConsensusTimestamp),
