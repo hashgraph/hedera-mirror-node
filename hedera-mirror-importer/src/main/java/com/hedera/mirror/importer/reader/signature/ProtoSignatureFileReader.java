@@ -40,16 +40,7 @@ public class ProtoSignatureFileReader implements SignatureFileReader {
     public FileStreamSignature read(StreamFileData signatureFileData) {
 
         try {
-            var signatureFile = SignatureFile.parseFrom(signatureFileData.getInputStream());
-            if (!signatureFile.hasFileSignature()) {
-                throw new InvalidStreamFileException(
-                        format("The file %s does not have file signature.", signatureFileData.getFilename()));
-            }
-
-            if (!signatureFile.hasMetadataSignature()) {
-                throw new InvalidStreamFileException(
-                        format("The file %s does not have file metadata signature.", signatureFileData.getFilename()));
-            }
+            var signatureFile = readSignatureFile(signatureFileData);
 
             var fileSignature = signatureFile.getFileSignature();
             var metadataSignature = signatureFile.getMetadataSignature();
@@ -67,6 +58,30 @@ public class ProtoSignatureFileReader implements SignatureFileReader {
         } catch (IOException e) {
             throw new SignatureFileParsingException(e);
         }
+    }
+
+    private SignatureFile readSignatureFile(StreamFileData signatureFileData) throws IOException {
+        var inputStream = signatureFileData.getInputStream();
+        int givenFileVersion = inputStream.read();
+        if (givenFileVersion != SIGNATURE_FILE_FORMAT_VERSION) {
+            throw new InvalidStreamFileException(
+                    format("Expected file with version %d, given %d.", SIGNATURE_FILE_FORMAT_VERSION,
+                            givenFileVersion));
+        }
+
+        var signatureFile = SignatureFile.parseFrom(inputStream);
+
+        if (!signatureFile.hasFileSignature()) {
+            throw new InvalidStreamFileException(
+                    format("The file %s does not have file signature.", signatureFileData.getFilename()));
+        }
+
+        if (!signatureFile.hasMetadataSignature()) {
+            throw new InvalidStreamFileException(
+                    format("The file %s does not have file metadata signature.", signatureFileData.getFilename()));
+        }
+
+        return signatureFile;
     }
 
     private FileStreamSignature.SignatureType fromProtobufSigTypeToDomainSigType(SignatureType type) {
