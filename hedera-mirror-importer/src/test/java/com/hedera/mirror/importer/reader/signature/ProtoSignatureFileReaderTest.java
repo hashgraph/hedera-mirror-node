@@ -23,17 +23,23 @@ package com.hedera.mirror.importer.reader.signature;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import org.apache.commons.codec.binary.Hex;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
 public class ProtoSignatureFileReaderTest extends AbstractSignatureFileReaderTest {
 
@@ -63,34 +69,45 @@ public class ProtoSignatureFileReaderTest extends AbstractSignatureFileReaderTes
         assertEquals(metadataSignatureAsHex, new String(Hex.encodeHex(fileStreamSignature.getMetadataHashSignature())));
     }
 
+    @Test
+    void testCorrectFailureWhenVersionIsWrong() throws IOException {
+        var inputStreamMock = mock(InputStream.class);
+        when(inputStreamMock.read()).thenReturn(5);
+        var streamFileDataMock = mock(StreamFileData.class);
+        when(streamFileDataMock.getInputStream()).thenReturn(inputStreamMock);
+        final InvalidStreamFileException invalidStreamFileException = assertThrows(InvalidStreamFileException.class,
+                () -> protoSignatureFileReader.read(streamFileDataMock));
+        assertEquals("Expected file with version 6, given 5.", invalidStreamFileException.getMessage());
+    }
+
     static Stream<Arguments> readValidFileTestArgumentProvider() {
         var recordFile = TestUtils.getResource(
                 Path.of(
-                                "data", "signature", "v6", "2022-06-13T14_30_54.302946267Z.rcd_sig"
+                                "data", "signature", "v6", "2022-06-14T14_49_22.456975294Z.rcd_sig"
                         )
                         .toString()
         );
 
         var recordFileGzipped = TestUtils.getResource(
                 Path.of(
-                                "data", "signature", "v6", "2022-06-13T14_30_54.302946267Z.rcd_sig.gz"
+                                "data", "signature", "v6", "2022-06-14T14_49_22.456975294Z.rcd_sig.gz"
                         )
                         .toString()
         );
         return Stream.of(
                 Arguments.of(
                         recordFile,
-                        "50727100c40e186a48a29b6fc5f07cae8c5da433a49863e628231518f47b8414e89833ff03a1ba4fbca6c1a0ae9674c7",
-                        "14277a649d60403c35972cc7523bfd2594e0351415d560db09db1681f766ff24fc387976186d064dffc2013da3bab63812beefb44321b9e22964926ab45abdd322cedbb937efa643e7c7910073363321ce863119c3973e62ca12ca3b037ac6e447828c00ceb6ff8919fb57306d75bf813898fdd99d33dedb18a7ccc8f4d404dbd8594b5a265161de206b63fe8715d8fcf8c08b5dd8a563fe295264784ed99dd892ceffbc72804d52144378d5f530e10c0b94b5c3c21c808ecff356b94f9a188e0563681f8a1df79fedd2962c6649577ab4f54685025bfc92f1e3b2f5941cc1eff95cdefcff831bd541edcb8f3d99ea24899f3105953a6685746fd14e723899aa31fa2806ce22cd6f6fe811e8988acd495678fe1bbc390a598326dca9fbca73107307a788b7efdd8316245644e54a2fdce9b82ce6dfa493a4fef54202ad8d8a6cffd18b2a0b33a3ef2eb7c86f3f97b85497acfa0a3001c4730c66b904b57dbab5475b42c61ac6cd6b8361f7e199bbc11b043dac8d57f3d96499edfff5f83b6fa4",
-                        "7533f30649143845ef97687c093522cf27a655a8fa185d19f7d482af6329a79ad4ca36356c2a813b5af4893f6aaeb212",
-                        "6149a367a63202928b436f3fceb506e0a1f28932c1b0ceea68ee9cc980052770bb8409a5d06eabd6f98d49313825736ba615ba329fbd2030b9e9369652cc4637935b2088a1e533c1249774a4db5b68560d32897617032379262ecac3c3efabd2c982c8b07a9cf3b3c7aefd4b171d002498535b674043523adbe23a7a420e122fa8dc4053f7dbed75f676222ffa99185fecedf483c518c1ae0fe1ab876e8cb1288abc08153cf0b9eb1806a45bed9f80c9741fe47d65f182cfc0d767a37d70e1aac3149df74723deeb4053050d09ec3cb5e6ceefb9f52b1ffa4520c86a022136d2617fbb4429c564030ce618542a163f3c20943fd9e2f1db2f6b1190cf7e2a7a68de083bad5a7b1d920e4f48156683ceb4a4908d7dbd5b3550ce0b0896940277adc28696456388fb04c75969b2694f118eb0452f4c9c7b27ae41bb33e6b04d8e88e29c77afa0f732b2a476f489b0dc46da54b6004db0b3a86f0e3ba37449863adb12a5f5d22c0505b5cd95ae1396a43d99cd24416b5931854c1c351253b0f8b232"
+                        "3ec9149b6a8735c7917530285e2b3528b702dc637f43ddd1da556a74b45d3eb55d7127862319feddccfacf45d987e33b",
+                        "6d88c487b371bae696f7ddd5c643fe15716d2fbb3c1f9698112097f7ac1dfab1895059d3117cc9f6f26d341f5f4c1319b7c839bfa363853c3d26daf150f356d4a35b55a2803d30b3a5013101f08b6be530848d79b207a5e18891af730f705e7371c0a6d26dd6244aef2fc2f6462dc9e1f160df7ff0b5a48608ea8bd0e4642780771b15bad35686e0d9aa8387bf440085ae862469cfc81c60089887868b0eee6bd519cf91dbbfdd649c9082767adc49d7eeae877cc780273dba16ede3b09b603cf31c7a44ab258bdf822fbeb6ef607af9cd6c09fc1bacd8a19a148bed4a331e784a4ee93f26a1ddd33ea1c8f4ea4126233b5c5d2c4cf3b6d2a0c26c74cb9692d193ea6703f02db25ea09828f007da5a3fb1a55c401e79f62370b7363da205013922261abcdb9a8cc79464180729d5646e0482bf9cacab9fefaf007f35d0a7822d6b09cf29a23690cec1f0e0b08cffba8753edcc0ff19c3fb8a17b20a65539a60b39876c5ad864103189d256c049ab390ec071e2b42db0dd36d796b9674ff9fda6",
+                        "3a74b1449b6d42f92ae8b363b48e739f422a21541ffc30418b80418d51f45c142a010a8e7ce0909d3b3fd500b39027b1",
+                        "6ddd1142ce71de99f9da1e9d6933f93f92773583f6413e13fbb72aadebdff5ec7dabd6504a91cd7e757b5f895d204620a442e649bd47a43f4f4c396d665957bc5d4260114d193fdd66c3af908dc589d85783953961ae283bc540e43c278da76b0f1dec05a61eb0cf011e4f6744a768a8cc080bbccae0a9137b1a3a23d6c8ab72c4a6997a98a5a81cb6aafe1a1b4bb4eaf83d51587cb2903691a8c823254e771a811d07d8357d4bd9a916a4b605e9f7fbb8a65569729e6556d83644b072f5df269e042e282f0c3a8c2ecd2bada6d288507967b0b6be2eb4713cb8264be9595aaa563b1d06f33adece27b50c8ecac86d137b979e3f1c898ecc182e35fa6af33f5d3b504c1d570dcf1de7d91ed73bd7919a9a59bdbbe831b8cf7610646d5801b8f0e4a4c5701558f905c68c8762b344dfb468ab74a6456a675f3dcdfd8eebb69b5720111cffeeda6f01af8ffe88c985f132064346b492fddcca0ef2d3ff75a6f9802788f531c6238e7449dbe654e1380477d1fe000d7dca6f59ad3a04dcf8fe6d34"
                 ),
                 Arguments.of(
                         recordFileGzipped,
-                        "50727100c40e186a48a29b6fc5f07cae8c5da433a49863e628231518f47b8414e89833ff03a1ba4fbca6c1a0ae9674c7",
-                        "14277a649d60403c35972cc7523bfd2594e0351415d560db09db1681f766ff24fc387976186d064dffc2013da3bab63812beefb44321b9e22964926ab45abdd322cedbb937efa643e7c7910073363321ce863119c3973e62ca12ca3b037ac6e447828c00ceb6ff8919fb57306d75bf813898fdd99d33dedb18a7ccc8f4d404dbd8594b5a265161de206b63fe8715d8fcf8c08b5dd8a563fe295264784ed99dd892ceffbc72804d52144378d5f530e10c0b94b5c3c21c808ecff356b94f9a188e0563681f8a1df79fedd2962c6649577ab4f54685025bfc92f1e3b2f5941cc1eff95cdefcff831bd541edcb8f3d99ea24899f3105953a6685746fd14e723899aa31fa2806ce22cd6f6fe811e8988acd495678fe1bbc390a598326dca9fbca73107307a788b7efdd8316245644e54a2fdce9b82ce6dfa493a4fef54202ad8d8a6cffd18b2a0b33a3ef2eb7c86f3f97b85497acfa0a3001c4730c66b904b57dbab5475b42c61ac6cd6b8361f7e199bbc11b043dac8d57f3d96499edfff5f83b6fa4",
-                        "7533f30649143845ef97687c093522cf27a655a8fa185d19f7d482af6329a79ad4ca36356c2a813b5af4893f6aaeb212",
-                        "6149a367a63202928b436f3fceb506e0a1f28932c1b0ceea68ee9cc980052770bb8409a5d06eabd6f98d49313825736ba615ba329fbd2030b9e9369652cc4637935b2088a1e533c1249774a4db5b68560d32897617032379262ecac3c3efabd2c982c8b07a9cf3b3c7aefd4b171d002498535b674043523adbe23a7a420e122fa8dc4053f7dbed75f676222ffa99185fecedf483c518c1ae0fe1ab876e8cb1288abc08153cf0b9eb1806a45bed9f80c9741fe47d65f182cfc0d767a37d70e1aac3149df74723deeb4053050d09ec3cb5e6ceefb9f52b1ffa4520c86a022136d2617fbb4429c564030ce618542a163f3c20943fd9e2f1db2f6b1190cf7e2a7a68de083bad5a7b1d920e4f48156683ceb4a4908d7dbd5b3550ce0b0896940277adc28696456388fb04c75969b2694f118eb0452f4c9c7b27ae41bb33e6b04d8e88e29c77afa0f732b2a476f489b0dc46da54b6004db0b3a86f0e3ba37449863adb12a5f5d22c0505b5cd95ae1396a43d99cd24416b5931854c1c351253b0f8b232"
+                        "3ec9149b6a8735c7917530285e2b3528b702dc637f43ddd1da556a74b45d3eb55d7127862319feddccfacf45d987e33b",
+                        "6d88c487b371bae696f7ddd5c643fe15716d2fbb3c1f9698112097f7ac1dfab1895059d3117cc9f6f26d341f5f4c1319b7c839bfa363853c3d26daf150f356d4a35b55a2803d30b3a5013101f08b6be530848d79b207a5e18891af730f705e7371c0a6d26dd6244aef2fc2f6462dc9e1f160df7ff0b5a48608ea8bd0e4642780771b15bad35686e0d9aa8387bf440085ae862469cfc81c60089887868b0eee6bd519cf91dbbfdd649c9082767adc49d7eeae877cc780273dba16ede3b09b603cf31c7a44ab258bdf822fbeb6ef607af9cd6c09fc1bacd8a19a148bed4a331e784a4ee93f26a1ddd33ea1c8f4ea4126233b5c5d2c4cf3b6d2a0c26c74cb9692d193ea6703f02db25ea09828f007da5a3fb1a55c401e79f62370b7363da205013922261abcdb9a8cc79464180729d5646e0482bf9cacab9fefaf007f35d0a7822d6b09cf29a23690cec1f0e0b08cffba8753edcc0ff19c3fb8a17b20a65539a60b39876c5ad864103189d256c049ab390ec071e2b42db0dd36d796b9674ff9fda6",
+                        "3a74b1449b6d42f92ae8b363b48e739f422a21541ffc30418b80418d51f45c142a010a8e7ce0909d3b3fd500b39027b1",
+                        "6ddd1142ce71de99f9da1e9d6933f93f92773583f6413e13fbb72aadebdff5ec7dabd6504a91cd7e757b5f895d204620a442e649bd47a43f4f4c396d665957bc5d4260114d193fdd66c3af908dc589d85783953961ae283bc540e43c278da76b0f1dec05a61eb0cf011e4f6744a768a8cc080bbccae0a9137b1a3a23d6c8ab72c4a6997a98a5a81cb6aafe1a1b4bb4eaf83d51587cb2903691a8c823254e771a811d07d8357d4bd9a916a4b605e9f7fbb8a65569729e6556d83644b072f5df269e042e282f0c3a8c2ecd2bada6d288507967b0b6be2eb4713cb8264be9595aaa563b1d06f33adece27b50c8ecac86d137b979e3f1c898ecc182e35fa6af33f5d3b504c1d570dcf1de7d91ed73bd7919a9a59bdbbe831b8cf7610646d5801b8f0e4a4c5701558f905c68c8762b344dfb468ab74a6456a675f3dcdfd8eebb69b5720111cffeeda6f01af8ffe88c985f132064346b492fddcca0ef2d3ff75a6f9802788f531c6238e7449dbe654e1380477d1fe000d7dca6f59ad3a04dcf8fe6d34"
                 )
         );
     }
