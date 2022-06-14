@@ -37,7 +37,7 @@ public class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderT
 
     @Override
     protected Duration getCloseInterval() {
-        return Duration.ofSeconds(8L);
+        return Duration.ofSeconds(10L);
     }
 
     @Override
