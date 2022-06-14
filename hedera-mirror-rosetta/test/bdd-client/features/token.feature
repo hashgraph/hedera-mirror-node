@@ -33,4 +33,4 @@ Feature: HTS related transactions
     Examples:
       | tokenType           |
       | FUNGIBLE_COMMON     |
-      | NON_FUNGIBLE_UNIQUE |
+#      | NON_FUNGIBLE_UNIQUE |
