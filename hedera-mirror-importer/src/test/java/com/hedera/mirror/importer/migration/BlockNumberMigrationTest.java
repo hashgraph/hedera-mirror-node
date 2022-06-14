@@ -124,7 +124,7 @@ class BlockNumberMigrationTest extends IntegrationTest {
     }
 
     private List<RecordFile> insertDefaultRecordFiles(Set<Long> skipRecordFileWithConsensusEnd) {
-        long[] consensusEnd = {1570800761443132000L, CORRECT_CONSENSUS_END, 1570801906238879002L};
+        long[] consensusEnd = {1570800761443132000L, CORRECT_CONSENSUS_END, CORRECT_CONSENSUS_END + 1L};
         long[] blockNumber = {0L, 8L, 9L};
         var recordFiles = new ArrayList<RecordFile>(consensusEnd.length);
 

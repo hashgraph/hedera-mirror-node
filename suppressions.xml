@@ -19,4 +19,9 @@
         <packageUrl regex="true">^pkg:maven/com\.salesforce\.servicelibs/react(ive|or)\-grpc\-.*$</packageUrl>
         <cpe>cpe:/a:grpc:grpc</cpe>
     </suppress>
+    <suppress>
+        <notes>Issue is in spring-web and will only be fixed by Spring in their next major release.</notes>
+        <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-web@.*$</packageUrl>
+        <cve>CVE-2016-1000027</cve>
+    </suppress>
 </suppressions>
