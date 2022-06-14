@@ -50,7 +50,6 @@ describe('NetworkNodeViewModel', () => {
       },
     ],
     nodeStake: {
-      rewardRate: 7,
       stake: 12,
       stakeRewarded: 4,
       stakeTotal: 6,
@@ -106,7 +105,6 @@ describe('NetworkNodeViewModel', () => {
           publicKey: null,
         },
         nodeStake: {
-          rewardRate: null,
           stake: null,
           stakeRewarded: null,
           stakeTotal: null,
