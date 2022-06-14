@@ -37,14 +37,14 @@ public class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderT
 
     @Override
     protected Duration getCloseInterval() {
-        return Duration.ofSeconds(4L);
+        return Duration.ofSeconds(8L);
     }
 
     @Override
     protected Map<String, RecordFile> getRecordFileMap() {
         Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
-        RecordFile recordFile1 = allRecordFileMap.get("2022-06-13T14_30_52.248543793Z.rcd");
-        RecordFile recordFile2 = allRecordFileMap.get("2022-06-13T14_30_54.302946267Z.rcd");
+        RecordFile recordFile1 = allRecordFileMap.get("2022-06-14T14_49_22.456975294Z.rcd");
+        RecordFile recordFile2 = allRecordFileMap.get("2022-06-14T14_49_30.374211670Z.rcd.gz");
         return Map.of(recordFile1.getName(), recordFile1, recordFile2.getName(), recordFile2);
     }
 }
