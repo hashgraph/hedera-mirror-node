@@ -141,7 +141,7 @@
         "stake": 13,
         "stake_rewarded": 5,
         "stake_total": 7,
-        "staking_period": 1654377364000000000
+        "staking_period": 1655164799999999999
       },
       {
         "consensus_timestamp": 187654000123458,
@@ -175,8 +175,8 @@
         "stake_rewarded": 5,
         "stake_total": 7,
         "staking_period": {
-          "from": "1654290964.000000001",
-          "to": "1654377364.000000000"
+          "from": "1655164800.000000000",
+          "to": "1655251200.000000000"
         },
         "timestamp": {
           "from": "187654.000123456",
@@ -201,8 +201,8 @@
         "stake_rewarded": 21,
         "stake_total": 41,
         "staking_period": {
-          "from": "0.000000001",
-          "to": "86400.000000000"
+          "from": "86400.000000000",
+          "to": "172800.000000000"
         },
         "timestamp": {
           "from": "187654.000123456",

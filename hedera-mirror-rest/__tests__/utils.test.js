@@ -112,25 +112,42 @@ describe('Utils nsToSecNs tests', () => {
   });
 });
 
-describe('Utils decrementTimestampByOneDay tests', () => {
-  test('Verify decrementTimestampByOneDay subtracts a day and adds 1 ns to the timestamp', () => {
-    const val = utils.decrementTimestampByOneDay(1654377364000000000);
-    expect(val).toBe('1654290964.000000001');
+describe('Utils incrementTimestampByOneDay tests', () => {
+  test('Verify incrementTimestampByOneDay adds a day to the timestamp and rounds', () => {
+    const val = utils.incrementTimestampByOneDay(1655164799999999999n);
+    expect(val).toBe('1655251199.999999999');
   });
 
-  test('Verify decrementTimestampByOneDay subtracts a day and adds 1 ns from the string timestamp', () => {
-    const val = utils.decrementTimestampByOneDay('1654377364000000000');
-    expect(val).toBe('1654290964.000000001');
+  test('Verify incrementTimestampByOneDay adds a day to the timestamp and rounds', () => {
+    const val = utils.incrementTimestampByOneDay(BigInt('1655164799999999999'));
+    expect(val).toBe('1655251199.999999999');
+  });
+
+  test('Verify incrementTimestampByOneDay with null', () => {
+    const val = utils.incrementTimestampByOneDay(null);
+    expect(val).toBeNil();
+  });
+
+  test('Verify incrementTimestampByOneDay with 0', () => {
+    const val = utils.incrementTimestampByOneDay(0);
+    expect(val).toBe('86400.000000000');
+  });
+});
+
+describe('Utils decrementTimestampByOneDay tests', () => {
+  test('Verify decrementTimestampByOneDay subtracts a day from the timestamp', () => {
+    const val = utils.decrementTimestampByOneDay(1654377364000000000);
+    expect(val).toBe('1654290963.999999999');
+  });
+
+  test('Verify decrementTimestampByOneDay subtracts a day from the string timestamp', () => {
+    const val = utils.decrementTimestampByOneDay('1654377364000000001');
+    expect(val).toBe('1654290964.000000000');
   });
 
   test('Verify decrementTimestampByOneDay with null', () => {
     const val = utils.decrementTimestampByOneDay(null);
     expect(val).toBeNil();
-  });
-
-  test('Verify decrementTimestampByOneDay with first day', () => {
-    const val = utils.decrementTimestampByOneDay(86400000000000);
-    expect(val).toBe('0.000000001');
   });
 });
 

@@ -53,7 +53,7 @@ describe('NetworkNodeViewModel', () => {
       stake: 12,
       stakeRewarded: 4,
       stakeTotal: 6,
-      stakingPeriod: 1654290963000000000,
+      stakingPeriod: '1654991999999999999',
     },
   };
   const defaultExpected = {
@@ -79,8 +79,8 @@ describe('NetworkNodeViewModel', () => {
     stake_rewarded: 4,
     stake_total: 6,
     staking_period: {
-      from: '1654204563.000000001',
-      to: '1654290963.000000000',
+      from: '1654992000.000000000',
+      to: '1655078400.000000000',
     },
     timestamp: {
       from: '187654.000123457',
@@ -120,10 +120,7 @@ describe('NetworkNodeViewModel', () => {
       stake: null,
       stake_rewarded: null,
       stake_total: null,
-      staking_period: {
-        from: null,
-        to: null,
-      },
+      staking_period: null,
     });
   });
 });

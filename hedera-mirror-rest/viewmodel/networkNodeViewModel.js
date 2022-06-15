@@ -49,10 +49,17 @@ class NetworkNodeViewModel {
     this.stake = networkNode.nodeStake.stake;
     this.stake_rewarded = networkNode.nodeStake.stakeRewarded;
     this.stake_total = networkNode.nodeStake.stakeTotal;
-    this.staking_period = {
-      from: utils.decrementTimestampByOneDay(networkNode.nodeStake.stakingPeriod),
-      to: utils.nsToSecNs(networkNode.nodeStake.stakingPeriod),
-    };
+
+    if (_.isNil(networkNode.nodeStake.stakingPeriod)) {
+      this.staking_period = null;
+    } else {
+      const stakingPeriodStart = BigInt(networkNode.nodeStake.stakingPeriod) + 1n;
+      this.staking_period = {
+        from: utils.nsToSecNs(stakingPeriodStart),
+        to: utils.incrementTimestampByOneDay(stakingPeriodStart),
+      };
+    }
+
     this.timestamp = {
       from: utils.nsToSecNs(networkNode.addressBook.startConsensusTimestamp),
       to: utils.nsToSecNs(networkNode.addressBook.endConsensusTimestamp),

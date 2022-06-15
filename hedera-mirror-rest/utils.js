@@ -824,17 +824,17 @@ const secNsToSeconds = (secNs) => {
 };
 
 /**
- * Decrement timestamp (nnnnnnnnnnnnnnnnnnn format) by 1 day and add 1 nanosecond
+ * Increment timestamp (nnnnnnnnnnnnnnnnnnn format) by 1 day
  * @return {String} (seconds.nnnnnnnnn format)
  */
-const oneDayLessOneNs = 86399999999999;
-const decrementTimestampByOneDay = (seconds) => {
-  if (_.isNil(seconds)) {
+const oneDayInNs = 86_400_000_000_000n;
+const incrementTimestampByOneDay = (ns) => {
+  if (_.isNil(ns)) {
     return null;
   }
 
-  const decrementResult = math.subtract(math.bignumber(seconds.toString()), oneDayLessOneNs);
-  return nsToSecNs(decrementResult.toString());
+  const result = BigInt(ns) + oneDayInNs;
+  return nsToSecNs(result);
 };
 
 const randomBytesAsync = util.promisify(crypto.randomBytes);
@@ -1391,7 +1391,6 @@ module.exports = {
   conflictingPathParam,
   createTransactionId,
   convertMySqlStyleQueryToPostgres,
-  decrementTimestampByOneDay,
   encodeBase64,
   encodeBinary,
   encodeUtf8,
@@ -1402,6 +1401,7 @@ module.exports = {
   getPaginationLink,
   getPoolClass,
   gtGte,
+  incrementTimestampByOneDay,
   ipMask,
   isNonNegativeInt32,
   isRepeatedQueryParameterValidLength,

@@ -222,7 +222,7 @@ const defaultNodeStakes = [
     stake: 3,
     stake_rewarded: 3,
     stake_total: 3,
-    staking_period: 3,
+    staking_period: 1654991999999999999n,
   },
   {
     consensus_timestamp: 2,
@@ -231,7 +231,7 @@ const defaultNodeStakes = [
     stake: 4,
     stake_rewarded: 4,
     stake_total: 4,
-    staking_period: 4,
+    staking_period: BigInt('1655251199999999999'),
   },
 ];
 
@@ -258,7 +258,7 @@ const defaultExpectedNetworkNode101 = [
       stake: 4,
       stakeRewarded: 4,
       stakeTotal: 4,
-      stakingPeriod: 4,
+      stakingPeriod: 1655251199999999999n,
     },
   },
   {
@@ -283,7 +283,7 @@ const defaultExpectedNetworkNode101 = [
       stake: 3,
       stakeRewarded: 3,
       stakeTotal: 3,
-      stakingPeriod: 3,
+      stakingPeriod: 1654991999999999999n,
     },
   },
 ];
@@ -311,7 +311,7 @@ const defaultExpectedNetworkNode102 = [
       stake: 3,
       stakeRewarded: 3,
       stakeTotal: 3,
-      stakingPeriod: 3,
+      stakingPeriod: 1654991999999999999n,
     },
   },
   {
@@ -336,7 +336,7 @@ const defaultExpectedNetworkNode102 = [
       stake: 4,
       stakeRewarded: 4,
       stakeTotal: 4,
-      stakingPeriod: 4,
+      stakingPeriod: 1655251199999999999n,
     },
   },
 ];
@@ -460,7 +460,7 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
         stake: 3,
         stakeRewarded: 3,
         stakeTotal: 3,
-        stakingPeriod: 3,
+        stakingPeriod: 1654991999999999999n,
       },
     },
   ];
@@ -488,7 +488,7 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
         stake: 3,
         stakeRewarded: 3,
         stakeTotal: 3,
-        stakingPeriod: 3,
+        stakingPeriod: 1654991999999999999n,
       },
     },
   ];

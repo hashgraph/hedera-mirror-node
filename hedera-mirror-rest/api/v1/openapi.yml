@@ -1924,16 +1924,20 @@ components:
         service_endpoints:
           $ref: '#/components/schemas/ServiceEndpoints'
         stake:
-          description: The node consensus weight at the end of the staking period
+          description: The node consensus weight at the beginning of the staking period
+          nullable: true
           type: number
         stake_rewarded:
-          description: The sum (balance + staked) for all accounts staked to the node that are not declining rewards at the end of the staking period
+          description: The sum (balance + staked) for all accounts staked to the node that are not declining rewards at the beginning of the staking period
+          nullable: true
           type: number
         stake_total:
-          description: The sum of all nodes' consensus weight at the end of the staking period
+          description: The sum of all nodes' consensus weight at the beginning of the staking period
+          nullable: true
           type: number
         staking_period:
-          description: The timestamps of the staking period
+          description: The timestamps at the beginning of the staking period
+          nullable: true
           $ref: '#/components/schemas/TimestampRange'
         timestamp:
           $ref: '#/components/schemas/TimestampRange'
