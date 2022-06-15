@@ -134,23 +134,6 @@ describe('Utils incrementTimestampByOneDay tests', () => {
   });
 });
 
-describe('Utils decrementTimestampByOneDay tests', () => {
-  test('Verify decrementTimestampByOneDay subtracts a day from the timestamp', () => {
-    const val = utils.decrementTimestampByOneDay(1654377364000000000);
-    expect(val).toBe('1654290963.999999999');
-  });
-
-  test('Verify decrementTimestampByOneDay subtracts a day from the string timestamp', () => {
-    const val = utils.decrementTimestampByOneDay('1654377364000000001');
-    expect(val).toBe('1654290964.000000000');
-  });
-
-  test('Verify decrementTimestampByOneDay with null', () => {
-    const val = utils.decrementTimestampByOneDay(null);
-    expect(val).toBeNil();
-  });
-});
-
 describe('Utils createTransactionId tests', () => {
   test('Verify createTransactionId returns correct result for valid inputs', () => {
     expect(utils.createTransactionId('1.2.995', '9223372036854775837')).toEqual('1.2.995-9223372036-854775837');
