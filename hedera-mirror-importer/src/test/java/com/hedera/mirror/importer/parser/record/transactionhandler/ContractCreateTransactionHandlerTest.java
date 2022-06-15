@@ -104,6 +104,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Override
     protected AbstractEntity getExpectedUpdatedEntity() {
         AbstractEntity entity = super.getExpectedUpdatedEntity();
+        entity.setDeclineReward(false);
         entity.setMaxAutomaticTokenAssociations(0);
         return entity;
     }
@@ -127,7 +128,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var recordBuilder = getDefaultTransactionRecord().setContractCreateResult(contractCreateResult);
 
         AbstractEntity expected = getExpectedUpdatedEntity();
-        ((Contract) expected).setEvmAddress(evmAddress);
+        expected.setEvmAddress(evmAddress);
         expected.setMemo("");
         testSpecs.add(
                 UpdateEntityTestSpec.builder()
@@ -264,9 +265,9 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         verify(entityListener).onContract(contracts.capture());
         assertThat(contracts.getValue())
                 .isNotNull()
-                .returns(false, Contract::isDeclineReward)
+                .returns(false, Contract::getDeclineReward)
                 .returns(accountID.getAccountNum(), Contract::getStakedAccountId)
-                .returns(-1L, Contract::getStakedNodeId)
+                .returns(null, Contract::getStakedNodeId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Contract::getStakePeriodStart);
     }
 
@@ -285,8 +286,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         verify(entityListener).onContract(contracts.capture());
         assertThat(contracts.getValue())
                 .isNotNull()
-                .returns(true, Contract::isDeclineReward)
-                .returns(-1L, Contract::getStakedAccountId)
+                .returns(true, Contract::getDeclineReward)
+                .returns(null, Contract::getStakedAccountId)
                 .returns(nodeId, Contract::getStakedNodeId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Contract::getStakePeriodStart);
     }

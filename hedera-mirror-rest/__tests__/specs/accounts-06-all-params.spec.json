@@ -129,6 +129,7 @@
             }
           ]
         },
+        "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
         "evm_address": null,
@@ -139,7 +140,10 @@
         },
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
-        "receiver_sig_required": false
+        "receiver_sig_required": false,
+        "staked_account_id": null,
+        "staked_node_id": null,
+        "stake_period_start": -1
       }
     ],
     "links": {

@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import javax.inject.Named;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -135,12 +134,10 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 return;
             case STAKED_NODE_ID:
                 contract.setStakedNodeId(transactionBody.getStakedNodeId());
-                contract.setStakedAccountId(-1L);
                 break;
             case STAKED_ACCOUNT_ID:
                 EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
-                contract.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
-                contract.setStakedNodeId(-1L);
+                contract.setStakedAccountId(accountId.getId());
                 break;
         }
 

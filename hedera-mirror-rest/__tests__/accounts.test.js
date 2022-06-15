@@ -20,11 +20,10 @@
 
 'use strict';
 
-const _ = require('lodash');
 const log4js = require('log4js');
 const request = require('supertest');
 
-const {getAccountAliasQuery, getBalanceParamValue, processRow} = require('../accounts');
+const {getBalanceParamValue, processRow} = require('../accounts');
 const base32 = require('../base32');
 const constants = require('../constants');
 const server = require('../server');
@@ -345,6 +344,7 @@ describe('processRow', () => {
     alias: base32.decode('WWDOGNX3TXHD2'),
     auto_renew_period: 7890000,
     consensus_timestamp: '9876500123456789',
+    decline_reward: false,
     ethereum_nonce: 1,
     evm_address: Buffer.from('ac384c53f03855fa1b3616052f8ba32c6c2a2fec', 'hex'),
     deleted: false,
@@ -354,6 +354,9 @@ describe('processRow', () => {
     max_automatic_token_associations: 100,
     memo: 'entity memo',
     receiver_sig_required: false,
+    staked_account_id: 0,
+    staked_node_id: -1,
+    stake_period_start: 20,
     token_balances: [
       {
         token_id: '1500',
@@ -383,6 +386,7 @@ describe('processRow', () => {
         },
       ],
     },
+    decline_reward: false,
     deleted: false,
     ethereum_nonce: 1,
     evm_address: '0xac384c53f03855fa1b3616052f8ba32c6c2a2fec',
@@ -394,6 +398,9 @@ describe('processRow', () => {
     max_automatic_token_associations: 100,
     memo: 'entity memo',
     receiver_sig_required: false,
+    staked_account_id: null,
+    staked_node_id: null,
+    stake_period_start: 20,
   };
   const expectedContract = {
     ...expectedAccount,
@@ -451,6 +458,21 @@ describe('processRow', () => {
 
   test('null alias', () => {
     expect(processRow({...inputAccount, alias: null})).toEqual({...expectedAccount, alias: null});
+  });
+
+  test('staked account id', () => {
+    expect(processRow({...inputAccount, staked_account_id: 10})).toEqual({
+      ...expectedAccount,
+      staked_account_id: '0.0.10',
+    });
+  });
+
+  test('null staked account id', () => {
+    expect(processRow({...inputAccount, staked_account_id: null})).toEqual(expectedAccount);
+  });
+
+  test('staked node id', () => {
+    expect(processRow({...inputAccount, staked_node_id: 2})).toEqual({...expectedAccount, staked_node_id: 2});
   });
 
   test('default contract', () => {

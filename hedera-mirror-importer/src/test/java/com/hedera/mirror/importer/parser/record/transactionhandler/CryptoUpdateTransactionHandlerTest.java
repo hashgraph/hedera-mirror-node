@@ -32,7 +32,8 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Consumer;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -59,47 +60,49 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         return EntityType.ACCOUNT;
     }
 
-    @Test
-    void updateTransactionStakedAccountId() {
-        AccountID accountId = AccountID.newBuilder().setAccountNum(1L).build();
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void updateTransactionDeclineReward(Boolean declineReward) {
+        RecordItem withStakedNodeIdSet = recordItemBuilder.cryptoUpdate()
+                .transactionBody(body -> body.clear().setDeclineReward(BoolValue.of(declineReward)))
+                .build();
+        setupForCryptoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
+                .returns(declineReward, Entity::getDeclineReward)
+                .returns(null, Entity::getStakedAccountId)
+                .returns(null, Entity::getStakedNodeId)
+                .returns(Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()), Entity::getStakePeriodStart)
+        );
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {0, 100})
+    void updateTransactionStakedAccountId(long accountNum) {
+        // Note, the sentinel value '0.0.0' clears the staked account id, in importer, we persist the encoded id '0' to
+        // db to indicate there is no staked account id
+        AccountID accountId = AccountID.newBuilder().setAccountNum(accountNum).build();
         RecordItem withStakedNodeIdSet = recordItemBuilder.cryptoUpdate()
                 .transactionBody(body -> body.clear().setStakedAccountId(accountId))
                 .build();
-        setupForCrytoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
-                .returns(1L, Entity::getStakedAccountId)
-                .returns(false, Entity::isDeclineReward)
+        setupForCryptoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
+                .returns(null, Entity::getDeclineReward)
+                .returns(accountNum, Entity::getStakedAccountId)
                 .returns(-1L, Entity::getStakedNodeId)
                 .returns(Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()), Entity::getStakePeriodStart)
         );
     }
 
-    @Test
-    void updateTransactionDeclineReward() {
-        RecordItem withDeclineValueSet = recordItemBuilder.cryptoUpdate()
-                .transactionBody(body -> body.clear()
-                        .setDeclineReward(BoolValue.of(true))
-                )
-                .build();
-        setupForCrytoUpdateTransactionTest(withDeclineValueSet, t -> assertThat(t)
-                .returns(true, Entity::isDeclineReward)
-                // in this case both are still null, because we are not saving it into the database.
-                .returns(null, Entity::getStakedNodeId)
-                .returns(null, Entity::getStakedAccountId)
-                .extracting(Entity::getStakePeriodStart)
-                .isNotNull());
-    }
-
-    @Test
-    void updateTransactionStakedNodeId() {
+    @ParameterizedTest
+    @ValueSource(longs = {1, -1})
+    void updateTransactionStakedNodeId(Long nodeId) {
         RecordItem withStakedNodeIdSet = recordItemBuilder.cryptoUpdate()
-                .transactionBody(body -> body.setStakedNodeId(1L))
+                .transactionBody(body -> body.setStakedNodeId(nodeId))
                 .build();
-        setupForCrytoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
-                .returns(1L, Entity::getStakedNodeId)
-                .returns(-1L, Entity::getStakedAccountId)
-                .returns(true, Entity::isDeclineReward)
-                .extracting(Entity::getStakePeriodStart)
-                .isNotNull());
+        setupForCryptoUpdateTransactionTest(withStakedNodeIdSet, t -> assertThat(t)
+                .returns(nodeId, Entity::getStakedNodeId)
+                .returns(0L, Entity::getStakedAccountId)
+                .returns(true, Entity::getDeclineReward)
+                .returns(Utility.getEpochDay(withStakedNodeIdSet.getConsensusTimestamp()), Entity::getStakePeriodStart)
+        );
     }
 
     private void assertCryptoUpdate(long timestamp, Consumer<Entity> extraAssert) {
@@ -112,7 +115,7 @@ class CryptoUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         )));
     }
 
-    private void setupForCrytoUpdateTransactionTest(RecordItem recordItem, Consumer<Entity> extraAssertions) {
+    private void setupForCryptoUpdateTransactionTest(RecordItem recordItem, Consumer<Entity> extraAssertions) {
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp))

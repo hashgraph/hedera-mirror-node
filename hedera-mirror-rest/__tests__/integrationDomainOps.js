@@ -389,6 +389,7 @@ const addEntity = async (defaults, entity) => {
     alias: null,
     auto_renew_account_id: null,
     auto_renew_period: null,
+    decline_reward: false,
     deleted: false,
     ethereum_nonce: null,
     evm_address: null,
@@ -402,10 +403,13 @@ const addEntity = async (defaults, entity) => {
     realm: 0,
     receiver_sig_required: false,
     shard: 0,
+    staked_account_id: null,
+    staked_node_id: -1,
+    stake_period_start: -1,
     timestamp_range: '[0,)',
     type: constants.entityTypes.ACCOUNT,
   };
-  const insertFields = Object.keys(localDefaults);
+  const insertFields = Object.keys(localDefaults).sort();
   entity = {
     ...localDefaults,
     ...defaults,
@@ -765,32 +769,10 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAcco
 };
 
 const addContract = async (contract) => {
-  const insertFields = [
-    'auto_renew_account_id',
-    'auto_renew_period',
-    'created_timestamp',
-    'deleted',
-    'evm_address',
-    'expiration_timestamp',
-    'file_id',
-    'id',
-    'initcode',
-    'key',
-    'max_automatic_token_associations',
-    'memo',
-    'num',
-    'obtainer_id',
-    'permanent_removal',
-    'public_key',
-    'proxy_account_id',
-    'realm',
-    'shard',
-    'type',
-    'timestamp_range',
-  ];
   contract = {
     auto_renew_account_id: null,
     auto_renew_period: null,
+    decline_reward: false,
     deleted: false,
     evm_address: null,
     expiration_timestamp: null,
@@ -802,6 +784,9 @@ const addContract = async (contract) => {
     public_key: null,
     realm: 0,
     shard: 0,
+    staked_account_id: null,
+    staked_node_id: -1,
+    stake_period_start: -1,
     type: constants.entityTypes.CONTRACT,
     timestamp_range: '[0,)',
     ...contract,
@@ -810,6 +795,9 @@ const addContract = async (contract) => {
   contract.id = EntityId.of(BigInt(contract.shard), BigInt(contract.realm), BigInt(contract.num)).getEncodedId();
   contract.initcode = contract.initcode != null ? Buffer.from(contract.initcode) : null;
   contract.key = contract.key != null ? Buffer.from(contract.key) : null;
+  const insertFields = Object.keys(contract)
+    .filter((k) => !k.startsWith('_'))
+    .sort();
 
   const table = getTableName('contract', contract);
   await insertDomainObject(table, insertFields, contract);

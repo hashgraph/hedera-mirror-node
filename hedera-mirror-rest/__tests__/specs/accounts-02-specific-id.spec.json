@@ -3,13 +3,17 @@
   "setup": {
     "accounts": [
       {
+        "decline_reward": true,
         "num": 7
       },
       {
-        "num": 8
+        "num": 8,
+        "staked_account_id": 200,
+        "stake_period_start": 1100
       },
       {
-        "num": 9
+        "num": 9,
+        "staked_node_id": 5
       }
     ],
     "balances": [
@@ -68,15 +72,19 @@
         },
         "account": "0.0.8",
         "alias": null,
+        "decline_reward": false,
+        "deleted": false,
         "ethereum_nonce": null,
         "evm_address": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
-        "deleted": false,
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
-        "receiver_sig_required": false
+        "receiver_sig_required": false,
+        "staked_account_id": "0.0.200",
+        "staked_node_id": null,
+        "stake_period_start": 1100
       }
     ],
     "links": {

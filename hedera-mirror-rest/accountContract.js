@@ -25,6 +25,7 @@ const utils = require('./utils');
 const commonFields = [
   'auto_renew_period',
   'created_timestamp',
+  'decline_reward',
   'deleted',
   'evm_address',
   'expiration_timestamp',
@@ -37,6 +38,9 @@ const commonFields = [
   'proxy_account_id',
   'realm',
   'shard',
+  'staked_account_id',
+  'staked_node_id',
+  'stake_period_start',
   'timestamp_range',
   'type',
 ];
