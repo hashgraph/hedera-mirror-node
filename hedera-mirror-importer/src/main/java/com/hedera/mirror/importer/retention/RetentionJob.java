@@ -68,6 +68,10 @@ public class RetentionJob {
 
         try {
             var recordFile = recordFileRepository.findEarliest();
+            if (recordFile.isEmpty()) {
+                return; // Shouldn't occur since we've found at least one row above
+            }
+
             long count = 0L;
             long minTimestamp = recordFile.map(RecordFile::getConsensusStart).orElse(0L);
             long maxTimestamp = latest.map(RecordFile::getConsensusEnd).get() - retentionPeriod;

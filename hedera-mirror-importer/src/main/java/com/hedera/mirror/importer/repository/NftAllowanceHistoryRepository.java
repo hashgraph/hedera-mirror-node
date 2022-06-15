@@ -24,9 +24,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowanceHistory;
 
-public interface NftAllowanceHistoryRepository extends CrudRepository<NftAllowanceHistory, NftAllowanceHistory.Id>,
+public interface NftAllowanceHistoryRepository extends CrudRepository<NftAllowanceHistory, AbstractNftAllowance.Id>,
         RetentionRepository {
 
     @Modifying

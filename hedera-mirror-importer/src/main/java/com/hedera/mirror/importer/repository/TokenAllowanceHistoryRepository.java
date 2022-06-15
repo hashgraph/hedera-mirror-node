@@ -24,10 +24,11 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowanceHistory;
 
 public interface TokenAllowanceHistoryRepository extends CrudRepository<TokenAllowanceHistory,
-        TokenAllowanceHistory.Id>, RetentionRepository {
+        AbstractTokenAllowance.Id>, RetentionRepository {
 
     @Modifying
     @Override

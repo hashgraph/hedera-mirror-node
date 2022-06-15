@@ -24,10 +24,11 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
+import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
 
 public interface CryptoAllowanceHistoryRepository extends CrudRepository<CryptoAllowanceHistory,
-        CryptoAllowanceHistory.Id>, RetentionRepository {
+        AbstractCryptoAllowance.Id>, RetentionRepository {
 
     @Modifying
     @Override
