@@ -142,7 +142,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .isNotNull()
                 .returns(true, Entity::getDeclineReward)
                 .returns(nodeId, Entity::getStakedNodeId)
-                .returns(0L, Entity::getStakedAccountId)
+                .returns(null, Entity::getStakedAccountId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
     }
 
