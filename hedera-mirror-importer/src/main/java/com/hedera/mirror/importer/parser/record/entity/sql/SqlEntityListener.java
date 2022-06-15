@@ -517,16 +517,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setProxyAccountId(src.getProxyAccountId());
         }
 
-        if (dest.getStakePeriodStart() == null) {
-            dest.setStakePeriodStart(src.getStakePeriodStart());
-        }
-
         if (dest.getStakedAccountId() == null) {
             dest.setStakedAccountId(src.getStakedAccountId());
         }
 
         if (dest.getStakedNodeId() == null) {
             dest.setStakedNodeId(src.getStakedNodeId());
+        }
+
+        if (dest.getStakePeriodStart() == null) {
+            dest.setStakePeriodStart(src.getStakePeriodStart());
         }
 
         // There is at least one entity with history. If there is one without history, it must be dest and just copy the
