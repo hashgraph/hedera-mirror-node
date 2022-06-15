@@ -404,10 +404,13 @@ public class DomainBuilder {
         var builder = NodeStake.builder()
                 .consensusTimestamp(timestamp)
                 .epochDay(getEpochDay(timestamp))
+                .maxStake(stake * 2)
+                .minStake(stake / 2)
                 .nodeId(id())
                 .rewardRate(id())
                 .stake(stake)
-                .stakeRewarded(stake - 100L)
+                .stakeNotRewarded(TINYBARS_IN_ONE_HBAR)
+                .stakeRewarded(stake - TINYBARS_IN_ONE_HBAR)
                 .stakeTotal(stake * 5)
                 .stakingPeriod(timestamp());
         return new DomainWrapperImpl<>(builder, builder::build);
