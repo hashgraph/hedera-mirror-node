@@ -1294,6 +1294,7 @@ components:
           $ref: '#/components/schemas/Alias'
         auto_renew_period:
           type: integer
+          format: int64
           nullable: true
         balance:
           $ref: '#/components/schemas/Balance'
