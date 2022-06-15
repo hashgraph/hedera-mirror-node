@@ -2,15 +2,15 @@
 alter table if exists entity alter column staked_account_id drop default;
 alter table if exists entity_history alter column staked_account_id drop default;
 
-update entity set staked_node_id = 0 where staked_node_id = -1;
-update entity_history set staked_node_id = 0 where staked_node_id = -1;
+update entity set staked_account_id = 0 where staked_account_id = -1;
+update entity_history set staked_account_id = 0 where staked_account_id = -1;
 
 --- drop default of column staked_account_id from entity and entity_history
 alter table if exists contract alter column staked_account_id drop default;
 alter table if exists contract_history alter column staked_account_id drop default;
 
-update contract set staked_node_id = 0 where staked_node_id = -1;
-update contract_history set staked_node_id = 0 where staked_node_id = -1;
+update contract set staked_account_id = 0 where staked_account_id = -1;
+update contract_history set staked_account_id = 0 where staked_account_id = -1;
 
 -- add columns to node_stake
 alter table if exists node_stake
