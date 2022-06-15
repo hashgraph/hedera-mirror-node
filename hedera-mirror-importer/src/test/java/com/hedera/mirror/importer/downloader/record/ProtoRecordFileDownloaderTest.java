@@ -20,15 +20,24 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
+import static org.mockito.Mockito.doReturn;
+
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.TestRecordFiles;
 
 public class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
+
+    @BeforeEach
+    protected void beforeEach() throws Exception {
+        super.beforeEach();
+        doReturn(loadAddressBook("test-v6.bin")).when(addressBookService).getCurrent();
+    }
 
     @Override
     protected Path getTestDataDir() {

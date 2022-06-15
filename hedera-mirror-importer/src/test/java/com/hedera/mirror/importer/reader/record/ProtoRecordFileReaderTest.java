@@ -5,8 +5,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.google.common.primitives.Ints;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.ByteArrayInputStream;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.importer.domain.StreamFileData;
@@ -25,11 +24,9 @@ public class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
     }
 
     @Test
-    void testCorrectFailureWhenVersionIsWrong() throws IOException {
-        var inputStreamMock = mock(InputStream.class);
-        when(inputStreamMock.readNBytes(4)).thenReturn(Ints.toByteArray(5));
+    void testCorrectFailureWhenVersionIsWrong() {
         var streamFileDataMock = mock(StreamFileData.class);
-        when(streamFileDataMock.getInputStream()).thenReturn(inputStreamMock);
+        when(streamFileDataMock.getInputStream()).thenReturn(new ByteArrayInputStream(Ints.toByteArray(5)));
         final InvalidStreamFileException invalidStreamFileException = assertThrows(InvalidStreamFileException.class,
                 () -> new ProtoRecordFileReader().read(streamFileDataMock));
         assertEquals("Expected file with version 6, given 5.", invalidStreamFileException.getMessage());

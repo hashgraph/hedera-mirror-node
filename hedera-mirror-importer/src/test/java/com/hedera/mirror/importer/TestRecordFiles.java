@@ -134,7 +134,7 @@ public class TestRecordFiles {
                 .digestAlgorithm(digestAlgorithm)
                 .gasUsed(0L)
                 .fileHash(
-                        "a455097616c72ef776b9c3bc47f76678c58dc4cec0631e8db7a1689b3780defe7d088081f66136153797e72af61ec756")
+                        "3ec9149b6a8735c7917530285e2b3528b702dc637f43ddd1da556a74b45d3eb55d7127862319feddccfacf45d987e33b")
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(0)
                 .hapiVersionPatch(0)
@@ -154,7 +154,7 @@ public class TestRecordFiles {
                 .digestAlgorithm(digestAlgorithm)
                 .gasUsed(0L)
                 .fileHash(
-                        "92aed173298c4f34ffcf18793f7eacc57e94ad7ec391199d10ef8b91006fa06c4cb799ebc37be041cb489e7007ae82db")
+                        "600a3a93a368ad5050fce67c78cbbfdb42feaa7f92d4e74ef27f003dfa1995d97525839868fdf000a76e29dc949708c7")
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(0)
                 .hapiVersionPatch(0)
@@ -174,7 +174,7 @@ public class TestRecordFiles {
                 .digestAlgorithm(digestAlgorithm)
                 .gasUsed(0L)
                 .fileHash(
-                        "45213dc2dd6c61bdab36a3ace11fd2404e22b18b2b56b3c8d899762d2babc89978f1f2ce1c0e42b23668a9ab1a187a6f")
+                        "9702f7c8767d83b6c10c757aa8f7e20496715b4a1eda3e24fd60517822ad47c5e258460a704468b2e60931118ac22395")
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(0)
                 .hapiVersionPatch(0)

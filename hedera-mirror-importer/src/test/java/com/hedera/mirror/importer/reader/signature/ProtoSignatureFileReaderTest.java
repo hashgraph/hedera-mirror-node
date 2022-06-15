@@ -26,9 +26,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import org.apache.commons.codec.binary.Hex;
@@ -70,11 +69,9 @@ public class ProtoSignatureFileReaderTest extends AbstractSignatureFileReaderTes
     }
 
     @Test
-    void testCorrectFailureWhenVersionIsWrong() throws IOException {
-        var inputStreamMock = mock(InputStream.class);
-        when(inputStreamMock.read()).thenReturn(5);
+    void testCorrectFailureWhenVersionIsWrong() {
         var streamFileDataMock = mock(StreamFileData.class);
-        when(streamFileDataMock.getInputStream()).thenReturn(inputStreamMock);
+        when(streamFileDataMock.getInputStream()).thenReturn(new ByteArrayInputStream(new byte[] {5}));
         final InvalidStreamFileException invalidStreamFileException = assertThrows(InvalidStreamFileException.class,
                 () -> protoSignatureFileReader.read(streamFileDataMock));
         assertEquals("Expected file with version 6, given 5.", invalidStreamFileException.getMessage());
