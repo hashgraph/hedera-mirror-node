@@ -1936,9 +1936,10 @@ components:
           nullable: true
           type: number
         staking_period:
-          description: The timestamps at the beginning of the staking period
-          nullable: true
-          $ref: '#/components/schemas/TimestampRange'
+          allOf:
+            - $ref: '#/components/schemas/TimestampRange'
+            - description: The timestamp range of the staking period
+              nullable: true
         timestamp:
           $ref: '#/components/schemas/TimestampRange'
       example:
