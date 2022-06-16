@@ -233,4 +233,24 @@ public class TestRecordFiles {
                 .build();
         return List.of(recordFileV2, recordFileV5);
     }
+
+    public List<RecordFile> getV5V6Files() {
+        EntityId nodeAccountId = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
+        RecordFile recordFileV5 = RecordFile.builder()
+                .nodeAccountId(nodeAccountId)
+                .name("2022-06-16T14_18_05.036741003Z.rcd")
+                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .size(488)
+                .version(5)
+                .build();
+
+        RecordFile recordFileV6 = RecordFile.builder()
+                .name("2022-06-16T14_20_42.665292003Z.rcd")
+                .nodeAccountId(nodeAccountId)
+                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .version(6)
+                .build();
+
+        return List.of(recordFileV5, recordFileV6);
+    }
 }
