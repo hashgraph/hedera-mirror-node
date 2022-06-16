@@ -33,7 +33,7 @@ import com.hedera.mirror.importer.TestRecordFiles;
 public class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @BeforeAll
-    static void beforeAll() throws IOException {
+    protected static void beforeAll() throws IOException {
         addressBook = loadAddressBook("test-v6-4n.bin");
         allNodeAccountIds = addressBook.getNodeSet();
     }
