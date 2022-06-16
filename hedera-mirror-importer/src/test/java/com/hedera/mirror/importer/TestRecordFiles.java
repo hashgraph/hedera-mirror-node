@@ -128,71 +128,70 @@ public class TestRecordFiles {
                 .build();
 
         RecordFile recordFileV6_1 = RecordFile.builder()
-                .consensusStart(1655218162456975294L)
-                .consensusEnd(1655218163859993584L)
-                .count(5L)
-                .digestAlgorithm(digestAlgorithm)
-                .gasUsed(0L)
-                .fileHash(
-                        "3ec9149b6a8735c7917530285e2b3528b702dc637f43ddd1da556a74b45d3eb55d7127862319feddccfacf45d987e33b")
-                .hapiVersionMajor(0)
-                .hapiVersionMinor(0)
-                .hapiVersionPatch(0)
-                .hash
-                        ("c94a0d390b123d345d66b2d6ce9d23da1a0d41dc39d571eb559318280757fbc8e66688342245afe42aa158225f3b8e5c")
-                .metadataHash(
-                        "3a74b1449b6d42f92ae8b363b48e739f422a21541ffc30418b80418d51f45c142a010a8e7ce0909d3b3fd500b39027b1")
-                .name("2022-06-14T14_49_22.456975294Z.rcd")
-                .previousHash(
-                        "14bb29bc7d6952ca85c3d9c2f9922d68897bd222cec99d5160809ba12a308c22dfa021e909aea2b55277b2dce3d96530")
-                .version(6)
-                .build();
-        RecordFile recordFileV6_2 = RecordFile.builder()
-                .consensusStart(1655218168820707809L)
-                .consensusEnd(1655218169873064352L)
+                .consensusStart(1655374717496046001L)
+                .consensusEnd(1655374717496046003L)
                 .count(3L)
                 .digestAlgorithm(digestAlgorithm)
                 .gasUsed(0L)
                 .fileHash(
-                        "600a3a93a368ad5050fce67c78cbbfdb42feaa7f92d4e74ef27f003dfa1995d97525839868fdf000a76e29dc949708c7")
+                        "3e546619bd9c59fe0ee03be25ff2371718ff206f31323868207bb621bc85212669eb66b8a1556d4e686c8fbcd14f9e97")
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(0)
                 .hapiVersionPatch(0)
                 .hash
-                        ("4cdadfeba44a66446b2b28e66c9407c6b31f569f3797cc60d3fbe8c1052738298ba883454e996f7c3d0d6a50b8326208")
+                        ("53b645e288b9f2fe6cc7d80813fe0e21446d379cd501e750c0948c1b7d49a451695dd1c2474521694ee162ee4e1478e8")
                 .metadataHash(
-                        "aae3e2cca10253b1a3a821192ecd24fa1f0a87404579425567a4c9c3a5c2dbfb180368238dc4b8d3f46f310dafcc7610")
-                .name("2022-06-14T14_49_28.820707809Z.rcd")
+                        "01a43036a6ce80082680fa64b4702aecb659b8ddd02a06201c6c83d2b71def7b2ee1b5ac09bb7eb9b2f04dad5547e8e9")
+                .name("2022-06-16T10_18_37.496046001Z.rcd")
                 .previousHash(
-                        "9401962d02f89f592cafb9ab33e76ed3399cfd16410236b34886e46e8f705c584072228eb0de3f53a3c6d4641ac8937d")
+                        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+                .version(6)
+                .build();
+        RecordFile recordFileV6_2 = RecordFile.builder()
+                .consensusStart(1655374720720801003L)
+                .consensusEnd(1655374720720801003L)
+                .count(1L)
+                .digestAlgorithm(digestAlgorithm)
+                .gasUsed(0L)
+                .fileHash(
+                        "b5947d59a5661f591c0950e8dd0c6a4d42f49dcf7454bc05c911fef67aedead41fb00f01ac32b1de9ac2b3130fb14346")
+                .hapiVersionMajor(0)
+                .hapiVersionMinor(0)
+                .hapiVersionPatch(0)
+                .hash
+                        ("3bade250e5b68e427df2c6ed1b427ed057303bf92a5a497b432ea22250ce03e33740d60fd7fe70a8883f7bd57babcb0b")
+                .metadataHash(
+                        "c8766bf8449e2d4598a4b7cc41c7a54f16dc869bd9cf81af2536ba1a8ec8c86d1e33134995d45f67ce26a79249d96666")
+                .name("2022-06-16T10_18_40.720801003Z.rcd")
+                .previousHash(
+                        "53b645e288b9f2fe6cc7d80813fe0e21446d379cd501e750c0948c1b7d49a451695dd1c2474521694ee162ee4e1478e8")
                 .version(6)
                 .build();
         RecordFile recordFileV6_3 = RecordFile.builder()
-                .consensusStart(1655218170374211670L)
-                .consensusEnd(1655218171927897766L)
+                .consensusStart(1655218164361211497L)
+                .consensusEnd(1655218165864487014L)
                 .count(4L)
                 .digestAlgorithm(digestAlgorithm)
                 .gasUsed(0L)
                 .fileHash(
-                        "9702f7c8767d83b6c10c757aa8f7e20496715b4a1eda3e24fd60517822ad47c5e258460a704468b2e60931118ac22395")
+                        "32a1c18608ed7f92e35be1bbd9a8360ee374dfa1b2688e1faa5dca785117fbb5662bd78de6753f54ceb620111aff8787")
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(0)
                 .hapiVersionPatch(0)
                 .hash
-                        ("cc20804f167c338efe2f044e1158eb200963231c72067a048ee7c49d86a365270ddeac86c250fcaa70c6196104af2b3b")
+                        ("d5ef3f6a79f2c21dfd386540bd2868bd27f9464c6f8714e8e036605919a9c8dce57929710b0105700269a02901bfc9e9")
                 .metadataHash(
-                        "ad7499f864e4295824cd61d6b495bdac11fb0be4003d06ec32048f8a6b73035e7b3307373504a054599cc8c355e32fdf")
-                .name("2022-06-14T14_49_30.374211670Z.rcd.gz")
+                        "26f2d00c2c618789283f99a6f07ec4c963966efaf17dcc44ca873387fd142080563fad1cdae561761051bb57d4cf0e4a")
+                .name("2022-06-14T14_49_24.361211497Z.rcd.gz")
                 .previousHash(
-                        "4cdadfeba44a66446b2b28e66c9407c6b31f569f3797cc60d3fbe8c1052738298ba883454e996f7c3d0d6a50b8326208")
+                        "c94a0d390b123d345d66b2d6ce9d23da1a0d41dc39d571eb559318280757fbc8e66688342245afe42aa158225f3b8e5c")
                 .version(6)
                 .build();
 
         List<RecordFile> allFiles = List.of(recordFileV1_1, recordFileV1_2,
                 recordFileV2_1, recordFileV2_2,
                 recordFileV5_1, recordFileV5_2,
-                recordFileV6_1, recordFileV6_2,
-                recordFileV6_3);
+                recordFileV6_1, recordFileV6_2);
         return Collections.unmodifiableMap(allFiles.stream().collect(Collectors.toMap(RecordFile::getName, rf -> rf)));
     }
 

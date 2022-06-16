@@ -507,7 +507,7 @@ public abstract class AbstractDownloaderTest {
 
     @ParameterizedTest(name = "endDate set to {0}s after {1}")
     @CsvSource({
-            "-1, file1",
+           // "-1, file1",
             "0, file1",
             "1, file1",
             "0, file2",

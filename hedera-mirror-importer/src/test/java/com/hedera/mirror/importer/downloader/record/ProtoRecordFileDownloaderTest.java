@@ -22,10 +22,12 @@ package com.hedera.mirror.importer.downloader.record;
 
 import static org.mockito.Mockito.doReturn;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -33,10 +35,16 @@ import com.hedera.mirror.importer.TestRecordFiles;
 
 public class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
 
+    @BeforeAll
+    static void beforeAll() throws IOException {
+        addressBook = loadAddressBook("test-v6-4n.bin");
+        allNodeAccountIds = addressBook.getNodeSet();
+    }
+
     @BeforeEach
     protected void beforeEach() throws Exception {
         super.beforeEach();
-        doReturn(loadAddressBook("test-v6.bin")).when(addressBookService).getCurrent();
+        doReturn(addressBook).when(addressBookService).getCurrent();
     }
 
     @Override
@@ -46,14 +54,14 @@ public class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderT
 
     @Override
     protected Duration getCloseInterval() {
-        return Duration.ofSeconds(10L);
+        return Duration.ofSeconds(4L);
     }
 
     @Override
     protected Map<String, RecordFile> getRecordFileMap() {
         Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
-        RecordFile recordFile1 = allRecordFileMap.get("2022-06-14T14_49_22.456975294Z.rcd");
-        RecordFile recordFile2 = allRecordFileMap.get("2022-06-14T14_49_30.374211670Z.rcd.gz");
+        RecordFile recordFile1 = allRecordFileMap.get("2022-06-16T10_18_37.496046001Z.rcd");
+        RecordFile recordFile2 = allRecordFileMap.get("2022-06-16T10_18_40.720801003Z.rcd");
         return Map.of(recordFile1.getName(), recordFile1, recordFile2.getName(), recordFile2);
     }
 }
