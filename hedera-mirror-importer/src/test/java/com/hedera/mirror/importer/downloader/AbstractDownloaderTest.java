@@ -196,14 +196,18 @@ public abstract class AbstractDownloaderTest {
     protected abstract Duration getCloseInterval();
 
     boolean isSigFile(Path path) {
-        return path.toString().endsWith(StreamType.SIGNATURE_SUFFIX);
+        final String pathString = path.toString();
+        return pathString.endsWith(StreamType.SIGNATURE_SUFFIX) ||
+                pathString.endsWith(StreamType.SIGNATURE_SUFFIX + ".gz");
     }
 
     boolean isStreamFile(Path path) {
         StreamType streamType = downloaderProperties.getStreamType();
 
         for (StreamType.Extension extension : streamType.getDataExtensions()) {
-            if (path.toString().endsWith(extension.getName())) {
+            final String pathString = path.toString();
+            if (pathString.endsWith(extension.getName()) ||
+                    pathString.endsWith(extension.getName() + ".gz")) {
                 return true;
             }
         }
