@@ -21,6 +21,7 @@ package com.hedera.mirror.common.domain;
  */
 
 import com.google.common.collect.ImmutableSortedSet;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
@@ -40,9 +41,11 @@ public enum StreamType {
     BALANCE(AccountBalanceFile.class, "accountBalances", "balance", "_Balances", List.of("csv", "pb"),
             Duration.ofMinutes(15L)),
     EVENT(EventFile.class, "eventsStreams", "events_", "", List.of("evts"), Duration.ofSeconds(5L)),
-    RECORD(RecordFile.class, "recordstreams", "record", "", List.of("rcd"), Duration.ofSeconds(2L));
+    RECORD(RecordFile.class, "recordstreams", "record", "", List.of("rcd", "rcd.gz"), Duration.ofSeconds(2L));
 
     public static final String SIGNATURE_SUFFIX = "_sig";
+
+    public static final String COMPRESSED_SIGNATURE_SUFFIX = "_sig.gz";
 
     private static final String PARSED = "parsed";
     private static final String SIGNATURES = "signatures";
@@ -82,6 +85,11 @@ public enum StreamType {
 
     public boolean isChained() {
         return this != BALANCE;
+    }
+
+    public static boolean isSignatureStreamType(Path path) {
+        var pathString = path.toString();
+        return pathString.endsWith(SIGNATURE_SUFFIX) || pathString.endsWith(COMPRESSED_SIGNATURE_SUFFIX);
     }
 
     @Value(staticConstructor = "of")

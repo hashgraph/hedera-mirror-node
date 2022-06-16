@@ -196,7 +196,7 @@ public abstract class AbstractDownloaderTest {
     protected abstract Duration getCloseInterval();
 
     boolean isSigFile(Path path) {
-        return path.toString().endsWith(StreamType.SIGNATURE_SUFFIX);
+        return StreamType.isSignatureStreamType(path);
     }
 
     boolean isStreamFile(Path path) {

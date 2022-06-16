@@ -78,7 +78,7 @@ public class ProtoSignatureFileReaderTest extends AbstractSignatureFileReaderTes
     static Stream<Arguments> readValidFileTestArgumentProvider() {
         var recordFile1 = TestUtils.getResource(
                 Path.of(
-                                "data", "signature", "v6", "2022-06-16T10_18_37.496046001Z.rcd_sig.gz"
+                                "data", "signature", "v6", "2022-06-16T10_18_37.496046001Z.rcd_sig"
                         )
                         .toString()
         );

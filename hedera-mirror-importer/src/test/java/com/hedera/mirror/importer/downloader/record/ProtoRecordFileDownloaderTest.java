@@ -51,7 +51,7 @@ public class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderT
     @Override
     protected Map<String, RecordFile> getRecordFileMap() {
         Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
-        RecordFile recordFile1 = allRecordFileMap.get("2022-06-16T10_18_37.496046001Z.rcd");
+        RecordFile recordFile1 = allRecordFileMap.get("2022-06-16T10_18_37.496046001Z.rcd.gz");
         RecordFile recordFile2 = allRecordFileMap.get("2022-06-16T10_18_40.720801003Z.rcd");
         return Map.of(recordFile1.getName(), recordFile1, recordFile2.getName(), recordFile2);
     }
