@@ -112,6 +112,28 @@ describe('Utils nsToSecNs tests', () => {
   });
 });
 
+describe('Utils incrementTimestampByOneDay tests', () => {
+  test('Verify incrementTimestampByOneDay adds a day to the timestamp and rounds', () => {
+    const val = utils.incrementTimestampByOneDay(1655164799999999999n);
+    expect(val).toBe('1655251199.999999999');
+  });
+
+  test('Verify incrementTimestampByOneDay adds a day to the timestamp and rounds', () => {
+    const val = utils.incrementTimestampByOneDay(BigInt('1655164799999999999'));
+    expect(val).toBe('1655251199.999999999');
+  });
+
+  test('Verify incrementTimestampByOneDay with null', () => {
+    const val = utils.incrementTimestampByOneDay(null);
+    expect(val).toBeNil();
+  });
+
+  test('Verify incrementTimestampByOneDay with 0', () => {
+    const val = utils.incrementTimestampByOneDay(0);
+    expect(val).toBe('86400.000000000');
+  });
+});
+
 describe('Utils createTransactionId tests', () => {
   test('Verify createTransactionId returns correct result for valid inputs', () => {
     expect(utils.createTransactionId('1.2.995', '9223372036854775837')).toEqual('1.2.995-9223372036-854775837');

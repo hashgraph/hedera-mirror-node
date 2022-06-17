@@ -39,6 +39,7 @@ module.exports = {
   NetworkNode: require('./networkNode'),
   Nft: require('./nft'),
   NftTransfer: require('./nftTransfer'),
+  NodeStake: require('./nodeStake'),
   RecordFile: require('./recordFile'),
   SignatureType: require('./signatureType'),
   Token: require('./token'),

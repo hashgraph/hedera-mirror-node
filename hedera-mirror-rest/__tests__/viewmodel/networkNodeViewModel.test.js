@@ -49,6 +49,12 @@ describe('NetworkNodeViewModel', () => {
         port: 50212,
       },
     ],
+    nodeStake: {
+      stake: 12,
+      stakeRewarded: 4,
+      stakeTotal: 6,
+      stakingPeriod: '1654991999999999999',
+    },
   };
   const defaultExpected = {
     description: 'desc 1',
@@ -69,6 +75,13 @@ describe('NetworkNodeViewModel', () => {
         port: 50212,
       },
     ],
+    stake: 12,
+    stake_rewarded: 4,
+    stake_total: 6,
+    staking_period: {
+      from: '1654992000.000000000',
+      to: '1655078400.000000000',
+    },
     timestamp: {
       from: '187654.000123457',
       to: null,
@@ -91,6 +104,12 @@ describe('NetworkNodeViewModel', () => {
           nodeId: 0,
           publicKey: null,
         },
+        nodeStake: {
+          stake: null,
+          stakeRewarded: null,
+          stakeTotal: null,
+          stakingPeriod: null,
+        },
       })
     ).toEqual({
       ...defaultExpected,
@@ -98,6 +117,10 @@ describe('NetworkNodeViewModel', () => {
       memo: null,
       node_cert_hash: '0x',
       public_key: '0x',
+      stake: null,
+      stake_rewarded: null,
+      stake_total: null,
+      staking_period: null,
     });
   });
 });

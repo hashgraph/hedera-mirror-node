@@ -454,7 +454,7 @@ paths:
         included but can be found by calling `/api/v1/contracts/{contractId}/results/{timestamp}`
         or `/api/v1/contracts/results/{transactionId}`. When searching by topic a timestamp parameter must be supplied
         and span a time range of at most seven days.
-        
+
         ## Ordering
         The order is governed by the combination of timestamp and index values. If the index param is omitted, the order is determined by the timestamp only.
 
@@ -1935,6 +1935,23 @@ components:
           type: string
         service_endpoints:
           $ref: '#/components/schemas/ServiceEndpoints'
+        stake:
+          description: The node consensus weight at the beginning of the staking period
+          nullable: true
+          type: number
+        stake_rewarded:
+          description: The sum (balance + staked) for all accounts staked to the node that are not declining rewards at the beginning of the staking period
+          nullable: true
+          type: number
+        stake_total:
+          description: The sum of all nodes' consensus weight at the beginning of the staking period
+          nullable: true
+          type: number
+        staking_period:
+          allOf:
+            - $ref: '#/components/schemas/TimestampRange'
+            - description: The timestamp range of the staking period
+              nullable: true
         timestamp:
           $ref: '#/components/schemas/TimestampRange'
       example:
@@ -1948,6 +1965,12 @@ components:
         service_endpoints:
           - ip_address_v4: 128.0.0.6
             port: 50216
+        stake: 20000
+        stake_rewarded: 100
+        stake_total: 100000
+        staking_period:
+          from: 1654290964.000000001
+          to: 1654377364.000000000
         timestamp:
           from: 187654.000123457
           to: null
