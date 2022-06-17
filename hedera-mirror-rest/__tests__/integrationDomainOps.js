@@ -1244,29 +1244,24 @@ const addNft = async (nft) => {
 };
 
 const addNodeStake = async (nodeStakeInput) => {
-  const insertFields = [
-    'consensus_timestamp',
-    'epoch_day',
-    'node_id',
-    'reward_rate',
-    'stake',
-    'stake_rewarded',
-    'stake_total',
-    'staking_period',
-  ];
-
   const stakingPeriodEnd = 86_400_000_000_000n - 1n;
   const nodeStake = {
     consensus_timestamp: 0,
     epoch_day: 0,
+    max_stake: 2000,
+    min_stake: 1,
     node_id: 0,
     reward_rate: 0,
     stake: 0,
+    stake_not_rewarded: 0,
     stake_rewarded: 0,
     stake_total: 0,
     staking_period: stakingPeriodEnd,
     ...nodeStakeInput,
   };
+  const insertFields = Object.keys(nodeStake)
+    .filter((k) => !k.startsWith('_'))
+    .sort();
 
   await insertDomainObject('node_stake', insertFields, nodeStake);
 };

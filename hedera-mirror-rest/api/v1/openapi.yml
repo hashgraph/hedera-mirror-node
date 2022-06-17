@@ -1186,6 +1186,9 @@ components:
           $ref: '#/components/schemas/Timestamp'
     NetworkNodesResponse:
       type: object
+      required:
+        - nodes
+        - links
       properties:
         nodes:
           $ref: '#/components/schemas/NetworkNodes'
@@ -1909,6 +1912,23 @@ components:
           nullable: true
     NetworkNode:
       type: object
+      required:
+        - description
+        - file_id
+        - max_stake
+        - memo
+        - min_stake
+        - node_account_id
+        - node_id
+        - node_cert_hash
+        - public_key
+        - service_endpoints
+        - stake
+        - stake_not_rewarded
+        - stake_rewarded
+        - stake_total
+        - staking_period
+        - timestamp
       properties:
         description:
           description: a memo associated with the address book
@@ -1916,37 +1936,60 @@ components:
           type: string
         file_id:
           $ref: '#/components/schemas/EntityId'
+        max_stake:
+          description: The maximum stake (rewarded or not rewarded) this node can have as consensus weight
+          type: integer
+          format: int64
+          nullable: true
         memo:
           description: memo
           nullable: true
           type: string
+        min_stake:
+          description: |
+            The minimum stake (rewarded or not rewarded) this node must reach before having non-zero consensus weight
+          type: integer
+          format: int64
+          nullable: true
+        node_account_id:
+          $ref: '#/components/schemas/EntityId'
         node_id:
           description: An identifier for the node
           type: number
-        node_account_id:
-          $ref: '#/components/schemas/EntityId'
         node_cert_hash:
           description: hex encoded hash of the node’s TLS certificate
           nullable: true
           type: string
         public_key:
-          description: hex encoded X509 RSA public key used to sign stream files
+          description: hex encoded X509 RSA public key used to verify stream file signature
           nullable: true
           type: string
         service_endpoints:
           $ref: '#/components/schemas/ServiceEndpoints'
         stake:
           description: The node consensus weight at the beginning of the staking period
-          nullable: true
           type: number
+          format: int64
+          nullable: true
+        stake_not_rewarded:
+          description: |
+            The sum (balance + stakedToMe) for all accounts staked to this node with declineReward=true at the 
+            beginning of the staking period
+          type: number
+          format: int64
+          nullable: true
         stake_rewarded:
-          description: The sum (balance + staked) for all accounts staked to the node that are not declining rewards at the beginning of the staking period
-          nullable: true
+          description: |
+            The sum (balance + staked) for all accounts staked to the node that are not declining rewards at the
+            beginning of the staking period
           type: number
+          format: int64
+          nullable: true
         stake_total:
           description: The sum of all nodes' consensus weight at the beginning of the staking period
-          nullable: true
           type: number
+          format: int64
+          nullable: true
         staking_period:
           allOf:
             - $ref: '#/components/schemas/TimestampRange'
@@ -1957,7 +2000,9 @@ components:
       example:
         description: "address book 1"
         file_id: '0.0.102'
+        max_stake: 50000
         memo: '0.0.4'
+        min_stake: 1000
         node_account_id: '0.0.4'
         node_cert_hash: '0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16'
         node_id: 1
@@ -1966,13 +2011,14 @@ components:
           - ip_address_v4: 128.0.0.6
             port: 50216
         stake: 20000
+        stake_not_rewarded: 19900
         stake_rewarded: 100
         stake_total: 100000
         staking_period:
-          from: 1654290964.000000001
-          to: 1654377364.000000000
+          from: '1655164800.000000000'
+          to: '1655251200.000000000'
         timestamp:
-          from: 187654.000123457
+          from: '187654.000123457'
           to: null
     NetworkNodes:
       type: array

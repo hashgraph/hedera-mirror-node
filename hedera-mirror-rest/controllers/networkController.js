@@ -55,7 +55,6 @@ class NetworkController extends BaseController {
    * Extracts SQL where conditions, params, order, and limit
    *
    * @param {[]} filters parsed and validated filters
-   * @param {Number} startPosition param index start position
    */
   extractNetworkNodesQuery = (filters) => {
     let limit = networkNodesDefaultSize;
@@ -129,7 +128,7 @@ class NetworkController extends BaseController {
   };
 
   extractFileDataQuery = (filters) => {
-    // get latest rate only. Since logic pulls most recent items order and limit are ommitted in filterQuery
+    // get the latest rate only. Since logic pulls most recent items order and limit are omitted in filterQuery
     const filterQuery = {
       whereQuery: [],
     };
@@ -147,7 +146,7 @@ class NetworkController extends BaseController {
           );
         }
 
-        // to ensure most recent occurence is found convert eq to lte
+        // to ensure most recent occurrence is found convert eq to lte
         if (utils.opsMap.eq === filter.operator) {
           filter.operator = utils.opsMap.lte;
         }

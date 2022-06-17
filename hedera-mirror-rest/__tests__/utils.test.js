@@ -38,6 +38,22 @@ const ed25519ProtoKey = {ed25519: Buffer.from(ed25519Key, 'hex')};
 const ed25519Der = `302a300506032b6570032100${ed25519Key}`;
 const responseLimit = config.response.limit;
 
+describe('Utils asNullIfDefault', () => {
+  test('number with default', () => {
+    expect(utils.asNullIfDefault(-1, -1)).toBeNull();
+    expect(utils.asNullIfDefault(0, -1)).toEqual(0);
+    expect(utils.asNullIfDefault(null, -1)).toBeNull();
+    expect(utils.asNullIfDefault(undefined, -1)).toBeUndefined();
+  });
+
+  test('string with default', () => {
+    expect(utils.asNullIfDefault('default', 'default')).toBeNull();
+    expect(utils.asNullIfDefault('foobar', 'default')).toEqual('foobar');
+    expect(utils.asNullIfDefault(null, 'default')).toBeNull();
+    expect(utils.asNullIfDefault(undefined, 'default')).toBeUndefined();
+  });
+});
+
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {
     const val = utils.getNullableNumber(0);

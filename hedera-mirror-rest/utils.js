@@ -59,6 +59,17 @@ const ltLte = [opsMap.lt, opsMap.lte];
 const gtLtPattern = /[gl]t[e]?:/;
 
 /**
+ * Returns null if the value is equal to the default, otherwise value.
+ *
+ * @param value
+ * @param defaultValue
+ * @return {*|null}
+ */
+const asNullIfDefault = (value, defaultValue) => {
+  return value === defaultValue ? null : value;
+};
+
+/**
  * Check if the given number is numeric
  * @param {String} n Number to test
  * @return {Boolean} true if n is numeric, false otherwise
@@ -1384,6 +1395,7 @@ const convertGasPriceToTinyBars = (gasPrice, hbarsPerTinyCent, centsPerHbar) => 
 
 module.exports = {
   addHexPrefix,
+  asNullIfDefault,
   buildAndValidateFilters,
   buildComparatorFilter,
   buildPgSqlObject,
