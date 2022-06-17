@@ -446,11 +446,9 @@ describe('NetworkNodeService.getNetworkNodes tests', () => {
     await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
     await integrationDomainOps.loadNodeStakes(defaultNodeStakes);
 
-    const actual = await NetworkNodeService.getNetworkNodes([], [102], 'asc', 5);
-    expect(actual).toMatchObject(defaultExpectedNetworkNode102);
-    // await expect(NetworkNodeService.getNetworkNodes([], [102], 'asc', 5)).resolves.toMatchObject(
-    //   defaultExpectedNetworkNode102
-    // );
+    await expect(NetworkNodeService.getNetworkNodes([], [102], 'asc', 5)).resolves.toMatchObject(
+      defaultExpectedNetworkNode102
+    );
   });
 
   test('NetworkNodeService.getNetworkNodes - Empty node stakes', async () => {
