@@ -25,13 +25,17 @@ const _ = require('lodash');
 const {Nft} = require('../model');
 const BaseService = require('./baseService');
 const {OrderSpec} = require('../sql');
+const constants = require('../constants');
 
 /**
  * Nft business model
  */
 class NftService extends BaseService {
-  static nftByIdQuery = 'select * from nft where token_id = $1 and serial_number = $2';
-
+  static columns = {
+    [constants.filterKeys.TOKEN_ID]: Nft.TOKEN_ID,
+    [constants.filterKeys.SERIAL_NUMBER]: Nft.SERIAL_NUMBER,
+    [constants.filterKeys.SPENDER_ID]: Nft.SPENDER,
+  };
   static nftQuery = `select
     ${Nft.ACCOUNT_ID},
     ${Nft.CREATED_TIMESTAMP},
@@ -43,71 +47,107 @@ class NftService extends BaseService {
     ${Nft.SPENDER},
     ${Nft.TOKEN_ID}
     from ${Nft.tableName}`;
+  static orderByColumns = [Nft.TOKEN_ID, Nft.SERIAL_NUMBER];
 
-  async getNft(tokenId, serialNumber) {
-    const {rows} = await pool.queryQuietly(NftService.nftByIdQuery, [tokenId, serialNumber]);
-    return _.isEmpty(rows) ? null : new Nft(rows[0]);
+  /**
+   * Gets the subquery to retrieve the token allowance based on the filters for an owner account
+   *
+   * @param {{key: string, operator: string, value: *}[]} filters
+   * @param {*[]} params
+   * @param {string} accountIdCondition
+   * @param {string} limitClause
+   * @param {string} orderClause
+   * @param {{key: string, operator: string, value: *}[]} spenderIdInFilters
+   * @param {{key: string, operator: string, value: *}[]} spenderIdFilters
+   * @return {string}
+   */
+  getSubQuery(filters, params, accountIdCondition, limitClause, orderClause, spenderIdInFilters, spenderIdFilters) {
+    // spenderInCondition used to combine multiple equals queries into a single "in" condition;
+    let spenderInCondition;
+    if (spenderIdInFilters.length === 1) {
+      // A single equals condition is treated like any other spenderIdFilter
+      spenderIdFilters.push(...spenderIdInFilters);
+    } else if (!_.isEmpty(spenderIdInFilters)) {
+      spenderInCondition = spenderIdInFilters.map((f) => f.value).join(',');
+    }
+
+    filters.push(...spenderIdFilters);
+
+    const conditions = [
+      accountIdCondition,
+      ...filters.map((filter) => {
+        params.push(filter.value);
+        const column = NftService.columns[filter.key];
+        return `${column}${filter.operator}$${params.length}`;
+      }),
+    ];
+    if (!_.isNil(spenderInCondition)) {
+      conditions.push(`${Nft.SPENDER} in (${spenderInCondition})`);
+    }
+
+    return [NftService.nftQuery, `where ${conditions.join(' and ')}`, orderClause, limitClause].join('\n');
   }
 
-  getNftsFiltersQuery(whereConditions, whereParams, orderClause, limit, paramsLength = whereParams.length) {
-    const params = whereParams;
-    const query = [
-      NftService.nftQuery,
-      whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
-      orderClause,
-      super.getLimitQuery(paramsLength + 1),
-    ].join('\n');
-    params.push(limit);
-
-    return [query, params];
-  }
-
-  async getNftOwnership(lower, inner, upper, order, limit) {
-    let allParams = [];
-    let allQueries = [];
+  /**
+   * Gets the full sql query and params
+   *
+   * @param query
+   * @return {{sqlQuery: string, params: *[]}}
+   */
+  getQuery(query) {
+    const {lower, inner, upper, order, ownerAccountId, limit, spenderIdInFilters, spenderIdFilters} = query;
+    const params = [ownerAccountId, limit];
+    const accountIdCondition = `${Nft.ACCOUNT_ID} = $1`;
+    const limitClause = super.getLimitQuery(2);
     const orderClause = super.getOrderByQuery(
-      OrderSpec.from(Nft.TOKEN_ID, order),
-      OrderSpec.from(Nft.SERIAL_NUMBER, order)
+      ...NftService.orderByColumns.map((column) => OrderSpec.from(column, order))
     );
-    if (!_.isEmpty(lower)) {
-      const [lowerQuery, lowerParams] = this.getNftsFiltersQuery(lower.conditions, lower.params, orderClause, limit);
-      allQueries = allQueries.concat(`(${lowerQuery})`);
-      allParams = allParams.concat(lowerParams);
-    }
 
-    if (!_.isEmpty(inner)) {
-      const [innerQuery, innerParams] = this.getNftsFiltersQuery(
-        inner.conditions,
-        inner.params,
-        orderClause,
-        limit,
-        inner.params.length + allParams.length
+    const subQueries = [lower, inner, upper]
+      .filter((filters) => filters.length !== 0)
+      .map((filters) =>
+        this.getSubQuery(
+          filters,
+          params,
+          accountIdCondition,
+          limitClause,
+          orderClause,
+          spenderIdInFilters,
+          spenderIdFilters
+        )
       );
-      allQueries = allQueries.concat(`(${innerQuery})`);
-      allParams = allParams.concat(innerParams);
-    }
 
-    if (!_.isEmpty(upper)) {
-      const [upperQuery, upperParams] = this.getNftsFiltersQuery(
-        upper.conditions,
-        upper.params,
+    let sqlQuery;
+    if (subQueries.length === 0) {
+      // if all three filters are empty, the subqueries will be empty too, just create the query with empty filters
+      sqlQuery = this.getSubQuery(
+        [],
+        params,
+        accountIdCondition,
+        limitClause,
         orderClause,
-        limit,
-        upper.params.length + allParams.length
+        spenderIdInFilters,
+        spenderIdFilters
       );
-      allQueries = allQueries.concat(`(${upperQuery})`);
-      allParams = allParams.concat(upperParams);
+    } else if (subQueries.length === 1) {
+      sqlQuery = subQueries[0];
+    } else {
+      sqlQuery = [subQueries.map((q) => `(${q})`).join('\nunion all\n'), orderClause, limitClause].join('\n');
     }
 
-    let unionQuery = allQueries.filter((x) => !!x).join('\nunion all\n');
+    return {sqlQuery, params};
+  }
 
-    // if more than 1 query was combined add an additional order and limit to format joined results
-    if (allQueries.length > 1) {
-      unionQuery = [unionQuery, orderClause, super.getLimitQuery(allParams.length)].join('\n');
-    }
-
-    const rows = await super.getRows(unionQuery, allParams, 'getNftOwnership');
-    return rows.map((nft) => new Nft(nft));
+  /**
+   * Gets the nfts for the query
+   *
+   * @param query
+   * @return {Promise<Nft[]>}
+   */
+  async getNfts(query) {
+    const {sqlQuery, params} = this.getQuery(query);
+    const rows = await super.getRows(sqlQuery, params, 'newGetNftOwnership');
+    return rows.map((ta) => new Nft(ta));
   }
 }
 
