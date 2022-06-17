@@ -8,7 +8,7 @@
     "node": ">=16.13.0 < 17"
   },
   "scripts": {
-    "dev": "nodemon app.js",
+    "dev": "nodemon server.js",
     "integrationtest": "jest --testPathPattern='/__tests__/integration.test.js|/__tests__/service/.*\\.test\\.js' --collectCoverage=false",
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
     "postinstall": "node ./npm_scripts/postinstall.js",

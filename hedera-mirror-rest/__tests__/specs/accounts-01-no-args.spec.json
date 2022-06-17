@@ -15,7 +15,8 @@
       {
         "num": 3,
         "key": "2a28080112240a221220bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee",
-        "staked_account_id": 200
+        "staked_account_id": 200,
+        "stake_period_start": 2000
       },
       {
         "num": 4,
@@ -185,7 +186,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -219,7 +220,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -244,7 +245,7 @@
         "receiver_sig_required": false,
         "staked_account_id": "0.0.200",
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -303,7 +304,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -328,7 +329,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -350,7 +351,7 @@
         "receiver_sig_required": null,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -394,7 +395,7 @@
         "receiver_sig_required": null,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -416,7 +417,7 @@
         "receiver_sig_required": true,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       }
     ],
     "links": {

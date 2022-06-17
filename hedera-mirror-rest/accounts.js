@@ -49,6 +49,7 @@ const processRow = (row) => {
     evmAddress = entityId.toEvmAddress();
   }
 
+  const stakedToNode = row.staked_node_id !== null && row.staked_node_id !== -1;
   return {
     account: entityId.toString(),
     alias: base32.encode(row.alias),
@@ -64,8 +65,8 @@ const processRow = (row) => {
     memo: row.memo,
     receiver_sig_required: row.receiver_sig_required,
     staked_account_id: EntityId.parse(row.staked_account_id, {isNullable: true}).toString(),
-    staked_node_id: row.staked_node_id !== -1 ? row.staked_node_id : null,
-    stake_period_start: row.stake_period_start,
+    staked_node_id: stakedToNode ? row.staked_node_id : null,
+    stake_period_start: stakedToNode ? row.stake_period_start : null,
   };
 };
 

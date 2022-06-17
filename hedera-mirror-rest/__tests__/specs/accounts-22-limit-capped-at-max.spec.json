@@ -174,7 +174,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -205,7 +205,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -227,7 +227,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -249,7 +249,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -280,7 +280,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -302,7 +302,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       }
     ],
     "links": {

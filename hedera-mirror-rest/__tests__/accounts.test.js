@@ -356,7 +356,7 @@ describe('processRow', () => {
     receiver_sig_required: false,
     staked_account_id: 0,
     staked_node_id: -1,
-    stake_period_start: 20,
+    stake_period_start: -1,
     token_balances: [
       {
         token_id: '1500',
@@ -400,7 +400,7 @@ describe('processRow', () => {
     receiver_sig_required: false,
     staked_account_id: null,
     staked_node_id: null,
-    stake_period_start: 20,
+    stake_period_start: null,
   };
   const expectedContract = {
     ...expectedAccount,
@@ -467,12 +467,23 @@ describe('processRow', () => {
     });
   });
 
+  test('staked account id and stake period start', () => {
+    expect(processRow({...inputAccount, staked_account_id: 10, stake_period_start: 30})).toEqual({
+      ...expectedAccount,
+      staked_account_id: '0.0.10',
+    });
+  });
+
   test('null staked account id', () => {
     expect(processRow({...inputAccount, staked_account_id: null})).toEqual(expectedAccount);
   });
 
   test('staked node id', () => {
-    expect(processRow({...inputAccount, staked_node_id: 2})).toEqual({...expectedAccount, staked_node_id: 2});
+    expect(processRow({...inputAccount, staked_node_id: 2, stake_period_start: 30})).toEqual({
+      ...expectedAccount,
+      staked_node_id: 2,
+      stake_period_start: 30,
+    });
   });
 
   test('default contract', () => {

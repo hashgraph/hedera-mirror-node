@@ -71,7 +71,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "account": "0.0.8",
@@ -89,7 +89,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       },
       {
         "account": "0.0.9",
@@ -107,7 +107,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
-        "stake_period_start": -1
+        "stake_period_start": null
       }
     ],
     "links": {

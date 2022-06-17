@@ -1337,9 +1337,10 @@ components:
           description: |
             The staking period during which either the staking settings for this account changed (such as starting
             staking or changing stakedNode) or the most recent reward was earned, whichever is later. If this account 
-            is not currently staked to a node, then the value is -1
+            is not currently staked to a node, then the value is null
           type: integer
           format: int64
+          nullable: true
       example:
         account: 0.0.8
         alias: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
@@ -1350,6 +1351,7 @@ components:
           tokens:
             - token_id: 0.0.200001
               balance: 8
+        decline_reward: false
         deleted: false
         ethereum_nonce: 10
         evm_address: "0xac384c53f03855fa1b3616052f8ba32c6c2a2fec"
@@ -1358,6 +1360,9 @@ components:
         max_automatic_token_associations: 200
         memo: "entity memo"
         receiver_sig_required: false
+        staked_account_id: null
+        staked_node_id: 3
+        stake_period_start: 2000
     Accounts:
       type: array
       items:
