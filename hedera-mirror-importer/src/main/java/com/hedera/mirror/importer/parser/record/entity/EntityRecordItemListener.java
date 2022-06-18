@@ -318,6 +318,9 @@ public class EntityRecordItemListener implements RecordItemListener {
                         case SKIP:
                             log.warn("Skipping non-fee transfer due to partial data issue");
                             continue;
+                        default:
+                            log.warn("Unsupported partial data action");
+                            break;
                     }
                 }
 

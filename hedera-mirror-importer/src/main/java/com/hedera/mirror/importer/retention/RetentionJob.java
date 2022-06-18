@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
@@ -135,6 +136,7 @@ public class RetentionJob {
 
             // We pruned max in the last iteration, so skip it now
             if (current == max) {
+                current = null;
                 return false;
             }
 
@@ -150,6 +152,7 @@ public class RetentionJob {
             // Next record file is in between min and max
             var next = recordFileRepository.findNextBetween(endTimestamp, max.getConsensusEnd());
             if (next.isEmpty()) {
+                current = null;
                 return false;
             }
 
@@ -159,6 +162,9 @@ public class RetentionJob {
 
         @Override
         public RecordFile next() {
+            if (current == null) {
+                throw new NoSuchElementException("No more record files");
+            }
             return current;
         }
     }

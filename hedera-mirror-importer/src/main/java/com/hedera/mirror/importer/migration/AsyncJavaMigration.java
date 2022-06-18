@@ -114,8 +114,7 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
         try {
             do {
-                final var previous = last;
-                last = transactionOperations.execute(t -> migratePartial(previous.get()));
+                last = executeTransaction(last);
                 count++;
 
                 if (stopwatch.elapsed(TimeUnit.MINUTES) >= minutes) {
@@ -129,6 +128,12 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
             log.error("Error executing asynchronous migration after {} iterations in {}", count, stopwatch);
             throw e;
         }
+    }
+
+    @Nonnull
+    private Optional<T> executeTransaction(final Optional<T> previous) {
+        var last = transactionOperations.execute(t -> migratePartial(previous.get()));
+        return last != null ? last : Optional.empty();
     }
 
     protected abstract T getInitial();
