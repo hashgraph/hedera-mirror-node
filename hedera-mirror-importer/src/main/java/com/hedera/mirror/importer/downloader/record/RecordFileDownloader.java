@@ -25,9 +25,9 @@ import javax.inject.Named;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.downloader.StreamFileNotifier;
@@ -52,7 +52,7 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
 
     @Override
     @Leader
-    @Scheduled(fixedDelayString = "${hedera.mirror.importer.downloader.record.frequency:500}")
+    @Scheduled(fixedDelayString = "#{@recordDownloaderProperties.getFrequency().toMillis()}")
     public void download() {
         downloadNextBatch();
     }

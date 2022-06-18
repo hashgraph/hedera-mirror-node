@@ -24,15 +24,17 @@ import java.time.Duration;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 @Data
+@Component
 @ConfigurationProperties("hedera.mirror.importer.retention")
 @Validated
 public class RetentionProperties {
 
     @NotNull
-    private Duration batchPeriod = Duration.ofHours(1L);
+    private Duration batchPeriod = Duration.ofDays(1L);
 
     private boolean enabled = false;
 

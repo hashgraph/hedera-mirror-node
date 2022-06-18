@@ -37,7 +37,8 @@ consistent even when querying the earliest data.
 The first time the job is run it may take a long time to complete due to the potentially terabytes worth of data to
 purge. Subsequent runs should be much faster as it will only have to purge the data accumulated between the last run.
 It's recommend if enabling retention to increase the `temp_file_limit` property on PostgreSQL to a large amount like
-`2147483647kB`.
+`2147483647kB`. The importer database user denoted by the `hedera.mirror.importer.db.username` property will need to be
+altered to have delete permission if it does not already have it.
 
 ## Upgrade
 

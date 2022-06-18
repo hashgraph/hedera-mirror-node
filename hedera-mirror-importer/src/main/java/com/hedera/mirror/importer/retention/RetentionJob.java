@@ -23,11 +23,12 @@ package com.hedera.mirror.importer.retention;
 import com.google.common.base.Stopwatch;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.ClassUtils;
@@ -49,62 +50,43 @@ public class RetentionJob {
     private final Collection<RetentionRepository> retentionRepositories;
     private final TransactionOperations transactionOperations;
 
-    @Scheduled(fixedDelayString = "${hedera.mirror.importer.retention.frequency:1}", timeUnit = TimeUnit.DAYS)
+    @Scheduled(fixedDelayString = "#{@retentionProperties.getFrequency().toMillis()}", initialDelay = 120_000)
     public synchronized void prune() {
         if (!retentionProperties.isEnabled()) {
+            log.info("Retention is disabled");
             return;
         }
 
-        Optional<RecordFile> latest = recordFileRepository.findLatest();
+        var retentionPeriod = retentionProperties.getPeriod();
+        var latest = recordFileRepository.findLatestWithOffset(retentionPeriod.toNanos());
         if (latest.isEmpty()) {
             log.warn("Skipping since database is empty");
             return;
         }
 
-        long batchPeriod = retentionProperties.getBatchPeriod().toNanos();
-        long retentionPeriod = retentionProperties.getPeriod().toNanos();
-        var counters = new TreeMap<String, Long>();
-        var stopwatch = Stopwatch.createStarted();
+        var maxTimestamp = latest.get().getConsensusEnd();
+        var iterator = new RecordFileIterator(latest.get());
+        log.info("Using retention period {} to prune entries on or before {}", retentionPeriod,
+                toInstant(maxTimestamp));
 
         try {
-            var recordFile = recordFileRepository.findEarliest();
-            if (recordFile.isEmpty()) {
-                return; // Shouldn't occur since we've found at least one row above
+            while (iterator.hasNext()) {
+                prune(iterator);
             }
 
-            long count = 0L;
-            long minTimestamp = recordFile.map(RecordFile::getConsensusStart).orElse(0L);
-            long maxTimestamp = latest.map(RecordFile::getConsensusEnd).get() - retentionPeriod;
-            log.info("Removing data from {} to {}", toInstant(minTimestamp), toInstant(maxTimestamp));
-
-            while (shouldDelete(recordFile, maxTimestamp)) {
-                long startTimestamp = recordFile.map(RecordFile::getConsensusStart).orElse(0L);
-                var nextRecordFile = recordFileRepository.findNext(startTimestamp + batchPeriod);
-                long endTimestamp = nextRecordFile.map(RecordFile::getConsensusEnd)
-                        .map(t -> Math.min(t, maxTimestamp))
-                        .orElse(maxTimestamp);
-
-                prune(counters, endTimestamp);
-
-                recordFile = nextRecordFile;
-                long countPrevious = count;
-                count = counters.values().stream().reduce(0L, Long::sum);
-                long elapsed = stopwatch.elapsed(TimeUnit.SECONDS);
-                long rate = elapsed > 0 ? count / elapsed : 0L;
-                log.info("Pruned {} entries in {} at {}/s", count - countPrevious, stopwatch, rate);
-            }
-
-            log.info("Finished pruning tables in {}: {}", stopwatch, counters);
+            log.info("Finished pruning tables in {}: {}", iterator.getStopwatch(), iterator.getCounters());
         } catch (Exception e) {
-            log.error("Error pruning tables in {}: {}", stopwatch, counters, e);
+            log.error("Error pruning tables in {}: {}", iterator.getStopwatch(), iterator.getCounters(), e);
         }
     }
 
-    private boolean shouldDelete(Optional<RecordFile> recordFile, long maxTimestamp) {
-        return recordFile.isPresent() && recordFile.get().getConsensusEnd() < maxTimestamp;
-    }
+    private void prune(RecordFileIterator iterator) {
+        var counters = iterator.getCounters();
+        long countBefore = counters.values().stream().reduce(0L, Long::sum);
+        var stopwatch = iterator.getStopwatch();
+        var next = iterator.next();
+        long endTimestamp = next.getConsensusEnd();
 
-    private void prune(Map<String, Long> counters, long endTimestamp) {
         transactionOperations.executeWithoutResult(t ->
                 retentionRepositories.forEach(repository -> {
                     long count = repository.prune(endTimestamp);
@@ -112,6 +94,12 @@ public class RetentionJob {
                     counters.merge(table, count, Long::sum);
                 })
         );
+
+        long countAfter = counters.values().stream().reduce(0L, Long::sum);
+        long count = countAfter - countBefore;
+        long elapsed = stopwatch.elapsed(TimeUnit.SECONDS);
+        long rate = elapsed > 0 ? countAfter / elapsed : 0L;
+        log.info("Pruned {} entries on or before {} in {} at {}/s", count, toInstant(endTimestamp), stopwatch, rate);
     }
 
     private String getTableName(RetentionRepository repository) {
@@ -122,5 +110,56 @@ public class RetentionJob {
 
     private Instant toInstant(long nanos) {
         return Instant.ofEpochSecond(0L, nanos);
+    }
+
+    @Data
+    private class RecordFileIterator implements Iterator<RecordFile> {
+
+        private final Map<String, Long> counters = new TreeMap<>();
+        private final RecordFile max;
+        private final Stopwatch stopwatch = Stopwatch.createStarted();
+        private RecordFile current;
+
+        public boolean hasNext() {
+            // Initialize with the earliest/minimum record file. This can incur an extra prune at the beginning but
+            // simplfies logic and is necessary in case there is only one record file in the database.
+            if (current == null) {
+                var next = recordFileRepository.findNextBetween(0, max.getConsensusEnd());
+                if (next.isEmpty()) {
+                    return false;
+                }
+
+                current = next.get();
+                return true;
+            }
+
+            // We pruned max in the last iteration, so skip it now
+            if (current == max) {
+                return false;
+            }
+
+            long batchPeriod = retentionProperties.getBatchPeriod().toNanos();
+            long endTimestamp = current.getConsensusEnd() + batchPeriod;
+
+            // Ignore batchPeriod if it would put us past the max and just use max instead
+            if (endTimestamp >= max.getConsensusEnd()) {
+                current = max;
+                return true;
+            }
+
+            // Next record file is in between min and max
+            var next = recordFileRepository.findNextBetween(endTimestamp, max.getConsensusEnd());
+            if (next.isEmpty()) {
+                return false;
+            }
+
+            current = next.get();
+            return true;
+        }
+
+        @Override
+        public RecordFile next() {
+            return current;
+        }
     }
 }

@@ -24,6 +24,7 @@ import com.google.common.base.Stopwatch;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
@@ -108,12 +109,19 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
         long count = 0;
         var last = Optional.of(getInitial());
         var stopwatch = Stopwatch.createStarted();
+        log.info("Starting asynchronous migration");
+        long minutes = 1L;
 
         try {
             do {
                 final var previous = last;
                 last = transactionOperations.execute(t -> migratePartial(previous.get()));
                 count++;
+
+                if (stopwatch.elapsed(TimeUnit.MINUTES) >= minutes) {
+                    log.info("Completed iteration {} with last value: {}", count, last.orElse(null));
+                    minutes++;
+                }
             } while (last.isPresent());
 
             log.info("Successfully completed asynchronous migration with {} iterations in {}", count, stopwatch);

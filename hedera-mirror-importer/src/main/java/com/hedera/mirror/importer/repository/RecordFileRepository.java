@@ -28,21 +28,22 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 
 public interface RecordFileRepository extends StreamFileRepository<RecordFile, Long>, RetentionRepository {
 
-    @Query(value = "select * from record_file order by consensus_end asc limit 1", nativeQuery = true)
-    Optional<RecordFile> findEarliest();
-
     @Override
     @Query(value = "select * from record_file order by consensus_end desc limit 1", nativeQuery = true)
     Optional<RecordFile> findLatest();
+
+    @Query(nativeQuery = true, value = "select * from record_file where consensus_end < " +
+            "(select max(consensus_end) from record_file) - ?1 order by consensus_end desc limit 1")
+    Optional<RecordFile> findLatestWithOffset(long offset);
 
     @Query(value = "select * from record_file where consensus_end < ?1 and gas_used = -1 order by consensus_end desc " +
             "limit 1",
             nativeQuery = true)
     Optional<RecordFile> findLatestMissingGasUsedBefore(long consensusTimestamp);
 
-    @Query(value = "select * from record_file where consensus_end < ?1 " +
-            "order by consensus_end desc limit 1", nativeQuery = true)
-    Optional<RecordFile> findNext(long consensusEnd);
+    @Query(value = "select * from record_file where consensus_end > ?1 and consensus_end <= ?2 " +
+            "order by consensus_end asc limit 1", nativeQuery = true)
+    Optional<RecordFile> findNextBetween(long minTimestampExclusive, long maxTimestampInclusive);
 
     @Modifying
     @Override

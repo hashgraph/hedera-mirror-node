@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -43,6 +44,8 @@ class RetentionJobTest extends IntegrationTest {
 
     @BeforeEach
     void setup() {
+        retentionProperties.setBatchPeriod(Duration.ofSeconds(1L));
+        retentionProperties.setPeriod(Duration.ofDays(-1L));
         retentionProperties.setEnabled(true);
     }
 
@@ -55,20 +58,19 @@ class RetentionJobTest extends IntegrationTest {
     void disabled() {
         // given
         retentionProperties.setEnabled(false);
-        retentionProperties.setPeriod(Duration.ofDays(-1L));
-        var recordFile = domainBuilder.recordFile().persist();
+        var recordFile = recordFile();
 
         // when
         retentionJob.prune();
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertThat(transactionRepository.count()).isEqualTo(1L);
     }
 
     @Test
     void noData() {
         // given
-        retentionProperties.setPeriod(Duration.ofDays(-1L));
         var transaction = domainBuilder.transaction().persist();
 
         // when
@@ -79,12 +81,9 @@ class RetentionJobTest extends IntegrationTest {
     }
 
     @Test
-    void startAndEndEqualsSame() {
+    void pruneSingle() {
         // given
-        retentionProperties.setPeriod(Duration.ofDays(-1L));
-        long timestamp = 1L;
-        domainBuilder.recordFile().customize(r -> r.consensusEnd(timestamp).consensusStart(timestamp)).persist();
-        domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).persist();
+        recordFile();
 
         // when
         retentionJob.prune();
@@ -95,43 +94,56 @@ class RetentionJobTest extends IntegrationTest {
     }
 
     @Test
-    void nothingToPrune() {
+    void pruneNothing() {
         // given
-        retentionProperties.setBatchPeriod(Duration.ofNanos(2L));
-        retentionProperties.setPeriod(Duration.ofDays(30L));
-        var recordFile1 = domainBuilder.recordFile().persist();
-        var recordFile2 = domainBuilder.recordFile().persist();
-        var recordFile3 = domainBuilder.recordFile().persist();
-        domainBuilder.transaction().customize(t -> t.consensusTimestamp(recordFile1.getConsensusStart())).persist();
-        domainBuilder.transaction().customize(t -> t.consensusTimestamp(recordFile2.getConsensusStart())).persist();
-        domainBuilder.transaction().customize(t -> t.consensusTimestamp(recordFile3.getConsensusStart())).persist();
+        retentionProperties.setPeriod(Duration.ofDays(30));
+        var recordFile1 = recordFile();
+        var recordFile2 = recordFile();
+        var recordFile3 = recordFile();
 
         // when
         retentionJob.prune();
 
         // then
-        assertThat(recordFileRepository.count()).isEqualTo(3);
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1, recordFile2, recordFile3);
         assertThat(transactionRepository.count()).isEqualTo(3);
     }
 
     @Test
-    void prune() {
+    void prunePartial() {
         // given
-        retentionProperties.setBatchPeriod(Duration.ofNanos(2L));
-        retentionProperties.setPeriod(Duration.ofNanos(2L));
-        var recordFile1 = domainBuilder.recordFile().persist();
-        var recordFile2 = domainBuilder.recordFile().persist();
-        var recordFile3 = domainBuilder.recordFile().persist();
-        domainBuilder.transaction().customize(t -> t.consensusTimestamp(recordFile1.getConsensusStart())).persist();
-        domainBuilder.transaction().customize(t -> t.consensusTimestamp(recordFile2.getConsensusStart())).persist();
-        var transaction3 = domainBuilder.transaction()
-                .customize(t -> t.consensusTimestamp(recordFile3.getConsensusStart())).persist();
+        var recordFile1 = recordFile();
+        var recordFile2 = recordFile();
+        var recordFile3 = recordFile();
+        var period = recordFile3.getConsensusEnd() - recordFile2.getConsensusEnd() - 1;
+        retentionProperties.setPeriod(Duration.ofSeconds(0, period));
 
         // when
         retentionJob.prune();
 
         // then
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile3);
-        assertThat(transactionRepository.findAll()).containsExactly(transaction3);
+        assertThat(transactionRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void pruneEverything() {
+        // given
+        recordFile();
+        recordFile();
+        recordFile();
+
+        // when
+        retentionJob.prune();
+
+        // then
+        assertThat(recordFileRepository.count()).isZero();
+        assertThat(transactionRepository.count()).isZero();
+    }
+
+    private RecordFile recordFile() {
+        var recordFile = domainBuilder.recordFile().persist();
+        domainBuilder.transaction().customize(t -> t.consensusTimestamp(recordFile.getConsensusEnd())).persist();
+        return recordFile;
     }
 }

@@ -32,17 +32,6 @@ class RecordFileRepositoryTest extends AbstractRepositoryTest {
     private final RecordFileRepository recordFileRepository;
 
     @Test
-    void findEarliest() {
-        assertThat(recordFileRepository.findEarliest()).isEmpty();
-
-        var recordFile1 = domainBuilder.recordFile().persist();
-        domainBuilder.recordFile().persist();
-        domainBuilder.recordFile().persist();
-
-        assertThat(recordFileRepository.findEarliest()).get().isEqualTo(recordFile1);
-    }
-
-    @Test
     void findLatest() {
         assertThat(recordFileRepository.findLatest()).isEmpty();
 
@@ -54,34 +43,52 @@ class RecordFileRepositoryTest extends AbstractRepositoryTest {
     }
 
     @Test
-    void findLatestMissingGasUsedBefore() {
-        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(100L)).isEmpty();
+    void findLatestWithOffset() {
+        assertThat(recordFileRepository.findLatestWithOffset(0)).isEmpty();
 
-        var recordFile1 = domainBuilder.recordFile().customize(r -> r.gasUsed(-1)).persist();
-        var recordFile2 = domainBuilder.recordFile().persist();
-        var recordFile3 = domainBuilder.recordFile().customize(r -> r.gasUsed(-1)).persist();
-        var recordFile4 = domainBuilder.recordFile().persist();
-
-        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile4.getConsensusEnd() + 1L)).get()
-                .isEqualTo(recordFile3);
-        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile3.getConsensusEnd())).get()
-                .isEqualTo(recordFile1);
-        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile2.getConsensusEnd())).get()
-                .isEqualTo(recordFile1);
-        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(recordFile1.getConsensusEnd())).isEmpty();
-    }
-
-    @Test
-    void findNext() {
         var recordFile1 = domainBuilder.recordFile().persist();
         var recordFile2 = domainBuilder.recordFile().persist();
         var recordFile3 = domainBuilder.recordFile().persist();
 
-        assertThat(recordFileRepository.findNext(0)).isEmpty();
-        assertThat(recordFileRepository.findNext(recordFile1.getConsensusEnd())).isEmpty();
-        assertThat(recordFileRepository.findNext(recordFile2.getConsensusEnd())).get().isEqualTo(recordFile1);
-        assertThat(recordFileRepository.findNext(recordFile3.getConsensusEnd())).get().isEqualTo(recordFile2);
-        assertThat(recordFileRepository.findNext(recordFile3.getConsensusEnd() + 1)).get().isEqualTo(recordFile3);
+        var offset = recordFile3.getConsensusEnd() - recordFile2.getConsensusEnd();
+        assertThat(recordFileRepository.findLatestWithOffset(offset)).get().isEqualTo(recordFile1);
+        assertThat(recordFileRepository.findLatestWithOffset(0)).get().isEqualTo(recordFile2);
+        assertThat(recordFileRepository.findLatestWithOffset(-1)).get().isEqualTo(recordFile3);
+    }
+
+    @Test
+    void findLatestMissingGasUsedBefore() {
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(100L)).isEmpty();
+
+        var rf1 = domainBuilder.recordFile().customize(r -> r.gasUsed(-1)).persist();
+        var rf2 = domainBuilder.recordFile().persist();
+        var rf3 = domainBuilder.recordFile().customize(r -> r.gasUsed(-1)).persist();
+        var rf4 = domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(rf4.getConsensusEnd() + 1L)).get()
+                .isEqualTo(rf3);
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(rf3.getConsensusEnd())).get().isEqualTo(rf1);
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(rf2.getConsensusEnd())).get().isEqualTo(rf1);
+        assertThat(recordFileRepository.findLatestMissingGasUsedBefore(rf1.getConsensusEnd())).isEmpty();
+    }
+
+    @Test
+    void findNextBetween() {
+        var rf1 = domainBuilder.recordFile().persist();
+        var rf2 = domainBuilder.recordFile().persist();
+        var rf3 = domainBuilder.recordFile().persist();
+        var max = Long.MAX_VALUE;
+
+        assertThat(recordFileRepository.findNextBetween(0, max)).get().isEqualTo(rf1);
+        assertThat(recordFileRepository.findNextBetween(rf1.getConsensusEnd(), max)).get().isEqualTo(rf2);
+        assertThat(recordFileRepository.findNextBetween(rf2.getConsensusEnd(), max)).get().isEqualTo(rf3);
+        assertThat(recordFileRepository.findNextBetween(rf3.getConsensusEnd(), max)).isEmpty();
+
+        max = rf3.getConsensusEnd();
+        assertThat(recordFileRepository.findNextBetween(0, max)).get().isEqualTo(rf1);
+        assertThat(recordFileRepository.findNextBetween(rf1.getConsensusEnd(), max)).get().isEqualTo(rf2);
+        assertThat(recordFileRepository.findNextBetween(rf2.getConsensusEnd(), max)).get().isEqualTo(rf3);
+        assertThat(recordFileRepository.findNextBetween(rf3.getConsensusEnd(), max)).isEmpty();
     }
 
     @Test
