@@ -27,19 +27,18 @@ const JSONBig = require('json-bigint')({useNativeBigInt: true});
 const long = require('long');
 const math = require('mathjs');
 const pg = require('pg');
+const pgRange = require('pg-range');
 const util = require('util');
 
 const constants = require('./constants');
 const EntityId = require('./entityId');
 const config = require('./config');
 const ed25519 = require('./ed25519');
-const contants = require('./constants');
 const {DbError} = require('./errors/dbError');
 const {InvalidArgumentError} = require('./errors/invalidArgumentError');
 const {InvalidClauseError} = require('./errors/invalidClauseError');
 const {TransactionResult, TransactionType, FeeSchedule} = require('./model');
 const {keyTypes} = require('./constants');
-const pgRange = require('pg-range');
 
 const responseLimit = config.response.limit;
 const resultSuccess = TransactionResult.getSuccessProtoId();
@@ -345,7 +344,7 @@ const filterDependencyCheck = (query) => {
   let containsBlockNumber = false;
   let containsBlockHash = false;
   let containsTransactionIndex = false;
-  for (const [key, values] of Object.entries(query)) {
+  for (const key of Object.keys(query)) {
     if (key === constants.filterKeys.TRANSACTION_INDEX) {
       containsTransactionIndex = true;
     } else if (key === constants.filterKeys.BLOCK_NUMBER) {
@@ -377,7 +376,7 @@ const filterDependencyCheck = (query) => {
 };
 
 const isValidContractIdQueryParam = (op, val) => {
-  if (EntityId.isValidEvmAddress(val, contants.EvmAddressType.OPTIONAL_SHARD_REALM)) {
+  if (EntityId.isValidEvmAddress(val, constants.EvmAddressType.OPTIONAL_SHARD_REALM)) {
     return op === constants.queryParamOperators.eq;
   }
   return EntityId.isValidEntityId(val, false);
@@ -797,7 +796,7 @@ const mergeParams = (initial, ...params) => {
 /**
  * Converts nanoseconds since epoch to seconds.nnnnnnnnn format
  *
- * @param {String} ns Nanoseconds since epoch
+ * @param {BigInt|Number|String} ns Nanoseconds since epoch
  * @param {String} sep separator between seconds and nanos, default is '.'
  * @return {String} Seconds since epoch (seconds.nnnnnnnnn format)
  */
@@ -807,7 +806,7 @@ const nsToSecNs = (ns, sep = '.') => {
   }
 
   ns = `${ns}`;
-  const secs = ns.substr(0, ns.length - 9).padStart(1, '0');
+  const secs = ns.substring(0, ns.length - 9).padStart(1, '0');
   const nanos = ns.slice(-9).padStart(9, '0');
   return `${secs}${sep}${nanos}`;
 };
@@ -838,13 +837,12 @@ const secNsToSeconds = (secNs) => {
  * Increment timestamp (nnnnnnnnnnnnnnnnnnn format) by 1 day
  * @return {String} (seconds.nnnnnnnnn format)
  */
-const oneDayInNs = 86_400_000_000_000n;
 const incrementTimestampByOneDay = (ns) => {
   if (_.isNil(ns)) {
     return null;
   }
 
-  const result = BigInt(ns) + oneDayInNs;
+  const result = BigInt(ns) + constants.ONE_DAY_IN_NS;
   return nsToSecNs(result);
 };
 

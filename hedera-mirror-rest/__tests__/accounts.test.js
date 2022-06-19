@@ -482,7 +482,13 @@ describe('processRow', () => {
     expect(processRow({...inputAccount, staked_node_id: 2, stake_period_start: 30})).toEqual({
       ...expectedAccount,
       staked_node_id: 2,
-      stake_period_start: 30,
+      stake_period_start: '2592000.000000000',
+    });
+
+    expect(processRow({...inputAccount, staked_node_id: 2, stake_period_start: 19162})).toEqual({
+      ...expectedAccount,
+      staked_node_id: 2,
+      stake_period_start: '1655596800.000000000',
     });
   });
 

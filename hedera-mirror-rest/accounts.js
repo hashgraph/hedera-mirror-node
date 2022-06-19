@@ -66,7 +66,7 @@ const processRow = (row) => {
     receiver_sig_required: row.receiver_sig_required,
     staked_account_id: EntityId.parse(row.staked_account_id, {isNullable: true}).toString(),
     staked_node_id: stakedToNode ? row.staked_node_id : null,
-    stake_period_start: stakedToNode ? row.stake_period_start : null,
+    stake_period_start: stakedToNode ? utils.nsToSecNs(BigInt(row.stake_period_start) * constants.ONE_DAY_IN_NS) : null,
   };
 };
 

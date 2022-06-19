@@ -22,3 +22,8 @@ alter table if exists node_stake
   alter column max_stake drop default,
   alter column min_stake drop default,
   alter column stake_not_rewarded drop default;
+
+-- change node_stake primary key to (consensus_timestamp, node_id)
+alter table if exists node_stake
+  drop constraint node_stake_pkey,
+  add primary key (consensus_timestamp, node_id);

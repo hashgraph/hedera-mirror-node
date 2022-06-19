@@ -362,6 +362,7 @@ class Pool {
       row.alias = null;
       row.auto_renew_period = i * 1000;
       row.consensus_timestamp = this.toNs(this.timeNow);
+      row.decline_reward = false;
       row.deleted = false;
       row.expiration_timestamp = this.toNs(this.timeNow + 1000);
       row.id = this.getAccountId(accountNum, i);
@@ -369,6 +370,9 @@ class Pool {
       row.max_automatic_token_associations = i;
       row.memo = 'account_memo' + i;
       row.receiver_sig_required = false;
+      row.staked_account_id = 0;
+      row.staked_node_id = -1;
+      row.stake_period_start = -1;
       row.type = 'ACCOUNT';
 
       rows.push(row);

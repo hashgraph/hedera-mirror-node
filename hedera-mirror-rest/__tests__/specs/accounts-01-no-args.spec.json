@@ -270,7 +270,7 @@
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": 3,
-        "stake_period_start": 1000
+        "stake_period_start": "86400000.000000000"
       },
       {
         "balance": {
@@ -373,7 +373,7 @@
         "receiver_sig_required": null,
         "staked_account_id": null,
         "staked_node_id": 5,
-        "stake_period_start": 1100
+        "stake_period_start": "95040000.000000000"
       },
       {
         "balance": {

@@ -1337,13 +1337,12 @@ components:
           format: int64
           nullable: true
         stake_period_start:
-          description: |
-            The staking period during which either the staking settings for this account changed (such as starting
-            staking or changing stakedNode) or the most recent reward was earned, whichever is later. If this account 
-            is not currently staked to a node, then the value is null
-          type: integer
-          format: int64
-          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/TimestampNullable'
+            - description: |
+                The staking period during which either the staking settings for this account changed (such as starting
+                staking or changing stakedNode) or the most recent reward was earned, whichever is later. If this
+                account is not currently staked to a node, then the value is null
       example:
         account: 0.0.8
         alias: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
