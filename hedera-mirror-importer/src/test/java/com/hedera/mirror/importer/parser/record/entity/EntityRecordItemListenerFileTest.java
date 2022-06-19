@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,9 +25,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
-
-import com.hedera.mirror.common.util.DomainUtils;
-
 import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
 import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -45,12 +42,13 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
@@ -58,6 +56,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
@@ -65,6 +64,7 @@ import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerTest {
 
     private static final FileID ADDRESS_BOOK_FILEID = FileID.newBuilder().setShardNum(0).setRealmNum(0)
@@ -73,23 +73,16 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     private static final byte[] FILE_CONTENTS = {'a', 'b', 'c'};
     private static final int TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT = 4;
 
-    @Resource
-    private AddressBookRepository addressBookRepository;
-
-    @Resource
-    private AddressBookEntryRepository addressBookEntryRepository;
-
-    @Resource
-    private FileDataRepository fileDataRepository;
-
-    @Resource
-    private AddressBookService addressBookService;
+    private final AddressBookRepository addressBookRepository;
+    private final AddressBookEntryRepository addressBookEntryRepository;
+    private final FileDataRepository fileDataRepository;
+    private final AddressBookService addressBookService;
 
     @Value("classpath:addressbook/mainnet")
-    private File addressBookLarge;
+    private final File addressBookLarge;
 
     @Value("classpath:addressbook/testnet")
-    private File addressBookSmall;
+    private final File addressBookSmall;
 
     @BeforeEach
     void before() {
@@ -623,6 +616,39 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     }
 
     @Test
+    void fileUpdateFeeSchedule() {
+        FileID fileId = FileID.newBuilder().setFileNum(111L).build();
+        Transaction transaction = fileUpdateAllTransaction(fileId, FILE_CONTENTS);
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED);
+
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
+
+        assertAll(
+                () -> assertRowCountOnSuccess(fileId),
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertFileEntityAndData(transactionBody.getFileUpdate(), record.getConsensusTimestamp())
+        );
+    }
+
+    @Test
+    void fileUpdateThrottles() {
+        FileID fileId = FileID.newBuilder().setFileNum(123L).build();
+        Transaction transaction = fileUpdateAllTransaction(fileId, FILE_CONTENTS);
+        TransactionBody transactionBody = getTransactionBody(transaction);
+        TransactionRecord record = transactionRecord(transactionBody,
+                ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
+
+        parseRecordItemAndCommit(new RecordItem(transaction, record));
+
+        assertAll(
+                () -> assertRowCountOnSuccess(fileId),
+                () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertFileEntityAndData(transactionBody.getFileUpdate(), record.getConsensusTimestamp())
+        );
+    }
+
+    @Test
     void fileDeleteToExisting() {
         // first create the file
         Transaction fileCreateTransaction = fileCreateTransaction();
@@ -793,8 +819,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
     private void assertAddressBookData(byte[] expected, Timestamp consensusTimestamp) {
         // addressBook.getStartConsensusTimestamp = transaction.consensusTimestamp + 1ns
         AddressBook actualAddressBook =
-                addressBookRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp) + 1)
-                .get();
+                addressBookRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp) + 1).get();
         assertArrayEquals(expected, actualAddressBook.getFileData());
     }
 
