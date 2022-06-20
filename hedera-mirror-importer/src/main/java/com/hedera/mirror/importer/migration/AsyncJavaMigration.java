@@ -132,8 +132,7 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
     @Nonnull
     private Optional<T> executeTransaction(final Optional<T> previous) {
-        var last = transactionOperations.execute(t -> migratePartial(previous.get()));
-        return last != null ? last : Optional.empty();
+        return transactionOperations.execute(t -> migratePartial(previous.get()));
     }
 
     protected abstract T getInitial();
