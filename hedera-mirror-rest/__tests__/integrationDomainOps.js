@@ -491,7 +491,11 @@ const addEthereumTransaction = async (ethereumTransaction) => {
   await insertDomainObject('ethereum_transaction', insertFields, ethTx);
 };
 
+const hexEncodedFileIds = [111, 112];
+
 const addFileData = async (fileDataInput) => {
+  const encoding = hexEncodedFileIds.includes(fileDataInput.entity_id) ? 'hex' : 'utf-8';
+
   const fileData = {
     transaction_type: 17,
     ...fileDataInput,
@@ -500,7 +504,7 @@ const addFileData = async (fileDataInput) => {
   // contract bytecode is provided as encoded hex string
   fileData.file_data =
     typeof fileDataInput.file_data === 'string'
-      ? Buffer.from(fileDataInput.file_data, 'utf-8')
+      ? Buffer.from(fileDataInput.file_data, encoding)
       : Buffer.from(fileData.file_data);
 
   await sqlConnection.query(
@@ -1344,8 +1348,6 @@ const insertDomainObject = async (table, fields, obj) => {
     `INSERT INTO ${table} (${fields}) VALUES (${positions});`,
     fields.map((f) => obj[f])
   );
-
-  logger.trace(`Inserted row to ${table}`);
 };
 
 // for a pair of current and history tables, if the timestamp range is open-ended, use the current table, otherwise

@@ -26,7 +26,10 @@ const {FeeSchedule} = require('../../model');
 
 describe('fee schedule proto parse', () => {
   const input = {
-    file_data: '0a280a0a08541a061a04408888340a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200',
+    file_data: Buffer.from(
+      '0a280a0a08541a061a04408888340a0a08061a061a0440889d2d0a0a08071a061a0440b0b63c120208011200',
+      'hex'
+    ),
     consensus_timestamp: 1653644164591111113,
   };
 
@@ -55,5 +58,8 @@ describe('fee schedule proto parse', () => {
 
   test('invalid contents', () => {
     expect(() => new FeeSchedule({file_data: '123456', consensus_timestamp: 1})).toThrowError(FileDecodeError);
+    expect(() => new FeeSchedule({file_data: Buffer.from('123456', 'hex'), consensus_timestamp: 1})).toThrowError(
+      FileDecodeError
+    );
   });
 });

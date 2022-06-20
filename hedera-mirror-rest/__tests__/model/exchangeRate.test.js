@@ -26,7 +26,7 @@ const {ExchangeRate} = require('../../model');
 
 describe('exchange rate proto parse', () => {
   const input = {
-    file_data: '0a1008b0ea0110cac1181a0608a0a1d09306121008b0ea0110e18e191a0608b0bdd09306',
+    file_data: Buffer.from('0a1008b0ea0110cac1181a0608a0a1d09306121008b0ea0110e18e191a0608b0bdd09306', 'hex'),
     consensus_timestamp: 1651770056616171000,
   };
 
@@ -45,6 +45,8 @@ describe('exchange rate proto parse', () => {
   });
 
   test('invalid contents', () => {
-    expect(() => new ExchangeRate({file_data: '123456', consensus_timestamp: 1})).toThrowError(FileDecodeError);
+    expect(() => new ExchangeRate({file_data: Buffer.from('123456', 'hex'), consensus_timestamp: 1})).toThrowError(
+      FileDecodeError
+    );
   });
 });

@@ -50,7 +50,7 @@ class FileDataService extends BaseService {
     )
     select
       max(${FileData.tableAlias}.${FileData.CONSENSUS_TIMESTAMP}) as ${FileData.CONSENSUS_TIMESTAMP},
-      string_agg(encode(${FileData.getFullName(FileData.FILE_DATA)}, 'escape'), '' order by ${FileData.getFullName(
+      string_agg(${FileData.getFullName(FileData.FILE_DATA)}, '' order by ${FileData.getFullName(
     FileData.CONSENSUS_TIMESTAMP
   )}) as ${FileData.FILE_DATA}
     from ${FileData.tableName} ${FileData.tableAlias}
@@ -110,13 +110,11 @@ class FileDataService extends BaseService {
 
   getExchangeRate = async (filterQueries) => {
     const row = await this.getLatestFileDataContents(FileDataService.exchangeRateFileId, filterQueries);
-
     return _.isNil(row) ? null : new ExchangeRate(row);
   };
 
   getFeeSchedule = async (filterQueries) => {
     const row = await this.getLatestFileDataContents(FileDataService.feeScheduleFileId, filterQueries);
-
     return _.isNil(row) ? null : new FeeSchedule(row);
   };
 }

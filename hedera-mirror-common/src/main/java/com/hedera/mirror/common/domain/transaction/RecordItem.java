@@ -178,7 +178,10 @@ public class RecordItem implements StreamItem {
     }
 
     public boolean isSuccessful() {
-        return record.getReceipt().getStatus() == ResponseCodeEnum.SUCCESS;
+        var status = record.getReceipt().getStatus();
+        return status == ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED ||
+                status == ResponseCodeEnum.SUCCESS ||
+                status == ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
     }
 
     public boolean isChild() {
