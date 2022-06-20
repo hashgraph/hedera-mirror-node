@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.migration;
 import com.google.common.base.Stopwatch;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
@@ -114,7 +115,8 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
         try {
             do {
-                last = executeTransaction(last);
+                final var previous = last;
+                last = Objects.requireNonNullElse(transactionOperations.execute(t -> migratePartial(previous.get())), Optional.empty());
                 count++;
 
                 if (stopwatch.elapsed(TimeUnit.MINUTES) >= minutes) {
@@ -128,11 +130,6 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
             log.error("Error executing asynchronous migration after {} iterations in {}", count, stopwatch);
             throw e;
         }
-    }
-
-    @Nonnull
-    private Optional<T> executeTransaction(final Optional<T> previous) {
-        return transactionOperations.execute(t -> migratePartial(previous.get()));
     }
 
     protected abstract T getInitial();
