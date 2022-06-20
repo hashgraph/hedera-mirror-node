@@ -28,7 +28,7 @@
   "dependencies": {
     "@hashgraph/proto": "^2.5.0",
     "abort-controller": "^3.0.0",
-    "boxen": "^5.1.2",
+    "boxen": "^7.0.0",
     "chalk": "^4.1.2",
     "glob": "^8.0.3",
     "jest": "^28.1.1",
