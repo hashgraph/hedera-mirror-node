@@ -76,6 +76,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @Override
     protected AbstractEntity getExpectedUpdatedEntity() {
         AbstractEntity entity = super.getExpectedUpdatedEntity();
+        entity.setDeclineReward(false);
         entity.setMaxAutomaticTokenAssociations(0);
         return entity;
     }
@@ -119,7 +120,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         verify(entityListener).onEntity(entities.capture());
         assertThat(entities.getValue())
                 .isNotNull()
-                .returns(false, Entity::isDeclineReward)
+                .returns(false, Entity::getDeclineReward)
                 .returns(accountId.getAccountNum(), Entity::getStakedAccountId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
     }
@@ -139,9 +140,9 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         verify(entityListener).onEntity(entities.capture());
         assertThat(entities.getValue())
                 .isNotNull()
-                .returns(true, Entity::isDeclineReward)
+                .returns(true, Entity::getDeclineReward)
                 .returns(nodeId, Entity::getStakedNodeId)
-                .returns(-1L, Entity::getStakedAccountId)
+                .returns(null, Entity::getStakedAccountId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
     }
 

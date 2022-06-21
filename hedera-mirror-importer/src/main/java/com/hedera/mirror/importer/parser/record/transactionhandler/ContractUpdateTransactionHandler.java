@@ -25,8 +25,8 @@ import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.S
 import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -120,12 +120,12 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
                 break;
             case STAKED_NODE_ID:
                 contract.setStakedNodeId(transactionBody.getStakedNodeId());
-                contract.setStakedAccountId(-1L);
+                contract.setStakedAccountId(AbstractEntity.ACCOUNT_ID_CLEARED);
                 break;
             case STAKED_ACCOUNT_ID:
                 EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
-                contract.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
-                contract.setStakedNodeId(-1L);
+                contract.setStakedAccountId(accountId.getId());
+                contract.setStakedNodeId(AbstractEntity.NODE_ID_CLEARED);
                 break;
         }
 

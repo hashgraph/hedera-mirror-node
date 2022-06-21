@@ -693,6 +693,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                                      Key adminKey, Key submitKey, String memo, Long autoRenewAccountNum,
                                      Long autoRenewPeriod) {
         Entity topic = EntityId.of(topicId).toEntity();
+
         if (autoRenewAccountNum != null) {
             topic.setAutoRenewAccountId(autoRenewAccountNum);
         }
@@ -708,10 +709,11 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         if (null != submitKey) {
             topic.setSubmitKey(submitKey.toByteArray());
         }
+
+        topic.setDeclineReward(false);
         topic.setEthereumNonce(0L);
         topic.setMemo(memo);
         topic.setType(EntityType.TOPIC);
-        topic.setStakedAccountId(-1L);
         topic.setStakedNodeId(-1L);
         topic.setStakePeriodStart(-1L);
         return topic;

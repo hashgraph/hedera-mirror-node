@@ -17,7 +17,7 @@
         "timestamp_range": "[997654000123457,)"
       },
       {
-        "auto_renew_account": 0,
+        "auto_renew_account_id": 0,
         "created_timestamp": "987654111123456",
         "deleted": true,
         "file_id": "5001",
@@ -28,7 +28,7 @@
         "timestamp_range": "[987654111123456,)"
       },
       {
-        "auto_renew_account_id": "7007",
+        "auto_renew_account_id": 7007,
         "auto_renew_period": 1500,
         "created_timestamp": "987654222123456",
         "expiration_timestamp": "1236987654000000123",
@@ -41,7 +41,7 @@
         "timestamp_range": "[987654222123456,)"
       },
       {
-        "auto_renew_account": 0,
+        "auto_renew_account_id": 0,
         "created_timestamp": "987654111123457",
         "deleted": true,
         "file_id": "5001",

@@ -23,6 +23,7 @@
 const AddressBook = require('./addressBook');
 const AddressBookEntry = require('./addressBookEntry');
 const AddressBookServiceEndpoint = require('./addressBookServiceEndpoint');
+const NodeStake = require('./nodeStake');
 
 class NetworkNode {
   /**
@@ -32,6 +33,7 @@ class NetworkNode {
     this.addressBook = new AddressBook(networkNodeDb);
     this.addressBookEntry = new AddressBookEntry(networkNodeDb);
     this.addressBookServiceEndpoints = networkNodeDb.service_endpoints.map((x) => new AddressBookServiceEndpoint(x));
+    this.nodeStake = new NodeStake(networkNodeDb);
   }
 }
 

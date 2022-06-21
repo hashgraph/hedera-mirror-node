@@ -24,7 +24,7 @@ import static com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody.Sta
 
 import javax.inject.Named;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -100,12 +100,12 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
                 break;
             case STAKED_NODE_ID:
                 entity.setStakedNodeId(transactionBody.getStakedNodeId());
-                entity.setStakedAccountId(-1L);
+                entity.setStakedAccountId(AbstractEntity.ACCOUNT_ID_CLEARED);
                 break;
             case STAKED_ACCOUNT_ID:
                 EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
-                entity.setStakedAccountId(AccountIdConverter.INSTANCE.convertToDatabaseColumn(accountId));
-                entity.setStakedNodeId(-1L);
+                entity.setStakedAccountId(accountId.getId());
+                entity.setStakedNodeId(AbstractEntity.NODE_ID_CLEARED);
                 break;
         }
 

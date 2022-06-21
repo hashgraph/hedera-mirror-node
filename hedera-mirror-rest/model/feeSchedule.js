@@ -26,6 +26,7 @@ const {FileDecodeError} = require('../errors/fileDecodeError');
 
 class FeeSchedule {
   static FEE_DIVISOR_FACTOR = 1000;
+
   /**
    * Parses fee schedule into object
    */
@@ -33,7 +34,7 @@ class FeeSchedule {
     let currentAndNextFeeSchedule = {};
 
     try {
-      currentAndNextFeeSchedule = proto.CurrentAndNextFeeSchedule.decode(Buffer.from(feeSchedule.file_data, 'hex'));
+      currentAndNextFeeSchedule = proto.CurrentAndNextFeeSchedule.decode(feeSchedule.file_data);
     } catch (error) {
       throw new FileDecodeError(error.message);
     }

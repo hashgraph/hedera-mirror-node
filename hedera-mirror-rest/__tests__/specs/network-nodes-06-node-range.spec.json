@@ -95,6 +95,64 @@
         "node_id": 6,
         "port": 50217
       }
+    ],
+    "nodestakes": [
+      {
+        "consensus_timestamp": 187654000123457,
+        "epoch_day": 1,
+        "node_id": 0,
+        "stake": 0,
+        "stake_rewarded": 0,
+        "stake_total": 0
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "epoch_day": 1,
+        "node_id": 1,
+        "stake": 1,
+        "stake_rewarded": 1,
+        "stake_total": 1
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "epoch_day": 1,
+        "node_id": 2,
+        "stake": 2,
+        "stake_rewarded": 2,
+        "stake_total": 2
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "epoch_day": 1,
+        "node_id": 3,
+        "stake": 3,
+        "stake_rewarded": 3,
+        "stake_total": 3
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "epoch_day": 1,
+        "node_id": 4,
+        "stake": 4,
+        "stake_rewarded": 4,
+        "stake_total": 4
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "epoch_day": 1,
+        "node_id": 5,
+        "stake": 5,
+        "stake_rewarded": 5,
+        "stake_total": 5
+      },
+      {
+        "consensus_timestamp": 187654000123457,
+        "epoch_day": 1,
+        "node_id": 6,
+        "stake": 6,
+        "stake_rewarded": 6,
+        "stake_total": 416
+      }
     ]
   },
   "urls": ["/api/v1/network/nodes?node.id=gt:2&limit=2", "/api/v1/network/nodes?node.id=gte:3&limit=2"],
@@ -104,7 +162,9 @@
       {
         "description": "description",
         "file_id": "0.0.102",
+        "max_stake": 2000,
         "memo": "0.0.6",
+        "min_stake": 1,
         "node_account_id": "0.0.6",
         "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
         "node_id": 3,
@@ -115,6 +175,14 @@
             "port": 50214
           }
         ],
+        "stake": 3,
+        "stake_not_rewarded": 0,
+        "stake_rewarded": 3,
+        "stake_total": 3,
+        "staking_period": {
+          "from": "86400.000000000",
+          "to": "172800.000000000"
+        },
         "timestamp": {
           "from": "187654.000123457",
           "to": null
@@ -123,7 +191,9 @@
       {
         "description": "description",
         "file_id": "0.0.102",
+        "max_stake": 2000,
         "memo": "0.0.7",
+        "min_stake": 1,
         "node_account_id": "0.0.7",
         "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
         "node_id": 4,
@@ -134,6 +204,14 @@
             "port": 50215
           }
         ],
+        "stake": 4,
+        "stake_not_rewarded": 0,
+        "stake_rewarded": 4,
+        "stake_total": 4,
+        "staking_period": {
+          "from": "86400.000000000",
+          "to": "172800.000000000"
+        },
         "timestamp": {
           "from": "187654.000123457",
           "to": null

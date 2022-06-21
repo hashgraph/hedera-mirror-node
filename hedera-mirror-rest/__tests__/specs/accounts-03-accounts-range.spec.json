@@ -108,15 +108,19 @@
         },
         "account": "0.0.18",
         "alias": null,
+        "decline_reward": false,
+        "deleted": false,
         "ethereum_nonce": null,
         "evm_address": null,
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
-        "deleted": false,
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
-        "receiver_sig_required": false
+        "receiver_sig_required": false,
+        "staked_account_id": null,
+        "staked_node_id": null,
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -126,15 +130,19 @@
         },
         "account": "0.0.19",
         "alias": null,
+        "decline_reward": false,
+        "deleted": false,
         "ethereum_nonce": null,
         "evm_address": "0x0000000000000000000000000000000000000013",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
-        "deleted": false,
         "max_automatic_token_associations": 0,
         "memo": "contract memo",
-        "receiver_sig_required": null
+        "receiver_sig_required": null,
+        "staked_account_id": null,
+        "staked_node_id": null,
+        "stake_period_start": null
       },
       {
         "balance": {
@@ -153,15 +161,19 @@
         },
         "account": "0.0.20",
         "alias": null,
+        "decline_reward": false,
+        "deleted": false,
         "ethereum_nonce": null,
         "evm_address": "0x4af4714503e4f85795962a89ec63d672b9f2bb9a",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
-        "deleted": false,
         "max_automatic_token_associations": 0,
         "memo": "contract memo",
-        "receiver_sig_required": null
+        "receiver_sig_required": null,
+        "staked_account_id": null,
+        "staked_node_id": null,
+        "stake_period_start": null
       }
     ],
     "links": {

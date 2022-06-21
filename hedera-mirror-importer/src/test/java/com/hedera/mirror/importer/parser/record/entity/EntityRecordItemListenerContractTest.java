@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.collect.Range;
+import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Int32Value;
@@ -68,7 +69,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.data.util.Version;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -297,6 +297,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         // now update
         Transaction transaction = contractUpdateAllTransaction(setupResult.protoContractId, true, b -> {
+            b.setDeclineReward(BoolValue.of(false));
             if (newAutoRenewAccount != null) {
                 b.getAutoRenewAccountIdBuilder().setAccountNum(newAutoRenewAccount);
             }
@@ -316,6 +317,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertContractEntity(contractUpdateTransactionBody, record.getConsensusTimestamp())
                         .returns(expectedAutoRenewAccount, Contract::getAutoRenewAccountId)
                         .returns(contract.getCreatedTimestamp(), Contract::getCreatedTimestamp)
+                        .returns(false, Contract::getDeclineReward)
                         .returns(contract.getFileId(), Contract::getFileId) // FileId is ignored on updates by HAPI
         );
     }
@@ -661,10 +663,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         contract.setStakePeriodStart(stakePeriodStart);
         Contract newContract = EntityId.of(CREATED_CONTRACT_ID).toEntity();
         newContract.setCreatedTimestamp(timestamp);
+        newContract.setDeclineReward(false);
         newContract.setDeleted(false);
         newContract.setMaxAutomaticTokenAssociations(0);
         newContract.setMemo("");
-        newContract.setStakedAccountId(-1L);
         newContract.setStakedNodeId(-1L);
         newContract.setStakePeriodStart(-1L);
         newContract.setTimestampLower(timestamp);
@@ -910,7 +912,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(createdId.getType(), Contract::getType);
 
         var contractCreateInstance = recordItem.getTransactionBody().getContractCreateInstance();
-        contractAssert.returns(contractCreateInstance.getDeclineReward(), Contract::isDeclineReward);
+        contractAssert.returns(contractCreateInstance.getDeclineReward(), Contract::getDeclineReward);
 
         if (contractCreateInstance.getStakedIdCase() == ContractCreateTransactionBody.StakedIdCase.STAKEDID_NOT_SET) {
             return;
@@ -919,13 +921,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         contractAssert.returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Contract::getStakePeriodStart);
 
         if (contractCreateInstance.hasStakedAccountId()) {
-            long accountId = AccountIdConverter.INSTANCE.convertToDatabaseColumn(
-                    EntityId.of(contractCreateInstance.getStakedAccountId()));
-            contractAssert.returns(accountId, Contract::getStakedAccountId)
+            var accountId = EntityId.of(contractCreateInstance.getStakedAccountId());
+            contractAssert.returns(accountId.getId(), Contract::getStakedAccountId)
                     .returns(-1L, Contract::getStakedNodeId);
         } else {
             contractAssert.returns(contractCreateInstance.getStakedNodeId(), Contract::getStakedNodeId)
-                    .returns(-1L, Contract::getStakedAccountId);
+                    .returns(null, Contract::getStakedAccountId);
         }
     }
 
@@ -949,16 +950,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(null, Contract::getObtainerId)
                 .returns(EntityId.of(expected.getProxyAccountID()), Contract::getProxyAccountId)
                 .returns(DomainUtils.getPublicKey(adminKey), Contract::getPublicKey)
-                .returns(EntityType.CONTRACT, Contract::getType)
-                .returns(expected.getDeclineReward().getValue(), Contract::isDeclineReward);
+                .returns(EntityType.CONTRACT, Contract::getType);
 
         if (expected.getStakedIdCase() == STAKEDID_NOT_SET) {
             return contractAssert;
         }
 
         if (expected.hasStakedAccountId()) {
-            long expectedAccountId = AccountIdConverter.INSTANCE.convertToDatabaseColumn(
-                    EntityId.of(expected.getStakedAccountId()));
+            long expectedAccountId = EntityId.of(expected.getStakedAccountId()).getId();
             contractAssert.returns(expectedAccountId, Contract::getStakedAccountId)
                     .returns(null, Contract::getStakedNodeId)
                     .returns(-1L, Contract::getStakePeriodStart);
