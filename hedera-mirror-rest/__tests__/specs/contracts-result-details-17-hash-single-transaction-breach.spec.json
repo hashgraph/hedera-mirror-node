@@ -78,14 +78,6 @@
     "/api/v1/contracts/results/4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
     "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392"
   ],
-  "responseStatus": 500,
-  "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "Internal error"
-        }
-      ]
-    }
-  }
+  "responseStatus": 200,
+  "responseJson": {}
 }

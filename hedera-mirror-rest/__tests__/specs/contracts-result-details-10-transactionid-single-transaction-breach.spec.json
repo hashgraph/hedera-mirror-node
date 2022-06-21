@@ -59,14 +59,6 @@
     "/api/v1/contracts/results/0.0.8001-167654-000123400",
     "/api/v1/contracts/results/0.0.8001-167654-000123400?nonce=0"
   ],
-  "responseStatus": 500,
-  "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "Internal error"
-        }
-      ]
-    }
-  }
+  "responseStatus": 200,
+  "responseJson": {}
 }
