@@ -400,6 +400,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setAutoRenewAccountId(autoRenewAccountId);
         entity.setAutoRenewPeriod(autoRenewPeriod);
         entity.setCreatedTimestamp(createdTimestamp);
+        entity.setDeclineReward(false);
         entity.setDeleted(deleted);
         entity.setEthereumNonce(0L);
         entity.setExpirationTimestamp(expiryTimeNs);
@@ -407,7 +408,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         entity.setTimestampLower(modifiedTimestamp);
         entity.setKey(adminKeyBytes);
         entity.setSubmitKey(submitKeyBytes);
-        entity.setStakedAccountId(-1L);
         entity.setStakedNodeId(-1L);
         entity.setStakePeriodStart(-1L);
         return entity;

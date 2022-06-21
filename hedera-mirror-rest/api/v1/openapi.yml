@@ -1093,6 +1093,9 @@ components:
     # API call responses.
     AccountsResponse:
       type: object
+      required:
+        - accounts
+        - links
       properties:
         accounts:
           $ref: '#/components/schemas/Accounts'
@@ -1183,6 +1186,9 @@ components:
           $ref: '#/components/schemas/Timestamp'
     NetworkNodesResponse:
       type: object
+      required:
+        - nodes
+        - links
       properties:
         nodes:
           $ref: '#/components/schemas/NetworkNodes'
@@ -1269,23 +1275,35 @@ components:
       type: object
       required:
         - account
-        - balance
-        - expiry_timestamp
+        - alias
         - auto_renew_period
-        - key
+        - balance
+        - decline_reward
         - deleted
+        - ethereum_nonce
+        - evm_address
+        - expiry_timestamp
+        - key
         - max_automatic_token_associations
         - memo
         - receiver_sig_required
+        - staked_account_id
+        - staked_node_id
+        - stake_period_start
       properties:
         account:
           $ref: '#/components/schemas/EntityId'
         alias:
           $ref: '#/components/schemas/Alias'
         auto_renew_period:
+          type: integer
+          format: int64
           nullable: true
         balance:
           $ref: '#/components/schemas/Balance'
+        decline_reward:
+          description: Whether the account declines receiving a staking reward
+          type: boolean
         deleted:
           type: boolean
           nullable: true
@@ -1309,6 +1327,22 @@ components:
         receiver_sig_required:
           nullable: true
           type: boolean
+        staked_account_id:
+          allOf:
+            - $ref: '#/components/schemas/EntityId'
+            - description: The account to which this account is staking
+        staked_node_id:
+          description: The id of the node to which this account is staking
+          type: integer
+          format: int64
+          nullable: true
+        stake_period_start:
+          allOf:
+            - $ref: '#/components/schemas/TimestampNullable'
+            - description: |
+                The staking period during which either the staking settings for this account changed (such as starting
+                staking or changing stakedNode) or the most recent reward was earned, whichever is later. If this
+                account is not currently staked to a node, then the value is null
       example:
         account: 0.0.8
         alias: HIQQEXWKW53RKN4W6XXC4Q232SYNZ3SZANVZZSUME5B5PRGXL663UAQA
@@ -1319,6 +1353,7 @@ components:
           tokens:
             - token_id: 0.0.200001
               balance: 8
+        decline_reward: false
         deleted: false
         ethereum_nonce: 10
         evm_address: "0xac384c53f03855fa1b3616052f8ba32c6c2a2fec"
@@ -1327,6 +1362,9 @@ components:
         max_automatic_token_associations: 200
         memo: "entity memo"
         receiver_sig_required: false
+        staked_account_id: null
+        staked_node_id: 3
+        stake_period_start: 2000
     Accounts:
       type: array
       items:
@@ -1353,40 +1391,16 @@ components:
           - token_id: 0.0.200001
             balance: 8
     AccountBalanceTransactions:
-      type: object
-      properties:
-        transactions:
-          $ref: '#/components/schemas/Transactions'
-        balance:
-          $ref: '#/components/schemas/Balance'
-        account:
-          $ref: '#/components/schemas/EntityId'
-        alias:
-          $ref: '#/components/schemas/Alias'
-        ethereum_nonce:
-          type: integer
-          format: int64
-          nullable: true
-        evm_address:
-          $ref: '#/components/schemas/EvmAddressNullable'
-        expiry_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
-        auto_renew_period:
-          nullable: true
-        key:
-          $ref: '#/components/schemas/Key'
-        deleted:
-          type: boolean
-        max_automatic_token_associations:
-          type: integer
-          format: int64
-        memo:
-          type: string
-        receiver_sig_required:
-          type: boolean
-          nullable: true
-        links:
-          $ref: '#/components/schemas/Links'
+      allOf:
+        - $ref: '#/components/schemas/AccountInfo'
+        - required:
+            - transactions
+            - links
+          properties:
+            transactions:
+              $ref: '#/components/schemas/Transactions'
+            links:
+              $ref: '#/components/schemas/Links'
     Alias:
       description: RFC4648 no-padding base32 encoded account alias
       type: string
@@ -1897,6 +1911,23 @@ components:
           nullable: true
     NetworkNode:
       type: object
+      required:
+        - description
+        - file_id
+        - max_stake
+        - memo
+        - min_stake
+        - node_account_id
+        - node_id
+        - node_cert_hash
+        - public_key
+        - service_endpoints
+        - stake
+        - stake_not_rewarded
+        - stake_rewarded
+        - stake_total
+        - staking_period
+        - timestamp
       properties:
         description:
           description: a memo associated with the address book
@@ -1904,37 +1935,60 @@ components:
           type: string
         file_id:
           $ref: '#/components/schemas/EntityId'
+        max_stake:
+          description: The maximum stake (rewarded or not rewarded) this node can have as consensus weight
+          type: integer
+          format: int64
+          nullable: true
         memo:
           description: memo
           nullable: true
           type: string
+        min_stake:
+          description: |
+            The minimum stake (rewarded or not rewarded) this node must reach before having non-zero consensus weight
+          type: integer
+          format: int64
+          nullable: true
+        node_account_id:
+          $ref: '#/components/schemas/EntityId'
         node_id:
           description: An identifier for the node
           type: number
-        node_account_id:
-          $ref: '#/components/schemas/EntityId'
         node_cert_hash:
           description: hex encoded hash of the node’s TLS certificate
           nullable: true
           type: string
         public_key:
-          description: hex encoded X509 RSA public key used to sign stream files
+          description: hex encoded X509 RSA public key used to verify stream file signature
           nullable: true
           type: string
         service_endpoints:
           $ref: '#/components/schemas/ServiceEndpoints'
         stake:
           description: The node consensus weight at the beginning of the staking period
-          nullable: true
           type: number
+          format: int64
+          nullable: true
+        stake_not_rewarded:
+          description: |
+            The sum (balance + stakedToMe) for all accounts staked to this node with declineReward=true at the 
+            beginning of the staking period
+          type: number
+          format: int64
+          nullable: true
         stake_rewarded:
-          description: The sum (balance + staked) for all accounts staked to the node that are not declining rewards at the beginning of the staking period
-          nullable: true
+          description: |
+            The sum (balance + staked) for all accounts staked to the node that are not declining rewards at the
+            beginning of the staking period
           type: number
+          format: int64
+          nullable: true
         stake_total:
           description: The sum of all nodes' consensus weight at the beginning of the staking period
-          nullable: true
           type: number
+          format: int64
+          nullable: true
         staking_period:
           allOf:
             - $ref: '#/components/schemas/TimestampRange'
@@ -1945,7 +1999,9 @@ components:
       example:
         description: "address book 1"
         file_id: '0.0.102'
+        max_stake: 50000
         memo: '0.0.4'
+        min_stake: 1000
         node_account_id: '0.0.4'
         node_cert_hash: '0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16'
         node_id: 1
@@ -1954,13 +2010,14 @@ components:
           - ip_address_v4: 128.0.0.6
             port: 50216
         stake: 20000
+        stake_not_rewarded: 19900
         stake_rewarded: 100
         stake_total: 100000
         staking_period:
-          from: 1654290964.000000001
-          to: 1654377364.000000000
+          from: '1655164800.000000000'
+          to: '1655251200.000000000'
         timestamp:
-          from: 187654.000123457
+          from: '187654.000123457'
           to: null
     NetworkNodes:
       type: array

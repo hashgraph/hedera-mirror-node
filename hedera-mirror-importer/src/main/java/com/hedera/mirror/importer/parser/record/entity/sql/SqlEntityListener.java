@@ -493,6 +493,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setAutoRenewAccountId(src.getAutoRenewAccountId());
         }
 
+        if (dest.getDeclineReward() == null) {
+            dest.setDeclineReward(src.getDeclineReward());
+        }
+
         if (dest.getDeleted() == null) {
             dest.setDeleted(src.getDeleted());
         }
@@ -511,6 +515,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         if (dest.getProxyAccountId() == null) {
             dest.setProxyAccountId(src.getProxyAccountId());
+        }
+
+        if (dest.getStakedAccountId() == null) {
+            dest.setStakedAccountId(src.getStakedAccountId());
+        }
+
+        if (dest.getStakedNodeId() == null) {
+            dest.setStakedNodeId(src.getStakedNodeId());
         }
 
         if (dest.getStakePeriodStart() == null) {

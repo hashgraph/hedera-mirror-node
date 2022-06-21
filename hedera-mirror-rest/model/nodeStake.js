@@ -27,9 +27,12 @@ class NodeStake {
   constructor(nodeStake) {
     this.consensusTimestamp = nodeStake.consensus_timestamp;
     this.epochDay = nodeStake.epoch_day;
+    this.maxStake = nodeStake.max_stake;
+    this.minStake = nodeStake.min_stake;
     this.nodeId = nodeStake.node_id;
     this.rewardRate = nodeStake.reward_rate;
     this.stake = nodeStake.stake;
+    this.stakeNotRewarded = nodeStake.stake_not_rewarded;
     this.stakeRewarded = nodeStake.stake_rewarded;
     this.stakeTotal = nodeStake.stake_total;
     this.stakingPeriod = nodeStake.staking_period;
@@ -40,9 +43,12 @@ class NodeStake {
 
   static CONSENSUS_TIMESTAMP = `consensus_timestamp`;
   static EPOCH_DAY = `epoch_day`;
+  static MAX_STAKE = `max_stake`;
+  static MIN_STAKE = `min_stake`;
   static NODE_ID = `node_id`;
   static REWARD_RATE = `reward_rate`;
   static STAKE = `stake`;
+  static STAKE_NOT_REWARDED = `stake_not_rewarded`;
   static STAKE_REWARDED = `stake_rewarded`;
   static STAKE_TOTAL = `stake_total`;
   static STAKING_PERIOD = `staking_period`;

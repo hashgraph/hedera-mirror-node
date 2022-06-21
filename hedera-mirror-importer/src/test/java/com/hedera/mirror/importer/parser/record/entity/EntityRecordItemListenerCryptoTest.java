@@ -69,8 +69,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -404,9 +404,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()),
                         dbAccountEntity.getTimestampLower()),
                 () -> assertFalse(dbAccountEntity.getReceiverSigRequired()),
-                () -> assertFalse(dbAccountEntity.isDeclineReward()),
+                () -> assertFalse(dbAccountEntity.getDeclineReward()),
                 () -> assertEquals(cryptoUpdateTransactionBody.getStakedNodeId(), dbAccountEntity.getStakedNodeId()),
-                () -> assertEquals(-1L, dbAccountEntity.getStakedAccountId()),
+                () -> assertEquals(AbstractEntity.ACCOUNT_ID_CLEARED, dbAccountEntity.getStakedAccountId()),
                 () -> assertEquals(Utility.getEpochDay(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp())),
                         dbAccountEntity.getStakePeriodStart())
         );
@@ -620,14 +620,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         parseRecordItemAndCommit(new RecordItem(updateTransaction, record));
 
         var dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
-
-        var entityId = EntityId.of(transactionBody.getCryptoUpdateAccount().getStakedAccountId());
-        long stakedAccountId = AccountIdConverter.INSTANCE.convertToDatabaseColumn(entityId);
+        var stakedAccountId = EntityId.of(transactionBody.getCryptoUpdateAccount().getStakedAccountId()).getId();
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count()),
                 () -> assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpirationTimestamp()),
-                () -> assertTrue(dbAccountEntity.isDeclineReward()),
+                () -> assertTrue(dbAccountEntity.getDeclineReward()),
                 () -> assertEquals(stakedAccountId, dbAccountEntity.getStakedAccountId()),
                 () -> assertEquals(-1L, dbAccountEntity.getStakedNodeId())
         );
@@ -1301,7 +1299,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     }
 
     private Transaction cryptoUpdateTransaction(AccountID accountNum,
-            Consumer<CryptoUpdateTransactionBody.Builder> custom) {
+                                                Consumer<CryptoUpdateTransactionBody.Builder> custom) {
         return buildTransaction(builder -> {
             var cryptoBuilder = builder.getCryptoUpdateAccountBuilder()
                     .setAccountIDToUpdate(accountNum)

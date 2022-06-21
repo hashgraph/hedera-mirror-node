@@ -40,7 +40,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         order by start_consensus_timestamp desc limit 1
       ),
       ns as (
-        select consensus_timestamp,node_id,stake,stake_rewarded,stake_total,staking_period
+        select max_stake,min_stake,node_id,stake,stake_not_rewarded,stake_rewarded,stake_total,staking_period
         from node_stake where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
       )
       select
@@ -53,7 +53,10 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         adb.file_id,
         adb.start_consensus_timestamp,
         adb.end_consensus_timestamp,
+        ns.max_stake,
+        ns.min_stake,
         ns.stake,
+        ns.stake_not_rewarded,
         ns.stake_rewarded,
         ns.stake_total,
         ns.staking_period,
@@ -84,7 +87,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       order by start_consensus_timestamp desc limit 1
     ),
     ns as (
-      select consensus_timestamp,node_id,stake,stake_rewarded,stake_total,staking_period
+      select max_stake,min_stake,node_id,stake,stake_not_rewarded,stake_rewarded,stake_total,staking_period
       from node_stake where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
     )
     select
@@ -97,7 +100,10 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       adb.file_id,
       adb.start_consensus_timestamp,
       adb.end_consensus_timestamp,
+      ns.max_stake,
+      ns.min_stake,
       ns.stake,
+      ns.stake_not_rewarded,
       ns.stake_rewarded,
       ns.stake_total,
       ns.staking_period,
@@ -200,37 +206,49 @@ const defaultNodeStakes = [
   {
     consensus_timestamp: 1,
     epoch_day: 0,
+    max_stake: 100,
+    min_stake: 1,
     node_id: 0,
     stake: 1,
+    stake_not_rewarded: 0,
     stake_rewarded: 1,
-    stake_total: 1,
+    stake_total: 3,
     staking_period: 1,
   },
   {
     consensus_timestamp: 1,
     epoch_day: 0,
+    max_stake: 200,
+    min_stake: 2,
     node_id: 1,
     stake: 2,
-    stake_rewarded: 2,
-    stake_total: 2,
+    stake_not_rewarded: 1,
+    stake_rewarded: 1,
+    stake_total: 3,
     staking_period: 2,
   },
   {
     consensus_timestamp: 2,
     epoch_day: 1,
+    max_stake: 300,
+    min_stake: 2,
     node_id: 0,
     stake: 3,
-    stake_rewarded: 3,
-    stake_total: 3,
+    stake_not_rewarded: 1,
+    stake_rewarded: 2,
+    stake_total: 7,
     staking_period: 1654991999999999999n,
   },
   {
     consensus_timestamp: 2,
     epoch_day: 1,
+    max_stake: 400,
+    min_stake: 1,
     node_id: 1,
     stake: 4,
-    stake_rewarded: 4,
-    stake_total: 4,
+    stake_not_rewarded: 1,
+    stake_rewarded: 3,
+    stake_total: 7,
     staking_period: BigInt('1655251199999999999'),
   },
 ];
@@ -255,9 +273,12 @@ const defaultExpectedNetworkNode101 = [
       },
     ],
     nodeStake: {
+      maxStake: 400,
+      minStake: 1,
       stake: 4,
-      stakeRewarded: 4,
-      stakeTotal: 4,
+      stakeNotRewarded: 1,
+      stakeRewarded: 3,
+      stakeTotal: 7,
       stakingPeriod: 1655251199999999999n,
     },
   },
@@ -280,9 +301,12 @@ const defaultExpectedNetworkNode101 = [
       },
     ],
     nodeStake: {
+      maxStake: 300,
+      minStake: 2,
       stake: 3,
-      stakeRewarded: 3,
-      stakeTotal: 3,
+      stakeNotRewarded: 1,
+      stakeRewarded: 2,
+      stakeTotal: 7,
       stakingPeriod: 1654991999999999999n,
     },
   },
@@ -308,9 +332,12 @@ const defaultExpectedNetworkNode102 = [
       },
     ],
     nodeStake: {
+      maxStake: 300,
+      minStake: 2,
       stake: 3,
-      stakeRewarded: 3,
-      stakeTotal: 3,
+      stakeNotRewarded: 1,
+      stakeRewarded: 2,
+      stakeTotal: 7,
       stakingPeriod: 1654991999999999999n,
     },
   },
@@ -333,9 +360,12 @@ const defaultExpectedNetworkNode102 = [
       },
     ],
     nodeStake: {
+      maxStake: 400,
+      minStake: 1,
       stake: 4,
-      stakeRewarded: 4,
-      stakeTotal: 4,
+      stakeNotRewarded: 1,
+      stakeRewarded: 3,
+      stakeTotal: 7,
       stakingPeriod: 1655251199999999999n,
     },
   },
@@ -458,8 +488,8 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
       ],
       nodeStake: {
         stake: 3,
-        stakeRewarded: 3,
-        stakeTotal: 3,
+        stakeRewarded: 2,
+        stakeTotal: 7,
         stakingPeriod: 1654991999999999999n,
       },
     },
@@ -485,9 +515,12 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
         },
       ],
       nodeStake: {
+        maxStake: 300,
+        minStake: 2,
         stake: 3,
-        stakeRewarded: 3,
-        stakeTotal: 3,
+        stakeNotRewarded: 1,
+        stakeRewarded: 2,
+        stakeTotal: 7,
         stakingPeriod: 1654991999999999999n,
       },
     },

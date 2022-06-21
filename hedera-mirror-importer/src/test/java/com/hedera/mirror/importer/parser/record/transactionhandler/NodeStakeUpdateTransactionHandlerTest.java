@@ -127,7 +127,14 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
     }
 
     private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(long stake, long stakeRewarded) {
-        return recordItemBuilder.nodeStake().setStake(stake).setStakeRewarded(stakeRewarded).build();
+        long stakeNotRewarded = stake - stakeRewarded;
+        return recordItemBuilder.nodeStake()
+                .setMaxStake(stake * 2)
+                .setMinStake(stake / 2)
+                .setStake(stake)
+                .setStakeNotRewarded(stakeNotRewarded)
+                .setStakeRewarded(stakeRewarded)
+                .build();
     }
 
     private NodeStake getExpectedNodeStake(long consensusTimestamp, long epochDay,
@@ -136,9 +143,12 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         return NodeStake.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .epochDay(epochDay)
+                .maxStake(nodeStakeProto.getMaxStake())
+                .minStake(nodeStakeProto.getMinStake())
                 .nodeId(nodeStakeProto.getNodeId())
                 .rewardRate(nodeStakeProto.getRewardRate())
                 .stake(nodeStakeProto.getStake())
+                .stakeNotRewarded(nodeStakeProto.getStakeNotRewarded())
                 .stakeRewarded(nodeStakeProto.getStakeRewarded())
                 .stakeTotal(stakeTotal)
                 .stakingPeriod(stakingPeriod)

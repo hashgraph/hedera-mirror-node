@@ -756,6 +756,7 @@ class BatchUpserterTest extends IntegrationTest {
         Entity entity = new Entity();
         entity.setId(id);
         entity.setCreatedTimestamp(createdTimestamp);
+        entity.setDeclineReward(false);
         entity.setEthereumNonce(0L);
         entity.setTimestampLower(modifiedTimestamp);
         entity.setNum(id);
@@ -763,7 +764,6 @@ class BatchUpserterTest extends IntegrationTest {
         entity.setShard(0L);
         entity.setType(ACCOUNT);
         entity.setMemo(memo);
-        entity.setStakedAccountId(-1L);
         entity.setStakedNodeId(-1L);
         entity.setStakePeriodStart(-1L);
         return entity;

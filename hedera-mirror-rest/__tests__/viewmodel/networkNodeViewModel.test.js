@@ -50,16 +50,21 @@ describe('NetworkNodeViewModel', () => {
       },
     ],
     nodeStake: {
+      maxStake: 1000,
+      minStake: 6,
       stake: 12,
+      stakeNotRewarded: 8,
       stakeRewarded: 4,
-      stakeTotal: 6,
+      stakeTotal: 100,
       stakingPeriod: '1654991999999999999',
     },
   };
   const defaultExpected = {
     description: 'desc 1',
     file_id: '0.0.102',
+    max_stake: 1000,
     memo: '0.0.3',
+    min_stake: 6,
     node_account_id: '0.0.3',
     node_cert_hash:
       '0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16',
@@ -76,8 +81,9 @@ describe('NetworkNodeViewModel', () => {
       },
     ],
     stake: 12,
+    stake_not_rewarded: 8,
     stake_rewarded: 4,
-    stake_total: 6,
+    stake_total: 100,
     staking_period: {
       from: '1654992000.000000000',
       to: '1655078400.000000000',
@@ -105,7 +111,10 @@ describe('NetworkNodeViewModel', () => {
           publicKey: null,
         },
         nodeStake: {
+          maxStake: null,
+          minStake: null,
           stake: null,
+          stakeNotRewarded: null,
           stakeRewarded: null,
           stakeTotal: null,
           stakingPeriod: null,
@@ -114,13 +123,31 @@ describe('NetworkNodeViewModel', () => {
     ).toEqual({
       ...defaultExpected,
       description: null,
+      max_stake: null,
       memo: null,
+      min_stake: null,
       node_cert_hash: '0x',
       public_key: '0x',
       stake: null,
+      stake_not_rewarded: null,
       stake_rewarded: null,
       stake_total: null,
       staking_period: null,
+    });
+  });
+
+  test('maxStake minStake stakeNotRewarded with default value -1', () => {
+    const nodeStake = {...defaultNetworkNode.nodeStake, maxStake: -1, minStake: -1, stakeNotRewarded: -1};
+    expect(
+      new NetworkNodeViewModel({
+        ...defaultNetworkNode,
+        nodeStake,
+      })
+    ).toEqual({
+      ...defaultExpected,
+      max_stake: null,
+      min_stake: null,
+      stake_not_rewarded: null,
     });
   });
 });

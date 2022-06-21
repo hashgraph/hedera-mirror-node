@@ -219,12 +219,15 @@ class SqlEntityListenerTest extends IntegrationTest {
         Contract contractUpdate = contractCreate.toEntityId().toEntity();
         contractUpdate.setAutoRenewAccountId(110L);
         contractUpdate.setAutoRenewPeriod(30L);
+        contractUpdate.setDeclineReward(true);
         contractUpdate.setExpirationTimestamp(500L);
         contractUpdate.setKey(domainBuilder.key());
         contractUpdate.setMaxAutomaticTokenAssociations(100);
         contractUpdate.setMemo("updated");
-        contractUpdate.setTimestampLower(contractCreate.getTimestampLower() + 1);
         contractUpdate.setProxyAccountId(EntityId.of(100L, ACCOUNT));
+        contractUpdate.setStakedAccountId(domainBuilder.id());
+        contractUpdate.setStakePeriodStart(domainBuilder.id());
+        contractUpdate.setTimestampLower(contractCreate.getTimestampLower() + 1);
 
         Contract contractDelete = contractCreate.toEntityId().toEntity();
         contractDelete.setDeleted(true);
@@ -641,6 +644,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         entityUpdate.setAlias(entityCreate.getAlias());
         entityUpdate.setAutoRenewAccountId(101L);
         entityUpdate.setAutoRenewPeriod(30L);
+        entityUpdate.setDeclineReward(true);
         entityUpdate.setExpirationTimestamp(500L);
         entityUpdate.setKey(domainBuilder.key());
         entityUpdate.setMaxAutomaticTokenAssociations(40);
@@ -648,6 +652,9 @@ class SqlEntityListenerTest extends IntegrationTest {
         entityUpdate.setTimestampLower(entityCreate.getTimestampLower() + 1);
         entityUpdate.setProxyAccountId(EntityId.of(100L, ACCOUNT));
         entityUpdate.setReceiverSigRequired(true);
+        entityUpdate.setStakedAccountId(domainBuilder.id());
+        entityUpdate.setStakedNodeId(-1L);
+        entityUpdate.setStakePeriodStart(domainBuilder.id());
         entityUpdate.setSubmitKey(domainBuilder.key());
 
         Entity entityDelete = entityCreate.toEntityId().toEntity();
