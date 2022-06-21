@@ -1,0 +1,12 @@
+changelog:
+  exclude:
+    labels: ["wontfix", "question", "duplicate", "invalid"]
+  categories:
+    - title: "Enhancements"
+      labels: ["enhancement", "epic"]
+    - title: "Bug Fixes"
+      labels: ["bug"]
+    - title: "Documentation"
+      labels: ["documentation"]
+    - title: "Dependency Upgrades"
+      labels: ["dependencies"]

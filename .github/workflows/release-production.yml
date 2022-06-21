@@ -11,6 +11,7 @@ jobs:
         module: [ grpc, importer, monitor, rest, rosetta, web3 ]
     env:
       MODULE: hedera-mirror-${{ matrix.module }}
+      IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
     name: Publish images
     runs-on: ubuntu-latest
     steps:
@@ -54,7 +55,7 @@ jobs:
           context: ${{env.MODULE}}
           platforms: linux/amd64, linux/arm64
           push: true
-          tags: gcr.io/mirrornode/${{env.MODULE}}:${{env.TAG}}
+          tags: ${{env.IMAGE}}:${{env.TAG}},${{env.IMAGE}}:latest
 
   chart:
     name: Publish charts
