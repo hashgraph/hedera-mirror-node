@@ -302,6 +302,23 @@ describe('getQuery', () => {
         params: [1, 20, 10, 30],
       },
     },
+    {
+      name: 'spender single eq lt',
+      query: {
+        ...defaultQuery,
+        spenderIdInFilters: [{key: SPENDER_ID, operator: eq, value: 15}],
+        spenderIdFilters: [{key: SPENDER_ID, operator: lte, value: 10}],
+      },
+      expected: {
+        sqlQuery: `${selectColumnsStatement}
+            from nft where account_id = $1
+            and spender <= $3
+            and spender = $4
+            order by token_id desc,serial_number desc
+            limit $2`,
+        params: [1, 20, 10, 15],
+      },
+    },
   ];
 
   specs.forEach((spec) => {
