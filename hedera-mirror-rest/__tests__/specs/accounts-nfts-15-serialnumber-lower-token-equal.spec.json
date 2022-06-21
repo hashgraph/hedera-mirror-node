@@ -1,5 +1,5 @@
 {
-  "description": "Account NFT api call for a serial number range with a missing upper bound token",
+  "description": "Account NFT api call for a serial number range with a token equal",
   "setup": {
     "entities": [
       {
@@ -39,14 +39,14 @@
         "account_id": "0.0.1001",
         "created_timestamp": "1234567890000000005",
         "metadata": "m1",
-        "serial_number": 1,
+        "serial_number": 8,
         "token_id": "0.0.1500"
       },
       {
         "account_id": "0.0.2001",
         "created_timestamp": "1234567890000000006",
         "metadata": "m2",
-        "serial_number": 2,
+        "serial_number": 5,
         "token_id": "0.0.1500"
       },
       {
@@ -66,17 +66,37 @@
     ]
   },
   "urls": [
-    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=lt:3",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=lte:3"
+    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=gt:2",
+    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=gte:3"
   ],
-  "responseStatus": 400,
+  "responseStatus": 200,
   "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "An upper bound serialnumber filter requires an upper bound tokenId parameter filter"
-        }
-      ]
+    "nfts": [
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000005",
+        "delegating_spender": null,
+        "deleted": false,
+        "metadata": "bTE=",
+        "modified_timestamp": "1234567890.000000005",
+        "serial_number": 8,
+        "spender": null,
+        "token_id": "0.0.1500"
+      },
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000008",
+        "delegating_spender": null,
+        "deleted": false,
+        "metadata": "bTM=",
+        "modified_timestamp": "1234567890.000000008",
+        "serial_number": 3,
+        "spender": null,
+        "token_id": "0.0.1500"
+      }
+    ],
+    "links": {
+      "next": null
     }
   }
 }

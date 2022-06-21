@@ -115,6 +115,9 @@ class BaseController {
       // both have lower. If primary has lower and secondary doesn't have lower, the lower bound of primary
       // will go into the inner part.
       filters = [{...primaryBound.lower, operator: utils.opsMap.eq}, secondaryBound.lower];
+    } else if (primaryBound.hasEqual() && secondaryBound.hasLower()) {
+      // place the upper secondary bound into the lower
+      filters = [primaryBound.equal, primaryBound.lower, primaryBound.upper, secondaryBound.lower];
     }
     return filters.filter((f) => !_.isNil(f));
   }
@@ -149,6 +152,11 @@ class BaseController {
    * @return {{key: string, operator: string, value: *}[]}
    */
   getUpperFilters(primaryBound, secondaryBound) {
+    if (secondaryBound.hasUpper() && primaryBound.hasEqual() && !primaryBound.hasUpper()) {
+      // Combine the equal into the upper
+      return [primaryBound.equal, secondaryBound.upper];
+    }
+
     if (!primaryBound.hasUpper() || !secondaryBound.hasUpper()) {
       return [];
     }

@@ -44,18 +44,6 @@ class AccountController extends BaseController {
       throw new InvalidArgumentError(`Cannot search NFTs with serialnumber without a tokenId parameter filter`);
     }
 
-    if (serialNumberBound.hasLower() && !tokenIdBound.hasLower()) {
-      throw new InvalidArgumentError(
-        'A lower bound serialnumber filter requires a lower bound tokenId parameter filter'
-      );
-    }
-
-    if (serialNumberBound.hasUpper() && !tokenIdBound.hasUpper()) {
-      throw new InvalidArgumentError(
-        'An upper bound serialnumber filter requires an upper bound tokenId parameter filter'
-      );
-    }
-
     let invalidRange = false;
     if (
       spenderIdFilters.map((f) => f.operator).filter((o) => o === utils.opsMap.lte || o === utils.opsMap.lt).length > 1
@@ -71,7 +59,7 @@ class AccountController extends BaseController {
       throw new InvalidArgumentError(`Multiple range params not allowed for spender.id`);
     }
 
-    if (spenderIdFilters.map((f) => f.operator).filter((o) => utils.opsMap.ne === o).length > 1) {
+    if (spenderIdFilters.map((f) => f.operator).filter((o) => utils.opsMap.ne === o).length > 0) {
       throw new InvalidArgumentError(`Not equals (ne) comparison operator is not supported`);
     }
   }
