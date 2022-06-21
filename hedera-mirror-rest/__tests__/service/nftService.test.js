@@ -20,39 +20,295 @@
 
 'use strict';
 
-const {NftService} = require('../../service');
+const {
+  filterKeys: {SERIAL_NUMBER, SPENDER_ID, TOKEN_ID},
+} = require('../../constants');
+const {
+  opsMap: {eq, gt, gte, lt, lte},
+} = require('../../utils');
+
 const {assertSqlQueryEqual} = require('../testutils');
+const {NftService} = require('../../service');
 
-const integrationDbOps = require('../integrationDbOps');
-const integrationDomainOps = require('../integrationDomainOps');
+describe('getQuery', () => {
+  const defaultQuery = {
+    lower: [],
+    inner: [],
+    upper: [],
+    spenderIdFilters: [],
+    spenderIdInFilters: [],
+    order: 'desc',
+    ownerAccountId: 1,
+    limit: 20,
+  };
 
-const {defaultMochaStatements} = require('./defaultMochaStatements');
-defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
+  const selectColumnsStatement = `select account_id,created_timestamp,delegating_spender,deleted,metadata,modified_timestamp,
+            serial_number,spender,token_id`;
 
-describe('NftService.getNftsFiltersQuery tests', () => {
-  const orderClause = 'order by token_id asc, serial_number asc';
-  test('Verify simple query', async () => {
-    const [query, params] = NftService.getNftsFiltersQuery(['account_id = $1'], [2], orderClause, 5);
-    const expected = `select account_id,created_timestamp,delegating_spender,deleted,metadata,modified_timestamp,serial_number,spender,token_id
-        from nft
-        where account_id = $1
-        order by token_id asc, serial_number asc
-        limit $2`;
-    assertSqlQueryEqual(query, expected);
-    expect(params).toEqual([2, 5]);
-  });
+  const specs = [
+    {
+      name: 'default',
+      query: defaultQuery,
+      expected: {
+        sqlQuery: `${selectColumnsStatement}
+            from nft where account_id = $1
+            order by token_id desc,serial_number desc
+            limit $2`,
+        params: [1, 20],
+      },
+    },
+    {
+      name: 'order asc',
+      query: {...defaultQuery, order: 'asc'},
+      expected: {
+        sqlQuery: `${selectColumnsStatement}
+            from nft where account_id = $1
+            order by token_id asc,serial_number asc
+            limit $2`,
+        params: [1, 20],
+      },
+    },
+    {
+      name: 'token eq',
+      query: {
+        ...defaultQuery,
+        lower: [{key: TOKEN_ID, operator: eq, value: 2}],
+      },
+      expected: {
+        sqlQuery: `${selectColumnsStatement}
+            from nft where account_id = $1
+            and token_id = $3
+            order by token_id desc,serial_number desc
+            limit $2`,
+        params: [1, 20, 2],
+      },
+    },
+    {
+      name: 'token eq and serial eq',
+      query: {
+        ...defaultQuery,
+        lower: [
+          {key: TOKEN_ID, operator: eq, value: 2},
+          {key: SERIAL_NUMBER, operator: eq, value: 3},
+        ],
+      },
+      expected: {
+        sqlQuery: `${selectColumnsStatement}
+            from nft where account_id = $1
+            and token_id = $3
+            and serial_number = $4
+            order by token_id desc,serial_number desc
+            limit $2`,
+        params: [1, 20, 2, 3],
+      },
+    },
+    {
+      name: 'token lower bound and serial lower bound',
+      query: {
+        ...defaultQuery,
+        lower: [{key: SERIAL_NUMBER, operator: gt, value: 3}],
+        inner: [{key: TOKEN_ID, operator: gt, value: 2}],
+      },
+      expected: {
+        sqlQuery: `(${selectColumnsStatement}
+              from nft where account_id = $1
+              and serial_number > $3
+              order by token_id desc,serial_number desc
+              limit $2
+            ) union all (
+              ${selectColumnsStatement}
+              from nft where account_id = $1
+              and token_id > $4
+              order by token_id desc,serial_number desc
+              limit $2
+            )
+            order by token_id desc,serial_number desc limit $2`,
+        params: [1, 20, 3, 2],
+      },
+    },
+    {
+      name: 'token upper bound and serial upper bound',
+      query: {
+        ...defaultQuery,
+        inner: [{key: TOKEN_ID, operator: lt, value: 2}],
+        upper: [
+          {key: TOKEN_ID, operator: eq, value: 3},
+          {key: SERIAL_NUMBER, operator: lt, value: 4},
+        ],
+      },
+      expected: {
+        sqlQuery: `(${selectColumnsStatement}
+              from nft where account_id = $1
+              and token_id < $3
+              order by token_id desc,serial_number desc limit $2
+            ) union all (
+              ${selectColumnsStatement}
+              from nft where account_id = $1
+              and token_id = $4
+              and serial_number < $5
+              order by token_id desc,serial_number desc limit $2
+            )
+            order by token_id desc,serial_number desc
+            limit $2`,
+        params: [1, 20, 2, 3, 4],
+      },
+    },
+    {
+      name: 'token closed range and serial eq',
+      query: {
+        ...defaultQuery,
+        lower: [
+          {key: TOKEN_ID, operator: gt, value: 2},
+          {key: TOKEN_ID, operator: lt, value: 10},
+          {key: SERIAL_NUMBER, operator: eq, value: 3},
+        ],
+      },
+      expected: {
+        sqlQuery: `${selectColumnsStatement}
+            from nft where account_id = $1
+            and token_id > $3
+            and token_id < $4
+            and serial_number = $5
+            order by token_id desc,serial_number desc
+            limit $2`,
+        params: [1, 20, 2, 10, 3],
+      },
+    },
+    {
+      name: 'token closed range and serial gt',
+      query: {
+        ...defaultQuery,
+        lower: [
+          {key: TOKEN_ID, operator: eq, value: 2},
+          {key: SERIAL_NUMBER, operator: gt, value: 30},
+        ],
+        inner: [
+          {key: TOKEN_ID, operator: gte, value: 3},
+          {key: TOKEN_ID, operator: lt, value: 10},
+        ],
+      },
+      expected: {
+        sqlQuery: `(${selectColumnsStatement}
+              from nft where account_id = $1
+              and token_id = $3
+              and serial_number > $4
+              order by token_id desc,serial_number desc limit $2
+            ) union all (
+              ${selectColumnsStatement}
+              from nft where account_id = $1
+              and token_id >= $5
+              and token_id < $6
+              order by token_id desc,serial_number desc limit $2
+            )
+            order by token_id desc,serial_number desc
+            limit $2`,
+        params: [1, 20, 2, 30, 3, 10],
+      },
+    },
+    {
+      name: 'token closed range and serial lt',
+      query: {
+        ...defaultQuery,
+        upper: [
+          {key: TOKEN_ID, operator: eq, value: 50},
+          {key: SERIAL_NUMBER, operator: lt, value: 30},
+        ],
+        inner: [
+          {key: TOKEN_ID, operator: gte, value: 3},
+          {key: TOKEN_ID, operator: lt, value: 10},
+        ],
+      },
+      expected: {
+        sqlQuery: `(${selectColumnsStatement}
+              from nft where account_id = $1
+              and token_id >= $3
+              and token_id < $4
+              order by token_id desc,serial_number desc limit $2
+            ) union all (
+              ${selectColumnsStatement}
+              from nft where account_id = $1
+              and token_id = $5
+              and serial_number < $6
+              order by token_id desc,serial_number desc limit $2
+            )
+            order by token_id desc,serial_number desc
+            limit $2`,
+        params: [1, 20, 3, 10, 50, 30],
+      },
+    },
+    {
+      name: 'token closed range and serial closed range',
+      query: {
+        ...defaultQuery,
+        lower: [
+          {key: TOKEN_ID, operator: eq, value: 2},
+          {key: SERIAL_NUMBER, operator: gte, value: 100},
+        ],
+        inner: [
+          {key: TOKEN_ID, operator: gt, value: 2},
+          {key: TOKEN_ID, operator: lt, value: 8},
+        ],
+        upper: [
+          {key: TOKEN_ID, operator: eq, value: 8},
+          {key: SERIAL_NUMBER, operator: lte, value: 200},
+        ],
+      },
+      expected: {
+        sqlQuery: `(${selectColumnsStatement}
+              from nft where account_id = $1
+              and token_id = $3
+              and serial_number >= $4
+              order by token_id desc,serial_number desc limit $2
+            ) union all (
+              ${selectColumnsStatement}
+              from nft where account_id = $1
+              and token_id > $5
+              and token_id < $6
+              order by token_id desc,serial_number desc limit $2
+            ) union all (
+              ${selectColumnsStatement}
+              from nft where account_id = $1
+              and token_id = $7
+              and serial_number <= $8
+              order by token_id desc,serial_number desc limit $2
+            )
+            order by token_id desc,serial_number desc
+            limit $2`,
+        params: [1, 20, 2, 100, 2, 8, 8, 200],
+      },
+    },
+    {
+      name: 'spender eq in gte lte',
+      query: {
+        ...defaultQuery,
+        spenderIdInFilters: [
+          {key: SPENDER_ID, operator: eq, value: 15},
+          {key: SPENDER_ID, operator: eq, value: 17},
+          {key: SPENDER_ID, operator: eq, value: 22},
+        ],
+        spenderIdFilters: [
+          {key: SPENDER_ID, operator: lte, value: 10},
+          {key: SPENDER_ID, operator: gte, value: 30},
+        ],
+      },
+      expected: {
+        sqlQuery: `${selectColumnsStatement}
+            from nft where account_id = $1
+            and spender <= $3
+            and spender >= $4
+            and spender in (15,17,22)
+            order by token_id desc,serial_number desc
+            limit $2`,
+        params: [1, 20, 10, 30],
+      },
+    },
+  ];
 
-  test('Verify additional conditions', async () => {
-    const additionalConditions = ['account_id = $1', 'token_id > $2', 'serial_number = $3'];
-    const [query, params] = NftService.getNftsFiltersQuery(additionalConditions, [2, 10, 20], orderClause, 5);
-    const expected = `select account_id,created_timestamp,delegating_spender,deleted,metadata,modified_timestamp,serial_number,spender,token_id
-        from nft
-        where account_id = $1
-          and token_id > $2
-          and serial_number = $3
-        order by token_id asc, serial_number asc
-        limit $4`;
-    assertSqlQueryEqual(query, expected);
-    expect(params).toEqual([2, 10, 20, 5]);
+  specs.forEach((spec) => {
+    test(spec.name, () => {
+      const actual = NftService.getQuery(spec.query);
+      assertSqlQueryEqual(actual.sqlQuery, spec.expected.sqlQuery);
+      expect(actual.params).toEqual(spec.expected.params);
+    });
   });
 });
