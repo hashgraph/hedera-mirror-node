@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.signature;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,10 +22,9 @@ package com.hedera.mirror.importer.reader.signature;
 
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
-import com.google.api.client.util.Base64;
+import com.google.common.io.BaseEncoding;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import java.io.File;
@@ -37,8 +36,8 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFileData;
@@ -70,6 +69,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
             "+xFHwmKhAvsKXyp2ZFIrB+PGMQI8wr1cCMYLKYpI4VceCkLTIB3XOOVKZPWZaOs8MK9Aj9ZeT3REqf" +
             "d252N19j2yA45x8Zs2kRIC2iKNNEPwcaUbGNHiPmsZ5Ezq0lnNKuomJECMsYHu";
 
+    private final BaseEncoding base64Codec = BaseEncoding.base64();
     private final SignatureFileReaderV5 fileReaderV5 = new SignatureFileReaderV5();
     private final File signatureFile = TestUtils
             .getResource(Path.of("data", "signature", "v5", "2021-01-11T22_16_11.299356001Z.rcd_sig").toString());
@@ -81,12 +81,10 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
 
         assertNotNull(fileStreamSignature);
         assertThat(fileStreamSignature.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
-        assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature.getFileHash());
-        assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
-                .getFileHashSignature());
-        assertArrayEquals(Base64.decodeBase64(metadataHashBase64.getBytes()), fileStreamSignature.getMetadataHash());
-        assertArrayEquals(Base64.decodeBase64(metadataSignatureBase64.getBytes()), fileStreamSignature
-                .getMetadataHashSignature());
+        assertArrayEquals(base64Codec.decode(entireFileHashBase64), fileStreamSignature.getFileHash());
+        assertArrayEquals(base64Codec.decode(entireFileSignatureBase64), fileStreamSignature.getFileHashSignature());
+        assertArrayEquals(base64Codec.decode(metadataHashBase64), fileStreamSignature.getMetadataHash());
+        assertArrayEquals(base64Codec.decode(metadataSignatureBase64), fileStreamSignature.getMetadataHashSignature());
     }
 
     @SuppressWarnings("java:S2699")
@@ -195,8 +193,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
                 truncateLastByte,
                 sectionName + " actual signature length");
 
-        return Arrays
-                .asList(signatureClassId, signatureClassVersion, signatureFileMarker, signatureLength, checkSum,
-                        signature);
+        return Arrays.asList(signatureClassId, signatureClassVersion, signatureFileMarker, signatureLength, checkSum,
+                signature);
     }
 }

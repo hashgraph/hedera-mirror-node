@@ -25,12 +25,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.TestRecordFiles;
 
-public class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
+class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @BeforeAll
     protected static void beforeAll() throws IOException {
@@ -50,9 +51,14 @@ public class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderT
 
     @Override
     protected Map<String, RecordFile> getRecordFileMap() {
-        Map<String, RecordFile> allRecordFileMap = TestRecordFiles.getAll();
-        RecordFile recordFile1 = allRecordFileMap.get("2022-06-16T10_18_37.496046001Z.rcd.gz");
-        RecordFile recordFile2 = allRecordFileMap.get("2022-06-16T10_18_40.720801003Z.rcd");
+        var allRecordFileMap = TestRecordFiles.getAll();
+        var recordFile1 = allRecordFileMap.get("2022-06-16T10_18_37.496046001Z.rcd.gz");
+        var recordFile2 = allRecordFileMap.get("2022-06-16T10_18_40.720801003Z.rcd.gz");
         return Map.of(recordFile1.getName(), recordFile1, recordFile2.getName(), recordFile2);
+    }
+
+    @Override
+    protected Map<String, Long> getExpectedFileIndexMap() {
+        return getRecordFileMap().values().stream().collect(Collectors.toMap(RecordFile::getName, RecordFile::getIndex));
     }
 }

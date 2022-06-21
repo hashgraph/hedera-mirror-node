@@ -24,14 +24,16 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.TestRecordFiles;
 
-public class RecordFileV5V6DownloaderTest  extends AbstractRecordFileDownloaderTest {
+class RecordFileV5V6DownloaderTest extends AbstractRecordFileDownloaderTest {
+
+    private static final RecordFile recordFileV5 = TestRecordFiles.getV5V6Files().get(0);
+    private static final RecordFile recordFileV6 = TestRecordFiles.getV5V6Files().get(1);
 
     @BeforeAll
     static void beforeAll() throws IOException {
@@ -51,9 +53,11 @@ public class RecordFileV5V6DownloaderTest  extends AbstractRecordFileDownloaderT
 
     @Override
     protected Map<String, RecordFile> getRecordFileMap() {
-        List<RecordFile> recordFiles = TestRecordFiles.getV5V6Files();
-        RecordFile recordFileV2 = recordFiles.get(0);
-        RecordFile recordFileV5 = recordFiles.get(1);
-        return Map.of(recordFileV2.getName(), recordFileV2, recordFileV5.getName(), recordFileV5);
+        return Map.of(recordFileV5.getName(), recordFileV5, recordFileV6.getName(), recordFileV6);
+    }
+
+    @Override
+    protected Map<String, Long> getExpectedFileIndexMap() {
+        return Map.of(recordFileV6.getName(), recordFileV6.getIndex());
     }
 }

@@ -182,6 +182,20 @@ public abstract class Downloader<T extends StreamFile> {
     }
 
     /**
+     * Sets the index of the streamFile to the last index plus 1, or 0 if it's the first stream file.
+     *
+     * @param streamFile the stream file object
+     */
+    protected void setStreamFileIndex(StreamFile streamFile) {
+        long index = lastStreamFile.get()
+                .map(StreamFile::getIndex)
+                .map(v -> v + 1)
+                .or(() -> Optional.ofNullable(mirrorProperties.getStartBlockNumber()))
+                .orElse(0L);
+        streamFile.setIndex(index);
+    }
+
+    /**
      * Download and parse all signature files with a timestamp later than the last valid file. Put signature files into
      * a multi-map sorted and grouped by the timestamp.
      *
@@ -295,7 +309,9 @@ public abstract class Downloader<T extends StreamFile> {
                 .collect(Collectors.toList());
     }
 
-    private Optional<FileStreamSignature> parseSignatureFile(PendingDownload pendingDownload, EntityId nodeAccountId) throws InterruptedException, ExecutionException {
+    private Optional<FileStreamSignature> parseSignatureFile(PendingDownload pendingDownload,
+                                                             EntityId nodeAccountId) throws InterruptedException,
+            ExecutionException {
         String s3Key = pendingDownload.getS3key();
         Stopwatch stopwatch = pendingDownload.getStopwatch();
 
@@ -483,20 +499,6 @@ public abstract class Downloader<T extends StreamFile> {
         downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
 
         lastStreamFile.set(Optional.of(streamFile));
-    }
-
-    /**
-     * Sets the index of the streamFile to the last index plus 1, or 0 if it's the first stream file.
-     *
-     * @param streamFile the stream file object
-     */
-    private void setStreamFileIndex(StreamFile streamFile) {
-        long index = lastStreamFile.get()
-                .map(StreamFile::getIndex)
-                .map(v -> v + 1)
-                .or(() -> Optional.ofNullable(mirrorProperties.getStartBlockNumber()))
-                .orElse(0L);
-        streamFile.setIndex(index);
     }
 
     /**

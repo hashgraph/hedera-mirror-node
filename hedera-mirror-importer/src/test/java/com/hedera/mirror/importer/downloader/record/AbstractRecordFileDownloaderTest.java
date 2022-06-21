@@ -44,7 +44,7 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
 
     @Override
     @BeforeEach
-    protected void beforeEach() throws Exception {
+    protected void beforeEach() {
         super.beforeEach();
         recordFileMap = getRecordFileMap();
         setTestFilesAndInstants(recordFileMap.keySet().stream().sorted().collect(Collectors.toList()));

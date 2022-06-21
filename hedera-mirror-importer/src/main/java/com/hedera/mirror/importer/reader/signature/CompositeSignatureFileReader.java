@@ -39,11 +39,9 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
 
     private final SignatureFileReaderV2 signatureFileReaderV2;
     private final SignatureFileReaderV5 signatureFileReaderV5;
-
     private final ProtoSignatureFileReader protoSignatureFileReader;
 
     @Override
-
     public FileStreamSignature read(StreamFileData signatureFileData) {
         try (DataInputStream dataInputStream = new DataInputStream(signatureFileData.getInputStream())) {
             byte version = dataInputStream.readByte();

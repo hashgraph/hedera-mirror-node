@@ -43,6 +43,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.services.stream.proto.HashObject;
 
 class DomainUtilsTest {
 
@@ -80,13 +81,15 @@ class DomainUtilsTest {
 
     @Test
     void getPublicKeyWhenECDSASecp256K1() throws Exception {
-        var bytes = Key.newBuilder().setECDSASecp256K1(ByteString.copyFrom(Hex.decodeHex(ECDSA_SECP256K1_KEY))).build().toByteArray();
+        var bytes = Key.newBuilder().setECDSASecp256K1(
+                ByteString.copyFrom(Hex.decodeHex(ECDSA_SECP256K1_KEY))).build().toByteArray();
         assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(ECDSA_SECP256K1_KEY);
     }
 
     @Test
     void getPublicKeyWhenECDSA384() throws Exception {
-        var bytes = Key.newBuilder().setECDSA384(ByteString.copyFrom(Hex.decodeHex(ECDSA_384_KEY))).build().toByteArray();
+        var bytes = Key.newBuilder().setECDSA384(
+                ByteString.copyFrom(Hex.decodeHex(ECDSA_384_KEY))).build().toByteArray();
         assertThat(DomainUtils.getPublicKey(bytes)).isEqualTo(ECDSA_384_KEY);
     }
 
@@ -329,5 +332,14 @@ class DomainUtilsTest {
         assertThat(DomainUtils.bytesToHex(new byte[] {00})).isEqualTo("00");
         assertThat(DomainUtils.bytesToHex(new byte[0])).isEmpty();
         assertThat(DomainUtils.bytesToHex(null)).isNull();
+    }
+
+    @Test
+    void getHashBytes() {
+        assertThat(DomainUtils.getHashBytes(HashObject.newBuilder().build())).isEqualTo(new byte[] {});
+        assertThat(DomainUtils.getHashBytes(HashObject.newBuilder().setHash(ByteString.EMPTY).build()))
+                .isEqualTo(new byte[] {});
+        assertThat(DomainUtils.getHashBytes(HashObject.newBuilder().setHash(ByteString.fromHex("aabb0102")).build()))
+                .isEqualTo(new byte[] {(byte) 0xaa, (byte) 0xbb, 1, 2});
     }
 }

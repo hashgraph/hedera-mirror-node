@@ -42,6 +42,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.services.stream.proto.HashObject;
 
 @Log4j2
 @UtilityClass
@@ -66,6 +67,10 @@ public class DomainUtils {
         }
 
         return ArrayUtils.isNotEmpty(bytes) ? Hex.encodeHexString(bytes) : "";
+    }
+
+    public static byte[] getHashBytes(HashObject hashObject) {
+        return toBytes(hashObject.getHash());
     }
 
     /**

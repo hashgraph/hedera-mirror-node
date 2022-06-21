@@ -132,19 +132,19 @@ public class TestRecordFiles {
                 .consensusEnd(1655374717496046003L)
                 .count(3L)
                 .digestAlgorithm(digestAlgorithm)
-                .gasUsed(0L)
                 .fileHash(
                         "3e546619bd9c59fe0ee03be25ff2371718ff206f31323868207bb621bc85212669eb66b8a1556d4e686c8fbcd14f9e97")
                 .hapiVersionMajor(0)
-                .hapiVersionMinor(0)
+                .hapiVersionMinor(27)
                 .hapiVersionPatch(0)
-                .hash
-                        ("53b645e288b9f2fe6cc7d80813fe0e21446d379cd501e750c0948c1b7d49a451695dd1c2474521694ee162ee4e1478e8")
+                .hash("53b645e288b9f2fe6cc7d80813fe0e21446d379cd501e750c0948c1b7d49a451695dd1c2474521694ee162ee4e1478e8")
+                .index(-9223372036854775807L)
                 .metadataHash(
                         "01a43036a6ce80082680fa64b4702aecb659b8ddd02a06201c6c83d2b71def7b2ee1b5ac09bb7eb9b2f04dad5547e8e9")
                 .name("2022-06-16T10_18_37.496046001Z.rcd.gz")
                 .previousHash(
                         "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+                .size(1124)
                 .version(6)
                 .build();
         RecordFile recordFileV6_2 = RecordFile.builder()
@@ -152,39 +152,18 @@ public class TestRecordFiles {
                 .consensusEnd(1655374720720801003L)
                 .count(1L)
                 .digestAlgorithm(digestAlgorithm)
-                .gasUsed(0L)
                 .fileHash(
                         "b5947d59a5661f591c0950e8dd0c6a4d42f49dcf7454bc05c911fef67aedead41fb00f01ac32b1de9ac2b3130fb14346")
                 .hapiVersionMajor(0)
-                .hapiVersionMinor(0)
+                .hapiVersionMinor(27)
                 .hapiVersionPatch(0)
-                .hash
-                        ("3bade250e5b68e427df2c6ed1b427ed057303bf92a5a497b432ea22250ce03e33740d60fd7fe70a8883f7bd57babcb0b")
+                .hash("3bade250e5b68e427df2c6ed1b427ed057303bf92a5a497b432ea22250ce03e33740d60fd7fe70a8883f7bd57babcb0b")
+                .index(-9223372036854775806L)
                 .metadataHash(
                         "c8766bf8449e2d4598a4b7cc41c7a54f16dc869bd9cf81af2536ba1a8ec8c86d1e33134995d45f67ce26a79249d96666")
-                .name("2022-06-16T10_18_40.720801003Z.rcd")
-                .previousHash(
-                        "53b645e288b9f2fe6cc7d80813fe0e21446d379cd501e750c0948c1b7d49a451695dd1c2474521694ee162ee4e1478e8")
-                .version(6)
-                .build();
-        RecordFile recordFileV6_3 = RecordFile.builder()
-                .consensusStart(1655218164361211497L)
-                .consensusEnd(1655218165864487014L)
-                .count(4L)
-                .digestAlgorithm(digestAlgorithm)
-                .gasUsed(0L)
-                .fileHash(
-                        "32a1c18608ed7f92e35be1bbd9a8360ee374dfa1b2688e1faa5dca785117fbb5662bd78de6753f54ceb620111aff8787")
-                .hapiVersionMajor(0)
-                .hapiVersionMinor(0)
-                .hapiVersionPatch(0)
-                .hash
-                        ("d5ef3f6a79f2c21dfd386540bd2868bd27f9464c6f8714e8e036605919a9c8dce57929710b0105700269a02901bfc9e9")
-                .metadataHash(
-                        "26f2d00c2c618789283f99a6f07ec4c963966efaf17dcc44ca873387fd142080563fad1cdae561761051bb57d4cf0e4a")
-                .name("2022-06-14T14_49_24.361211497Z.rcd.gz")
-                .previousHash(
-                        "c94a0d390b123d345d66b2d6ce9d23da1a0d41dc39d571eb559318280757fbc8e66688342245afe42aa158225f3b8e5c")
+                .name("2022-06-16T10_18_40.720801003Z.rcd.gz")
+                .previousHash(recordFileV6_1.getHash())
+                .size(792)
                 .version(6)
                 .build();
 
@@ -245,9 +224,11 @@ public class TestRecordFiles {
                 .build();
 
         RecordFile recordFileV6 = RecordFile.builder()
-                .name("2022-06-16T14_20_42.665292003Z.rcd")
+                .name("2022-06-16T14_20_42.665292003Z.rcd.gz")
                 .nodeAccountId(nodeAccountId)
                 .digestAlgorithm(DigestAlgorithm.SHA384)
+                .index(-9223372036854775800L)
+                .size(791)
                 .version(6)
                 .build();
 

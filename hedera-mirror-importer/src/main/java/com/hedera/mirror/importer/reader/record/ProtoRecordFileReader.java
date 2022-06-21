@@ -21,27 +21,29 @@ package com.hedera.mirror.importer.reader.record;
  */
 
 import static java.lang.String.format;
+import static org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM;
 
-import com.hederahashgraph.api.proto.java.SemanticVersion;
-import java.io.BufferedInputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.security.DigestInputStream;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import javax.inject.Named;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.io.output.NullOutputStream;
+import org.apache.commons.io.input.CountingInputStream;
+import org.springframework.data.util.Version;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
@@ -50,113 +52,50 @@ import com.hedera.services.stream.proto.RecordStreamFile;
 @Named
 public class ProtoRecordFileReader implements RecordFileReader {
 
-    private static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
+    public static final int VERSION = 6;
 
-    private static final int VERSION = 6;
+    private static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
 
     @Override
     public RecordFile read(StreamFileData streamFileData) {
-        try {
-            var messageDigestFile = createMessageDigest(DIGEST_ALGORITHM);
+        var filename = streamFileData.getFilename();
+        var loadStart = Instant.now().getEpochSecond();
+        var messageDigestFile = createMessageDigest(DIGEST_ALGORITHM);
 
-            var recordStreamFile = readRecordStreamFile(streamFileData.getInputStream(), messageDigestFile);
-
-            var recordFile = RecordFile.builder()
-                    .bytes(streamFileData.getBytes())
-                    .digestAlgorithm(DIGEST_ALGORITHM)
-                    .loadStart(Instant.now().getEpochSecond())
-                    .name(streamFileData.getFilename())
-                    .build();
-
-            readHeader(recordFile, recordStreamFile);
-            readBody(recordFile, recordStreamFile);
-
-            recordFile.setFileHash(Hex.encodeHexString(messageDigestFile.digest()));
-            MessageDigest messageDigestMetadata = computeMetadataHash(DIGEST_ALGORITHM, recordStreamFile);
-            recordFile.setMetadataHash(Hex.encodeHexString(messageDigestMetadata.digest()));
-
-            return recordFile;
-        } catch (IOException e) {
-            throw new StreamFileReaderException("Error reading record file " + streamFileData.getFilename(), e);
-        }
-    }
-
-    private RecordStreamFile readRecordStreamFile(InputStream inputStream, MessageDigest messageDigestFile) {
-        try (var digestInputStream = new DigestInputStream(inputStream, messageDigestFile);
-             var bufferedInputStream = new BufferedInputStream(digestInputStream)) {
-            int recordFileVersion = ByteBuffer.wrap(bufferedInputStream.readNBytes(4)).getInt();
-            if (recordFileVersion != VERSION) {
-                throw new InvalidStreamFileException(
-                        format("Expected file with version %d, given %d.", VERSION, recordFileVersion));
+        try (var countingInputStream = new CountingInputStream(
+                new DigestInputStream(streamFileData.getInputStream(), messageDigestFile))) {
+            var recordStreamFile = readRecordStreamFile(filename, countingInputStream);
+            var items = readItems(recordStreamFile);
+            int count = items.size();
+            if (count == 0) {
+                throw new InvalidStreamFileException("No record stream objects in record file " + filename);
             }
 
-            return RecordStreamFile.parseFrom(bufferedInputStream);
-        } catch (IOException e) {
-            throw new InvalidStreamFileException(e);
-        }
-    }
-
-    private void readHeader(RecordFile recordFile, RecordStreamFile recordStreamFile) {
-        SemanticVersion hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
-
-        recordFile.setHapiVersionMajor(hapiProtoVersion.getMajor());
-        recordFile.setHapiVersionMinor(hapiProtoVersion.getMinor());
-        recordFile.setHapiVersionPatch(hapiProtoVersion.getPatch());
-        recordFile.setVersion(VERSION);
-    }
-
-    private void readBody(RecordFile recordFile, RecordStreamFile recordStreamFile) {
-        if (recordStreamFile.getRecordStreamItemsCount() == 0) {
-            throw new InvalidStreamFileException("No record stream objects in record file " + recordFile.getName());
-        }
-
-        var items = new ArrayList<RecordItem>(recordStreamFile.getRecordStreamItemsCount());
-        RecordItem previousItem = null;
-        int itemCounter = 0;
-        for (var recordStreamItem : recordStreamFile.getRecordStreamItemsList()) {
-            var recordItem = RecordItem.builder()
-                    .hapiVersion(recordFile.getHapiVersion())
-                    .previous(previousItem)
-                    .recordBytes(recordStreamItem.getRecord().toByteArray())
-                    .transactionIndex(itemCounter++)
-                    .transactionBytes(recordStreamItem.getTransaction().toByteArray())
+            var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
+            return RecordFile.builder()
+                    .bytes(streamFileData.getBytes())
+                    .consensusStart(items.get(0).getConsensusTimestamp())
+                    .consensusEnd(items.get(count - 1).getConsensusTimestamp())
+                    .count((long) count)
+                    .digestAlgorithm(DIGEST_ALGORITHM)
+                    .fileHash(DomainUtils.bytesToHex(messageDigestFile.digest()))
+                    .hapiVersionMajor(hapiProtoVersion.getMajor())
+                    .hapiVersionMinor(hapiProtoVersion.getMinor())
+                    .hapiVersionPatch(hapiProtoVersion.getPatch())
+                    .hash(DomainUtils.bytesToHex(DomainUtils.getHashBytes(recordStreamFile.getEndObjectRunningHash())))
+                    .index(recordStreamFile.getBlockNumber())
+                    .items(Flux.fromIterable(items))
+                    .loadStart(loadStart)
+                    .metadataHash(DomainUtils.bytesToHex(getMetadataHash(DIGEST_ALGORITHM, recordStreamFile)))
+                    .name(filename)
+                    .previousHash(DomainUtils.bytesToHex(
+                            DomainUtils.getHashBytes(recordStreamFile.getStartObjectRunningHash())))
+                    .size(countingInputStream.getCount())
+                    .version(VERSION)
                     .build();
-            items.add(recordItem);
-            previousItem = recordItem;
+        } catch (IOException e) {
+            throw new InvalidStreamFileException("Error reading record file " + filename, e);
         }
-
-        recordFile.setCount((long) itemCounter);
-        recordFile.setItems(Flux.fromIterable(items));
-
-        recordFile.setConsensusStart(items.get(0).getConsensusTimestamp());
-        recordFile.setConsensusEnd(previousItem.getConsensusTimestamp());
-
-        recordFile.setPreviousHash(
-                Hex.encodeHexString(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray()));
-        recordFile.setHash(Hex.encodeHexString(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray()));
-    }
-
-    private MessageDigest computeMetadataHash(DigestAlgorithm algorithm, RecordStreamFile recordStreamFile)
-            throws IOException {
-        var digestOutputStream = new DigestOutputStream(NullOutputStream.NULL_OUTPUT_STREAM,
-                createMessageDigest(algorithm));
-        var dataOutputStream = new DataOutputStream(digestOutputStream);
-
-        var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
-        dataOutputStream.writeInt(VERSION);
-        dataOutputStream.writeInt(hapiProtoVersion.getMajor());
-        dataOutputStream.writeInt(hapiProtoVersion.getMinor());
-        dataOutputStream.writeInt(hapiProtoVersion.getPatch());
-
-        dataOutputStream.write(recordStreamFile.getStartObjectRunningHash().getHash().toByteArray());
-        dataOutputStream.write(recordStreamFile.getEndObjectRunningHash().getHash().toByteArray());
-
-        dataOutputStream.writeLong(recordStreamFile.getBlockNumber());
-
-        dataOutputStream.flush();
-        dataOutputStream.close();
-
-        return digestOutputStream.getMessageDigest();
     }
 
     private MessageDigest createMessageDigest(DigestAlgorithm digestAlgorithm) {
@@ -164,6 +103,60 @@ public class ProtoRecordFileReader implements RecordFileReader {
             return MessageDigest.getInstance(digestAlgorithm.getName());
         } catch (NoSuchAlgorithmException e) {
             throw new StreamFileReaderException(e);
+        }
+    }
+
+    private List<RecordItem> readItems(RecordStreamFile recordStreamFile) {
+        int count = recordStreamFile.getRecordStreamItemsCount();
+        if (count == 0) {
+            return Collections.emptyList();
+        }
+
+        var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
+        var hapiVersion = new Version(hapiProtoVersion.getMajor(), hapiProtoVersion.getMajor(),
+                hapiProtoVersion.getPatch());
+        var items = new ArrayList<RecordItem>(count);
+        RecordItem previousItem = null;
+        for (var recordStreamItem : recordStreamFile.getRecordStreamItemsList()) {
+            var recordItem = RecordItem.builder()
+                    .hapiVersion(hapiVersion)
+                    .previous(previousItem)
+                    .recordBytes(recordStreamItem.getRecord().toByteArray())
+                    .transactionBytes(recordStreamItem.getTransaction().toByteArray())
+                    .transactionIndex(items.size())
+                    .build();
+            items.add(recordItem);
+            previousItem = recordItem;
+        }
+
+        return items;
+    }
+
+    private RecordStreamFile readRecordStreamFile(String filename, InputStream inputStream) throws IOException {
+        try (var dataInputStream = new DataInputStream(inputStream)) {
+            int version = dataInputStream.readInt();
+            if (version != VERSION) {
+                throw new InvalidStreamFileException(format("Expected file %s with version %d, got %d.", filename,
+                        VERSION, version));
+            }
+
+            return RecordStreamFile.parseFrom(dataInputStream);
+        }
+    }
+
+    private byte[] getMetadataHash(DigestAlgorithm algorithm, RecordStreamFile recordStreamFile) throws IOException {
+        try (var digestOutputStream = new DigestOutputStream(NULL_OUTPUT_STREAM, createMessageDigest(algorithm));
+             var dataOutputStream = new DataOutputStream(digestOutputStream)) {
+            var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
+            dataOutputStream.writeInt(VERSION);
+            dataOutputStream.writeInt(hapiProtoVersion.getMajor());
+            dataOutputStream.writeInt(hapiProtoVersion.getMinor());
+            dataOutputStream.writeInt(hapiProtoVersion.getPatch());
+            dataOutputStream.write(DomainUtils.getHashBytes(recordStreamFile.getStartObjectRunningHash()));
+            dataOutputStream.write(DomainUtils.getHashBytes(recordStreamFile.getEndObjectRunningHash()));
+            dataOutputStream.writeLong(recordStreamFile.getBlockNumber());
+
+            return digestOutputStream.getMessageDigest().digest();
         }
     }
 }

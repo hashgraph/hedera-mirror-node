@@ -22,73 +22,67 @@ package com.hedera.mirror.importer.reader.signature;
 
 import static java.lang.String.format;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import javax.inject.Named;
 
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
-import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 import com.hedera.services.stream.proto.SignatureFile;
-import com.hedera.services.stream.proto.SignatureType;
 
 @Named
 public class ProtoSignatureFileReader implements SignatureFileReader {
-    public static final int SIGNATURE_FILE_FORMAT_VERSION = 6;
+
+    public static final byte SIGNATURE_FILE_FORMAT_VERSION = 6;
 
     @Override
     public FileStreamSignature read(StreamFileData signatureFileData) {
-
+        var filename = signatureFileData.getFilename();
         try {
             var signatureFile = readSignatureFile(signatureFileData);
 
             var fileSignature = signatureFile.getFileSignature();
             var metadataSignature = signatureFile.getMetadataSignature();
 
-            FileStreamSignature fileStreamSignature = new FileStreamSignature();
+            var fileStreamSignature = new FileStreamSignature();
             fileStreamSignature.setBytes(signatureFileData.getBytes());
-            fileStreamSignature.setFileHash(fileSignature.getHashObject().getHash().toByteArray());
-            fileStreamSignature.setFileHashSignature(fileSignature.getSignature().toByteArray());
-            fileStreamSignature.setFilename(signatureFileData.getFilename());
-            fileStreamSignature.setMetadataHash(metadataSignature.getHashObject().getHash().toByteArray());
-            fileStreamSignature.setMetadataHashSignature(metadataSignature.getSignature().toByteArray());
-            fileStreamSignature.setSignatureType(fromProtobufSigTypeToDomainSigType(fileSignature.getType()));
+            fileStreamSignature.setFileHash(DomainUtils.getHashBytes(fileSignature.getHashObject()));
+            fileStreamSignature.setFileHashSignature(DomainUtils.toBytes(fileSignature.getSignature()));
+            fileStreamSignature.setFilename(filename);
+            fileStreamSignature.setMetadataHash(DomainUtils.getHashBytes(metadataSignature.getHashObject()));
+            fileStreamSignature.setMetadataHashSignature(DomainUtils.toBytes(metadataSignature.getSignature()));
+            fileStreamSignature.setSignatureType(
+                    FileStreamSignature.SignatureType.valueOf(fileSignature.getType().toString()));
 
             return fileStreamSignature;
-        } catch (IOException e) {
-            throw new SignatureFileParsingException(e);
+        } catch (IllegalArgumentException | IOException e) {
+            throw new InvalidStreamFileException(filename, e);
         }
     }
 
     private SignatureFile readSignatureFile(StreamFileData signatureFileData) throws IOException {
-        var inputStream = signatureFileData.getInputStream();
-        int givenFileVersion = inputStream.read();
-        if (givenFileVersion != SIGNATURE_FILE_FORMAT_VERSION) {
-            throw new InvalidStreamFileException(
-                    format("Expected file with version %d, given %d.", SIGNATURE_FILE_FORMAT_VERSION,
-                            givenFileVersion));
+        try (var dataInputStream = new DataInputStream(signatureFileData.getInputStream())) {
+            var filename = signatureFileData.getFilename();
+            byte version = dataInputStream.readByte();
+            if (version != SIGNATURE_FILE_FORMAT_VERSION) {
+                throw new InvalidStreamFileException(
+                        format("Expected file %s with version %d, got %d", filename, SIGNATURE_FILE_FORMAT_VERSION,
+                                version));
+            }
+
+            var signatureFile = SignatureFile.parseFrom(dataInputStream);
+            if (!signatureFile.hasFileSignature()) {
+                throw new InvalidStreamFileException(format("The file %s does not have file signature", filename));
+            }
+
+            if (!signatureFile.hasMetadataSignature()) {
+                var message = format("The file %s does not have file metadata signature", filename);
+                throw new InvalidStreamFileException(message);
+            }
+
+            return signatureFile;
         }
-
-        var signatureFile = SignatureFile.parseFrom(inputStream);
-
-        if (!signatureFile.hasFileSignature()) {
-            throw new InvalidStreamFileException(
-                    format("The file %s does not have file signature.", signatureFileData.getFilename()));
-        }
-
-        if (!signatureFile.hasMetadataSignature()) {
-            throw new InvalidStreamFileException(
-                    format("The file %s does not have file metadata signature.", signatureFileData.getFilename()));
-        }
-
-        return signatureFile;
-    }
-
-    private FileStreamSignature.SignatureType fromProtobufSigTypeToDomainSigType(SignatureType type) {
-        if (type != SignatureType.SHA_384_WITH_RSA) {
-            throw new SignatureFileParsingException(
-                    format("The signature type %s is not supported", type));
-        }
-        return FileStreamSignature.SignatureType.SHA_384_WITH_RSA;
     }
 }
