@@ -70,9 +70,12 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             NodeStake nodeStake = new NodeStake();
             nodeStake.setConsensusTimestamp(consensusTimestamp);
             nodeStake.setEpochDay(epochDay);
+            nodeStake.setMaxStake(nodeStakeProto.getMaxStake());
+            nodeStake.setMinStake(nodeStakeProto.getMinStake());
             nodeStake.setNodeId(nodeStakeProto.getNodeId());
             nodeStake.setRewardRate(nodeStakeProto.getRewardRate());
             nodeStake.setStake(nodeStakeProto.getStake());
+            nodeStake.setStakeNotRewarded(nodeStakeProto.getStakeNotRewarded());
             nodeStake.setStakeRewarded(nodeStakeProto.getStakeRewarded());
             nodeStake.setStakeTotal(stakeTotal);
             nodeStake.setStakingPeriod(stakingPeriod);

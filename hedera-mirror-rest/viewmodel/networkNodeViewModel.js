@@ -33,19 +33,37 @@ class NetworkNodeViewModel {
   /**
    * Constructs network node view model
    *
-   * @param {AddressBook} addressBook
+   * @param {NetworkNode} networkNode
    */
   constructor(networkNode) {
-    this.description = networkNode.addressBookEntry.description;
+    const {addressBookEntry, nodeStake} = networkNode;
+    this.description = addressBookEntry.description;
     this.file_id = EntityId.parse(networkNode.addressBook.fileId).toString();
-    this.memo = networkNode.addressBookEntry.memo;
-    this.node_id = networkNode.addressBookEntry.nodeId;
-    this.node_account_id = EntityId.parse(networkNode.addressBookEntry.nodeAccountId).toString();
-    this.node_cert_hash = utils.addHexPrefix(utils.encodeUtf8(networkNode.addressBookEntry.nodeCertHash), true);
-    this.public_key = utils.addHexPrefix(networkNode.addressBookEntry.publicKey, true);
+    this.max_stake = utils.asNullIfDefault(nodeStake.maxStake, -1);
+    this.memo = addressBookEntry.memo;
+    this.min_stake = utils.asNullIfDefault(nodeStake.minStake, -1);
+    this.node_id = addressBookEntry.nodeId;
+    this.node_account_id = EntityId.parse(addressBookEntry.nodeAccountId).toString();
+    this.node_cert_hash = utils.addHexPrefix(utils.encodeUtf8(addressBookEntry.nodeCertHash), true);
+    this.public_key = utils.addHexPrefix(addressBookEntry.publicKey, true);
     this.service_endpoints = networkNode.addressBookServiceEndpoints.map(
       (x) => new AddressBookServiceEndpointViewModel(x)
     );
+    this.stake = nodeStake.stake;
+    this.stake_not_rewarded = utils.asNullIfDefault(nodeStake.stakeNotRewarded, -1);
+    this.stake_rewarded = nodeStake.stakeRewarded;
+    this.stake_total = nodeStake.stakeTotal;
+
+    if (_.isNil(nodeStake.stakingPeriod)) {
+      this.staking_period = null;
+    } else {
+      const stakingPeriodStart = BigInt(nodeStake.stakingPeriod) + 1n;
+      this.staking_period = {
+        from: utils.nsToSecNs(stakingPeriodStart),
+        to: utils.incrementTimestampByOneDay(stakingPeriodStart),
+      };
+    }
+
     this.timestamp = {
       from: utils.nsToSecNs(networkNode.addressBook.startConsensusTimestamp),
       to: utils.nsToSecNs(networkNode.addressBook.endConsensusTimestamp),

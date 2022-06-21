@@ -120,7 +120,11 @@ class RecordFile {
     const {receipt, transactionID, scheduleRef} = proto.TransactionRecord.decode(recordBuffer);
     const transactionId = protoTransactionIdToTransactionId(transactionID);
     const scheduled = scheduleRef !== null;
-    if (receipt.status !== proto.ResponseCodeEnum.SUCCESS) {
+    if (
+      receipt.status !== proto.ResponseCodeEnum.SUCCESS &&
+      receipt.status !== proto.ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED &&
+      receipt.status !== proto.ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION
+    ) {
       logger.debug(`Skip non-successful transaction ${transactionId}, ${receipt.status}`);
       return;
     }

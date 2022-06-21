@@ -462,12 +462,18 @@ public class RecordItemBuilder {
     }
 
     public NodeStake.Builder nodeStake() {
-        var stake = id() * TINYBARS_IN_ONE_HBAR;
+        long stake = id() * TINYBARS_IN_ONE_HBAR;
+        long maxStake = 2 * stake;
+        long minStake = stake / 2;
         return NodeStake.newBuilder()
+                .setMaxStake(maxStake)
+                .setMinStake(minStake)
                 .setNodeId(id())
                 .setRewardRate(id())
                 .setStake(stake)
-                .setStakeRewarded(stake - 100L);
+                .setStakeNotRewarded(TINYBARS_IN_ONE_HBAR)
+                .setStakeRewarded(stake - TINYBARS_IN_ONE_HBAR);
+
     }
 
     public ScheduleID scheduleId() {

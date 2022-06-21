@@ -32,7 +32,7 @@ class ExchangeRate {
     let exchangeRateSet = {};
 
     try {
-      exchangeRateSet = proto.ExchangeRateSet.decode(Buffer.from(exchangeRate.file_data, 'hex'));
+      exchangeRateSet = proto.ExchangeRateSet.decode(exchangeRate.file_data);
     } catch (error) {
       throw new FileDecodeError(error.message);
     }

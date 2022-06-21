@@ -38,6 +38,10 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         from address_book
         where file_id = $1
         order by start_consensus_timestamp desc limit 1
+      ),
+      ns as (
+        select max_stake,min_stake,node_id,stake,stake_not_rewarded,stake_rewarded,stake_total,staking_period
+        from node_stake where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
       )
       select
         abe.description,
@@ -49,6 +53,13 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         adb.file_id,
         adb.start_consensus_timestamp,
         adb.end_consensus_timestamp,
+        ns.max_stake,
+        ns.min_stake,
+        ns.stake,
+        ns.stake_not_rewarded,
+        ns.stake_rewarded,
+        ns.stake_total,
+        ns.staking_period,
         coalesce(
           (
             select jsonb_agg(
@@ -60,6 +71,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         ) as service_endpoints
         from address_book_entry abe
         join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
+        left join ns on abe.node_id = ns.node_id
         order by abe.node_id asc
         limit $2`;
     assertSqlQueryEqual(query, expected);
@@ -73,6 +85,10 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       from address_book
       where file_id = $1
       order by start_consensus_timestamp desc limit 1
+    ),
+    ns as (
+      select max_stake,min_stake,node_id,stake,stake_not_rewarded,stake_rewarded,stake_total,staking_period
+      from node_stake where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
     )
     select
       abe.description,
@@ -84,6 +100,13 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       adb.file_id,
       adb.start_consensus_timestamp,
       adb.end_consensus_timestamp,
+      ns.max_stake,
+      ns.min_stake,
+      ns.stake,
+      ns.stake_not_rewarded,
+      ns.stake_rewarded,
+      ns.stake_total,
+      ns.staking_period,
       coalesce(
         (
           select jsonb_agg(
@@ -95,6 +118,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       ) as service_endpoints
       from address_book_entry abe
       join adb on adb.start_consensus_timestamp = abe.consensus_timestamp
+      left join ns on abe.node_id = ns.node_id
       where abe.node_id = $2
       order by abe.node_id asc
       limit $3`;
@@ -178,6 +202,57 @@ const defaultInputServiceEndpointBooks = [
   },
 ];
 
+const defaultNodeStakes = [
+  {
+    consensus_timestamp: 1,
+    epoch_day: 0,
+    max_stake: 100,
+    min_stake: 1,
+    node_id: 0,
+    stake: 1,
+    stake_not_rewarded: 0,
+    stake_rewarded: 1,
+    stake_total: 3,
+    staking_period: 1,
+  },
+  {
+    consensus_timestamp: 1,
+    epoch_day: 0,
+    max_stake: 200,
+    min_stake: 2,
+    node_id: 1,
+    stake: 2,
+    stake_not_rewarded: 1,
+    stake_rewarded: 1,
+    stake_total: 3,
+    staking_period: 2,
+  },
+  {
+    consensus_timestamp: 2,
+    epoch_day: 1,
+    max_stake: 300,
+    min_stake: 2,
+    node_id: 0,
+    stake: 3,
+    stake_not_rewarded: 1,
+    stake_rewarded: 2,
+    stake_total: 7,
+    staking_period: 1654991999999999999n,
+  },
+  {
+    consensus_timestamp: 2,
+    epoch_day: 1,
+    max_stake: 400,
+    min_stake: 1,
+    node_id: 1,
+    stake: 4,
+    stake_not_rewarded: 1,
+    stake_rewarded: 3,
+    stake_total: 7,
+    staking_period: BigInt('1655251199999999999'),
+  },
+];
+
 const defaultExpectedNetworkNode101 = [
   {
     addressBook: {
@@ -197,6 +272,15 @@ const defaultExpectedNetworkNode101 = [
         port: 50212,
       },
     ],
+    nodeStake: {
+      maxStake: 400,
+      minStake: 1,
+      stake: 4,
+      stakeNotRewarded: 1,
+      stakeRewarded: 3,
+      stakeTotal: 7,
+      stakingPeriod: 1655251199999999999n,
+    },
   },
   {
     addressBook: {
@@ -216,6 +300,15 @@ const defaultExpectedNetworkNode101 = [
         port: 50211,
       },
     ],
+    nodeStake: {
+      maxStake: 300,
+      minStake: 2,
+      stake: 3,
+      stakeNotRewarded: 1,
+      stakeRewarded: 2,
+      stakeTotal: 7,
+      stakingPeriod: 1654991999999999999n,
+    },
   },
 ];
 
@@ -238,6 +331,15 @@ const defaultExpectedNetworkNode102 = [
         port: 50212,
       },
     ],
+    nodeStake: {
+      maxStake: 300,
+      minStake: 2,
+      stake: 3,
+      stakeNotRewarded: 1,
+      stakeRewarded: 2,
+      stakeTotal: 7,
+      stakingPeriod: 1654991999999999999n,
+    },
   },
   {
     addressBook: {
@@ -257,6 +359,68 @@ const defaultExpectedNetworkNode102 = [
         port: 50212,
       },
     ],
+    nodeStake: {
+      maxStake: 400,
+      minStake: 1,
+      stake: 4,
+      stakeNotRewarded: 1,
+      stakeRewarded: 3,
+      stakeTotal: 7,
+      stakingPeriod: 1655251199999999999n,
+    },
+  },
+];
+
+const defaultExpectedNetworkNodeEmptyNodeStake = [
+  {
+    addressBook: {
+      endConsensusTimestamp: null,
+      fileId: 102,
+      startConsensusTimestamp: 2,
+    },
+    addressBookEntry: {
+      description: 'desc 3',
+      memo: '0.0.3',
+      nodeAccountId: 3,
+      nodeId: 0,
+    },
+    addressBookServiceEndpoints: [
+      {
+        ipAddressV4: '128.0.0.1',
+        port: 50212,
+      },
+    ],
+    nodeStake: {
+      stake: null,
+      stakeRewarded: null,
+      stakeTotal: null,
+      stakingPeriod: null,
+    },
+  },
+  {
+    addressBook: {
+      endConsensusTimestamp: null,
+      fileId: 102,
+      startConsensusTimestamp: 2,
+    },
+    addressBookEntry: {
+      description: 'desc 4',
+      memo: '0.0.4',
+      nodeAccountId: 4,
+      nodeId: 1,
+    },
+    addressBookServiceEndpoints: [
+      {
+        ipAddressV4: '128.0.0.2',
+        port: 50212,
+      },
+    ],
+    nodeStake: {
+      stake: null,
+      stakeRewarded: null,
+      stakeTotal: null,
+      stakingPeriod: null,
+    },
   },
 ];
 
@@ -269,6 +433,7 @@ describe('NetworkNodeService.getNetworkNodes tests', () => {
     await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
     await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
     await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
+    await integrationDomainOps.loadNodeStakes(defaultNodeStakes);
 
     await expect(NetworkNodeService.getNetworkNodes([], [101], 'desc', 5)).resolves.toMatchObject(
       defaultExpectedNetworkNode101
@@ -279,9 +444,20 @@ describe('NetworkNodeService.getNetworkNodes tests', () => {
     await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
     await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
     await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
+    await integrationDomainOps.loadNodeStakes(defaultNodeStakes);
 
     await expect(NetworkNodeService.getNetworkNodes([], [102], 'asc', 5)).resolves.toMatchObject(
       defaultExpectedNetworkNode102
+    );
+  });
+
+  test('NetworkNodeService.getNetworkNodes - Empty node stakes', async () => {
+    await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
+    await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
+    await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
+
+    await expect(NetworkNodeService.getNetworkNodes([], [102], 'asc', 5)).resolves.toMatchObject(
+      defaultExpectedNetworkNodeEmptyNodeStake
     );
   });
 });
@@ -310,6 +486,12 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
           port: 50211,
         },
       ],
+      nodeStake: {
+        stake: 3,
+        stakeRewarded: 2,
+        stakeTotal: 7,
+        stakingPeriod: 1654991999999999999n,
+      },
     },
   ];
 
@@ -332,6 +514,15 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
           port: 50212,
         },
       ],
+      nodeStake: {
+        maxStake: 300,
+        minStake: 2,
+        stake: 3,
+        stakeNotRewarded: 1,
+        stakeRewarded: 2,
+        stakeTotal: 7,
+        stakingPeriod: 1654991999999999999n,
+      },
     },
   ];
 
@@ -339,6 +530,7 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
     await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
     await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
     await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
+    await integrationDomainOps.loadNodeStakes(defaultNodeStakes);
 
     await expect(NetworkNodeService.getNetworkNodes([defaultNodeFilter], [101, 0], 'desc', 5)).resolves.toMatchObject(
       expectedNetworkNode101
@@ -349,6 +541,7 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
     await integrationDomainOps.loadAddressBooks(defaultInputAddressBooks);
     await integrationDomainOps.loadAddressBookEntries(defaultInputAddressBookEntries);
     await integrationDomainOps.loadAddressBookServiceEndpoints(defaultInputServiceEndpointBooks);
+    await integrationDomainOps.loadNodeStakes(defaultNodeStakes);
 
     await expect(NetworkNodeService.getNetworkNodes([defaultNodeFilter], [102, 0], 'asc', 5)).resolves.toMatchObject(
       expectedNetworkNode102

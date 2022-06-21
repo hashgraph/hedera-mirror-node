@@ -155,7 +155,7 @@ create unique index if not exists nft_transfer__token_id_serial_num_timestamp
     on nft_transfer (token_id desc, serial_number desc, consensus_timestamp desc);
 
 alter table if exists node_stake
-    add constraint node_stake__pk primary key (epoch_day, node_id);
+    add constraint node_stake__pk primary key (consensus_timestamp, node_id);
 
 -- non_fee_transfer
 create index if not exists non_fee_transfer__consensus_timestamp
