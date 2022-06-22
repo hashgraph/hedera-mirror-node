@@ -82,7 +82,7 @@ class ProtoSignatureFileReaderTest extends AbstractSignatureFileReaderTest {
         var streamFileData = StreamFileData.from(FILENAME, bytes);
         var exception = assertThrows(InvalidStreamFileException.class,
                 () -> protoSignatureFileReader.read(streamFileData));
-        var expected = String.format("The file %s does not have file signature", FILENAME);
+        var expected = String.format("The file %s does not have a file signature", FILENAME);
         assertEquals(expected, exception.getMessage());
     }
 
@@ -92,7 +92,7 @@ class ProtoSignatureFileReaderTest extends AbstractSignatureFileReaderTest {
         var streamFileData = StreamFileData.from(FILENAME, bytes);
         var exception = assertThrows(InvalidStreamFileException.class,
                 () -> protoSignatureFileReader.read(streamFileData));
-        var expected = String.format("The file %s does not have file metadata signature", FILENAME);
+        var expected = String.format("The file %s does not have a file metadata signature", FILENAME);
         assertEquals(expected, exception.getMessage());
     }
 

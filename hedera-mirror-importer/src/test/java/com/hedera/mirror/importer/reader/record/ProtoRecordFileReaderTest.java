@@ -85,7 +85,7 @@ class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
                 () -> reader.read(streamFileData));
         var expected = String.format("%s has unsupported start running object hash algorithm " +
                 "HASH_ALGORITHM_UNKNOWN and end running object hash algorithm HASH_ALGORITHM_UNKNOWN", FILENAME);
-        assertThat(exception.getMessage()).isEqualTo(expected);
+        assertEquals(expected, exception.getMessage());
     }
 
     @Test

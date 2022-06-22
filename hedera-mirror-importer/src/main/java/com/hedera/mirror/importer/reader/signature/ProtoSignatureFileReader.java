@@ -74,11 +74,11 @@ public class ProtoSignatureFileReader implements SignatureFileReader {
 
             var signatureFile = SignatureFile.parseFrom(dataInputStream);
             if (!signatureFile.hasFileSignature()) {
-                throw new InvalidStreamFileException(format("The file %s does not have file signature", filename));
+                throw new InvalidStreamFileException(format("The file %s does not have a file signature", filename));
             }
 
             if (!signatureFile.hasMetadataSignature()) {
-                var message = format("The file %s does not have file metadata signature", filename);
+                var message = format("The file %s does not have a file metadata signature", filename);
                 throw new InvalidStreamFileException(message);
             }
 
