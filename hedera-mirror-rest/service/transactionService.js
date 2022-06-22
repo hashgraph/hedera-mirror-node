@@ -26,6 +26,7 @@ const BaseService = require('./baseService');
 const {Transaction} = require('../model');
 const {EthereumTransaction} = require('../model');
 const {TransactionWithEthData} = require('../model');
+const {OrderSpec} = require('../sql');
 
 const ethTransactionReplaceString = `$ethTransactionWhere`;
 
@@ -145,11 +146,22 @@ class TransactionService extends BaseService {
       ),
       [ethHash],
       'getTransactionDetailsFromEthHash',
-      excludeTransactionResults
+      excludeTransactionResults,
+      undefined,
+      1,
+      this.getOrderByQuery(OrderSpec.from(Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP), 'asc'))
     );
   }
 
-  async getTransactionDetails(query, params, parentFunctionName, excludeTransactionResults = [], nonce = undefined) {
+  async getTransactionDetails(
+    query,
+    params,
+    parentFunctionName,
+    excludeTransactionResults = [],
+    nonce = undefined,
+    limit = undefined,
+    orderQuery = undefined
+  ) {
     if (nonce !== undefined) {
       params.push(nonce);
       query = `${query}
@@ -168,6 +180,15 @@ class TransactionService extends BaseService {
         params.push(excludeTransactionResults);
         query += ` and ${Transaction.getFullName(Transaction.RESULT)} <> $${params.length}`;
       }
+    }
+
+    if (orderQuery !== undefined) {
+      query += ` ${orderQuery}`;
+    }
+
+    if (limit !== undefined) {
+      params.push(limit);
+      query += ` ${this.getLimitQuery(params.length)}`;
     }
 
     const rows = await super.getRows(query, params, parentFunctionName);

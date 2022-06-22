@@ -1019,6 +1019,12 @@ class ContractController extends BaseController {
 
     if (transactions.length === 0) {
       throw new NotFoundError('No correlating transaction');
+    } else if (transactions.length > 1) {
+      logger.error(
+        'Transaction invariance breached: there should be at most one transaction with none-duplicate-transaction ' +
+          'result for a specific (payer + valid start timestamp + nonce) combination'
+      );
+      throw new Error('Transaction invariance breached');
     }
 
     // retrieve contract result and recordFile models concurrently using transaction timestamp
