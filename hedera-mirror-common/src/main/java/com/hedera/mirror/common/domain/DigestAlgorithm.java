@@ -26,7 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 
 @Getter
 public enum DigestAlgorithm {
-    SHA384("SHA-384", 48, 0x58ff811b);
+    SHA_384("SHA-384", 48, 0x58ff811b);
 
     private final String name;
     private final int size;

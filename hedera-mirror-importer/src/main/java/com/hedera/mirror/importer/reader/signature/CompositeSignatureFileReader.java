@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.signature;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,6 +39,7 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
 
     private final SignatureFileReaderV2 signatureFileReaderV2;
     private final SignatureFileReaderV5 signatureFileReaderV5;
+    private final ProtoSignatureFileReader protoSignatureFileReader;
 
     @Override
     public FileStreamSignature read(StreamFileData signatureFileData) {
@@ -46,10 +47,12 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
             byte version = dataInputStream.readByte();
             SignatureFileReader fileReader;
 
-            if (version == SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION) {
+            if (version == SignatureFileReaderV5.VERSION) {
                 fileReader = signatureFileReaderV5;
             } else if (version <= SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH) { // Begins with a byte of value 4
                 fileReader = signatureFileReaderV2;
+            } else if (version == ProtoSignatureFileReader.VERSION) {
+                fileReader = protoSignatureFileReader;
             } else {
                 throw new SignatureFileParsingException("Unsupported signature file version: " + version);
             }

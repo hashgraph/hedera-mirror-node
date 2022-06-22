@@ -452,7 +452,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .consensusStart(consensusStart)
                 .consensusEnd(consensusEnd)
                 .count(0L)
-                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .fileHash(UUID.randomUUID().toString())
                 .hash(UUID.randomUUID().toString())
                 .index(nextIndex++)

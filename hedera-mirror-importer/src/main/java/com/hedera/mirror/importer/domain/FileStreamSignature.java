@@ -48,6 +48,7 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
     private byte[] metadataHash;
     private byte[] metadataHashSignature;
     private StreamType streamType;
+    private byte version;
 
     @Override
     public int compareTo(FileStreamSignature other) {
@@ -63,7 +64,7 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
     }
 
     public String getNodeAccountIdString() {
-        return nodeAccountId.entityIdToString();
+        return nodeAccountId.toString();
     }
 
     public enum SignatureStatus {

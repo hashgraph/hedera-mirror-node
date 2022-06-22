@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.signature;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,8 +23,7 @@ package com.hedera.mirror.importer.reader.signature;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_SIGNATURE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Ints;
 import java.io.File;
@@ -36,8 +35,8 @@ import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFileData;
 
@@ -52,6 +51,7 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
             "/oUesRi5pnATgjqZOXycMegavb1Ikf3GoQAvn1Bx6EO14Uh7hVMxa/NYMtSVNQ17QG6QtA4j7viVvJ9EPSiCsmg3Cp2PhBW5ZPshq" +
             "+ExciGbnXFu+ytLZGSwKhePwuLQsBNTbGUcDFy1IJge95tEweR51Y1Nfh6PqPTnkdirRGO";
     private static final int SIGNATURE_LENGTH = 48;
+    private static final byte VERSION = 2;
 
     private final SignatureFileReaderV2 fileReaderV2 = new SignatureFileReaderV2();
     private final File signatureFile = TestUtils
@@ -66,6 +66,7 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
         assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature.getFileHash());
         assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
                 .getFileHashSignature());
+        assertEquals(VERSION, fileStreamSignature.getVersion());
     }
 
     @SuppressWarnings("java:S2699")
@@ -78,7 +79,7 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
                 "hash delimiter");
 
         SignatureFileSection hash = new SignatureFileSection(
-                TestUtils.generateRandomByteArray(DigestAlgorithm.SHA384.getSize()),
+                TestUtils.generateRandomByteArray(DigestAlgorithm.SHA_384.getSize()),
                 "invalidHashLength",
                 truncateLastByte,
                 "hash");

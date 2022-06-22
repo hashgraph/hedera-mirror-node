@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
-import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA384;
+import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.maxBy;
@@ -72,6 +72,7 @@ import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.reader.StreamFileReader;
+import com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
@@ -182,6 +183,20 @@ public abstract class Downloader<T extends StreamFile> {
     }
 
     /**
+     * Sets the index of the streamFile to the last index plus 1, or 0 if it's the first stream file.
+     *
+     * @param streamFile the stream file object
+     */
+    protected void setStreamFileIndex(T streamFile) {
+        long index = lastStreamFile.get()
+                .map(StreamFile::getIndex)
+                .map(v -> v + 1)
+                .or(() -> Optional.ofNullable(mirrorProperties.getStartBlockNumber()))
+                .orElse(0L);
+        streamFile.setIndex(index);
+    }
+
+    /**
      * Download and parse all signature files with a timestamp later than the last valid file. Put signature files into
      * a multi-map sorted and grouped by the timestamp.
      *
@@ -205,7 +220,7 @@ public abstract class Downloader<T extends StreamFile> {
          */
         for (EntityId nodeAccountId : nodeAccountIds) {
             tasks.add(Executors.callable(() -> {
-                String nodeAccountIdStr = nodeAccountId.entityIdToString();
+                String nodeAccountIdStr = nodeAccountId.toString();
                 Stopwatch stopwatch = Stopwatch.createStarted();
 
                 try {
@@ -295,7 +310,9 @@ public abstract class Downloader<T extends StreamFile> {
                 .collect(Collectors.toList());
     }
 
-    private Optional<FileStreamSignature> parseSignatureFile(PendingDownload pendingDownload, EntityId nodeAccountId) throws InterruptedException, ExecutionException {
+    private Optional<FileStreamSignature> parseSignatureFile(PendingDownload pendingDownload,
+                                                             EntityId nodeAccountId) throws InterruptedException,
+            ExecutionException {
         String s3Key = pendingDownload.getS3key();
         Stopwatch stopwatch = pendingDownload.getStopwatch();
 
@@ -459,6 +476,7 @@ public abstract class Downloader<T extends StreamFile> {
 
     private PendingDownload downloadSignedDataFile(FileStreamSignature fileStreamSignature) {
         String filename = fileStreamSignature.getFilename().replace(StreamType.SIGNATURE_SUFFIX, "");
+        filename += fileStreamSignature.getVersion() >= ProtoSignatureFileReader.VERSION ? ".gz" : "";
         String nodeAccountId = fileStreamSignature.getNodeAccountIdString();
         return pendingDownload(new StreamFilename(filename), getS3Prefix(nodeAccountId));
     }
@@ -483,20 +501,6 @@ public abstract class Downloader<T extends StreamFile> {
         downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
 
         lastStreamFile.set(Optional.of(streamFile));
-    }
-
-    /**
-     * Sets the index of the streamFile to the last index plus 1, or 0 if it's the first stream file.
-     *
-     * @param streamFile the stream file object
-     */
-    private void setStreamFileIndex(StreamFile streamFile) {
-        long index = lastStreamFile.get()
-                .map(StreamFile::getIndex)
-                .map(v -> v + 1)
-                .or(() -> Optional.ofNullable(mirrorProperties.getStartBlockNumber()))
-                .orElse(0L);
-        streamFile.setIndex(index);
     }
 
     /**
@@ -544,7 +548,7 @@ public abstract class Downloader<T extends StreamFile> {
             return true;
         }
 
-        if (SHA384.isHashEmpty(expectedPreviousHash)) {
+        if (SHA_384.isHashEmpty(expectedPreviousHash)) {
             log.warn("Previous hash not available");
             return true;
         }

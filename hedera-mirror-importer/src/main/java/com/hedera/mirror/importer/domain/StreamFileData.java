@@ -22,11 +22,14 @@ package com.hedera.mirror.importer.domain;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
+import lombok.extern.log4j.Log4j2;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.FileUtils;
@@ -35,6 +38,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
+@Log4j2
 @Value
 public class StreamFileData {
 
@@ -42,6 +46,8 @@ public class StreamFileData {
 
     private final StreamFilename streamFilename;
     private final byte[] bytes;
+    @Getter(lazy = true)
+    private final byte[] decompressedBytes = decompressBytes();
 
     public static StreamFileData from(@NonNull File file) {
         try {
@@ -60,22 +66,12 @@ public class StreamFileData {
     }
 
     // Used for testing with raw bytes
-    public static StreamFileData from(@NonNull String filename, @NonNull byte[] bytes) {
+    public static StreamFileData from(@NonNull String filename, byte[] bytes) {
         return new StreamFileData(new StreamFilename(filename), bytes);
     }
 
     public InputStream getInputStream() {
-        try {
-            InputStream is = new ByteArrayInputStream(bytes);
-            String compressor = streamFilename.getCompressor();
-            if (StringUtils.isNotBlank(compressor)) {
-                is = compressorStreamFactory.createCompressorInputStream(compressor, is);
-            }
-
-            return is;
-        } catch (CompressorException ex) {
-            throw new InvalidStreamFileException("Unable to open compressed file " + streamFilename, ex);
-        }
+        return new ByteArrayInputStream(getDecompressedBytes());
     }
 
     public Instant getInstant() {
@@ -89,5 +85,21 @@ public class StreamFileData {
     @Override
     public String toString() {
         return streamFilename.toString();
+    }
+
+    private byte[] decompressBytes() {
+        var compressor = streamFilename.getCompressor();
+        if (StringUtils.isBlank(compressor)) {
+            return bytes;
+        }
+
+        try (var inputStream = new ByteArrayInputStream(bytes);
+             var compressorInputStream = compressorStreamFactory.createCompressorInputStream(compressor, inputStream)) {
+            return compressorInputStream.readAllBytes();
+        } catch (CompressorException | IOException e) {
+            var filename = streamFilename.getFilename();
+            log.error("Failed to decompress stream file {}", filename);
+            throw new InvalidStreamFileException(filename, e);
+        }
     }
 }

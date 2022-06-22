@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.downloader;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,9 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
 import java.util.List;
-
-import com.hedera.mirror.common.util.DomainUtils;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -34,6 +31,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.cglib.core.ReflectUtils;
 
 import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFilename;
 
 // Common tests for streams (record and events) which are linked by previous file's hash.
@@ -55,7 +53,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
         expectLastStreamFile("123", 1L, Instant.EPOCH.plusNanos(100L));
 
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2050-01-01T00:00:00.000000Z"));
-        fileCopier.filterFiles(file2 + "*").copy(); // Skip first file with zero hash
+        fileCopier.filterFiles(trimCompressionSuffix(file2) + "*").copy(); // Skip first file with zero hash
         downloader.download();
         verifyStreamFiles(List.of(file2));
     }
