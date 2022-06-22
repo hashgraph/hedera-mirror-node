@@ -37,6 +37,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.junit.jupiter.api.Test;
 
+import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
@@ -64,8 +65,9 @@ class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
     void testEmptyRecordStreamItems() {
         var bytes = gzip(ProtoRecordStreamFile.of(RecordStreamFile.Builder::clearRecordStreamItems));
         var reader = new ProtoRecordFileReader();
+        var streamFileData = StreamFileData.from(FILENAME, bytes);
         var exception = assertThrows(InvalidStreamFileException.class,
-                () -> reader.read(StreamFileData.from(FILENAME, bytes)));
+                () -> reader.read(streamFileData));
         var expected = "No record stream objects in record file " + FILENAME;
         assertEquals(expected, exception.getMessage());
     }
@@ -78,10 +80,12 @@ class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
             return b;
         }));
         var reader = new ProtoRecordFileReader();
+        var streamFileData = StreamFileData.from(FILENAME, bytes);
         var exception = assertThrows(InvalidStreamFileException.class,
-                () -> reader.read(StreamFileData.from(FILENAME, bytes)));
-        assertThat(exception.getMessage()).contains(FILENAME);
-        assertThat(exception.getCause()).isInstanceOf(IllegalArgumentException.class);
+                () -> reader.read(streamFileData));
+        var expected = String.format("%s has unsupported start running object hash algorithm " +
+                "HASH_ALGORITHM_UNKNOWN and end running object hash algorithm HASH_ALGORITHM_UNKNOWN", FILENAME);
+        assertThat(exception.getMessage()).isEqualTo(expected);
     }
 
     @Test
@@ -91,11 +95,10 @@ class ProtoRecordFileReaderTest extends AbstractRecordFileReaderTest {
             return b;
         }));
         var reader = new ProtoRecordFileReader();
-        var exception = assertThrows(InvalidStreamFileException.class,
-                () -> reader.read(StreamFileData.from(FILENAME, bytes)));
-        var expected = String.format("File %s has mismatch start and end object running hash algorithms " +
-                "[HASH_ALGORITHM_UNKNOWN, SHA_384]", FILENAME);
-        assertEquals(expected, exception.getMessage());
+        var streamFileData = StreamFileData.from(FILENAME, bytes);
+        var recordFile = reader.read(streamFileData);
+
+        assertThat(recordFile.getDigestAlgorithm()).isEqualTo(DigestAlgorithm.SHA_384);
     }
 
     @SneakyThrows

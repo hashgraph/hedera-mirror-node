@@ -88,7 +88,8 @@ abstract class RecordFileReaderTest {
                             .map(RecordItem::getHapiVersion)
                             .collectList()
                             .block();
-                    assertThat(hapiVersions).allSatisfy(version -> assertEquals(recordFile.getHapiVersion(), version));
+                    assertThat(hapiVersions).isNotEmpty()
+                            .allSatisfy(version -> assertEquals(recordFile.getHapiVersion(), version));
 
                     List<Long> timestamps = actual.getItems()
                             .map(RecordItem::getConsensusTimestamp)

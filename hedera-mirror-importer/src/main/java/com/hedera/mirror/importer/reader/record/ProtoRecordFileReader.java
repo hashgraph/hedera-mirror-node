@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.reader.record;
 import static java.lang.String.format;
 import static org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -33,8 +34,11 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 import javax.inject.Named;
-import org.apache.commons.io.input.CountingInputStream;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.io.input.TeeInputStream;
 import org.springframework.data.util.Version;
 import reactor.core.publisher.Flux;
 
@@ -45,31 +49,37 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
+import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.RecordStreamFile;
 
+@Log4j2
 @Named
 public class ProtoRecordFileReader implements RecordFileReader {
 
     public static final int VERSION = 6;
+
+    private static final int BYTE_BUFFER_SIZE = 262144;
 
     @Override
     public RecordFile read(StreamFileData streamFileData) {
         var filename = streamFileData.getFilename();
         var loadStart = Instant.now().getEpochSecond();
 
-        try (var countingInputStream = new CountingInputStream(streamFileData.getInputStream())) {
-            var recordStreamFile = readRecordStreamFile(filename, countingInputStream);
+        try (var byteArrayOutputStream = new ByteArrayOutputStream(BYTE_BUFFER_SIZE);
+             var teeInputStream = new TeeInputStream(streamFileData.getInputStream(), byteArrayOutputStream)) {
+            var recordStreamFile = readRecordStreamFile(filename, teeInputStream);
             var startObjectRunningHash = recordStreamFile.getStartObjectRunningHash();
             var endObjectRunningHash = recordStreamFile.getEndObjectRunningHash();
-            if (!startObjectRunningHash.getAlgorithm().equals(endObjectRunningHash.getAlgorithm())) {
-                throw new InvalidStreamFileException(format("File %s has mismatch start and end object running hash " +
-                                "algorithms [%s, %s]", filename, startObjectRunningHash.getAlgorithm(),
-                        endObjectRunningHash.getAlgorithm()));
+            var startHashAlgorithm = startObjectRunningHash.getAlgorithm();
+            var endHashAlgorithm = endObjectRunningHash.getAlgorithm();
+            if (!startHashAlgorithm.equals(endHashAlgorithm)) {
+                log.warn("{} has mismatch start object running hash algorithm {} and end object running" +
+                        "hash algorithm {}", filename, startHashAlgorithm, endHashAlgorithm);
             }
 
             var items = readItems(filename, recordStreamFile);
             int count = items.size();
-            var digestAlgorithm = DigestAlgorithm.valueOf(startObjectRunningHash.getAlgorithm().toString());
+            var digestAlgorithm = getDigestAlgorithm(filename, startHashAlgorithm, endHashAlgorithm);
 
             var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
             return RecordFile.builder()
@@ -78,7 +88,7 @@ public class ProtoRecordFileReader implements RecordFileReader {
                     .consensusEnd(items.get(count - 1).getConsensusTimestamp())
                     .count((long) count)
                     .digestAlgorithm(digestAlgorithm)
-                    .fileHash(getFileHash(digestAlgorithm, streamFileData))
+                    .fileHash(getFileHash(digestAlgorithm, byteArrayOutputStream.toByteArray()))
                     .hapiVersionMajor(hapiProtoVersion.getMajor())
                     .hapiVersionMinor(hapiProtoVersion.getMinor())
                     .hapiVersionPatch(hapiProtoVersion.getPatch())
@@ -89,7 +99,7 @@ public class ProtoRecordFileReader implements RecordFileReader {
                     .metadataHash(getMetadataHash(digestAlgorithm, recordStreamFile))
                     .name(filename)
                     .previousHash(DomainUtils.bytesToHex(DomainUtils.getHashBytes(startObjectRunningHash)))
-                    .size(countingInputStream.getCount())
+                    .size(byteArrayOutputStream.size())
                     .version(VERSION)
                     .build();
         } catch (IllegalArgumentException | IOException e) {
@@ -105,11 +115,27 @@ public class ProtoRecordFileReader implements RecordFileReader {
         }
     }
 
-    private String getFileHash(DigestAlgorithm algorithm, StreamFileData streamFileData) throws IOException {
-        try (var inputStream = streamFileData.getInputStream()) {
-            var messageDigest = createMessageDigest(algorithm);
-            return DomainUtils.bytesToHex(messageDigest.digest(inputStream.readAllBytes()));
-        }
+    private DigestAlgorithm getDigestAlgorithm(String filename, HashAlgorithm start, HashAlgorithm end) {
+        return Stream.of(start, end)
+                .map(hashAlgorithm -> {
+                    try {
+                        return DigestAlgorithm.valueOf(hashAlgorithm.toString());
+                    } catch (IllegalArgumentException e) {
+                        return null;
+                    }
+                })
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElseThrow(() -> {
+                    var message = format("%s has unsupported start running object hash algorithm %s and " +
+                            "end running object hash algorithm %s", filename, start, end);
+                    return new InvalidStreamFileException(message);
+                });
+    }
+
+    private String getFileHash(DigestAlgorithm algorithm, byte[] fileData) throws IOException {
+        var messageDigest = createMessageDigest(algorithm);
+        return DomainUtils.bytesToHex(messageDigest.digest(fileData));
     }
 
     private String getMetadataHash(DigestAlgorithm algorithm, RecordStreamFile recordStreamFile) throws IOException {
