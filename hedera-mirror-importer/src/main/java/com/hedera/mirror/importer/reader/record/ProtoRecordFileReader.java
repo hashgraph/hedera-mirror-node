@@ -80,8 +80,8 @@ public class ProtoRecordFileReader implements RecordFileReader {
             var items = readItems(filename, recordStreamFile);
             int count = items.size();
             var digestAlgorithm = getDigestAlgorithm(filename, startHashAlgorithm, endHashAlgorithm);
-
             var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
+
             return RecordFile.builder()
                     .bytes(streamFileData.getBytes())
                     .consensusStart(items.get(0).getConsensusTimestamp())
@@ -102,7 +102,7 @@ public class ProtoRecordFileReader implements RecordFileReader {
                     .size(byteArrayOutputStream.size())
                     .version(VERSION)
                     .build();
-        } catch (IllegalArgumentException | IOException e) {
+        } catch (IOException e) {
             throw new InvalidStreamFileException("Error reading record file " + filename, e);
         }
     }
@@ -133,7 +133,7 @@ public class ProtoRecordFileReader implements RecordFileReader {
                 });
     }
 
-    private String getFileHash(DigestAlgorithm algorithm, byte[] fileData) throws IOException {
+    private String getFileHash(DigestAlgorithm algorithm, byte[] fileData) {
         var messageDigest = createMessageDigest(algorithm);
         return DomainUtils.bytesToHex(messageDigest.digest(fileData));
     }

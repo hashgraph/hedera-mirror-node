@@ -126,28 +126,6 @@ public class TestRecordFiles {
                 .size(498)
                 .version(5)
                 .build();
-
-//        RecordFile recordFileV6_1 = RecordFile.builder()
-//                .consensusStart(1655374717496046001L)
-//                .consensusEnd(1655374717496046003L)
-//                .count(3L)
-//                .digestAlgorithm(digestAlgorithm)
-//                .fileHash(
-//                        "3e546619bd9c59fe0ee03be25ff2371718ff206f31323868207bb621bc85212669eb66b8a1556d4e686c8fbcd14f9e97")
-//                .hapiVersionMajor(0)
-//                .hapiVersionMinor(27)
-//                .hapiVersionPatch(0)
-//                .hash
-//                ("53b645e288b9f2fe6cc7d80813fe0e21446d379cd501e750c0948c1b7d49a451695dd1c2474521694ee162ee4e1478e8")
-//                .index(-9223372036854775807L)
-//                .metadataHash(
-//                        "01a43036a6ce80082680fa64b4702aecb659b8ddd02a06201c6c83d2b71def7b2ee1b5ac09bb7eb9b2f04dad5547e8e9")
-//                .name("2022-06-16T10_18_37.496046001Z.rcd.gz")
-//                .previousHash(
-//                        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
-//                .size(1124)
-//                .version(6)
-//                .build();
         RecordFile recordFileV6_1 = RecordFile.builder()
                 .consensusStart(1655802944212575003L)
                 .consensusEnd(1655802944212575003L)
