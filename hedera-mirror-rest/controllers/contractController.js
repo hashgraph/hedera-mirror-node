@@ -70,6 +70,7 @@ const contractSelectFields = [
 const contractWithInitcodeSelectFields = [...contractSelectFields, Contract.getFullName(Contract.INITCODE)];
 
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
+const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
 
 /**
  * Extracts the sql where clause, params, order and limit values to be used from the provided contract query
@@ -1005,7 +1006,10 @@ class ContractController extends BaseController {
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
       // get transactions using ethereum hash and nonce
-      transactions = await TransactionService.getTransactionDetailsFromEthHash(ethHash, duplicateTransactionResult);
+      transactions = await TransactionService.getTransactionDetailsFromEthHash(ethHash, [
+        duplicateTransactionResult,
+        wrongNonceTransactionResult,
+      ]);
     } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
       const nonce = getLastNonceParamValue(req.query);
