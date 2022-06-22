@@ -116,32 +116,6 @@
       }
     },
     {
-      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:1001&token.id=lt:1008&spender.id=1004",
-      "responseStatus": 400,
-      "responseJson": {
-        "_status": {
-          "messages": [
-            {
-              "message": "Can't support both range and equal"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:1001&token.id=gt:10001&token.id=10005",
-      "responseStatus": 400,
-      "responseJson": {
-        "_status": {
-          "messages": [
-            {
-              "message": "Can't support both range and equal"
-            }
-          ]
-        }
-      }
-    },
-    {
       "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gt:1001&token.id=gt:1008",
       "responseStatus": 400,
       "responseJson": {

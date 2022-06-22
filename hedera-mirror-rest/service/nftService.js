@@ -36,6 +36,7 @@ class NftService extends BaseService {
     [constants.filterKeys.SERIAL_NUMBER]: Nft.SERIAL_NUMBER,
     [constants.filterKeys.SPENDER_ID]: Nft.SPENDER,
   };
+  static nftByIdQuery = 'select * from nft where token_id = $1 and serial_number = $2';
   static nftQuery = `select
     ${Nft.ACCOUNT_ID},
     ${Nft.CREATED_TIMESTAMP},
@@ -48,6 +49,11 @@ class NftService extends BaseService {
     ${Nft.TOKEN_ID}
     from ${Nft.tableName}`;
   static orderByColumns = [Nft.TOKEN_ID, Nft.SERIAL_NUMBER];
+
+  async getNft(tokenId, serialNumber) {
+    const {rows} = await pool.queryQuietly(NftService.nftByIdQuery, [tokenId, serialNumber]);
+    return _.isEmpty(rows) ? null : new Nft(rows[0]);
+  }
 
   /**
    * Gets the subquery to retrieve the token allowance based on the filters for an owner account

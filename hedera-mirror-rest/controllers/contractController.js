@@ -584,32 +584,18 @@ class ContractController extends BaseController {
   };
 
   validateContractLogsBounds = (timestampBound, indexBound) => {
-    for (const bound of [timestampBound, indexBound]) {
-      if (bound.hasBound() && bound.hasEqual()) {
-        throw new InvalidArgumentError(`Can't support both range and equal`);
-      }
-    }
-
-    if (timestampBound.isEmpty() && !indexBound.isEmpty()) {
+    if (!this.validateSecondaryBound(timestampBound, indexBound)) {
       throw new InvalidArgumentError(
         `Cannot search by ${constants.filterKeys.INDEX} without a ${constants.filterKeys.TIMESTAMP} parameter filter`
       );
     }
 
-    if (
-      indexBound.hasLower() &&
-      !timestampBound.hasEqual() &&
-      (!timestampBound.hasLower() || timestampBound.lower.operator === utils.opsMap.gt)
-    ) {
+    if (!this.validateLowerBounds(timestampBound, indexBound)) {
       // invalid ops: index >/>= & timestamp </<=/>
       throw new InvalidArgumentError(`Timestamp must have gte or eq operator`);
     }
 
-    if (
-      indexBound.hasUpper() &&
-      !timestampBound.hasEqual() &&
-      (!timestampBound.hasUpper() || timestampBound.upper.operator === utils.opsMap.lt)
-    ) {
+    if (!this.validateUpperBounds(timestampBound, indexBound)) {
       // invalid ops: index </<= & timestamp >/>=/<
       throw new InvalidArgumentError(`Timestamp must have lte or eq operator`);
     }

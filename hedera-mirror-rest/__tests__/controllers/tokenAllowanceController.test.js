@@ -342,10 +342,6 @@ describe('extractTokenMultiUnionQuery throw', () => {
       filters: [{key: SPENDER_ID, operator: ne, value: 1}],
     },
     {
-      name: 'spender.id range and equal',
-      filters: [spenderEqFilter, spenderGtFilter, spenderLtFilter],
-    },
-    {
       name: 'spender.id multiple equal',
       filters: [spenderEqFilter, spenderEqFilter],
     },
@@ -360,10 +356,6 @@ describe('extractTokenMultiUnionQuery throw', () => {
     {
       name: 'token.id ne',
       filters: [{key: TOKEN_ID, operator: ne, value: 1}],
-    },
-    {
-      name: 'token.id range and equal',
-      filters: [tokenIdEqFilter, tokenIdGtFilter, tokenIdLtFilter],
     },
     {
       name: 'token.id multiple equal',

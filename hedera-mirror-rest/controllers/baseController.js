@@ -24,21 +24,7 @@ const _ = require('lodash');
 
 const utils = require('../utils');
 
-// errors
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-
 class BaseController {
-  updateConditionsAndParamsWithValues = (
-    filter,
-    existingParams,
-    existingConditions,
-    fullName,
-    position = existingParams.length
-  ) => {
-    existingParams.push(filter.value);
-    existingConditions.push(`${fullName}${filter.operator}$${position}`);
-  };
-
   updateConditionsAndParamsWithInValues = (
     filter,
     invalues,
@@ -74,29 +60,45 @@ class BaseController {
   };
 
   /**
-   * Retrieve a unique identifying string for a filter using it's key and comparison operator
-   * e.g. 'token.id-=', 'serialnumber->='
-   * Note gt & gte are equivalent, as are lt & lte when mergeOrEqualComparisons  is true
-   * @param {Object} filter
-   * @param {boolean} mergeOrEqualComparisons flag to treat gt & gte as equivalent, as well as lt & lte
-   * @returns {string}
+   * Validate that if the primary bound is empty the secondary bound is empty as well.
+   *
+   * @param {Bound} primaryBound
+   * @param {Bound} secondaryBound
+   * @return boolean true if the bounds are valid.
    */
-  getFilterKeyOpString = (filter, mergeOrEqualComparisons = true) => {
-    const rangeRegex = /(>|<)(=)?/;
-    const comparisonString = mergeOrEqualComparisons ? filter.operator.replace(rangeRegex, '$1') : filter.operator;
-    return `${filter.key}-${comparisonString.trim()}`;
-  };
+  validateSecondaryBound(primaryBound, secondaryBound) {
+    return !(primaryBound.isEmpty() && !secondaryBound.isEmpty());
+  }
 
   /**
-   * Verify there's only a single occurence of a given non-eq filter in the map using its unique string identifier
-   * @param {Object} filterMap Map of observer filters
-   * @param {String} filter Current filter
+   * Validate that the Lower Bounds are valid.
+   *
+   * @param {Bound} primaryBound
+   * @param {Bound} secondaryBound
+   * @return boolean true if the bounds are valid.
    */
-  validateSingleFilterKeyOccurence = (filterMap, filter) => {
-    if (filterMap[this.getFilterKeyOpString(filter)]) {
-      throw new InvalidArgumentError(`Multiple range params not allowed for ${filter.key}`);
-    }
-  };
+  validateLowerBounds(primaryBound, secondaryBound) {
+    return !(
+      !primaryBound.hasEqual() &&
+      secondaryBound.hasLower() &&
+      (!primaryBound.hasLower() || primaryBound.lower.operator === utils.opsMap.gt)
+    );
+  }
+
+  /**
+   * Validate that the Upper Bounds are valid.
+   *
+   * @param {Bound} primaryBound
+   * @param {Bound} secondaryBound
+   * @return boolean true if the bounds are valid.
+   */
+  validateUpperBounds(primaryBound, secondaryBound) {
+    return !(
+      !primaryBound.hasEqual() &&
+      secondaryBound.hasUpper() &&
+      (!primaryBound.hasUpper() || primaryBound.upper.operator === utils.opsMap.lt)
+    );
+  }
 
   /**
    * Gets filters for the lower part of the multi-union query.
@@ -152,11 +154,6 @@ class BaseController {
    * @return {{key: string, operator: string, value: *}[]}
    */
   getUpperFilters(primaryBound, secondaryBound) {
-    if (secondaryBound.hasUpper() && primaryBound.hasEqual() && !primaryBound.hasUpper()) {
-      // Combine the equal into the upper
-      return [primaryBound.equal, secondaryBound.upper];
-    }
-
     if (!primaryBound.hasUpper() || !secondaryBound.hasUpper()) {
       return [];
     }

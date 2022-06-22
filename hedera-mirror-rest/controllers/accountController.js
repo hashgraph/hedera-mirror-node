@@ -40,22 +40,15 @@ const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
 class AccountController extends BaseController {
   validateFilters(serialNumberBound, tokenIdBound, spenderIdFilters) {
-    if (!serialNumberBound.isEmpty() && tokenIdBound.isEmpty()) {
+    if (!this.validateSecondaryBound(tokenIdBound, serialNumberBound)) {
       throw new InvalidArgumentError(`Cannot search NFTs with serialnumber without a tokenId parameter filter`);
     }
 
-    let invalidRange = false;
+    const spenderOperators = spenderIdFilters.map((f) => f.operator);
     if (
-      spenderIdFilters.map((f) => f.operator).filter((o) => o === utils.opsMap.lte || o === utils.opsMap.lt).length > 1
+      spenderOperators.filter((o) => o === utils.opsMap.lte || o === utils.opsMap.lt).length > 1 ||
+      spenderOperators.filter((o) => o === utils.opsMap.gte || o === utils.opsMap.gt).length > 1
     ) {
-      invalidRange = true;
-    }
-    if (
-      spenderIdFilters.map((f) => f.operator).filter((o) => o === utils.opsMap.gte || o === utils.opsMap.gt).length > 1
-    ) {
-      invalidRange = true;
-    }
-    if (invalidRange) {
       throw new InvalidArgumentError(`Multiple range params not allowed for spender.id`);
     }
 
@@ -103,7 +96,7 @@ class AccountController extends BaseController {
 
     let lower = this.getLowerFilters(tokenIdBound, serialNumberBound);
     let inner = this.getInnerFilters(tokenIdBound, serialNumberBound);
-    let upper = this.getUpperFilters(tokenIdBound, serialNumberBound);
+    let upper = this.getAccountsUpperFilters(tokenIdBound, serialNumberBound);
     return {
       bounds,
       lower,
@@ -115,6 +108,15 @@ class AccountController extends BaseController {
       spenderIdInFilters,
       spenderIdFilters,
     };
+  }
+
+  getAccountsUpperFilters(tokenIdBound, serialNumberBound) {
+    if (serialNumberBound.hasUpper() && tokenIdBound.hasEqual() && !tokenIdBound.hasUpper()) {
+      // Combine the equal into the upper
+      return [tokenIdBound.equal, serialNumberBound.upper];
+    }
+
+    return this.getUpperFilters(tokenIdBound, serialNumberBound);
   }
 
   /**

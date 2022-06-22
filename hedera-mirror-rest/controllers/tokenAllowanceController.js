@@ -99,23 +99,17 @@ class TokenAllowanceController extends BaseController {
   }
 
   validateBounds(spenderBound, tokenIdBound) {
-    for (const bound of [spenderBound, tokenIdBound]) {
-      if (bound.hasBound() && bound.hasEqual()) {
-        throw new InvalidArgumentError(`Can't support both range and equal`);
-      }
-    }
-
-    if (spenderBound.isEmpty() && !tokenIdBound.isEmpty()) {
+    if (!this.validateSecondaryBound(spenderBound, tokenIdBound)) {
       throw new InvalidArgumentError(
         `${constants.filterKeys.TOKEN_ID} without a ${constants.filterKeys.SPENDER_ID} parameter filter`
       );
     }
 
-    if (tokenIdBound.hasLower() && (!spenderBound.hasLower() || spenderBound.lower.operator === utils.opsMap.gt)) {
+    if (!this.validateLowerBounds(spenderBound, tokenIdBound)) {
       throw new InvalidArgumentError('Unsupported combination');
     }
 
-    if (tokenIdBound.hasUpper() && (!spenderBound.hasUpper() || spenderBound.upper.operator === utils.opsMap.lt)) {
+    if (!this.validateUpperBounds(spenderBound, tokenIdBound)) {
       throw new InvalidArgumentError('Unsupported combination');
     }
   }
