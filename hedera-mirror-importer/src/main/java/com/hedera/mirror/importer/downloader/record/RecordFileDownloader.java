@@ -25,7 +25,6 @@ import javax.inject.Named;
 import org.springframework.scheduling.annotation.Scheduled;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
 
-import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
@@ -60,12 +59,11 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
     }
 
     @Override
-    protected void setStreamFileIndex(StreamFile streamFile) {
-        var recordFile = (RecordFile) streamFile;
-        // Staring from the record stream file v6, the record file index is externalized as the block_number field of
+    protected void setStreamFileIndex(RecordFile recordFile) {
+        // Starting from the record stream file v6, the record file index is externalized as the block_number field of
         // the protobuf RecordStreamFile, so only set the record file index to be last + 1 if it's pre-v6.
         if (recordFile.getVersion() < ProtoRecordFileReader.VERSION) {
-            super.setStreamFileIndex(streamFile);
+            super.setStreamFileIndex(recordFile);
         }
     }
 }

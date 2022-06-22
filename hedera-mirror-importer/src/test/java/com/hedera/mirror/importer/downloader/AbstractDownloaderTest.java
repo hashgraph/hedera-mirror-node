@@ -656,7 +656,9 @@ public abstract class AbstractDownloaderTest {
     private String getSigFilename(String dataFilename) {
         var streamFilename = new StreamFilename(dataFilename);
         var dataExtension = streamFilename.getExtension().getName();
-        return dataFilename.replace(dataExtension, dataExtension + "_sig");
+        // take into account that data files may be compressed so the filename has an additional compression suffix,
+        // while signature files won't be compressed.
+        return dataFilename.replaceAll(dataExtension + ".*$", dataExtension + "_sig");
     }
 
     protected void verifyUnsuccessful() {

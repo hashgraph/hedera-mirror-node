@@ -48,7 +48,7 @@ class RecordFileV5V6DownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @Override
     protected Duration getCloseInterval() {
-        return Duration.ofSeconds(158L);
+        return Duration.ofSeconds(64L);
     }
 
     @Override

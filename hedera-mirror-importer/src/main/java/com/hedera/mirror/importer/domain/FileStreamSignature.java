@@ -63,7 +63,7 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
     }
 
     public String getNodeAccountIdString() {
-        return nodeAccountId.entityIdToString();
+        return nodeAccountId.toString();
     }
 
     public enum SignatureStatus {

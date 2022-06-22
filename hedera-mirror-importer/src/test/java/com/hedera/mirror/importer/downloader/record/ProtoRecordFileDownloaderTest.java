@@ -52,8 +52,8 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
     @Override
     protected Map<String, RecordFile> getRecordFileMap() {
         var allRecordFileMap = TestRecordFiles.getAll();
-        var recordFile1 = allRecordFileMap.get("2022-06-16T10_18_37.496046001Z.rcd.gz");
-        var recordFile2 = allRecordFileMap.get("2022-06-16T10_18_40.720801003Z.rcd.gz");
+        var recordFile1 = allRecordFileMap.get("2022-06-21T09_15_44.212575003Z.rcd.gz");
+        var recordFile2 = allRecordFileMap.get("2022-06-21T09_15_46.247764003Z.rcd.gz");
         return Map.of(recordFile1.getName(), recordFile1, recordFile2.getName(), recordFile2);
     }
 

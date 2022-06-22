@@ -44,7 +44,7 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
         try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
                 signatureFileData.getInputStream(), filename)) {
             vdis.readByte(SIGNATURE_TYPE_FILE_HASH, "hash delimiter");
-            byte[] fileHash = vdis.readNBytes(DigestAlgorithm.SHA384.getSize(), "hash");
+            byte[] fileHash = vdis.readNBytes(DigestAlgorithm.SHA_384.getSize(), "hash");
 
             vdis.readByte(SIGNATURE_TYPE_SIGNATURE, "signature delimiter");
             byte[] signature = vdis.readLengthAndBytes(1, SignatureType.SHA_384_WITH_RSA.getMaxLength(),

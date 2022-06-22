@@ -35,7 +35,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 public class TestRecordFiles {
 
     public Map<String, RecordFile> getAll() {
-        DigestAlgorithm digestAlgorithm = DigestAlgorithm.SHA384;
+        DigestAlgorithm digestAlgorithm = DigestAlgorithm.SHA_384;
 
         RecordFile recordFileV1_1 = RecordFile.builder()
                 .consensusStart(1561990380317763000L)
@@ -127,43 +127,64 @@ public class TestRecordFiles {
                 .version(5)
                 .build();
 
+//        RecordFile recordFileV6_1 = RecordFile.builder()
+//                .consensusStart(1655374717496046001L)
+//                .consensusEnd(1655374717496046003L)
+//                .count(3L)
+//                .digestAlgorithm(digestAlgorithm)
+//                .fileHash(
+//                        "3e546619bd9c59fe0ee03be25ff2371718ff206f31323868207bb621bc85212669eb66b8a1556d4e686c8fbcd14f9e97")
+//                .hapiVersionMajor(0)
+//                .hapiVersionMinor(27)
+//                .hapiVersionPatch(0)
+//                .hash
+//                ("53b645e288b9f2fe6cc7d80813fe0e21446d379cd501e750c0948c1b7d49a451695dd1c2474521694ee162ee4e1478e8")
+//                .index(-9223372036854775807L)
+//                .metadataHash(
+//                        "01a43036a6ce80082680fa64b4702aecb659b8ddd02a06201c6c83d2b71def7b2ee1b5ac09bb7eb9b2f04dad5547e8e9")
+//                .name("2022-06-16T10_18_37.496046001Z.rcd.gz")
+//                .previousHash(
+//                        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
+//                .size(1124)
+//                .version(6)
+//                .build();
         RecordFile recordFileV6_1 = RecordFile.builder()
-                .consensusStart(1655374717496046001L)
-                .consensusEnd(1655374717496046003L)
-                .count(3L)
-                .digestAlgorithm(digestAlgorithm)
-                .fileHash(
-                        "3e546619bd9c59fe0ee03be25ff2371718ff206f31323868207bb621bc85212669eb66b8a1556d4e686c8fbcd14f9e97")
-                .hapiVersionMajor(0)
-                .hapiVersionMinor(27)
-                .hapiVersionPatch(0)
-                .hash("53b645e288b9f2fe6cc7d80813fe0e21446d379cd501e750c0948c1b7d49a451695dd1c2474521694ee162ee4e1478e8")
-                .index(-9223372036854775807L)
-                .metadataHash(
-                        "01a43036a6ce80082680fa64b4702aecb659b8ddd02a06201c6c83d2b71def7b2ee1b5ac09bb7eb9b2f04dad5547e8e9")
-                .name("2022-06-16T10_18_37.496046001Z.rcd.gz")
-                .previousHash(
-                        "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")
-                .size(1124)
-                .version(6)
-                .build();
-        RecordFile recordFileV6_2 = RecordFile.builder()
-                .consensusStart(1655374720720801003L)
-                .consensusEnd(1655374720720801003L)
+                .consensusStart(1655802944212575003L)
+                .consensusEnd(1655802944212575003L)
                 .count(1L)
                 .digestAlgorithm(digestAlgorithm)
                 .fileHash(
-                        "b5947d59a5661f591c0950e8dd0c6a4d42f49dcf7454bc05c911fef67aedead41fb00f01ac32b1de9ac2b3130fb14346")
+                        "459884c41241650e739c194c2120996dcc2aff35ea8e7b3a770929089b89c31583ae9ff383b80561f211b4fc4f6a0a9b")
                 .hapiVersionMajor(0)
                 .hapiVersionMinor(27)
-                .hapiVersionPatch(0)
-                .hash("3bade250e5b68e427df2c6ed1b427ed057303bf92a5a497b432ea22250ce03e33740d60fd7fe70a8883f7bd57babcb0b")
-                .index(-9223372036854775806L)
+                .hapiVersionPatch(1)
+                .hash("099224968b8a38e88bb5bb82d626e1f2835415b4ebbdc0bd6e695505944ed533159c9e66414887f58da34921cf4178a3")
+                .index(-9223372036854775796L)
                 .metadataHash(
-                        "c8766bf8449e2d4598a4b7cc41c7a54f16dc869bd9cf81af2536ba1a8ec8c86d1e33134995d45f67ce26a79249d96666")
-                .name("2022-06-16T10_18_40.720801003Z.rcd.gz")
+                        "884757419c733027557616cb0191c59fa13805fbc0500daaddc84c99692924df9ba7419e2391be02da4d1de42255deae")
+                .name("2022-06-21T09_15_44.212575003Z.rcd.gz")
+                .previousHash(
+                        "502ca907a14af743a441a4f7d0de2664174b931ae0c4cae978712d44b9790123b4ac6cba6a273151703129b22f2d95f2")
+                .size(2276)
+                .version(6)
+                .build();
+        RecordFile recordFileV6_2 = RecordFile.builder()
+                .consensusStart(1655802946247764003L)
+                .consensusEnd(1655802946247764003L)
+                .count(1L)
+                .digestAlgorithm(digestAlgorithm)
+                .fileHash(
+                        "7cdb75a5631c67d03b0bf8e10d5de91e054d1941cf50746fea328c42c50279f4eadd7b3d9c159de4f9a9da288cc1142f")
+                .hapiVersionMajor(0)
+                .hapiVersionMinor(27)
+                .hapiVersionPatch(1)
+                .hash("f43343b6bbbc226282b250eff72b72d2eed605921e83263a9558ff72f18aa6113faae71f3d83308756b597dc26b9d8a0")
+                .index(-9223372036854775795L)
+                .metadataHash(
+                        "d3959bfcfeb0a6933995f58440f374fd300ba06372a6ff6d6226e8cf8afa02d529df52bd162c3c1a40c86d43b6322eea")
+                .name("2022-06-21T09_15_46.247764003Z.rcd.gz")
                 .previousHash(recordFileV6_1.getHash())
-                .size(792)
+                .size(787)
                 .version(6)
                 .build();
 
@@ -180,7 +201,7 @@ public class TestRecordFiles {
                 .consensusStart(1611188151568507001L)
                 .consensusEnd(1611188151568507001L)
                 .count(1L)
-                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .fileHash(
                         "e7d9e71efd239bde3adcad8eb0571c38f91f77ae76a4af69bb44f19b2785ad3594ac1d265351a592ab14301da9bb1950")
                 .hash("e7d9e71efd239bde3adcad8eb0571c38f91f77ae76a4af69bb44f19b2785ad3594ac1d265351a592ab14301da9bb1950")
@@ -195,7 +216,7 @@ public class TestRecordFiles {
                 .consensusStart(1611188383558496000L)
                 .consensusEnd(1611188383558496000L)
                 .count(1L)
-                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .fileHash(
                         "42717bae0e538bac34563784b08b5a5b50a9964c9435452c93134bf13355c9778a1c64cfdc30f33fe52dd7f76dbdda70")
                 .hapiVersionMajor(0)
@@ -217,18 +238,18 @@ public class TestRecordFiles {
         EntityId nodeAccountId = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
         RecordFile recordFileV5 = RecordFile.builder()
                 .nodeAccountId(nodeAccountId)
-                .name("2022-06-16T14_18_05.036741003Z.rcd")
-                .digestAlgorithm(DigestAlgorithm.SHA384)
-                .size(488)
+                .name("2022-06-21T09_14_34.364804003Z.rcd")
+                .digestAlgorithm(DigestAlgorithm.SHA_384)
+                .size(492)
                 .version(5)
                 .build();
 
         RecordFile recordFileV6 = RecordFile.builder()
-                .name("2022-06-16T14_20_42.665292003Z.rcd.gz")
+                .name("2022-06-21T09_15_38.325469003Z.rcd.gz")
                 .nodeAccountId(nodeAccountId)
-                .digestAlgorithm(DigestAlgorithm.SHA384)
-                .index(-9223372036854775800L)
-                .size(791)
+                .digestAlgorithm(DigestAlgorithm.SHA_384)
+                .index(-9223372036854775797L)
+                .size(785)
                 .version(6)
                 .build();
 

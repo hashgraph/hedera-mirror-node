@@ -49,7 +49,7 @@ import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 @Named
 public class RecordFileReaderImplV5 implements RecordFileReader {
 
-    private static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
+    private static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA_384;
     private static final int VERSION = 5;
 
     @Override

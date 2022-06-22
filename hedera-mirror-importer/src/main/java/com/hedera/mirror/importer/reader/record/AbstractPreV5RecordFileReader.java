@@ -45,7 +45,7 @@ import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 @RequiredArgsConstructor
 public abstract class AbstractPreV5RecordFileReader implements RecordFileReader {
 
-    protected static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
+    protected static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA_384;
     protected static final byte PREV_HASH_MARKER = 1;
     protected static final byte RECORD_MARKER = 2;
 

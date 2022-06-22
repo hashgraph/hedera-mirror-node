@@ -107,6 +107,7 @@ class ProtoSignatureFileReaderTest extends AbstractSignatureFileReaderTest {
         var exception = assertThrows(InvalidStreamFileException.class,
                 () -> protoSignatureFileReader.read(streamFileData));
         assertThat(exception.getMessage()).contains(FILENAME);
+        assertThat(exception.getCause()).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

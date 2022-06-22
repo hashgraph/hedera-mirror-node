@@ -137,19 +137,19 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
                 null);
 
         SignatureFileSection hashDigestType = new SignatureFileSection(
-                Ints.toByteArray(DigestAlgorithm.SHA384.getType()),
+                Ints.toByteArray(DigestAlgorithm.SHA_384.getType()),
                 "invalidHashDigestType:" + sectionName,
                 incrementLastByte,
                 sectionName + " hash digest type");
 
         SignatureFileSection hashLength = new SignatureFileSection(
-                Ints.toByteArray(DigestAlgorithm.SHA384.getSize()),
+                Ints.toByteArray(DigestAlgorithm.SHA_384.getSize()),
                 "invalidHashLength:" + sectionName,
                 incrementLastByte,
                 "hash length");
 
         SignatureFileSection hash = new SignatureFileSection(
-                TestUtils.generateRandomByteArray(DigestAlgorithm.SHA384.getSize()),
+                TestUtils.generateRandomByteArray(DigestAlgorithm.SHA_384.getSize()),
                 "incorrectHashLength:" + sectionName,
                 truncateLastByte,
                 sectionName + " actual hash length");
