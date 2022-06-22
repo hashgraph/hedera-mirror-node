@@ -97,6 +97,29 @@
         "node_id": 1,
         "port": 50216
       }
+    ],
+    "nodestakes": [
+      {
+        "consensus_timestamp": 187654000123456,
+        "epoch_day": 3,
+        "node_id": 0,
+        "stake": 12,
+        "stake_not_rewarded": 8,
+        "stake_rewarded": 4,
+        "stake_total": 30
+      },
+      {
+        "consensus_timestamp": 1655164800000000005,
+        "epoch_day": 4,
+        "max_stake": 5000,
+        "min_stake": 10,
+        "node_id": 0,
+        "stake": 13,
+        "stake_not_rewarded": 8,
+        "stake_rewarded": 5,
+        "stake_total": 50,
+        "staking_period": 1655164799999999999
+      }
     ]
   },
   "url": "/api/v1/network/nodes",
@@ -106,7 +129,9 @@
       {
         "description": "description",
         "file_id": "0.0.102",
+        "max_stake": 5000,
         "memo": "0.0.3",
+        "min_stake": 10,
         "node_account_id": "0.0.3",
         "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
         "node_id": 0,
@@ -117,6 +142,14 @@
             "port": 50215
           }
         ],
+        "stake": 13,
+        "stake_not_rewarded": 8,
+        "stake_rewarded": 5,
+        "stake_total": 50,
+        "staking_period": {
+          "from": "1655164800.000000000",
+          "to": "1655251200.000000000"
+        },
         "timestamp": {
           "from": "187654.000123457",
           "to": null
@@ -125,7 +158,9 @@
       {
         "description": "description",
         "file_id": "0.0.102",
+        "max_stake": null,
         "memo": "0.0.4",
+        "min_stake": null,
         "node_account_id": "0.0.4",
         "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
         "node_id": 1,
@@ -136,6 +171,11 @@
             "port": 50216
           }
         ],
+        "stake": null,
+        "stake_not_rewarded": null,
+        "stake_rewarded": null,
+        "stake_total": null,
+        "staking_period": null,
         "timestamp": {
           "from": "187654.000123457",
           "to": null

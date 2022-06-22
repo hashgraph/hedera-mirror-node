@@ -60,6 +60,10 @@ import com.hedera.mirror.common.util.DomainUtils;
 @Upsertable(history = true)
 public abstract class AbstractEntity implements History {
 
+    public static final long ACCOUNT_ID_CLEARED = 0L;
+
+    public static final long NODE_ID_CLEARED = -1L;
+
     private Long autoRenewAccountId;
 
     private Long autoRenewPeriod;
@@ -67,7 +71,7 @@ public abstract class AbstractEntity implements History {
     @Column(updatable = false)
     private Long createdTimestamp;
 
-    private boolean declineReward;
+    private Boolean declineReward;
 
     private Boolean deleted;
 

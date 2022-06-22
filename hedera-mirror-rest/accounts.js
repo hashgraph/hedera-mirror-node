@@ -20,7 +20,6 @@
 
 'use strict';
 
-const AccountAlias = require('./accountAlias');
 const base32 = require('./base32');
 const {getAccountContractUnionQueryWithOrder} = require('./accountContract');
 const constants = require('./constants');
@@ -50,11 +49,13 @@ const processRow = (row) => {
     evmAddress = entityId.toEvmAddress();
   }
 
+  const stakedToNode = row.staked_node_id !== null && row.staked_node_id !== -1;
   return {
     account: entityId.toString(),
     alias: base32.encode(row.alias),
     auto_renew_period: row.auto_renew_period,
     balance,
+    decline_reward: row.decline_reward,
     deleted: row.deleted,
     ethereum_nonce: row.ethereum_nonce,
     evm_address: evmAddress,
@@ -63,6 +64,9 @@ const processRow = (row) => {
     max_automatic_token_associations: row.max_automatic_token_associations,
     memo: row.memo,
     receiver_sig_required: row.receiver_sig_required,
+    staked_account_id: EntityId.parse(row.staked_account_id, {isNullable: true}).toString(),
+    staked_node_id: stakedToNode ? row.staked_node_id : null,
+    stake_period_start: stakedToNode ? utils.nsToSecNs(BigInt(row.stake_period_start) * constants.ONE_DAY_IN_NS) : null,
   };
 };
 
@@ -70,6 +74,7 @@ const processRow = (row) => {
 const entityFields = [
   'alias',
   'auto_renew_period',
+  'decline_reward',
   'deleted',
   'ethereum_nonce',
   'evm_address',
@@ -78,6 +83,9 @@ const entityFields = [
   'max_automatic_token_associations',
   'memo',
   'receiver_sig_required',
+  'staked_account_id',
+  'staked_node_id',
+  'stake_period_start',
   'type',
 ].join(',');
 const entityAndBalanceFields = [

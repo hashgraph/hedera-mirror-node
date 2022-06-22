@@ -38,6 +38,22 @@ const ed25519ProtoKey = {ed25519: Buffer.from(ed25519Key, 'hex')};
 const ed25519Der = `302a300506032b6570032100${ed25519Key}`;
 const responseLimit = config.response.limit;
 
+describe('Utils asNullIfDefault', () => {
+  test('number with default', () => {
+    expect(utils.asNullIfDefault(-1, -1)).toBeNull();
+    expect(utils.asNullIfDefault(0, -1)).toEqual(0);
+    expect(utils.asNullIfDefault(null, -1)).toBeNull();
+    expect(utils.asNullIfDefault(undefined, -1)).toBeUndefined();
+  });
+
+  test('string with default', () => {
+    expect(utils.asNullIfDefault('default', 'default')).toBeNull();
+    expect(utils.asNullIfDefault('foobar', 'default')).toEqual('foobar');
+    expect(utils.asNullIfDefault(null, 'default')).toBeNull();
+    expect(utils.asNullIfDefault(undefined, 'default')).toBeUndefined();
+  });
+});
+
 describe('Utils getNullableNumber tests', () => {
   test('Verify getNullableNumber returns correct result for 0', () => {
     const val = utils.getNullableNumber(0);
@@ -109,6 +125,28 @@ describe('Utils nsToSecNs tests', () => {
   test('Verify nsToSecNsWithHyphen returns correct result for null validStartNs', () => {
     const val = utils.nsToSecNsWithHyphen(null);
     expect(val).toBe(null);
+  });
+});
+
+describe('Utils incrementTimestampByOneDay tests', () => {
+  test('Verify incrementTimestampByOneDay adds a day to the timestamp and rounds', () => {
+    const val = utils.incrementTimestampByOneDay(1655164799999999999n);
+    expect(val).toBe('1655251199.999999999');
+  });
+
+  test('Verify incrementTimestampByOneDay adds a day to the timestamp and rounds', () => {
+    const val = utils.incrementTimestampByOneDay(BigInt('1655164799999999999'));
+    expect(val).toBe('1655251199.999999999');
+  });
+
+  test('Verify incrementTimestampByOneDay with null', () => {
+    const val = utils.incrementTimestampByOneDay(null);
+    expect(val).toBeNil();
+  });
+
+  test('Verify incrementTimestampByOneDay with 0', () => {
+    const val = utils.incrementTimestampByOneDay(0);
+    expect(val).toBe('86400.000000000');
   });
 });
 

@@ -223,7 +223,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    coalesce(realm, e_realm, null)," +
                 "    coalesce(shard, e_shard, null)," +
                 "    coalesce(stake_period_start, e_stake_period_start, '-1')," +
-                "    coalesce(staked_account_id, e_staked_account_id, '-1')," +
+                "    coalesce(staked_account_id, e_staked_account_id, null)," +
                 "    coalesce(staked_node_id, e_staked_node_id, '-1')," +
                 "    coalesce(timestamp_range, e_timestamp_range, null)," +
                 "    coalesce(type, e_type, 'CONTRACT')" +
@@ -291,7 +291,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "  coalesce(realm, e_realm, null)," +
                 "  coalesce(shard, e_shard, null)," +
                 "  coalesce(stake_period_start, e_stake_period_start, '-1')," +
-                "  coalesce(staked_account_id, e_staked_account_id, '-1')," +
+                "  coalesce(staked_account_id, e_staked_account_id, null)," +
                 "  coalesce(staked_node_id, e_staked_node_id, '-1')," +
                 "  coalesce(timestamp_range, e_timestamp_range, null)," +
                 "  coalesce(type, e_type, 'CONTRACT')" +
