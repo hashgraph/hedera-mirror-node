@@ -39,7 +39,7 @@ import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 @Named
 public class SignatureFileReaderV5 implements SignatureFileReader {
 
-    protected static final byte SIGNATURE_FILE_FORMAT_VERSION = 5;
+    protected static final byte VERSION = 5;
 
     @Override
     public FileStreamSignature read(StreamFileData signatureFileData) {
@@ -47,7 +47,7 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
 
         try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
                 signatureFileData.getInputStream(), filename)) {
-            vdis.readByte(SIGNATURE_FILE_FORMAT_VERSION, "fileVersion");
+            vdis.readByte(VERSION, "fileVersion");
 
             // Read the objectStreamSignatureVersion, which is not used
             vdis.readInt();
@@ -70,6 +70,7 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
             fileStreamSignature.setMetadataHash(metadataHashObject.getHash());
             fileStreamSignature.setMetadataHashSignature(metadataHashSignatureObject.getSignature());
             fileStreamSignature.setSignatureType(fileHashSignatureObject.getSignatureType());
+            fileStreamSignature.setVersion(VERSION);
 
             return fileStreamSignature;
         } catch (InvalidStreamFileException | IOException e) {

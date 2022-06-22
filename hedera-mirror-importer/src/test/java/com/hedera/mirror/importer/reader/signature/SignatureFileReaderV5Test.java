@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.reader.signature;
  * ‍
  */
 
-import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -49,6 +48,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
     private static final long SIGNATURE_CLASS_ID = 0x13dc4b399b245c69L;
     private static final int SIGNATURE_CLASS_VERSION = 1;
     private static final SignatureType signatureType = SignatureType.SHA_384_WITH_RSA;
+    private static final byte VERSION = 5;
 
     private static final String entireFileHashBase64 = "L+OAVq+qeyicnL+lVSL5XIBy8JSYGaTVGa9ADG59s" +
             "+ZOUHcTaAHR3KxX0Cooc5Jo";
@@ -85,6 +85,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
         assertArrayEquals(base64Codec.decode(entireFileSignatureBase64), fileStreamSignature.getFileHashSignature());
         assertArrayEquals(base64Codec.decode(metadataHashBase64), fileStreamSignature.getMetadataHash());
         assertArrayEquals(base64Codec.decode(metadataSignatureBase64), fileStreamSignature.getMetadataHashSignature());
+        assertEquals(VERSION, fileStreamSignature.getVersion());
     }
 
     @SuppressWarnings("java:S2699")
@@ -92,7 +93,7 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
     Iterable<DynamicTest> testReadCorruptSignatureFileV5() {
 
         SignatureFileSection fileVersion = new SignatureFileSection(
-                new byte[] {SIGNATURE_FILE_FORMAT_VERSION},
+                new byte[] {VERSION},
                 "invalidFileFormatVersion",
                 incrementLastByte,
                 "fileVersion");

@@ -35,7 +35,7 @@ import com.hedera.services.stream.proto.SignatureFile;
 @Named
 public class ProtoSignatureFileReader implements SignatureFileReader {
 
-    public static final byte SIGNATURE_FILE_FORMAT_VERSION = 6;
+    public static final byte VERSION = 6;
 
     @Override
     public FileStreamSignature read(StreamFileData signatureFileData) {
@@ -55,6 +55,7 @@ public class ProtoSignatureFileReader implements SignatureFileReader {
             fileStreamSignature.setMetadataHashSignature(DomainUtils.toBytes(metadataSignature.getSignature()));
             fileStreamSignature.setSignatureType(
                     FileStreamSignature.SignatureType.valueOf(fileSignature.getType().toString()));
+            fileStreamSignature.setVersion(VERSION);
 
             return fileStreamSignature;
         } catch (IllegalArgumentException | IOException e) {
@@ -66,10 +67,9 @@ public class ProtoSignatureFileReader implements SignatureFileReader {
         try (var dataInputStream = new DataInputStream(signatureFileData.getInputStream())) {
             var filename = signatureFileData.getFilename();
             byte version = dataInputStream.readByte();
-            if (version != SIGNATURE_FILE_FORMAT_VERSION) {
-                throw new InvalidStreamFileException(
-                        format("Expected file %s with version %d, got %d", filename, SIGNATURE_FILE_FORMAT_VERSION,
-                                version));
+            if (version != VERSION) {
+                var message = format("Expected file %s with version %d, got %d", filename, VERSION, version);
+                throw new InvalidStreamFileException(message);
             }
 
             var signatureFile = SignatureFile.parseFrom(dataInputStream);

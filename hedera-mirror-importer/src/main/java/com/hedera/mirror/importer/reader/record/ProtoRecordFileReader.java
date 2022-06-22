@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.reader.record;
 import static java.lang.String.format;
 import static org.apache.commons.io.output.NullOutputStream.NULL_OUTPUT_STREAM;
 
-import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -38,7 +37,6 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.io.input.TeeInputStream;
 import org.springframework.data.util.Version;
 import reactor.core.publisher.Flux;
 
@@ -58,16 +56,13 @@ public class ProtoRecordFileReader implements RecordFileReader {
 
     public static final int VERSION = 6;
 
-    private static final int BYTE_BUFFER_SIZE = 262144;
-
     @Override
     public RecordFile read(StreamFileData streamFileData) {
         var filename = streamFileData.getFilename();
         var loadStart = Instant.now().getEpochSecond();
 
-        try (var byteArrayOutputStream = new ByteArrayOutputStream(BYTE_BUFFER_SIZE);
-             var teeInputStream = new TeeInputStream(streamFileData.getInputStream(), byteArrayOutputStream)) {
-            var recordStreamFile = readRecordStreamFile(filename, teeInputStream);
+        try (var inputStream = streamFileData.getInputStream()) {
+            var recordStreamFile = readRecordStreamFile(filename, inputStream);
             var startObjectRunningHash = recordStreamFile.getStartObjectRunningHash();
             var endObjectRunningHash = recordStreamFile.getEndObjectRunningHash();
             var startHashAlgorithm = startObjectRunningHash.getAlgorithm();
@@ -82,13 +77,14 @@ public class ProtoRecordFileReader implements RecordFileReader {
             var digestAlgorithm = getDigestAlgorithm(filename, startHashAlgorithm, endHashAlgorithm);
             var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
 
+            var bytes = streamFileData.getBytes();
             return RecordFile.builder()
-                    .bytes(streamFileData.getBytes())
+                    .bytes(bytes)
                     .consensusStart(items.get(0).getConsensusTimestamp())
                     .consensusEnd(items.get(count - 1).getConsensusTimestamp())
                     .count((long) count)
                     .digestAlgorithm(digestAlgorithm)
-                    .fileHash(getFileHash(digestAlgorithm, byteArrayOutputStream.toByteArray()))
+                    .fileHash(getFileHash(digestAlgorithm, streamFileData.getDecompressedBytes()))
                     .hapiVersionMajor(hapiProtoVersion.getMajor())
                     .hapiVersionMinor(hapiProtoVersion.getMinor())
                     .hapiVersionPatch(hapiProtoVersion.getPatch())
@@ -99,7 +95,7 @@ public class ProtoRecordFileReader implements RecordFileReader {
                     .metadataHash(getMetadataHash(digestAlgorithm, recordStreamFile))
                     .name(filename)
                     .previousHash(DomainUtils.bytesToHex(DomainUtils.getHashBytes(startObjectRunningHash)))
-                    .size(byteArrayOutputStream.size())
+                    .size(bytes.length)
                     .version(VERSION)
                     .build();
         } catch (IOException e) {

@@ -47,6 +47,8 @@ class ProtoSignatureFileReaderTest extends AbstractSignatureFileReaderTest {
 
     private static final String FILENAME = "2022-06-16T10_18_37.496046001Z.rcd_sig";
 
+    private static final byte VERSION = 6;
+
     private final ProtoSignatureFileReader protoSignatureFileReader = new ProtoSignatureFileReader();
 
     @ParameterizedTest
@@ -65,7 +67,8 @@ class ProtoSignatureFileReaderTest extends AbstractSignatureFileReaderTest {
                 .returns(entireFileSignatureHex, f -> DomainUtils.bytesToHex(f.getFileHashSignature()))
                 .returns(metadataHashAsHex, FileStreamSignature::getMetadataHashAsHex)
                 .returns(metadataSignatureAsHex, f -> DomainUtils.bytesToHex(f.getMetadataHashSignature()))
-                .returns(FileStreamSignature.SignatureType.SHA_384_WITH_RSA, FileStreamSignature::getSignatureType);
+                .returns(FileStreamSignature.SignatureType.SHA_384_WITH_RSA, FileStreamSignature::getSignatureType)
+                .returns(VERSION, FileStreamSignature::getVersion);
     }
 
     @Test

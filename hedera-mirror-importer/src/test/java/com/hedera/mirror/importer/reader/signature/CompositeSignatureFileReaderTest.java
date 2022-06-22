@@ -72,7 +72,7 @@ class CompositeSignatureFileReaderTest {
 
     @Test
     void testValidV5() throws Exception {
-        var signatureFileBytes = getSignatureFileBytes(SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION);
+        var signatureFileBytes = getSignatureFileBytes(SignatureFileReaderV5.VERSION);
         var streamFileData = StreamFileData.from(SIGNATURE_FILENAME, signatureFileBytes);
         compositeBalanceFileReader.read(streamFileData);
         verify(signatureFileReaderV5, times(1)).read(any(StreamFileData.class));
@@ -82,7 +82,7 @@ class CompositeSignatureFileReaderTest {
 
     @Test
     void testValidV6() throws Exception {
-        var signatureFileBytes = getSignatureFileBytes(ProtoSignatureFileReader.SIGNATURE_FILE_FORMAT_VERSION);
+        var signatureFileBytes = getSignatureFileBytes(ProtoSignatureFileReader.VERSION);
         var streamFileData = StreamFileData.from(SIGNATURE_FILENAME, signatureFileBytes);
         compositeBalanceFileReader.read(streamFileData);
         verify(signatureFileReaderV5, never()).read(any(StreamFileData.class));

@@ -47,11 +47,11 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
             byte version = dataInputStream.readByte();
             SignatureFileReader fileReader;
 
-            if (version == SignatureFileReaderV5.SIGNATURE_FILE_FORMAT_VERSION) {
+            if (version == SignatureFileReaderV5.VERSION) {
                 fileReader = signatureFileReaderV5;
             } else if (version <= SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH) { // Begins with a byte of value 4
                 fileReader = signatureFileReaderV2;
-            } else if (version == ProtoSignatureFileReader.SIGNATURE_FILE_FORMAT_VERSION) {
+            } else if (version == ProtoSignatureFileReader.VERSION) {
                 fileReader = protoSignatureFileReader;
             } else {
                 throw new SignatureFileParsingException("Unsupported signature file version: " + version);

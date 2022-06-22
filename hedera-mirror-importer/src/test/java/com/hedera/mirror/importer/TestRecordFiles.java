@@ -143,7 +143,7 @@ public class TestRecordFiles {
                 .name("2022-06-21T09_15_44.212575003Z.rcd.gz")
                 .previousHash(
                         "502ca907a14af743a441a4f7d0de2664174b931ae0c4cae978712d44b9790123b4ac6cba6a273151703129b22f2d95f2")
-                .size(2276)
+                .size(1223)
                 .version(6)
                 .build();
         RecordFile recordFileV6_2 = RecordFile.builder()
@@ -162,7 +162,7 @@ public class TestRecordFiles {
                         "d3959bfcfeb0a6933995f58440f374fd300ba06372a6ff6d6226e8cf8afa02d529df52bd162c3c1a40c86d43b6322eea")
                 .name("2022-06-21T09_15_46.247764003Z.rcd.gz")
                 .previousHash(recordFileV6_1.getHash())
-                .size(787)
+                .size(791)
                 .version(6)
                 .build();
 
@@ -227,7 +227,7 @@ public class TestRecordFiles {
                 .nodeAccountId(nodeAccountId)
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .index(-9223372036854775797L)
-                .size(785)
+                .size(788)
                 .version(6)
                 .build();
 

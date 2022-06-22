@@ -23,8 +23,7 @@ package com.hedera.mirror.importer.reader.signature;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_FILE_HASH;
 import static com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2.SIGNATURE_TYPE_SIGNATURE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Ints;
 import java.io.File;
@@ -52,6 +51,7 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
             "/oUesRi5pnATgjqZOXycMegavb1Ikf3GoQAvn1Bx6EO14Uh7hVMxa/NYMtSVNQ17QG6QtA4j7viVvJ9EPSiCsmg3Cp2PhBW5ZPshq" +
             "+ExciGbnXFu+ytLZGSwKhePwuLQsBNTbGUcDFy1IJge95tEweR51Y1Nfh6PqPTnkdirRGO";
     private static final int SIGNATURE_LENGTH = 48;
+    private static final byte VERSION = 2;
 
     private final SignatureFileReaderV2 fileReaderV2 = new SignatureFileReaderV2();
     private final File signatureFile = TestUtils
@@ -66,6 +66,7 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
         assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature.getFileHash());
         assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
                 .getFileHashSignature());
+        assertEquals(VERSION, fileStreamSignature.getVersion());
     }
 
     @SuppressWarnings("java:S2699")

@@ -37,6 +37,8 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
     protected static final byte SIGNATURE_TYPE_SIGNATURE = 3; // the file content signature, should not be hashed
     protected static final byte SIGNATURE_TYPE_FILE_HASH = 4; // next 48 bytes are SHA-384 of content of record file
 
+    private static final byte VERSION = 2;
+
     @Override
     public FileStreamSignature read(StreamFileData signatureFileData) {
         String filename = signatureFileData.getFilename();
@@ -60,6 +62,7 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
             fileStreamSignature.setFileHashSignature(signature);
             fileStreamSignature.setFilename(filename);
             fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
+            fileStreamSignature.setVersion(VERSION);
 
             return fileStreamSignature;
         } catch (InvalidStreamFileException | IOException e) {
