@@ -1921,6 +1921,7 @@ components:
         - node_id
         - node_cert_hash
         - public_key
+        - reward_rate
         - service_endpoints
         - stake
         - stake_not_rewarded
@@ -1963,6 +1964,11 @@ components:
           description: hex encoded X509 RSA public key used to verify stream file signature
           nullable: true
           type: string
+        reward_rate:
+          description: The total tinybars earned as staking reward during the previous staking period
+          type: number
+          format: int64
+          nullable: true
         service_endpoints:
           $ref: '#/components/schemas/ServiceEndpoints'
         stake:
@@ -1972,7 +1978,7 @@ components:
           nullable: true
         stake_not_rewarded:
           description: |
-            The sum (balance + stakedToMe) for all accounts staked to this node with declineReward=true at the 
+            The sum (balance + stakedToMe) for all accounts staked to this node with declineReward=true at the
             beginning of the staking period
           type: number
           format: int64

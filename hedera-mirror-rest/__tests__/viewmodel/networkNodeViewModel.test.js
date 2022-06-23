@@ -52,6 +52,7 @@ describe('NetworkNodeViewModel', () => {
     nodeStake: {
       maxStake: 1000,
       minStake: 6,
+      rewardRate: 7,
       stake: 12,
       stakeNotRewarded: 8,
       stakeRewarded: 4,
@@ -70,6 +71,7 @@ describe('NetworkNodeViewModel', () => {
       '0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16',
     node_id: 0,
     public_key: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
+    reward_rate: 7,
     service_endpoints: [
       {
         ip_address_v4: '128.0.0.1',
@@ -113,6 +115,7 @@ describe('NetworkNodeViewModel', () => {
         nodeStake: {
           maxStake: null,
           minStake: null,
+          rewardRate: null,
           stake: null,
           stakeNotRewarded: null,
           stakeRewarded: null,
@@ -128,6 +131,7 @@ describe('NetworkNodeViewModel', () => {
       min_stake: null,
       node_cert_hash: '0x',
       public_key: '0x',
+      reward_rate: null,
       stake: null,
       stake_not_rewarded: null,
       stake_rewarded: null,
