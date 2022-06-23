@@ -478,7 +478,7 @@ public class DomainBuilder {
                 .consensusStart(timestamp)
                 .consensusEnd(timestamp + 1)
                 .count(1L)
-                .digestAlgorithm(DigestAlgorithm.SHA384)
+                .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .fileHash(text(96))
                 .hash(text(96))
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
