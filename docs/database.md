@@ -31,7 +31,8 @@ every `hedera.mirror.importer.retention.frequency` with a default of one day to 
 back to remove data set the `hedera.mirror.importer.retention.period` appropriately. Keep in mind this retention period
 is relative to the timestamp of the last transaction in the database and not to the current wall-clock time. Data is
 deleted atomically one or more blocks at a time starting from the earliest block and increasing, so data should be
-consistent even when querying the earliest data.
+consistent even when querying the earliest data. There are also `hedera.mirror.importer.retention.exclude/include`
+properties that can be used to filter which tables are included or excluded from retention, defaulting to include all.
 
 The first time the job is run it may take a long time to complete due to the potentially terabytes worth of data to
 purge. Subsequent runs should be much faster as it will only have to purge the data accumulated between the last run.

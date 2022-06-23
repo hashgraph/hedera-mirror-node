@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.retention;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +47,8 @@ class RetentionJobTest extends IntegrationTest {
     @BeforeEach
     void setup() {
         retentionProperties.setBatchPeriod(Duration.ofSeconds(1L));
+        retentionProperties.setExclude(Collections.emptySet());
+        retentionProperties.setInclude(Collections.emptySet());
         retentionProperties.setPeriod(Duration.ofDays(-1L));
         retentionProperties.setEnabled(true);
     }
@@ -78,6 +82,49 @@ class RetentionJobTest extends IntegrationTest {
 
         // then
         assertThat(transactionRepository.findAll()).containsExactly(transaction);
+    }
+
+    @Test
+    void include() {
+        // given
+        retentionProperties.setInclude(Set.of("transaction"));
+        var recordFile = recordFile();
+
+        // when
+        retentionJob.prune();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertThat(transactionRepository.count()).isZero();
+    }
+
+    @Test
+    void exclude() {
+        // given
+        retentionProperties.setExclude(Set.of("record_file"));
+        var recordFile = recordFile();
+
+        // when
+        retentionJob.prune();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertThat(transactionRepository.count()).isZero();
+    }
+
+    @Test
+    void includeAndExclude() {
+        // given
+        retentionProperties.setInclude(Set.of("record_file", "transaction"));
+        retentionProperties.setExclude(Set.of("record_file"));
+        var recordFile = recordFile();
+
+        // when
+        retentionJob.prune();
+
+        // then
+        assertThat(recordFileRepository.findAll()).containsExactly(recordFile);
+        assertThat(transactionRepository.count()).isZero();
     }
 
     @Test

@@ -21,6 +21,8 @@ package com.hedera.mirror.importer.retention;
  */
 
 import java.time.Duration;
+import java.util.Collections;
+import java.util.Set;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -39,8 +41,18 @@ public class RetentionProperties {
     private boolean enabled = false;
 
     @NotNull
+    private Set<String> exclude = Collections.emptySet();
+
+    @NotNull
     private Duration frequency = Duration.ofDays(1L);
 
     @NotNull
+    private Set<String> include = Collections.emptySet();
+
+    @NotNull
     private Duration period = Duration.ofDays(90L);
+
+    public boolean shouldPrune(String table) {
+        return (include.isEmpty() || include.contains(table)) && (exclude.isEmpty() || !exclude.contains(table));
+    }
 }

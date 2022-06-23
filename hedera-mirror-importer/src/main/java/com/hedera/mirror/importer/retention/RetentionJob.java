@@ -40,6 +40,7 @@ import org.springframework.transaction.support.TransactionOperations;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.RetentionRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
@@ -90,9 +91,12 @@ public class RetentionJob {
 
         transactionOperations.executeWithoutResult(t ->
                 retentionRepositories.forEach(repository -> {
-                    long count = repository.prune(endTimestamp);
                     String table = getTableName(repository);
-                    counters.merge(table, count, Long::sum);
+
+                    if (retentionProperties.shouldPrune(table)) {
+                        long count = repository.prune(endTimestamp);
+                        counters.merge(table, count, Long::sum);
+                    }
                 })
         );
 
@@ -106,7 +110,7 @@ public class RetentionJob {
     private String getTableName(RetentionRepository repository) {
         Class<?> targetClass = repository.getClass().getInterfaces()[0];
         String className = ClassUtils.getSimpleName(targetClass);
-        return StringUtils.removeEnd(className, "Repository");
+        return Utility.toSnakeCase(StringUtils.removeEnd(className, "Repository"));
     }
 
     private Instant toInstant(long nanos) {
