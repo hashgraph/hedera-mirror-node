@@ -240,6 +240,10 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
       consensus_timestamp: 3,
       hash: ethereumTxHash,
     },
+    {
+      consensus_timestamp: 4,
+      hash: ethereumTxHash,
+    },
   ];
 
   const expectedTransaction = {
