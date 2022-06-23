@@ -34,6 +34,14 @@ type MockAccountRepository struct {
 	mock.Mock
 }
 
+func (m *MockAccountRepository) GetAccountAlias(ctx context.Context, accountId types.AccountId) (
+	types.AccountId,
+	*rTypes.Error,
+) {
+	args := m.Called()
+	return args.Get(0).(types.AccountId), args.Get(1).(*rTypes.Error)
+}
+
 func (m *MockAccountRepository) RetrieveBalanceAtBlock(
 	ctx context.Context,
 	accountId types.AccountId,
