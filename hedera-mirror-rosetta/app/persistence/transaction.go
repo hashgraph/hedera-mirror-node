@@ -37,8 +37,10 @@ import (
 )
 
 const (
-	batchSize                      = 2000
-	transactionResultSuccess int32 = 22
+	batchSize                                                 = 2000
+	transactionResultFeeScheduleFilePartUploaded        int32 = 104
+	transactionResultSuccess                            int32 = 22
+	transactionResultSuccessButMissingExpectedOperation int32 = 220
 )
 
 const (
@@ -434,11 +436,11 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 		transactionType := types.TransactionTypes[int32(transaction.Type)]
 
 		nonFeeTransferMap := aggregateNonFeeTransfers(nonFeeTransfers)
-		adjustedCryptoTransfers := adjustCryptoTransfers(cryptoTransfers, nonFeeTransferMap)
+		feeCryptoTransfers := getFeeCryptoTransfers(cryptoTransfers, nonFeeTransferMap)
 
 		operations = tr.appendHbarTransferOperations(transactionResult, transactionType, nonFeeTransfers, operations)
 		// crypto transfers are always successful regardless of the transaction result
-		operations = tr.appendHbarTransferOperations(success, transactionType, adjustedCryptoTransfers, operations)
+		operations = tr.appendHbarTransferOperations(success, types.OperationTypeFee, feeCryptoTransfers, operations)
 		operations = tr.appendTokenTransferOperations(transactionResult, transactionType, tokenTransfers, operations)
 		operations = tr.appendNftTransferOperations(transactionResult, transactionType, nftTransfers, operations)
 
@@ -459,7 +461,7 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 
 func (tr *transactionRepository) appendHbarTransferOperations(
 	transactionResult string,
-	transactionType string,
+	operationType string,
 	hbarTransfers []hbarTransfer,
 	operations types.OperationSlice,
 ) types.OperationSlice {
@@ -468,12 +470,12 @@ func (tr *transactionRepository) appendHbarTransferOperations(
 		transfers = append(transfers, hbarTransfer)
 	}
 
-	return tr.appendTransferOperations(transactionResult, transactionType, transfers, operations)
+	return tr.appendTransferOperations(transactionResult, operationType, transfers, operations)
 }
 
 func (tr *transactionRepository) appendNftTransferOperations(
 	transactionResult string,
-	transactionType string,
+	operationType string,
 	nftTransfers []domain.NftTransfer,
 	operations types.OperationSlice,
 ) types.OperationSlice {
@@ -482,12 +484,12 @@ func (tr *transactionRepository) appendNftTransferOperations(
 		transfers = append(transfers, getSingleNftTransfers(nftTransfer)...)
 	}
 
-	return tr.appendTransferOperations(transactionResult, transactionType, transfers, operations)
+	return tr.appendTransferOperations(transactionResult, operationType, transfers, operations)
 }
 
 func (tr *transactionRepository) appendTokenTransferOperations(
 	transactionResult string,
-	transactionType string,
+	operationType string,
 	tokenTransfers []tokenTransfer,
 	operations types.OperationSlice,
 ) types.OperationSlice {
@@ -502,12 +504,12 @@ func (tr *transactionRepository) appendTokenTransferOperations(
 		transfers = append(transfers, tokenTransfer)
 	}
 
-	return tr.appendTransferOperations(transactionResult, transactionType, transfers, operations)
+	return tr.appendTransferOperations(transactionResult, operationType, transfers, operations)
 }
 
 func (tr *transactionRepository) appendTransferOperations(
 	transactionResult string,
-	transactionType string,
+	operationType string,
 	transfers []transfer,
 	operations types.OperationSlice,
 ) types.OperationSlice {
@@ -517,7 +519,7 @@ func (tr *transactionRepository) appendTransferOperations(
 			Amount:    transfer.getAmount(),
 			Index:     int64(len(operations)),
 			Status:    transactionResult,
-			Type:      transactionType,
+			Type:      operationType,
 		})
 	}
 	return operations
@@ -568,10 +570,24 @@ func (tr *transactionRepository) processSuccessTokenDissociates(
 }
 
 func IsTransactionResultSuccessful(result int32) bool {
-	return result == transactionResultSuccess
+	return result == transactionResultFeeScheduleFilePartUploaded ||
+		result == transactionResultSuccess ||
+		result == transactionResultSuccessButMissingExpectedOperation
 }
 
-func adjustCryptoTransfers(
+func aggregateNonFeeTransfers(nonFeeTransfers []hbarTransfer) map[int64]int64 {
+	nonFeeTransferMap := make(map[int64]int64)
+
+	// the original transfer list from the transaction body
+	for _, transfer := range nonFeeTransfers {
+		// the original transfer list may have multiple entries for one entity, so accumulate it
+		nonFeeTransferMap[transfer.AccountId.EncodedId] += transfer.Amount
+	}
+
+	return nonFeeTransferMap
+}
+
+func getFeeCryptoTransfers(
 	cryptoTransfers []hbarTransfer,
 	nonFeeTransferMap map[int64]int64,
 ) []hbarTransfer {
@@ -603,18 +619,6 @@ func adjustCryptoTransfers(
 	return adjusted
 }
 
-func aggregateNonFeeTransfers(nonFeeTransfers []hbarTransfer) map[int64]int64 {
-	nonFeeTransferMap := make(map[int64]int64)
-
-	// the original transfer list from the transaction body
-	for _, transfer := range nonFeeTransfers {
-		// the original transfer list may have multiple entries for one entity, so accumulate it
-		nonFeeTransferMap[transfer.AccountId.EncodedId] += transfer.Amount
-	}
-
-	return nonFeeTransferMap
-}
-
 func getSingleNftTransfers(nftTransfer domain.NftTransfer) []transfer {
 	transfers := make([]transfer, 0)
 	if nftTransfer.ReceiverAccountId != nil {
@@ -641,13 +645,13 @@ func getTokenOperation(
 	token domain.Token,
 	transaction *transaction,
 	transactionResult string,
-	transactionType string,
+	operationType string,
 ) types.Operation {
 	operation := types.Operation{
 		AccountId: types.NewAccountIdFromEntityId(transaction.PayerAccountId),
 		Index:     int64(index),
 		Status:    transactionResult,
-		Type:      transactionType,
+		Type:      operationType,
 	}
 
 	metadata := make(map[string]interface{})

@@ -112,10 +112,12 @@ func NewNetworkAPIService(
 	network *rTypes.NetworkIdentifier,
 	version *rTypes.Version,
 ) server.NetworkAPIServicer {
+	operationTypes := tools.GetStringValuesFromInt32StringMap(types.TransactionTypes)
+	operationTypes = append(operationTypes, types.OperationTypeFee)
 	return &networkAPIService{
 		BaseService:          baseService,
 		addressBookEntryRepo: addressBookEntryRepo,
-		operationTypes:       tools.GetStringValuesFromInt32StringMap(types.TransactionTypes),
+		operationTypes:       operationTypes,
 		network:              network,
 		version:              version,
 	}
