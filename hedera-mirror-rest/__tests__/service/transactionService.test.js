@@ -42,12 +42,6 @@ const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
 const {defaultMochaStatements} = require('./defaultMochaStatements');
 defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
-const pickFields =
-  (fields = []) =>
-  (array) => {
-    return array.map((t) => _.pick(t, fields));
-  };
-
 describe('TransactionService.getTransactionDetailsFromTimestamp tests', () => {
   test('No match', async () => {
     await expect(TransactionService.getTransactionDetailsFromTimestamp('1')).resolves.toBeNull();
@@ -195,6 +189,8 @@ describe('TransactionService.getTransactionDetailsFromTransactionId tests', () =
 
 describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
   const ethereumTxHash = '4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+  const ethereumTxHashBuffer = Buffer.from(ethereumTxHash, 'hex');
+
   const inputTransactions = [
     {
       consensus_timestamp: 1,
@@ -252,7 +248,11 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
   };
 
   // pick the fields of interests, otherwise expect will fail since the Transaction object has other fields
-  const pickTransactionFields = pickFields(['consensusTimestamp', 'transactionHash']);
+  const pickTransactionFields = (transactions) => {
+    return transactions
+      .map((tx) => _.pick(tx, ['consensusTimestamp', 'transactionHash']))
+      .map((tx) => ({...tx, transactionHash: Buffer.from(tx.transactionHash).toString('hex')}));
+  };
 
   beforeEach(async () => {
     await integrationDomainOps.loadTransactions(inputTransactions);
@@ -262,13 +262,13 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
   test('No match', async () => {
     await expect(
       TransactionService.getTransactionDetailsFromEthHash(
-        '4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393'
+        Buffer.from('4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393', 'hex')
       )
     ).resolves.toHaveLength(0);
   });
 
   test('Match all transactions by same hash', async () => {
-    const transactions = await TransactionService.getTransactionDetailsFromEthHash(ethereumTxHash);
+    const transactions = await TransactionService.getTransactionDetailsFromEthHash(ethereumTxHashBuffer);
     expect(pickTransactionFields(transactions)).toIncludeSameMembers([
       expectedTransaction,
       {consensusTimestamp: 2, transactionHash: ethereumTxHash},
@@ -278,7 +278,7 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
   });
 
   test('Match all transactions with no duplicates and wrong nonces', async () => {
-    const transactions = await TransactionService.getTransactionDetailsFromEthHash(ethereumTxHash, [
+    const transactions = await TransactionService.getTransactionDetailsFromEthHash(ethereumTxHashBuffer, [
       duplicateTransactionResult,
       wrongNonceTransactionResult,
     ]);
@@ -290,7 +290,7 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
 
   test('Match the oldest tx with no duplicates and wrong nonces', async () => {
     const transactions = await TransactionService.getTransactionDetailsFromEthHash(
-      ethereumTxHash,
+      ethereumTxHashBuffer,
       [duplicateTransactionResult, wrongNonceTransactionResult],
       1
     );
