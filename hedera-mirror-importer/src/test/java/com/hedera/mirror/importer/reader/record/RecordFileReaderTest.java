@@ -39,6 +39,7 @@ import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -82,6 +83,14 @@ abstract class RecordFileReaderTest {
                             .isEqualTo(recordFile);
                     assertThat(actual.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
                     assertThat(actual.getLoadStart()).isNotNull().isPositive();
+
+                    List<Version> hapiVersions = actual.getItems()
+                            .map(RecordItem::getHapiVersion)
+                            .collectList()
+                            .block();
+                    assertThat(hapiVersions).isNotEmpty()
+                            .allSatisfy(version -> assertEquals(recordFile.getHapiVersion(), version));
+
                     List<Long> timestamps = actual.getItems()
                             .map(RecordItem::getConsensusTimestamp)
                             .collectList()

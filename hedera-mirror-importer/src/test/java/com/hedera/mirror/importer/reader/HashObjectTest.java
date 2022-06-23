@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.reader;
  * ‍
  */
 
-import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA384;
+import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -50,16 +50,17 @@ class HashObjectTest {
             "1226, 1, , 57, true",
             "1226, 1, , 61, true",
     })
-    void newHashObject(long classId, int classVersion, Integer digestType, int bytesToTruncate, boolean expectThrown) throws IOException {
+    void newHashObject(long classId, int classVersion, Integer digestType, int bytesToTruncate,
+                       boolean expectThrown) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream(); DataOutputStream dos =
                 new DataOutputStream(bos)) {
             // given
             dos.writeLong(classId);
             dos.writeInt(classVersion);
-            digestType = Objects.requireNonNullElseGet(digestType, SHA384::getType);
+            digestType = Objects.requireNonNullElseGet(digestType, SHA_384::getType);
             dos.writeInt(digestType);
-            dos.writeInt(SHA384.getSize());
-            byte[] hash = TestUtils.generateRandomByteArray(SHA384.getSize());
+            dos.writeInt(SHA_384.getSize());
+            byte[] hash = TestUtils.generateRandomByteArray(SHA_384.getSize());
             dos.write(hash);
 
             byte[] data = bos.toByteArray();
@@ -70,10 +71,10 @@ class HashObjectTest {
             try (ValidatedDataInputStream dis = new ValidatedDataInputStream(new ByteArrayInputStream(data), "test")) {
                 // when, then
                 if (expectThrown) {
-                    assertThrows(InvalidStreamFileException.class, () -> new HashObject(dis, SHA384));
+                    assertThrows(InvalidStreamFileException.class, () -> new HashObject(dis, SHA_384));
                 } else {
-                    HashObject expected = new HashObject(classId, classVersion, SHA384.getType(), hash);
-                    HashObject actual = new HashObject(dis, "testfile", SHA384);
+                    HashObject expected = new HashObject(classId, classVersion, SHA_384.getType(), hash);
+                    HashObject actual = new HashObject(dis, "testfile", SHA_384);
                     assertThat(actual).isEqualTo(expected);
                 }
             }

@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.domain;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -79,7 +79,7 @@ class StreamFileDataTest {
     @Test
     void createWithGzippedData() throws IOException {
         String filename = "2021-03-10T16_00_00Z.rcd.gz";
-        byte[] uncompressedBytes = { 1, 2, 3 };
+        byte[] uncompressedBytes = {1, 2, 3};
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             try (OutputStream os = new GZIPOutputStream(baos)) {
@@ -90,6 +90,8 @@ class StreamFileDataTest {
 
             try (InputStream is = streamFileData.getInputStream()) {
                 assertThat(is.readAllBytes()).isEqualTo(uncompressedBytes);
+                assertThat(streamFileData.getDecompressedBytes()).isEqualTo(uncompressedBytes);
+                assertThat(streamFileData.getBytes()).isEqualTo(baos.toByteArray());
             }
         }
     }
@@ -97,7 +99,7 @@ class StreamFileDataTest {
     @Test
     void createWithCompressorAndUncompressedData() {
         String filename = "2021-03-10T16_00_00Z.rcd.gz";
-        byte[] uncompressedBytes = { 1, 2, 3 };
+        byte[] uncompressedBytes = {1, 2, 3};
 
         StreamFileData streamFileData = StreamFileData.from(filename, uncompressedBytes);
         assertThrows(InvalidStreamFileException.class, streamFileData::getInputStream);

@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.signature;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,8 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
     protected static final byte SIGNATURE_TYPE_SIGNATURE = 3; // the file content signature, should not be hashed
     protected static final byte SIGNATURE_TYPE_FILE_HASH = 4; // next 48 bytes are SHA-384 of content of record file
 
+    private static final byte VERSION = 2;
+
     @Override
     public FileStreamSignature read(StreamFileData signatureFileData) {
         String filename = signatureFileData.getFilename();
@@ -44,7 +46,7 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
         try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
                 signatureFileData.getInputStream(), filename)) {
             vdis.readByte(SIGNATURE_TYPE_FILE_HASH, "hash delimiter");
-            byte[] fileHash = vdis.readNBytes(DigestAlgorithm.SHA384.getSize(), "hash");
+            byte[] fileHash = vdis.readNBytes(DigestAlgorithm.SHA_384.getSize(), "hash");
 
             vdis.readByte(SIGNATURE_TYPE_SIGNATURE, "signature delimiter");
             byte[] signature = vdis.readLengthAndBytes(1, SignatureType.SHA_384_WITH_RSA.getMaxLength(),
@@ -60,6 +62,7 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
             fileStreamSignature.setFileHashSignature(signature);
             fileStreamSignature.setFilename(filename);
             fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
+            fileStreamSignature.setVersion(VERSION);
 
             return fileStreamSignature;
         } catch (InvalidStreamFileException | IOException e) {

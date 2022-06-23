@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,6 +43,7 @@ public class CompositeRecordFileReader implements RecordFileReader {
     private final RecordFileReaderImplV1 version1Reader;
     private final RecordFileReaderImplV2 version2Reader;
     private final RecordFileReaderImplV5 version5Reader;
+    private final ProtoRecordFileReader version6Reader;
 
     @Override
     public RecordFile read(@NonNull StreamFileData streamFileData) {
@@ -64,6 +65,9 @@ public class CompositeRecordFileReader implements RecordFileReader {
                     break;
                 case 5:
                     reader = version5Reader;
+                    break;
+                case 6:
+                    reader = version6Reader;
                     break;
                 default:
                     throw new InvalidStreamFileException(String.format("Unsupported record file version %d in file %s",

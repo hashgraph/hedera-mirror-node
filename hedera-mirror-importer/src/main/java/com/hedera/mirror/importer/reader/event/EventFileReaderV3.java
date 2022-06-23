@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.event;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,14 +26,12 @@ import java.io.DataInputStream;
 import java.security.MessageDigest;
 import java.time.Instant;
 import javax.inject.Named;
-
-import com.hedera.mirror.common.util.DomainUtils;
-
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.event.EventFile;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidEventFileException;
 
@@ -45,7 +43,7 @@ public class EventFileReaderV3 implements EventFileReader {
     public static final int EVENT_PREV_HASH_LENGTH = 48; // SHA-384 - 48 bytes
     public static final byte EVENT_STREAM_FILE_VERSION_2 = 2;
     public static final byte EVENT_STREAM_FILE_VERSION_3 = 3;
-    protected static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA384;
+    protected static final DigestAlgorithm DIGEST_ALGORITHM = DigestAlgorithm.SHA_384;
 
     @Override
     public EventFile read(StreamFileData streamFileData) {
