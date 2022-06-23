@@ -269,7 +269,7 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
 
   test('Match all transactions by same hash', async () => {
     const transactions = await TransactionService.getTransactionDetailsFromEthHash(ethereumTxHash);
-    expect(pickTransactionFields(transactions)).resolves.toIncludeSameMembers([
+    expect(pickTransactionFields(transactions)).toIncludeSameMembers([
       expectedTransaction,
       {consensusTimestamp: 2, transactionHash: ethereumTxHash},
       {consensusTimestamp: 3, transactionHash: ethereumTxHash},
@@ -282,7 +282,7 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
       duplicateTransactionResult,
       wrongNonceTransactionResult,
     ]);
-    expect(pickTransactionFields(transactions)).resolves.toIncludeSameMembers([
+    expect(pickTransactionFields(transactions)).toIncludeSameMembers([
       expectedTransaction,
       {consensusTimestamp: 4, transactionHash: ethereumTxHash},
     ]);
@@ -294,6 +294,6 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
       [duplicateTransactionResult, wrongNonceTransactionResult],
       1
     );
-    expect(pickTransactionFields(transactions)).resolves.toIncludeSameMembers([expectedTransaction]);
+    expect(pickTransactionFields(transactions)).toIncludeSameMembers([expectedTransaction]);
   });
 });
