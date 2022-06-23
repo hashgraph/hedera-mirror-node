@@ -138,7 +138,7 @@ class TransactionService extends BaseService {
     );
   }
 
-  async getTransactionDetailsFromEthHash(ethHash, excludeTransactionResults = []) {
+  async getTransactionDetailsFromEthHash(ethHash, excludeTransactionResults = [], limit = undefined) {
     return this.getTransactionDetails(
       TransactionService.transactionDetailsFromEthHashQuery.replace(
         ethTransactionReplaceString,
@@ -148,7 +148,7 @@ class TransactionService extends BaseService {
       'getTransactionDetailsFromEthHash',
       excludeTransactionResults,
       undefined,
-      1,
+      limit,
       this.getOrderByQuery(OrderSpec.from(Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP), 'asc'))
     );
   }

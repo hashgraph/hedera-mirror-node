@@ -1006,10 +1006,11 @@ class ContractController extends BaseController {
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
       // get transactions using ethereum hash and nonce
-      transactions = await TransactionService.getTransactionDetailsFromEthHash(ethHash, [
-        duplicateTransactionResult,
-        wrongNonceTransactionResult,
-      ]);
+      transactions = await TransactionService.getTransactionDetailsFromEthHash(
+        ethHash,
+        [duplicateTransactionResult, wrongNonceTransactionResult],
+        1
+      );
     } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
       const nonce = getLastNonceParamValue(req.query);

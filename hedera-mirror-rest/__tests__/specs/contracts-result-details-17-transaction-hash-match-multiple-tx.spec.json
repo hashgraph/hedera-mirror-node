@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call for a ethereum transaction hash matching more than 1 tx",
+  "description": "Contract results api call for an ethereum transaction hash matching more than one tx",
   "setup": {
     "contractresults": [
       {
@@ -42,17 +42,25 @@
         "transaction_hash": "519a008fabde5d",
         "type": 50,
         "valid_start_timestamp": 167654000123401,
-        "result": 312
+        "result": 22
       },
       {
         "consensus_timestamp": 167654000123458,
+        "payerAccountId": "8001",
+        "transaction_hash": "519a008fabde5d",
+        "type": 50,
+        "valid_start_timestamp": 167654000123402,
+        "result": 312
+      },
+      {
+        "consensus_timestamp": 167654000123459,
         "payerAccountId": "8001",
         "transaction_hash": "519a008fabde6d",
         "valid_start_timestamp": 167654000123400,
         "result": 11
       },
       {
-        "consensus_timestamp": 167654000123459,
+        "consensus_timestamp": 167654000123460,
         "payerAccountId": "8001",
         "transaction_hash": "519a008fabde7d",
         "valid_start_timestamp": 167654000123400,
@@ -70,6 +78,13 @@
       {
         "call_data": "0x0606",
         "consensus_timestamp": 167654000123457,
+        "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+        "value": "0x0077359400",
+        "_value_description": "2000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00"
+      },
+      {
+        "call_data": "0x0606",
+        "consensus_timestamp": 167654000123458,
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
         "value": "0x0077359400",
         "_value_description": "2000000000 tinybars, in importer java BigInteger.toByteArray always adds extra 0x00"

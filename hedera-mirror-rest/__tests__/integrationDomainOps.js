@@ -1370,6 +1370,7 @@ module.exports = {
   loadNodeStakes,
   loadRecordFiles,
   loadTransactions,
+  loadEthereumTransactions,
   loadContractLogs,
   loadContractStateChanges,
   setAccountBalance,
