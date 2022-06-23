@@ -1179,18 +1179,21 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .id(new NftId(1L, EntityId.of(tokenId)))
                 .accountId(EntityId.of(owner))
                 .createdTimestamp(101L)
+                .deleted(false)
                 .modifiedTimestamp(101L)
                 .build();
         var nft2 = Nft.builder()
                 .id(new NftId(2L, EntityId.of(tokenId)))
                 .accountId(EntityId.of(owner))
                 .createdTimestamp(102L)
+                .deleted(false)
                 .modifiedTimestamp(102L)
                 .build();
         var nft3 = Nft.builder()
                 .id(new NftId(3L, EntityId.of(tokenId)))
                 .accountId(EntityId.of(owner))
                 .createdTimestamp(103L)
+                .deleted(false)
                 .modifiedTimestamp(103L)
                 .build();
         var timestamp = DomainUtils.timeStampInNanos(consensusTimestamp);

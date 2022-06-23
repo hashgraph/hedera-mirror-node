@@ -392,6 +392,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .build();
     }
 
+    private static Stream<Arguments> nftTransfersHaveCorrectIsApprovalValueArgumentProvider() {
+        return Stream.of(
+                Arguments.of(true, true),
+                Arguments.of(true, false),
+                Arguments.of(false, true),
+                Arguments.of(false, false)
+        );
+    }
+
     @BeforeEach
     void before() {
         entityProperties.getPersist().setTokens(true);
@@ -1152,9 +1161,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_2, TOKEN_ID, PAYER, null);
         assertNftTransferInRepository(mintTimestamp, SERIAL_NUMBER_1, TOKEN_ID, PAYER, null);
         assertTokenInRepository(TOKEN_ID, false, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, 1);
-        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, false, mintTimestamp, mintTimestamp, METADATA
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_1, true, mintTimestamp, mintTimestamp, METADATA
                 .getBytes(), EntityId.of(PAYER), false);
-        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, false, mintTimestamp, mintTimestamp, METADATA
+        assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, mintTimestamp, mintTimestamp, METADATA
                 .getBytes(), EntityId.of(PAYER), false);
     }
 
@@ -1254,7 +1263,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         expectedNft1.setAccountId(EntityId.of(RECEIVER));
         expectedNft1.setModifiedTimestamp(transferTimestamp);
         expectedNft1.setSpender(null);
-        var expectedNft2 =  Nft.builder()
+        var expectedNft2 = Nft.builder()
                 .id(new NftId(SERIAL_NUMBER_2, EntityId.of(TOKEN_ID)))
                 .accountId(EntityId.of(RECEIVER))
                 .createdTimestamp(mintTimestamp2)
@@ -1407,7 +1416,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     @Test
-    void tokenTransfersMustHaveCorrectIsApprovalValue(){
+    void tokenTransfersMustHaveCorrectIsApprovalValue() {
         //given
         createAndAssociateToken(TOKEN_ID, FUNGIBLE_COMMON, SYMBOL, CREATE_TIMESTAMP, ASSOCIATE_TIMESTAMP,
                 PAYER2, false, false, false, INITIAL_SUPPLY);
@@ -1620,15 +1629,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, wipeTimestamp, transferAmount);
     }
 
-    private static Stream<Arguments> nftTransfersHaveCorrectIsApprovalValueArgumentProvider() {
-        return Stream.of(
-                Arguments.of(true, true),
-                Arguments.of(true, false),
-                Arguments.of(false, true),
-                Arguments.of(false, false)
-        );
-    }
-
     void tokenCreate(List<CustomFee> customFees, boolean freezeDefault, boolean freezeKey, boolean kycKey,
                      boolean pauseKey, List<TokenAccount> expectedTokenAccounts,
                      List<EntityId> autoAssociatedAccounts) {
@@ -1727,7 +1727,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private RecordItem getRecordItem(long consensusTimestamp, Transaction transaction) {
-        return getRecordItem(consensusTimestamp, transaction, builder -> {});
+        return getRecordItem(consensusTimestamp, transaction, builder -> {
+        });
     }
 
     private RecordItem getRecordItem(long consensusTimestamp, Transaction transaction,
@@ -1818,20 +1819,20 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                                                AccountID autoRenewAccount, AccountID treasury) {
         return buildTransaction(builder -> {
             builder.getTokenUpdateBuilder()
-                            .setAdminKey(newKey)
-                            .setAutoRenewPeriod(Duration.newBuilder().setSeconds(TOKEN_UPDATE_AUTO_RENEW_PERIOD))
-                            .setExpiry(EXPIRY_TIMESTAMP)
-                            .setFeeScheduleKey(newKey)
-                            .setFreezeKey(newKey)
-                            .setKycKey(newKey)
-                            .setMemo(StringValue.of(memo))
-                            .setName(symbol + "_update_name")
-                            .setPauseKey(newKey)
-                            .setSupplyKey(newKey)
-                            .setSymbol(symbol)
-                            .setToken(tokenID)
-                            .setTreasury(treasury)
-                            .setWipeKey(newKey);
+                    .setAdminKey(newKey)
+                    .setAutoRenewPeriod(Duration.newBuilder().setSeconds(TOKEN_UPDATE_AUTO_RENEW_PERIOD))
+                    .setExpiry(EXPIRY_TIMESTAMP)
+                    .setFeeScheduleKey(newKey)
+                    .setFreezeKey(newKey)
+                    .setKycKey(newKey)
+                    .setMemo(StringValue.of(memo))
+                    .setName(symbol + "_update_name")
+                    .setPauseKey(newKey)
+                    .setSupplyKey(newKey)
+                    .setSymbol(symbol)
+                    .setToken(tokenID)
+                    .setTreasury(treasury)
+                    .setWipeKey(newKey);
             if (autoRenewAccount != null) {
                 builder.getTokenUpdateBuilder().setAutoRenewAccount(autoRenewAccount);
             }
@@ -2032,7 +2033,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void assertTokenTransferInRepository(TokenID tokenID, AccountID accountID, long consensusTimestamp,
-            long amount){
+                                                 long amount) {
         assertTokenTransferInRepository(tokenID, accountID, consensusTimestamp, amount, false);
     }
 
@@ -2062,7 +2063,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void assertNftTransferInRepository(long consensusTimestamp, long serialNumber, TokenID tokenID,
-            AccountID receiverId, AccountID senderId){
+                                               AccountID receiverId, AccountID senderId) {
         assertNftTransferInRepository(consensusTimestamp, serialNumber, tokenID, receiverId, senderId, false);
     }
 

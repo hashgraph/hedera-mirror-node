@@ -979,8 +979,6 @@ paths:
                 $ref: '#/components/schemas/Nfts'
         400:
           $ref: '#/components/responses/InvalidParameterError'
-        404:
-          $ref: '#/components/responses/NotFoundError'
       tags:
         - tokens
   /api/v1/tokens/{tokenId}/nfts/{serialNumber}:
@@ -1972,7 +1970,7 @@ components:
           nullable: true
         stake_not_rewarded:
           description: |
-            The sum (balance + stakedToMe) for all accounts staked to this node with declineReward=true at the 
+            The sum (balance + stakedToMe) for all accounts staked to this node with declineReward=true at the
             beginning of the staking period
           type: number
           format: int64
