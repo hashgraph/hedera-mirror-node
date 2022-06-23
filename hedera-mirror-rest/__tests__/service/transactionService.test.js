@@ -220,6 +220,13 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
     {
       consensus_timestamp: 4,
       payerAccountId: 10,
+      type: ethereumTxType,
+      result: successTransactionResult,
+      valid_start_timestamp: 4,
+    },
+    {
+      consensus_timestamp: 5,
+      payerAccountId: 10,
       type: contractCreateType,
     },
   ];
@@ -261,26 +268,32 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
   });
 
   test('Match all transactions by same hash', async () => {
-    const transactions = TransactionService.getTransactionDetailsFromEthHash(ethereumTxHash);
-    await expect(pickTransactionFields(transactions)).resolves.toIncludeSameMembers([
+    const transactions = await TransactionService.getTransactionDetailsFromEthHash(ethereumTxHash);
+    expect(pickTransactionFields(transactions)).resolves.toIncludeSameMembers([
       expectedTransaction,
-      {
-        consensusTimestamp: 2,
-        transactionHash: ethereumTxHash,
-      },
-      {
-        consensusTimestamp: 3,
-        transactionHash: ethereumTxHash,
-      },
+      {consensusTimestamp: 2, transactionHash: ethereumTxHash},
+      {consensusTimestamp: 3, transactionHash: ethereumTxHash},
+      {consensusTimestamp: 4, transactionHash: ethereumTxHash},
+    ]);
+  });
+
+  test('Match all transactions with no duplicates and wrong nonces', async () => {
+    const transactions = await TransactionService.getTransactionDetailsFromEthHash(ethereumTxHash, [
+      duplicateTransactionResult,
+      wrongNonceTransactionResult,
+    ]);
+    expect(pickTransactionFields(transactions)).resolves.toIncludeSameMembers([
+      expectedTransaction,
+      {consensusTimestamp: 4, transactionHash: ethereumTxHash},
     ]);
   });
 
   test('Match the oldest tx with no duplicates and wrong nonces', async () => {
-    const transactions = TransactionService.getTransactionDetailsFromEthHash(
+    const transactions = await TransactionService.getTransactionDetailsFromEthHash(
       ethereumTxHash,
       [duplicateTransactionResult, wrongNonceTransactionResult],
       1
     );
-    await expect(pickTransactionFields(transactions)).resolves.toIncludeSameMembers([expectedTransaction]);
+    expect(pickTransactionFields(transactions)).resolves.toIncludeSameMembers([expectedTransaction]);
   });
 });
