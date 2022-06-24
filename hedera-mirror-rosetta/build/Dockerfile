@@ -45,7 +45,7 @@ RUN apt-get update \
 RUN useradd -s /bin/bash importer && useradd -s /bin/bash rosetta
 
 ENV PATH="/usr/lib/postgresql/${PG_VERSION}/bin:${PATH}"
-ENV PGDATA="/data"
+ENV PGDATA="/data/pgdata"
 ENV PGCONF=${PGDATA}
 RUN rm -fr /etc/postgresql/${PG_VERSION}/main
 VOLUME /data
