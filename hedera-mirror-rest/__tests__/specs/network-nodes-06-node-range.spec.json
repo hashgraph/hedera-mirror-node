@@ -101,6 +101,7 @@
         "consensus_timestamp": 187654000123457,
         "epoch_day": 1,
         "node_id": 0,
+        "reward_rate": 0,
         "stake": 0,
         "stake_rewarded": 0,
         "stake_total": 0
@@ -109,6 +110,7 @@
         "consensus_timestamp": 187654000123457,
         "epoch_day": 1,
         "node_id": 1,
+        "reward_rate": 1,
         "stake": 1,
         "stake_rewarded": 1,
         "stake_total": 1
@@ -117,6 +119,7 @@
         "consensus_timestamp": 187654000123457,
         "epoch_day": 1,
         "node_id": 2,
+        "reward_rate": 2,
         "stake": 2,
         "stake_rewarded": 2,
         "stake_total": 2
@@ -125,6 +128,7 @@
         "consensus_timestamp": 187654000123457,
         "epoch_day": 1,
         "node_id": 3,
+        "reward_rate": 3,
         "stake": 3,
         "stake_rewarded": 3,
         "stake_total": 3
@@ -133,6 +137,7 @@
         "consensus_timestamp": 187654000123457,
         "epoch_day": 1,
         "node_id": 4,
+        "reward_rate": 4,
         "stake": 4,
         "stake_rewarded": 4,
         "stake_total": 4
@@ -141,6 +146,7 @@
         "consensus_timestamp": 187654000123457,
         "epoch_day": 1,
         "node_id": 5,
+        "reward_rate": 5,
         "stake": 5,
         "stake_rewarded": 5,
         "stake_total": 5
@@ -149,6 +155,7 @@
         "consensus_timestamp": 187654000123457,
         "epoch_day": 1,
         "node_id": 6,
+        "reward_rate": 6,
         "stake": 6,
         "stake_rewarded": 6,
         "stake_total": 416
@@ -169,6 +176,7 @@
         "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
         "node_id": 3,
         "public_key": "0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f",
+        "reward_rate_start": 3,
         "service_endpoints": [
           {
             "ip_address_v4": "128.0.0.4",
@@ -198,6 +206,7 @@
         "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
         "node_id": 4,
         "public_key": "0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f",
+        "reward_rate_start": 4,
         "service_endpoints": [
           {
             "ip_address_v4": "128.0.0.5",

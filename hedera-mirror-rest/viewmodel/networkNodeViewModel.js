@@ -46,6 +46,7 @@ class NetworkNodeViewModel {
     this.node_account_id = EntityId.parse(addressBookEntry.nodeAccountId).toString();
     this.node_cert_hash = utils.addHexPrefix(utils.encodeUtf8(addressBookEntry.nodeCertHash), true);
     this.public_key = utils.addHexPrefix(addressBookEntry.publicKey, true);
+    this.reward_rate_start = nodeStake.rewardRate;
     this.service_endpoints = networkNode.addressBookServiceEndpoints.map(
       (x) => new AddressBookServiceEndpointViewModel(x)
     );
