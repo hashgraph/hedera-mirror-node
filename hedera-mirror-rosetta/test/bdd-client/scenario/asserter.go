@@ -69,19 +69,14 @@ func assertTransactionAll(transaction *types.Transaction, funcs ...assertTransac
 	return t.err
 }
 
-func assertTransactionOpTypes(expectedOpTypes ...string) assertTransactionFunc {
-	expectedOpTypesMap := make(map[string]int)
-	for _, expectedOpType := range expectedOpTypes {
-		expectedOpTypesMap[expectedOpType] = 1
-	}
-
+func assertTransactionOpTypesContains(expectedOpTypes ...string) assertTransactionFunc {
 	return func(t *asserter, transaction *types.Transaction) {
-		actualOpTypes := make(map[string]int)
+		var actualOpTypes []string
 		for _, operation := range transaction.Operations {
-			actualOpTypes[operation.Type] = 1
+			actualOpTypes = append(actualOpTypes, operation.Type)
 		}
 
-		assert.Equal(t, expectedOpTypesMap, actualOpTypes)
+		assert.Subset(t, actualOpTypes, expectedOpTypes)
 	}
 }
 

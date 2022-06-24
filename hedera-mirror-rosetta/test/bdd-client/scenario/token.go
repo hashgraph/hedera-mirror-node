@@ -105,7 +105,7 @@ func (t *tokenFeature) verifyTokenCreateTransaction(ctx context.Context) error {
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(1, gte),
-		assertTransactionOpTypes(operationTypeTokenCreate, operationTypeFee),
+		assertTransactionOpTypesContains(operationTypeTokenCreate, operationTypeFee),
 		assertTransactionMetadataAndType("entity_id", ""),
 	); err != nil {
 		return err
@@ -162,7 +162,7 @@ func (t *tokenFeature) verifyTokenAssociateOrDissociate(ctx context.Context, ass
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(1, gte),
-		assertTransactionOpTypes(operationTypeFee),
+		assertTransactionOpTypesContains(operationTypeFee),
 		assertTransactionMetadata("entity_id", operator.Id.String()),
 	)
 }
@@ -222,7 +222,7 @@ func (t *tokenFeature) verifyTokenFreezeOrUnfreezeAccount(ctx context.Context, f
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(1, gte),
-		assertTransactionOpTypes(opType, operationTypeFee),
+		assertTransactionOpTypesContains(operationTypeFee),
 		assertTransactionMetadata("entity_id", t.normalOperator.Id.String()),
 	)
 }
@@ -282,7 +282,7 @@ func (t *tokenFeature) verifyTokenKycGrantOrRevokeAccount(ctx context.Context, g
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(1, gte),
-		assertTransactionOpTypes(opType, operationTypeFee),
+		assertTransactionOpTypesContains(operationTypeFee),
 		assertTransactionMetadata("entity_id", t.normalOperator.Id.String()),
 	)
 }
@@ -407,7 +407,7 @@ func (t *tokenFeature) verifyTokenTransfer(ctx context.Context) error {
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(2, gte),
-		assertTransactionOpTypes(operationTypeCryptoTransfer, operationTypeFee),
+		assertTransactionOpTypesContains(operationTypeCryptoTransfer, operationTypeFee),
 		assertTransactionOnlyIncludesTransfers(expectedAccountAmounts, getMatchCurrencyFilter(t.currency), false),
 	)
 }
@@ -494,7 +494,7 @@ func (t *tokenFeature) verifyTokenBurnOrMint(ctx context.Context, burn bool) err
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(1, gte),
-		assertTransactionOpTypes(opType, operationTypeFee),
+		assertTransactionOpTypesContains(opType, operationTypeFee),
 		assertTransactionOnlyIncludesTransfers(expectedAccountAmounts, getMatchCurrencyFilter(t.currency), ignoreAmountMetadata),
 		assertTransactionMetadata("entity_id", t.tokenId.String()),
 	); err != nil {
@@ -590,7 +590,7 @@ func (t *tokenFeature) verifyTokenWipeAccount(ctx context.Context) error {
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(1, gte),
-		assertTransactionOpTypes(operationTypeTokenWipe, operationTypeFee),
+		assertTransactionOpTypesContains(operationTypeTokenWipe, operationTypeFee),
 		assertTransactionOnlyIncludesTransfers(expectedAccountAmounts, getMatchCurrencyFilter(t.currency), false),
 		assertTransactionMetadata("entity_id", t.tokenId.String()),
 	)
@@ -622,7 +622,7 @@ func (t *tokenFeature) verifyTokenDelete(ctx context.Context) error {
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(1, gte),
-		assertTransactionOpTypes(operationTypeTokenDelete, operationTypeFee),
+		assertTransactionOpTypesContains(operationTypeTokenDelete, operationTypeFee),
 		assertTransactionMetadata("entity_id", t.tokenId.String()),
 	)
 }
@@ -659,7 +659,7 @@ func (t *tokenFeature) verifyTokenUpdate(ctx context.Context) error {
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(1, gte),
-		assertTransactionOpTypes(operationTypeTokenUpdate, operationTypeFee),
+		assertTransactionOpTypesContains(operationTypeTokenUpdate, operationTypeFee),
 		assertTransactionMetadata("entity_id", t.tokenId.String()),
 	)
 }

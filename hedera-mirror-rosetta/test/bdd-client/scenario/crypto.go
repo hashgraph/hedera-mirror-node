@@ -70,7 +70,7 @@ func (c *cryptoFeature) verifyCryptoCreateTransaction(ctx context.Context) error
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(1, gte),
-		assertTransactionOpTypes(operationTypeCryptoCreateAccount, operationTypeFee),
+		assertTransactionOpTypesContains(operationTypeCryptoCreateAccount, operationTypeFee),
 		assertTransactionMetadataAndType("entity_id", ""),
 	); err != nil {
 		return err
@@ -128,7 +128,7 @@ func (c *cryptoFeature) verifyCryptoTransferAliasTransaction(ctx context.Context
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(2, gte),
-		assertTransactionOpTypes(operationTypeCryptoTransfer, operationTypeFee),
+		assertTransactionOpTypesContains(operationTypeCryptoTransfer, operationTypeFee),
 	); err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func (c *cryptoFeature) verifyCryptoTransferTransaction(ctx context.Context) err
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(2, gte),
-		assertTransactionOpTypes(operationTypeCryptoTransfer, operationTypeFee),
+		assertTransactionOpTypesContains(operationTypeCryptoTransfer, operationTypeFee),
 		assertTransactionIncludesTransfers(expectedAccountAmounts),
 	)
 }
