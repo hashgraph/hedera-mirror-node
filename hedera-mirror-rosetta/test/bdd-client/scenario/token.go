@@ -162,7 +162,7 @@ func (t *tokenFeature) verifyTokenAssociateOrDissociate(ctx context.Context, ass
 		transaction,
 		assertTransactionOpSuccess,
 		assertTransactionOpCount(1, gte),
-		assertTransactionOpTypes(opType, operationTypeFee),
+		assertTransactionOpTypes(operationTypeFee),
 		assertTransactionMetadata("entity_id", operator.Id.String()),
 	)
 }

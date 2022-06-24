@@ -147,17 +147,14 @@ const (
                                               where consensus_timestamp = t.consensus_timestamp and
                                                 (errata is null or errata <> 'DELETE')
                                             ), '[]') as crypto_transfers,
-                                            case
-                                              when t.type = 14 then coalesce((
+                                            coalesce((
                                                   select json_agg(json_build_object(
                                                       'account_id', entity_id,
                                                       'amount', amount
                                                     ) order by entity_id)
                                                   from non_fee_transfer
                                                   where consensus_timestamp = t.consensus_timestamp
-                                                ), '[]')
-                                              else '[]'
-                                            end as non_fee_transfers,
+                                            ), '[]') as non_fee_transfers,
                                             coalesce((
                                               select json_agg(json_build_object(
                                                   'account_id', account_id,
