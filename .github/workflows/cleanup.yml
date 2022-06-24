@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        module: [ grpc, importer, monitor, rest, rosetta, test ]
+        module: [ grpc, importer, monitor, rest, rosetta, web3 ]
     steps:
       - uses: actions/checkout@v2
 
