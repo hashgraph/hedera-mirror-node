@@ -9,15 +9,15 @@
         "result": 16,
         "type": 50,
         "transaction_hash": "519a008fabde4d",
-        "valid_start_timestamp": 167654000123455,
-        "to_address": "00000000000000000000000000000000000003ee"
+        "valid_start_timestamp": 167654000123455
       }
     ],
     "ethereumtransactions": [
       {
         "consensus_timestamp": 167654000123456,
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
-        "type": 2
+        "type": 2,
+        "to_address": "00000000000000000000000000000000000003ee"
       }
     ],
     "recordFiles": [
@@ -36,5 +36,37 @@
     "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392"
   ],
   "responseStatus": 206,
-  "responseJson": {}
+  "responseJson": {
+    "access_list": "0x",
+    "amount": 0,
+    "block_gas_used": 50000000,
+    "block_hash": "0x6ceecd8bb224da491",
+    "block_number": 1,
+    "bloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "call_result": "0x",
+    "chain_id": "0x",
+    "contract_id": "0.0.1006",
+    "created_contract_ids": [],
+    "error_message": "INVALID_CONTRACT_ID",
+    "from": "0x0000000000000000000000000000000000001f41",
+    "function_parameters": "0x",
+    "gas_limit": 1000000,
+    "gas_price": "0x4a817c80",
+    "gas_used": 0,
+    "hash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+    "logs": [],
+    "max_fee_per_gas": "0x",
+    "max_priority_fee_per_gas": "0x",
+    "nonce": 1,
+    "r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
+    "result": 16,
+    "s": "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",
+    "state_changes": [],
+    "status": "0x0",
+    "timestamp": "167654.000123456",
+    "to": "00000000000000000000000000000000000003ee",
+    "transaction_index": 1,
+    "type": 2,
+    "v": 1
+  }
 }
