@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,29 +20,25 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
-import com.hedera.mirror.common.domain.entity.EntityId;
-
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class CryptoTransferRepositoryTest extends AbstractRepositoryTest {
 
-    @Resource
-    private CryptoTransferRepository cryptoTransferRepository;
+    private final CryptoTransferRepository cryptoTransferRepository;
 
     @Test
-    void findByConsensusTimestampAndEntityNum() {
-        EntityId entity = EntityId.of(0L, 1L, 2L, ACCOUNT);
-        EntityId payerEntity = EntityId.of(0L, 1L, 3L, ACCOUNT);
-        CryptoTransfer cryptoTransfer = new CryptoTransfer(1L, 40L, entity);
-        cryptoTransfer.setPayerAccountId(payerEntity);
+    void prune() {
+        domainBuilder.cryptoTransfer().persist();
+        var cryptoTransfer2 = domainBuilder.cryptoTransfer().persist();
+        var cryptoTransfer3 = domainBuilder.cryptoTransfer().persist();
 
-        cryptoTransferRepository.save(cryptoTransfer);
+        cryptoTransferRepository.prune(cryptoTransfer2.getConsensusTimestamp());
 
-        assertThat(cryptoTransferRepository.findById(cryptoTransfer.getId())).get().isEqualTo(cryptoTransfer);
+        assertThat(cryptoTransferRepository.findAll()).containsExactly(cryptoTransfer3);
     }
 }

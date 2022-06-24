@@ -20,9 +20,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.toSnakeCase;
 import static java.lang.invoke.MethodType.methodType;
 
-import com.google.common.base.CaseFormat;
 import java.lang.invoke.LambdaMetafactory;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -176,10 +176,6 @@ public class EntityMetadataRegistry {
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }
-    }
-
-    private String toSnakeCase(String text) {
-        return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, text);
     }
 
     @Data
