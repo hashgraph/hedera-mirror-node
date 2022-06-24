@@ -1055,7 +1055,7 @@ class ContractController extends BaseController {
     if (!_.isNil(transaction.callDataId)) {
       fileData = await FileDataService.getLatestFileDataContents(transaction.callDataId, {whereQuery: []});
     }
-
+    transaction.callData = null;
     if (contractResults.length === 0) {
       // should mock contract results only if:
       // - contract results are empty
@@ -1112,6 +1112,7 @@ class ContractController extends BaseController {
       bloom: Buffer.alloc(256),
       call_result: Buffer.alloc(0),
       created_contract_ids: [],
+      functionParameters: [],
       payerAccountId: transaction.payerAccountId,
       errorMessage: TransactionResult.getName(transaction.result),
       consensusTimestamp: transaction.consensusTimestamp,
