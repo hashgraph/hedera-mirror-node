@@ -41,6 +41,8 @@ class TransactionWithEthData extends Transaction {
     this.signatureS = txWithEthData.signature_s;
     this.recoveryId = txWithEthData.recovery_id;
     this.value = txWithEthData.value;
+    this.toAddress = txWithEthData.to_address;
+    this.transactionType = txWithEthData.transaction_type;
   }
 }
 

@@ -55,7 +55,8 @@ class TransactionService extends BaseService {
         ${EthereumTransaction.SIGNATURE_S},
         ${EthereumTransaction.TYPE},
         ${EthereumTransaction.RECOVERY_ID},
-        ${EthereumTransaction.VALUE}
+        ${EthereumTransaction.VALUE},
+        ${EthereumTransaction.TO_ADDRESS}
       from ${EthereumTransaction.tableName}
       where ${ethTransactionReplaceString}
   )`;
@@ -80,6 +81,7 @@ class TransactionService extends BaseService {
     ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)},
     ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
     ${Transaction.getFullName(Transaction.RESULT)},
+    ${Transaction.getFullName(Transaction.TYPE)} as transaction_type,
     coalesce(
         ${EthereumTransaction.getFullName(EthereumTransaction.HASH)},
       ${Transaction.getFullName(Transaction.TRANSACTION_HASH)}
