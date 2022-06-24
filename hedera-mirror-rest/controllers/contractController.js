@@ -1110,8 +1110,8 @@ class ContractController extends BaseController {
   getMockedContractResultByTransaction = (transaction) => {
     return {
       bloom: Buffer.alloc(256),
-      call_result: Buffer.alloc(0),
-      created_contract_ids: [],
+      callResult: Buffer.alloc(0),
+      createdContractIds: [],
       functionParameters: [],
       payerAccountId: transaction.payerAccountId,
       errorMessage: TransactionResult.getName(transaction.result),
