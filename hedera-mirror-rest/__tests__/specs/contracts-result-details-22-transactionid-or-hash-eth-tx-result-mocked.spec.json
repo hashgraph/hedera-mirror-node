@@ -17,7 +17,8 @@
         "consensus_timestamp": 167654000123456,
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
         "type": 2,
-        "to_address": "00000000000000000000000000000000000003ee"
+        "to_address": "00000000000000000000000000000000000003ee",
+        "payerAccountId": "8001"
       }
     ],
     "recordFiles": [
@@ -64,7 +65,7 @@
     "state_changes": [],
     "status": "0x0",
     "timestamp": "167654.000123456",
-    "to": "00000000000000000000000000000000000003ee",
+    "to": "0x00000000000000000000000000000000000003ee",
     "transaction_index": 1,
     "type": 2,
     "v": 1
