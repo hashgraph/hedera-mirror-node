@@ -5,7 +5,7 @@
       {
         "consensus_timestamp": 167654000123456,
         "entity_id": 5001,
-        "payerAccountId": "8001",
+        "payer_account_id": "8001",
         "result": 16,
         "type": 50,
         "transaction_hash": "519a008fabde4d",
@@ -18,7 +18,7 @@
         "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
         "type": 2,
         "to_address": "00000000000000000000000000000000000003ee",
-        "payerAccountId": "8001"
+        "payer_account_id": "8001"
       }
     ],
     "recordFiles": [
