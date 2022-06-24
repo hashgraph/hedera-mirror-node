@@ -9,13 +9,24 @@
         "result": 16,
         "type": 50,
         "transaction_hash": "519a008fabde4d",
-        "valid_start_timestamp": 167654000123455
+        "valid_start_timestamp": 167654000123455,
+        "to_address": "00000000000000000000000000000000000003ee"
       }
     ],
     "ethereumtransactions": [
       {
         "consensus_timestamp": 167654000123456,
-        "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392"
+        "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+        "type": 2
+      }
+    ],
+    "recordFiles": [
+      {
+        "index": 1,
+        "gas_used": 50000000,
+        "consensus_start": 167654000123450,
+        "consensus_end": 167654000123460,
+        "hash": "6ceecd8bb224da491"
       }
     ]
   },
