@@ -1055,7 +1055,7 @@ class ContractController extends BaseController {
     if (!_.isNil(transaction.callDataId)) {
       fileData = await FileDataService.getLatestFileDataContents(transaction.callDataId, {whereQuery: []});
     }
-    transaction.callData = null;
+
     if (contractResults.length === 0) {
       // should mock contract results only if:
       // - contract results are empty
