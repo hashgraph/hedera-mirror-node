@@ -62,7 +62,7 @@ public class RetentionJob {
         var retentionPeriod = retentionProperties.getPeriod();
         var latest = recordFileRepository.findLatestWithOffset(retentionPeriod.toNanos());
         if (latest.isEmpty()) {
-            log.warn("Skipping since database is empty");
+            log.warn("Skipping since there is no data {} older than the latest data in database", retentionPeriod);
             return;
         }
 
