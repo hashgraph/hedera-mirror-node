@@ -1965,7 +1965,7 @@ components:
           nullable: true
           type: string
         reward_rate_start:
-          description: The total tinybars earned by this node as a staking reward at the start of the current staking period
+          description: The total tinybars earned by this node in the last staking period
           type: number
           format: int64
           nullable: true
