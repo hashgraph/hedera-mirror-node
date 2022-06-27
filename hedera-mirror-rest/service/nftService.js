@@ -37,7 +37,6 @@ class NftService extends BaseService {
     [constants.filterKeys.SPENDER_ID]: Nft.SPENDER,
   };
 
-  //static nftByIdQuery = 'select * from nft where token_id = $1 and serial_number = $2';
   static nftByIdQuery = `select * from nft where ${Nft.TOKEN_ID} = $1 and ${Nft.SERIAL_NUMBER} = $2`;
 
   static nftQuery = `select
