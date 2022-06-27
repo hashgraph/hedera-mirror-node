@@ -74,7 +74,7 @@
         <guava.version>31.1-jre</guava.version>
         <headlong.version>6.4.0</headlong.version>
         <hedera-protobuf.version>0.27.0-alpha.6</hedera-protobuf.version>
-        <hibernate-types.version>2.16.2</hibernate-types.version>
+        <hibernate-types.version>2.16.3</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>17</java.version>
         <javax.version>1</javax.version>
