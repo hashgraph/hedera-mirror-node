@@ -53,9 +53,19 @@ const mandatoryParams = [
   'transfers',
 ];
 
+const mergeArrays = (...arrayList) => {
+  return arrayList
+    .filter((array) => array != null)
+    .reduce((previous, current) => {
+      previous.push(...current);
+      return previous;
+    }, []);
+};
+
 const checkTransactionTransfers = (transactions, option) => {
   const {accountId, message} = option;
-  const {transfers} = transactions[0];
+  const transaction = transactions[0];
+  const transfers = mergeArrays(transaction.transfers, transaction.token_transfers);
   if (!transfers || !transfers.some((xfer) => xfer.account === accountId)) {
     return {
       passed: false,
@@ -91,9 +101,12 @@ const getTransactionsWithAccountCheck = async (server) => {
     return {url, ...result};
   }
 
+  const transaction = transactions[0];
+  const transfers = mergeArrays(transaction.transfers, transaction.token_transfers);
+
   const highestAccount = _.max(
     _.map(
-      _.filter(transactions[0].transfers, (xfer) => xfer.amount > 0),
+      _.filter(transfers, (xfer) => xfer.amount > 0),
       (xfer) => xfer.account
     )
   );
@@ -102,7 +115,7 @@ const getTransactionsWithAccountCheck = async (server) => {
     return {
       url,
       passed: false,
-      message: 'accNum is 0',
+      message: 'no account found in transaction transfers list and token_transfers list',
     };
   }
 

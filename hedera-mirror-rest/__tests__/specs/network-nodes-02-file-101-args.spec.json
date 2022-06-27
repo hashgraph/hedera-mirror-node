@@ -106,6 +106,7 @@
         "consensus_timestamp": 1,
         "epoch_day": 1,
         "node_id": 0,
+        "reward_rate": 5,
         "stake": 10,
         "stake_rewarded": 2,
         "stake_total": 4
@@ -114,6 +115,7 @@
         "consensus_timestamp": 2,
         "epoch_day": 2,
         "node_id": 0,
+        "reward_rate": 6,
         "stake": 11,
         "stake_rewarded": 3,
         "stake_total": 5
@@ -122,6 +124,7 @@
         "consensus_timestamp": 187654000123456,
         "epoch_day": 3,
         "node_id": 0,
+        "reward_rate": 7,
         "stake": 12,
         "stake_rewarded": 4,
         "stake_total": 6
@@ -130,6 +133,7 @@
         "consensus_timestamp": 187654000123456,
         "epoch_day": 1,
         "node_id": 1,
+        "reward_rate": 8,
         "stake": 100,
         "stake_rewarded": 20,
         "stake_total": 40
@@ -138,6 +142,7 @@
         "consensus_timestamp": 187654000123458,
         "epoch_day": 4,
         "node_id": 0,
+        "reward_rate": 9,
         "stake": 13,
         "stake_not_rewarded": 8,
         "stake_rewarded": 5,
@@ -148,6 +153,7 @@
         "consensus_timestamp": 187654000123458,
         "epoch_day": 2,
         "node_id": 1,
+        "reward_rate": 10,
         "stake": 101,
         "stake_not_rewarded": 80,
         "stake_rewarded": 21,
@@ -169,6 +175,7 @@
         "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
         "node_id": 0,
         "public_key": "0x",
+        "reward_rate_start": 9,
         "service_endpoints": [
           {
             "ip_address_v4": "127.0.0.3",
@@ -198,6 +205,7 @@
         "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
         "node_id": 1,
         "public_key": "0x",
+        "reward_rate_start": 10,
         "service_endpoints": [
           {
             "ip_address_v4": "127.0.0.4",

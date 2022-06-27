@@ -35,8 +35,8 @@ class NetworkNodeService extends BaseService {
       order by ${AddressBook.START_CONSENSUS_TIMESTAMP} desc limit 1
     ),
     ${NodeStake.tableAlias} as (
-      select ${NodeStake.MAX_STAKE}, ${NodeStake.MIN_STAKE}, ${NodeStake.NODE_ID}, ${NodeStake.STAKE},
-             ${NodeStake.STAKE_NOT_REWARDED}, ${NodeStake.STAKE_REWARDED}, ${NodeStake.STAKE_TOTAL},
+      select ${NodeStake.MAX_STAKE}, ${NodeStake.MIN_STAKE}, ${NodeStake.NODE_ID}, ${NodeStake.REWARD_RATE},
+             ${NodeStake.STAKE}, ${NodeStake.STAKE_NOT_REWARDED}, ${NodeStake.STAKE_REWARDED}, ${NodeStake.STAKE_TOTAL},
              ${NodeStake.STAKING_PERIOD}
       from ${NodeStake.tableName}
       where ${NodeStake.CONSENSUS_TIMESTAMP} =
@@ -53,6 +53,7 @@ class NetworkNodeService extends BaseService {
       ${AddressBook.getFullName(AddressBook.END_CONSENSUS_TIMESTAMP)},
       ${NodeStake.getFullName(NodeStake.MAX_STAKE)},
       ${NodeStake.getFullName(NodeStake.MIN_STAKE)},
+      ${NodeStake.getFullName(NodeStake.REWARD_RATE)},
       ${NodeStake.getFullName(NodeStake.STAKE)},
       ${NodeStake.getFullName(NodeStake.STAKE_NOT_REWARDED)},
       ${NodeStake.getFullName(NodeStake.STAKE_REWARDED)},
