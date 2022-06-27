@@ -68,6 +68,25 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 		expectedNonFeeTransfers  []hbarTransfer
 	}{
 		{
+			name:                     "empty",
+			expectedFeeHbarTransfers: []hbarTransfer{},
+			expectedNonFeeTransfers:  []hbarTransfer{},
+		},
+		{
+			name: "empty non fee transfers",
+			hbarTransfers: []hbarTransfer{
+				{firstEntityId, -65},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			expectedFeeHbarTransfers: []hbarTransfer{
+				{firstEntityId, -65},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			expectedNonFeeTransfers: []hbarTransfer{},
+		},
+		{
 			name: "simple transfer lists",
 			hbarTransfers: []hbarTransfer{
 				{firstEntityId, -165},

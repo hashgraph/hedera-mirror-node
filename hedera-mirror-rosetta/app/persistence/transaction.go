@@ -525,7 +525,6 @@ func (tr *transactionRepository) appendTransferOperations(
 func categorizeHbarTransfers(hbarTransfers, nonFeeTransfers []hbarTransfer) (
 	feeHbarTransfers, adjustedNonFeeTransfers []hbarTransfer,
 ) {
-	nonFeeTransferMap := aggregateNonFeeTransfers(nonFeeTransfers)
 	entityIds := make(map[int64]struct{})
 	for _, transfer := range hbarTransfers {
 		entityIds[transfer.AccountId.EncodedId] = struct{}{}
@@ -539,6 +538,7 @@ func categorizeHbarTransfers(hbarTransfers, nonFeeTransfers []hbarTransfer) (
 		}
 	}
 
+	nonFeeTransferMap := aggregateNonFeeTransfers(nonFeeTransfers)
 	return getFeeHbarTransfers(hbarTransfers, nonFeeTransferMap), adjustedNonFeeTransfers
 }
 
