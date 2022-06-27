@@ -34,10 +34,12 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
+import com.hedera.mirror.web3.evm.OracleSimulator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
 import com.hedera.mirror.web3.evm.SimulatorUpdater;
 import com.hedera.mirror.web3.evm.properties.ConfigurationProperties;
 import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
+import com.hedera.services.transaction.HederaMessageCallProcessor;
 import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.exception.InvalidTransactionException;
 import com.hedera.services.transaction.exception.ValidationUtils;
@@ -161,7 +163,7 @@ abstract class EvmTxProcessor {
             final boolean contractCreation,
             final Instant consensusTime,
             final boolean isStatic,
-            final StorageExpiry.Oracle expiryOracle,
+            final OracleSimulator expiryOracle,
             final Address mirrorReceiver,
             final BigInteger userOfferedGasPrice,
             final long maxGasAllowanceInTinybars,
