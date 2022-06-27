@@ -1,0 +1,53 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mirror
+  namespace: dev
+spec:
+  chart:
+    spec:
+      chart: charts/hedera-mirror
+      reconcileStrategy: Revision
+      sourceRef:
+        kind: GitRepository
+        name: hedera-mirror-node
+      valuesFiles:
+        - charts/hedera-mirror/values.yaml
+        - charts/hedera-mirror/values-prod.yaml
+      version: '0.57.2'
+  dependsOn:
+    - name: mirror
+      namespace: common
+  install:
+    crds: CreateReplace
+  interval: 30s
+  test:
+    enable: true
+    timeout: 20m  # It can take up to 15m for the next balance file to show up that the helm tests verify
+  timeout: 20m
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+    remediation:
+      retries: 20
+  valuesFrom:
+    - kind: Secret
+      name: mirror
+  values:
+    importer:
+      env:
+        HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
+    monitor:
+      env:
+        HEDERA_MIRROR_MONITOR_NETWORK: "OTHER"
+        HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "1"
+      prometheusRules:
+        MonitorPublishErrors:
+          enabled: false
+        MonitorPublishLatency:
+          enabled: false
+        MonitorSubscribeLatency:
+          enabled: false
+    rest:
+      test:
+        checkRecent: false
