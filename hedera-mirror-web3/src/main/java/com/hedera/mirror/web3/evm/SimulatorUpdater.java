@@ -1,10 +1,7 @@
 package com.hedera.mirror.web3.evm;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
@@ -71,10 +68,4 @@ public class SimulatorUpdater implements WorldUpdater {
     public long getSbhRefund() {
         return 0L;
     }
-
-    public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getFinalStateChanges() {
-        //Should be empty, since we simulate a txn and won't save any state changes
-        return Map.of();
-    }
-
 }

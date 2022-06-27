@@ -44,7 +44,6 @@ import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.exception.InvalidTransactionException;
 import com.hedera.services.transaction.exception.ValidationUtils;
 import com.hedera.services.transaction.models.Account;
-import com.hedera.services.transaction.models.Id;
 
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
@@ -222,7 +221,6 @@ abstract class EvmTxProcessor {
             }
         }
 
-        final var coinbase = Id.fromGrpcAccount(configurationProperties.fundingAccount()).asEvmAddress();
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var gasAvailable = gasLimit - intrinsicGas;
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
@@ -246,7 +244,6 @@ abstract class EvmTxProcessor {
                         .completer(unused -> {
                         })
                         .isStatic(isStatic)
-                        .miningBeneficiary(coinbase)
                         .blockHashLookup(blockMetaSource::getBlockHash)
                         .contextVariables(Map.of(
                                 "sbh", storageByteHoursTinyBarsGiven(consensusTime),
@@ -285,18 +282,9 @@ abstract class EvmTxProcessor {
                 }
             }
 
-            // Send fees to coinbase
-            final var mutableCoinbase = worldUpdater.getOrCreate(coinbase).getMutable();
-            final long coinbaseFee = gasLimit - refunded;
-
-            mutableCoinbase.incrementBalance(Wei.of(coinbaseFee * gasPrice));
             initialFrame.getSelfDestructs().forEach(worldUpdater::deleteAccount);
 
-            if (configurationProperties.shouldEnableTraceability()) {
-                stateChanges = worldUpdater.getFinalStateChanges();
-            } else {
-                stateChanges = Map.of();
-            }
+            stateChanges = Map.of();
 
             // Commit top level updater
             worldUpdater.commit();
