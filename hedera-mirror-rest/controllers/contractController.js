@@ -1116,7 +1116,8 @@ class ContractController extends BaseController {
       payerAccountId: transaction.payerAccountId,
       errorMessage: TransactionResult.getName(transaction.result),
       consensusTimestamp: transaction.consensusTimestamp,
-      contractId: transaction.toAddress ? transaction.toAddress.toString('hex') : null,
+      contractId:
+        transaction.toAddress && transaction.toAddress.toString('hex') ? transaction.toAddress.toString('hex') : null,
       gasUsed: 0,
     };
   };
