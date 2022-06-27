@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.transaction.properties;
+package com.hedera.mirror.web3.evm.properties;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 

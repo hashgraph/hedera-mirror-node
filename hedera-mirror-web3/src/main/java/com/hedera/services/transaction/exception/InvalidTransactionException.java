@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.transaction.exception;
+package com.hedera.services.transaction.exception;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import org.apache.tuweni.bytes.Bytes;

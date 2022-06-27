@@ -1,6 +1,5 @@
-package com.hedera.mirror.web3.transaction.execution;
+package com.hedera.services.transaction.execution;
 
-import static com.hedera.mirror.web3.transaction.exception.ValidationUtils.validateTrue;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -14,13 +13,11 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.transaction.InvalidTransactionException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
@@ -37,9 +34,15 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-import com.hedera.mirror.web3.transaction.TransactionProcessingResult;
-import com.hedera.mirror.web3.transaction.properties.ConfigurationProperties;
-import com.hedera.mirror.web3.transaction.properties.SimulatedBlockMetaSource;
+import com.hedera.mirror.web3.evm.SimulatedPricesSource;
+import com.hedera.mirror.web3.evm.SimulatorUpdater;
+import com.hedera.mirror.web3.evm.properties.ConfigurationProperties;
+import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
+import com.hedera.services.transaction.TransactionProcessingResult;
+import com.hedera.services.transaction.exception.InvalidTransactionException;
+import com.hedera.services.transaction.exception.ValidationUtils;
+import com.hedera.services.transaction.models.Account;
+import com.hedera.services.transaction.models.Id;
 
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
@@ -55,18 +58,19 @@ abstract class EvmTxProcessor {
 
     public static final String SBH_CONTEXT_KEY = "sbh";
     public static final String EXPIRY_ORACLE_CONTEXT_KEY = "expiryOracle";
+    public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
     private SimulatedBlockMetaSource blockMetaSource;
-    private HederaMutableWorldState worldState;
+    private SimulatorUpdater worldUpdater;
 
     private final GasCalculator gasCalculator;
-    private final LivePricesSource livePricesSource;
+    private final SimulatedPricesSource simulatedPricesSource;
     private final AbstractMessageProcessor messageCallProcessor;
     private final AbstractMessageProcessor contractCreationProcessor;
     protected final ConfigurationProperties configurationProperties;
 
     protected EvmTxProcessor(
-            final LivePricesSource livePricesSource,
+            final SimulatedPricesSource simulatedPricesSource,
             final ConfigurationProperties configurationProperties,
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
@@ -74,7 +78,7 @@ abstract class EvmTxProcessor {
     ) {
         this(
                 null,
-                livePricesSource,
+                simulatedPricesSource,
                 configurationProperties,
                 gasCalculator,
                 hederaOperations,
@@ -86,21 +90,21 @@ abstract class EvmTxProcessor {
         this.blockMetaSource = blockMetaSource;
     }
 
-    protected void setWorldState(final HederaMutableWorldState worldState) {
-        this.worldState = worldState;
+    protected void setWorldUpdater(final SimulatorUpdater worldUpdater) {
+        this.worldUpdater = worldUpdater;
     }
 
     protected EvmTxProcessor(
-            final HederaMutableWorldState worldState,
-            final LivePricesSource livePricesSource,
+            final SimulatorUpdater worldUpdater,
+            final SimulatedPricesSource simulatedPricesSource,
             final ConfigurationProperties configurationProperties,
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap,
             final SimulatedBlockMetaSource blockMetaSource
     ) {
-        this.worldState = worldState;
-        this.livePricesSource = livePricesSource;
+        this.worldUpdater = worldUpdater;
+        this.simulatedPricesSource = simulatedPricesSource;
         this.configurationProperties = configurationProperties;
         this.gasCalculator = gasCalculator;
 
@@ -167,14 +171,13 @@ abstract class EvmTxProcessor {
         final Wei upfrontCost = gasCost.add(value);
         final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
-        final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
-        final var senderAccount = updater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
+        final var senderAccount = worldUpdater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
         final MutableAccount mutableSender = senderAccount.getMutable();
 
         var allowanceCharged = Wei.ZERO;
         MutableAccount mutableRelayer = null;
         if (relayer != null) {
-            final var relayerAccount = updater.getOrCreateSenderAccount(relayer.getId().asEvmAddress());
+            final var relayerAccount = worldUpdater.getOrCreateSenderAccount(relayer.getId().asEvmAddress());
             mutableRelayer = relayerAccount.getMutable();
         }
         if (!isStatic) {
@@ -183,37 +186,37 @@ abstract class EvmTxProcessor {
             }
             if (relayer == null) {
                 final var senderCanAffordGas = mutableSender.getBalance().compareTo(upfrontCost) >= 0;
-                validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
+                ValidationUtils.validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
                 mutableSender.decrementBalance(gasCost);
             } else {
                 final var gasAllowance = Wei.of(maxGasAllowanceInTinybars);
                 if (userOfferedGasPrice.equals(BigInteger.ZERO)) {
                     // If sender set gas price to 0, relayer pays all the fees
-                    validateTrue(gasAllowance.greaterOrEqualThan(gasCost), INSUFFICIENT_TX_FEE);
+                    ValidationUtils.validateTrue(gasAllowance.greaterOrEqualThan(gasCost), INSUFFICIENT_TX_FEE);
                     final var relayerCanAffordGas = mutableRelayer.getBalance().compareTo((gasCost)) >= 0;
-                    validateTrue(relayerCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
+                    ValidationUtils.validateTrue(relayerCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
                     mutableRelayer.decrementBalance(gasCost);
                     allowanceCharged = gasCost;
                 } else if (userOfferedGasPrice.divide(WEIBARS_TO_TINYBARS).compareTo(BigInteger.valueOf(gasPrice)) < 0) {
                     // If sender gas price < current gas price, pay the difference from gas allowance
                     var senderFee =
                             Wei.of(userOfferedGasPrice.multiply(BigInteger.valueOf(gasLimit)).divide(WEIBARS_TO_TINYBARS));
-                    validateTrue(mutableSender.getBalance().compareTo(senderFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
+                    ValidationUtils.validateTrue(mutableSender.getBalance().compareTo(senderFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
                     final var remainingFee = gasCost.subtract(senderFee);
-                    validateTrue(gasAllowance.greaterOrEqualThan(remainingFee), INSUFFICIENT_TX_FEE);
-                    validateTrue(mutableRelayer.getBalance().compareTo(remainingFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
+                    ValidationUtils.validateTrue(gasAllowance.greaterOrEqualThan(remainingFee), INSUFFICIENT_TX_FEE);
+                    ValidationUtils.validateTrue(mutableRelayer.getBalance().compareTo(remainingFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
                     mutableSender.decrementBalance(senderFee);
                     mutableRelayer.decrementBalance(remainingFee);
                     allowanceCharged = remainingFee;
                 } else {
                     // If user gas price >= current gas price, sender pays all fees
                     final var senderCanAffordGas = mutableSender.getBalance().compareTo(gasCost) >= 0;
-                    validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
+                    ValidationUtils.validateTrue(senderCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
                     mutableSender.decrementBalance(gasCost);
                 }
                 // In any case, the sender must have sufficient balance to pay for any value sent
                 final var senderCanAffordValue = mutableSender.getBalance().compareTo(Wei.of(value)) >= 0;
-                validateTrue(senderCanAffordValue, INSUFFICIENT_PAYER_BALANCE);
+                ValidationUtils.validateTrue(senderCanAffordValue, INSUFFICIENT_PAYER_BALANCE);
             }
         }
 
@@ -223,7 +226,7 @@ abstract class EvmTxProcessor {
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
         final var valueAsWei = Wei.of(value);
-        final var stackedUpdater = updater.updater();
+        final var stackedUpdater = worldUpdater.updater();
         final var senderEvmAddress = sender.canonicalAddress();
         final MessageFrame.Builder commonInitialFrame =
                 MessageFrame.builder()
@@ -256,7 +259,7 @@ abstract class EvmTxProcessor {
         }
 
         var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
-        final long sbhRefund = updater.getSbhRefund();
+        final long sbhRefund = worldUpdater.getSbhRefund();
         final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
 
         if (isStatic) {
@@ -281,20 +284,20 @@ abstract class EvmTxProcessor {
             }
 
             // Send fees to coinbase
-            final var mutableCoinbase = updater.getOrCreate(coinbase).getMutable();
+            final var mutableCoinbase = worldUpdater.getOrCreate(coinbase).getMutable();
             final long coinbaseFee = gasLimit - refunded;
 
             mutableCoinbase.incrementBalance(Wei.of(coinbaseFee * gasPrice));
-            initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
+            initialFrame.getSelfDestructs().forEach(worldUpdater::deleteAccount);
 
             if (configurationProperties.shouldEnableTraceability()) {
-                stateChanges = updater.getFinalStateChanges();
+                stateChanges = worldUpdater.getFinalStateChanges();
             } else {
                 stateChanges = Map.of();
             }
 
             // Commit top level updater
-            updater.commit();
+            worldUpdater.commit();
         }
 
         // Externalise result
@@ -336,12 +339,12 @@ abstract class EvmTxProcessor {
     }
 
     protected long gasPriceTinyBarsGiven(final Instant consensusTime, boolean isEthTxn) {
-        return livePricesSource.currentGasPrice(consensusTime,
+        return simulatedPricesSource.currentGasPrice(consensusTime,
                 isEthTxn ? HederaFunctionality.EthereumTransaction : getFunctionType());
     }
 
     protected long storageByteHoursTinyBarsGiven(final Instant consensusTime) {
-        return livePricesSource.currentGasPrice(consensusTime, getFunctionType());
+        return simulatedPricesSource.currentGasPrice(consensusTime, getFunctionType());
     }
 
     protected abstract HederaFunctionality getFunctionType();
