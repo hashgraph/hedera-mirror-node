@@ -54,7 +54,7 @@ const tokenIdLteFilter = {key: TOKEN_ID, operator: lte, value: 151};
 
 describe('extractTokenMultiUnionQuery', () => {
   const defaultExpected = {
-    bounds: {[SPENDER_ID]: new Bound(), [TOKEN_ID]: new Bound()},
+    bounds: {[SPENDER_ID]: new Bound(SPENDER_ID), [TOKEN_ID]: new Bound(TOKEN_ID)},
     lower: [],
     inner: [],
     upper: [],
@@ -85,8 +85,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({equal: spenderEqFilter}),
-          [TOKEN_ID]: new Bound(),
+          [SPENDER_ID]: Bound.create({equal: spenderEqFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: new Bound(TOKEN_ID),
         },
         lower: [spenderEqFilter],
       },
@@ -97,8 +97,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({lower: spenderGtFilter}),
-          [TOKEN_ID]: new Bound(),
+          [SPENDER_ID]: Bound.create({lower: spenderGtFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: new Bound(TOKEN_ID),
         },
         lower: [spenderGtFilter],
       },
@@ -109,8 +109,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({lower: spenderGteFilter}),
-          [TOKEN_ID]: new Bound(),
+          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: new Bound(TOKEN_ID),
         },
         lower: [spenderGteFilter],
       },
@@ -121,8 +121,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({upper: spenderLtFilter}),
-          [TOKEN_ID]: new Bound(),
+          [SPENDER_ID]: Bound.create({upper: spenderLtFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: new Bound(TOKEN_ID),
         },
         lower: [spenderLtFilter],
       },
@@ -133,8 +133,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({upper: spenderLteFilter}),
-          [TOKEN_ID]: new Bound(),
+          [SPENDER_ID]: Bound.create({upper: spenderLteFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: new Bound(TOKEN_ID),
         },
         lower: [spenderLteFilter],
       },
@@ -145,8 +145,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({lower: spenderGtFilter, upper: spenderLtFilter}),
-          [TOKEN_ID]: new Bound(),
+          [SPENDER_ID]: Bound.create({lower: spenderGtFilter, upper: spenderLtFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: new Bound(TOKEN_ID),
         },
         lower: [spenderGtFilter, spenderLtFilter],
       },
@@ -157,8 +157,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({equal: spenderEqFilter}),
-          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter}),
+          [SPENDER_ID]: Bound.create({equal: spenderEqFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter, name: TOKEN_ID}),
         },
         lower: [spenderEqFilter, tokenIdEqFilter],
       },
@@ -169,8 +169,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({lower: spenderGtFilter}),
-          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter}),
+          [SPENDER_ID]: Bound.create({lower: spenderGtFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter, name: TOKEN_ID}),
         },
         lower: [spenderGtFilter, tokenIdEqFilter],
       },
@@ -181,8 +181,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({upper: spenderLtFilter}),
-          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter}),
+          [SPENDER_ID]: Bound.create({upper: spenderLtFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter, name: TOKEN_ID}),
         },
         lower: [spenderLtFilter, tokenIdEqFilter],
       },
@@ -193,8 +193,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({lower: spenderGtFilter, upper: spenderLtFilter}),
-          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter}),
+          [SPENDER_ID]: Bound.create({lower: spenderGtFilter, upper: spenderLtFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter, name: TOKEN_ID}),
         },
         lower: [spenderGtFilter, spenderLtFilter, tokenIdEqFilter],
       },
@@ -205,8 +205,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, upper: spenderLteFilter}),
-          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter}),
+          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, upper: spenderLteFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter, name: TOKEN_ID}),
         },
         lower: [spenderGteFilter, spenderLteFilter, tokenIdEqFilter],
       },
@@ -217,8 +217,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({lower: spenderGteFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter}),
+          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter, name: TOKEN_ID}),
         },
         lower: [{...spenderGteFilter, operator: eq}, tokenIdGteFilter],
         inner: [{...spenderGteFilter, operator: gt}],
@@ -230,8 +230,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({lower: spenderGteFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter}),
+          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter, name: TOKEN_ID}),
         },
         lower: [{...spenderGteFilter, operator: eq}, tokenIdGtFilter],
         inner: [{...spenderGteFilter, operator: gt}],
@@ -243,8 +243,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({upper: spenderLteFilter}),
-          [TOKEN_ID]: Bound.create({upper: tokenIdLteFilter}),
+          [SPENDER_ID]: Bound.create({upper: spenderLteFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({upper: tokenIdLteFilter, name: TOKEN_ID}),
         },
         inner: [{...spenderLteFilter, operator: lt}],
         upper: [{...spenderLteFilter, operator: eq}, tokenIdLteFilter],
@@ -256,8 +256,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({upper: spenderLteFilter}),
-          [TOKEN_ID]: Bound.create({upper: tokenIdLtFilter}),
+          [SPENDER_ID]: Bound.create({upper: spenderLteFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({upper: tokenIdLtFilter, name: TOKEN_ID}),
         },
         inner: [{...spenderLteFilter, operator: lt}],
         upper: [{...spenderLteFilter, operator: eq}, tokenIdLtFilter],
@@ -269,8 +269,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, upper: spenderLteFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter}),
+          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, upper: spenderLteFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter, name: TOKEN_ID}),
         },
         lower: [{...spenderGteFilter, operator: eq}, tokenIdGtFilter],
         inner: [{...spenderGteFilter, operator: gt}, spenderLteFilter],
@@ -282,8 +282,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, upper: spenderLteFilter}),
-          [TOKEN_ID]: Bound.create({upper: tokenIdLtFilter}),
+          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, upper: spenderLteFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({upper: tokenIdLtFilter, name: TOKEN_ID}),
         },
         inner: [
           {...spenderGteFilter, operator: gte},
@@ -298,8 +298,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, upper: spenderLteFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter, upper: tokenIdLtFilter}),
+          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, upper: spenderLteFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter, upper: tokenIdLtFilter, name: TOKEN_ID}),
         },
         lower: [{...spenderGteFilter, operator: eq}, tokenIdGtFilter],
         inner: [
@@ -315,8 +315,8 @@ describe('extractTokenMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, upper: spenderLteFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter, upper: tokenIdLteFilter}),
+          [SPENDER_ID]: Bound.create({lower: spenderGteFilter, upper: spenderLteFilter, name: SPENDER_ID}),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter, upper: tokenIdLteFilter, name: TOKEN_ID}),
         },
         lower: [{...spenderGteFilter, operator: eq}, tokenIdGteFilter],
         inner: [
@@ -342,6 +342,10 @@ describe('extractTokenMultiUnionQuery throw', () => {
       filters: [{key: SPENDER_ID, operator: ne, value: 1}],
     },
     {
+      name: 'spender.id range and equal',
+      filters: [spenderEqFilter, spenderGtFilter, spenderLtFilter],
+    },
+    {
       name: 'spender.id multiple equal',
       filters: [spenderEqFilter, spenderEqFilter],
     },
@@ -356,6 +360,10 @@ describe('extractTokenMultiUnionQuery throw', () => {
     {
       name: 'token.id ne',
       filters: [{key: TOKEN_ID, operator: ne, value: 1}],
+    },
+    {
+      name: 'token.id range and equal',
+      filters: [tokenIdEqFilter, tokenIdGtFilter, tokenIdLtFilter],
     },
     {
       name: 'token.id multiple equal',

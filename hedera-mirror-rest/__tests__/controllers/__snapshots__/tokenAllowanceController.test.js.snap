@@ -8,6 +8,8 @@ exports[`extractTokenMultiUnionQuery throw spender.id multiple upper bounds 1`] 
 
 exports[`extractTokenMultiUnionQuery throw spender.id ne 1`] = `"Not equal (ne) operator is not supported"`;
 
+exports[`extractTokenMultiUnionQuery throw spender.id range and equal 1`] = `"Can't support both range and equal"`;
+
 exports[`extractTokenMultiUnionQuery throw token.id eq without spender.id query 1`] = `"token.id without a spender.id parameter filter"`;
 
 exports[`extractTokenMultiUnionQuery throw token.id gt with spender.id gt 1`] = `"Unsupported combination"`;
@@ -25,3 +27,5 @@ exports[`extractTokenMultiUnionQuery throw token.id multiple lower bounds 1`] = 
 exports[`extractTokenMultiUnionQuery throw token.id multiple upper bounds 1`] = `"Only one lt/lte operator is allowed"`;
 
 exports[`extractTokenMultiUnionQuery throw token.id ne 1`] = `"Not equal (ne) operator is not supported"`;
+
+exports[`extractTokenMultiUnionQuery throw token.id range and equal 1`] = `"Can't support both range and equal"`;

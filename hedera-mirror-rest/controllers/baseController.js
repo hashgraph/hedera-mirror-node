@@ -23,6 +23,7 @@
 const _ = require('lodash');
 
 const utils = require('../utils');
+const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
 class BaseController {
   updateConditionsAndParamsWithInValues = (
@@ -60,14 +61,36 @@ class BaseController {
   };
 
   /**
+   * Validate that the bounds are valid. Validates the following:
+   *  Bound Range
+   *  Secondary Bound is not present without Primary Bound
+   *  Lower Bounds
+   *  Upper Bounds.
+   *
+   * @param {Bound} primaryBound
+   * @param {Bound} secondaryBound
+   * @throws {InvalidArgumentError}
+   */
+  validateBounds(primaryBound, secondaryBound) {
+    this.validateBoundsRange(primaryBound, secondaryBound);
+    this.validateSecondaryBound(primaryBound, secondaryBound);
+    this.validateLowerBounds(primaryBound, secondaryBound);
+    this.validateUpperBounds(primaryBound, secondaryBound);
+  }
+
+  /**
    * Validate that if the primary bound is empty the secondary bound is empty as well.
    *
    * @param {Bound} primaryBound
    * @param {Bound} secondaryBound
-   * @return boolean true if the bounds are valid.
+   * @throws {InvalidArgumentError}
    */
   validateSecondaryBound(primaryBound, secondaryBound) {
-    return !(primaryBound.isEmpty() && !secondaryBound.isEmpty());
+    if (primaryBound.isEmpty() && !secondaryBound.isEmpty()) {
+      throw new InvalidArgumentError(
+        `${secondaryBound.filterKey} without a ${primaryBound.filterKey} parameter filter`
+      );
+    }
   }
 
   /**
@@ -75,14 +98,16 @@ class BaseController {
    *
    * @param {Bound} primaryBound
    * @param {Bound} secondaryBound
-   * @return boolean true if the bounds are valid.
+   * @throws {InvalidArgumentError}
    */
   validateLowerBounds(primaryBound, secondaryBound) {
-    return !(
+    if (
       !primaryBound.hasEqual() &&
       secondaryBound.hasLower() &&
       (!primaryBound.hasLower() || primaryBound.lower.operator === utils.opsMap.gt)
-    );
+    ) {
+      throw new InvalidArgumentError(`${primaryBound.filterKey} must have gte or eq operator`);
+    }
   }
 
   /**
@@ -90,14 +115,31 @@ class BaseController {
    *
    * @param {Bound} primaryBound
    * @param {Bound} secondaryBound
-   * @return boolean true if the bounds are valid.
+   * @throws {InvalidArgumentError}
    */
   validateUpperBounds(primaryBound, secondaryBound) {
-    return !(
+    if (
       !primaryBound.hasEqual() &&
       secondaryBound.hasUpper() &&
       (!primaryBound.hasUpper() || primaryBound.upper.operator === utils.opsMap.lt)
-    );
+    ) {
+      throw new InvalidArgumentError(`${primaryBound.filterKey} must have lte or eq operator`);
+    }
+  }
+
+  /**
+   * Validate the bound range and equal combination
+   *
+   * @param {Bound} primaryBound
+   * @param {Bound} secondaryBound
+   * @throws {InvalidArgumentError}
+   */
+  validateBoundsRange(primaryBound, secondaryBound) {
+    for (const bound of [primaryBound, secondaryBound]) {
+      if (bound.hasBound() && bound.hasEqual()) {
+        throw new InvalidArgumentError(`Can't support both range and equal`);
+      }
+    }
   }
 
   /**
@@ -117,9 +159,15 @@ class BaseController {
       // both have lower. If primary has lower and secondary doesn't have lower, the lower bound of primary
       // will go into the inner part.
       filters = [{...primaryBound.lower, operator: utils.opsMap.eq}, secondaryBound.lower];
-    } else if (primaryBound.hasEqual() && secondaryBound.hasLower()) {
-      // place the upper secondary bound into the lower
-      filters = [primaryBound.equal, primaryBound.lower, primaryBound.upper, secondaryBound.lower];
+    } else if (primaryBound.hasEqual()) {
+      filters = [
+        primaryBound.equal,
+        primaryBound.lower,
+        primaryBound.upper,
+        secondaryBound.lower,
+        secondaryBound.equal,
+        secondaryBound.upper,
+      ];
     }
     return filters.filter((f) => !_.isNil(f));
   }
@@ -167,7 +215,7 @@ class BaseController {
    * @param {Request} req
    * @param {*[]} rows
    * @param {{string:Bound}} bounds
-   * @param {{primary:string,secondary:string}} boundKeys
+   * @param {{primary:string,secondary:string, primaryDbColumn:string, secondaryDbColumn:string}} boundKeys
    * @param {number} limit
    * @param {string} order
    * @return {string|null}
@@ -186,12 +234,14 @@ class BaseController {
     if (primaryBound.hasBound() || primaryBound.isEmpty()) {
       // the primary param has bound or no primary param at all
       // primary param should be exclusive when the secondary operator is eq
-      lastValues[boundKeys.primary] = {value: lastRow[boundKeys.primary], inclusive: !secondaryBound.hasEqual()};
+      const dbColumn = !_.isNil(boundKeys.primaryDbColumn) ? boundKeys.primaryDbColumn : boundKeys.primary;
+      lastValues[boundKeys.primary] = {value: lastRow[dbColumn], inclusive: !secondaryBound.hasEqual()};
     }
 
     if (secondaryBound.hasBound() || secondaryBound.isEmpty()) {
       // the secondary param has bound or no secondary param at all
-      lastValues[boundKeys.secondary] = {value: lastRow[boundKeys.secondary]};
+      const dbColumn = !_.isNil(boundKeys.secondaryDbColumn) ? boundKeys.secondaryDbColumn : boundKeys.secondary;
+      lastValues[boundKeys.secondary] = {value: lastRow[dbColumn]};
     }
 
     return utils.getPaginationLink(req, false, lastValues, order);

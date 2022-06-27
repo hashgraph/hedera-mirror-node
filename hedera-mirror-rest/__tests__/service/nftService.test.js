@@ -313,10 +313,10 @@ describe('getQuery', () => {
         sqlQuery: `${selectColumnsStatement}
             from nft where account_id = $1
             and spender <= $3
-            and spender = $4
+            and spender in (15)
             order by token_id desc,serial_number desc
             limit $2`,
-        params: [1, 20, 10, 15],
+        params: [1, 20, 10],
       },
     },
   ];

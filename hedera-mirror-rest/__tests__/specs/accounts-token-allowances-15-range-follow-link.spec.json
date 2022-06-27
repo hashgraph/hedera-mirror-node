@@ -80,7 +80,7 @@
   },
   "tests": [
     {
-      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&token.id=lt:10002&spender.id=3102&order=desc&limit=3",
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&order=desc&limit=3",
       "responseStatus": 200,
       "responseJson": {
         "allowances": [
@@ -116,12 +116,12 @@
           }
         ],
         "links": {
-          "next": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&spender.id=3102&spender.id=lte:0.0.3101&order=desc&limit=3&token.id=lt:0.0.10005"
+          "next": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&spender.id=lte:0.0.3101&order=desc&limit=3&token.id=lt:0.0.10005"
         }
       }
     },
     {
-      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&spender.id=3102&spender.id=lte:0.0.3101&order=desc&limit=3&token.id=lt:0.0.10005",
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&spender.id=lte:0.0.3101&order=desc&limit=3&token.id=lt:0.0.10005",
       "responseStatus": 200,
       "responseJson": {
         "allowances": [
@@ -157,12 +157,12 @@
           }
         ],
         "links": {
-          "next": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&spender.id=3102&spender.id=lte:0.0.2001&order=desc&limit=3&token.id=lt:0.0.10002"
+          "next": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&spender.id=lte:0.0.2001&order=desc&limit=3&token.id=lt:0.0.10002"
         }
       }
     },
     {
-      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&spender.id=3102&spender.id=lte:0.0.2001&order=desc&limit=3&token.id=lt:0.0.10002",
+      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&spender.id=lte:0.0.2001&order=desc&limit=3&token.id=lt:0.0.10002",
       "responseStatus": 200,
       "responseJson": {
         "allowances": [

@@ -40,9 +40,7 @@ const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
 class AccountController extends BaseController {
   validateFilters(serialNumberBound, tokenIdBound, spenderIdFilters) {
-    if (!this.validateSecondaryBound(tokenIdBound, serialNumberBound)) {
-      throw new InvalidArgumentError(`Cannot search NFTs with serialnumber without a tokenId parameter filter`);
-    }
+    this.validateBounds(tokenIdBound, serialNumberBound);
 
     const spenderOperators = spenderIdFilters.map((f) => f.operator);
     if (
@@ -58,11 +56,17 @@ class AccountController extends BaseController {
   }
 
   extractNftMultiUnionQuery(filters, ownerAccountId) {
-    const serialNumberBound = new Bound();
-    const tokenIdBound = new Bound();
+    const serialNumberBound = new Bound(constants.filterKeys.SERIAL_NUMBER);
+    const tokenIdBound = new Bound(constants.filterKeys.TOKEN_ID);
     const bounds = {
       [constants.filterKeys.SERIAL_NUMBER]: serialNumberBound,
       [constants.filterKeys.TOKEN_ID]: tokenIdBound,
+    };
+    const boundKeys = {
+      primary: constants.filterKeys.TOKEN_ID,
+      primaryDbColumn: 'token_id',
+      secondary: constants.filterKeys.SERIAL_NUMBER,
+      secondaryDbColumn: 'serial_number',
     };
     let limit = defaultLimit;
     let order = constants.orderFilterValues.DESC;
@@ -87,6 +91,7 @@ class AccountController extends BaseController {
           break;
         case constants.filterKeys.SPENDER_ID:
           filter.operator === utils.opsMap.eq ? spenderIdInFilters.push(filter) : spenderIdFilters.push(filter);
+          break;
         default:
           break;
       }
@@ -94,11 +99,12 @@ class AccountController extends BaseController {
 
     this.validateFilters(serialNumberBound, tokenIdBound, spenderIdFilters);
 
-    let lower = this.getLowerFilters(tokenIdBound, serialNumberBound);
-    let inner = this.getInnerFilters(tokenIdBound, serialNumberBound);
-    let upper = this.getAccountsUpperFilters(tokenIdBound, serialNumberBound);
+    const lower = this.getLowerFilters(tokenIdBound, serialNumberBound);
+    const inner = this.getInnerFilters(tokenIdBound, serialNumberBound);
+    const upper = this.getUpperFilters(tokenIdBound, serialNumberBound);
     return {
       bounds,
+      boundKeys,
       lower,
       inner,
       upper,
@@ -108,15 +114,6 @@ class AccountController extends BaseController {
       spenderIdInFilters,
       spenderIdFilters,
     };
-  }
-
-  getAccountsUpperFilters(tokenIdBound, serialNumberBound) {
-    if (serialNumberBound.hasUpper() && tokenIdBound.hasEqual() && !tokenIdBound.hasUpper()) {
-      // Combine the equal into the upper
-      return [tokenIdBound.equal, serialNumberBound.upper];
-    }
-
-    return this.getUpperFilters(tokenIdBound, serialNumberBound);
   }
 
   /**
@@ -135,40 +132,10 @@ class AccountController extends BaseController {
     res.locals[constants.responseDataLabel] = {
       nfts,
       links: {
-        next: this.getPaginationLink(req, nfts, query.bounds, query.limit, query.order),
+        next: this.getPaginationLink(req, nfts, query.bounds, query.boundKeys, query.limit, query.order),
       },
     };
   };
-
-  /**
-   * Gets the pagination link for the accounts nfts query
-   * @param {Request} req
-   * @param {NftViewModel[]} nftViewModels
-   * @param {{string: Bound}} bounds
-   * @param {number} limit
-   * @param {string} order
-   * @return {string|null}
-   */
-  getPaginationLink(req, nftViewModels, bounds, limit, order) {
-    const serialBound = bounds[constants.filterKeys.SERIAL_NUMBER];
-    const tokenIdBound = bounds[constants.filterKeys.TOKEN_ID];
-
-    if (nftViewModels.length < limit || (serialBound.hasEqual() && tokenIdBound.hasEqual())) {
-      // fetched all matching rows or the query is for a specific serial number and token id combination
-      return null;
-    }
-
-    const lastRow = _.last(nftViewModels);
-    const lastValues = {};
-    if (tokenIdBound.hasBound() || tokenIdBound.isEmpty()) {
-      lastValues[constants.filterKeys.TOKEN_ID] = {value: lastRow.token_id, inclusive: !tokenIdBound.hasEqual()};
-    }
-    if (serialBound.hasBound() || serialBound.isEmpty()) {
-      lastValues[constants.filterKeys.SERIAL_NUMBER] = {value: lastRow.serial_number};
-    }
-
-    return utils.getPaginationLink(req, false, lastValues, order);
-  }
 }
 
 module.exports = new AccountController();

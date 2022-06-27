@@ -36,97 +36,27 @@ const Bound = require('./bound');
 const {EntityService, TokenAllowanceService} = require('../service');
 const {TokenAllowanceViewModel} = require('../viewmodel');
 
-// errors
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-
 class TokenAllowanceController extends BaseController {
-  /**
-   * Gets filters for the lower part of the multi-union query.
-   *
-   * @param {Bound} spenderBound
-   * @param {Bound} tokenIdBound
-   * @return {{key: string, operator: string, value: *}[]}
-   */
-  getLowerFilters(spenderBound, tokenIdBound) {
-    let filters = [];
-    if (!tokenIdBound.hasBound()) {
-      // no token.id bound filters or no token.id filters at all, everything goes into the lower part and there
-      // shouldn't be inner or upper part.
-      filters = [spenderBound.equal, spenderBound.lower, spenderBound.upper, tokenIdBound.equal];
-    } else if (spenderBound.hasLower() && tokenIdBound.hasLower()) {
-      // both have lower. If spender.id has lower and token.id doesn't have lower, the lower bound of spender.id
-      // will go into the inner part.
-      filters = [{...spenderBound.lower, operator: utils.opsMap.eq}, tokenIdBound.lower];
-    }
-    return filters.filter((f) => !_.isNil(f));
-  }
-
-  /**
-   * Gets filters for the inner part of the multi-union query
-   *
-   * @param {Bound} spenderBound
-   * @param {Bound} tokenIdBound
-   * @return {{key: string, operator: string, value: *}[]}
-   */
-  getInnerFilters(spenderBound, tokenIdBound) {
-    if (!spenderBound.hasBound() || !tokenIdBound.hasBound()) {
-      return [];
-    }
-
-    return [
-      // if token.id has lower bound, the spender.id filter should be spender.id > ?
-      {filter: spenderBound.lower, newOperator: tokenIdBound.hasLower() ? utils.opsMap.gt : null},
-      // if token.id has upper bound, the spender.id filter should be spender.id < ?
-      {filter: spenderBound.upper, newOperator: tokenIdBound.hasUpper() ? utils.opsMap.lt : null},
-    ]
-      .filter((f) => !_.isNil(f.filter))
-      .map((f) => ({...f.filter, operator: f.newOperator || f.filter.operator}));
-  }
-
-  /**
-   * Gets filters for the upper part of the multi-union query
-   *
-   * @param {Bound} spenderBound
-   * @param {Bound} tokenIdBound
-   * @return {{key: string, operator: string, value: *}[]}
-   */
-  getUpperFilters(spenderBound, tokenIdBound) {
-    if (!spenderBound.hasUpper() || !tokenIdBound.hasUpper()) {
-      return [];
-    }
-    // the upper part should always have spender.id = ?
-    return [{...spenderBound.upper, operator: utils.opsMap.eq}, tokenIdBound.upper];
-  }
-
-  validateBounds(spenderBound, tokenIdBound) {
-    if (!this.validateSecondaryBound(spenderBound, tokenIdBound)) {
-      throw new InvalidArgumentError(
-        `${constants.filterKeys.TOKEN_ID} without a ${constants.filterKeys.SPENDER_ID} parameter filter`
-      );
-    }
-
-    if (!this.validateLowerBounds(spenderBound, tokenIdBound)) {
-      throw new InvalidArgumentError('Unsupported combination');
-    }
-
-    if (!this.validateUpperBounds(spenderBound, tokenIdBound)) {
-      throw new InvalidArgumentError('Unsupported combination');
-    }
-  }
-
   /**
    * Extracts multiple queries to be combined in union.
    *
    * @param {[]} filters req filters
    * @param {BigInt} ownerAccountId Encoded owner entityId
-   * @returns {{bounds: {string: Bound}, lower: *[], inner: *[], upper: *[], accountId: BigInt, order: 'asc'|'desc', limit: number}}
+   * @returns {{bounds: {string: Bound}, boundKeys: {Map<String, string}, lower: *[], inner: *[], upper: *[],
+   *  accountId: BigInt, order: 'asc'|'desc', limit: number}}
    */
   extractTokenMultiUnionQuery(filters, ownerAccountId) {
-    const spenderBound = new Bound();
-    const tokenIdBound = new Bound();
+    const spenderBound = new Bound(constants.filterKeys.SPENDER_ID);
+    const tokenIdBound = new Bound(constants.filterKeys.TOKEN_ID);
     const bounds = {
       [constants.filterKeys.SPENDER_ID]: spenderBound,
       [constants.filterKeys.TOKEN_ID]: tokenIdBound,
+    };
+    const boundKeys = {
+      primary: constants.filterKeys.SPENDER_ID,
+      primaryDbColumn: 'spender',
+      secondary: constants.filterKeys.TOKEN_ID,
+      secondaryDbColumn: 'token_id',
     };
     let limit = defaultLimit;
     let order = constants.orderFilterValues.ASC;
@@ -152,6 +82,7 @@ class TokenAllowanceController extends BaseController {
 
     return {
       bounds,
+      boundKeys,
       lower: this.getLowerFilters(spenderBound, tokenIdBound),
       inner: this.getInnerFilters(spenderBound, tokenIdBound),
       upper: this.getUpperFilters(spenderBound, tokenIdBound),
@@ -177,44 +108,10 @@ class TokenAllowanceController extends BaseController {
     res.locals[constants.responseDataLabel] = {
       allowances,
       links: {
-        next: this.getPaginationLink(req, allowances, query.bounds, query.limit, query.order),
+        next: this.getPaginationLink(req, allowances, query.bounds, query.boundKeys, query.limit, query.order),
       },
     };
   };
-
-  /**
-   * Gets the pagination link for token allowance query
-   * @param {Request} req
-   * @param {TokenAllowanceViewModel[]} allowances
-   * @param {{string: Bound}} bounds
-   * @param {number} limit
-   * @param {string} order
-   * @return {string|null}
-   */
-  getPaginationLink(req, allowances, bounds, limit, order) {
-    const spenderBound = bounds[constants.filterKeys.SPENDER_ID];
-    const tokenIdBound = bounds[constants.filterKeys.TOKEN_ID];
-
-    if (allowances.length < limit || (spenderBound.hasEqual() && tokenIdBound.hasEqual())) {
-      // fetched all matching rows or the query is for a specific spender and token id combination
-      return null;
-    }
-
-    const lastRow = _.last(allowances);
-    const lastValues = {};
-    if (spenderBound.hasBound() || spenderBound.isEmpty()) {
-      // page on spender.id when either the spender query has bound or no spender query at all
-      // spender.id should be exclusive when the token.id operator is eq
-      lastValues[constants.filterKeys.SPENDER_ID] = {value: lastRow.spender, inclusive: !tokenIdBound.hasEqual()};
-    }
-
-    if (tokenIdBound.hasBound() || tokenIdBound.isEmpty()) {
-      // page on token.id when either the token.id query has bound or no token.id query at all
-      lastValues[constants.filterKeys.TOKEN_ID] = {value: lastRow.token_id};
-    }
-
-    return utils.getPaginationLink(req, false, lastValues, order);
-  }
 }
 
 module.exports = new TokenAllowanceController();

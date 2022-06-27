@@ -27,9 +27,12 @@ const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 /**
  * Holds the filters for query parameters in a multi-column paging query. The parsing logic only allows single
  * occurrence of equal, lt/lte, and gt/gte filters, respectively.
+ *
+ * FilterKey may be referenced in validation errors.
  */
 class Bound {
-  constructor() {
+  constructor(filterKey) {
+    this.filterKey = filterKey;
     this.equal = null;
     this.lower = null;
     this.upper = null;

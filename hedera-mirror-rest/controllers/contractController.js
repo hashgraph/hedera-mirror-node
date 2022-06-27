@@ -584,25 +584,10 @@ class ContractController extends BaseController {
   };
 
   validateContractLogsBounds = (timestampBound, indexBound) => {
-    if (!this.validateSecondaryBound(timestampBound, indexBound)) {
-      throw new InvalidArgumentError(
-        `Cannot search by ${constants.filterKeys.INDEX} without a ${constants.filterKeys.TIMESTAMP} parameter filter`
-      );
-    }
-
-    if (!this.validateLowerBounds(timestampBound, indexBound)) {
-      // invalid ops: index >/>= & timestamp </<=/>
-      throw new InvalidArgumentError(`Timestamp must have gte or eq operator`);
-    }
-
-    if (!this.validateUpperBounds(timestampBound, indexBound)) {
-      // invalid ops: index </<= & timestamp >/>=/<
-      throw new InvalidArgumentError(`Timestamp must have lte or eq operator`);
-    }
-
     if (indexBound.hasEqual() && !timestampBound.hasEqual()) {
-      throw new InvalidArgumentError(`Timestamp must have eq operator`);
+      throw new InvalidArgumentError(`${timestampBound.filterKey} must have eq operator`);
     }
+    this.validateBounds(timestampBound, indexBound);
   };
 
   /**
@@ -646,8 +631,8 @@ class ContractController extends BaseController {
       params.push(contractId);
     }
 
-    const indexBound = new Bound();
-    const timestampBound = new Bound();
+    const indexBound = new Bound(constants.filterKeys.INDEX);
+    const timestampBound = new Bound(constants.filterKeys.TIMESTAMP);
     const bounds = {
       [constants.filterKeys.INDEX]: indexBound,
       [constants.filterKeys.TIMESTAMP]: timestampBound,

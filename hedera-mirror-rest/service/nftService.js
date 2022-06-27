@@ -37,7 +37,8 @@ class NftService extends BaseService {
     [constants.filterKeys.SPENDER_ID]: Nft.SPENDER,
   };
 
-  static nftByIdQuery = 'select * from nft where token_id = $1 and serial_number = $2';
+  //static nftByIdQuery = 'select * from nft where token_id = $1 and serial_number = $2';
+  static nftByIdQuery = `select * from nft where ${Nft.TOKEN_ID} = $1 and ${Nft.SERIAL_NUMBER} = $2`;
 
   static nftQuery = `select
     ${Nft.ACCOUNT_ID},
@@ -71,14 +72,8 @@ class NftService extends BaseService {
    * @return {string}
    */
   getSubQuery(filters, params, accountIdCondition, limitClause, orderClause, spenderIdInFilters, spenderIdFilters) {
-    // spenderInCondition used to combine multiple equals queries into a single "in" condition;
-    let spenderInCondition;
-    if (spenderIdInFilters.length === 1) {
-      // A single equals condition is treated like any other spenderIdFilter
-      spenderIdFilters.push(...spenderIdInFilters);
-    } else if (!_.isEmpty(spenderIdInFilters)) {
-      spenderInCondition = spenderIdInFilters.map((f) => f.value).join(',');
-    }
+    // spenderInCondition used to combine equals queries into a single "in" condition;
+    const spenderInCondition = !_.isEmpty(spenderIdInFilters) ? spenderIdInFilters.map((f) => f.value).join(',') : null;
 
     filters.push(...spenderIdFilters);
 
@@ -155,7 +150,7 @@ class NftService extends BaseService {
    */
   async getNfts(query) {
     const {sqlQuery, params} = this.getQuery(query);
-    const rows = await super.getRows(sqlQuery, params, 'newGetNftOwnership');
+    const rows = await super.getRows(sqlQuery, params, 'getNfts');
     return rows.map((ta) => new Nft(ta));
   }
 }
