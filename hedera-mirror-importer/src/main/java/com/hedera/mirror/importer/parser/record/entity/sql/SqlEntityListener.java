@@ -69,6 +69,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -117,6 +118,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TopicMessage> topicMessages;
     private final Collection<Transaction> transactions;
     private final Collection<TransactionSignature> transactionSignatures;
+    private final Collection<UtilRandomGenerate> utilRandomGenerates;
 
     // maps of upgradable domains
     private final Map<Long, Contract> contractState;
@@ -171,6 +173,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         topicMessages = new ArrayList<>();
         transactions = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
+        utilRandomGenerates = new ArrayList<>();
 
         contractState = new HashMap<>();
         cryptoAllowanceState = new HashMap<>();
@@ -242,6 +245,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             tokenTransfers.clear();
             transactions.clear();
             transactionSignatures.clear();
+            utilRandomGenerates.clear();
             eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
         } catch (BeanCreationNotAllowedException e) {
             // This error can occur during shutdown
@@ -269,6 +273,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(topicMessages);
             batchPersister.persist(transactions);
             batchPersister.persist(transactionSignatures);
+            batchPersister.persist(utilRandomGenerates);
 
             // insert operations with conflict management
             batchPersister.persist(contracts);
@@ -539,6 +544,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         return dest;
+    }
+
+    @Override
+    public void onUtilRandomGenerate(UtilRandomGenerate utilRandomGenerate) {
+        utilRandomGenerates.add(utilRandomGenerate);
     }
 
     private Contract mergeContract(Contract previous, Contract current) {

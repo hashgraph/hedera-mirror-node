@@ -105,6 +105,7 @@ import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
 import com.hedera.mirror.common.util.DomainUtils;
 
 @Component
@@ -746,6 +747,13 @@ public class DomainBuilder {
                 .publicKeyPrefix(bytes(16))
                 .signature(bytes(32))
                 .type(SignaturePair.SignatureCase.ED25519.getNumber());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<UtilRandomGenerate, UtilRandomGenerate.UtilRandomGenerateBuilder> utilRandomGenerate() {
+        var builder = UtilRandomGenerate.builder()
+                .consensusTimestamp(timestamp())
+                .pseudorandomBytes(bytes(384));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

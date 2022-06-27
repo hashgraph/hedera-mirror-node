@@ -56,6 +56,7 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
@@ -404,6 +405,12 @@ public class RecordItemBuilder {
                 .setTreasury(accountId())
                 .setWipeKey(key());
         return new Builder<>(TransactionType.TOKENUPDATE, transactionBody);
+    }
+
+    public Builder<RandomGenerateTransactionBody.Builder> utilRandomGenerate() {
+        var builder = RandomGenerateTransactionBody.newBuilder()
+                .setRange(8);
+        return new Builder<>(TransactionType.UTILRANDOMGENERATE, builder);
     }
 
     // Helper methods

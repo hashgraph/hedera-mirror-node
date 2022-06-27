@@ -29,6 +29,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -101,6 +102,7 @@ import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
+import com.hedera.mirror.importer.repository.UtilRandomGenerateRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class SqlEntityListenerTest extends IntegrationTest {
@@ -137,6 +139,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final TransactionRepository transactionRepository;
     private final TransactionSignatureRepository transactionSignatureRepository;
     private final TransactionTemplate transactionTemplate;
+    private final UtilRandomGenerateRepository utilRandomGenerateRepository;
 
     private static Key keyFromString(String key) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
@@ -1630,6 +1633,26 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         schedule.setExecutedTimestamp(5L);
         assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrder(schedule);
+    }
+
+    @Test
+    void onUtilRandomGenerate() {
+        // given
+        var randomGenerateBytes = domainBuilder.utilRandomGenerate().get();
+        randomGenerateBytes.setPseudorandomBytes(domainBuilder.bytes(384));
+
+        var randomGenerateNumber = domainBuilder.utilRandomGenerate().get();
+        int range = 8;
+        randomGenerateNumber.setRange(range);
+        randomGenerateNumber.setPseudorandomNumber(new SecureRandom().nextInt(range));
+
+        // when
+        sqlEntityListener.onUtilRandomGenerate(randomGenerateBytes);
+        sqlEntityListener.onUtilRandomGenerate(randomGenerateNumber);
+        completeFileAndCommit();
+
+        // then
+        assertThat(utilRandomGenerateRepository.findAll()).containsExactlyInAnyOrder(randomGenerateBytes, randomGenerateNumber);
     }
 
     @Test
