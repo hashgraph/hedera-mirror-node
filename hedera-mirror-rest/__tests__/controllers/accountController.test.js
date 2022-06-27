@@ -62,7 +62,13 @@ const tokenIdLteFilter = {key: TOKEN_ID, operator: lte, value: 151};
 
 describe('extractNftMultiUnionQuery', () => {
   const defaultExpected = {
-    bounds: {[TOKEN_ID]: new Bound(), [SERIAL_NUMBER]: new Bound()},
+    bounds: {[TOKEN_ID]: new Bound(TOKEN_ID), [SERIAL_NUMBER]: new Bound(SERIAL_NUMBER)},
+    boundKeys: {
+      primary: TOKEN_ID,
+      primaryDbColumn: 'token_id',
+      secondary: SERIAL_NUMBER,
+      secondaryDbColumn: 'serial_number',
+    },
     lower: [],
     inner: [],
     upper: [],
@@ -95,8 +101,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter}),
-          [SERIAL_NUMBER]: new Bound(),
+          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter, filterKey: TOKEN_ID}),
+          [SERIAL_NUMBER]: new Bound(SERIAL_NUMBER),
         },
         lower: [tokenIdEqFilter],
       },
@@ -107,8 +113,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter}),
-          [SERIAL_NUMBER]: new Bound(),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter, filterKey: TOKEN_ID}),
+          [SERIAL_NUMBER]: new Bound(SERIAL_NUMBER),
         },
         lower: [tokenIdGtFilter],
       },
@@ -119,8 +125,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [TOKEN_ID]: Bound.create({upper: tokenIdLtFilter}),
-          [SERIAL_NUMBER]: new Bound(),
+          [TOKEN_ID]: Bound.create({upper: tokenIdLtFilter, filterKey: TOKEN_ID}),
+          [SERIAL_NUMBER]: new Bound(SERIAL_NUMBER),
         },
         lower: [tokenIdLtFilter],
       },
@@ -131,8 +137,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter}),
-          [SERIAL_NUMBER]: new Bound(),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter, filterKey: TOKEN_ID}),
+          [SERIAL_NUMBER]: new Bound(SERIAL_NUMBER),
         },
         lower: [tokenIdGteFilter],
       },
@@ -143,8 +149,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [TOKEN_ID]: Bound.create({upper: tokenIdLteFilter}),
-          [SERIAL_NUMBER]: new Bound(),
+          [TOKEN_ID]: Bound.create({upper: tokenIdLteFilter, filterKey: TOKEN_ID}),
+          [SERIAL_NUMBER]: new Bound(SERIAL_NUMBER),
         },
         lower: [tokenIdLteFilter],
       },
@@ -155,8 +161,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter, upper: tokenIdLtFilter}),
-          [SERIAL_NUMBER]: new Bound(),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter, upper: tokenIdLtFilter, filterKey: TOKEN_ID}),
+          [SERIAL_NUMBER]: new Bound(SERIAL_NUMBER),
         },
         lower: [tokenIdGtFilter, tokenIdLtFilter],
       },
@@ -167,8 +173,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter}),
-          [SERIAL_NUMBER]: Bound.create({equal: serialEqFilter}),
+          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter, filterKey: TOKEN_ID}),
+          [SERIAL_NUMBER]: Bound.create({equal: serialEqFilter, filterKey: SERIAL_NUMBER}),
         },
         lower: [tokenIdEqFilter, serialEqFilter],
       },
@@ -179,8 +185,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SERIAL_NUMBER]: Bound.create({equal: serialEqFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter}),
+          [SERIAL_NUMBER]: Bound.create({equal: serialEqFilter, filterKey: SERIAL_NUMBER}),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter, filterKey: TOKEN_ID}),
         },
         lower: [tokenIdGtFilter, serialEqFilter],
       },
@@ -191,22 +197,10 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SERIAL_NUMBER]: Bound.create({equal: serialEqFilter}),
-          [TOKEN_ID]: Bound.create({upper: tokenIdLtFilter}),
+          [SERIAL_NUMBER]: Bound.create({equal: serialEqFilter, filterKey: SERIAL_NUMBER}),
+          [TOKEN_ID]: Bound.create({upper: tokenIdLtFilter, filterKey: TOKEN_ID}),
         },
         lower: [tokenIdLtFilter, serialEqFilter],
-      },
-    },
-    {
-      name: 'token gt and lt, serial eq',
-      filters: [serialEqFilter, tokenIdGtFilter, tokenIdLtFilter],
-      expected: {
-        ...defaultExpected,
-        bounds: {
-          [SERIAL_NUMBER]: Bound.create({equal: serialEqFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter, upper: tokenIdLtFilter}),
-        },
-        lower: [tokenIdGtFilter, tokenIdLtFilter, serialEqFilter],
       },
     },
     {
@@ -215,8 +209,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SERIAL_NUMBER]: Bound.create({equal: serialEqFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter, upper: tokenIdLteFilter}),
+          [SERIAL_NUMBER]: Bound.create({equal: serialEqFilter, filterKey: SERIAL_NUMBER}),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter, upper: tokenIdLteFilter, filterKey: TOKEN_ID}),
         },
         lower: [tokenIdGteFilter, tokenIdLteFilter, serialEqFilter],
       },
@@ -227,24 +221,11 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SERIAL_NUMBER]: Bound.create({lower: serialGteFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter}),
+          [SERIAL_NUMBER]: Bound.create({lower: serialGteFilter, filterKey: SERIAL_NUMBER}),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter, filterKey: TOKEN_ID}),
         },
         lower: [{...tokenIdGteFilter, operator: eq}, serialGteFilter],
         inner: [{...tokenIdGtFilter, value: tokenIdGtFilter.value + 1}],
-      },
-    },
-    {
-      name: 'token gt and serial gte',
-      filters: [serialGteFilter, tokenIdGtFilter],
-      expected: {
-        ...defaultExpected,
-        bounds: {
-          [SERIAL_NUMBER]: Bound.create({lower: serialGteFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter}),
-        },
-        lower: [{...tokenIdGtFilter, operator: eq}, serialGteFilter],
-        inner: [tokenIdGtFilter],
       },
     },
     {
@@ -253,38 +234,11 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SERIAL_NUMBER]: Bound.create({upper: serialLteFilter}),
-          [TOKEN_ID]: Bound.create({upper: tokenIdLteFilter}),
+          [SERIAL_NUMBER]: Bound.create({upper: serialLteFilter, filterKey: SERIAL_NUMBER}),
+          [TOKEN_ID]: Bound.create({upper: tokenIdLteFilter, filterKey: TOKEN_ID}),
         },
         inner: [{...tokenIdLteFilter, operator: lt}],
         upper: [{...tokenIdLteFilter, operator: eq}, serialLteFilter],
-      },
-    },
-    {
-      name: 'token lt and serial lte',
-      filters: [serialLteFilter, tokenIdLtFilter],
-      expected: {
-        ...defaultExpected,
-        bounds: {
-          [SERIAL_NUMBER]: Bound.create({upper: serialLteFilter}),
-          [TOKEN_ID]: Bound.create({upper: tokenIdLtFilter}),
-        },
-        inner: [tokenIdLtFilter],
-        upper: [{...tokenIdLtFilter, operator: eq}, serialLteFilter],
-      },
-    },
-    {
-      name: 'token gt and lt, serial gte and lte',
-      filters: [serialGteFilter, serialLteFilter, tokenIdGtFilter, tokenIdLtFilter],
-      expected: {
-        ...defaultExpected,
-        bounds: {
-          [SERIAL_NUMBER]: Bound.create({lower: serialGteFilter, upper: serialLteFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGtFilter, upper: tokenIdLtFilter}),
-        },
-        lower: [{...tokenIdGtFilter, operator: eq}, serialGteFilter],
-        inner: [{...tokenIdGtFilter}, {...tokenIdLtFilter}],
-        upper: [{...tokenIdLtFilter, operator: eq}, serialLteFilter],
       },
     },
     {
@@ -293,8 +247,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SERIAL_NUMBER]: Bound.create({lower: serialGteFilter, upper: serialLteFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter, upper: tokenIdLteFilter}),
+          [SERIAL_NUMBER]: Bound.create({lower: serialGteFilter, upper: serialLteFilter, filterKey: SERIAL_NUMBER}),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter, upper: tokenIdLteFilter, filterKey: TOKEN_ID}),
         },
         lower: [{...tokenIdGteFilter, operator: eq}, serialGteFilter],
         inner: [
@@ -310,10 +264,10 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter}),
-          [SERIAL_NUMBER]: Bound.create({upper: serialLtFilter}),
+          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter, filterKey: TOKEN_ID}),
+          [SERIAL_NUMBER]: Bound.create({upper: serialLtFilter, filterKey: SERIAL_NUMBER}),
         },
-        upper: [tokenIdEqFilter, serialLtFilter],
+        lower: [tokenIdEqFilter, serialLtFilter],
       },
     },
     {
@@ -322,8 +276,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter}),
-          [SERIAL_NUMBER]: Bound.create({lower: serialGtFilter}),
+          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter, filterKey: TOKEN_ID}),
+          [SERIAL_NUMBER]: Bound.create({lower: serialGtFilter, filterKey: SERIAL_NUMBER}),
         },
         lower: [tokenIdEqFilter, serialGtFilter],
       },
@@ -334,8 +288,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [TOKEN_ID]: new Bound(),
-          [SERIAL_NUMBER]: new Bound(),
+          [TOKEN_ID]: new Bound(TOKEN_ID),
+          [SERIAL_NUMBER]: new Bound(SERIAL_NUMBER),
         },
         spenderIdFilters: [spenderLtFilter, spenderGteFilter],
         spenderIdInFilters: [spenderEqFilter, spenderEqInFilter, spenderEqInFilter2],
@@ -354,8 +308,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter}),
-          [SERIAL_NUMBER]: new Bound(),
+          [TOKEN_ID]: Bound.create({equal: tokenIdEqFilter, filterKey: TOKEN_ID}),
+          [SERIAL_NUMBER]: new Bound(SERIAL_NUMBER),
         },
         lower: [tokenIdEqFilter],
         spenderIdFilters: [spenderLtFilter, spenderGteFilter],
@@ -377,8 +331,8 @@ describe('extractNftMultiUnionQuery', () => {
       expected: {
         ...defaultExpected,
         bounds: {
-          [SERIAL_NUMBER]: Bound.create({lower: serialGteFilter, upper: serialLteFilter}),
-          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter, upper: tokenIdLteFilter}),
+          [SERIAL_NUMBER]: Bound.create({lower: serialGteFilter, upper: serialLteFilter, filterKey: SERIAL_NUMBER}),
+          [TOKEN_ID]: Bound.create({lower: tokenIdGteFilter, upper: tokenIdLteFilter, filterKey: TOKEN_ID}),
         },
         lower: [{...tokenIdGteFilter, operator: eq}, serialGteFilter],
         inner: [
@@ -440,6 +394,14 @@ describe('extractTokenMultiUnionQuery throw', () => {
     {
       name: 'token.id multiple upper bounds',
       filters: [tokenIdLtFilter, tokenIdLteFilter],
+    },
+    {
+      name: 'token gt and serial gte',
+      filters: [serialGteFilter, tokenIdGtFilter],
+    },
+    {
+      name: 'token lt and serial lte',
+      filters: [serialLteFilter, tokenIdLtFilter],
     },
     {
       name: 'spender le lte',

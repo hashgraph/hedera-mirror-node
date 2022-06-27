@@ -10,13 +10,17 @@ exports[`extractTokenMultiUnionQuery throw serial number multiple upper bounds 1
 
 exports[`extractTokenMultiUnionQuery throw serial number ne 1`] = `"Multiple range params not allowed for serialnumber"`;
 
-exports[`extractTokenMultiUnionQuery throw serial number range and equal 1`] = `"Cannot search NFTs with serialnumber without a tokenId parameter filter"`;
+exports[`extractTokenMultiUnionQuery throw serial number range and equal 1`] = `"Can't support both range and equal"`;
 
 exports[`extractTokenMultiUnionQuery throw spender ge gte 1`] = `"Multiple range params not allowed for spender.id"`;
 
 exports[`extractTokenMultiUnionQuery throw spender le lte 1`] = `"Multiple range params not allowed for spender.id"`;
 
 exports[`extractTokenMultiUnionQuery throw spender ne 1`] = `"Not equals (ne) comparison operator is not supported"`;
+
+exports[`extractTokenMultiUnionQuery throw token gt and serial gte 1`] = `"token.id must have gte or eq operator"`;
+
+exports[`extractTokenMultiUnionQuery throw token lt and serial lte 1`] = `"token.id must have lte or eq operator"`;
 
 exports[`extractTokenMultiUnionQuery throw token.id multiple equal 1`] = `"Multiple range params not allowed for token.id"`;
 
