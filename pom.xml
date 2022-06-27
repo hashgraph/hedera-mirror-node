@@ -56,6 +56,8 @@
 
     <properties>
         <besu.version>22.4.3</besu.version>
+        <tuweni.version>2.2.0</tuweni.version>
+        <swirlds.version>0.26.2</swirlds.version>
         <dependency-check.version>7.1.1</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.40.1</docker-maven-plugin.version>

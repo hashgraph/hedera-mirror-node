@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.transaction;
+package com.hedera.services.transaction;
 
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -181,7 +181,7 @@ public class TransactionProcessingResult {
      *
      * @return the {@link ContractFunctionResult} model to externalise
      */
-    public ContractFunctionResult toGrpc() {
-        return EvmFnResult.fromCall(this).toGrpc();
-    }
+//    public ContractFunctionResult toGrpc() {
+//        return EvmFnResult.fromCall(this).toGrpc();
+//    }
 }
