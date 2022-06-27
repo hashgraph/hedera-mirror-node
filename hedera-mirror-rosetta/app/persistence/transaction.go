@@ -432,12 +432,12 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 		transactionResult := types.TransactionResults[int32(transaction.Result)]
 		transactionType := types.TransactionTypes[int32(transaction.Type)]
 
-		nonFeeTransferMap := aggregateNonFeeTransfers(nonFeeTransfers)
-		feeCryptoTransfers := getFeeCryptoTransfers(cryptoTransfers, nonFeeTransferMap)
+		var feeHbarTransfers []hbarTransfer
+		feeHbarTransfers, nonFeeTransfers = categorizeHbarTransfers(cryptoTransfers, nonFeeTransfers)
 
 		operations = tr.appendHbarTransferOperations(transactionResult, transactionType, nonFeeTransfers, operations)
 		// crypto transfers are always successful regardless of the transaction result
-		operations = tr.appendHbarTransferOperations(success, types.OperationTypeFee, feeCryptoTransfers, operations)
+		operations = tr.appendHbarTransferOperations(success, types.OperationTypeFee, feeHbarTransfers, operations)
 		operations = tr.appendTokenTransferOperations(transactionResult, transactionType, tokenTransfers, operations)
 		operations = tr.appendNftTransferOperations(transactionResult, transactionType, nftTransfers, operations)
 
@@ -522,6 +522,26 @@ func (tr *transactionRepository) appendTransferOperations(
 	return operations
 }
 
+func categorizeHbarTransfers(hbarTransfers, nonFeeTransfers []hbarTransfer) (
+	feeHbarTransfers, adjustedNonFeeTransfers []hbarTransfer,
+) {
+	nonFeeTransferMap := aggregateNonFeeTransfers(nonFeeTransfers)
+	entityIds := make(map[int64]struct{})
+	for _, transfer := range hbarTransfers {
+		entityIds[transfer.AccountId.EncodedId] = struct{}{}
+	}
+
+	adjustedNonFeeTransfers = make([]hbarTransfer, 0, len(nonFeeTransfers))
+	for _, nonFeeTransfer := range nonFeeTransfers {
+		entityId := nonFeeTransfer.AccountId.EncodedId
+		if _, ok := entityIds[entityId]; ok {
+			adjustedNonFeeTransfers = append(adjustedNonFeeTransfers, nonFeeTransfer)
+		}
+	}
+
+	return getFeeHbarTransfers(hbarTransfers, nonFeeTransferMap), adjustedNonFeeTransfers
+}
+
 func (tr *transactionRepository) processSuccessTokenDissociates(
 	ctx context.Context,
 	transactions []*transaction,
@@ -584,10 +604,7 @@ func aggregateNonFeeTransfers(nonFeeTransfers []hbarTransfer) map[int64]int64 {
 	return nonFeeTransferMap
 }
 
-func getFeeCryptoTransfers(
-	cryptoTransfers []hbarTransfer,
-	nonFeeTransferMap map[int64]int64,
-) []hbarTransfer {
+func getFeeHbarTransfers(cryptoTransfers []hbarTransfer, nonFeeTransferMap map[int64]int64) []hbarTransfer {
 	cryptoTransferMap := make(map[int64]hbarTransfer)
 	accountIds := make([]int64, 0)
 	for _, transfer := range cryptoTransfers {

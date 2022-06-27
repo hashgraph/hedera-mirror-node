@@ -44,6 +44,7 @@ const (
 var (
 	firstEntityId               = domain.MustDecodeEntityId(12345)
 	secondEntityId              = domain.MustDecodeEntityId(54321)
+	thirdEntityId               = domain.MustDecodeEntityId(54350)
 	newEntityId                 = domain.MustDecodeEntityId(55000)
 	feeCollectorEntityId        = domain.MustDecodeEntityId(98)
 	firstAccountId              = types.NewAccountIdFromEntityId(firstEntityId)
@@ -57,6 +58,69 @@ var (
 	tokenDecimals         int64 = 10
 	tokenInitialSupply    int64 = 50000
 )
+
+func TestCategorizeHbarTransfers(t *testing.T) {
+	tests := []struct {
+		name                     string
+		hbarTransfers            []hbarTransfer
+		nonFeeTransfers          []hbarTransfer
+		expectedFeeHbarTransfers []hbarTransfer
+		expectedNonFeeTransfers  []hbarTransfer
+	}{
+		{
+			name: "simple transfer lists",
+			hbarTransfers: []hbarTransfer{
+				{firstEntityId, -165},
+				{secondEntityId, 100},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			nonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100},
+				{secondEntityId, 100},
+			},
+			expectedFeeHbarTransfers: []hbarTransfer{
+				{firstEntityId, -65},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			expectedNonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100},
+				{secondEntityId, 100},
+			},
+		},
+		{
+			name: "non fee transfer not in transaction record",
+			hbarTransfers: []hbarTransfer{
+				{firstEntityId, -100499210447},
+				{secondEntityId, 99999999958},
+				{nodeEntityId, 2558345},
+				{feeCollectorEntityId, 496652144},
+			},
+			nonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100000000000},
+				{thirdEntityId, 100000000000},
+			},
+			expectedFeeHbarTransfers: []hbarTransfer{
+				{firstEntityId, -499210447},
+				{secondEntityId, 99999999958},
+				{nodeEntityId, 2558345},
+				{feeCollectorEntityId, 496652144},
+			},
+			expectedNonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100000000000},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualFeeHbarTransfers, actualAdjustedNonFeeTransfers := categorizeHbarTransfers(tt.hbarTransfers, tt.nonFeeTransfers)
+			assert.Equal(t, tt.expectedFeeHbarTransfers, actualFeeHbarTransfers)
+			assert.Equal(t, tt.expectedNonFeeTransfers, actualAdjustedNonFeeTransfers)
+		})
+	}
+}
 
 func TestTransactionGetHashString(t *testing.T) {
 	tx := transaction{Hash: []byte{1, 2, 3, 0xaa, 0xff}}
