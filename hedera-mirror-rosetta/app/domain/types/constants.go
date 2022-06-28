@@ -37,6 +37,8 @@ const (
 	OperationTypeTokenUnfreeze       = "TOKENUNFREEZE"
 	OperationTypeTokenUpdate         = "TOKENUPDATE"
 	OperationTypeTokenWipe           = "TOKENWIPE"
+
+	OperationTypeFee = "FEE"
 )
 
 const (
