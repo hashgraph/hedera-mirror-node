@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.Mock;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
@@ -37,9 +38,12 @@ import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV1;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV2;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV5;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
+    @Mock
+    protected RecordFileRepository recordFileRepository;
     private Map<String, RecordFile> recordFileMap;
 
     @Override
@@ -63,7 +67,8 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
                 new RecordFileReaderImplV2(), new RecordFileReaderImplV5(), new ProtoRecordFileReader());
         return new RecordFileDownloader(s3AsyncClient, addressBookService,
                 (RecordDownloaderProperties) downloaderProperties, meterRegistry,
-                nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier, dateRangeProcessor);
+                nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier, dateRangeProcessor,
+                recordFileRepository);
     }
 
     @Override

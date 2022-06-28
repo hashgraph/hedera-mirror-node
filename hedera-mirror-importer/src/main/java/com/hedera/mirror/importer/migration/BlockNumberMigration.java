@@ -86,13 +86,13 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
         recordFileRepository.findById(correctConsensusEnd)
                 .map(RecordFile::getIndex)
                 .filter(blockNumber -> blockNumber != correctBlockNumber)
-                .ifPresent(blockNumber -> updateRecordFilesBlockNumber(correctBlockNumber, blockNumber));
+                .ifPresent(blockNumber -> updateIndex(correctBlockNumber, blockNumber));
     }
 
-    private void updateRecordFilesBlockNumber(long correctBlockNumber, long incorrectBlockNumber) {
+    private void updateIndex(long correctBlockNumber, long incorrectBlockNumber) {
         long offset = correctBlockNumber - incorrectBlockNumber;
         Stopwatch stopwatch = Stopwatch.createStarted();
-        long count = jdbcTemplate.update("update record_file set index = index + ?", offset);
+        int count = recordFileRepository.updateIndex(offset);
         log.info("Updated {} blocks with offset {} in {}", count, offset, stopwatch);
     }
 }

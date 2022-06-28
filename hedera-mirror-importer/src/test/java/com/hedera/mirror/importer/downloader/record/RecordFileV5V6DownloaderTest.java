@@ -20,15 +20,22 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.TestRecordFiles;
+import com.hedera.mirror.importer.domain.StreamFilename;
 
 class RecordFileV5V6DownloaderTest extends AbstractRecordFileDownloaderTest {
 
@@ -59,5 +66,29 @@ class RecordFileV5V6DownloaderTest extends AbstractRecordFileDownloaderTest {
     @Override
     protected Map<String, Long> getExpectedFileIndexMap() {
         return Map.of(recordFileV6.getName(), recordFileV6.getIndex());
+    }
+
+    @Test
+    @DisplayName("Block number migration")
+    void blockNumberMigration() {
+        long offset = recordFileV6.getIndex() - recordFileV5.getIndex();
+        fileCopier.copy();
+        expectLastStreamFile(new StreamFilename(recordFileV5.getName()).getInstant());
+        downloader.download();
+
+        verifyStreamFiles(List.of(recordFileV6.getName()));
+        verify(recordFileRepository).updateIndex(offset);
+    }
+
+    @Test
+    @DisplayName("Block number migration unnecessary")
+    void blockNumberMigrationUnnecessary() {
+        var instant = new StreamFilename(recordFileV5.getName()).getInstant();
+        fileCopier.copy();
+        expectLastStreamFile(recordFileV5.getHash(), recordFileV6.getIndex() - 1, instant);
+        downloader.download();
+
+        verifyStreamFiles(List.of(recordFileV6.getName()));
+        verifyNoInteractions(recordFileRepository);
     }
 }
