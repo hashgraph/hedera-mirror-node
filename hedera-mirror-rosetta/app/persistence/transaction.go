@@ -533,6 +533,7 @@ func categorizeHbarTransfers(hbarTransfers, nonFeeTransfers []hbarTransfer) (
 	adjustedNonFeeTransfers = make([]hbarTransfer, 0, len(nonFeeTransfers))
 	for _, nonFeeTransfer := range nonFeeTransfers {
 		entityId := nonFeeTransfer.AccountId.EncodedId
+		// skip non fee transfer whose entity id is not in the transaction record's transfer list
 		if _, ok := entityIds[entityId]; ok {
 			adjustedNonFeeTransfers = append(adjustedNonFeeTransfers, nonFeeTransfer)
 		}
