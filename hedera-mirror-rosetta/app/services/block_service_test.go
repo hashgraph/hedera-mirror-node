@@ -236,25 +236,6 @@ func (suite *blockServiceSuite) TestBlockThrowsWhenAccountRepoFail() {
 	suite.mockAccountRepo.AssertNumberOfCalls(suite.T(), "GetAccountAlias", 1)
 }
 
-func (suite *blockServiceSuite) TestBlockThrowsWhenIncorrectAccountAlias() {
-	// given:
-	exampleTransactions := []*types.Transaction{
-		makeTransaction(nil, "123"),
-		makeTransaction(&entityId, "246"),
-	}
-	suite.mockAccountRepo.On("GetAccountAlias").Return(types.AccountId{}, errors.ErrInternalServerError)
-	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
-	suite.mockTransactionRepo.On("FindBetween").Return(exampleTransactions, mocks.NilError)
-
-	// when:
-	actual, e := suite.blockService.Block(nil, blockRequest())
-
-	// then:
-	assert.Nil(suite.T(), actual)
-	assert.NotNil(suite.T(), e)
-	suite.mockAccountRepo.AssertNumberOfCalls(suite.T(), "GetAccountAlias", 1)
-}
-
 func (suite *blockServiceSuite) TestBlockThrowsWhenFindByIdentifierFails() {
 	// given:
 	suite.mockBlockRepo.On("FindByIdentifier").Return(
