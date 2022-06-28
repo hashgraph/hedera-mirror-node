@@ -407,9 +407,8 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.TOKENUPDATE, transactionBody);
     }
 
-    public Builder<RandomGenerateTransactionBody.Builder> utilRandomGenerate() {
-        var builder = RandomGenerateTransactionBody.newBuilder()
-                .setRange(8);
+    public Builder<RandomGenerateTransactionBody.Builder> utilRandomGenerate(int range) {
+        var builder = RandomGenerateTransactionBody.newBuilder().setRange(range);
         return new Builder<>(TransactionType.UTILRANDOMGENERATE, builder);
     }
 

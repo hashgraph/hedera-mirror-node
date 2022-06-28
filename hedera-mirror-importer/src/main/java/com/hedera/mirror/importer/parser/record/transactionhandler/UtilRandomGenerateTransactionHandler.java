@@ -6,6 +6,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 import lombok.RequiredArgsConstructor;
@@ -32,13 +33,14 @@ class UtilRandomGenerateTransactionHandler implements TransactionHandler {
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
-        var transactionBody = recordItem.getTransactionBody().getRandomGenerate();
+        var range = recordItem.getTransactionBody().getRandomGenerate().getRange();
+        var transactionRecord = recordItem.getRecord();
+
         var utilRandomGenerate = new UtilRandomGenerate();
         utilRandomGenerate.setConsensusTimestamp(consensusTimestamp);
-        utilRandomGenerate.setRange(transactionBody.getRange());
-
-        // Todo, add random number or bytes once they are provided by the transactionBody
-        utilRandomGenerate.setPseudorandomNumber(8);
+        utilRandomGenerate.setRange(range);
+        utilRandomGenerate.setPseudorandomNumber(transactionRecord.getPseudorandomNumber());
+        utilRandomGenerate.setPseudorandomBytes(DomainUtils.toBytes(transactionRecord.getPseudorandomBytes()));
 
         entityListener.onUtilRandomGenerate(utilRandomGenerate);
     }
