@@ -29,8 +29,10 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.importer.IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -73,6 +75,7 @@ class EntityMetadataRegistryTest extends IntegrationTest {
                 .returns(true, ColumnMetadata::isNullable)
                 .returns(null, ColumnMetadata::getDefaultValue)
                 .returns(true, ColumnMetadata::isUpdatable)
+                .returns(null, ColumnMetadata::getUpsertColumn)
                 .satisfies(cm -> assertThat(cm.getGetter().apply(contract)).isEqualTo(contract.getAutoRenewAccountId()))
                 .satisfies(cm -> assertThatCode(() -> cm.getSetter().accept(contract, newValue))
                         .satisfies(d -> assertThat(contract.getAutoRenewAccountId()).isEqualTo(newValue)));
@@ -86,6 +89,23 @@ class EntityMetadataRegistryTest extends IntegrationTest {
     @Test
     void notEntity() {
         assertThatThrownBy(() -> registry.lookup(NonEntity.class)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void upsertColumn() {
+        var metadata = registry.lookup(Token.class);
+        assertThat(metadata)
+                .isNotNull()
+                .returns("token_id", e -> e.columns(ColumnMetadata::isId, "{0}"))
+                .extracting(e -> e.getColumns()
+                        .stream()
+                        .filter(c -> c.getName().equals("total_supply"))
+                        .findFirst()
+                        .get())
+                .extracting(ColumnMetadata::getUpsertColumn)
+                .isNotNull()
+                .extracting(UpsertColumn::coalesce)
+                .isNotNull();
     }
 
     @Upsertable

@@ -35,7 +35,6 @@ import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
 
     private static final String UPSERT_TEMPLATE = "/db/template/upsert.vm";
-
     private static final String UPSERT_HISTORY_TEMPLATE = "/db/template/upsert_history.vm";
 
     private final EntityMetadata metadata;
@@ -86,18 +85,13 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
         velocityContext.put("existingColumnsAs", metadata.columns("e.{0} as e_{0}"));
         velocityContext.put("idJoin", metadata.columns(ColumnMetadata::isId, "e.{0} = t.{0}", " and "));
         velocityContext.put("insertColumns", metadata.columns("{0}"));
-        velocityContext.put("notNullableColumn", metadata.column(c -> !c.isNullable() && !c.isId(),
+        velocityContext.put("notUpdatableColumn", metadata.column(c -> !c.isUpdatable(),
                 "coalesce({0}, e_{0}) is not null"));
         velocityContext.put("updateColumns", metadata.columns(ColumnMetadata::isUpdatable, "{0} = excluded.{0}"));
 
         StringWriter writer = new StringWriter();
         template.merge(velocityContext, writer);
         return writer.toString();
-    }
-
-    @Override
-    public String getTemporaryTableName() {
-        return getFinalTableName() + "_temp";
     }
 
     @Override

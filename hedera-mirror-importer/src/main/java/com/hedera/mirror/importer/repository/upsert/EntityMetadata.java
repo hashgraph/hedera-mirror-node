@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import java.text.MessageFormat;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -42,7 +41,7 @@ class EntityMetadata {
         return columns.stream()
                 .filter(filter)
                 .findFirst()
-                .map(c -> MessageFormat.format(pattern, c.getName(), c.getDefaultValue()))
+                .map(c -> c.format(pattern))
                 .orElse("");
     }
 
@@ -57,7 +56,7 @@ class EntityMetadata {
     public String columns(Predicate<ColumnMetadata> filter, String pattern, String separator) {
         return columns.stream()
                 .filter(filter)
-                .map(c -> MessageFormat.format(pattern, c.getName(), c.getDefaultValue()))
+                .map(c -> c.format(pattern))
                 .collect(Collectors.joining(separator));
     }
 }

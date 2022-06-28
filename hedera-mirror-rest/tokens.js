@@ -705,12 +705,6 @@ const getNftTokensRequest = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
   const filters = utils.buildAndValidateFilters(req.query, validateTokenQueryFilter);
 
-  // verify token exists
-  const token = await TokenService.getToken(tokenId);
-  if (token === null) {
-    throw new NotFoundError(`No such token id - ${req.params.tokenId}`);
-  }
-
   const {query, params, limit, order} = extractSqlFromNftTokensRequest(tokenId, nftSelectQuery, filters);
   if (logger.isTraceEnabled()) {
     logger.trace(`getNftTokens query: ${query} ${utils.JSONStringify(params)}`);
@@ -753,12 +747,6 @@ const getNftTokensRequest = async (req, res) => {
 const getNftTokenInfoRequest = async (req, res) => {
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
   const serialNumber = getAndValidateSerialNumberRequestPathParam(req);
-
-  // verify token exists
-  const token = await TokenService.getToken(tokenId);
-  if (token === null) {
-    throw new NotFoundError(`No such token id - ${req.params.tokenId}`);
-  }
 
   const {query, params} = extractSqlFromNftTokenInfoRequest(tokenId, serialNumber, nftSelectQuery);
   if (logger.isTraceEnabled()) {
