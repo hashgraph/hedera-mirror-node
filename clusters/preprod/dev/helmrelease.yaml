@@ -9,12 +9,12 @@ spec:
       chart: charts/hedera-mirror
       reconcileStrategy: Revision
       sourceRef:
-        kind: GitRepository
+        kind: HelmRepository
         name: hedera-mirror-node
       valuesFiles:
         - charts/hedera-mirror/values.yaml
         - charts/hedera-mirror/values-prod.yaml
-      version: '0.57.2'
+      version: '0.46.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -40,7 +40,7 @@ spec:
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "OTHER"
-        HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "1"
+        HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "0.5"
       prometheusRules:
         MonitorPublishErrors:
           enabled: false
@@ -48,6 +48,5 @@ spec:
           enabled: false
         MonitorSubscribeLatency:
           enabled: false
-    rest:
-      test:
-        checkRecent: false
+    postgresql:
+      enabled: false
