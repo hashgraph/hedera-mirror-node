@@ -1637,22 +1637,14 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @Test
     void onUtilRandomGenerate() {
-        // given
-        var randomGenerateBytes = domainBuilder.utilRandomGenerate().get();
-        randomGenerateBytes.setPseudorandomBytes(domainBuilder.bytes(384));
-
-        var randomGenerateNumber = domainBuilder.utilRandomGenerate().get();
-        int range = 8;
-        randomGenerateNumber.setRange(range);
-        randomGenerateNumber.setPseudorandomNumber(new SecureRandom().nextInt(range));
+        var utilRandomGenerate = domainBuilder.utilRandomGenerate().get();
+        sqlEntityListener.onUtilRandomGenerate(utilRandomGenerate);
 
         // when
-        sqlEntityListener.onUtilRandomGenerate(randomGenerateBytes);
-        sqlEntityListener.onUtilRandomGenerate(randomGenerateNumber);
         completeFileAndCommit();
 
         // then
-        assertThat(utilRandomGenerateRepository.findAll()).containsExactlyInAnyOrder(randomGenerateBytes, randomGenerateNumber);
+        assertThat(utilRandomGenerateRepository.findAll()).contains(utilRandomGenerate);
     }
 
     @Test

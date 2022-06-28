@@ -47,15 +47,9 @@ class UtilRandomGenerateRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void save() {
-        var randomGenerateBytes = domainBuilder.utilRandomGenerate().get();
-        randomGenerateBytes.setPseudorandomBytes(domainBuilder.bytes(384));
+        var utilRandomGenerate = domainBuilder.utilRandomGenerate().get();
 
-        int range = 8;
-        var randomGenerateNumber = domainBuilder.utilRandomGenerate().get();
-        randomGenerateNumber.setRange(range);
-        randomGenerateNumber.setPseudorandomNumber(new SecureRandom().nextInt(range));
-
-        utilRandomGenerateRepository.saveAll(List.of(randomGenerateBytes, randomGenerateNumber));
-        assertThat(utilRandomGenerateRepository.findAll()).containsExactlyInAnyOrder(randomGenerateBytes, randomGenerateNumber);
+        utilRandomGenerateRepository.save(utilRandomGenerate);
+        assertThat(utilRandomGenerateRepository.findAll()).contains(utilRandomGenerate);
     }
 }
