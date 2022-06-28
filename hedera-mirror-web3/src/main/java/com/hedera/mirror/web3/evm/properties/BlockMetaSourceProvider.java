@@ -22,7 +22,7 @@ public class BlockMetaSourceProvider {
     public Hash getBlockHash(long blockNo) {
         final var recordFile = recordFileRepository.findByIndex(blockNo);
         return recordFile.map(file -> Hash.fromHexString(file.getFileHash())).orElseThrow(
-                () -> new InvalidParametersException(String.format("No record file with id: %d", blockNo)));
+                () -> new InvalidParametersException(String.format("No record file with index: %d", blockNo)));
     }
 
     public BlockValues computeBlockValues(long gasLimit) {
