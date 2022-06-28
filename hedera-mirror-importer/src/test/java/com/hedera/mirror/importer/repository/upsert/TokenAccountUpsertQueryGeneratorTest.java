@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,73 +22,49 @@ package com.hedera.mirror.importer.repository.upsert;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
-class TokenAccountUpsertQueryGeneratorTest extends AbstractUpsertQueryGeneratorTest {
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.importer.IntegrationTest;
 
-    @Resource
-    private TokenAccountUpsertQueryGenerator tokenAccountRepositoryCustom;
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+class TokenAccountUpsertQueryGeneratorTest extends IntegrationTest {
 
-    @Override
-    protected UpsertQueryGenerator getUpdatableDomainRepositoryCustom() {
-        return tokenAccountRepositoryCustom;
-    }
+    private final EntityMetadataRegistry entityMetadataRegistry;
+    private final TokenAccountUpsertQueryGenerator upsertQueryGenerator;
 
-    @Override
-    protected String getInsertQuery() {
-        return "with last as (" +
-                "  select distinct on (token_account.account_id, token_account.token_id) token_account.*" +
-                "  from token_account" +
-                "  join token_account_temp on token_account_temp.account_id = token_account.account_id" +
-                "    and token_account_temp.token_id = token_account.token_id" +
-                "  order by token_account.account_id, token_account.token_id, token_account.modified_timestamp desc" +
-                ")" +
-                "  insert into token_account" +
-                "   (account_id, associated, automatic_association, created_timestamp, freeze_status, kyc_status," +
-                "    modified_timestamp, token_id) " +
-                "  select " +
-                "    token_account_temp.account_id," +
-                "    coalesce(token_account_temp.associated, last.associated)," +
-                "    coalesce(token_account_temp.automatic_association, last.automatic_association)," +
-                "    coalesce(token_account_temp.created_timestamp, last.created_timestamp)," +
-                "    case when token_account_temp.freeze_status is not null then token_account_temp.freeze_status" +
-                "         when token_account_temp.created_timestamp is not null then" +
-                "           case" +
-                "             when token.freeze_key is null then 0" +
-                "             when token.freeze_default is true then 1" +
-                "             else 2" +
-                "           end" +
-                "         else last.freeze_status" +
-                "    end freeze_status," +
-                "    case when token_account_temp.kyc_status is not null then token_account_temp.kyc_status" +
-                "         when token_account_temp.created_timestamp is not null then" +
-                "           case" +
-                "             when token.kyc_key is null then 0" +
-                "             else 2" +
-                "            end" +
-                "         else last.kyc_status" +
-                "    end kyc_status," +
-                "    token_account_temp.modified_timestamp," +
-                "    token_account_temp.token_id " +
-                "  from token_account_temp " +
-                "  join token on token_account_temp.token_id = token.token_id" +
-                "  left join last on last.account_id = token_account_temp.account_id and" +
-                "    last.token_id = token_account_temp.token_id" +
-                "    and last.associated is true" +
-                "  where token_account_temp.created_timestamp is not null or last.created_timestamp is not null" +
-                "  order by token_account_temp.modified_timestamp";
+    @Test
+    void createTempIndexQuery() {
+        var expected = "create index if not exists token_account_temp_idx on token_account_temp " +
+                "(token_id, account_id, modified_timestamp)";
+        var createTempIndexQuery = upsertQueryGenerator.getCreateTempIndexQuery();
+        assertThat(createTempIndexQuery).isEqualTo(expected);
     }
 
     @Test
-    void tableName() {
-        String tableName = getUpdatableDomainRepositoryCustom().getFinalTableName();
-        assertThat(tableName).isEqualTo("token_account");
+    void finalTableName() {
+        var finalTableName = upsertQueryGenerator.getFinalTableName();
+        assertThat(finalTableName).isEqualTo("token_account");
     }
 
     @Test
-    void tempTableName() {
-        String tempTableName = getUpdatableDomainRepositoryCustom().getTemporaryTableName();
-        assertThat(tempTableName).isEqualTo("token_account_temp");
+    void insertQuery() {
+        var entityMetadata = entityMetadataRegistry.lookup(TokenAccount.class);
+        var columns = entityMetadata.columns("{0}");
+        var insertQuery = upsertQueryGenerator.getInsertQuery();
+        assertThat(insertQuery).isNotBlank().containsIgnoringWhitespaces(columns);
+    }
+
+    @Test
+    void temporaryTableName() {
+        var temporaryTableName = upsertQueryGenerator.getTemporaryTableName();
+        assertThat(temporaryTableName).isEqualTo("token_account_temp");
+    }
+
+    @Test
+    void updateQuery() {
+        assertThat(upsertQueryGenerator.getUpdateQuery()).isNull();
     }
 }

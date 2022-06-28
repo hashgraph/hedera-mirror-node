@@ -23,19 +23,20 @@ package com.hedera.mirror.importer.repository.upsert;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.hedera.mirror.common.domain.token.TokenAccount;
+
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.importer.IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
 
     private final UpsertQueryGeneratorFactory factory;
-    private final NftUpsertQueryGenerator nftUpsertQueryGenerator;
+    private final TokenAccountUpsertQueryGenerator customUpsertQueryGenerator;
 
     @Test
     void unsupportedClass() {
@@ -46,7 +47,7 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
 
     @Test
     void getExistingGenerator() {
-        assertThat(factory.get(Nft.class)).isEqualTo(nftUpsertQueryGenerator);
+        assertThat(factory.get(TokenAccount.class)).isEqualTo(customUpsertQueryGenerator);
     }
 
     @Test
@@ -54,4 +55,3 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
         assertThat(factory.get(Contract.class)).isInstanceOf(GenericUpsertQueryGenerator.class);
     }
 }
-

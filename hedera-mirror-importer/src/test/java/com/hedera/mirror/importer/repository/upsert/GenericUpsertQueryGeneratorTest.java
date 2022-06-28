@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.importer.IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -62,6 +63,14 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
     void getTemporaryTableName() {
         UpsertQueryGenerator generator = factory.get(Contract.class);
         assertThat(generator.getTemporaryTableName()).isEqualTo("contract_temp");
+    }
+
+    @Test
+    void customCoalesceColumn() {
+        var sql = "case when total_supply >= 0 then total_supply else e_total_supply + coalesce(total_supply, 0) end";
+        UpsertQueryGenerator generator = factory.get(Token.class);
+        assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
+        assertThat(format(generator.getInsertQuery())).containsIgnoringWhitespaces(sql);
     }
 
     @Test

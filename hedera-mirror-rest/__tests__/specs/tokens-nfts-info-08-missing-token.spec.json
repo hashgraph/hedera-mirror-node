@@ -1,0 +1,30 @@
+{
+  "description": "Token nft info api call missing related token",
+  "setup": {
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "nfts": [
+      {
+        "account_id": "0.0.2001",
+        "created_timestamp": "1234567890000000006",
+        "metadata": "m2",
+        "serial_number": 2,
+        "token_id": "0.0.1500"
+      }
+    ]
+  },
+  "url": "/api/v1/tokens/0.0.1500/nfts/2",
+  "responseStatus": 200,
+  "responseJson": {
+    "account_id": "0.0.2001",
+    "created_timestamp": "1234567890.000000006",
+    "delegating_spender": null,
+    "deleted": false,
+    "metadata": "bTI=",
+    "modified_timestamp": "1234567890.000000006",
+    "serial_number": 2,
+    "spender": null,
+    "token_id": "0.0.1500"
+  }
+}

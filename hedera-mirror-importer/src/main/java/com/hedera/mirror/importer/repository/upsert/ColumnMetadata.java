@@ -20,10 +20,14 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
+import java.text.MessageFormat;
 import java.util.Comparator;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
+
+import com.hedera.mirror.common.domain.UpsertColumn;
 
 @Value
 class ColumnMetadata implements Comparable<ColumnMetadata> {
@@ -36,9 +40,20 @@ class ColumnMetadata implements Comparable<ColumnMetadata> {
     private final BiConsumer<Object, Object> setter;
     private final Class<?> type;
     private final boolean updatable;
+    private final UpsertColumn upsertColumn;
 
     @Override
     public int compareTo(ColumnMetadata other) {
         return Comparator.comparing(ColumnMetadata::getName).compare(this, other);
+    }
+
+    String format(String pattern) {
+        var coalesce = upsertColumn != null ? upsertColumn.coalesce() : null;
+
+        if (pattern.contains("coalesce") && StringUtils.isNotBlank(coalesce)) {
+            pattern = coalesce;
+        }
+
+        return MessageFormat.format(pattern, name, defaultValue);
     }
 }
