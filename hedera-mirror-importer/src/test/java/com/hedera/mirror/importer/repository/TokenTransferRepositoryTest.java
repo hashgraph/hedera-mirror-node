@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,35 +20,32 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.TokenTransfer;
-
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class TokenTransferRepositoryTest extends AbstractRepositoryTest {
 
-    @Resource
-    private TokenTransferRepository tokenTransferRepository;
+    private final TokenTransferRepository tokenTransferRepository;
 
     @Test
-    void findById() {
-        EntityId tokenId = EntityId.of(0L, 1L, 20L, TOKEN);
-        EntityId accountId = EntityId.of(0L, 1L, 7L, ACCOUNT);
-        EntityId payerAccountId = EntityId.of(0L, 1L, 500L, ACCOUNT);
-        long amount = 40L;
-        TokenTransfer tokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
-                .amount(amount)
-                .id(new TokenTransfer.Id(1L, tokenId, accountId))
-                .payerAccountId(payerAccountId)
-                .tokenDissociate(false)).get();
+    void prune() {
+        domainBuilder.tokenTransfer().persist();
+        var tokenTransfer2 = domainBuilder.tokenTransfer().persist();
+        var tokenTransfer3 = domainBuilder.tokenTransfer().persist();
 
+        tokenTransferRepository.prune(tokenTransfer2.getId().getConsensusTimestamp());
+
+        assertThat(tokenTransferRepository.findAll()).containsExactly(tokenTransfer3);
+    }
+
+    @Test
+    void save() {
+        var tokenTransfer = domainBuilder.tokenTransfer().get();
         tokenTransferRepository.save(tokenTransfer);
-
         assertThat(tokenTransferRepository.findById(tokenTransfer.getId()))
                 .get()
                 .isEqualTo(tokenTransfer);

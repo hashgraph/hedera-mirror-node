@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,49 +22,30 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.NftTransfer;
-import com.hedera.mirror.common.domain.token.NftTransferId;
-
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class NftTransferRepositoryTest extends AbstractRepositoryTest {
 
-    private static final EntityId PAYER_ACCOUNT_ID = EntityId.of("0.0.1000", EntityType.ACCOUNT);
+    private final NftTransferRepository nftTransferRepository;
 
-    @Resource
-    NftTransferRepository repository;
+    @Test
+    void prune() {
+        domainBuilder.nftTransfer().persist();
+        var nftTransfer2 = domainBuilder.nftTransfer().persist();
+        var nftTransfer3 = domainBuilder.nftTransfer().persist();
+
+        nftTransferRepository.prune(nftTransfer2.getId().getConsensusTimestamp());
+
+        assertThat(nftTransferRepository.findAll()).containsExactly(nftTransfer3);
+    }
 
     @Test
     void save() {
-        NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityType.TOKEN)));
-        nftTransfer.setReceiverAccountId(EntityId.of("0.0.2", EntityType.ACCOUNT));
-        nftTransfer.setSenderAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT));
-        nftTransfer.setPayerAccountId(PAYER_ACCOUNT_ID);
-        NftTransfer saved = repository.save(nftTransfer);
-        assertThat(repository.findById(saved.getId())).contains(saved);
-    }
-
-    @Test
-    void saveMintTransfer() {
-        NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityType.TOKEN)));
-        nftTransfer.setReceiverAccountId(EntityId.of("0.0.2", EntityType.ACCOUNT));
-        nftTransfer.setPayerAccountId(PAYER_ACCOUNT_ID);
-        NftTransfer saved = repository.save(nftTransfer);
-        assertThat(repository.findById(saved.getId())).contains(saved);
-    }
-
-    @Test
-    void saveBurnTransfer() {
-        NftTransfer nftTransfer = new NftTransfer();
-        nftTransfer.setId(new NftTransferId(1, 1, EntityId.of("0.0.1", EntityType.TOKEN)));
-        nftTransfer.setSenderAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT));
-        nftTransfer.setPayerAccountId(PAYER_ACCOUNT_ID);
-        NftTransfer saved = repository.save(nftTransfer);
-        assertThat(repository.findById(saved.getId())).contains(saved);
+        var nftTransfer = domainBuilder.nftTransfer().get();
+        nftTransferRepository.save(nftTransfer);
+        assertThat(nftTransferRepository.findById(nftTransfer.getId())).contains(nftTransfer);
     }
 }

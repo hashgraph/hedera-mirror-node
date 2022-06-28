@@ -120,4 +120,16 @@ public class UtilityTest {
                 , () -> assertEquals(instant.getNano(), test.getNanos())
         );
     }
+
+    @ParameterizedTest(name = "Convert {0} to snake case")
+    @CsvSource({
+            ",",
+            "\"\",\"\"",
+            "Foo,foo",
+            "FooBar,foo_bar",
+            "foo_bar,foo_bar"
+    })
+    void toSnakeCase(String input, String output) {
+        assertThat(Utility.toSnakeCase(input)).isEqualTo(output);
+    }
 }
