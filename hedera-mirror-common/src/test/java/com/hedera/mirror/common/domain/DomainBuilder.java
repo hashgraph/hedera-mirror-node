@@ -599,7 +599,6 @@ public class DomainBuilder {
                 .logsBloom(bloomFilter())
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
-                .metadataHash(text(96))
                 .name(now.toString().replace(':', '_') + ".rcd")
                 .nodeAccountId(entityId(ACCOUNT))
                 .previousHash(text(96))
