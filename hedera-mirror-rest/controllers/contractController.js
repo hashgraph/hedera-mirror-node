@@ -1075,8 +1075,7 @@ class ContractController extends BaseController {
       transaction,
       contractLogs,
       contractStateChanges,
-      fileData,
-      isFailedContractResult
+      fileData
     );
 
     if (_.isNil(contractResults[0].callResult)) {
@@ -1093,8 +1092,7 @@ class ContractController extends BaseController {
     transaction,
     contractLogs,
     contractStateChanges,
-    fileData,
-    isFailedContractResult
+    fileData
   ) => {
     res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
       contractResult,
@@ -1102,8 +1100,7 @@ class ContractController extends BaseController {
       transaction,
       contractLogs,
       contractStateChanges,
-      fileData,
-      isFailedContractResult
+      fileData
     );
   };
 

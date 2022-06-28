@@ -48,15 +48,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
    * @param {ContractStateChange[]} contractStateChanges
    * @param {FileData} fileData
    */
-  constructor(
-    contractResult,
-    recordFile,
-    transaction,
-    contractLogs,
-    contractStateChanges,
-    fileData,
-    isFailedContractResult
-  ) {
+  constructor(contractResult, recordFile, transaction, contractLogs, contractStateChanges, fileData) {
     super(contractResult);
 
     this.block_hash = utils.addHexPrefix(recordFile.hash);
@@ -73,11 +65,6 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       transaction.result === ContractResultDetailsViewModel._SUCCESS_PROTO_ID
         ? ContractResultDetailsViewModel._SUCCESS_RESULT
         : ContractResultDetailsViewModel._FAIL_RESULT;
-
-    if (isFailedContractResult) {
-      this.result = transaction.result;
-      this.status = ContractResultDetailsViewModel._FAIL_RESULT;
-    }
 
     // default eth related values
     this.access_list = null;
