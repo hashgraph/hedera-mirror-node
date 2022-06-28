@@ -106,7 +106,8 @@ class UtilRandomGenerateTransactionHandlerTest extends AbstractTransactionHandle
         assertThat(randomGenerates.getAllValues()).contains(expectedRandomGenerate);
     }
 
-    private UtilRandomGenerate getExpectedRandomGenerate(long consensusTimestamp, int range, byte[] randomBytes, int randomNumber) {
+    private UtilRandomGenerate getExpectedRandomGenerate(long consensusTimestamp, int range, byte[] randomBytes,
+                                                         int randomNumber) {
         return UtilRandomGenerate.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .range(range)
