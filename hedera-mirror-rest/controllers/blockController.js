@@ -41,7 +41,7 @@ const validateHashOrNumber = (hashOrNumber) => {
     return {hash: hashOrNumber.replace('0x', ''), number: null};
   }
 
-  if (utils.isPositiveLong(hashOrNumber)) {
+  if (utils.isPositiveLong(hashOrNumber, true)) {
     return {hash: null, number: hashOrNumber};
   }
 
