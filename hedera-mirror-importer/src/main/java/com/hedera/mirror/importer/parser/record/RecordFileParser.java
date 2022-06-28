@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record;
 
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import io.micrometer.core.instrument.DistributionSummary;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -29,6 +30,7 @@ import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.inject.Named;
 import org.apache.logging.log4j.Level;
 import org.springframework.retry.annotation.Backoff;
@@ -42,12 +44,15 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
+import com.hedera.mirror.importer.reader.record.ProtoRecordFileReader;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
 public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
 
+    private final AtomicReference<RecordFile> last;
     private final RecordItemListener recordItemListener;
     private final RecordStreamFileListener recordStreamFileListener;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
@@ -64,6 +69,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
                             RecordStreamFileListener recordStreamFileListener,
                             MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
         super(meterRegistry, parserProperties, streamFileRepository);
+        this.last = new AtomicReference<>();
         this.recordItemListener = recordItemListener;
         this.recordStreamFileListener = recordStreamFileListener;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
@@ -133,8 +139,8 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
                     .block();
 
             recordFile.finishLoad(count);
-
             recordStreamFileListener.onEnd(recordFile);
+            updateIndex(recordFile);
         } catch (Exception ex) {
             recordStreamFileListener.onError();
             throw ex;
@@ -158,5 +164,23 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         Instant consensusTimestamp = Utility.convertToInstant(recordItem.getRecord().getConsensusTimestamp());
         latencyMetrics.getOrDefault(recordItem.getTransactionType(), unknownLatencyMetric)
                 .record(Duration.between(consensusTimestamp, Instant.now()));
+    }
+
+    // Correct v5 block numbers once we receive a v6 block with a canonical number
+    private void updateIndex(RecordFile recordFile) {
+        var lastRecordFile = last.get();
+
+        if (lastRecordFile != null && recordFile.getVersion() >= ProtoRecordFileReader.VERSION) {
+            long offset = recordFile.getIndex() - lastRecordFile.getIndex();
+
+            if (offset != 1) {
+                Stopwatch stopwatch = Stopwatch.createStarted();
+                var recordFileRepository = (RecordFileRepository) streamFileRepository;
+                int count = recordFileRepository.updateIndex(offset);
+                log.info("Updated {} blocks with offset {} in {}", count, offset, stopwatch);
+            }
+        }
+
+        last.set(recordFile);
     }
 }

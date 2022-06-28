@@ -28,6 +28,7 @@ import static org.mockito.Mockito.verify;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
+import org.mockito.Mock;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
@@ -39,15 +40,25 @@ import com.hedera.mirror.common.domain.event.EventItem;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
+import com.hedera.mirror.importer.repository.EventFileRepository;
+import com.hedera.mirror.importer.repository.StreamFileRepository;
 
 class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> {
 
     private long count = 0;
 
+    @Mock
+    private EventFileRepository eventFileRepository;
+
     @Override
     protected EventFileParser getParser() {
         EventParserProperties parserProperties = new EventParserProperties();
-        return new EventFileParser(new SimpleMeterRegistry(), parserProperties, streamFileRepository);
+        return new EventFileParser(new SimpleMeterRegistry(), parserProperties, eventFileRepository);
+    }
+
+    @Override
+    protected StreamFileRepository getStreamFileRepository() {
+        return eventFileRepository;
     }
 
     @Override
@@ -55,10 +66,10 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
         EventFile eventFile = (EventFile) streamFile;
 
         if (parsed) {
-            verify(streamFileRepository).save(eventFile);
+            verify(eventFileRepository).save(eventFile);
         } else {
             if (!dbError) {
-                verify(streamFileRepository, never()).save(any());
+                verify(eventFileRepository, never()).save(any());
             }
         }
     }
@@ -89,6 +100,6 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
 
     @Override
     protected void mockDbFailure() {
-        doThrow(ParserException.class).when(streamFileRepository).save(any());
+        doThrow(ParserException.class).when(eventFileRepository).save(any());
     }
 }
