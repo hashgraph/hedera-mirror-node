@@ -81,6 +81,7 @@ const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANS
 const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
 const ethereumTransactionType = TransactionType.getProtoId('ETHEREUMTRANSACTION');
 
+const emptyBloomBuffer = Buffer.alloc(256);
 /**
  * Extracts the sql where clause, params, order and limit values to be used from the provided contract query
  * param filters
@@ -1011,7 +1012,7 @@ class ContractController extends BaseController {
     // extract filters from query param
     const {transactionIdOrHash} = req.params;
     let transactions;
-    let shouldMockContractResults = false;
+    let isFailedContractResult = false;
     // When getting transactions, exclude duplicate transactions. there can be at most one
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
@@ -1057,12 +1058,11 @@ class ContractController extends BaseController {
     }
 
     if (contractResults.length === 0) {
-      // should mock contract results only if:
-      // - contract results are empty
-      // - transaction type = ethereum transaction
-      shouldMockContractResults = transaction.transactionType.toString() === ethereumTransactionType;
-      if (shouldMockContractResults) {
-        contractResults.push(this.getMockedContractResultByTransaction(transaction));
+      // should always return a contract results when
+      // contract results are empty AND transaction type = ethereum transaction
+      isFailedContractResult = transaction.transactionType.toString() === ethereumTransactionType;
+      if (isFailedContractResult) {
+        contractResults.push(this.getDefaultFailureContractResultByTransaction(transaction));
       } else {
         throw new NotFoundError();
       }
@@ -1076,7 +1076,7 @@ class ContractController extends BaseController {
       contractLogs,
       contractStateChanges,
       fileData,
-      shouldMockContractResults
+      isFailedContractResult
     );
 
     if (_.isNil(contractResults[0].callResult)) {
@@ -1094,7 +1094,7 @@ class ContractController extends BaseController {
     contractLogs,
     contractStateChanges,
     fileData,
-    shouldMockContractResults
+    isFailedContractResult
   ) => {
     res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
       contractResult,
@@ -1103,21 +1103,20 @@ class ContractController extends BaseController {
       contractLogs,
       contractStateChanges,
       fileData,
-      shouldMockContractResults
+      isFailedContractResult
     );
   };
 
-  getMockedContractResultByTransaction = (transaction) => {
+  getDefaultFailureContractResultByTransaction = (transaction) => {
     return {
-      bloom: Buffer.alloc(256),
+      bloom: emptyBloomBuffer,
       callResult: null,
       createdContractIds: [],
       functionParameters: [],
       payerAccountId: transaction.payerAccountId,
       errorMessage: TransactionResult.getName(transaction.result),
       consensusTimestamp: transaction.consensusTimestamp,
-      contractId:
-        transaction.toAddress && transaction.toAddress.toString('hex') ? transaction.toAddress.toString('hex') : null,
+      contractId: transaction.entityId,
       gasUsed: 0,
     };
   };

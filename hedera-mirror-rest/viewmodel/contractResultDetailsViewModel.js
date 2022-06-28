@@ -55,7 +55,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     contractLogs,
     contractStateChanges,
     fileData,
-    isContractResultMocked
+    isFailedContractResult
   ) {
     super(contractResult);
 
@@ -74,7 +74,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
         ? ContractResultDetailsViewModel._SUCCESS_RESULT
         : ContractResultDetailsViewModel._FAIL_RESULT;
 
-    if (isContractResultMocked) {
+    if (isFailedContractResult) {
       this.result = transaction.result;
       this.status = ContractResultDetailsViewModel._FAIL_RESULT;
     }
