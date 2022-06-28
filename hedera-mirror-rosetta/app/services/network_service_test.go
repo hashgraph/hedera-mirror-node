@@ -82,6 +82,12 @@ func TestOfflineNetworkServiceSuite(t *testing.T) {
 type offlineNetworkServiceSuite struct {
 	suite.Suite
 	networkService server.NetworkAPIServicer
+	operationTypes []string
+}
+
+func (suite *offlineNetworkServiceSuite) SetupSuite() {
+	suite.operationTypes = tools.GetStringValuesFromInt32StringMap(types.TransactionTypes)
+	suite.operationTypes = append(suite.operationTypes, types.OperationTypeFee)
 }
 
 func (suite *offlineNetworkServiceSuite) BeforeTest(_, _ string) {
@@ -174,7 +180,7 @@ func (suite *offlineNetworkServiceSuite) TestNetworkOptions() {
 					Successful: false,
 				},
 			},
-			OperationTypes:          tools.GetStringValuesFromInt32StringMap(types.TransactionTypes),
+			OperationTypes:          suite.operationTypes,
 			Errors:                  expectedErrors,
 			HistoricalBalanceLookup: true,
 		},

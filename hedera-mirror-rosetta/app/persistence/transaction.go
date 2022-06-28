@@ -37,8 +37,10 @@ import (
 )
 
 const (
-	batchSize                      = 2000
-	transactionResultSuccess int32 = 22
+	batchSize                                                 = 2000
+	transactionResultFeeScheduleFilePartUploaded        int32 = 104
+	transactionResultSuccess                            int32 = 22
+	transactionResultSuccessButMissingExpectedOperation int32 = 220
 )
 
 const (
@@ -145,17 +147,14 @@ const (
                                               where consensus_timestamp = t.consensus_timestamp and
                                                 (errata is null or errata <> 'DELETE')
                                             ), '[]') as crypto_transfers,
-                                            case
-                                              when t.type = 14 then coalesce((
+                                            coalesce((
                                                   select json_agg(json_build_object(
                                                       'account_id', entity_id,
                                                       'amount', amount
                                                     ) order by entity_id)
                                                   from non_fee_transfer
                                                   where consensus_timestamp = t.consensus_timestamp
-                                                ), '[]')
-                                              else '[]'
-                                            end as non_fee_transfers,
+                                            ), '[]') as non_fee_transfers,
                                             coalesce((
                                               select json_agg(json_build_object(
                                                   'account_id', account_id,
@@ -433,12 +432,12 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 		transactionResult := types.TransactionResults[int32(transaction.Result)]
 		transactionType := types.TransactionTypes[int32(transaction.Type)]
 
-		nonFeeTransferMap := aggregateNonFeeTransfers(nonFeeTransfers)
-		adjustedCryptoTransfers := adjustCryptoTransfers(cryptoTransfers, nonFeeTransferMap)
+		var feeHbarTransfers []hbarTransfer
+		feeHbarTransfers, nonFeeTransfers = categorizeHbarTransfers(cryptoTransfers, nonFeeTransfers)
 
 		operations = tr.appendHbarTransferOperations(transactionResult, transactionType, nonFeeTransfers, operations)
 		// crypto transfers are always successful regardless of the transaction result
-		operations = tr.appendHbarTransferOperations(success, transactionType, adjustedCryptoTransfers, operations)
+		operations = tr.appendHbarTransferOperations(success, types.OperationTypeFee, feeHbarTransfers, operations)
 		operations = tr.appendTokenTransferOperations(transactionResult, transactionType, tokenTransfers, operations)
 		operations = tr.appendNftTransferOperations(transactionResult, transactionType, nftTransfers, operations)
 
@@ -459,7 +458,7 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 
 func (tr *transactionRepository) appendHbarTransferOperations(
 	transactionResult string,
-	transactionType string,
+	operationType string,
 	hbarTransfers []hbarTransfer,
 	operations types.OperationSlice,
 ) types.OperationSlice {
@@ -468,12 +467,12 @@ func (tr *transactionRepository) appendHbarTransferOperations(
 		transfers = append(transfers, hbarTransfer)
 	}
 
-	return tr.appendTransferOperations(transactionResult, transactionType, transfers, operations)
+	return tr.appendTransferOperations(transactionResult, operationType, transfers, operations)
 }
 
 func (tr *transactionRepository) appendNftTransferOperations(
 	transactionResult string,
-	transactionType string,
+	operationType string,
 	nftTransfers []domain.NftTransfer,
 	operations types.OperationSlice,
 ) types.OperationSlice {
@@ -482,12 +481,12 @@ func (tr *transactionRepository) appendNftTransferOperations(
 		transfers = append(transfers, getSingleNftTransfers(nftTransfer)...)
 	}
 
-	return tr.appendTransferOperations(transactionResult, transactionType, transfers, operations)
+	return tr.appendTransferOperations(transactionResult, operationType, transfers, operations)
 }
 
 func (tr *transactionRepository) appendTokenTransferOperations(
 	transactionResult string,
-	transactionType string,
+	operationType string,
 	tokenTransfers []tokenTransfer,
 	operations types.OperationSlice,
 ) types.OperationSlice {
@@ -502,12 +501,12 @@ func (tr *transactionRepository) appendTokenTransferOperations(
 		transfers = append(transfers, tokenTransfer)
 	}
 
-	return tr.appendTransferOperations(transactionResult, transactionType, transfers, operations)
+	return tr.appendTransferOperations(transactionResult, operationType, transfers, operations)
 }
 
 func (tr *transactionRepository) appendTransferOperations(
 	transactionResult string,
-	transactionType string,
+	operationType string,
 	transfers []transfer,
 	operations types.OperationSlice,
 ) types.OperationSlice {
@@ -517,10 +516,31 @@ func (tr *transactionRepository) appendTransferOperations(
 			Amount:    transfer.getAmount(),
 			Index:     int64(len(operations)),
 			Status:    transactionResult,
-			Type:      transactionType,
+			Type:      operationType,
 		})
 	}
 	return operations
+}
+
+func categorizeHbarTransfers(hbarTransfers, nonFeeTransfers []hbarTransfer) (
+	feeHbarTransfers, adjustedNonFeeTransfers []hbarTransfer,
+) {
+	entityIds := make(map[int64]struct{})
+	for _, transfer := range hbarTransfers {
+		entityIds[transfer.AccountId.EncodedId] = struct{}{}
+	}
+
+	adjustedNonFeeTransfers = make([]hbarTransfer, 0, len(nonFeeTransfers))
+	for _, nonFeeTransfer := range nonFeeTransfers {
+		entityId := nonFeeTransfer.AccountId.EncodedId
+		// skip non fee transfer whose entity id is not in the transaction record's transfer list
+		if _, ok := entityIds[entityId]; ok {
+			adjustedNonFeeTransfers = append(adjustedNonFeeTransfers, nonFeeTransfer)
+		}
+	}
+
+	nonFeeTransferMap := aggregateNonFeeTransfers(nonFeeTransfers)
+	return getFeeHbarTransfers(hbarTransfers, nonFeeTransferMap), adjustedNonFeeTransfers
 }
 
 func (tr *transactionRepository) processSuccessTokenDissociates(
@@ -568,13 +588,24 @@ func (tr *transactionRepository) processSuccessTokenDissociates(
 }
 
 func IsTransactionResultSuccessful(result int32) bool {
-	return result == transactionResultSuccess
+	return result == transactionResultFeeScheduleFilePartUploaded ||
+		result == transactionResultSuccess ||
+		result == transactionResultSuccessButMissingExpectedOperation
 }
 
-func adjustCryptoTransfers(
-	cryptoTransfers []hbarTransfer,
-	nonFeeTransferMap map[int64]int64,
-) []hbarTransfer {
+func aggregateNonFeeTransfers(nonFeeTransfers []hbarTransfer) map[int64]int64 {
+	nonFeeTransferMap := make(map[int64]int64)
+
+	// the original transfer list from the transaction body
+	for _, transfer := range nonFeeTransfers {
+		// the original transfer list may have multiple entries for one entity, so accumulate it
+		nonFeeTransferMap[transfer.AccountId.EncodedId] += transfer.Amount
+	}
+
+	return nonFeeTransferMap
+}
+
+func getFeeHbarTransfers(cryptoTransfers []hbarTransfer, nonFeeTransferMap map[int64]int64) []hbarTransfer {
 	cryptoTransferMap := make(map[int64]hbarTransfer)
 	accountIds := make([]int64, 0)
 	for _, transfer := range cryptoTransfers {
@@ -603,18 +634,6 @@ func adjustCryptoTransfers(
 	return adjusted
 }
 
-func aggregateNonFeeTransfers(nonFeeTransfers []hbarTransfer) map[int64]int64 {
-	nonFeeTransferMap := make(map[int64]int64)
-
-	// the original transfer list from the transaction body
-	for _, transfer := range nonFeeTransfers {
-		// the original transfer list may have multiple entries for one entity, so accumulate it
-		nonFeeTransferMap[transfer.AccountId.EncodedId] += transfer.Amount
-	}
-
-	return nonFeeTransferMap
-}
-
 func getSingleNftTransfers(nftTransfer domain.NftTransfer) []transfer {
 	transfers := make([]transfer, 0)
 	if nftTransfer.ReceiverAccountId != nil {
@@ -641,13 +660,13 @@ func getTokenOperation(
 	token domain.Token,
 	transaction *transaction,
 	transactionResult string,
-	transactionType string,
+	operationType string,
 ) types.Operation {
 	operation := types.Operation{
 		AccountId: types.NewAccountIdFromEntityId(transaction.PayerAccountId),
 		Index:     int64(index),
 		Status:    transactionResult,
-		Type:      transactionType,
+		Type:      operationType,
 	}
 
 	metadata := make(map[string]interface{})

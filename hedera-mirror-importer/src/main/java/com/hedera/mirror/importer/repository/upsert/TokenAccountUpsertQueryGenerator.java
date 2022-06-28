@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,136 +20,74 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import java.lang.reflect.Type;
-import java.util.List;
-import java.util.Set;
+import java.text.MessageFormat;
 import javax.inject.Named;
-import javax.persistence.metamodel.SingularAttribute;
-import lombok.Getter;
 import lombok.Value;
-
-import com.hedera.mirror.common.domain.token.TokenAccountId_;
-import com.hedera.mirror.common.domain.token.TokenAccount_;
-import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
-import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
-import com.hedera.mirror.common.domain.token.Token_;
 
 @Named
 @Value
-public class TokenAccountUpsertQueryGenerator extends AbstractUpsertQueryGenerator<TokenAccount_> {
-    private static final String CTE_NAME = "last";
-    private static final String JOIN_TABLE = "token";
-    // id columns (account_id, token_id, and modified_timestamp) are set directly. freeze_status / kyc_status require
-    // special care. Other columns are set by coalescing the temp table column and the last association column
-    private static final Set<String> COALESCE_COLUMNS = Set.of(TokenAccount_.ASSOCIATED,
-            TokenAccount_.AUTOMATIC_ASSOCIATION, TokenAccount_.CREATED_TIMESTAMP);
-    private final String finalTableName = "token_account";
-    private final String temporaryTableName = getFinalTableName() + "_temp";
-    private final List<String> conflictIdColumns = List.of(TokenAccountId_.ACCOUNT_ID, TokenAccountId_.TOKEN_ID);
-
-    @Getter(lazy = true)
-    @SuppressWarnings("java:S3740")
-    // JPAMetaModelEntityProcessor does not expand embeddedId fields, as such they need to be explicitly referenced
-    private final Set<SingularAttribute> selectableColumns = Set.of(TokenAccountId_.accountId, TokenAccount_.associated,
-            TokenAccount_.automaticAssociation, TokenAccount_.createdTimestamp, TokenAccount_.freezeStatus,
-            TokenAccount_.kycStatus, TokenAccountId_.modifiedTimestamp, TokenAccountId_.tokenId);
+public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
 
     @Override
-    protected boolean isInsertOnly() {
-        return true;
+    public String getCreateTempIndexQuery() {
+        var pattern = "create index if not exists {0}_idx on {0} (token_id, account_id, modified_timestamp)";
+        return MessageFormat.format(pattern, getTemporaryTableName());
     }
 
     @Override
-    protected String getCteForInsert() {
-        String finalTableAccountIdColumn = getFullFinalTableColumnName(TokenAccountId_.ACCOUNT_ID);
-        String finalTableTokenIdColumn = getFullFinalTableColumnName(TokenAccountId_.TOKEN_ID);
-        String finalTableModifiedTimestampColumn = getFullFinalTableColumnName(TokenAccountId_.MODIFIED_TIMESTAMP);
-        return String.format("with %s as (" +
-                        "  select distinct on (%s, %s) %s.*" +
-                        "  from %s" +
-                        "  join %s on %s = %s and %s = %s" +
-                        "  order by %s, %s, %s desc)",
-                CTE_NAME,
-                finalTableAccountIdColumn, finalTableTokenIdColumn, finalTableName,
-                finalTableName,
-                temporaryTableName,
-                getFullTempTableColumnName(TokenAccountId_.ACCOUNT_ID), finalTableAccountIdColumn,
-                getFullTempTableColumnName(TokenAccountId_.TOKEN_ID), finalTableTokenIdColumn,
-                finalTableAccountIdColumn, finalTableTokenIdColumn, finalTableModifiedTimestampColumn
-        );
+    public String getFinalTableName() {
+        return "token_account";
     }
 
     @Override
-    protected String getInsertWhereClause() {
-        return String.format(" join %s on %s = %s" +
-                        " left join %s on %s = %s and %s = %s and %s is true" +
-                        " where %s is not null or %s is not null" +
-                        " order by %s",
-                TokenUpsertQueryGenerator.TABLE,
-                getFullTempTableColumnName(TokenAccountId_.TOKEN_ID),
-                getFullTableColumnName(TokenUpsertQueryGenerator.TABLE, Token_.TOKEN_ID),
-                CTE_NAME,
-                getFullTableColumnName(CTE_NAME, TokenAccountId_.ACCOUNT_ID),
-                getFullTempTableColumnName(TokenAccountId_.ACCOUNT_ID),
-                getFullTableColumnName(CTE_NAME, TokenAccountId_.TOKEN_ID),
-                getFullTempTableColumnName(TokenAccountId_.TOKEN_ID),
-                getFullTableColumnName(CTE_NAME, TokenAccount_.ASSOCIATED),
-                getFullTempTableColumnName(TokenAccount_.CREATED_TIMESTAMP),
-                getFullTableColumnName(CTE_NAME, TokenAccount_.CREATED_TIMESTAMP),
-                getFullTempTableColumnName(TokenAccountId_.MODIFIED_TIMESTAMP));
+    public String getInsertQuery() {
+        return """
+                with last as (
+                  select distinct on (token_account.account_id, token_account.token_id) token_account.*
+                  from token_account
+                  join token_account_temp on token_account_temp.account_id = token_account.account_id
+                    and token_account_temp.token_id = token_account.token_id
+                  order by token_account.account_id, token_account.token_id, token_account.modified_timestamp desc
+                )
+                insert into token_account (
+                  account_id, associated, automatic_association, created_timestamp, freeze_status, kyc_status,
+                  modified_timestamp, token_id
+                )
+                select
+                  token_account_temp.account_id,
+                  coalesce(token_account_temp.associated, last.associated),
+                  coalesce(token_account_temp.automatic_association, last.automatic_association),
+                  coalesce(token_account_temp.created_timestamp, last.created_timestamp),
+                  case when token_account_temp.freeze_status is not null then token_account_temp.freeze_status
+                       when token_account_temp.created_timestamp is not null then
+                         case
+                           when token.freeze_key is null then 0
+                           when token.freeze_default is true then 1
+                           else 2
+                         end
+                       else last.freeze_status
+                  end freeze_status,
+                  case when token_account_temp.kyc_status is not null then token_account_temp.kyc_status
+                       when token_account_temp.created_timestamp is not null then
+                         case
+                           when token.kyc_key is null then 0
+                           else 2
+                          end
+                       else last.kyc_status
+                  end kyc_status,
+                  token_account_temp.modified_timestamp,
+                  token_account_temp.token_id
+                from token_account_temp
+                join token on token_account_temp.token_id = token.token_id
+                left join last on last.account_id = token_account_temp.account_id and
+                  last.token_id = token_account_temp.token_id and last.associated is true
+                where token_account_temp.created_timestamp is not null or last.created_timestamp is not null
+                order by token_account_temp.modified_timestamp
+                """;
     }
 
     @Override
-    protected String getAttributeSelectQuery(Type attributeType, String attributeName) {
-        if (attributeName.equalsIgnoreCase(TokenAccount_.FREEZE_STATUS)) {
-            String freezeStatusInsert = "case when %s is not null then %s" +
-                    "  when %s is not null then" +
-                    "    case" +
-                    "      when %s is null then %s" +
-                    "      when %s is true then %s" +
-                    "      else %s" +
-                    "    end" +
-                    "  else %s " +
-                    "end %s";
-            return String.format(freezeStatusInsert,
-                    getFullTempTableColumnName(TokenAccount_.FREEZE_STATUS),
-                    getFullTempTableColumnName(TokenAccount_.FREEZE_STATUS),
-                    getFullTempTableColumnName(TokenAccount_.CREATED_TIMESTAMP),
-                    getFullTableColumnName(JOIN_TABLE, Token_.FREEZE_KEY),
-                    TokenFreezeStatusEnum.NOT_APPLICABLE.getId(),
-                    getFullTableColumnName(JOIN_TABLE, Token_.FREEZE_DEFAULT),
-                    TokenFreezeStatusEnum.FROZEN.getId(),
-                    TokenFreezeStatusEnum.UNFROZEN.getId(),
-                    getFullTableColumnName(CTE_NAME, TokenAccount_.FREEZE_STATUS),
-                    getFormattedColumnName(TokenAccount_.FREEZE_STATUS));
-        } else if (attributeName.equalsIgnoreCase(TokenAccount_.KYC_STATUS)) {
-            String kycInsert = "case when %s is not null then %s" +
-                    "  when %s is not null then" +
-                    "    case" +
-                    "      when %s is null then %s" +
-                    "      else %s" +
-                    "    end" +
-                    "  else %s " +
-                    "end %s";
-            return String.format(kycInsert,
-                    getFullTempTableColumnName(TokenAccount_.KYC_STATUS),
-                    getFullTempTableColumnName(TokenAccount_.KYC_STATUS),
-                    getFullTempTableColumnName(TokenAccount_.CREATED_TIMESTAMP),
-                    getFullTableColumnName(JOIN_TABLE, Token_.KYC_KEY),
-                    TokenKycStatusEnum.NOT_APPLICABLE.getId(),
-                    TokenKycStatusEnum.REVOKED.getId(),
-                    getFullTableColumnName(CTE_NAME, TokenAccount_.KYC_STATUS),
-                    getFormattedColumnName(TokenAccount_.KYC_STATUS));
-        } else if (COALESCE_COLUMNS.contains(attributeName)) {
-            return String.format("coalesce(%s, %s)", getFullTempTableColumnName(attributeName),
-                    getFullTableColumnName(CTE_NAME, attributeName));
-        }
-
-        return super.getAttributeSelectQuery(attributeType, attributeName);
-    }
-
-    @Override
-    protected boolean needsOnConflictAction() {
-        return false;
+    public String getUpdateQuery() {
+        return null;
     }
 }
