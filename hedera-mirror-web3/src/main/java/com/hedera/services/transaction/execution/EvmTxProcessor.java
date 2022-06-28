@@ -36,7 +36,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 import com.hedera.mirror.web3.evm.OracleSimulator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
-import com.hedera.mirror.web3.evm.SimulatorUpdater;
+import com.hedera.mirror.web3.evm.SimulatedUpdater;
 import com.hedera.mirror.web3.evm.properties.ConfigurationProperties;
 import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
@@ -62,7 +62,7 @@ abstract class EvmTxProcessor {
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
     private SimulatedBlockMetaSource blockMetaSource;
-    private SimulatorUpdater worldUpdater;
+    private SimulatedUpdater worldUpdater;
 
     private final GasCalculator gasCalculator;
     private final SimulatedPricesSource simulatedPricesSource;
@@ -91,12 +91,12 @@ abstract class EvmTxProcessor {
         this.blockMetaSource = blockMetaSource;
     }
 
-    protected void setWorldUpdater(final SimulatorUpdater worldUpdater) {
+    protected void setWorldUpdater(final SimulatedUpdater worldUpdater) {
         this.worldUpdater = worldUpdater;
     }
 
     protected EvmTxProcessor(
-            final SimulatorUpdater worldUpdater,
+            final SimulatedUpdater worldUpdater,
             final SimulatedPricesSource simulatedPricesSource,
             final ConfigurationProperties configurationProperties,
             final GasCalculator gasCalculator,
