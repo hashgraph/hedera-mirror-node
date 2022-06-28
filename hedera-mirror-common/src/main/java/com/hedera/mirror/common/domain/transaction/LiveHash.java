@@ -23,15 +23,18 @@ package com.hedera.mirror.common.domain.transaction;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@Builder
 @Data
 @Entity
 @NoArgsConstructor
-@AllArgsConstructor
 public class LiveHash implements Persistable<Long> {
 
     @Id

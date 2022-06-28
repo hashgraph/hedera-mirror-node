@@ -40,7 +40,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         order by start_consensus_timestamp desc limit 1
       ),
       ns as (
-        select max_stake,min_stake,node_id,stake,stake_not_rewarded,stake_rewarded,stake_total,staking_period
+        select max_stake,min_stake,node_id,reward_rate,stake,stake_not_rewarded,stake_rewarded,stake_total,staking_period
         from node_stake where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
       )
       select
@@ -55,6 +55,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         adb.end_consensus_timestamp,
         ns.max_stake,
         ns.min_stake,
+        ns.reward_rate,
         ns.stake,
         ns.stake_not_rewarded,
         ns.stake_rewarded,
@@ -87,7 +88,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       order by start_consensus_timestamp desc limit 1
     ),
     ns as (
-      select max_stake,min_stake,node_id,stake,stake_not_rewarded,stake_rewarded,stake_total,staking_period
+      select max_stake,min_stake,node_id,reward_rate,stake,stake_not_rewarded,stake_rewarded,stake_total,staking_period
       from node_stake where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
     )
     select
@@ -102,6 +103,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       adb.end_consensus_timestamp,
       ns.max_stake,
       ns.min_stake,
+      ns.reward_rate,
       ns.stake,
       ns.stake_not_rewarded,
       ns.stake_rewarded,
@@ -209,6 +211,7 @@ const defaultNodeStakes = [
     max_stake: 100,
     min_stake: 1,
     node_id: 0,
+    reward_rate: 1,
     stake: 1,
     stake_not_rewarded: 0,
     stake_rewarded: 1,
@@ -221,6 +224,7 @@ const defaultNodeStakes = [
     max_stake: 200,
     min_stake: 2,
     node_id: 1,
+    reward_rate: 2,
     stake: 2,
     stake_not_rewarded: 1,
     stake_rewarded: 1,
@@ -233,6 +237,7 @@ const defaultNodeStakes = [
     max_stake: 300,
     min_stake: 2,
     node_id: 0,
+    reward_rate: 3,
     stake: 3,
     stake_not_rewarded: 1,
     stake_rewarded: 2,
@@ -245,6 +250,7 @@ const defaultNodeStakes = [
     max_stake: 400,
     min_stake: 1,
     node_id: 1,
+    reward_rate: 4,
     stake: 4,
     stake_not_rewarded: 1,
     stake_rewarded: 3,
@@ -303,6 +309,7 @@ const defaultExpectedNetworkNode101 = [
     nodeStake: {
       maxStake: 300,
       minStake: 2,
+      rewardRate: 3,
       stake: 3,
       stakeNotRewarded: 1,
       stakeRewarded: 2,
@@ -334,6 +341,7 @@ const defaultExpectedNetworkNode102 = [
     nodeStake: {
       maxStake: 300,
       minStake: 2,
+      rewardRate: 3,
       stake: 3,
       stakeNotRewarded: 1,
       stakeRewarded: 2,
@@ -362,6 +370,7 @@ const defaultExpectedNetworkNode102 = [
     nodeStake: {
       maxStake: 400,
       minStake: 1,
+      rewardRate: 4,
       stake: 4,
       stakeNotRewarded: 1,
       stakeRewarded: 3,
@@ -391,6 +400,7 @@ const defaultExpectedNetworkNodeEmptyNodeStake = [
       },
     ],
     nodeStake: {
+      rewardRate: null,
       stake: null,
       stakeRewarded: null,
       stakeTotal: null,
@@ -416,6 +426,7 @@ const defaultExpectedNetworkNodeEmptyNodeStake = [
       },
     ],
     nodeStake: {
+      rewardRate: null,
       stake: null,
       stakeRewarded: null,
       stakeTotal: null,
@@ -487,6 +498,7 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
         },
       ],
       nodeStake: {
+        rewardRate: 3,
         stake: 3,
         stakeRewarded: 2,
         stakeTotal: 7,
@@ -517,6 +529,7 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
       nodeStake: {
         maxStake: 300,
         minStake: 2,
+        rewardRate: 3,
         stake: 3,
         stakeNotRewarded: 1,
         stakeRewarded: 2,

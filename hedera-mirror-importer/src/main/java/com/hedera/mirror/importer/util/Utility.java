@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.util;
  * ‍
  */
 
+import com.google.common.base.CaseFormat;
 import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
@@ -39,6 +40,7 @@ import java.util.Arrays;
 import lombok.experimental.UtilityClass;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
@@ -167,5 +169,12 @@ public class Utility {
     public static TransactionID getTransactionId(AccountID payerAccountId) {
         Timestamp validStart = Utility.instantToTimestamp(Instant.now());
         return TransactionID.newBuilder().setAccountID(payerAccountId).setTransactionValidStart(validStart).build();
+    }
+
+    public static String toSnakeCase(String text) {
+        if (StringUtils.isBlank(text)) {
+            return text;
+        }
+        return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, text);
     }
 }

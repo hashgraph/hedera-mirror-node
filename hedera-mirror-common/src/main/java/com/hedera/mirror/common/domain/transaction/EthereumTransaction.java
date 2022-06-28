@@ -56,7 +56,7 @@ public class EthereumTransaction implements Persistable<Long> {
     private byte[] chainId;
 
     @Id
-    private Long consensusTimestamp;
+    private long consensusTimestamp;
 
     @ToString.Exclude
     private byte[] data;

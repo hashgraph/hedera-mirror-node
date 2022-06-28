@@ -20,43 +20,15 @@ package com.hedera.mirror.common.domain.contract;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import javax.persistence.Column;
-import javax.persistence.Convert;
 import javax.persistence.Entity;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import lombok.experimental.SuperBuilder;
-
-import com.hedera.mirror.common.converter.FileIdConverter;
-import com.hedera.mirror.common.converter.UnknownIdConverter;
-import com.hedera.mirror.common.domain.Aliasable;
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
-import com.hedera.mirror.common.domain.entity.EntityId;
 
 @Data
 @Entity
 @NoArgsConstructor
 @SuperBuilder
-public class Contract extends AbstractEntity implements Aliasable {
-
-    @Column(updatable = false)
-    @Convert(converter = FileIdConverter.class)
-    private EntityId fileId;
-
-    @Column(updatable = false)
-    @ToString.Exclude
-    private byte[] initcode;
-
-    @Convert(converter = UnknownIdConverter.class)
-    private EntityId obtainerId;
-
-    private Boolean permanentRemoval;
-
-    @JsonIgnore
-    @Override
-    public byte[] getAlias() {
-        return getEvmAddress();
-    }
+public class Contract extends AbstractContract {
+    // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
 }
