@@ -516,7 +516,7 @@ func TestNewAccountIdFromEntityFail(t *testing.T) {
 			input: domain.Entity{Alias: randstr.Bytes(16), Id: domain.MustDecodeEntityId(150)},
 		},
 		{
-			name:  "unsupported curve type",
+			name:  "unsupported key type",
 			input: domain.Entity{Alias: keyListNetworkAlias, Id: domain.MustDecodeEntityId(150)},
 		},
 	}
