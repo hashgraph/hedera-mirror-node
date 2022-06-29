@@ -80,6 +80,7 @@ class TransactionService extends BaseService {
     ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)},
     ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
     ${Transaction.getFullName(Transaction.RESULT)},
+    ${Transaction.getFullName(Transaction.TYPE)} as transaction_type,
     coalesce(
         ${EthereumTransaction.getFullName(EthereumTransaction.HASH)},
       ${Transaction.getFullName(Transaction.TRANSACTION_HASH)}

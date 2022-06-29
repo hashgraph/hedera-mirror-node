@@ -35,7 +35,15 @@ const EntityId = require('../entityId');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 const {NotFoundError} = require('../errors/notFoundError');
 
-const {Contract, ContractLog, ContractResult, TransactionResult, RecordFile, Transaction} = require('../model');
+const {
+  Contract,
+  ContractLog,
+  ContractResult,
+  TransactionResult,
+  RecordFile,
+  Transaction,
+  TransactionType,
+} = require('../model');
 const {ContractService, FileDataService, RecordFileService, TransactionService} = require('../service');
 const TransactionId = require('../transactionId');
 const utils = require('../utils');
@@ -71,7 +79,9 @@ const contractWithInitcodeSelectFields = [...contractSelectFields, Contract.getF
 
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
+const ethereumTransactionType = TransactionType.getProtoId('ETHEREUMTRANSACTION');
 
+const emptyBloomBuffer = Buffer.alloc(256);
 /**
  * Extracts the sql where clause, params, order and limit values to be used from the provided contract query
  * param filters
@@ -1002,6 +1012,7 @@ class ContractController extends BaseController {
     // extract filters from query param
     const {transactionIdOrHash} = req.params;
     let transactions;
+    let isFailedContractResult = false;
     // When getting transactions, exclude duplicate transactions. there can be at most one
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
@@ -1047,7 +1058,14 @@ class ContractController extends BaseController {
     }
 
     if (contractResults.length === 0) {
-      throw new NotFoundError();
+      // should always return a contract results when
+      // contract results are empty AND transaction type = ethereum transaction
+      isFailedContractResult = transaction.transactionType.toString() === ethereumTransactionType;
+      if (isFailedContractResult) {
+        contractResults.push(this.getDefaultFailureContractResultByTransaction(transaction));
+      } else {
+        throw new NotFoundError();
+      }
     }
 
     this.setContractResultsResponse(
@@ -1084,6 +1102,20 @@ class ContractController extends BaseController {
       contractStateChanges,
       fileData
     );
+  };
+
+  getDefaultFailureContractResultByTransaction = (transaction) => {
+    return {
+      bloom: emptyBloomBuffer,
+      callResult: [],
+      consensusTimestamp: transaction.consensusTimestamp,
+      contractId: null,
+      createdContractIds: [],
+      errorMessage: TransactionResult.getName(transaction.result),
+      functionParameters: [],
+      gasUsed: 0,
+      payerAccountId: transaction.payerAccountId,
+    };
   };
 }
 
