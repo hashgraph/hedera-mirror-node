@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.web3.evm.properties;
 
 /*-
  * ‌
@@ -20,11 +20,19 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import org.hyperledger.besu.evm.frame.MessageFrame;
+import javax.validation.constraints.NotBlank;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 
-public class OracleSimulator {
+@ConfigurationProperties(prefix = "evm")
+@ConfigurationPropertiesScan
+@Data
+public class EvmConfigProperties {
 
-    public long storageExpiryIn(final MessageFrame frame) {
-        return 0L;
-    }
+    @NotBlank
+    int chainId;
+
+    @NotBlank
+    int maxGasRefundPercentage;
 }
