@@ -21,6 +21,7 @@ package com.hedera.mirror.web3.repository;
  */
 
 import java.util.Optional;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
@@ -31,6 +32,7 @@ public interface RecordFileRepository extends PagingAndSortingRepository<RecordF
     @Query("select max(r.index) from RecordFile r")
     Optional<Long> findLatestIndex();
 
+    @Cacheable(value = "record_file", key = "record_index")
     @Query("select r from RecordFile r where r.index = ?1")
     Optional<RecordFile> findByIndex(long index);
 
