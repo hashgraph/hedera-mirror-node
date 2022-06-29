@@ -77,8 +77,8 @@ paths:
         |               | gt(e)               | Y       | Single occurrence only. | ?token.id=gte:X |
         | serialnumber  | eq                  | Y       | Single occurrence only. Requires the presence of a **token.id** query | ?serialnumber=Y |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lt(e)** or **eq** **token.id** query | ?token.id=lte:X&serialnumber=lt:Y |
-        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gt(e)** or **eq** **token.id** query | ?token.id=gte:X&serialnumber=gt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** or **eq** **token.id** query | ?token.id=lte:X&serialnumber=lt:Y |
+        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** or **eq** **token.id** query | ?token.id=gte:X&serialnumber=gt:Y |
         | spender.id    | eq                  | Y       | | ?spender.id=Z |
         |               | ne                  | N       | | |
         |               | lt(e)               | Y       | | ?spender.id=lt:Z |
@@ -156,8 +156,8 @@ paths:
         |               | gt(e)               | Y       | Single occurrence only. | ?spender.id=gte:X |
         | token.id      | eq                  | Y       | Single occurrence only. Requires the presence of a **spender.id** query | ?token.id=lt:Y |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lt(e)** or **eq** **spender.id** query | ?spender.id=lte:X&token.id=lt:Y |
-        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gt(e)** or **eq** **spender.id** query | ?spender.id=gte:X&token.id=gt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** or **eq** **spender.id** query | ?spender.id=lte:X&token.id=lt:Y |
+        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** or **eq** **spender.id** query | ?spender.id=gte:X&token.id=gt:Y |
 
         Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
 

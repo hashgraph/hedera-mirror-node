@@ -39,8 +39,8 @@ const {NftViewModel} = require('../viewmodel');
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
 class AccountController extends BaseController {
-  validateFilters(serialNumberBound, tokenIdBound, spenderIdFilters) {
-    this.validateBounds(tokenIdBound, serialNumberBound);
+  validateFilters(bounds, spenderIdFilters) {
+    this.validateBounds(bounds);
 
     const spenderOperators = spenderIdFilters.map((f) => f.operator);
     if (
@@ -56,17 +56,9 @@ class AccountController extends BaseController {
   }
 
   extractNftMultiUnionQuery(filters, ownerAccountId) {
-    const serialNumberBound = new Bound(constants.filterKeys.SERIAL_NUMBER);
-    const tokenIdBound = new Bound(constants.filterKeys.TOKEN_ID);
     const bounds = {
-      [constants.filterKeys.SERIAL_NUMBER]: serialNumberBound,
-      [constants.filterKeys.TOKEN_ID]: tokenIdBound,
-    };
-    const boundKeys = {
-      primary: constants.filterKeys.TOKEN_ID,
-      primaryDbColumn: 'token_id',
-      secondary: constants.filterKeys.SERIAL_NUMBER,
-      secondaryDbColumn: 'serial_number',
+      primary: new Bound(constants.filterKeys.TOKEN_ID, 'token_id'),
+      secondary: new Bound(constants.filterKeys.SERIAL_NUMBER, 'serial_number'),
     };
     let limit = defaultLimit;
     let order = constants.orderFilterValues.DESC;
@@ -76,12 +68,10 @@ class AccountController extends BaseController {
     for (const filter of filters) {
       switch (filter.key) {
         case constants.filterKeys.SERIAL_NUMBER:
+          bounds.secondary.parse(filter);
+          break;
         case constants.filterKeys.TOKEN_ID:
-          try {
-            bounds[filter.key].parse(filter);
-          } catch (e) {
-            throw new InvalidArgumentError(`Multiple range params not allowed for ${filter.key}`);
-          }
+          bounds.primary.parse(filter);
           break;
         case constants.filterKeys.LIMIT:
           limit = filter.value;
@@ -97,14 +87,13 @@ class AccountController extends BaseController {
       }
     }
 
-    this.validateFilters(serialNumberBound, tokenIdBound, spenderIdFilters);
+    this.validateFilters(bounds, spenderIdFilters);
 
-    const lower = this.getLowerFilters(tokenIdBound, serialNumberBound);
-    const inner = this.getInnerFilters(tokenIdBound, serialNumberBound);
-    const upper = this.getUpperFilters(tokenIdBound, serialNumberBound);
+    const lower = this.getLowerFilters(bounds);
+    const inner = this.getInnerFilters(bounds);
+    const upper = this.getUpperFilters(bounds);
     return {
       bounds,
-      boundKeys,
       lower,
       inner,
       upper,
@@ -132,7 +121,7 @@ class AccountController extends BaseController {
     res.locals[constants.responseDataLabel] = {
       nfts,
       links: {
-        next: this.getPaginationLink(req, nfts, query.bounds, query.boundKeys, query.limit, query.order),
+        next: this.getPaginationLink(req, nfts, query.bounds, query.limit, query.order),
       },
     };
   };

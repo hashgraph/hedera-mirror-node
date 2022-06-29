@@ -12,23 +12,53 @@
     "cryptotransfers": [],
     "nfts": []
   },
-  "urls": [
-    "/api/v1/accounts/0.0.1001/nfts?token.id=2&token.id=3",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=gt:2&token.id=gt:3",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=gte:2&token.id=gte:3",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=gt:2&token.id=gte:3",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=lt:3&token.id=lt:2",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=lte:3&token.id=lte:2",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=lt:3&token.id=lte:2"
-  ],
-  "responseStatus": 400,
-  "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "Multiple range params not allowed for token.id"
+  "tests": [
+    {
+      "url": "/api/v1/accounts/0.0.1001/nfts?token.id=2&token.id=3",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Only one equal (eq) operator is allowed for token.id"
+            }
+          ]
         }
-      ]
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/accounts/0.0.1001/nfts?token.id=gt:2&token.id=gt:3",
+        "/api/v1/accounts/0.0.1001/nfts?token.id=gte:2&token.id=gte:3",
+        "/api/v1/accounts/0.0.1001/nfts?token.id=gt:2&token.id=gte:3"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Only one gt/gte operator is allowed for token.id"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/accounts/0.0.1001/nfts?token.id=lt:3&token.id=lt:2",
+        "/api/v1/accounts/0.0.1001/nfts?token.id=lte:3&token.id=lte:2",
+        "/api/v1/accounts/0.0.1001/nfts?token.id=lt:3&token.id=lte:2"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Only one lt/lte operator is allowed for token.id"
+            }
+          ]
+        }
+      }
     }
-  }
+  ]
 }

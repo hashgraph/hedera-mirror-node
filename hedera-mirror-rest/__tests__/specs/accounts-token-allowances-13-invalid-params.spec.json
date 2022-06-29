@@ -31,7 +31,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one equal (eq) operator is allowed"
+              "message": "Only one equal (eq) operator is allowed for spender.id"
             }
           ]
         }
@@ -57,7 +57,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one equal (eq) operator is allowed"
+              "message": "Only one equal (eq) operator is allowed for token.id"
             }
           ]
         }
@@ -70,7 +70,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one gt/gte operator is allowed"
+              "message": "Only one gt/gte operator is allowed for spender.id"
             }
           ]
         }
@@ -83,7 +83,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one lt/lte operator is allowed"
+              "message": "Only one lt/lte operator is allowed for spender.id"
             }
           ]
         }
@@ -96,7 +96,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one gt/gte operator is allowed"
+              "message": "Only one gt/gte operator is allowed for token.id"
             }
           ]
         }
@@ -109,7 +109,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one lt/lte operator is allowed"
+              "message": "Only one lt/lte operator is allowed for token.id"
             }
           ]
         }

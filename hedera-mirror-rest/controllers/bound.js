@@ -31,8 +31,9 @@ const {InvalidArgumentError} = require('../errors/invalidArgumentError');
  * FilterKey may be referenced in validation errors.
  */
 class Bound {
-  constructor(filterKey) {
+  constructor(filterKey, viewModelKey) {
     this.filterKey = filterKey;
+    this.viewModelKey = viewModelKey;
     this.equal = null;
     this.lower = null;
     this.upper = null;
@@ -62,21 +63,21 @@ class Bound {
     const operator = filter.operator;
     if (operator === utils.opsMap.eq) {
       if (this.hasEqual()) {
-        throw new InvalidArgumentError('Only one equal (eq) operator is allowed');
+        throw new InvalidArgumentError(`Only one equal (eq) operator is allowed for ${this.filterKey}`);
       }
       this.equal = filter;
     } else if (utils.gtGte.includes(operator)) {
       if (this.hasLower()) {
-        throw new InvalidArgumentError('Only one gt/gte operator is allowed');
+        throw new InvalidArgumentError(`Only one gt/gte operator is allowed for ${this.filterKey}`);
       }
       this.lower = filter;
     } else if (utils.ltLte.includes(operator)) {
       if (this.hasUpper()) {
-        throw new InvalidArgumentError('Only one lt/lte operator is allowed');
+        throw new InvalidArgumentError(`Only one lt/lte operator is allowed for ${this.filterKey}`);
       }
       this.upper = filter;
     } else {
-      throw new InvalidArgumentError('Not equal (ne) operator is not supported');
+      throw new InvalidArgumentError(`Not equal (ne) operator is not supported for ${this.filterKey}`);
     }
   }
 

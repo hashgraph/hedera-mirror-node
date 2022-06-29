@@ -42,21 +42,13 @@ class TokenAllowanceController extends BaseController {
    *
    * @param {[]} filters req filters
    * @param {BigInt} ownerAccountId Encoded owner entityId
-   * @returns {{bounds: {string: Bound}, boundKeys: {Map<String, string}, lower: *[], inner: *[], upper: *[],
+   * @returns {{bounds: {string: Bound}, lower: *[], inner: *[], upper: *[],
    *  accountId: BigInt, order: 'asc'|'desc', limit: number}}
    */
   extractTokenMultiUnionQuery(filters, ownerAccountId) {
-    const spenderBound = new Bound(constants.filterKeys.SPENDER_ID);
-    const tokenIdBound = new Bound(constants.filterKeys.TOKEN_ID);
     const bounds = {
-      [constants.filterKeys.SPENDER_ID]: spenderBound,
-      [constants.filterKeys.TOKEN_ID]: tokenIdBound,
-    };
-    const boundKeys = {
-      primary: constants.filterKeys.SPENDER_ID,
-      primaryDbColumn: 'spender',
-      secondary: constants.filterKeys.TOKEN_ID,
-      secondaryDbColumn: 'token_id',
+      primary: new Bound(constants.filterKeys.SPENDER_ID, 'spender'),
+      secondary: new Bound(constants.filterKeys.TOKEN_ID, 'token_id'),
     };
     let limit = defaultLimit;
     let order = constants.orderFilterValues.ASC;
@@ -64,8 +56,10 @@ class TokenAllowanceController extends BaseController {
     for (const filter of filters) {
       switch (filter.key) {
         case constants.filterKeys.SPENDER_ID:
+          bounds.primary.parse(filter);
+          break;
         case constants.filterKeys.TOKEN_ID:
-          bounds[filter.key].parse(filter);
+          bounds.secondary.parse(filter);
           break;
         case constants.filterKeys.LIMIT:
           limit = filter.value;
@@ -78,14 +72,13 @@ class TokenAllowanceController extends BaseController {
       }
     }
 
-    this.validateBounds(spenderBound, tokenIdBound);
+    this.validateBounds(bounds);
 
     return {
       bounds,
-      boundKeys,
-      lower: this.getLowerFilters(spenderBound, tokenIdBound),
-      inner: this.getInnerFilters(spenderBound, tokenIdBound),
-      upper: this.getUpperFilters(spenderBound, tokenIdBound),
+      lower: this.getLowerFilters(bounds),
+      inner: this.getInnerFilters(bounds),
+      upper: this.getUpperFilters(bounds),
       order,
       ownerAccountId,
       limit,
@@ -108,7 +101,7 @@ class TokenAllowanceController extends BaseController {
     res.locals[constants.responseDataLabel] = {
       allowances,
       links: {
-        next: this.getPaginationLink(req, allowances, query.bounds, query.boundKeys, query.limit, query.order),
+        next: this.getPaginationLink(req, allowances, query.bounds, query.limit, query.order),
       },
     };
   };
