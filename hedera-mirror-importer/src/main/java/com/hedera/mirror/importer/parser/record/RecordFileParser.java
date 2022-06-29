@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+import static com.hedera.mirror.importer.reader.record.ProtoRecordFileReader.VERSION;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
@@ -44,7 +45,6 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParser;
-import com.hedera.mirror.importer.reader.record.ProtoRecordFileReader;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 import com.hedera.mirror.importer.util.Utility;
@@ -169,13 +169,17 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
     // Correct v5 block numbers once we receive a v6 block with a canonical number
     private void updateIndex(RecordFile recordFile) {
         var lastRecordFile = last.get();
+        var recordFileRepository = (RecordFileRepository) streamFileRepository;
 
-        if (lastRecordFile != null && recordFile.getVersion() >= ProtoRecordFileReader.VERSION) {
-            long offset = recordFile.getIndex() - lastRecordFile.getIndex();
+        if (lastRecordFile == null) {
+            lastRecordFile = recordFileRepository.findLatest().orElse(null);
+        }
 
-            if (offset != 1) {
-                Stopwatch stopwatch = Stopwatch.createStarted();
-                var recordFileRepository = (RecordFileRepository) streamFileRepository;
+        if (lastRecordFile != null && lastRecordFile.getVersion() < VERSION && recordFile.getVersion() >= VERSION) {
+            long offset = recordFile.getIndex() - lastRecordFile.getIndex() - 1;
+
+            if (offset != 0) {
+                var stopwatch = Stopwatch.createStarted();
                 int count = recordFileRepository.updateIndex(offset);
                 log.info("Updated {} blocks with offset {} in {}", count, offset, stopwatch);
             }

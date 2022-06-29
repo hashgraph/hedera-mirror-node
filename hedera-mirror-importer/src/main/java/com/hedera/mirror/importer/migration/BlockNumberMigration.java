@@ -31,7 +31,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.MirrorProperties;
@@ -42,17 +41,16 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 public class BlockNumberMigration extends MirrorBaseJavaMigration {
 
     static final Map<HederaNetwork, Pair<Long, Long>> BLOCK_NUMBER_MAPPING = Map.of(
-            TESTNET, Pair.of(1654885757958366469L, 21831887L),
-            MAINNET, Pair.of(1654885703747893000L, 33522048L)
+            TESTNET, Pair.of(1656461617493248000L, 22384256L),
+            MAINNET, Pair.of(1656461547557609267L, 34305852L)
     );
 
-    private final JdbcTemplate jdbcTemplate;
     private final MirrorProperties mirrorProperties;
     private final RecordFileRepository recordFileRepository;
 
     @Override
     public Integer getChecksum() {
-        return 3; // Change this if this migration should be rerun
+        return 4; // Change this if this migration should be rerun
     }
 
     @Override

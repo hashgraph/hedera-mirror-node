@@ -43,6 +43,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -246,7 +247,26 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         assertParsed(streamFile2, true, false);
         assertPostParseStreamFile(streamFile1, true);
         assertPostParseStreamFile(streamFile2, true);
-        verify(recordFileRepository).updateIndex(offset);
+        verify(recordFileRepository).updateIndex(offset - 1);
+    }
+
+    @Test
+    void blockNumberMigrationOnStartup() {
+        // given
+        int offset = 2;
+        var streamFile1 = (RecordFile) getStreamFile();
+        var streamFile2 = (RecordFile) getStreamFile();
+        streamFile1.setIndex(streamFile2.getIndex() - offset);
+        streamFile1.setVersion(5);
+        when(recordFileRepository.findLatest()).thenReturn(Optional.of(streamFile1));
+
+        // when
+        parser.parse(streamFile2);
+
+        // then
+        assertParsed(streamFile2, true, false);
+        assertPostParseStreamFile(streamFile2, true);
+        verify(recordFileRepository).updateIndex(offset - 1);
     }
 
     @Test
