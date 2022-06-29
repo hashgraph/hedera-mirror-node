@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
+import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
@@ -29,6 +30,9 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 @Data
 public class EvmConfigProperties {
 
+    @NotBlank
     int chainId;
+
+    @NotBlank
     int maxGasRefundPercentage;
 }
