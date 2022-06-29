@@ -20,10 +20,17 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 
 public interface StakingRewardTransferRepository extends
-        CrudRepository<StakingRewardTransfer, StakingRewardTransfer.Id> {
+        CrudRepository<StakingRewardTransfer, StakingRewardTransfer.Id>, RetentionRepository {
+
+    @Modifying
+    @Override
+    @Query("delete from StakingRewardTransfer where consensusTimestamp <= ?1")
+    int prune(long consensusTimestamp);
 }

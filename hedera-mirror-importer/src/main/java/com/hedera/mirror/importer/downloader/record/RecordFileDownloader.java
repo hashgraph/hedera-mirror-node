@@ -53,7 +53,7 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
 
     @Override
     @Leader
-    @Scheduled(fixedDelayString = "${hedera.mirror.importer.downloader.record.frequency:500}")
+    @Scheduled(fixedDelayString = "#{@recordDownloaderProperties.getFrequency().toMillis()}")
     public void download() {
         downloadNextBatch();
     }

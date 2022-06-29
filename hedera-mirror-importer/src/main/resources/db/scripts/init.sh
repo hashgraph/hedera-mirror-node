@@ -68,9 +68,9 @@ alter default privileges in schema :dbSchema grant select on tables to readonly;
 alter default privileges in schema :dbSchema grant select on sequences to readonly;
 
 -- Grant readwrite privileges
-grant insert, update on all tables in schema :dbSchema to readwrite;
+grant insert, update, delete on all tables in schema :dbSchema to readwrite;
 grant usage on all sequences in schema :dbSchema to readwrite;
-alter default privileges in schema :dbSchema grant insert, update on tables to readwrite;
+alter default privileges in schema :dbSchema grant insert, update, delete on tables to readwrite;
 alter default privileges in schema :dbSchema grant usage on sequences to readwrite;
 
 -- Alter search path

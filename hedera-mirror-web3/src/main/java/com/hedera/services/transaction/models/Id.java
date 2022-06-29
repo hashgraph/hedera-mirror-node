@@ -5,7 +5,7 @@ import static java.lang.System.arraycopy;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.swirlds.common.utility.CommonUtils;
+import com.swirlds.common.CommonUtils;
 import java.util.Comparator;
 import org.hyperledger.besu.datatypes.Address;
 

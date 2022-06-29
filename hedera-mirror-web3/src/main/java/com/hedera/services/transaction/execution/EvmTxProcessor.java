@@ -37,14 +37,13 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 import com.hedera.mirror.web3.evm.OracleSimulator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
 import com.hedera.mirror.web3.evm.SimulatorUpdater;
+import com.hedera.mirror.web3.evm.properties.EvmConfigProperties;
 import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
-import com.hedera.mirror.web3.evm.properties.ConfigurationProperties;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
 import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.exception.InvalidTransactionException;
 import com.hedera.services.transaction.exception.ValidationUtils;
 import com.hedera.services.transaction.models.Account;
-import com.hedera.services.transaction.models.Id;
 
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
@@ -69,11 +68,11 @@ abstract class EvmTxProcessor {
     private final SimulatedPricesSource simulatedPricesSource;
     private final AbstractMessageProcessor messageCallProcessor;
     private final AbstractMessageProcessor contractCreationProcessor;
-    protected final ConfigurationProperties configurationProperties;
+    protected final EvmConfigProperties configurationProperties;
 
     protected EvmTxProcessor(
             final SimulatedPricesSource simulatedPricesSource,
-            final ConfigurationProperties configurationProperties,
+            final EvmConfigProperties configurationProperties,
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap
@@ -99,7 +98,7 @@ abstract class EvmTxProcessor {
     protected EvmTxProcessor(
             final SimulatorUpdater worldUpdater,
             final SimulatedPricesSource simulatedPricesSource,
-            final ConfigurationProperties configurationProperties,
+            final EvmConfigProperties configurationProperties,
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap,
@@ -111,7 +110,8 @@ abstract class EvmTxProcessor {
         this.gasCalculator = gasCalculator;
 
         var operationRegistry = new OperationRegistry();
-        registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(configurationProperties.chainId()));
+
+        registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(configurationProperties.getChainId()));
         hederaOperations.forEach(operationRegistry::put);
 
         final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
@@ -222,7 +222,6 @@ abstract class EvmTxProcessor {
             }
         }
 
-        final var coinbase = Id.fromGrpcAccount(configurationProperties.fundingAccount()).asEvmAddress();
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var gasAvailable = gasLimit - intrinsicGas;
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
@@ -246,7 +245,6 @@ abstract class EvmTxProcessor {
                         .completer(unused -> {
                         })
                         .isStatic(isStatic)
-                        .miningBeneficiary(coinbase)
                         .blockHashLookup(blockMetaSource::getBlockHash)
                         .contextVariables(Map.of(
                                 "sbh", storageByteHoursTinyBarsGiven(consensusTime),
@@ -285,18 +283,9 @@ abstract class EvmTxProcessor {
                 }
             }
 
-            // Send fees to coinbase
-            final var mutableCoinbase = worldUpdater.getOrCreate(coinbase).getMutable();
-            final long coinbaseFee = gasLimit - refunded;
-
-            mutableCoinbase.incrementBalance(Wei.of(coinbaseFee * gasPrice));
             initialFrame.getSelfDestructs().forEach(worldUpdater::deleteAccount);
 
-            if (configurationProperties.shouldEnableTraceability()) {
-                stateChanges = worldUpdater.getFinalStateChanges();
-            } else {
-                stateChanges = Map.of();
-            }
+            stateChanges = Map.of();
 
             // Commit top level updater
             worldUpdater.commit();
@@ -334,7 +323,7 @@ abstract class EvmTxProcessor {
 
         gasUsedByTransaction = gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
 
-        final var maxRefundPercent = configurationProperties.maxGasRefundPercentage();
+        final var maxRefundPercent = configurationProperties.getMaxGasRefundPercentage();
         gasUsedByTransaction = Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
 
         return gasUsedByTransaction;

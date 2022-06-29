@@ -22,15 +22,27 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EthereumTransactionRepositoryTest extends AbstractRepositoryTest {
 
-    @Resource
-    private EthereumTransactionRepository ethereumTransactionRepository;
+    private final EthereumTransactionRepository ethereumTransactionRepository;
+
+    @Test
+    void prune() {
+        domainBuilder.ethereumTransaction(true).persist();
+        var ethereumTransaction2 = domainBuilder.ethereumTransaction(false).persist();
+        var ethereumTransaction3 = domainBuilder.ethereumTransaction(true).persist();
+
+        ethereumTransactionRepository.prune(ethereumTransaction2.getConsensusTimestamp());
+
+        assertThat(ethereumTransactionRepository.findAll()).containsExactly(ethereumTransaction3);
+    }
 
     @Test
     void saveInitCode() {

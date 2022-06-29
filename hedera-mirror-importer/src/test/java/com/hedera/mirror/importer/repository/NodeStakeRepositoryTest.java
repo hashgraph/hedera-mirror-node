@@ -26,14 +26,29 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.hedera.mirror.importer.util.Utility;
+
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class NodeStakeRepositoryTest extends AbstractRepositoryTest {
 
-    private final NodeStakeRepository repository;
+    private final NodeStakeRepository nodeStakeRepository;
 
     @Test
-    void findById() {
-        var expected = domainBuilder.nodeStake().persist();
-        assertThat(repository.findById(expected.getId())).get().isEqualTo(expected);
+    void prune() {
+        long epochDay = Utility.getEpochDay(domainBuilder.timestamp());
+        domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay - 367)).persist();
+        var nodeStake2 = domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay - 1)).persist();
+        var nodeStake3 = domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay)).persist();
+
+        nodeStakeRepository.prune(nodeStake2.getConsensusTimestamp());
+
+        assertThat(nodeStakeRepository.findAll()).containsExactlyInAnyOrder(nodeStake2, nodeStake3);
+    }
+
+    @Test
+    void save() {
+        var nodeStake = domainBuilder.nodeStake().get();
+        nodeStakeRepository.save(nodeStake);
+        assertThat(nodeStakeRepository.findById(nodeStake.getId())).get().isEqualTo(nodeStake);
     }
 }

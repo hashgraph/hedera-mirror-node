@@ -20,10 +20,16 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import com.hedera.mirror.common.domain.transaction.Transaction;
 
-public interface TransactionRepository extends PagingAndSortingRepository<Transaction, Long> {
+public interface TransactionRepository extends PagingAndSortingRepository<Transaction, Long>, RetentionRepository {
 
+    @Modifying
+    @Override
+    @Query("delete from Transaction where consensusTimestamp <= ?1")
+    int prune(long consensusTimestamp);
 }
