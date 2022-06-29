@@ -679,7 +679,8 @@ public abstract class AbstractDownloaderTest {
     }
 
     protected void verifyStreamFiles(List<String> files) {
-        verifyStreamFiles(files, s -> {});
+        verifyStreamFiles(files, s -> {
+        });
     }
 
     protected void verifyStreamFiles(List<String> files, Consumer<StreamFile> extraAssert) {
@@ -751,6 +752,6 @@ public abstract class AbstractDownloaderTest {
      * @param instant the instant of the stream file
      */
     protected void expectLastStreamFile(Instant instant) {
-        expectLastStreamFile(null, null, instant);
+        expectLastStreamFile(null, 0L, instant);
     }
 }
