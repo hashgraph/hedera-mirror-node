@@ -25,23 +25,33 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class WeiBarTinyBarConverterTest {
+
     private static final WeiBarTinyBarConverter converter = WeiBarTinyBarConverter.INSTANCE;
     private static final Long defaultGas = 1234567890123L;
-    private static final byte[] defaultGasBytes = BigInteger.valueOf(defaultGas).toByteArray();
 
     @Test
-    void byteArrayWeiBarToTinyBar() {
+    void convertBytes() {
         var emptyBytes = new byte[] {};
-        Assertions.assertThat(converter.weiBarToTinyBar((byte[]) null)).isNull();
-        Assertions.assertThat(converter.weiBarToTinyBar(emptyBytes)).isSameAs(emptyBytes);
-        Assertions.assertThat(converter.weiBarToTinyBar(defaultGasBytes))
-                .isEqualTo(BigInteger.valueOf(123).toByteArray());
+        var bigInteger = BigInteger.valueOf(defaultGas);
+        var expectedBytes = BigInteger.valueOf(123).toByteArray();
+        var expectedNegativeBytes = BigInteger.valueOf(-123).toByteArray();
+
+        Assertions.assertThat(converter.convert(null, true)).isNull();
+        Assertions.assertThat(converter.convert(null, false)).isNull();
+        Assertions.assertThat(converter.convert(emptyBytes, true)).isSameAs(emptyBytes);
+        Assertions.assertThat(converter.convert(emptyBytes, false)).isSameAs(emptyBytes);
+        Assertions.assertThat(converter.convert(bigInteger.toByteArray(), true)).isEqualTo(expectedBytes);
+        Assertions.assertThat(converter.convert(bigInteger.toByteArray(), false)).isEqualTo(expectedBytes);
+        Assertions.assertThat(converter.convert(bigInteger.negate().toByteArray(), true))
+                .isEqualTo(expectedNegativeBytes);
+        Assertions.assertThat(converter.convert(bigInteger.negate().toByteArray(), false))
+                .isNotEqualTo(expectedBytes)
+                .isNotEqualTo(expectedNegativeBytes);
     }
 
     @Test
-    void longWeiBarToTinyBar() {
-        Assertions.assertThat(converter.weiBarToTinyBar((Long) null)).isNull();
-        Assertions.assertThat(converter.weiBarToTinyBar(defaultGas))
-                .isEqualTo(123L);
+    void convertLong() {
+        Assertions.assertThat(converter.convert(null)).isNull();
+        Assertions.assertThat(converter.convert(defaultGas)).isEqualTo(123L);
     }
 }
