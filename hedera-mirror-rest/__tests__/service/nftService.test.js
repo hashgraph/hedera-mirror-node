@@ -296,10 +296,10 @@ describe('getQuery', () => {
             from nft where account_id = $1
             and spender <= $3
             and spender >= $4
-            and spender in (15,17,22)
+            and spender in ($5,$6,$7)
             order by token_id desc,serial_number desc
             limit $2`,
-        params: [1, 20, 10, 30],
+        params: [1, 20, 10, 30, 15, 17, 22],
       },
     },
     {
@@ -313,10 +313,10 @@ describe('getQuery', () => {
         sqlQuery: `${selectColumnsStatement}
             from nft where account_id = $1
             and spender <= $3
-            and spender in (15)
+            and spender in ($4)
             order by token_id desc,serial_number desc
             limit $2`,
-        params: [1, 20, 10],
+        params: [1, 20, 10, 15],
       },
     },
   ];

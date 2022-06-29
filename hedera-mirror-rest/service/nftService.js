@@ -71,11 +71,7 @@ class NftService extends BaseService {
    * @return {string}
    */
   getSubQuery(filters, params, accountIdCondition, limitClause, orderClause, spenderIdInFilters, spenderIdFilters) {
-    // spenderInCondition used to combine equals queries into a single "in" condition;
-    const spenderInCondition = !_.isEmpty(spenderIdInFilters) ? spenderIdInFilters.map((f) => f.value).join(',') : null;
-
     filters.push(...spenderIdFilters);
-
     const conditions = [
       accountIdCondition,
       ...filters.map((filter) => {
@@ -84,8 +80,14 @@ class NftService extends BaseService {
         return `${column}${filter.operator}$${params.length}`;
       }),
     ];
-    if (!_.isNil(spenderInCondition)) {
-      conditions.push(`${Nft.SPENDER} in (${spenderInCondition})`);
+
+    if (!_.isEmpty(spenderIdInFilters)) {
+      const paramsForCondition = spenderIdInFilters.map((filter) => {
+        params.push(filter.value);
+        return `$${params.length}`;
+      });
+
+      conditions.push(`${Nft.SPENDER} in (${paramsForCondition})`);
     }
 
     return [NftService.nftQuery, `where ${conditions.join(' and ')}`, orderClause, limitClause].join('\n');
