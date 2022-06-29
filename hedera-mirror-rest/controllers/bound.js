@@ -33,7 +33,7 @@ const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 class Bound {
   constructor(filterKey, viewModelKey) {
     this.filterKey = filterKey;
-    this.viewModelKey = viewModelKey;
+    this.viewModelKey = !_.isNil(viewModelKey) ? viewModelKey : filterKey;
     this.equal = null;
     this.lower = null;
     this.upper = null;

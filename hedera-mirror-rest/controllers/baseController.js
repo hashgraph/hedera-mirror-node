@@ -98,12 +98,13 @@ class BaseController {
    * @throws {InvalidArgumentError}
    */
   validateLowerBounds(bounds) {
+    const {primary, secondary} = bounds;
     if (
-      !bounds.primary.hasEqual() &&
-      bounds.secondary.hasLower() &&
-      (!bounds.primary.hasLower() || bounds.primary.lower.operator === utils.opsMap.gt)
+      !primary.hasEqual() &&
+      secondary.hasLower() &&
+      (!primary.hasLower() || primary.lower.operator === utils.opsMap.gt)
     ) {
-      throw new InvalidArgumentError(`${bounds.primary.filterKey} must have gte or eq operator`);
+      throw new InvalidArgumentError(`${primary.filterKey} must have gte or eq operator`);
     }
   }
 
@@ -114,12 +115,13 @@ class BaseController {
    * @throws {InvalidArgumentError}
    */
   validateUpperBounds(bounds) {
+    const {primary, secondary} = bounds;
     if (
-      !bounds.primary.hasEqual() &&
-      bounds.secondary.hasUpper() &&
-      (!bounds.primary.hasUpper() || bounds.primary.upper.operator === utils.opsMap.lt)
+      !primary.hasEqual() &&
+      secondary.hasUpper() &&
+      (!primary.hasUpper() || primary.upper.operator === utils.opsMap.lt)
     ) {
-      throw new InvalidArgumentError(`${bounds.primary.filterKey} must have lte or eq operator`);
+      throw new InvalidArgumentError(`${primary.filterKey} must have lte or eq operator`);
     }
   }
 
@@ -145,23 +147,17 @@ class BaseController {
    */
   getLowerFilters(bounds) {
     let filters = [];
-    if (!bounds.secondary.hasBound()) {
+    const {primary, secondary} = bounds;
+    if (!secondary.hasBound()) {
       // no secondary bound filters or no secondary filters at all, everything goes into the lower part and there
       // shouldn't be inner or upper part.
-      filters = [bounds.primary.equal, bounds.primary.lower, bounds.primary.upper, bounds.secondary.equal];
-    } else if (bounds.primary.hasLower() && bounds.secondary.hasLower()) {
+      filters = [primary.equal, primary.lower, primary.upper, secondary.equal];
+    } else if (primary.hasLower() && secondary.hasLower()) {
       // both have lower. If primary has lower and secondary doesn't have lower, the lower bound of primary
       // will go into the inner part.
-      filters = [{...bounds.primary.lower, operator: utils.opsMap.eq}, bounds.secondary.lower];
-    } else if (bounds.primary.hasEqual()) {
-      filters = [
-        bounds.primary.equal,
-        bounds.primary.lower,
-        bounds.primary.upper,
-        bounds.secondary.lower,
-        bounds.secondary.equal,
-        bounds.secondary.upper,
-      ];
+      filters = [{...primary.lower, operator: utils.opsMap.eq}, secondary.lower];
+    } else if (primary.hasEqual()) {
+      filters = [primary.equal, primary.lower, primary.upper, secondary.lower, secondary.equal, secondary.upper];
     }
     return filters.filter((f) => !_.isNil(f));
   }
@@ -173,15 +169,16 @@ class BaseController {
    * @return {{key: string, operator: string, value: *}[]}
    */
   getInnerFilters(bounds) {
-    if (!bounds.primary.hasBound() || !bounds.secondary.hasBound()) {
+    const {primary, secondary} = bounds;
+    if (!primary.hasBound() || !secondary.hasBound()) {
       return [];
     }
 
     return [
       // if secondary has lower bound, the primary filter should be > ?
-      {filter: bounds.primary.lower, newOperator: bounds.secondary.hasLower() ? utils.opsMap.gt : null},
+      {filter: primary.lower, newOperator: secondary.hasLower() ? utils.opsMap.gt : null},
       // if secondary has upper bound, the primary filter should be < ?
-      {filter: bounds.primary.upper, newOperator: bounds.secondary.hasUpper() ? utils.opsMap.lt : null},
+      {filter: primary.upper, newOperator: secondary.hasUpper() ? utils.opsMap.lt : null},
     ]
       .filter((f) => !_.isNil(f.filter))
       .map((f) => ({...f.filter, operator: f.newOperator || f.filter.operator}));
@@ -194,11 +191,12 @@ class BaseController {
    * @return {{key: string, operator: string, value: *}[]}
    */
   getUpperFilters(bounds) {
-    if (!bounds.primary.hasUpper() || !bounds.secondary.hasUpper()) {
+    const {primary, secondary} = bounds;
+    if (!primary.hasUpper() || !secondary.hasUpper()) {
       return [];
     }
     // the upper part should always have primary filter = ?
-    return [{...bounds.primary.upper, operator: utils.opsMap.eq}, bounds.secondary.upper];
+    return [{...primary.upper, operator: utils.opsMap.eq}, secondary.upper];
   }
 
   /**
@@ -225,16 +223,15 @@ class BaseController {
     if (primaryBound.hasBound() || primaryBound.isEmpty()) {
       // the primary param has bound or no primary param at all
       // primary param should be exclusive when the secondary operator is eq
-      const viewModelKey = !_.isNil(primaryBound.viewModelKey) ? primaryBound.viewModelKey : primaryBound.filterKey;
-      lastValues[primaryBound.filterKey] = {value: lastRow[viewModelKey], inclusive: !secondaryBound.hasEqual()};
+      lastValues[primaryBound.filterKey] = {
+        value: lastRow[primaryBound.viewModelKey],
+        inclusive: !secondaryBound.hasEqual(),
+      };
     }
 
     if (secondaryBound.hasBound() || secondaryBound.isEmpty()) {
       // the secondary param has bound or no secondary param at all
-      const viewModelKey = !_.isNil(secondaryBound.viewModelKey)
-        ? secondaryBound.viewModelKey
-        : secondaryBound.filterKey;
-      lastValues[secondaryBound.filterKey] = {value: lastRow[viewModelKey]};
+      lastValues[secondaryBound.filterKey] = {value: lastRow[secondaryBound.viewModelKey]};
     }
 
     return utils.getPaginationLink(req, false, lastValues, order);

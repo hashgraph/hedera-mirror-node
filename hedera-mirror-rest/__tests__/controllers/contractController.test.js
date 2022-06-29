@@ -825,6 +825,7 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
           primary: Bound.create({
             equal: timestampEq1002Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter],
@@ -843,6 +844,7 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
           primary: Bound.create({
             lower: timestampGt1002Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampGt1002Filter],
@@ -861,6 +863,7 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
           primary: Bound.create({
             lower: timestampGte1002Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampGte1002Filter],
@@ -879,6 +882,7 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
           primary: Bound.create({
             upper: timestampLt1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampLt1005Filter],
@@ -897,6 +901,7 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
           primary: Bound.create({
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampLte1005Filter],
@@ -916,6 +921,7 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
             lower: timestampGt1002Filter,
             upper: timestampLt1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampGt1002Filter, timestampLt1005Filter],
@@ -937,6 +943,7 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
             lower: timestampGte1002Filter,
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampGte1002Filter, timestampLte1005Filter],
@@ -953,10 +960,15 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({equal: indexEq2Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            equal: indexEq2Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             equal: timestampEq1002Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexEq2Filter],
@@ -973,10 +985,15 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({lower: indexGt2Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            lower: indexGt2Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             equal: timestampEq1002Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexGt2Filter],
@@ -993,10 +1010,15 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({lower: indexGte2Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            lower: indexGte2Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             equal: timestampEq1002Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexGte2Filter],
@@ -1013,10 +1035,15 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({upper: indexLt5Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            upper: indexLt5Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             equal: timestampEq1002Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexLt5Filter],
@@ -1033,10 +1060,15 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({upper: indexLte5Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            upper: indexLte5Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             equal: timestampEq1002Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexLte5Filter],
@@ -1053,10 +1085,15 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({lower: indexGt2Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            lower: indexGt2Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             lower: timestampGte1002Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexGt2Filter],
@@ -1074,10 +1111,15 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({lower: indexGte2Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            lower: indexGte2Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             lower: timestampGte1002Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexGte2Filter],
@@ -1095,10 +1137,15 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({upper: indexLt5Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            upper: indexLt5Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         upper: [timestampEq1005Filter, indexLt5Filter],
@@ -1116,10 +1163,15 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({upper: indexLte5Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            upper: indexLte5Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         upper: [timestampEq1005Filter, indexLte5Filter],
@@ -1137,11 +1189,16 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({lower: indexGt2Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            lower: indexGt2Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             lower: timestampGte1002Filter,
             upper: timestampLt1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexGt2Filter],
@@ -1159,11 +1216,16 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({lower: indexGt2Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            lower: indexGt2Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             lower: timestampGte1002Filter,
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexGt2Filter],
@@ -1181,11 +1243,16 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({lower: indexGte2Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            lower: indexGte2Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             lower: timestampGte1002Filter,
             upper: timestampLt1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexGte2Filter],
@@ -1204,11 +1271,16 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({lower: indexGte2Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            lower: indexGte2Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             lower: timestampGte1002Filter,
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexGte2Filter],
@@ -1227,11 +1299,16 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({upper: indexLt5Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            upper: indexLt5Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             lower: timestampGt1002Filter,
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         inner: [timestampGt1002Filter, timestampLt1005Filter],
@@ -1249,11 +1326,16 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({upper: indexLte5Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            upper: indexLte5Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             lower: timestampGt1002Filter,
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         inner: [timestampGt1002Filter, timestampLt1005Filter],
@@ -1271,11 +1353,16 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({upper: indexLt5Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            upper: indexLt5Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             lower: timestampGte1002Filter,
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         inner: [timestampGte1002Filter, timestampLt1005Filter],
@@ -1293,11 +1380,16 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
         conditions: [defaultContractLogCondition],
         params: [defaultContractId],
         bounds: {
-          secondary: Bound.create({upper: indexLte5Filter, filterKey: constants.filterKeys.INDEX}),
+          secondary: Bound.create({
+            upper: indexLte5Filter,
+            filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
+          }),
           primary: Bound.create({
             lower: timestampGte1002Filter,
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         inner: [timestampGte1002Filter, timestampLt1005Filter],
@@ -1319,11 +1411,13 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
             lower: indexGt2Filter,
             upper: indexLt5Filter,
             filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
           }),
           primary: Bound.create({
             lower: timestampGte1002Filter,
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexGt2Filter],
@@ -1347,11 +1441,13 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
             lower: indexGt2Filter,
             upper: indexLte5Filter,
             filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
           }),
           primary: Bound.create({
             lower: timestampGte1002Filter,
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexGt2Filter],
@@ -1374,11 +1470,13 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
             lower: indexGte2Filter,
             upper: indexLt5Filter,
             filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
           }),
           primary: Bound.create({
             lower: timestampGte1002Filter,
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexGte2Filter],
@@ -1401,11 +1499,13 @@ describe('extractContractLogsMultiUnionQuery - positive', () => {
             lower: indexGte2Filter,
             upper: indexLte5Filter,
             filterKey: constants.filterKeys.INDEX,
+            viewModelKey: constants.filterKeys.INDEX,
           }),
           primary: Bound.create({
             lower: timestampGte1002Filter,
             upper: timestampLte1005Filter,
             filterKey: constants.filterKeys.TIMESTAMP,
+            viewModelKey: constants.filterKeys.TIMESTAMP,
           }),
         },
         lower: [timestampEq1002Filter, indexGte2Filter],

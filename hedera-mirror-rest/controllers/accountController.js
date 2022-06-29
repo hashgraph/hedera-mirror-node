@@ -50,7 +50,7 @@ class AccountController extends BaseController {
       throw new InvalidArgumentError(`Multiple range params not allowed for spender.id`);
     }
 
-    if (spenderIdFilters.map((f) => f.operator).filter((o) => utils.opsMap.ne === o).length > 0) {
+    if (spenderIdFilters.some((f) => f.operator === utils.opsMap.ne)) {
       throw new InvalidArgumentError(`Not equals (ne) comparison operator is not supported`);
     }
   }
