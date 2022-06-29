@@ -21,15 +21,14 @@ package com.hedera.mirror.common.domain.transaction;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import javax.persistence.Entity;
+import javax.persistence.Id;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
-
-import javax.persistence.Entity;
-import javax.persistence.Id;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
 @Builder
@@ -39,11 +38,11 @@ import javax.persistence.Id;
 public class UtilRandomGenerate implements Persistable<Long> {
 
     @Id
-    private Long consensusTimestamp;
+    private long consensusTimestamp;
 
     private byte[] pseudorandomBytes;
 
-    private int pseudorandomNumber;
+    private Integer pseudorandomNumber;
 
     private int range;
 

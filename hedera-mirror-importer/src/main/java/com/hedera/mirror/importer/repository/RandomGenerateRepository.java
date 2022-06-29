@@ -20,17 +20,13 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-
-import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
-
-import com.hederahashgraph.api.proto.java.RandomGenerate;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
-public interface UtilRandomGenerateRepository extends PagingAndSortingRepository<UtilRandomGenerate, Long>, RetentionRepository {
+import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
+
+public interface RandomGenerateRepository extends PagingAndSortingRepository<UtilRandomGenerate, Long>, RetentionRepository {
 
     @Modifying
     @Query("delete from UtilRandomGenerate where consensusTimestamp <= ?1")

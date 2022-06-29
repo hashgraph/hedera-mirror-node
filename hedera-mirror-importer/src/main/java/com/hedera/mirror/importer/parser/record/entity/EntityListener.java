@@ -109,6 +109,9 @@ public interface EntityListener {
     default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
     }
 
+    default void onRandomGenerate(UtilRandomGenerate utilRandomGenerate) {
+    }
+
     default void onSchedule(Schedule schedule) throws ImporterException {
     }
 
@@ -134,8 +137,5 @@ public interface EntityListener {
     }
 
     default void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {
-    }
-
-    default void onUtilRandomGenerate(UtilRandomGenerate utilRandomGenerate) {
     }
 }

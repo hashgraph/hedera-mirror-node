@@ -360,6 +360,20 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);
     }
 
+    public Builder<RandomGenerateTransactionBody.Builder> randomGenerate(int range) {
+        var builder = RandomGenerateTransactionBody.newBuilder().setRange(range);
+        var transactionBodyBuilder = new Builder<>(TransactionType.RANDOMGENERATE, builder);
+        return range < 0 ?
+                transactionBodyBuilder :
+                transactionBodyBuilder.record(r -> {
+                    if(range > 0) {
+                        r.setPseudorandomNumber(random.nextInt());
+                    } else {
+                        r.setPseudorandomBytes(ByteString.copyFrom(randomBytes(382)));
+                    }
+                });
+    }
+
     public Builder<ScheduleCreateTransactionBody.Builder> scheduleCreate() {
         var scheduledTransaction = SchedulableTransactionBody.newBuilder()
                 .setTransactionFee(1_00_000_000)
@@ -405,11 +419,6 @@ public class RecordItemBuilder {
                 .setTreasury(accountId())
                 .setWipeKey(key());
         return new Builder<>(TransactionType.TOKENUPDATE, transactionBody);
-    }
-
-    public Builder<RandomGenerateTransactionBody.Builder> utilRandomGenerate(int range) {
-        var builder = RandomGenerateTransactionBody.newBuilder().setRange(range);
-        return new Builder<>(TransactionType.UTILRANDOMGENERATE, builder);
     }
 
     // Helper methods

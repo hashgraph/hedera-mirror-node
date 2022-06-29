@@ -232,5 +232,9 @@ create index if not exists transaction_signature__entity_id
 create index if not exists transaction_signature__timestamp_public_key_prefix
     on transaction_signature (consensus_timestamp desc, public_key_prefix);
 
+-- util-random-generate
+alter table util_random_generate
+    add constraint util_random_generate__pk primary key (consensus_timestamp);
+
 -- revert to default
 set local citus.multi_shard_modify_mode to 'parallel';

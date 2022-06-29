@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -92,6 +91,7 @@ import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
+import com.hedera.mirror.importer.repository.RandomGenerateRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
@@ -102,7 +102,6 @@ import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
-import com.hedera.mirror.importer.repository.UtilRandomGenerateRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class SqlEntityListenerTest extends IntegrationTest {
@@ -126,6 +125,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftTransferRepository nftTransferRepository;
     private final NodeStakeRepository nodeStakeRepository;
+    private final RandomGenerateRepository randomGenerateRepository;
     private final RecordFileRepository recordFileRepository;
     private final ScheduleRepository scheduleRepository;
     private final SqlEntityListener sqlEntityListener;
@@ -139,7 +139,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final TransactionRepository transactionRepository;
     private final TransactionSignatureRepository transactionSignatureRepository;
     private final TransactionTemplate transactionTemplate;
-    private final UtilRandomGenerateRepository utilRandomGenerateRepository;
 
     private static Key keyFromString(String key) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
@@ -1154,6 +1153,24 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onRandomGenerate() {
+        var randomGenerate = domainBuilder.utilRandomGenerate().get();
+        var randomGenerate2 = domainBuilder.utilRandomGenerate()
+                .customize(r -> r.range(0)
+                .pseudorandomNumber(null)
+                .pseudorandomBytes(domainBuilder.bytes(382))).get();
+
+        sqlEntityListener.onRandomGenerate(randomGenerate);
+        sqlEntityListener.onRandomGenerate(randomGenerate2);
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(randomGenerateRepository.findAll()).containsExactlyInAnyOrder(randomGenerate, randomGenerate2);
+    }
+
+    @Test
     void onStakingRewardTransfer() {
         // given
         var transfer1 = domainBuilder.stakingRewardTransfer().get();
@@ -1633,18 +1650,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         schedule.setExecutedTimestamp(5L);
         assertThat(scheduleRepository.findAll()).containsExactlyInAnyOrder(schedule);
-    }
-
-    @Test
-    void onUtilRandomGenerate() {
-        var utilRandomGenerate = domainBuilder.utilRandomGenerate().get();
-        sqlEntityListener.onUtilRandomGenerate(utilRandomGenerate);
-
-        // when
-        completeFileAndCommit();
-
-        // then
-        assertThat(utilRandomGenerateRepository.findAll()).contains(utilRandomGenerate);
     }
 
     @Test

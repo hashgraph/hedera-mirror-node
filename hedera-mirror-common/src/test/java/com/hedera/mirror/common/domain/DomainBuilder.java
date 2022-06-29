@@ -754,8 +754,7 @@ public class DomainBuilder {
         var builder = UtilRandomGenerate.builder()
                 .consensusTimestamp(timestamp())
                 .range(Integer.MAX_VALUE)
-                .pseudorandomBytes(bytes(384))
-                .pseudorandomNumber(random.nextInt());
+                .pseudorandomNumber(random.nextInt(Integer.MAX_VALUE));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

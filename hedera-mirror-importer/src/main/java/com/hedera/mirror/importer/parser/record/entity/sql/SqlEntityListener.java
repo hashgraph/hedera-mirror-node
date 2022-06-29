@@ -110,6 +110,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<NodeStake> nodeStakes;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
+    private final Collection<UtilRandomGenerate> randomGenerates;
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
     private final Map<TokenAccountId, TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
@@ -118,7 +119,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TopicMessage> topicMessages;
     private final Collection<Transaction> transactions;
     private final Collection<TransactionSignature> transactionSignatures;
-    private final Collection<UtilRandomGenerate> utilRandomGenerates;
 
     // maps of upgradable domains
     private final Map<Long, Contract> contractState;
@@ -165,6 +165,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nftAllowances = new ArrayList<>();
         nodeStakes = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
+        randomGenerates = new ArrayList<>();
         stakingRewardTransfers = new ArrayList<>();
         tokenAccounts = new LinkedHashMap<>();
         tokenAllowances = new ArrayList<>();
@@ -173,7 +174,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         topicMessages = new ArrayList<>();
         transactions = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
-        utilRandomGenerates = new ArrayList<>();
 
         contractState = new HashMap<>();
         cryptoAllowanceState = new HashMap<>();
@@ -234,6 +234,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nftAllowanceState.clear();
             nftTransferState.clear();
             nodeStakes.clear();
+            randomGenerates.clear();
             schedules.clear();
             topicMessages.clear();
             tokenAccounts.clear();
@@ -245,7 +246,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             tokenTransfers.clear();
             transactions.clear();
             transactionSignatures.clear();
-            utilRandomGenerates.clear();
             eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
         } catch (BeanCreationNotAllowedException e) {
             // This error can occur during shutdown
@@ -270,10 +270,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(fileData);
             batchPersister.persist(liveHashes);
             batchPersister.persist(nodeStakes);
+            batchPersister.persist(randomGenerates);
             batchPersister.persist(topicMessages);
             batchPersister.persist(transactions);
             batchPersister.persist(transactionSignatures);
-            batchPersister.persist(utilRandomGenerates);
 
             // insert operations with conflict management
             batchPersister.persist(contracts);
@@ -407,6 +407,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
         nonFeeTransfers.add(nonFeeTransfer);
+    }
+
+    @Override
+    public void onRandomGenerate(UtilRandomGenerate randomGenerate) {
+        randomGenerates.add(randomGenerate);
     }
 
     @Override
@@ -544,11 +549,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         return dest;
-    }
-
-    @Override
-    public void onUtilRandomGenerate(UtilRandomGenerate utilRandomGenerate) {
-        utilRandomGenerates.add(utilRandomGenerate);
     }
 
     private Contract mergeContract(Contract previous, Contract current) {

@@ -24,15 +24,12 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.security.SecureRandom;
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class UtilRandomGenerateRepositoryTest extends AbstractRepositoryTest {
 
-    private final UtilRandomGenerateRepository utilRandomGenerateRepository;
+    private final RandomGenerateRepository utilRandomGenerateRepository;
 
     @Test
     void prune() {

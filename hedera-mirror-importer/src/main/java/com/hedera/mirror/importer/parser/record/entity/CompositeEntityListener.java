@@ -158,6 +158,11 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
+    public void onRandomGenerate(UtilRandomGenerate randomGenerate) {
+        onEach(EntityListener::onRandomGenerate, randomGenerate);
+    }
+
+    @Override
     public void onSchedule(Schedule schedule) throws ImporterException {
         onEach(EntityListener::onSchedule, schedule);
     }
@@ -200,10 +205,5 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {
         onEach(EntityListener::onTransactionSignature, transactionSignature);
-    }
-
-    @Override
-    public void onUtilRandomGenerate(UtilRandomGenerate utilRandomGenerate) {
-        onEach(EntityListener::onUtilRandomGenerate, utilRandomGenerate);
     }
 }
