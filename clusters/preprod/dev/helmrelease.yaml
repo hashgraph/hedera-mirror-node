@@ -11,15 +11,15 @@ spec:
         kind: HelmRepository
         name: hedera-mirror-node
       valuesFiles:
-        - charts/hedera-mirror/values.yaml
-        - charts/hedera-mirror/values-prod.yaml
+        - values.yaml
+        - values-prod.yaml
       version: '0.46.1'
   dependsOn:
     - name: mirror
       namespace: common
   install:
     crds: CreateReplace
-  interval: 30s
+  interval: 90s
   test:
     enable: true
     timeout: 20m  # It can take up to 15m for the next balance file to show up that the helm tests verify
