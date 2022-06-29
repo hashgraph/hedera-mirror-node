@@ -24,10 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.google.protobuf.ByteString;
-
-import com.hedera.mirror.common.domain.transaction.Transaction;
-
 import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
