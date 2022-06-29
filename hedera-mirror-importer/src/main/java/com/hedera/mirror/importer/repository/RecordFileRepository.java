@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.repository;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -53,6 +54,6 @@ public interface RecordFileRepository extends StreamFileRepository<RecordFile, L
 
     @Modifying
     @Query(nativeQuery = true, value = "update record_file set index = index + ?1")
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW, timeout = 7200)
     int updateIndex(long offset);
 }
