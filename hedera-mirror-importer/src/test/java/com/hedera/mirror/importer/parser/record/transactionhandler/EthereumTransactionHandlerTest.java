@@ -157,6 +157,32 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(entityListener, never()).onEntity(any());
     }
 
+    @Test
+    void updateTransactionEmptyWeiBars() {
+        boolean create = true;
+        var emptyBytes = new byte[] {};
+        var ethereumTransaction = domainBuilder.ethereumTransaction(create).get();
+        ethereumTransaction.setGasLimit(null);
+        ethereumTransaction.setGasPrice(emptyBytes);
+        ethereumTransaction.setMaxFeePerGas(emptyBytes);
+        ethereumTransaction.setMaxPriorityFeePerGas(emptyBytes);
+        ethereumTransaction.setValue(emptyBytes);
+        doReturn(ethereumTransaction).when(ethereumTransactionParser).decode(any());
+
+        var recordItem = recordItemBuilder.ethereumTransaction(create).build();
+
+        var transaction = new Transaction();
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        verify(entityListener).onEthereumTransaction(ethereumTransaction);
+        assertThat(ethereumTransaction)
+                .returns(null, EthereumTransaction::getGasLimit)
+                .returns(emptyBytes, EthereumTransaction::getGasPrice)
+                .returns(emptyBytes, EthereumTransaction::getMaxFeePerGas)
+                .returns(emptyBytes, EthereumTransaction::getMaxPriorityFeePerGas)
+                .returns(emptyBytes, EthereumTransaction::getValue);
+    }
+
     @ValueSource(booleans = {true, false})
     @ParameterizedTest
     void updateTransactionSkipNonceOnFailure(boolean create) {

@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.repository;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 
@@ -49,4 +51,9 @@ public interface RecordFileRepository extends StreamFileRepository<RecordFile, L
     @Override
     @Query("delete from RecordFile where consensusEnd <= ?1")
     int prune(long consensusTimestamp);
+
+    @Modifying
+    @Query(nativeQuery = true, value = "update record_file set index = index + ?1")
+    @Transactional(propagation = Propagation.REQUIRES_NEW, timeout = 7200)
+    int updateIndex(long offset);
 }

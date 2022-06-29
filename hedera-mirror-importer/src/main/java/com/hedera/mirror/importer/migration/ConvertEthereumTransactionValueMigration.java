@@ -67,7 +67,7 @@ public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigr
         jdbcTemplate.query(SELECT_NON_NULL_VALUE_SQL, rs -> {
             var consensusTimestamp = rs.getLong(1);
             var weibar = rs.getBytes(2);
-            var tinybar = converter.weiBarToTinyBar(weibar);
+            var tinybar = converter.convert(weibar, true);
             jdbcTemplate.update(SET_TINYBAR_VALUE_SQL,
                     Map.of("consensusTimestamp", consensusTimestamp, "value", tinybar));
             count.incrementAndGet();

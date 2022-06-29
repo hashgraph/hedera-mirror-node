@@ -218,6 +218,7 @@ public class TestRecordFiles {
                 .nodeAccountId(nodeAccountId)
                 .name("2022-06-21T09_14_34.364804003Z.rcd")
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
+                .index(0L)
                 .size(492)
                 .version(5)
                 .build();

@@ -30,6 +30,10 @@ import (
 // AccountRepository Interface that all AccountRepository structs must implement
 type AccountRepository interface {
 
+	// GetAccountAlias returns the alias info of the account if exists. The same accountId is returned if the account
+	// doesn't have an alias
+	GetAccountAlias(ctx context.Context, accountId types.AccountId) (types.AccountId, *rTypes.Error)
+
 	// RetrieveBalanceAtBlock returns the hbar balance and token balances of the account at a given block (provided by
 	// consensusEnd timestamp).
 	// balance = balanceAtLatestBalanceSnapshot + balanceChangeBetweenSnapshotAndBlock

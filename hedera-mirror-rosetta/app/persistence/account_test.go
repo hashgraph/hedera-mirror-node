@@ -22,8 +22,10 @@ package persistence
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
@@ -32,12 +34,16 @@ import (
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/thanhpk/randstr"
 )
 
 const (
 	account1 = int64(9000) + iota
 	treasury
 	account2
+	account3
+	account4
+	account5
 )
 
 const (
@@ -60,6 +66,11 @@ const (
 	initialAccountBalance    int64 = 12345
 	secondSnapshotTimestamp        = consensusTimestamp - 20
 	thirdSnapshotTimestamp   int64 = 400
+
+	// account3, account4, and account5 are for GetAccountAlias tests
+	account3CreatedTimestamp = consensusTimestamp + 100
+	account4CreatedTimestamp = consensusTimestamp + 110
+	account5CreatedTimestamp = consensusTimestamp + 120
 )
 
 var (
@@ -74,6 +85,13 @@ var (
 	token2 domain.Token
 	token3 domain.Token
 	token4 domain.Token
+
+	// account3 has ecdsaSecp256k1 alias, account4 has ed25519 alias, account5 has invalid alias
+	account3Alias        = "0x03d9a822b91df7850274273a338c152e7bcfa2036b24cd9e3b29d07efd949b387a"
+	account3NetworkAlias = hexutil.MustDecode("0x3a2103d9a822b91df7850274273a338c152e7bcfa2036b24cd9e3b29d07efd949b387a")
+	account4Alias        = "0x5a081255a92b7c262bc2ea3ab7114b8a815345b3cc40f800b2b40914afecc44e"
+	account4NetworkAlias = hexutil.MustDecode("0x12205a081255a92b7c262bc2ea3ab7114b8a815345b3cc40f800b2b40914afecc44e")
+	account5NetworkAlias = randstr.Bytes(48)
 )
 
 // run the suite
@@ -84,8 +102,12 @@ func TestAccountRepositorySuite(t *testing.T) {
 type accountRepositorySuite struct {
 	integrationTest
 	suite.Suite
-	accountId       types.AccountId
-	accountIdString string
+	accountId            types.AccountId
+	accountIdString      string
+	account1NetworkAlias []byte
+	account3NetworkAlias []byte
+	account4NetworkAlias []byte
+	account5NetworkAlias []byte
 }
 
 func (suite *accountRepositorySuite) SetupSuite() {
@@ -94,18 +116,12 @@ func (suite *accountRepositorySuite) SetupSuite() {
 }
 
 func (suite *accountRepositorySuite) SetupTest() {
-	suite.setupTest(nil)
-}
-
-func (suite *accountRepositorySuite) setupTest(accountNetworkAlias []byte) {
 	suite.integrationTest.SetupTest()
 	associatedTokenAccounts := make([]domain.TokenAccount, 0)
 
-	accountBuilder := tdomain.NewEntityBuilder(dbClient, account1, account1CreatedTimestamp, domain.EntityTypeAccount)
-	if accountNetworkAlias != nil {
-		accountBuilder.Alias(accountNetworkAlias)
-	}
-	accountBuilder.Persist()
+	tdomain.NewEntityBuilder(dbClient, account1, account1CreatedTimestamp, domain.EntityTypeAccount).
+		Alias(suite.account1NetworkAlias).
+		Persist()
 
 	// persist tokens and tokenAccounts
 	token1 = tdomain.NewTokenBuilder(dbClient, encodedTokenId1, firstSnapshotTimestamp+1, treasury).Persist()
@@ -300,6 +316,52 @@ func (suite *accountRepositorySuite) setupTest(accountNetworkAlias []byte) {
 			Associated(false, accountDeleteTimestamp-1).
 			Persist()
 	}
+
+	// accounts for GetAccountAlias tests
+	tdomain.NewEntityBuilder(dbClient, account3, account3CreatedTimestamp, domain.EntityTypeAccount).
+		Alias(suite.account3NetworkAlias).
+		Persist()
+	tdomain.NewEntityBuilder(dbClient, account4, account4CreatedTimestamp, domain.EntityTypeAccount).
+		Alias(suite.account4NetworkAlias).
+		Persist()
+	tdomain.NewEntityBuilder(dbClient, account5, account5CreatedTimestamp, domain.EntityTypeAccount).
+		Alias(suite.account5NetworkAlias).
+		Persist()
+}
+
+func (suite *accountRepositorySuite) TestGetAccountAlias() {
+	tests := []struct {
+		encodedId int64
+		expected  string
+	}{
+		{encodedId: account3, expected: fmt.Sprintf("0.0.%d", account3)},
+		{encodedId: account4, expected: fmt.Sprintf("0.0.%d", account4)},
+	}
+
+	repo := NewAccountRepository(dbClient)
+
+	for _, tt := range tests {
+		name := fmt.Sprintf("%d", tt.encodedId)
+		suite.T().Run(name, func(t *testing.T) {
+			accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(tt.encodedId))
+			actual, err := repo.GetAccountAlias(defaultContext, accountId)
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expected, actual.String())
+		})
+	}
+}
+
+func (suite *accountRepositorySuite) TestGetAccountAliasDbConnectionError() {
+	// given
+	accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(account3))
+	repo := NewAccountRepository(invalidDbClient)
+
+	// when
+	actual, err := repo.GetAccountAlias(defaultContext, accountId)
+
+	// then
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), types.AccountId{}, actual)
 }
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
@@ -592,8 +654,7 @@ func TestAccountRepositoryWithAliasSuite(t *testing.T) {
 
 type accountRepositoryWithAliasSuite struct {
 	accountRepositorySuite
-	networkAlias []byte
-	publicKey    types.PublicKey
+	publicKey types.PublicKey
 }
 
 func (suite *accountRepositoryWithAliasSuite) SetupSuite() {
@@ -604,7 +665,7 @@ func (suite *accountRepositoryWithAliasSuite) SetupSuite() {
 		panic(err)
 	}
 	suite.publicKey = types.PublicKey{PublicKey: sk.PublicKey()}
-	suite.networkAlias, err = suite.publicKey.ToAlias()
+	suite.account1NetworkAlias, err = suite.publicKey.ToAlias()
 	if err != nil {
 		panic(err)
 	}
@@ -612,24 +673,58 @@ func (suite *accountRepositoryWithAliasSuite) SetupSuite() {
 	if err != nil {
 		panic(err)
 	}
+
+	suite.account3NetworkAlias = account3NetworkAlias
+	suite.account4NetworkAlias = account4NetworkAlias
+	suite.account5NetworkAlias = account5NetworkAlias
 }
 
 func (suite *accountRepositoryWithAliasSuite) SetupTest() {
-	suite.setupTest(suite.networkAlias)
+	suite.accountRepositorySuite.SetupTest()
 
 	// add account2 with the same alias but was deleted before account1
 	// the entity row with deleted = true in entity table
 	tdomain.NewEntityBuilder(dbClient, account2, account2CreatedTimestamp, domain.EntityTypeAccount).
-		Alias(suite.networkAlias).
+		Alias(suite.account1NetworkAlias).
 		Deleted(true).
 		ModifiedTimestamp(account2DeletedTimestamp).
 		Persist()
 	// the historical entry
 	tdomain.NewEntityBuilder(dbClient, account2, account2CreatedTimestamp, domain.EntityTypeAccount).
-		Alias(suite.networkAlias).
+		Alias(suite.account1NetworkAlias).
 		TimestampRange(account2CreatedTimestamp, account2DeletedTimestamp).
 		Historical(true).
 		Persist()
+}
+
+func (suite *accountRepositoryWithAliasSuite) TestGetAccountAlias() {
+	tests := []struct {
+		encodedId     int64
+		expectedAlias string
+	}{
+		{encodedId: account3, expectedAlias: account3Alias},
+		{encodedId: account4, expectedAlias: account4Alias},
+	}
+
+	repo := NewAccountRepository(dbClient)
+
+	for _, tt := range tests {
+		name := fmt.Sprintf("%d", tt.encodedId)
+		suite.T().Run(name, func(t *testing.T) {
+			accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(tt.encodedId))
+			actual, err := repo.GetAccountAlias(defaultContext, accountId)
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expectedAlias, actual.String())
+		})
+	}
+}
+
+func (suite *accountRepositoryWithAliasSuite) TestGetAccountAliasThrowWhenInvalidAlias() {
+	accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(account5))
+	repo := NewAccountRepository(dbClient)
+	actual, err := repo.GetAccountAlias(defaultContext, accountId)
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), types.AccountId{}, actual)
 }
 
 func (suite *accountRepositoryWithAliasSuite) TestRetrieveBalanceAtBlockNoAccountEntity() {

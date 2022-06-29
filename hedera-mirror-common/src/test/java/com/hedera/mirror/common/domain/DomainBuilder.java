@@ -592,6 +592,9 @@ public class DomainBuilder {
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .fileHash(text(96))
                 .gasUsed(100L)
+                .hapiVersionMajor(0)
+                .hapiVersionMinor(28)
+                .hapiVersionPatch(0)
                 .hash(text(96))
                 .index(id())
                 .logsBloom(bloomFilter())
@@ -599,8 +602,9 @@ public class DomainBuilder {
                 .loadStart(now.getEpochSecond())
                 .name(now.toString().replace(':', '_') + ".rcd")
                 .nodeAccountId(entityId(ACCOUNT))
+                .previousHash(text(96))
                 .size(256 * 1024)
-                .previousHash(text(96));
+                .version(6);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

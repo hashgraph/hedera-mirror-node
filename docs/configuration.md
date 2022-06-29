@@ -417,25 +417,26 @@ latter configuration overwriting (technically recursively merged into) the curre
 
 The following table lists the available properties along with their default values.
 
-Name                                                    | Default                 | Description
-------------------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------
-`hedera.mirror.rosetta.db.host`                         | 127.0.0.1               | The IP or hostname used to connect to the database
-`hedera.mirror.rosetta.db.name`                         | mirror_node             | The name of the database
-`hedera.mirror.rosetta.db.password`                     | mirror_rosetta_pass     | The database password the processor uses to connect
-`hedera.mirror.rosetta.db.pool.maxIdleConnections`      | 20                      | The maximum number of idle database connections
-`hedera.mirror.rosetta.db.pool.maxLifetime`             | 30                      | The maximum lifetime of a database connection in minutes
-`hedera.mirror.rosetta.db.pool.maxOpenConnections`      | 100                     | The maximum number of open database connections
-`hedera.mirror.rosetta.db.port`                         | 5432                    | The port used to connect to the database
-`hedera.mirror.rosetta.db.statementTimeout`             | 20                      | The number of seconds to wait before timing out a query statement
-`hedera.mirror.rosetta.db.username`                     | mirror_rosetta          | The username the processor uses to connect to the database
-`hedera.mirror.rosetta.log.level`                       | info                    | The log level
-`hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`
-`hedera.mirror.rosetta.nodes`                           | {}                      | A map of main nodes with its service endpoint as the key and the node account id as its value
-`hedera.mirror.rosetta.nodeVersion`                     | 0                       | The default canonical version of the node runtime
-`hedera.mirror.rosetta.online`                          | true                    | The default online mode of the Rosetta interface
-`hedera.mirror.rosetta.port`                            | 5700                    | The REST API port
-`hedera.mirror.rosetta.shard`                           | 0                       | The default shard number that this mirror node participates in
-`hedera.mirror.rosetta.realm`                           | 0                       | The default realm number within the shard
+Name                                                 | Default             | Description
+---------------------------------------------------- |---------------------| ----------------------------------------------------------------------------------------------
+`hedera.mirror.rosetta.cache.entity.maxSize`         | 524288              | The max number of entities to cache
+`hedera.mirror.rosetta.db.host`                      | 127.0.0.1           | The IP or hostname used to connect to the database
+`hedera.mirror.rosetta.db.name`                      | mirror_node         | The name of the database
+`hedera.mirror.rosetta.db.password`                  | mirror_rosetta_pass | The database password the processor uses to connect
+`hedera.mirror.rosetta.db.pool.maxIdleConnections`   | 20                  | The maximum number of idle database connections
+`hedera.mirror.rosetta.db.pool.maxLifetime`          | 30                  | The maximum lifetime of a database connection in minutes
+`hedera.mirror.rosetta.db.pool.maxOpenConnections`   | 100                 | The maximum number of open database connections
+`hedera.mirror.rosetta.db.port`                      | 5432                | The port used to connect to the database
+`hedera.mirror.rosetta.db.statementTimeout`          | 20                  | The number of seconds to wait before timing out a query statement
+`hedera.mirror.rosetta.db.username`                  | mirror_rosetta      | The username the processor uses to connect to the database
+`hedera.mirror.rosetta.log.level`                    | info                | The log level
+`hedera.mirror.rosetta.network`                      | DEMO                | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`
+`hedera.mirror.rosetta.nodes`                        | {}                  | A map of main nodes with its service endpoint as the key and the node account id as its value
+`hedera.mirror.rosetta.nodeVersion`                  | 0                   | The default canonical version of the node runtime
+`hedera.mirror.rosetta.online`                       | true                | The default online mode of the Rosetta interface
+`hedera.mirror.rosetta.port`                         | 5700                | The REST API port
+`hedera.mirror.rosetta.shard`                        | 0                   | The default shard number that this mirror node participates in
+`hedera.mirror.rosetta.realm`                        | 0                   | The default realm number within the shard
 
 ## Web3 API
 
