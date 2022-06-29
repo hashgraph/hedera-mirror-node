@@ -56,8 +56,6 @@
 
     <properties>
         <besu.version>22.4.3</besu.version>
-        <tuweni.version>2.2.0</tuweni.version>
-        <swirlds.version>0.26.2</swirlds.version>
         <dependency-check.version>7.1.1</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.40.1</docker-maven-plugin.version>
@@ -99,6 +97,8 @@
         <sonar.issue.ignore.multicriteria.e3.ruleKey>java:S2187</sonar.issue.ignore.multicriteria.e3.ruleKey>
         <sonar.issue.ignore.multicriteria.e4.resourceKey>**/*.js</sonar.issue.ignore.multicriteria.e4.resourceKey>
         <sonar.issue.ignore.multicriteria.e4.ruleKey>javascript:S3758</sonar.issue.ignore.multicriteria.e4.ruleKey>
+        <swirlds.version>0.26.2</swirlds.version>
+        <tuweni.version>2.2.0</tuweni.version>
         <web3j.version>4.9.2</web3j.version>
     </properties>
 

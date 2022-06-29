@@ -37,7 +37,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 import com.hedera.mirror.web3.evm.OracleSimulator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
 import com.hedera.mirror.web3.evm.SimulatorUpdater;
-import com.hedera.mirror.web3.evm.properties.ConfigurationProperties;
+import com.hedera.mirror.web3.evm.properties.EvmConfigProperties;
 import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
 import com.hedera.services.transaction.TransactionProcessingResult;
@@ -68,11 +68,11 @@ abstract class EvmTxProcessor {
     private final SimulatedPricesSource simulatedPricesSource;
     private final AbstractMessageProcessor messageCallProcessor;
     private final AbstractMessageProcessor contractCreationProcessor;
-    protected final ConfigurationProperties configurationProperties;
+    protected final EvmConfigProperties configurationProperties;
 
     protected EvmTxProcessor(
             final SimulatedPricesSource simulatedPricesSource,
-            final ConfigurationProperties configurationProperties,
+            final EvmConfigProperties configurationProperties,
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap
@@ -98,7 +98,7 @@ abstract class EvmTxProcessor {
     protected EvmTxProcessor(
             final SimulatorUpdater worldUpdater,
             final SimulatedPricesSource simulatedPricesSource,
-            final ConfigurationProperties configurationProperties,
+            final EvmConfigProperties configurationProperties,
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap,
@@ -110,7 +110,7 @@ abstract class EvmTxProcessor {
         this.gasCalculator = gasCalculator;
 
         var operationRegistry = new OperationRegistry();
-        registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(configurationProperties.chainId()));
+        registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(configurationProperties.getChainId()));
         hederaOperations.forEach(operationRegistry::put);
 
         final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
@@ -322,7 +322,7 @@ abstract class EvmTxProcessor {
 
         gasUsedByTransaction = gasUsedByTransaction - selfDestructRefund - initialFrame.getGasRefund();
 
-        final var maxRefundPercent = configurationProperties.maxGasRefundPercentage();
+        final var maxRefundPercent = configurationProperties.getMaxGasRefundPercentage();
         gasUsedByTransaction = Math.max(gasUsedByTransaction, txGasLimit - txGasLimit * maxRefundPercent / 100);
 
         return gasUsedByTransaction;
