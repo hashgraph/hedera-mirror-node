@@ -14,32 +14,10 @@ import org.hyperledger.besu.evm.frame.BlockValues;
 @Value
 public class SimulatedBlockMetaSource implements BlockValues {
 
-    long gasLimit;
-    long blockNo;
     Instant consTimestamp;
-
-    @Override
-    public long getGasLimit() {
-        return gasLimit;
-    }
-
-    @Override
-    public long getTimestamp() {
-        return consTimestamp.getEpochSecond();
-    }
-
-    @Override
-    public Optional<Wei> getBaseFee() {
-        return Optional.of(Wei.ZERO);
-    }
-
-    @Override
-    public Bytes getDifficultyBytes() {
-        return UInt256.ZERO;
-    }
-
-    @Override
-    public long getNumber() {
-        return blockNo;
-    }
+    Bytes difficultyBytes = UInt256.ZERO;
+    Optional<Wei> baseFee = Optional.of(Wei.ZERO);
+    long gasLimit;
+    long number;
+    long timestamp = consTimestamp.getEpochSecond();
 }
