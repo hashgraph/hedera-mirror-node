@@ -23,19 +23,30 @@ package services
 import (
 	"context"
 
+	"github.com/Code-Hex/go-generics-cache/policy/lru"
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 )
 
 // blockAPIService implements the server.BlockAPIServicer interface.
 type blockAPIService struct {
+	accountRepo interfaces.AccountRepository
 	BaseService
+	entityCache *lru.Cache[int64, types.AccountId]
 }
 
 // NewBlockAPIService creates a new instance of a blockAPIService.
-func NewBlockAPIService(baseService BaseService) server.BlockAPIServicer {
-	return &blockAPIService{BaseService: baseService}
+func NewBlockAPIService(
+	accountRepo interfaces.AccountRepository,
+	baseService BaseService,
+	entityCacheConfig config.Cache,
+) server.BlockAPIServicer {
+	entityCache := lru.NewCache[int64, types.AccountId](lru.WithCapacity(entityCacheConfig.MaxSize))
+	return &blockAPIService{accountRepo: accountRepo, BaseService: baseService, entityCache: entityCache}
 }
 
 // Block implements the /block endpoint.
@@ -49,6 +60,10 @@ func (s *blockAPIService) Block(
 	}
 
 	if block.Transactions, err = s.FindBetween(ctx, block.ConsensusStartNanos, block.ConsensusEndNanos); err != nil {
+		return nil, err
+	}
+
+	if err = s.updateOperationAccountAlias(ctx, block.Transactions...); err != nil {
 		return nil, err
 	}
 
@@ -76,5 +91,37 @@ func (s *blockAPIService) BlockTransaction(
 		return nil, err
 	}
 
+	if err = s.updateOperationAccountAlias(ctx, transaction); err != nil {
+		return nil, err
+	}
+
 	return &rTypes.BlockTransactionResponse{Transaction: transaction.ToRosetta()}, nil
+}
+
+func (s *blockAPIService) updateOperationAccountAlias(
+	ctx context.Context,
+	transactions ...*types.Transaction,
+) *rTypes.Error {
+	for _, transaction := range transactions {
+		operations := transaction.Operations
+		for index := range operations {
+			var cached types.AccountId
+			var found bool
+
+			accountId := operations[index].AccountId
+			if cached, found = s.entityCache.Get(accountId.GetId()); !found {
+				result, err := s.accountRepo.GetAccountAlias(ctx, accountId)
+				if err != nil {
+					return err
+				}
+
+				s.entityCache.Set(result.GetId(), result)
+				cached = result
+			}
+
+			operations[index].AccountId = cached
+		}
+	}
+
+	return nil
 }

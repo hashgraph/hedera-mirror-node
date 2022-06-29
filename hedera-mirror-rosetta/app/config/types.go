@@ -26,7 +26,10 @@ import (
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
+const EntityCacheKey = "entity"
+
 type Config struct {
+	Cache       map[string]Cache
 	Db          Db
 	Log         Log
 	Network     string
@@ -36,6 +39,10 @@ type Config struct {
 	Port        uint16
 	Realm       int64
 	Shard       int64
+}
+
+type Cache struct {
+	MaxSize int `yaml:"maxSize"`
 }
 
 type Db struct {
