@@ -1107,14 +1107,14 @@ class ContractController extends BaseController {
   getDefaultFailureContractResultByTransaction = (transaction) => {
     return {
       bloom: emptyBloomBuffer,
-      callResult: null,
-      createdContractIds: [],
-      functionParameters: [],
-      payerAccountId: transaction.payerAccountId,
-      errorMessage: TransactionResult.getName(transaction.result),
+      callResult: [],
       consensusTimestamp: transaction.consensusTimestamp,
-      contractId: transaction.entityId,
+      contractId: null,
+      createdContractIds: [],
+      errorMessage: TransactionResult.getName(transaction.result),
+      functionParameters: [],
       gasUsed: 0,
+      payerAccountId: transaction.payerAccountId,
     };
   };
 }
