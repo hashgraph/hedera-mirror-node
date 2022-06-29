@@ -23,7 +23,6 @@ package com.hedera.mirror.web3.repository;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
-import org.springframework.data.repository.query.Param;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 
@@ -32,8 +31,8 @@ public interface RecordFileRepository extends PagingAndSortingRepository<RecordF
     @Query("select max(r.index) from RecordFile r")
     Optional<Long> findLatestIndex();
 
-    @Query("select r from RecordFile r where r.index = :index")
-    Optional<RecordFile> findByIndex(@Param("index") long index);
+    @Query("select r from RecordFile r where r.index = ?1")
+    Optional<RecordFile> findByIndex(long index);
 
     @Query(value = "select * from record_file order by consensus_end desc limit 1", nativeQuery = true)
     Optional<RecordFile> findLatest();
