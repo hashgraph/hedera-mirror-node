@@ -1,5 +1,27 @@
 package com.hedera.services.transaction.execution;
 
+/*
+ * -
+ * ‌
+ * Hedera Services Node
+ * ​
+ * Copyright (C) 2018 - 2021 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ *
+ */
+
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
@@ -37,7 +59,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 import com.hedera.mirror.web3.evm.OracleSimulator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
 import com.hedera.mirror.web3.evm.SimulatorUpdater;
-import com.hedera.mirror.web3.evm.properties.EvmConfigProperties;
+import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
 import com.hedera.services.transaction.TransactionProcessingResult;
@@ -68,11 +90,11 @@ abstract class EvmTxProcessor {
     private final SimulatedPricesSource simulatedPricesSource;
     private final AbstractMessageProcessor messageCallProcessor;
     private final AbstractMessageProcessor contractCreationProcessor;
-    protected final EvmConfigProperties configurationProperties;
+    protected final EvmProperties configurationProperties;
 
     protected EvmTxProcessor(
             final SimulatedPricesSource simulatedPricesSource,
-            final EvmConfigProperties configurationProperties,
+            final EvmProperties configurationProperties,
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap
@@ -98,7 +120,7 @@ abstract class EvmTxProcessor {
     protected EvmTxProcessor(
             final SimulatorUpdater worldUpdater,
             final SimulatedPricesSource simulatedPricesSource,
-            final EvmConfigProperties configurationProperties,
+            final EvmProperties configurationProperties,
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap,
