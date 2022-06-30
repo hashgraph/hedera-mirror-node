@@ -22,6 +22,7 @@ package com.hedera.mirror.web3.evm;
 
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
+// FUTURE WORK This should move to an interface when evm-module is complete
 public class OracleSimulator {
 
     public long storageExpiryIn(final MessageFrame frame) {
