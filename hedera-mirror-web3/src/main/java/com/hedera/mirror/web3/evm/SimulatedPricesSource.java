@@ -23,6 +23,7 @@ package com.hedera.mirror.web3.evm;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.time.Instant;
 
+// FUTURE WORK This should move to an interface when evm-module is complete
 public class SimulatedPricesSource {
 
     public long currentGasPrice(final Instant now, final HederaFunctionality function) {
