@@ -1,8 +1,27 @@
 package com.hedera.mirror.web3.evm.config;
 
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.github.benmanes.caffeine.cache.Caffeine;
 import java.util.concurrent.TimeUnit;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -10,18 +29,29 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@EntityScan("com.hedera.mirror.web3.evm")
 @EnableCaching
 public class EvmConfiguration {
 
-    @Bean
-    public Caffeine caffeineConfig() {
-        return Caffeine.newBuilder().expireAfterAccess(10, TimeUnit.MINUTES);
-    }
+    public static final String CACHE_MANAGER_10M = "10M";
+    public static final String CACHE_MANAGER_500NS = "500NS";
 
     @Bean
-    public CacheManager cacheManager(Caffeine caffeine) {
+    Caffeine caffeineConfig() {
+        return Caffeine.newBuilder();
+    }
+
+    @Bean(CACHE_MANAGER_10M)
+    public CacheManager cacheManager10M(Caffeine caffeine) {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeine.expireAfterAccess(10, TimeUnit.MINUTES).maximumSize(10000);
+        caffeineCacheManager.setCaffeine(caffeine);
+        return caffeineCacheManager;
+    }
+
+    @Bean(CACHE_MANAGER_500NS)
+    public CacheManager cacheManager500NS(Caffeine caffeine) {
+        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeine.expireAfterAccess(500, TimeUnit.NANOSECONDS).maximumSize(1);
         caffeineCacheManager.setCaffeine(caffeine);
         return caffeineCacheManager;
     }

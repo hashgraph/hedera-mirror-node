@@ -20,7 +20,6 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
-import java.time.Instant;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -36,10 +35,13 @@ import org.hyperledger.besu.evm.frame.BlockValues;
 @RequiredArgsConstructor
 public class SimulatedBlockMetaSource implements BlockValues {
 
+    private static Optional<Wei> zeroWei = Optional.of(Wei.ZERO);
+
+    Optional<Wei> baseFee = zeroWei;
     Bytes difficultyBytes = UInt256.ZERO;
-    Optional<Wei> baseFee = Optional.of(Wei.ZERO);
-    final long gasLimit;
-    final long number;
-    final Instant consTimestamp;
-    long timestamp = consTimestamp.getEpochSecond();
+
+    //Used for constructor
+    long gasLimit;
+    long number;
+    long timestamp;
 }
