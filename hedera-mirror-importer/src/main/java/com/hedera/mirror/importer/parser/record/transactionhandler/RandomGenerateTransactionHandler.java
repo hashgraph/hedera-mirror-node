@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -55,12 +54,6 @@ class RandomGenerateTransactionHandler implements TransactionHandler {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         var range = recordItem.getTransactionBody().getRandomGenerate().getRange();
         if (!recordItem.isSuccessful() || range < 0) {
-            var status = recordItem.getRecord().getReceipt().getStatus();
-            if(status != ResponseCodeEnum.DUPLICATE_TRANSACTION) {
-                log.warn("RandomGenerateTransaction at consensus timestamp {} failed with status {}",
-                        consensusTimestamp,
-                        status);
-            }
             return;
         }
 
@@ -76,8 +69,8 @@ class RandomGenerateTransactionHandler implements TransactionHandler {
                 randomGenerate.setPseudorandomNumber(transactionRecord.getPseudorandomNumber());
                 break;
             default:
-                log.warn("RandomGenerateTransaction failed. Transaction Record missing EntropyCase at " +
-                        "consensus timestamp {}", consensusTimestamp);
+                log.warn("Unsupported entropy case {} at consensus timestamp {}",
+                        transactionRecord.getEntropyCase(), consensusTimestamp);
                 return;
         }
 

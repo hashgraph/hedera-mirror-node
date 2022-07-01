@@ -31,7 +31,7 @@ import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
 import com.hedera.mirror.importer.repository.RandomGenerateRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class EntityRecordItemListenerRandomGenerateTest extends AbstractEntityRecordItemListenerTest {
+class EntityRecordItemListenerUtilTest extends AbstractEntityRecordItemListenerTest {
 
     private final RandomGenerateRepository randomGenerateRepository;
 

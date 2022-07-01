@@ -90,10 +90,10 @@ class RandomGenerateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Test
-    void updateTransactionInvalidRandomRange() {
+    void updateTransactionFailedTransaction() {
         // given
         var recordItem = recordItemBuilder.randomGenerate(1)
-                .status(ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE)
+                .status(ResponseCodeEnum.DUPLICATE_TRANSACTION)
                 .build();
 
         // when

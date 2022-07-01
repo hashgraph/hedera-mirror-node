@@ -363,13 +363,11 @@ public class RecordItemBuilder {
     public Builder<RandomGenerateTransactionBody.Builder> randomGenerate(int range) {
         var builder = RandomGenerateTransactionBody.newBuilder().setRange(range);
         var transactionBodyBuilder = new Builder<>(TransactionType.RANDOMGENERATE, builder);
-        return range < 0 ?
-                transactionBodyBuilder :
-                transactionBodyBuilder.record(r -> {
-                    if(range > 0) {
-                        r.setPseudorandomNumber(random.nextInt());
-                    } else {
+        return transactionBodyBuilder.record(r -> {
+                    if(range == 0) {
                         r.setPseudorandomBytes(ByteString.copyFrom(randomBytes(382)));
+                    } else if(range > 0) {
+                        r.setPseudorandomNumber(random.nextInt());
                     }
                 });
     }
