@@ -6,7 +6,7 @@ import org.hyperledger.besu.datatypes.Address;
 @Singleton
 public class AliasesResolver {
 
-    //TODO implementation to be provided in separate PR
+    //FUTURE WORK implementation to be provided in separate PR
     Address resolveForEvm(final Address addressOrAlias) {
         return null;
     }

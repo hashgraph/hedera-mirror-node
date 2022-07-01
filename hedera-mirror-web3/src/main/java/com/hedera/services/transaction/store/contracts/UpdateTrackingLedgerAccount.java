@@ -1,7 +1,26 @@
 package com.hedera.services.transaction.store.contracts;
 
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.common.base.Preconditions;
-import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -18,12 +37,9 @@ import org.hyperledger.besu.evm.account.AccountStorageEntry;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
-import com.hedera.mirror.web3.evm.utils.AddressUtils;
-
 public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAccount, EvmAccount {
     private final Hash addressHash;
     private final Address address;
-    private final AccountID accountId;
     private final NavigableMap<UInt256, UInt256> updatedStorage;
 
     @Nullable
@@ -40,7 +56,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
             final Address address) {
         Preconditions.checkNotNull(address);
         this.address = address;
-        this.accountId = AddressUtils.accountIdFromEvmAddress(address);
         this.addressHash = Hash.hash(this.address);
         this.account = null;
         this.nonce = 0L;
@@ -54,7 +69,6 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
             final A account) {
         Preconditions.checkNotNull(account);
         this.address = account.getAddress();
-        this.accountId = AddressUtils.accountIdFromEvmAddress(address);
         this.addressHash = account instanceof UpdateTrackingLedgerAccount
                 ? ((UpdateTrackingLedgerAccount<A>) account).addressHash
                 : Hash.hash(this.address);
