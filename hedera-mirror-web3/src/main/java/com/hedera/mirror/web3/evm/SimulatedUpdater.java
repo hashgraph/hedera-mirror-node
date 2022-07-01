@@ -20,9 +20,9 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import static com.hedera.mirror.web3.evm.utils.AdressUtils.asEvmAddress;
-import static com.hedera.mirror.web3.evm.utils.AdressUtils.realmFromEvmAddress;
-import static com.hedera.mirror.web3.evm.utils.AdressUtils.shardFromEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.AddressUtils.asEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.AddressUtils.realmFromEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.AddressUtils.shardFromEvmAddress;
 import static com.hedera.services.transaction.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 import java.util.ArrayList;

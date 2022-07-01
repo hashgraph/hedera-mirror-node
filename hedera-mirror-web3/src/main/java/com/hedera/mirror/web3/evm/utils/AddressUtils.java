@@ -26,9 +26,9 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import java.util.Arrays;
 
-public final class AdressUtils {
+public final class AddressUtils {
 
-    private AdressUtils(){}
+    private AddressUtils(){}
 
     public static int shardFromEvmAddress(final byte[] bytes) {
         return Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4));
