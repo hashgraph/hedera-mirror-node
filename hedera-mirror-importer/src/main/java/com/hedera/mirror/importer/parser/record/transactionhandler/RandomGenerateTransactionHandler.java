@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -52,17 +53,18 @@ class RandomGenerateTransactionHandler implements TransactionHandler {
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
-        if (!recordItem.isSuccessful()) {
-            var record = recordItem.getRecord();
-            log.warn("RandomGenerateTransaction at consensus timestamp {} failed with status {}",
-                    consensusTimestamp,
-                    record.getReceipt().getStatus());
+        var range = recordItem.getTransactionBody().getRandomGenerate().getRange();
+        if (!recordItem.isSuccessful() || range < 0) {
+            var status = recordItem.getRecord().getReceipt().getStatus();
+            if(status != ResponseCodeEnum.DUPLICATE_TRANSACTION) {
+                log.warn("RandomGenerateTransaction at consensus timestamp {} failed with status {}",
+                        consensusTimestamp,
+                        status);
+            }
             return;
         }
 
-        var range = recordItem.getTransactionBody().getRandomGenerate().getRange();
         var transactionRecord = recordItem.getRecord();
-
         var randomGenerate = new UtilRandomGenerate();
         randomGenerate.setConsensusTimestamp(consensusTimestamp);
         randomGenerate.setRange(range);
@@ -74,7 +76,9 @@ class RandomGenerateTransactionHandler implements TransactionHandler {
                 randomGenerate.setPseudorandomNumber(transactionRecord.getPseudorandomNumber());
                 break;
             default:
-                log.warn("Transaction Record missing entropy case at consensus timestamp {}", consensusTimestamp);
+                log.warn("RandomGenerateTransaction failed. Transaction Record missing EntropyCase at " +
+                        "consensus timestamp {}", consensusTimestamp);
+                return;
         }
 
         entityListener.onRandomGenerate(randomGenerate);

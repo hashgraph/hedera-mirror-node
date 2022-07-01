@@ -363,6 +363,9 @@ public class RecordItemBuilder {
     public Builder<RandomGenerateTransactionBody.Builder> randomGenerate(int range) {
         var builder = RandomGenerateTransactionBody.newBuilder().setRange(range);
         var transactionBodyBuilder = new Builder<>(TransactionType.RANDOMGENERATE, builder);
+//        if(range < 0) {
+//             transactionBodyBuilder.status(ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE);
+//        }
         return range < 0 ?
                 transactionBodyBuilder :
                 transactionBodyBuilder.record(r -> {

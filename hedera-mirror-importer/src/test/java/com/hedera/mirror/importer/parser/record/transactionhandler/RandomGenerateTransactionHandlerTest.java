@@ -27,16 +27,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class RandomGenerateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Captor
@@ -93,29 +90,44 @@ class RandomGenerateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     @Test
-    void updateTransactionEntropyNotSet() {
+    void updateTransactionInvalidRandomRange() {
         // given
-        var recordItem = recordItemBuilder.randomGenerate(-1).build();
-        var expectedRandomGenerate =
-                getExpectedRandomGenerate(recordItem.getConsensusTimestamp(), -1, null, null);
+        var recordItem = recordItemBuilder.randomGenerate(1)
+                .status(ResponseCodeEnum.INVALID_RANDOM_GENERATE_RANGE)
+                .build();
 
         // when
         transactionHandler.updateTransaction(null, recordItem);
 
         // then
-        verify(entityListener).onRandomGenerate(randomGenerates.capture());
-        assertThat(randomGenerates.getAllValues()).containsOnly(expectedRandomGenerate);
-    }
-
-    @Test
-    void updateTransactionUnsuccessful() {
-        var recordItem = recordItemBuilder.randomGenerate(-1)
-                .receipt(r -> r.setStatus(ResponseCodeEnum.ERROR_DECODING_BYTESTRING))
-                .build();
-        transactionHandler.updateTransaction(null, recordItem);
         verifyNoInteractions(entityListener);
     }
 
+    @Test
+    void updateTransactionEntropyNotSet() {
+        // given
+        var recordItem = recordItemBuilder.randomGenerate(1)
+                .record(r -> r.clearEntropy())
+                .build();
+
+        // when
+        transactionHandler.updateTransaction(null, recordItem);
+
+        // then
+        verifyNoInteractions(entityListener);
+    }
+
+    @Test
+    void updateTransactionNegativeRange() {
+        // given
+        var recordItem = recordItemBuilder.randomGenerate(-1).build();
+
+        // when
+        transactionHandler.updateTransaction(null, recordItem);
+
+        // then
+        verifyNoInteractions(entityListener);
+    }
 
     private UtilRandomGenerate getExpectedRandomGenerate(long consensusTimestamp, int range, byte[] randomBytes,
                                                          Integer randomNumber) {
