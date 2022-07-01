@@ -594,56 +594,28 @@ class ContractController extends BaseController {
     };
   };
 
-  validateContractLogsBounds = (timestampBound, indexBound) => {
-    for (const bound of [timestampBound, indexBound]) {
-      if (bound.hasBound() && bound.hasEqual()) {
-        throw new InvalidArgumentError(`Can't support both range and equal`);
-      }
+  validateContractLogsBounds = (bounds) => {
+    if (bounds.secondary.hasEqual() && !bounds.primary.hasEqual()) {
+      throw new InvalidArgumentError(`${bounds.primary.filterKey} must have eq operator`);
     }
-
-    if (timestampBound.isEmpty() && !indexBound.isEmpty()) {
-      throw new InvalidArgumentError(
-        `Cannot search by ${constants.filterKeys.INDEX} without a ${constants.filterKeys.TIMESTAMP} parameter filter`
-      );
-    }
-
-    if (
-      indexBound.hasLower() &&
-      !timestampBound.hasEqual() &&
-      (!timestampBound.hasLower() || timestampBound.lower.operator === utils.opsMap.gt)
-    ) {
-      // invalid ops: index >/>= & timestamp </<=/>
-      throw new InvalidArgumentError(`Timestamp must have gte or eq operator`);
-    }
-
-    if (
-      indexBound.hasUpper() &&
-      !timestampBound.hasEqual() &&
-      (!timestampBound.hasUpper() || timestampBound.upper.operator === utils.opsMap.lt)
-    ) {
-      // invalid ops: index </<= & timestamp >/>=/<
-      throw new InvalidArgumentError(`Timestamp must have lte or eq operator`);
-    }
-
-    if (indexBound.hasEqual() && !timestampBound.hasEqual()) {
-      throw new InvalidArgumentError(`Timestamp must have eq operator`);
-    }
+    this.validateBounds(bounds);
   };
 
   /**
    * Extends base getLowerFilters function and adds a special case to
    * extract contract logs lower filters
-   * @param {Bound} timestampBound
-   * @param {Bound} indexBound
+   * @param {Bound}[] bounds
    * @returns {{key: string, operator: string, value: *}[]}
    */
-  getContractLogsLowerFilters = (timestampBound, indexBound) => {
-    let filters = this.getLowerFilters(timestampBound, indexBound);
+  getContractLogsLowerFilters = (bounds) => {
+    let filters = this.getLowerFilters(bounds);
 
     if (!_.isEmpty(filters)) {
       return filters;
     }
 
+    const timestampBound = bounds.primary;
+    const indexBound = bounds.secondary;
     // timestamp has equal and index has bound/equal
     // only lower bound is used, inner and upper are not needed
     if (timestampBound.hasEqual() && (indexBound.hasBound() || indexBound.hasEqual())) {
@@ -657,7 +629,7 @@ class ContractController extends BaseController {
    *
    * @param {[]} filters parsed and validated filters
    * @param {string|undefined} contractId encoded contract ID
-   * @return {{bounds: {string: Bound},boundKeys: {{primary:string,secondary:string}}, lower: *[], inner: *[], upper: *[], conditions: [], params: [], timestampOrder: 'asc'|'desc', indexOrder: 'asc'|'desc', limit: number}}
+   * @return {{bounds: {string: Bound}, lower: *[], inner: *[], upper: *[], conditions: [], params: [], timestampOrder: 'asc'|'desc', indexOrder: 'asc'|'desc', limit: number}}
    */
   extractContractLogsMultiUnionQuery = (filters, contractId) => {
     let limit = defaultLimit;
@@ -671,13 +643,10 @@ class ContractController extends BaseController {
       params.push(contractId);
     }
 
-    const indexBound = new Bound();
-    const timestampBound = new Bound();
     const bounds = {
-      [constants.filterKeys.INDEX]: indexBound,
-      [constants.filterKeys.TIMESTAMP]: timestampBound,
+      primary: new Bound(constants.filterKeys.TIMESTAMP),
+      secondary: new Bound(constants.filterKeys.INDEX),
     };
-    const boundKeys = {primary: constants.filterKeys.TIMESTAMP, secondary: constants.filterKeys.INDEX};
     const keyFullNames = {
       [constants.filterKeys.TOPIC0]: ContractLog.getFullName(ContractLog.TOPIC0),
       [constants.filterKeys.TOPIC1]: ContractLog.getFullName(ContractLog.TOPIC1),
@@ -695,11 +664,10 @@ class ContractController extends BaseController {
     for (const filter of filters) {
       switch (filter.key) {
         case constants.filterKeys.INDEX:
+          bounds.secondary.parse(filter);
+          break;
         case constants.filterKeys.TIMESTAMP:
-          if (filter.operator === utils.opsMap.ne) {
-            throw new InvalidArgumentError(`Not equals operator not supported for ${filter.key} param`);
-          }
-          bounds[filter.key].parse(filter);
+          bounds.primary.parse(filter);
           break;
         case constants.filterKeys.LIMIT:
           limit = filter.value;
@@ -731,7 +699,7 @@ class ContractController extends BaseController {
       }
     }
 
-    this.validateContractLogsBounds(timestampBound, indexBound);
+    this.validateContractLogsBounds(bounds);
 
     // update query with repeated values
     Object.keys(keyFullNames).forEach((filterKey) => {
@@ -740,10 +708,9 @@ class ContractController extends BaseController {
 
     return {
       bounds,
-      boundKeys,
-      lower: this.getContractLogsLowerFilters(timestampBound, indexBound),
-      inner: this.getInnerFilters(timestampBound, indexBound),
-      upper: this.getUpperFilters(timestampBound, indexBound),
+      lower: this.getContractLogsLowerFilters(bounds),
+      inner: this.getInnerFilters(bounds),
+      upper: this.getUpperFilters(bounds),
       conditions,
       params,
       timestampOrder,
@@ -847,7 +814,7 @@ class ContractController extends BaseController {
     res.locals[constants.responseDataLabel] = {
       logs,
       links: {
-        next: this.getPaginationLink(req, logs, query.bounds, query.boundKeys, query.limit, query.timestampOrder),
+        next: this.getPaginationLink(req, logs, query.bounds, query.limit, query.timestampOrder),
       },
     };
   };
@@ -873,7 +840,7 @@ class ContractController extends BaseController {
     res.locals[constants.responseDataLabel] = {
       logs,
       links: {
-        next: this.getPaginationLink(req, logs, query.bounds, query.boundKeys, query.limit, query.timestampOrder),
+        next: this.getPaginationLink(req, logs, query.bounds, query.limit, query.timestampOrder),
       },
     };
   };

@@ -23,22 +23,9 @@
 const _ = require('lodash');
 
 const utils = require('../utils');
-
-// errors
 const {InvalidArgumentError} = require('../errors/invalidArgumentError');
 
 class BaseController {
-  updateConditionsAndParamsWithValues = (
-    filter,
-    existingParams,
-    existingConditions,
-    fullName,
-    position = existingParams.length
-  ) => {
-    existingParams.push(filter.value);
-    existingConditions.push(`${fullName}${filter.operator}$${position}`);
-  };
-
   updateConditionsAndParamsWithInValues = (
     filter,
     invalues,
@@ -74,47 +61,103 @@ class BaseController {
   };
 
   /**
-   * Retrieve a unique identifying string for a filter using it's key and comparison operator
-   * e.g. 'token.id-=', 'serialnumber->='
-   * Note gt & gte are equivalent, as are lt & lte when mergeOrEqualComparisons  is true
-   * @param {Object} filter
-   * @param {boolean} mergeOrEqualComparisons flag to treat gt & gte as equivalent, as well as lt & lte
-   * @returns {string}
+   * Validate that the bounds are valid. Validates the following:
+   *  Bound Range
+   *  Secondary Bound is not present without Primary Bound
+   *  Lower Bounds
+   *  Upper Bounds.
+   *
+   * @param {Bound}[] bounds
+   * @throws {InvalidArgumentError}
    */
-  getFilterKeyOpString = (filter, mergeOrEqualComparisons = true) => {
-    const rangeRegex = /(>|<)(=)?/;
-    const comparisonString = mergeOrEqualComparisons ? filter.operator.replace(rangeRegex, '$1') : filter.operator;
-    return `${filter.key}-${comparisonString.trim()}`;
-  };
+  validateBounds(bounds) {
+    this.validateBoundsRange(bounds);
+    this.validateSecondaryBound(bounds);
+    this.validateLowerBounds(bounds);
+    this.validateUpperBounds(bounds);
+  }
 
   /**
-   * Verify there's only a single occurence of a given non-eq filter in the map using its unique string identifier
-   * @param {Object} filterMap Map of observer filters
-   * @param {String} filter Current filter
+   * Validate that if the primary bound is empty the secondary bound is empty as well.
+   *
+   * @param {Bound}[] bounds
+   * @throws {InvalidArgumentError}
    */
-  validateSingleFilterKeyOccurence = (filterMap, filter) => {
-    if (filterMap[this.getFilterKeyOpString(filter)]) {
-      throw new InvalidArgumentError(`Multiple range params not allowed for ${filter.key}`);
+  validateSecondaryBound(bounds) {
+    if (bounds.primary.isEmpty() && !bounds.secondary.isEmpty()) {
+      throw new InvalidArgumentError(
+        `${bounds.secondary.filterKey} without a ${bounds.primary.filterKey} parameter filter`
+      );
     }
-  };
+  }
+
+  /**
+   * Validate that the Lower Bounds are valid.
+   *
+   * @param {Bound}[] bounds
+   * @throws {InvalidArgumentError}
+   */
+  validateLowerBounds(bounds) {
+    const {primary, secondary} = bounds;
+    if (
+      !primary.hasEqual() &&
+      secondary.hasLower() &&
+      (!primary.hasLower() || primary.lower.operator === utils.opsMap.gt)
+    ) {
+      throw new InvalidArgumentError(`${primary.filterKey} must have gte or eq operator`);
+    }
+  }
+
+  /**
+   * Validate that the Upper Bounds are valid.
+   *
+   * @param {Bound}[] bounds
+   * @throws {InvalidArgumentError}
+   */
+  validateUpperBounds(bounds) {
+    const {primary, secondary} = bounds;
+    if (
+      !primary.hasEqual() &&
+      secondary.hasUpper() &&
+      (!primary.hasUpper() || primary.upper.operator === utils.opsMap.lt)
+    ) {
+      throw new InvalidArgumentError(`${primary.filterKey} must have lte or eq operator`);
+    }
+  }
+
+  /**
+   * Validate the bound range and equal combination
+   *
+   * @param {Bound}[] bounds
+   * @throws {InvalidArgumentError}
+   */
+  validateBoundsRange(bounds) {
+    Object.keys(bounds).forEach((key) => {
+      if (bounds[key].hasBound() && bounds[key].hasEqual()) {
+        throw new InvalidArgumentError(`Can't support both range and equal for ${bounds[key].filterKey}`);
+      }
+    });
+  }
 
   /**
    * Gets filters for the lower part of the multi-union query.
    *
-   * @param {Bound} primaryBound
-   * @param {Bound} secondaryBound
+   * @param {Bound}[] bounds
    * @return {{key: string, operator: string, value: *}[]}
    */
-  getLowerFilters(primaryBound, secondaryBound) {
+  getLowerFilters(bounds) {
     let filters = [];
-    if (!secondaryBound.hasBound()) {
+    const {primary, secondary} = bounds;
+    if (!secondary.hasBound()) {
       // no secondary bound filters or no secondary filters at all, everything goes into the lower part and there
       // shouldn't be inner or upper part.
-      filters = [primaryBound.equal, primaryBound.lower, primaryBound.upper, secondaryBound.equal];
-    } else if (primaryBound.hasLower() && secondaryBound.hasLower()) {
+      filters = [primary.equal, primary.lower, primary.upper, secondary.equal];
+    } else if (primary.hasLower() && secondary.hasLower()) {
       // both have lower. If primary has lower and secondary doesn't have lower, the lower bound of primary
       // will go into the inner part.
-      filters = [{...primaryBound.lower, operator: utils.opsMap.eq}, secondaryBound.lower];
+      filters = [{...primary.lower, operator: utils.opsMap.eq}, secondary.lower];
+    } else if (primary.hasEqual()) {
+      filters = [primary.equal, primary.lower, primary.upper, secondary.lower, secondary.equal, secondary.upper];
     }
     return filters.filter((f) => !_.isNil(f));
   }
@@ -122,20 +165,20 @@ class BaseController {
   /**
    * Gets filters for the inner part of the multi-union query
    *
-   * @param {Bound} primaryBound
-   * @param {Bound} secondaryBound
+   * @param {Bound}[] Bounds
    * @return {{key: string, operator: string, value: *}[]}
    */
-  getInnerFilters(primaryBound, secondaryBound) {
-    if (!primaryBound.hasBound() || !secondaryBound.hasBound()) {
+  getInnerFilters(bounds) {
+    const {primary, secondary} = bounds;
+    if (!primary.hasBound() || !secondary.hasBound()) {
       return [];
     }
 
     return [
       // if secondary has lower bound, the primary filter should be > ?
-      {filter: primaryBound.lower, newOperator: secondaryBound.hasLower() ? utils.opsMap.gt : null},
+      {filter: primary.lower, newOperator: secondary.hasLower() ? utils.opsMap.gt : null},
       // if secondary has upper bound, the primary filter should be < ?
-      {filter: primaryBound.upper, newOperator: secondaryBound.hasUpper() ? utils.opsMap.lt : null},
+      {filter: primary.upper, newOperator: secondary.hasUpper() ? utils.opsMap.lt : null},
     ]
       .filter((f) => !_.isNil(f.filter))
       .map((f) => ({...f.filter, operator: f.newOperator || f.filter.operator}));
@@ -144,16 +187,16 @@ class BaseController {
   /**
    * Gets filters for the upper part of the multi-union query
    *
-   * @param {Bound} primaryBound
-   * @param {Bound} secondaryBound
+   * @param {Bound}[] Bounds
    * @return {{key: string, operator: string, value: *}[]}
    */
-  getUpperFilters(primaryBound, secondaryBound) {
-    if (!primaryBound.hasUpper() || !secondaryBound.hasUpper()) {
+  getUpperFilters(bounds) {
+    const {primary, secondary} = bounds;
+    if (!primary.hasUpper() || !secondary.hasUpper()) {
       return [];
     }
     // the upper part should always have primary filter = ?
-    return [{...primaryBound.upper, operator: utils.opsMap.eq}, secondaryBound.upper];
+    return [{...primary.upper, operator: utils.opsMap.eq}, secondary.upper];
   }
 
   /**
@@ -161,15 +204,14 @@ class BaseController {
    *
    * @param {Request} req
    * @param {*[]} rows
-   * @param {{string:Bound}} bounds
-   * @param {{primary:string,secondary:string}} boundKeys
+   * @param {Bound}}[] bounds
    * @param {number} limit
    * @param {string} order
    * @return {string|null}
    */
-  getPaginationLink(req, rows, bounds, boundKeys, limit, order) {
-    const primaryBound = bounds[boundKeys.primary];
-    const secondaryBound = bounds[boundKeys.secondary];
+  getPaginationLink(req, rows, bounds, limit, order) {
+    const primaryBound = bounds.primary;
+    const secondaryBound = bounds.secondary;
 
     if (rows.length < limit || (primaryBound.hasEqual() && secondaryBound.hasEqual())) {
       // fetched all matching rows or the query is for a specific combination
@@ -181,12 +223,15 @@ class BaseController {
     if (primaryBound.hasBound() || primaryBound.isEmpty()) {
       // the primary param has bound or no primary param at all
       // primary param should be exclusive when the secondary operator is eq
-      lastValues[boundKeys.primary] = {value: lastRow[boundKeys.primary], inclusive: !secondaryBound.hasEqual()};
+      lastValues[primaryBound.filterKey] = {
+        value: lastRow[primaryBound.viewModelKey],
+        inclusive: !secondaryBound.hasEqual(),
+      };
     }
 
     if (secondaryBound.hasBound() || secondaryBound.isEmpty()) {
       // the secondary param has bound or no secondary param at all
-      lastValues[boundKeys.secondary] = {value: lastRow[boundKeys.secondary]};
+      lastValues[secondaryBound.filterKey] = {value: lastRow[secondaryBound.viewModelKey]};
     }
 
     return utils.getPaginationLink(req, false, lastValues, order);
