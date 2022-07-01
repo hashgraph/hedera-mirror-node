@@ -53,7 +53,7 @@ class RandomGenerateTransactionHandler implements TransactionHandler {
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         var range = recordItem.getTransactionBody().getRandomGenerate().getRange();
-        if (!recordItem.isSuccessful() || range < 0) {
+        if (!recordItem.isSuccessful()) {
             return;
         }
 

@@ -117,18 +117,6 @@ class RandomGenerateTransactionHandlerTest extends AbstractTransactionHandlerTes
         verifyNoInteractions(entityListener);
     }
 
-    @Test
-    void updateTransactionNegativeRange() {
-        // given
-        var recordItem = recordItemBuilder.randomGenerate(-1).build();
-
-        // when
-        transactionHandler.updateTransaction(null, recordItem);
-
-        // then
-        verifyNoInteractions(entityListener);
-    }
-
     private UtilRandomGenerate getExpectedRandomGenerate(long consensusTimestamp, int range, byte[] randomBytes,
                                                          Integer randomNumber) {
         return UtilRandomGenerate.builder()
