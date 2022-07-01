@@ -569,5 +569,5 @@ create table if not exists util_random_generate
     range               integer not null,
     pseudorandom_bytes  bytea   null,
     pseudorandom_number integer null
-)
+);
 comment on table util_random_generate is 'Util random generate';
