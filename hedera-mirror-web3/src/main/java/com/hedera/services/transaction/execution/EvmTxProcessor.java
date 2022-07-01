@@ -58,7 +58,6 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 import com.hedera.mirror.web3.evm.OracleSimulator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
-import com.hedera.mirror.web3.evm.SimulatorUpdater;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
@@ -66,6 +65,7 @@ import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.exception.InvalidTransactionException;
 import com.hedera.services.transaction.exception.ValidationUtils;
 import com.hedera.services.transaction.models.Account;
+import com.hedera.services.transaction.store.contracts.HederaWorldUpdater;
 
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
@@ -84,7 +84,7 @@ abstract class EvmTxProcessor {
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
     private SimulatedBlockMetaSource blockMetaSource;
-    private SimulatorUpdater worldUpdater;
+    private HederaWorldUpdater worldUpdater;
 
     private final GasCalculator gasCalculator;
     private final SimulatedPricesSource simulatedPricesSource;
@@ -113,12 +113,12 @@ abstract class EvmTxProcessor {
         this.blockMetaSource = blockMetaSource;
     }
 
-    protected void setWorldUpdater(final SimulatorUpdater worldUpdater) {
+    protected void setWorldUpdater(final HederaWorldUpdater worldUpdater) {
         this.worldUpdater = worldUpdater;
     }
 
     protected EvmTxProcessor(
-            final SimulatorUpdater worldUpdater,
+            final HederaWorldUpdater worldUpdater,
             final SimulatedPricesSource simulatedPricesSource,
             final EvmProperties configurationProperties,
             final GasCalculator gasCalculator,
