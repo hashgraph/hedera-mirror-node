@@ -27,10 +27,27 @@ import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.services.transaction.store.contracts.EntityAccess;
 
+//FUTURE WORK to be implemented in separate PR
 @Singleton
 public class SimulatedEntityAccess implements EntityAccess {
+
+    @Override
+    public boolean isDeleted(Address id) {
+        return false;
+    }
+
+    @Override
+    public boolean isDetached(Address id) {
+        return false;
+    }
+
     @Override
     public boolean isExtant(Address id) {
+        return false;
+    }
+
+    @Override
+    public boolean isTokenAccount(Address address) {
         return false;
     }
 

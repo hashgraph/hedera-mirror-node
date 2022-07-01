@@ -20,14 +20,13 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Code;
 
-@Singleton
-public class AliasesResolver {
+//FUTURE WORK to be implemented in separate PR
+public class CodeCache {
 
-    //FUTURE WORK implementation to be provided in separate PR
-    Address resolveForEvm(final Address addressOrAlias) {
-        return null;
+    public Code getIfPresent(final Address address) {
+        return Code.EMPTY_CODE;
     }
 }

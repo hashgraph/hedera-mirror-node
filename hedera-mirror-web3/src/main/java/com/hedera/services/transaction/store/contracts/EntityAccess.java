@@ -26,7 +26,16 @@ import org.hyperledger.besu.datatypes.Address;
 
 public interface EntityAccess {
 
+    /* --- Account access --- */
+    long getBalance(Address id);
+
+    boolean isDeleted(Address id);
+
+    boolean isDetached(Address id);
+
     boolean isExtant(Address id);
+
+    boolean isTokenAccount(Address address);
 
     /* --- Storage access --- */
     void putStorage(Address id, UInt256 key, UInt256 value);

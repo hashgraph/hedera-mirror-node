@@ -20,8 +20,12 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
+import static com.hedera.mirror.web3.evm.utils.AdressUtils.asEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.AdressUtils.realmFromEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.AdressUtils.shardFromEvmAddress;
 import static com.hedera.services.transaction.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -31,41 +35,67 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.Data;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
+import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.services.transaction.store.contracts.EntityAccess;
 import com.hedera.services.transaction.store.contracts.HederaWorldUpdater;
 import com.hedera.services.transaction.store.contracts.UpdateTrackingLedgerAccount;
+import com.hedera.services.transaction.store.contracts.WorldStateAccount;
+import com.hedera.services.transaction.store.contracts.WorldStateTokenAccount;
 
 @Data
 public class SimulatedUpdater implements HederaWorldUpdater {
 
+    private ContractRepository contractRepository;
     private AliasesResolver aliasesResolver;
     private SimulatedEntityAccess entityAccess;
+    private CodeCache codeCache;
+
+    private int numAllocatedIds = 0;
+    private long sbhRefund = 0L;
+    private long newContractNumId;
 
     private final List<Address> provisionalContractCreations = new LinkedList<>();
-    private long sbhRefund = 0L;
+    protected final Set<Address> deletedAccounts = new HashSet<>();
+    protected final Map<Address, UpdateTrackingLedgerAccount<Account>> updatedAccounts = new HashMap<>();
 
-    protected Set<Address> deletedAccounts = new HashSet<>();
-    protected Map<Address, UpdateTrackingLedgerAccount<Account>> updatedAccounts = new HashMap<>();
-
+    //FUTURE WORK finish implementation when we introduce StackedUpdaters
     public SimulatedUpdater updater() {
         return new SimulatedUpdater();
     }
 
-    //FUTURE WORK to be implemented
     @Override
-    public EvmAccount createAccount(Address address, long l, Wei wei) {
-        return null;
+    public EvmAccount createAccount(final Address addressOrAlias, final long nonce, final Wei balance) {
+        final var address = aliasesResolver.resolveForEvm(addressOrAlias);
+        final var newMutable = new UpdateTrackingLedgerAccount<>(address);
+        newMutable.setNonce(nonce);
+        newMutable.setBalance(balance);
+
+        return new WrappedEvmAccount(track(newMutable));
     }
 
     @Override
     public EvmAccount getAccount(Address address) {
-        return null;
+        final var extantMutable = updatedAccounts.get(address);
+        if (extantMutable != null) {
+            return new WrappedEvmAccount(extantMutable);
+        } else if (deletedAccounts.contains(address)) {
+            return null;
+        } else {
+            final var origin = get(address);
+            if (origin == null) {
+                return null;
+            }
+            final var newMutable = new UpdateTrackingLedgerAccount<>(origin);
+            return new WrappedEvmAccount(track(newMutable));
+        }
     }
 
     @Override
@@ -77,17 +107,24 @@ public class SimulatedUpdater implements HederaWorldUpdater {
 
     @Override
     public Collection<? extends Account> getTouchedAccounts() {
-        return null;
+        return new ArrayList<>(getUpdatedAccounts().values());
     }
 
     @Override
     public Collection<Address> getDeletedAccountAddresses() {
-        return null;
+        return new ArrayList<>(getDeletedAccounts());
     }
 
     @Override
     public void revert() {
+        getDeletedAccounts().clear();
+        getUpdatedAccounts().clear();
 
+        while (numAllocatedIds != 0) {
+            numAllocatedIds--;
+            newContractNumId--;
+        }
+        sbhRefund = 0L;
     }
 
     @Override
@@ -117,12 +154,27 @@ public class SimulatedUpdater implements HederaWorldUpdater {
 
     @Override
     public Account get(Address address) {
-        return null;
+        if (address == null) {
+            return null;
+        }
+        if (entityAccess.isTokenAccount(address)) {
+            return new WorldStateTokenAccount(address);
+        }
+        if (!isGettable(address)) {
+            return null;
+        }
+        final long balance = entityAccess.getBalance(address);
+        return new WorldStateAccount(address, Wei.of(balance), codeCache, entityAccess);
     }
 
     @Override
     public Address newContractAddress(Address sponsor) {
-        return null;
+        numAllocatedIds++;
+        newContractNumId = contractRepository.findLatestNum().get() + 1;
+
+        final var sponsorBytes = sponsor.toArrayUnsafe();
+        final var newContractEvmBytes = asEvmAddress(shardFromEvmAddress(sponsorBytes), realmFromEvmAddress(sponsorBytes), newContractNumId);
+        return Address.wrap(Bytes.wrap(newContractEvmBytes));
     }
 
     /**
@@ -143,7 +195,7 @@ public class SimulatedUpdater implements HederaWorldUpdater {
 
     @Override
     public void countIdsAllocatedByStacked(int n) {
-
+        numAllocatedIds += n;
     }
 
     private void commitSizeLimitedStorageTo(final EntityAccess entityAccess) {
@@ -157,6 +209,17 @@ public class SimulatedUpdater implements HederaWorldUpdater {
             }
         }
         entityAccess.flushStorage();
+    }
+
+    protected UpdateTrackingLedgerAccount<Account> track(final UpdateTrackingLedgerAccount<Account> account) {
+        final var address = account.getAddress();
+        updatedAccounts.put(address, account);
+        deletedAccounts.remove(address);
+        return account;
+    }
+
+    private boolean isGettable(final Address address) {
+        return entityAccess.isExtant(address) && !entityAccess.isDeleted(address) && !entityAccess.isDetached(address);
     }
 
     private void ensureExistence(

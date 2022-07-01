@@ -1,10 +1,10 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.web3.repository;
 
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Mirror Node
  * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,14 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import javax.inject.Singleton;
-import org.hyperledger.besu.datatypes.Address;
+import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 
-@Singleton
-public class AliasesResolver {
+import com.hedera.mirror.common.domain.contract.Contract;
 
-    //FUTURE WORK implementation to be provided in separate PR
-    Address resolveForEvm(final Address addressOrAlias) {
-        return null;
-    }
+public interface ContractRepository extends CrudRepository<Contract, Long> {
+
+    @Query(value = "select max(c.num) from Contract c")
+    Optional<Long> findLatestNum();
 }
