@@ -32,6 +32,11 @@ import com.hedera.services.transaction.store.contracts.EntityAccess;
 public class SimulatedEntityAccess implements EntityAccess {
 
     @Override
+    public long getBalance(Address id) {
+        return 0;
+    }
+
+    @Override
     public boolean isDeleted(Address id) {
         return false;
     }

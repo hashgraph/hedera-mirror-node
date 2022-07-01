@@ -40,7 +40,7 @@ public interface EntityAccess {
     /* --- Storage access --- */
     void putStorage(Address id, UInt256 key, UInt256 value);
 
-    //Will be needed for opcodes
+    //FUTURE WORK Will be needed for opcodes
     UInt256 getStorage(Address id, UInt256 key);
 
     void flushStorage();
