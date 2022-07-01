@@ -52,7 +52,13 @@ aims to document the required changes associated with any new feature.
 
 ## Rosetta API
 
-- [ ] ??
+- [ ] Domain struct added / updated if needed by Rosetta
+- [ ] Repository added / updated
+- [ ] Service added / updated
+- [ ] TransactionResults updated
+- [ ] TransactionTypes updated
+- [ ] rosetta-cli validation configuration updated
+- [ ] BDD Test updated
 
 ## Test
 
