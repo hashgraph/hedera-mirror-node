@@ -91,6 +91,7 @@ import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
+import com.hedera.mirror.importer.repository.RandomGenerateRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
@@ -124,6 +125,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftTransferRepository nftTransferRepository;
     private final NodeStakeRepository nodeStakeRepository;
+    private final RandomGenerateRepository randomGenerateRepository;
     private final RecordFileRepository recordFileRepository;
     private final ScheduleRepository scheduleRepository;
     private final SqlEntityListener sqlEntityListener;
@@ -1148,6 +1150,24 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(nodeStakeRepository.findAll()).containsExactlyInAnyOrder(nodeStake1, nodeStake2);
+    }
+
+    @Test
+    void onRandomGenerate() {
+        var randomGenerate = domainBuilder.utilRandomGenerate().get();
+        var randomGenerate2 = domainBuilder.utilRandomGenerate()
+                .customize(r -> r.range(0)
+                .pseudorandomNumber(null)
+                .pseudorandomBytes(domainBuilder.bytes(382))).get();
+
+        sqlEntityListener.onRandomGenerate(randomGenerate);
+        sqlEntityListener.onRandomGenerate(randomGenerate2);
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(randomGenerateRepository.findAll()).containsExactlyInAnyOrder(randomGenerate, randomGenerate2);
     }
 
     @Test

@@ -69,6 +69,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -109,6 +110,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<NodeStake> nodeStakes;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
+    private final Collection<UtilRandomGenerate> randomGenerates;
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
     private final Map<TokenAccountId, TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
@@ -163,6 +165,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nftAllowances = new ArrayList<>();
         nodeStakes = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
+        randomGenerates = new ArrayList<>();
         stakingRewardTransfers = new ArrayList<>();
         tokenAccounts = new LinkedHashMap<>();
         tokenAllowances = new ArrayList<>();
@@ -231,6 +234,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nftAllowanceState.clear();
             nftTransferState.clear();
             nodeStakes.clear();
+            randomGenerates.clear();
             schedules.clear();
             topicMessages.clear();
             tokenAccounts.clear();
@@ -266,6 +270,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(fileData);
             batchPersister.persist(liveHashes);
             batchPersister.persist(nodeStakes);
+            batchPersister.persist(randomGenerates);
             batchPersister.persist(topicMessages);
             batchPersister.persist(transactions);
             batchPersister.persist(transactionSignatures);
@@ -402,6 +407,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
         nonFeeTransfers.add(nonFeeTransfer);
+    }
+
+    @Override
+    public void onRandomGenerate(UtilRandomGenerate randomGenerate) {
+        randomGenerates.add(randomGenerate);
     }
 
     @Override

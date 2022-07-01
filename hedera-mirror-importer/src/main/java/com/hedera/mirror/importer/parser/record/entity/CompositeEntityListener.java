@@ -53,6 +53,7 @@ import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
 import com.hedera.mirror.importer.exception.ImporterException;
 
 @Log4j2
@@ -154,6 +155,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onNodeStake(NodeStake nodeStake) {
         onEach(EntityListener::onNodeStake, nodeStake);
+    }
+
+    @Override
+    public void onRandomGenerate(UtilRandomGenerate randomGenerate) {
+        onEach(EntityListener::onRandomGenerate, randomGenerate);
     }
 
     @Override

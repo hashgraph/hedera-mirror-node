@@ -46,6 +46,7 @@ import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
 import com.hedera.mirror.importer.exception.ImporterException;
 
 /**
@@ -106,6 +107,9 @@ public interface EntityListener {
     }
 
     default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
+    }
+
+    default void onRandomGenerate(UtilRandomGenerate utilRandomGenerate) {
     }
 
     default void onSchedule(Schedule schedule) throws ImporterException {
