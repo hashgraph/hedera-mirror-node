@@ -12,7 +12,7 @@ Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the 
 ## Requirements
 
 - [Helm 3+](https://helm.sh)
-- [Kubernetes 1.21+](https://kubernetes.io)
+- [Kubernetes 1.23+](https://kubernetes.io)
 
 Set environment variables that will be used for the remainder of the document:
 
@@ -42,16 +42,6 @@ automatically base64 decode secrets.
 
 ```shell
 kubectl get password mirror-passwords -o yaml | ksd
-```
-
-### TimescaleDB
-
-In an effort to increase performance and reduce storage costs, the mirror node is experimenting with
-[TimescaleDB](https://docs.timescale.com/latest/main). To deploy the mirror node chart using TimescaleDB instead of
-PostgreSQL:
-
-```shell
-$ helm upgrade --install "${RELEASE}" charts/hedera-mirror --set postgresql.enabled=false --set timescaledb.enabled=true
 ```
 
 ### Non-Production Environments
@@ -133,7 +123,7 @@ a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standa
 ## Testing
 
 To verify the chart installation is successful, you can run the helm tests. These tests are not automatically executed
-by helm on install/upgrade, they have to be executed manually. The tests require the `existingTopicNum`, `operatorId`,
+by helm on install/upgrade, they have to be executed manually. The tests require the `operatorId`,
 and `operatorKey` properties be set in a local values file in order to execute, as well as `network` if using an
 environment other than testnet, and `nodes` if using a custom environment.
 
@@ -146,7 +136,6 @@ test:
       mirror:
         test:
           acceptance:
-            existingTopicNum:
             network:
             # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
             operatorId:

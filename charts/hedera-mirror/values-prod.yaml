@@ -70,9 +70,6 @@ rest:
       enabled: true
   hpa:
     minReplicas: 3
-  ingress:
-    middleware:
-      enabled: true
   podDisruptionBudget:
     enabled: true
   priorityClassName: medium
@@ -97,13 +94,6 @@ rosetta:
     enabled: true
   serviceMonitor:
     enabled: true
-
-timescaledb:
-  podMonitor:
-    enabled: true
-  prometheus:
-    enabled: true
-  replicaCount: 2
 
 web3:
   alertmanager:

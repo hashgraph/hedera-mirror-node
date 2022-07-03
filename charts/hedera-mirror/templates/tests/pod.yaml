@@ -18,7 +18,7 @@ spec:
         - '-c'
           # Copying the contents of the secret to the directory the image reads from without overwriting the existing yml.
         - |
-          apk add -qu git openjdk11-jre
+          apk add -qu git openjdk17-jre
           git clone --branch {{ if regexMatch "^\\d+\\.\\d+\\.\\d+.*$" .Chart.AppVersion }}v{{end}}{{ .Chart.AppVersion }} --depth 1 https://github.com/hashgraph/hedera-mirror-node.git
           cd hedera-mirror-node
           cp /etc/secrets/* hedera-mirror-test/src/test/resources/

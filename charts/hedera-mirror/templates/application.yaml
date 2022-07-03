@@ -52,7 +52,7 @@ spec:
       - description: Website
         url: https://hedera.com
     maintainers:
-      - name: Hedera Mirror Node team
+      - name: Hedera Mirror Node Team
         email: mirrornode@hedera.com
     notes: |
       {{ if .Values.grpc.enabled -}}

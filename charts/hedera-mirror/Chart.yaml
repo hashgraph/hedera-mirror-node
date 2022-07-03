@@ -22,11 +22,11 @@ dependencies:
     condition: postgresql.enabled
     name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: 9.0.3
+    version: 9.2.0
   - condition: redis.enabled
     name: redis
     repository: https://charts.bitnami.com/bitnami
-    version: 16.8.9
+    version: 16.13.1
   - alias: rest
     condition: rest.enabled
     name: hedera-mirror-rest
@@ -41,11 +41,6 @@ dependencies:
     tags:
       - api
     version: ">=0.18.0-0"
-  - alias: timescaledb
-    condition: timescaledb.enabled
-    name: timescaledb-single
-    repository: https://raw.githubusercontent.com/timescale/timescaledb-kubernetes/master/charts/repo/
-    version: 0.11.0
   - alias: web3
     condition: web3.enabled
     name: hedera-mirror-web3
@@ -63,12 +58,9 @@ keywords:
   - hashgraph
   - mirror
 maintainers:
-  - name: ewlghedera
-  - name: matheus-dallrosa
-  - name: Nana-EC
-  - name: steven-sheehy
-  - name: xin-hedera
+  - name: Hedera Mirror Node Team
+    email: mirrornode@hedera.com
 name: hedera-mirror
 sources:
   - https://github.com/hashgraph/hedera-mirror-node
-version: 0.47.0-SNAPSHOT
+version: 0.60.0-SNAPSHOT
