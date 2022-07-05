@@ -36,7 +36,7 @@ public class ShutdownHelper {
 
     private static volatile boolean stopping;
 
-    public ShutdownHelper() {
+    private ShutdownHelper() {
         Runtime.getRuntime().addShutdownHook(new Thread(ShutdownHelper::onExit));
     }
 
