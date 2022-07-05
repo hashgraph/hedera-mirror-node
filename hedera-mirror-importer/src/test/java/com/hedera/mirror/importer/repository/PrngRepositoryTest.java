@@ -27,26 +27,26 @@ import org.springframework.beans.factory.annotation.Autowired;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class UtilRandomGenerateRepositoryTest extends AbstractRepositoryTest {
+class PrngRepositoryTest extends AbstractRepositoryTest {
 
-    private final RandomGenerateRepository utilRandomGenerateRepository;
+    private final PrngRepository prngRepository;
 
     @Test
     void prune() {
-        domainBuilder.utilRandomGenerate().persist();
-        var randomGenerate2 = domainBuilder.utilRandomGenerate().persist();
-        var randomGenerate3 = domainBuilder.utilRandomGenerate().persist();
+        domainBuilder.prng().persist();
+        var prng2 = domainBuilder.prng().persist();
+        var prng3 = domainBuilder.prng().persist();
 
-        utilRandomGenerateRepository.prune(randomGenerate2.getId());
+        prngRepository.prune(prng2.getId());
 
-        assertThat(utilRandomGenerateRepository.findAll()).containsExactly(randomGenerate3);
+        assertThat(prngRepository.findAll()).containsExactly(prng3);
     }
 
     @Test
     void save() {
-        var utilRandomGenerate = domainBuilder.utilRandomGenerate().get();
+        var prng = domainBuilder.prng().get();
 
-        utilRandomGenerateRepository.save(utilRandomGenerate);
-        assertThat(utilRandomGenerateRepository.findAll()).contains(utilRandomGenerate);
+        prngRepository.save(prng);
+        assertThat(prngRepository.findAll()).contains(prng);
     }
 }

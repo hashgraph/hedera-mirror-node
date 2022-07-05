@@ -380,6 +380,16 @@ create table if not exists non_fee_transfer
 );
 comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 
+-- prng
+create table if not exists prng
+(
+    consensus_timestamp bigint  not null,
+    range               integer not null,
+    pseudorandom_bytes  bytea   null,
+    pseudorandom_number integer null
+);
+comment on table prng is 'Pseudo random generates';
+
 -- record_file
 create table if not exists record_file
 (
@@ -561,13 +571,3 @@ create table if not exists transaction_signature
     type                smallint
 );
 comment on table transaction_signature is 'Transaction signatories';
-
--- util_random_generate
-create table if not exists util_random_generate
-(
-    consensus_timestamp bigint  not null,
-    range               integer not null,
-    pseudorandom_bytes  bytea   null,
-    pseudorandom_number integer null
-);
-comment on table util_random_generate is 'Util random generate';

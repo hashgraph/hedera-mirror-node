@@ -91,7 +91,7 @@ import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
-import com.hedera.mirror.importer.repository.RandomGenerateRepository;
+import com.hedera.mirror.importer.repository.PrngRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
@@ -125,7 +125,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftTransferRepository nftTransferRepository;
     private final NodeStakeRepository nodeStakeRepository;
-    private final RandomGenerateRepository randomGenerateRepository;
+    private final PrngRepository prngRepository;
     private final RecordFileRepository recordFileRepository;
     private final ScheduleRepository scheduleRepository;
     private final SqlEntityListener sqlEntityListener;
@@ -1153,21 +1153,21 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onRandomGenerate() {
-        var randomGenerate = domainBuilder.utilRandomGenerate().get();
-        var randomGenerate2 = domainBuilder.utilRandomGenerate()
+    void onPrng() {
+        var prng = domainBuilder.prng().get();
+        var prng2 = domainBuilder.prng()
                 .customize(r -> r.range(0)
-                .pseudorandomNumber(null)
-                .pseudorandomBytes(domainBuilder.bytes(382))).get();
+                .prngNumber(null)
+                .prngBytes(domainBuilder.bytes(382))).get();
 
-        sqlEntityListener.onRandomGenerate(randomGenerate);
-        sqlEntityListener.onRandomGenerate(randomGenerate2);
+        sqlEntityListener.onPrng(prng);
+        sqlEntityListener.onPrng(prng2);
 
         // when
         completeFileAndCommit();
 
         // then
-        assertThat(randomGenerateRepository.findAll()).containsExactlyInAnyOrder(randomGenerate, randomGenerate2);
+        assertThat(prngRepository.findAll()).containsExactlyInAnyOrder(prng, prng2);
     }
 
     @Test
