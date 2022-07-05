@@ -579,6 +579,14 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<Prng, Prng.PrngBuilder> prng() {
+        var builder = Prng.builder()
+                .consensusTimestamp(timestamp())
+                .range(Integer.MAX_VALUE)
+                .prngNumber(random.nextInt(Integer.MAX_VALUE));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<RecordFile, RecordFile.RecordFileBuilder> recordFile() {
         // reset transaction index
         transactionIndex.set(0);
@@ -751,14 +759,6 @@ public class DomainBuilder {
                 .publicKeyPrefix(bytes(16))
                 .signature(bytes(32))
                 .type(SignaturePair.SignatureCase.ED25519.getNumber());
-        return new DomainWrapperImpl<>(builder, builder::build);
-    }
-
-    public DomainWrapper<Prng, Prng.PrngBuilder> prng() {
-        var builder = Prng.builder()
-                .consensusTimestamp(timestamp())
-                .range(Integer.MAX_VALUE)
-                .prngNumber(random.nextInt(Integer.MAX_VALUE));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

@@ -110,7 +110,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<NodeStake> nodeStakes;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
-    private final Collection<Prng> pseudoRandomNumbers;
+    private final Collection<Prng> prngs;
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
     private final Map<TokenAccountId, TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
@@ -165,7 +165,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nftAllowances = new ArrayList<>();
         nodeStakes = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
-        pseudoRandomNumbers = new ArrayList<>();
+        prngs = new ArrayList<>();
         stakingRewardTransfers = new ArrayList<>();
         tokenAccounts = new LinkedHashMap<>();
         tokenAllowances = new ArrayList<>();
@@ -234,7 +234,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             nftAllowanceState.clear();
             nftTransferState.clear();
             nodeStakes.clear();
-            pseudoRandomNumbers.clear();
+            prngs.clear();
             schedules.clear();
             topicMessages.clear();
             tokenAccounts.clear();
@@ -270,7 +270,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(fileData);
             batchPersister.persist(liveHashes);
             batchPersister.persist(nodeStakes);
-            batchPersister.persist(pseudoRandomNumbers);
+            batchPersister.persist(prngs);
             batchPersister.persist(topicMessages);
             batchPersister.persist(transactions);
             batchPersister.persist(transactionSignatures);
@@ -411,7 +411,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onPrng(Prng prng) {
-        pseudoRandomNumbers.add(prng);
+        prngs.add(prng);
     }
 
     @Override
