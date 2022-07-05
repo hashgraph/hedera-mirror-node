@@ -100,12 +100,12 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
 import com.hedera.mirror.common.util.DomainUtils;
 
 @Component
@@ -579,6 +579,14 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<Prng, Prng.PrngBuilder> prng() {
+        var builder = Prng.builder()
+                .consensusTimestamp(timestamp())
+                .range(Integer.MAX_VALUE)
+                .prngNumber(random.nextInt(Integer.MAX_VALUE));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<RecordFile, RecordFile.RecordFileBuilder> recordFile() {
         // reset transaction index
         transactionIndex.set(0);
@@ -751,14 +759,6 @@ public class DomainBuilder {
                 .publicKeyPrefix(bytes(16))
                 .signature(bytes(32))
                 .type(SignaturePair.SignatureCase.ED25519.getNumber());
-        return new DomainWrapperImpl<>(builder, builder::build);
-    }
-
-    public DomainWrapper<UtilRandomGenerate, UtilRandomGenerate.UtilRandomGenerateBuilder> utilRandomGenerate() {
-        var builder = UtilRandomGenerate.builder()
-                .consensusTimestamp(timestamp())
-                .range(Integer.MAX_VALUE)
-                .pseudorandomNumber(random.nextInt(Integer.MAX_VALUE));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

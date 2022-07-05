@@ -161,6 +161,10 @@ alter table if exists node_stake
 create index if not exists non_fee_transfer__consensus_timestamp
     on non_fee_transfer (consensus_timestamp);
 
+-- prng
+alter table prng
+    add constraint prng__pk primary key (consensus_timestamp);
+
 -- record_file
 alter table record_file
     add constraint record_file__pk primary key (consensus_end, node_account_id);
@@ -231,10 +235,6 @@ create index if not exists transaction_signature__entity_id
     on transaction_signature (entity_id desc, consensus_timestamp desc);
 create index if not exists transaction_signature__timestamp_public_key_prefix
     on transaction_signature (consensus_timestamp desc, public_key_prefix);
-
--- util_random_generate
-alter table util_random_generate
-    add constraint util_random_generate__pk primary key (consensus_timestamp);
 
 -- revert to default
 set local citus.multi_shard_modify_mode to 'parallel';
