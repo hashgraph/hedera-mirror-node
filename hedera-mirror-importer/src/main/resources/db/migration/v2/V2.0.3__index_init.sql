@@ -161,6 +161,10 @@ alter table if exists node_stake
 create index if not exists non_fee_transfer__consensus_timestamp
     on non_fee_transfer (consensus_timestamp);
 
+-- prng
+alter table prng
+    add constraint prng__pk primary key (consensus_timestamp);
+
 -- record_file
 alter table record_file
     add constraint record_file__pk primary key (consensus_end, node_account_id);

@@ -77,7 +77,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Cannot search NFTs with serialnumber without a tokenId parameter filter"
+          "message": "serialnumber without a token.id parameter filter"
         }
       ]
     }

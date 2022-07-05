@@ -34,7 +34,6 @@ psql -d "user=postgres connect_timeout=3" \
 -- Create database & owner
 create user :ownerUsername with login password :'ownerPassword';
 create database :dbName with owner :ownerUsername;
-alter database :dbName set timescaledb.telemetry_level = off;
 
 -- Add extensions
 create extension if not exists pg_stat_statements;

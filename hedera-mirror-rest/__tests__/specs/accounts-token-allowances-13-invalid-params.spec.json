@@ -31,7 +31,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one equal (eq) operator is allowed"
+              "message": "Only one equal (eq) operator is allowed for spender.id"
             }
           ]
         }
@@ -57,7 +57,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one equal (eq) operator is allowed"
+              "message": "Only one equal (eq) operator is allowed for token.id"
             }
           ]
         }
@@ -70,7 +70,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one gt/gte operator is allowed"
+              "message": "Only one gt/gte operator is allowed for spender.id"
             }
           ]
         }
@@ -83,7 +83,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one lt/lte operator is allowed"
+              "message": "Only one lt/lte operator is allowed for spender.id"
             }
           ]
         }
@@ -96,7 +96,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one gt/gte operator is allowed"
+              "message": "Only one gt/gte operator is allowed for token.id"
             }
           ]
         }
@@ -109,33 +109,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Only one lt/lte operator is allowed"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:1001&token.id=lt:1008&spender.id=1004",
-      "responseStatus": 400,
-      "responseJson": {
-        "_status": {
-          "messages": [
-            {
-              "message": "Can't support both range and equal"
-            }
-          ]
-        }
-      }
-    },
-    {
-      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:1001&token.id=gt:10001&token.id=10005",
-      "responseStatus": 400,
-      "responseJson": {
-        "_status": {
-          "messages": [
-            {
-              "message": "Can't support both range and equal"
+              "message": "Only one lt/lte operator is allowed for token.id"
             }
           ]
         }
@@ -148,7 +122,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Unsupported combination"
+              "message": "spender.id must have gte or eq operator"
             }
           ]
         }
@@ -161,7 +135,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Unsupported combination"
+              "message": "spender.id must have lte or eq operator"
             }
           ]
         }

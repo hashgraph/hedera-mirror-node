@@ -100,6 +100,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -575,6 +576,14 @@ public class DomainBuilder {
                 .entityId(entityId(ACCOUNT))
                 .payerAccountId(entityId(ACCOUNT));
 
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<Prng, Prng.PrngBuilder> prng() {
+        var builder = Prng.builder()
+                .consensusTimestamp(timestamp())
+                .range(Integer.MAX_VALUE)
+                .prngNumber(random.nextInt(Integer.MAX_VALUE));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

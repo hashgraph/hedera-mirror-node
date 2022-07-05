@@ -56,6 +56,7 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
@@ -357,6 +358,18 @@ public class RecordItemBuilder {
                 .setEndOfStakingPeriod(timestamp())
                 .addNodeStake(nodeStake());
         return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);
+    }
+
+    public Builder<PrngTransactionBody.Builder> prng(int range) {
+        var builder = PrngTransactionBody.newBuilder().setRange(range);
+        var transactionBodyBuilder = new Builder<>(TransactionType.PRNG, builder);
+        return transactionBodyBuilder.record(r -> {
+                    if(range == 0) {
+                        r.setPrngBytes(ByteString.copyFrom(randomBytes(382)));
+                    } else if(range > 0) {
+                        r.setPrngNumber(random.nextInt());
+                    }
+                });
     }
 
     public Builder<ScheduleCreateTransactionBody.Builder> scheduleCreate() {

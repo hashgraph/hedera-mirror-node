@@ -26,815 +26,428 @@ const {
   },
 } = require('../../config');
 const constants = require('../../constants');
-const accountCtrl = require('../../controllers/accountController');
 const utils = require('../../utils');
 
-const accountIdFilter = 'account_id = $1';
-const tokenIdFilter = 'token_id = $2';
+const {
+  filterKeys: {SERIAL_NUMBER, SPENDER_ID, TOKEN_ID, ORDER, LIMIT},
+} = constants;
+const {
+  opsMap: {eq, gt, gte, lt, lte, ne},
+} = utils;
 
-describe('extractNftsQuery', () => {
-  const defaultExpected = {
-    conditions: [accountIdFilter],
-    params: [],
-    order: constants.orderFilterValues.DESC,
-    limit: defaultLimit,
-  };
+const Bound = require('../../controllers/bound');
+const {AccountController} = require('../../controllers');
 
-  const specs = [
-    {
-      name: 'limit',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.LIMIT,
-            operator: utils.opsMap.eq,
-            value: 20,
-          },
-        ],
-        accountId: 1,
-      },
-      expected: {
-        ...defaultExpected,
-        limit: 20,
-        params: [1],
-      },
-    },
-    {
-      name: 'order asc',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.ORDER,
-            operator: utils.opsMap.eq,
-            value: constants.orderFilterValues.ASC,
-          },
-        ],
-        accountId: 2,
-      },
-      expected: {
-        ...defaultExpected,
-        order: constants.orderFilterValues.ASC,
-        conditions: [accountIdFilter],
-        params: [2],
-      },
-    },
-    {
-      name: 'token.id',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.eq,
-            value: '1000',
-          },
-        ],
-        accountId: 3,
-      },
-      expected: {
-        ...defaultExpected,
-        conditions: [accountIdFilter, tokenIdFilter],
-        params: [3, '1000'],
-      },
-    },
-    {
-      name: 'token and serialnumber',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.eq,
-            value: '1001',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.eq,
-            value: '1',
-          },
-        ],
-        accountId: 4,
-      },
-      expected: {
-        ...defaultExpected,
-        conditions: [accountIdFilter, tokenIdFilter, 'serial_number = $3'],
-        params: [4, '1001', '1'],
-      },
-    },
-  ];
+const ownerAccountId = BigInt(1);
 
-  specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(accountCtrl.extractNftsQuery(spec.input.filters, spec.input.accountId)).toEqual(spec.expected);
-    });
-  });
-});
+const serialEqFilter = {key: SERIAL_NUMBER, operator: eq, value: 5};
+const serialGtFilter = {key: SERIAL_NUMBER, operator: gt, value: 6};
+const serialGteFilter = {key: SERIAL_NUMBER, operator: gte, value: 7};
+const serialLtFilter = {key: SERIAL_NUMBER, operator: lt, value: 15};
+const serialLteFilter = {key: SERIAL_NUMBER, operator: lte, value: 16};
+
+const spenderEqFilter = {key: SPENDER_ID, operator: eq, value: 1000};
+const spenderGtFilter = {key: SPENDER_ID, operator: gt, value: 2000};
+const spenderGteFilter = {key: SPENDER_ID, operator: gte, value: 3000};
+const spenderLtFilter = {key: SPENDER_ID, operator: lt, value: 4000};
+const spenderLteFilter = {key: SPENDER_ID, operator: lte, value: 5000};
+const spenderEqInFilter = {key: SPENDER_ID, operator: eq, value: 1050};
+const spenderEqInFilter2 = {key: SPENDER_ID, operator: eq, value: 1100};
+
+const tokenIdEqFilter = {key: TOKEN_ID, operator: eq, value: 100};
+const tokenIdGtFilter = {key: TOKEN_ID, operator: gt, value: 101};
+const tokenIdGteFilter = {key: TOKEN_ID, operator: gte, value: 102};
+const tokenIdLtFilter = {key: TOKEN_ID, operator: lt, value: 150};
+const tokenIdLteFilter = {key: TOKEN_ID, operator: lte, value: 151};
 
 describe('extractNftMultiUnionQuery', () => {
   const defaultExpected = {
-    conditions: [accountIdFilter],
-    params: [],
+    bounds: {
+      primary: new Bound(TOKEN_ID, 'token_id'),
+      secondary: new Bound(SERIAL_NUMBER, 'serial_number'),
+    },
+    lower: [],
+    inner: [],
+    upper: [],
+    ownerAccountId,
     order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
+    spenderIdFilters: [],
+    spenderIdInFilters: [],
   };
 
   const specs = [
     {
-      name: 'limit',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.LIMIT,
-            operator: utils.opsMap.eq,
-            value: 20,
-          },
-        ],
-        accountId: 1,
-      },
-      expected: {
-        lower: {
-          ...defaultExpected,
-          limit: 20,
-          params: [1],
-        },
-        inner: null,
-        upper: null,
-        order: constants.orderFilterValues.DESC,
-        limit: 20,
-      },
+      name: 'empty',
+      filters: [],
+      expected: defaultExpected,
     },
     {
       name: 'order asc',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.ORDER,
-            operator: utils.opsMap.eq,
-            value: constants.orderFilterValues.ASC,
-          },
-        ],
-        accountId: 2,
-      },
+      filters: [{key: ORDER, operator: eq, value: 'asc'}],
+      expected: {...defaultExpected, order: 'asc'},
+    },
+    {
+      name: 'limit',
+      filters: [{key: LIMIT, operator: eq, value: 60}],
+      expected: {...defaultExpected, limit: 60},
+    },
+    {
+      name: 'token eq',
+      filters: [tokenIdEqFilter],
       expected: {
-        lower: {
-          ...defaultExpected,
-          order: constants.orderFilterValues.ASC,
-          params: [2],
+        ...defaultExpected,
+        bounds: {
+          primary: Bound.create({equal: tokenIdEqFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+          secondary: new Bound(SERIAL_NUMBER, 'serial_number'),
         },
-        inner: null,
-        upper: null,
-        order: constants.orderFilterValues.ASC,
-        limit: defaultLimit,
+        lower: [tokenIdEqFilter],
       },
     },
     {
-      name: 'token.id single',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.gte,
-            value: '1001',
-          },
-        ],
-        accountId: 3,
-      },
+      name: 'token gt',
+      filters: [tokenIdGtFilter],
       expected: {
-        lower: {
-          ...defaultExpected,
-          conditions: [accountIdFilter, tokenIdFilter],
-          params: [3, '1001'],
+        ...defaultExpected,
+        bounds: {
+          primary: Bound.create({lower: tokenIdGtFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+          secondary: new Bound(SERIAL_NUMBER, 'serial_number'),
         },
-        inner: {
-          ...defaultExpected,
-          conditions: ['account_id = $4', 'token_id > $5'],
-          params: [3, '1001'],
+        lower: [tokenIdGtFilter],
+      },
+    },
+    {
+      name: 'token lt',
+      filters: [tokenIdLtFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          primary: Bound.create({upper: tokenIdLtFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+          secondary: new Bound(SERIAL_NUMBER, 'serial_number'),
         },
-        upper: null,
-        order: constants.orderFilterValues.DESC,
-        limit: defaultLimit,
+        lower: [tokenIdLtFilter],
+      },
+    },
+    {
+      name: 'token gte',
+      filters: [tokenIdGteFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          primary: Bound.create({lower: tokenIdGteFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+          secondary: new Bound(SERIAL_NUMBER, 'serial_number'),
+        },
+        lower: [tokenIdGteFilter],
+      },
+    },
+    {
+      name: 'token lte',
+      filters: [tokenIdLteFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          primary: Bound.create({upper: tokenIdLteFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+          secondary: new Bound(SERIAL_NUMBER, 'serial_number'),
+        },
+        lower: [tokenIdLteFilter],
+      },
+    },
+    {
+      name: 'token lt and gt',
+      filters: [tokenIdLtFilter, tokenIdGtFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          primary: Bound.create({
+            lower: tokenIdGtFilter,
+            upper: tokenIdLtFilter,
+            filterKey: TOKEN_ID,
+            viewModelKey: 'token_id',
+          }),
+          secondary: new Bound(SERIAL_NUMBER, 'serial_number'),
+        },
+        lower: [tokenIdGtFilter, tokenIdLtFilter],
+      },
+    },
+    {
+      name: 'token eq and serial eq',
+      filters: [serialEqFilter, tokenIdEqFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          primary: Bound.create({equal: tokenIdEqFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+          secondary: Bound.create({equal: serialEqFilter, filterKey: SERIAL_NUMBER, viewModelKey: 'serial_number'}),
+        },
+        lower: [tokenIdEqFilter, serialEqFilter],
+      },
+    },
+    {
+      name: 'token gt and serial eq',
+      filters: [serialEqFilter, tokenIdGtFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          secondary: Bound.create({equal: serialEqFilter, filterKey: SERIAL_NUMBER, viewModelKey: 'serial_number'}),
+          primary: Bound.create({lower: tokenIdGtFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+        },
+        lower: [tokenIdGtFilter, serialEqFilter],
+      },
+    },
+    {
+      name: 'token lt and serial eq',
+      filters: [serialEqFilter, tokenIdLtFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          secondary: Bound.create({equal: serialEqFilter, filterKey: SERIAL_NUMBER, viewModelKey: 'serial_number'}),
+          primary: Bound.create({upper: tokenIdLtFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+        },
+        lower: [tokenIdLtFilter, serialEqFilter],
+      },
+    },
+    {
+      name: 'token gte and lte, serial eq',
+      filters: [serialEqFilter, tokenIdGteFilter, tokenIdLteFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          secondary: Bound.create({equal: serialEqFilter, filterKey: SERIAL_NUMBER, viewModelKey: 'serial_number'}),
+          primary: Bound.create({
+            lower: tokenIdGteFilter,
+            upper: tokenIdLteFilter,
+            filterKey: TOKEN_ID,
+            viewModelKey: 'token_id',
+          }),
+        },
+        lower: [tokenIdGteFilter, tokenIdLteFilter, serialEqFilter],
+      },
+    },
+    {
+      name: 'token gte and serial gte',
+      filters: [serialGteFilter, tokenIdGteFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          secondary: Bound.create({lower: serialGteFilter, filterKey: SERIAL_NUMBER, viewModelKey: 'serial_number'}),
+          primary: Bound.create({lower: tokenIdGteFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+        },
+        lower: [{...tokenIdGteFilter, operator: eq}, serialGteFilter],
+        inner: [{...tokenIdGtFilter, value: tokenIdGtFilter.value + 1}],
+      },
+    },
+    {
+      name: 'token lte and serial lte',
+      filters: [serialLteFilter, tokenIdLteFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          secondary: Bound.create({upper: serialLteFilter, filterKey: SERIAL_NUMBER, viewModelKey: 'serial_number'}),
+          primary: Bound.create({upper: tokenIdLteFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+        },
+        inner: [{...tokenIdLteFilter, operator: lt}],
+        upper: [{...tokenIdLteFilter, operator: eq}, serialLteFilter],
+      },
+    },
+    {
+      name: 'token gte and lte, serial gte and lte',
+      filters: [serialGteFilter, serialLteFilter, tokenIdGteFilter, tokenIdLteFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          secondary: Bound.create({
+            lower: serialGteFilter,
+            upper: serialLteFilter,
+            filterKey: SERIAL_NUMBER,
+            viewModelKey: 'serial_number',
+          }),
+          primary: Bound.create({
+            lower: tokenIdGteFilter,
+            upper: tokenIdLteFilter,
+            filterKey: TOKEN_ID,
+            viewModelKey: 'token_id',
+          }),
+        },
+        lower: [{...tokenIdGteFilter, operator: eq}, serialGteFilter],
+        inner: [
+          {...tokenIdGteFilter, operator: gt},
+          {...tokenIdLteFilter, operator: lt},
+        ],
+        upper: [{...tokenIdLteFilter, operator: eq}, serialLteFilter],
+      },
+    },
+    {
+      name: 'token eq and serial lt',
+      filters: [serialLtFilter, tokenIdEqFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          primary: Bound.create({equal: tokenIdEqFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+          secondary: Bound.create({upper: serialLtFilter, filterKey: SERIAL_NUMBER, viewModelKey: 'serial_number'}),
+        },
+        lower: [tokenIdEqFilter, serialLtFilter],
+      },
+    },
+    {
+      name: 'token eq and serial gt',
+      filters: [serialGtFilter, tokenIdEqFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          primary: Bound.create({equal: tokenIdEqFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+          secondary: Bound.create({lower: serialGtFilter, filterKey: SERIAL_NUMBER, viewModelKey: 'serial_number'}),
+        },
+        lower: [tokenIdEqFilter, serialGtFilter],
+      },
+    },
+    {
+      name: 'spender eq le gte',
+      filters: [spenderEqFilter, spenderEqInFilter, spenderEqInFilter2, spenderLtFilter, spenderGteFilter],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          primary: new Bound(TOKEN_ID, 'token_id'),
+          secondary: new Bound(SERIAL_NUMBER, 'serial_number'),
+        },
+        spenderIdFilters: [spenderLtFilter, spenderGteFilter],
+        spenderIdInFilters: [spenderEqFilter, spenderEqInFilter, spenderEqInFilter2],
+      },
+    },
+    {
+      name: 'token eq spender eq le gte',
+      filters: [
+        tokenIdEqFilter,
+        spenderEqFilter,
+        spenderEqInFilter,
+        spenderEqInFilter2,
+        spenderLtFilter,
+        spenderGteFilter,
+      ],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          primary: Bound.create({equal: tokenIdEqFilter, filterKey: TOKEN_ID, viewModelKey: 'token_id'}),
+          secondary: new Bound(SERIAL_NUMBER, 'serial_number'),
+        },
+        lower: [tokenIdEqFilter],
+        spenderIdFilters: [spenderLtFilter, spenderGteFilter],
+        spenderIdInFilters: [spenderEqFilter, spenderEqInFilter, spenderEqInFilter2],
+      },
+    },
+    {
+      name: 'token gte and lte, serial gte and lte, spender eq lte gt',
+      filters: [
+        serialGteFilter,
+        serialLteFilter,
+        tokenIdGteFilter,
+        tokenIdLteFilter,
+        spenderEqFilter,
+        spenderEqInFilter,
+        spenderLteFilter,
+        spenderGtFilter,
+      ],
+      expected: {
+        ...defaultExpected,
+        bounds: {
+          secondary: Bound.create({
+            lower: serialGteFilter,
+            upper: serialLteFilter,
+            filterKey: SERIAL_NUMBER,
+            viewModelKey: 'serial_number',
+          }),
+          primary: Bound.create({
+            lower: tokenIdGteFilter,
+            upper: tokenIdLteFilter,
+            filterKey: TOKEN_ID,
+            viewModelKey: 'token_id',
+          }),
+        },
+        lower: [{...tokenIdGteFilter, operator: eq}, serialGteFilter],
+        inner: [
+          {...tokenIdGteFilter, operator: gt},
+          {...tokenIdLteFilter, operator: lt},
+        ],
+        upper: [{...tokenIdLteFilter, operator: eq}, serialLteFilter],
+        spenderIdFilters: [spenderLteFilter, spenderGtFilter],
+        spenderIdInFilters: [spenderEqFilter, spenderEqInFilter],
       },
     },
   ];
 
   specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(accountCtrl.extractNftMultiUnionQuery(spec.input.filters, spec.input.accountId)).toEqual(spec.expected);
+    test(spec.name, () => {
+      expect(AccountController.extractNftMultiUnionQuery(spec.filters, ownerAccountId)).toEqual(spec.expected);
     });
   });
 });
 
-describe('extractNftMultiUnionQuery range bounds', () => {
-  const defaultExpected = {
-    conditions: [accountIdFilter],
-    params: [],
-    order: constants.orderFilterValues.DESC,
-    limit: defaultLimit,
-  };
-
+describe('extractTokenMultiUnionQuery throw', () => {
   const specs = [
     {
-      name: 'token inner only',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.lt,
-            value: '777',
-          },
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.gt,
-            value: '111',
-          },
-        ],
-        accountId: 3,
-      },
-      expected: {
-        lower: null,
-        inner: {
-          ...defaultExpected,
-          conditions: [accountIdFilter, 'token_id > $2', 'token_id < $3'],
-          params: [3, '111', '777'],
-        },
-        upper: null,
-        order: constants.orderFilterValues.DESC,
-        limit: defaultLimit,
-      },
+      name: 'no token.id',
+      filters: [{key: SERIAL_NUMBER, operator: eq, value: 1}],
     },
     {
-      name: 'token and serialnumber lower and inner',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.gte,
-            value: '1000',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.gt,
-            value: '1',
-          },
-        ],
-        accountId: 3,
-      },
-      expected: {
-        lower: {
-          ...defaultExpected,
-          conditions: [accountIdFilter, tokenIdFilter, 'serial_number > $3'],
-          params: [3, '1000', '1'],
-        },
-        inner: {
-          ...defaultExpected,
-          conditions: ['account_id = $5', 'token_id > $6'],
-          params: [3, '1000'],
-        },
-        upper: null,
-        order: constants.orderFilterValues.DESC,
-        limit: defaultLimit,
-      },
+      name: 'serial number ne',
+      filters: [{key: SERIAL_NUMBER, operator: ne, value: 1}],
     },
     {
-      name: 'token and serialnumber inner and upper',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.lte,
-            value: '1000',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.lt,
-            value: '10',
-          },
-        ],
-        accountId: 3,
-      },
-      expected: {
-        lower: null,
-        inner: {
-          ...defaultExpected,
-          conditions: [accountIdFilter, 'token_id < $2'],
-          params: [3, '1000'],
-        },
-        upper: {
-          ...defaultExpected,
-          conditions: ['account_id = $4', 'token_id = $5', 'serial_number < $6'],
-          params: [3, '1000', '10'],
-        },
-        order: constants.orderFilterValues.DESC,
-        limit: defaultLimit,
-      },
+      name: 'serial number range and equal',
+      filters: [serialEqFilter, serialGtFilter, serialLtFilter],
     },
     {
-      name: 'token and serialnumber lower, inner and upper',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.gte,
-            value: '1000',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.gt,
-            value: '10',
-          },
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.lte,
-            value: '2000',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.lt,
-            value: '20',
-          },
-        ],
-        accountId: 4,
-      },
-      expected: {
-        lower: {
-          ...defaultExpected,
-          conditions: [accountIdFilter, tokenIdFilter, 'serial_number > $3'],
-          params: [4, '1000', '10'],
-        },
-        inner: {
-          ...defaultExpected,
-          conditions: ['account_id = $5', 'token_id > $6', 'token_id < $7'],
-          params: [4, '1000', '2000'],
-        },
-        upper: {
-          ...defaultExpected,
-          conditions: ['account_id = $9', 'token_id = $10', 'serial_number < $11'],
-          params: [4, '2000', '20'],
-        },
-        order: constants.orderFilterValues.DESC,
-        limit: defaultLimit,
-      },
-    },
-  ];
-
-  specs.forEach((spec) => {
-    test(`${spec.name} bound`, () => {
-      expect(accountCtrl.extractNftMultiUnionQuery(spec.input.filters, spec.input.accountId)).toEqual(spec.expected);
-    });
-  });
-});
-
-describe('extractNftMultiUnionQuery throws', () => {
-  const specs = [
-    {
-      name: 'limit',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.LIMIT,
-            operator: utils.opsMap.eq,
-            value: 20,
-          },
-          {
-            key: constants.filterKeys.LIMIT,
-            operator: utils.opsMap.eq,
-            value: 30,
-          },
-        ],
-        accountId: 1,
-      },
+      name: 'serial number multiple equal',
+      filters: [serialEqFilter, serialEqFilter],
     },
     {
-      name: 'order asc',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.ORDER,
-            operator: utils.opsMap.eq,
-            value: constants.orderFilterValues.ASC,
-          },
-          {
-            key: constants.filterKeys.ORDER,
-            operator: utils.opsMap.eq,
-            value: constants.orderFilterValues.DESC,
-          },
-        ],
-        accountId: 2,
-      },
+      name: 'serial number multiple lower bounds',
+      filters: [serialGtFilter, serialGteFilter],
+    },
+    {
+      name: 'serial number multiple upper bounds',
+      filters: [serialLtFilter, serialLteFilter],
     },
     {
       name: 'token.id ne',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.ne,
-            value: '1001',
-          },
-        ],
-        accountId: 3,
-      },
+      filters: [{key: TOKEN_ID, operator: ne, value: 1}],
     },
     {
-      name: 'token.id eq repeated',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.eq,
-            value: '1001',
-          },
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.eq,
-            value: '1002',
-          },
-        ],
-        accountId: 3,
-      },
+      name: 'token.id multiple equal',
+      filters: [tokenIdEqFilter, tokenIdEqFilter],
+    },
+    {
+      name: 'token.id multiple lower bounds',
+      filters: [tokenIdGtFilter, tokenIdGteFilter],
+    },
+    {
+      name: 'token.id multiple upper bounds',
+      filters: [tokenIdLtFilter, tokenIdLteFilter],
+    },
+    {
+      name: 'token gt and serial gte',
+      filters: [serialGteFilter, tokenIdGtFilter],
+    },
+    {
+      name: 'token lt and serial lte',
+      filters: [serialLteFilter, tokenIdLtFilter],
+    },
+    {
+      name: 'spender le lte',
+      filters: [tokenIdEqFilter, spenderLtFilter, spenderLteFilter],
+    },
+    {
+      name: 'spender ge gte',
+      filters: [tokenIdEqFilter, spenderGtFilter, spenderGteFilter],
+    },
+    {
+      name: 'spender ne',
+      filters: [{key: SPENDER_ID, operator: ne, value: 1}],
     },
   ];
 
   specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
+    test(spec.name, () => {
       expect(() =>
-        accountCtrl.extractNftMultiUnionQuery(spec.input.filters, spec.input.accountId)
-      ).toThrowErrorMatchingSnapshot();
-    });
-  });
-});
-
-describe('extractNftMultiUnionQuery range bound throws', () => {
-  const specs = [
-    {
-      name: 'token.id gt(e) repeated',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.gt,
-            value: '1001',
-          },
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.gte,
-            value: '1002',
-          },
-        ],
-        accountId: 3,
-      },
-    },
-    {
-      name: 'token.id lt(e) repeated',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.lt,
-            value: '1001',
-          },
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.lte,
-            value: '1002',
-          },
-        ],
-        accountId: 3,
-      },
-    },
-    {
-      name: 'serialnumber gt with no token.id gt(e)',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.eq,
-            value: '1000',
-          },
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.lte,
-            value: '1000',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.gt,
-            value: '1',
-          },
-        ],
-        accountId: 3,
-      },
-    },
-    {
-      name: 'serialnumber lt with no token.id lt(e)',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.eq,
-            value: '1000',
-          },
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.gte,
-            value: '1000',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.lt,
-            value: '1',
-          },
-        ],
-        accountId: 3,
-      },
-    },
-    {
-      name: 'token and serialnumber repeated range',
-      input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.gte,
-            value: '1000',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.gt,
-            value: '10',
-          },
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.lte,
-            value: '2000',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.lt,
-            value: '20',
-          },
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.gte,
-            value: '1001',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.gt,
-            value: '11',
-          },
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.lte,
-            value: '2001',
-          },
-          {
-            key: constants.filterKeys.SERIAL_NUMBER,
-            operator: utils.opsMap.lt,
-            value: '21',
-          },
-        ],
-        accountId: 4,
-      },
-    },
-  ];
-
-  specs.forEach((spec) => {
-    test(`${spec.name} bound`, () => {
-      expect(() =>
-        accountCtrl.extractNftMultiUnionQuery(spec.input.filters, spec.input.accountId)
-      ).toThrowErrorMatchingSnapshot();
-    });
-  });
-});
-
-describe('getFilterKeyOpString', () => {
-  const specs = [
-    {
-      name: 'limit key',
-      input: {
-        filter: {
-          key: constants.filterKeys.LIMIT,
-          operator: utils.opsMap.eq,
-          value: 20,
-        },
-        merge: false,
-      },
-      expected: 'limit-=',
-    },
-    {
-      name: 'limit key w merge',
-      input: {
-        filter: {
-          key: constants.filterKeys.LIMIT,
-          operator: utils.opsMap.eq,
-          value: 20,
-        },
-        merge: true,
-      },
-      expected: 'limit-=',
-    },
-    {
-      name: 'order key w asc',
-      input: {
-        filter: {
-          key: constants.filterKeys.ORDER,
-          operator: utils.opsMap.eq,
-          value: constants.orderFilterValues.ASC,
-        },
-        merge: false,
-      },
-      expected: 'order-=',
-    },
-    {
-      name: 'order key w desc merge',
-      input: {
-        filter: {
-          key: constants.filterKeys.ORDER,
-          operator: utils.opsMap.eq,
-          value: constants.orderFilterValues.DESC,
-        },
-        merge: true,
-      },
-      expected: 'order-=',
-    },
-    {
-      name: 'token.id key w gt',
-      input: {
-        filter: {
-          key: constants.filterKeys.TOKEN_ID,
-          operator: utils.opsMap.gt,
-          value: '1001',
-        },
-        merge: false,
-      },
-      expected: 'token.id->',
-    },
-    {
-      name: 'token.id gte',
-      input: {
-        filter: {
-          key: constants.filterKeys.TOKEN_ID,
-          operator: utils.opsMap.gte,
-          value: '1001',
-        },
-        merge: false,
-      },
-      expected: 'token.id->=',
-    },
-    {
-      name: 'token.id key w gte merge',
-      input: {
-        filter: {
-          key: constants.filterKeys.TOKEN_ID,
-          operator: utils.opsMap.gte,
-          value: '1001',
-        },
-        merge: true,
-      },
-      expected: 'token.id->',
-    },
-    {
-      name: 'serialnumber key w lt',
-      input: {
-        filter: {
-          key: constants.filterKeys.SERIAL_NUMBER,
-          operator: utils.opsMap.lt,
-          value: '1001',
-        },
-        merge: false,
-      },
-      expected: 'serialnumber-<',
-    },
-    {
-      name: 'serialnumber key w lte',
-      input: {
-        filter: {
-          key: constants.filterKeys.SERIAL_NUMBER,
-          operator: utils.opsMap.lte,
-          value: '1001',
-        },
-        merge: false,
-      },
-      expected: 'serialnumber-<=',
-    },
-    {
-      name: 'serialnumber key w lte merge',
-      input: {
-        filter: {
-          key: constants.filterKeys.SERIAL_NUMBER,
-          operator: utils.opsMap.lte,
-          value: '1001',
-        },
-        merge: true,
-      },
-      expected: 'serialnumber-<',
-    },
-  ];
-
-  specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(accountCtrl.getFilterKeyOpString(spec.input.filter, spec.input.merge)).toEqual(spec.expected);
-    });
-  });
-});
-
-describe('validateSingleFilterKeyOccurrence not throw', () => {
-  const specs = [
-    {
-      name: 'token.id gt single occurrence',
-      input: {
-        filterMap: {
-          'token.id-<': true,
-        },
-        filter: {
-          key: constants.filterKeys.TOKEN_ID,
-          operator: utils.opsMap.gt,
-          value: 20,
-        },
-      },
-    },
-    {
-      name: 'token.id gte single occurrence',
-      input: {
-        filterMap: {
-          'token.id-<=': true,
-        },
-        filter: {
-          key: constants.filterKeys.TOKEN_ID,
-          operator: utils.opsMap.gte,
-          value: 20,
-        },
-      },
-    },
-    {
-      name: 'serialnumber lt single occurrence',
-      input: {
-        filterMap: {
-          'serialnumber->': true,
-        },
-        filter: {
-          key: constants.filterKeys.SERIAL_NUMBER,
-          operator: utils.opsMap.lt,
-          value: 20,
-        },
-      },
-    },
-    {
-      name: 'serialnumber lte single occurrence',
-      input: {
-        filterMap: {
-          'serialnumber->=': true,
-        },
-        filter: {
-          key: constants.filterKeys.SERIAL_NUMBER,
-          operator: utils.opsMap.lte,
-          value: 20,
-        },
-      },
-    },
-  ];
-
-  specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(() =>
-        accountCtrl.validateSingleFilterKeyOccurrence(spec.input.filterMap, spec.input.filter)
-      ).not.toThrow();
-    });
-  });
-});
-
-describe('validateSingleFilterKeyOccurrence throw', () => {
-  const specs = [
-    {
-      name: 'token.id multiple occurrence',
-      input: {
-        filterMap: {
-          'token.id->': true,
-        },
-        filter: {
-          key: constants.filterKeys.TOKEN_ID,
-          operator: utils.opsMap.gt,
-          value: 20,
-        },
-      },
-    },
-    {
-      name: 'serialnumber multiple occurrence',
-      input: {
-        filterMap: {
-          'serialnumber-<': true,
-        },
-        filter: {
-          key: constants.filterKeys.SERIAL_NUMBER,
-          operator: utils.opsMap.lt,
-          value: 20,
-        },
-      },
-    },
-  ];
-
-  specs.forEach((spec) => {
-    test(`${spec.name}`, () => {
-      expect(() =>
-        accountCtrl.validateSingleFilterKeyOccurrence(spec.input.filterMap, spec.input.filter)
+        AccountController.extractNftMultiUnionQuery(spec.filters, ownerAccountId)
       ).toThrowErrorMatchingSnapshot();
     });
   });

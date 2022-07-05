@@ -67,8 +67,6 @@ postgresql:
   enabled: true
   pgpool:
     replicaCount: 0
-  postgresql:
-    upgradeRepmgrExtension: true  # Upgrade repmgr version to 5.2 or else container spinup fails
 
 redis:
   enabled: false
@@ -93,9 +91,6 @@ rest:
     type: LoadBalancer
 
 rosetta:
-  enabled: false
-
-timescaledb:
   enabled: false
 
 web3:

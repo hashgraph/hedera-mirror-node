@@ -50,6 +50,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
@@ -154,6 +155,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onNodeStake(NodeStake nodeStake) {
         onEach(EntityListener::onNodeStake, nodeStake);
+    }
+
+    @Override
+    public void onPrng(Prng prng) {
+        onEach(EntityListener::onPrng, prng);
     }
 
     @Override

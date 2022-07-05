@@ -24,4 +24,9 @@
         <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-web@.*$</packageUrl>
         <cve>CVE-2016-1000027</cve>
     </suppress>
+    <suppress>
+        <notes><![CDATA[FP per issue #4637]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.apache\.logging\.log4j/log4j\-.*@.*$</packageUrl>
+        <cve>CVE-2022-33915</cve>
+    </suppress>
 </suppressions>

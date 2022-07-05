@@ -32,7 +32,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Not equals operator not supported for timestamp param"
+          "message": "Not equal (ne) operator is not supported for timestamp"
         }
       ]
     }
