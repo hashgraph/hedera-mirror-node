@@ -27,53 +27,53 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
-import com.hedera.mirror.importer.repository.RandomGenerateRepository;
+import com.hedera.mirror.common.domain.transaction.Prng;
+import com.hedera.mirror.importer.repository.PrngRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerUtilTest extends AbstractEntityRecordItemListenerTest {
 
-    private final RandomGenerateRepository randomGenerateRepository;
+    private final PrngRepository prngRepository;
 
     @Test
-    void randomGenerateUpdateRandomNumber() {
-        var recordItem = recordItemBuilder.randomGenerate(Integer.MAX_VALUE).build();
-        int pseudorandomNumber = recordItem.getRecord().getPseudorandomNumber();
+    void prngUpdateRandomNumber() {
+        var recordItem = recordItemBuilder.prng(Integer.MAX_VALUE).build();
+        int pseudorandomNumber = recordItem.getRecord().getPrngNumber();
 
         parseRecordItemAndCommit(recordItem);
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(0, entityRepository.count()),
-                () -> assertEquals(1, randomGenerateRepository.count()),
-                () -> assertThat(randomGenerateRepository.findAll())
+                () -> assertEquals(1, prngRepository.count()),
+                () -> assertThat(prngRepository.findAll())
                         .first()
                         .isNotNull()
-                        .returns(recordItem.getConsensusTimestamp(), UtilRandomGenerate::getConsensusTimestamp)
-                        .returns(Integer.MAX_VALUE, UtilRandomGenerate::getRange)
-                        .returns(pseudorandomNumber, UtilRandomGenerate::getPseudorandomNumber)
-                        .returns(null, UtilRandomGenerate::getPseudorandomBytes)
+                        .returns(recordItem.getConsensusTimestamp(), Prng::getConsensusTimestamp)
+                        .returns(Integer.MAX_VALUE, Prng::getRange)
+                        .returns(pseudorandomNumber, Prng::getPrngNumber)
+                        .returns(null, Prng::getPrngBytes)
         );
     }
 
     @Test
-    void randomGenerateUpdateRandomBytes() {
-        var recordItem = recordItemBuilder.randomGenerate(0).build();
-        byte[] pseudorandomBytes = recordItem.getRecord().getPseudorandomBytes().toByteArray();
+    void prngUpdateRandomBytes() {
+        var recordItem = recordItemBuilder.prng(0).build();
+        byte[] pseudorandomBytes = recordItem.getRecord().getPrngBytes().toByteArray();
 
         parseRecordItemAndCommit(recordItem);
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEquals(0, entityRepository.count()),
-                () -> assertEquals(1, randomGenerateRepository.count()),
-                () -> assertThat(randomGenerateRepository.findAll())
+                () -> assertEquals(1, prngRepository.count()),
+                () -> assertThat(prngRepository.findAll())
                         .first()
                         .isNotNull()
-                        .returns(recordItem.getConsensusTimestamp(), UtilRandomGenerate::getConsensusTimestamp)
-                        .returns(0, UtilRandomGenerate::getRange)
-                        .returns(pseudorandomBytes, UtilRandomGenerate::getPseudorandomBytes)
-                        .returns(null, UtilRandomGenerate::getPseudorandomNumber)
+                        .returns(recordItem.getConsensusTimestamp(), Prng::getConsensusTimestamp)
+                        .returns(0, Prng::getRange)
+                        .returns(pseudorandomBytes, Prng::getPrngBytes)
+                        .returns(null, Prng::getPrngNumber)
         );
     }
 }

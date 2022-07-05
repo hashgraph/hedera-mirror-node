@@ -562,12 +562,12 @@ create table if not exists transaction_signature
 );
 comment on table transaction_signature is 'Transaction signatories';
 
--- util_random_generate
-create table if not exists util_random_generate
+-- prng
+create table if not exists prng
 (
     consensus_timestamp bigint  not null,
     range               integer not null,
     pseudorandom_bytes  bytea   null,
     pseudorandom_number integer null
 );
-comment on table util_random_generate is 'Util random generate';
+comment on table prng is 'Pseudo random generates';

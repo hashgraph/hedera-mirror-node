@@ -28,14 +28,14 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
+import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Log4j2
 @Named
 @RequiredArgsConstructor
-class RandomGenerateTransactionHandler implements TransactionHandler {
+class PrngTransactionHandler implements TransactionHandler {
 
     private final EntityListener entityListener;
 
@@ -46,27 +46,27 @@ class RandomGenerateTransactionHandler implements TransactionHandler {
 
     @Override
     public TransactionType getType() {
-        return TransactionType.RANDOMGENERATE;
+        return TransactionType.PRNG;
     }
 
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
-        var range = recordItem.getTransactionBody().getRandomGenerate().getRange();
+        var range = recordItem.getTransactionBody().getPrng().getRange();
         if (!recordItem.isSuccessful()) {
             return;
         }
 
         var transactionRecord = recordItem.getRecord();
-        var randomGenerate = new UtilRandomGenerate();
-        randomGenerate.setConsensusTimestamp(consensusTimestamp);
-        randomGenerate.setRange(range);
+        var prng = new Prng();
+        prng.setConsensusTimestamp(consensusTimestamp);
+        prng.setRange(range);
         switch(transactionRecord.getEntropyCase()) {
-            case PSEUDORANDOM_BYTES:
-                randomGenerate.setPseudorandomBytes(DomainUtils.toBytes(transactionRecord.getPseudorandomBytes()));
+            case PRNG_BYTES:
+                prng.setPrngBytes(DomainUtils.toBytes(transactionRecord.getPrngBytes()));
                 break;
-            case PSEUDORANDOM_NUMBER:
-                randomGenerate.setPseudorandomNumber(transactionRecord.getPseudorandomNumber());
+            case PRNG_NUMBER:
+                prng.setPrngNumber(transactionRecord.getPrngNumber());
                 break;
             default:
                 log.warn("Unsupported entropy case {} at consensus timestamp {}",
@@ -74,6 +74,6 @@ class RandomGenerateTransactionHandler implements TransactionHandler {
                 return;
         }
 
-        entityListener.onRandomGenerate(randomGenerate);
+        entityListener.onPrng(prng);
     }
 }

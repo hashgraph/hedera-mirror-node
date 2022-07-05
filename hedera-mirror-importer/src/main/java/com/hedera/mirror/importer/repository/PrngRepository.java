@@ -24,11 +24,11 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
-import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
+import com.hedera.mirror.common.domain.transaction.Prng;
 
-public interface RandomGenerateRepository extends PagingAndSortingRepository<UtilRandomGenerate, Long>, RetentionRepository {
+public interface PrngRepository extends PagingAndSortingRepository<Prng, Long>, RetentionRepository {
 
     @Modifying
-    @Query("delete from UtilRandomGenerate where consensusTimestamp <= ?1")
+    @Query("delete from Prng where consensusTimestamp <= ?1")
     int prune(long consensusTimestamp);
 }

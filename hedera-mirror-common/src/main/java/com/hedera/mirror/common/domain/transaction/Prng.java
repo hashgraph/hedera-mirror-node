@@ -35,14 +35,14 @@ import org.springframework.data.domain.Persistable;
 @Data
 @Entity
 @NoArgsConstructor
-public class UtilRandomGenerate implements Persistable<Long> {
+public class Prng implements Persistable<Long> {
 
     @Id
     private long consensusTimestamp;
 
-    private byte[] pseudorandomBytes;
+    private byte[] prngBytes;
 
-    private Integer pseudorandomNumber;
+    private Integer prngNumber;
 
     private int range;
 

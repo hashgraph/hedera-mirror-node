@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hederahashgraph.api.proto.java.RandomGenerateTransactionBody;
+import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
@@ -32,22 +32,22 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.UtilRandomGenerate;
+import com.hedera.mirror.common.domain.transaction.Prng;
 
-class RandomGenerateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class PrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Captor
-    private ArgumentCaptor<UtilRandomGenerate> randomGenerates;
+    private ArgumentCaptor<Prng> pseudoRandomGenerates;
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new RandomGenerateTransactionHandler(entityListener);
+        return new PrngTransactionHandler(entityListener);
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
         return TransactionBody.newBuilder()
-                .setRandomGenerate(RandomGenerateTransactionBody.newBuilder().build());
+                .setPrng(PrngTransactionBody.newBuilder().build());
     }
 
     @Override
@@ -59,8 +59,8 @@ class RandomGenerateTransactionHandlerTest extends AbstractTransactionHandlerTes
     void updateTransactionRandomNumber() {
         // given
         int range = 8;
-        var recordItem = recordItemBuilder.randomGenerate(range).build();
-        int randomNumber = recordItem.getRecord().getPseudorandomNumber();
+        var recordItem = recordItemBuilder.prng(range).build();
+        int randomNumber = recordItem.getRecord().getPrngNumber();
         var expectedRandomGenerate =
                 getExpectedRandomGenerate(recordItem.getConsensusTimestamp(), range, null, randomNumber);
 
@@ -68,16 +68,16 @@ class RandomGenerateTransactionHandlerTest extends AbstractTransactionHandlerTes
         transactionHandler.updateTransaction(null, recordItem);
 
         // then
-        verify(entityListener).onRandomGenerate(randomGenerates.capture());
-        assertThat(randomGenerates.getAllValues()).containsOnly(expectedRandomGenerate);
+        verify(entityListener).onPrng(pseudoRandomGenerates.capture());
+        assertThat(pseudoRandomGenerates.getAllValues()).containsOnly(expectedRandomGenerate);
     }
 
     @Test
     void updateTransactionRandomBytes() {
         // given
         int range = 0;
-        var recordItem = recordItemBuilder.randomGenerate(range).build();
-        byte[] randomBytes = recordItem.getRecord().getPseudorandomBytes().toByteArray();
+        var recordItem = recordItemBuilder.prng(range).build();
+        byte[] randomBytes = recordItem.getRecord().getPrngBytes().toByteArray();
         var expectedRandomGenerate =
                 getExpectedRandomGenerate(recordItem.getConsensusTimestamp(), range, randomBytes, null);
 
@@ -85,14 +85,14 @@ class RandomGenerateTransactionHandlerTest extends AbstractTransactionHandlerTes
         transactionHandler.updateTransaction(null, recordItem);
 
         // then
-        verify(entityListener).onRandomGenerate(randomGenerates.capture());
-        assertThat(randomGenerates.getAllValues()).containsOnly(expectedRandomGenerate);
+        verify(entityListener).onPrng(pseudoRandomGenerates.capture());
+        assertThat(pseudoRandomGenerates.getAllValues()).containsOnly(expectedRandomGenerate);
     }
 
     @Test
     void updateTransactionFailedTransaction() {
         // given
-        var recordItem = recordItemBuilder.randomGenerate(1)
+        var recordItem = recordItemBuilder.prng(1)
                 .status(ResponseCodeEnum.DUPLICATE_TRANSACTION)
                 .build();
 
@@ -106,7 +106,7 @@ class RandomGenerateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Test
     void updateTransactionEntropyNotSet() {
         // given
-        var recordItem = recordItemBuilder.randomGenerate(1)
+        var recordItem = recordItemBuilder.prng(1)
                 .record(r -> r.clearEntropy())
                 .build();
 
@@ -117,13 +117,13 @@ class RandomGenerateTransactionHandlerTest extends AbstractTransactionHandlerTes
         verifyNoInteractions(entityListener);
     }
 
-    private UtilRandomGenerate getExpectedRandomGenerate(long consensusTimestamp, int range, byte[] randomBytes,
-                                                         Integer randomNumber) {
-        return UtilRandomGenerate.builder()
+    private Prng getExpectedRandomGenerate(long consensusTimestamp, int range, byte[] randomBytes,
+                                           Integer randomNumber) {
+        return Prng.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .range(range)
-                .pseudorandomBytes(randomBytes)
-                .pseudorandomNumber(randomNumber)
+                .prngBytes(randomBytes)
+                .prngNumber(randomNumber)
                 .build();
     }
 }
