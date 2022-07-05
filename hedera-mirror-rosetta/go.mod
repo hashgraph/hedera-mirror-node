@@ -3,8 +3,10 @@ module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 go 1.18
 
 require (
+	github.com/Code-Hex/go-generics-cache v1.0.1
 	github.com/coinbase/rosetta-sdk-go v0.7.10
 	github.com/cucumber/godog v0.12.5
+	github.com/ethereum/go-ethereum v1.10.19
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220614085905-694ecae18fba
 	github.com/hashgraph/hedera-sdk-go/v2 v2.16.0
@@ -25,12 +27,11 @@ require (
 	google.golang.org/protobuf v1.28.0
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.3.7
-	gorm.io/gorm v1.23.6
+	gorm.io/gorm v1.23.7
 )
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
-	github.com/Code-Hex/go-generics-cache v1.0.1 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -46,7 +47,6 @@ require (
 	github.com/docker/docker v20.10.7+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/ethereum/go-ethereum v1.10.19 // indirect
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
@@ -109,7 +109,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20220518034528-6f7dac969898 // indirect
-	golang.org/x/exp v0.0.0-20220426173459-3bcf042a4bf5 // indirect
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
