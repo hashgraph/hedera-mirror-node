@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   annotations:
     helm.sh/hook: test-success
-    helm.sh/hook-delete-policy: before-hook-creation,hook-failed,hook-succeeded
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
   labels: {{- include "hedera-mirror-rest.labels" . | nindent 4 }}
   name: {{ include "hedera-mirror-rest.fullname" . }}-test
   namespace: {{ include "hedera-mirror-rest.namespace" . }}
@@ -29,12 +29,16 @@ data:
       done
     }
 
+    {{ if .Values.test.checks.accounts -}}
     @test "Has accounts" {
       has_data "accounts"
     }
+    {{- end -}}
 
+    {{ if .Values.test.checks.transactions -}}
     @test "Has transactions" {
       has_data "transactions"
     }
+    {{- end -}}
 {{- end -}}
 
