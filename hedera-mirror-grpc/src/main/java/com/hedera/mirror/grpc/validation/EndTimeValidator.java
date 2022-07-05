@@ -29,6 +29,7 @@ public class EndTimeValidator implements ConstraintValidator<EndTime, TopicMessa
 
     @Override
     public void initialize(EndTime endTime) {
+        // Nothing needs to be done with endTime upon initialize
     }
 
     @Override

@@ -33,8 +33,8 @@ import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.util.retry.Retry;
 
+import com.hedera.mirror.monitor.ScenarioProperties;
 import com.hedera.mirror.monitor.expression.ExpressionConverter;
-import com.hedera.mirror.monitor.subscribe.AbstractSubscriberProperties;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
@@ -78,7 +78,7 @@ class GrpcSubscriber implements MirrorSubscriber {
 
     private Flux<SubscribeResponse> clientSubscribe(GrpcSubscription subscription) {
         GrpcSubscriberProperties subscriberProperties = subscription.getProperties();
-        AbstractSubscriberProperties.RetryProperties retry = subscriberProperties.getRetry();
+        ScenarioProperties.RetryProperties retry = subscriberProperties.getRetry();
 
         return Flux.defer(() -> grpcClient.subscribe(subscription))
                 .retryWhen(Retry.backoff(retry.getMaxAttempts(), retry.getMinBackoff())

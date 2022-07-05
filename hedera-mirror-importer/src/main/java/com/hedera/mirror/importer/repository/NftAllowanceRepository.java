@@ -22,7 +22,8 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
+import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 
-public interface NftAllowanceRepository extends CrudRepository<NftAllowance, NftAllowance.Id> {
+public interface NftAllowanceRepository extends CrudRepository<NftAllowance, AbstractNftAllowance.Id> {
 }

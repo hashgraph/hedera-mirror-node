@@ -22,7 +22,8 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
+import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 
-public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowance, CryptoAllowance.Id> {
+public interface CryptoAllowanceRepository extends CrudRepository<CryptoAllowance, AbstractCryptoAllowance.Id> {
 }

@@ -41,7 +41,10 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
+import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -120,14 +123,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     // maps of upgradable domains
     private final Map<Long, Contract> contractState;
-    private final Map<CryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
+    private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<Long, Entity> entityState;
     private final Map<NftId, Nft> nfts;
-    private final Map<NftAllowance.Id, NftAllowance> nftAllowanceState;
+    private final Map<AbstractNftAllowance.Id, NftAllowance> nftAllowanceState;
     private final Map<NftTransferId, NftTransfer> nftTransferState;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
-    private final Map<TokenAllowance.Id, TokenAllowance> tokenAllowanceState;
+    private final Map<AbstractTokenAllowance.Id, TokenAllowance> tokenAllowanceState;
 
     // tracks the state of <token, account> relationships in a batch, the initial state before the batch is in db.
     // for each <token, account> update, merge the state and the update, save the merged state to the batch.

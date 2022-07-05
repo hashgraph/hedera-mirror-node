@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.balance.line;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,6 +44,7 @@ import com.hedera.mirror.importer.exception.InvalidDatasetException;
 @RequiredArgsConstructor
 public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
 
+    private static final String INVALID_BALANCE = "Invalid account balance line: ";
     private static final Splitter SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
 
     private final MirrorProperties mirrorProperties;
@@ -71,7 +72,7 @@ public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
             } else if (parts.size() == 4) {
                 hasTokenBalance = false;
             } else {
-                throw new InvalidDatasetException("Invalid account balance line: " + line);
+                throw new InvalidDatasetException(INVALID_BALANCE + line);
             }
 
             long shardNum = Long.parseLong(parts.get(0));
@@ -80,7 +81,7 @@ public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
             long balance = Long.parseLong(parts.get(3));
 
             if (shardNum < 0 || realmNum < 0 || accountNum < 0 || balance < 0) {
-                throw new InvalidDatasetException("Invalid account balance line: " + line);
+                throw new InvalidDatasetException(INVALID_BALANCE + line);
             }
 
             if (shardNum != mirrorProperties.getShard()) {
@@ -97,7 +98,7 @@ public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
 
             return new AccountBalance(balance, tokenBalances, new AccountBalance.Id(consensusTimestamp, accountId));
         } catch (NumberFormatException | InvalidProtocolBufferException ex) {
-            throw new InvalidDatasetException("Invalid account balance line: " + line, ex);
+            throw new InvalidDatasetException(INVALID_BALANCE + line, ex);
         }
     }
 

@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.balance.line;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,16 +26,17 @@ import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 
 @Named
 @RequiredArgsConstructor
 public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
 
+    private static final String INVALID_BALANCE = "Invalid account balance line: ";
     private static final Splitter SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
 
     private final MirrorProperties mirrorProperties;
@@ -58,7 +59,7 @@ public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
             }
             List<String> parts = SPLITTER.splitToList(line);
             if (parts.size() != 4) {
-                throw new InvalidDatasetException("Invalid account balance line: " + line);
+                throw new InvalidDatasetException(INVALID_BALANCE + line);
             }
 
             long shardNum = Long.parseLong(parts.get(0));
@@ -66,7 +67,7 @@ public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
             int accountNum = Integer.parseInt(parts.get(2));
             long balance = Long.parseLong(parts.get(3));
             if (shardNum < 0 || realmNum < 0 || accountNum < 0 || balance < 0) {
-                throw new InvalidDatasetException("Invalid account balance line: " + line);
+                throw new InvalidDatasetException(INVALID_BALANCE + line);
             }
 
             if (shardNum != mirrorProperties.getShard()) {
@@ -78,7 +79,7 @@ public class AccountBalanceLineParserV1 implements AccountBalanceLineParser {
                     .emptyList(), new AccountBalance.Id(consensusTimestamp, EntityId
                     .of(shardNum, realmNum, accountNum, EntityType.ACCOUNT)));
         } catch (NumberFormatException ex) {
-            throw new InvalidDatasetException("Invalid account balance line: " + line, ex);
+            throw new InvalidDatasetException(INVALID_BALANCE + line, ex);
         }
     }
 }

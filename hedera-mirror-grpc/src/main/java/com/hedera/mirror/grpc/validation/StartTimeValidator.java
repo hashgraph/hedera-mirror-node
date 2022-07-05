@@ -30,6 +30,7 @@ public class StartTimeValidator implements ConstraintValidator<StartTime, TopicM
 
     @Override
     public void initialize(StartTime startTime) {
+        // Nothing needs to be done with startTime upon initialize
     }
 
     @Override
