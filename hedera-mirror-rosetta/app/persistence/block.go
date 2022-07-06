@@ -81,7 +81,7 @@ const (
                                              coalesce((
                                                select consensus_start-1
                                                from record_file
-                                               where index = @index + 1
+                                               where index = @index + 1::bigint
                                              ), consensus_end) as consensus_end,
                                              hash,
                                              index,
