@@ -21,7 +21,7 @@ spec:
     crds: CreateReplace
   interval: 30s
   test:
-    enable: false
+    enable: true
     timeout: 15m
   timeout: 20m
   upgrade:
