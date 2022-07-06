@@ -29,6 +29,9 @@ import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
+import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
+import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
+import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
@@ -78,7 +81,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
     private void parseCryptoAllowances(List<com.hederahashgraph.api.proto.java.CryptoAllowance> cryptoAllowances,
                                        RecordItem recordItem) {
         var consensusTimestamp = recordItem.getConsensusTimestamp();
-        var cryptoAllowanceState = new HashMap<CryptoAllowance.Id, CryptoAllowance>();
+        var cryptoAllowanceState = new HashMap<AbstractCryptoAllowance.Id, CryptoAllowance>();
         var payerAccountId = recordItem.getPayerAccountId();
 
         // iterate the crypto allowance list in reverse order and honor the last allowance for the same owner and spender
@@ -109,7 +112,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                                     RecordItem recordItem) {
         var consensusTimestamp = recordItem.getConsensusTimestamp();
         var payerAccountId = recordItem.getPayerAccountId();
-        var nftAllowanceState = new HashMap<NftAllowance.Id, NftAllowance>();
+        var nftAllowanceState = new HashMap<AbstractNftAllowance.Id, NftAllowance>();
         var nftSerialAllowanceState = new HashMap<NftId, Nft>();
 
         // iterate the nft allowance list in reverse order and honor the last allowance for either
@@ -164,7 +167,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
                                       RecordItem recordItem) {
         var consensusTimestamp = recordItem.getConsensusTimestamp();
         var payerAccountId = recordItem.getPayerAccountId();
-        var tokenAllowanceState = new HashMap<TokenAllowance.Id, TokenAllowance>();
+        var tokenAllowanceState = new HashMap<AbstractTokenAllowance.Id, TokenAllowance>();
 
         // iterate the token allowance list in reverse order and honor the last allowance for the same owner, spender,
         // and token

@@ -45,7 +45,9 @@ const storeFile = (data, file, ext) => {
 
   const filename = `${file}.${ext}`;
   fs.writeFileSync(`${filename}`, data, (err) => {
-    if (err) throw err;
+    if (err) {
+      throw err;
+    }
   });
 };
 

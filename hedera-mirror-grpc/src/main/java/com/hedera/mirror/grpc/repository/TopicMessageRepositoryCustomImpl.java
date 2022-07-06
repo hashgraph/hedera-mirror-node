@@ -45,6 +45,8 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
     // the primary key so pg planner will choose the better index when querying topic messages by id
     private static final String TOPIC_MESSAGES_BY_ID_QUERY_HINT = "set local random_page_cost = 0";
 
+    private static final String CONSENSUS_TIMESTAMP = "consensusTimestamp";
+
     private final EntityManager entityManager;
     private final InstantToLongConverter converter;
 
@@ -56,15 +58,15 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
 
         Predicate predicate = cb.and(
                 cb.equal(root.get("topicId"), filter.getTopicId().getId()),
-                cb.greaterThanOrEqualTo(root.get("consensusTimestamp"), converter.convert(filter.getStartTime()))
+                cb.greaterThanOrEqualTo(root.get(CONSENSUS_TIMESTAMP), converter.convert(filter.getStartTime()))
         );
 
         if (filter.getEndTime() != null) {
             predicate = cb.and(predicate, cb
-                    .lessThan(root.get("consensusTimestamp"), converter.convert(filter.getEndTime())));
+                    .lessThan(root.get(CONSENSUS_TIMESTAMP), converter.convert(filter.getEndTime())));
         }
 
-        query = query.select(root).where(predicate).orderBy(cb.asc(root.get("consensusTimestamp")));
+        query = query.select(root).where(predicate).orderBy(cb.asc(root.get(CONSENSUS_TIMESTAMP)));
 
         TypedQuery<TopicMessage> typedQuery = entityManager.createQuery(query);
         typedQuery.setHint(QueryHints.HINT_READONLY, true);
