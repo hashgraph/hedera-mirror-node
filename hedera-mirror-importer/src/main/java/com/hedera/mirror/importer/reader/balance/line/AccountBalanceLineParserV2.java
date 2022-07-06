@@ -44,7 +44,6 @@ import com.hedera.mirror.importer.exception.InvalidDatasetException;
 @RequiredArgsConstructor
 public class AccountBalanceLineParserV2 implements AccountBalanceLineParser {
 
-    private static final String INVALID_BALANCE = "Invalid account balance line: ";
     private static final Splitter SPLITTER = Splitter.on(',').trimResults().omitEmptyStrings();
 
     private final MirrorProperties mirrorProperties;
