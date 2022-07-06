@@ -33,7 +33,7 @@ data:
     @test "Has accounts" {
       has_data "accounts"
     }
-    {{- end -}}
+    {{- end }}
 
     {{ if .Values.test.checks.transactions -}}
     @test "Has transactions" {
