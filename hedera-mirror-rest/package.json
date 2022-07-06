@@ -96,7 +96,7 @@
     "jest": "^28.1.1",
     "jest-circus": "^28.1.2",
     "jest-extended": "^2.0.0",
-    "jest-junit": "^13.2.0",
+    "jest-junit": "^14.0.0",
     "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.7",
     "nodemon": "^2.0.19",
