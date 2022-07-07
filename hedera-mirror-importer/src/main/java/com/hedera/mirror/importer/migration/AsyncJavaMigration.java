@@ -113,6 +113,7 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
                 .subscribeOn(Schedulers.single())
                 .doOnSuccess(t -> onSuccess())
                 .doOnError(t -> log.error("Asynchronous migration failed:", t))
+                .doFinally(s -> complete.set(true))
                 .subscribe();
     }
 
@@ -140,8 +141,6 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
         } catch (Exception e) {
             log.error("Error executing asynchronous migration after {} iterations in {}", count, stopwatch);
             throw e;
-        } finally {
-            complete.set(true);
         }
     }
 
