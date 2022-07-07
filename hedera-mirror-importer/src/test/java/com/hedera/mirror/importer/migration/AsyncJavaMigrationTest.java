@@ -29,12 +29,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
-
-import com.hedera.mirror.importer.EnabledIfV1;
-
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -47,6 +43,7 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.transaction.support.TransactionOperations;
 
+import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.db.DBProperties;
 
@@ -101,9 +98,8 @@ class AsyncJavaMigrationTest extends IntegrationTest {
         migrateSync(migration);
         assertThat(getAllMigrationHistory())
                 .hasSize(1)
-                .first()
-                .extracting(MigrationHistory::getExecutionTime, InstanceOfAssertFactories.INTEGER)
-                .isGreaterThan(1000);
+                .extracting(MigrationHistory::getExecutionTime)
+                .isNotEqualTo(ELAPSED);
     }
 
     @Test
