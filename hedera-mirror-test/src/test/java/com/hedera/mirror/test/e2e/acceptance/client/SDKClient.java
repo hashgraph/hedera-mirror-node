@@ -130,12 +130,8 @@ public class SDKClient implements AutoCloseable {
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
     }
 
-    private synchronized ExpandedAccountId getOperatorAccount() {
+    private ExpandedAccountId getOperatorAccount() {
         try {
-            if (expandedOperatorAccountId != null) {
-                return expandedOperatorAccountId;
-            }
-
             if (acceptanceTestProperties.isCreateOperatorAccount()) {
                 PrivateKey privateKey = PrivateKey.generateED25519();
                 PublicKey publicKey = privateKey.getPublicKey();
