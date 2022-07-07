@@ -20,6 +20,8 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import static com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties.HederaNetwork.OTHER;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,9 +39,13 @@ import org.apache.commons.lang3.RandomUtils;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.hashgraph.sdk.AccountBalanceQuery;
+import com.hedera.hashgraph.sdk.AccountCreateTransaction;
+import com.hedera.hashgraph.sdk.AccountDeleteTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
@@ -63,10 +69,9 @@ public class SDKClient implements AutoCloseable {
         this.mirrorNodeClient = mirrorNodeClient;
         maxTransactionFee = Hbar.fromTinybars(acceptanceTestProperties.getMaxTinyBarTransactionFee());
         this.acceptanceTestProperties = acceptanceTestProperties;
-        expandedOperatorAccountId = new ExpandedAccountId(
-                acceptanceTestProperties.getOperatorId(),
-                acceptanceTestProperties.getOperatorKey());
         this.client = getValidatedClient();
+        expandedOperatorAccountId = getOperatorAccount();
+        this.client.setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());
         validateNetworkMap = this.client.getNetwork();
     }
 
@@ -77,6 +82,21 @@ public class SDKClient implements AutoCloseable {
 
     @Override
     public void close() throws TimeoutException {
+        var createdAccountId = expandedOperatorAccountId.getAccountId();
+        var operatorId = AccountId.fromString(acceptanceTestProperties.getOperatorId());
+
+        if (!operatorId.equals(createdAccountId)) {
+            try {
+                new AccountDeleteTransaction()
+                        .setAccountId(createdAccountId)
+                        .setTransferAccountId(operatorId)
+                        .execute(client);
+                log.info("Deleted temporary operator account {}", createdAccountId);
+            } catch (Exception e) {
+                log.warn("Unable to delete temporary operator account {}", createdAccountId, e);
+            }
+        }
+
         client.close();
     }
 
@@ -97,6 +117,10 @@ public class SDKClient implements AutoCloseable {
             }
         }
 
+        if (network == OTHER && CollectionUtils.isEmpty(customNodes)) {
+            throw new IllegalArgumentException("nodes must not be empty when network is OTHER");
+        }
+
         Client client = Client.forName(network.toString().toLowerCase());
         return client.getNetwork();
     }
@@ -104,6 +128,30 @@ public class SDKClient implements AutoCloseable {
     private Map<String, AccountId> getNetworkMap(Set<NodeProperties> nodes) {
         return nodes.stream()
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
+    }
+
+    private ExpandedAccountId getOperatorAccount() {
+        try {
+            if (acceptanceTestProperties.isCreateOperatorAccount()) {
+                PrivateKey privateKey = PrivateKey.generateED25519();
+                PublicKey publicKey = privateKey.getPublicKey();
+                var accountId = new AccountCreateTransaction()
+                        .setInitialBalance(Hbar.fromTinybars(acceptanceTestProperties.getOperatorBalance()))
+                        .setKey(publicKey)
+                        .setMaxTransactionFee(getMaxTransactionFee())
+                        .execute(client)
+                        .getReceipt(client)
+                        .accountId;
+                log.info("Created operator account {} with public key {}", accountId, publicKey);
+                return new ExpandedAccountId(accountId, privateKey, publicKey);
+            }
+        } catch (Exception e) {
+            log.warn("Unable to create a regular operator account. Falling back to existing operator");
+        }
+
+        var operatorId = acceptanceTestProperties.getOperatorId();
+        var operatorKey = acceptanceTestProperties.getOperatorKey();
+        return new ExpandedAccountId(operatorId, operatorKey);
     }
 
     private Client getValidatedClient() throws InterruptedException {
@@ -130,8 +178,10 @@ public class SDKClient implements AutoCloseable {
     }
 
     private Client toClient(Map<String, AccountId> network) throws InterruptedException {
+        var operatorId = AccountId.fromString(acceptanceTestProperties.getOperatorId());
+        var operatorKey = PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
         Client client = Client.forNetwork(network);
-        client.setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());
+        client.setOperator(operatorId, operatorKey);
         client.setMirrorNetwork(List.of(acceptanceTestProperties.getMirrorNodeAddress()));
         return client;
     }

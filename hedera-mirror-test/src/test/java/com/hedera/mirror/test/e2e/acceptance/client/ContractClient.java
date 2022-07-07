@@ -21,8 +21,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import javax.inject.Named;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.AccountId;
@@ -39,11 +37,10 @@ import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Named
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ContractClient extends AbstractNetworkClient {
+
     public ContractClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
-        log.debug("Creating Contract Client");
     }
 
     public NetworkTransactionResponse createContract(FileId fileId, long gas, Hbar payableAmount,
