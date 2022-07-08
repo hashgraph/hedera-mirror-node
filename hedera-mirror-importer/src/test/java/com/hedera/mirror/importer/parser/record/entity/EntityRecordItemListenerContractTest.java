@@ -51,7 +51,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -72,7 +71,6 @@ import org.springframework.data.util.Version;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
@@ -177,7 +175,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var parentEvmAddress = domainBuilder.evmAddress();
         var parentRecordItem = recordItemBuilder.contractCreate()
                 .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
-                        .clearStateChanges()
+                        // .clearStateChanges()
                         .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(parentEvmAddress)))
                 ))
                 .hapiVersion(HAPI_VERSION_0_23_0)
@@ -195,7 +193,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .setTransactionID(childTransactionId)
                         .setContractCreateResult(r.getContractCreateResultBuilder()
                                 .clearCreatedContractIDs()
-                                .clearStateChanges()
+                                // .clearStateChanges()
                                 .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(childEvmAddress)))))
                 .hapiVersion(HAPI_VERSION_0_23_0)
                 .build();
@@ -588,7 +586,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .transactionBody(b -> b.setContractID(setupResult.protoContractId))
                 .record(r -> r.clearContractCallResult()
                         .setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)
-                                .clearStateChanges()))
+                                // .clearStateChanges()
+                        ))
                 .hapiVersion(HAPI_VERSION_0_23_0)
                 .build();
 
@@ -601,7 +600,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .record(r -> r.setConsensusTimestamp(childConsensusTimestamp)
                         .setContractCreateResult(r.getContractCreateResultBuilder()
                                 .clearCreatedContractIDs()
-                                .clearStateChanges()
+                                //.clearStateChanges()
                                 .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(childEvmAddress))))
                         .setTransactionID(childTransactionId))
                 .hapiVersion(HAPI_VERSION_0_23_0)
@@ -989,8 +988,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             contractResult.returns(EntityId.of(receipt.getContractID()), ContractResult::getContractId);
         }
 
-        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
-                result.getStateChangesList());
+        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult);
+                // result.getStateChangesList());
     }
 
     private void assertContractCallResult(ContractCallTransactionBody transactionBody, TransactionRecord record) {
@@ -1011,14 +1010,14 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .returns(toBytes(transactionBody.getFunctionParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
-        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult,
-                result.getStateChangesList());
+        assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult);
+        //        result.getStateChangesList());
     }
 
     private void assertContractResult(long consensusTimestamp, ContractFunctionResult result,
                                       List<ContractLoginfo> logInfoList,
-                                      ObjectAssert<ContractResult> contractResult,
-                                      List<com.hederahashgraph.api.proto.java.ContractStateChange> stateChanges) {
+                                      ObjectAssert<ContractResult> contractResult) {
+                                      // List<com.hedera.services.stream.proto.ContractStateChange> stateChanges) {
         List<Long> createdContractIds = result.getCreatedContractIDsList()
                 .stream()
                 .map(ContractID::getContractNum)
@@ -1055,22 +1054,22 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         int count = 0;
         var contractStateChanges = assertThat(contractStateChangeRepository.findAll());
 
-        for (var contractStateChangeInfo : stateChanges) {
-            EntityId contractId = EntityId.of(contractStateChangeInfo.getContractID());
-            for (var storageChange : contractStateChangeInfo.getStorageChangesList()) {
-                byte[] slot = DomainUtils.toBytes(storageChange.getSlot());
-                byte[] valueWritten = storageChange.hasValueWritten() ? storageChange.getValueWritten().getValue()
-                        .toByteArray() : null;
-
-                contractStateChanges.filteredOn(c -> c.getConsensusTimestamp() == consensusTimestamp
-                                && c.getContractId() == contractId.getId() && Arrays.equals(c.getSlot(), slot))
-                        .hasSize(1)
-                        .first()
-                        .returns(storageChange.getValueRead().toByteArray(), ContractStateChange::getValueRead)
-                        .returns(valueWritten, ContractStateChange::getValueWritten);
-                ++count;
-            }
-        }
+//        for (var contractStateChangeInfo : stateChanges) {
+//            EntityId contractId = EntityId.of(contractStateChangeInfo.getContractID());
+//            for (var storageChange : contractStateChangeInfo.getStorageChangesList()) {
+//                byte[] slot = DomainUtils.toBytes(storageChange.getSlot());
+//                byte[] valueWritten = storageChange.hasValueWritten() ? storageChange.getValueWritten().getValue()
+//                        .toByteArray() : null;
+//
+//                contractStateChanges.filteredOn(c -> c.getConsensusTimestamp() == consensusTimestamp
+//                                && c.getContractId() == contractId.getId() && Arrays.equals(c.getSlot(), slot))
+//                        .hasSize(1)
+//                        .first()
+//                        .returns(storageChange.getValueRead().toByteArray(), ContractStateChange::getValueRead)
+//                        .returns(valueWritten, ContractStateChange::getValueWritten);
+//                ++count;
+//            }
+//        }
 
         contractStateChanges.hasSize(count);
     }

@@ -47,6 +47,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
@@ -77,6 +78,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.repository.AssessedCustomFeeRepository;
+import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
@@ -110,6 +112,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private static final EntityId TRANSACTION_PAYER = EntityId.of("0.0.1000", ACCOUNT);
 
     private final AssessedCustomFeeRepository assessedCustomFeeRepository;
+    private final ContractActionRepository contractActionRepository;
     private final ContractLogRepository contractLogRepository;
     private final ContractRepository contractRepository;
     private final ContractResultRepository contractResultRepository;
@@ -375,6 +378,19 @@ class SqlEntityListenerTest extends IntegrationTest {
         existingContract.setStakePeriodStart(existingContractStakePeriodStart3.getStakePeriodStart());
         assertThat(contractRepository.findAll()).containsExactly(existingContract);
         assertThat(findHistory(Contract.class)).isEmpty();
+    }
+
+    @Test
+    void onContractAction() {
+        // given
+        ContractAction contractAction = domainBuilder.contractAction().get();
+
+        // when
+        sqlEntityListener.onContractAction(contractAction);
+        completeFileAndCommit();
+
+        // then
+        assertThat(contractActionRepository.findAll()).containsExactlyInAnyOrder(contractAction);
     }
 
     @Test

@@ -100,7 +100,10 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 contract.setFileId(EntityId.of(transactionBody.getFileID()));
                 break;
             case INITCODE:
-                contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+                // contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+                if (!recordItem.getSidecarRecords().isEmpty()) {
+                    contract.setInitcode(getInitcodeFromRecordItem(recordItem));
+                }
                 break;
             default:
                 break;
@@ -118,7 +121,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
         contract.setMemo(transactionBody.getMemo());
 
-        // for child transactions initCode and FileID are located in parent ContractCreate/EthereumTransaction types
+        // for child transactions FileID is located in parent ContractCreate/EthereumTransaction types
+        // and initcode is located in the sidecar
         updateChildFromParent(contract, recordItem);
         updateStakingInfo(recordItem, contract);
 
@@ -183,8 +187,10 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 }
                 break;
             case INITCODE:
-                if (contract.getInitcode() == null) {
-                    contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+                if (contract.getInitcode() == null && !recordItem.getSidecarRecords().isEmpty()) {
+                    // contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+                    var sidecarRecord = recordItem.getSidecarRecords().get(0);
+                    contract.setInitcode(sidecarRecord.getContractBytecode().getInitcode());
                 }
                 break;
             default:
@@ -202,11 +208,23 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             return;
         }
 
-        var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
-        var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
+//        var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
+//        var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
+//
+//        if (contract.getInitcode() == null) {
+//            contract.setInitcode(ethereumTransaction.getCallData());
+//        }
 
-        if (contract.getInitcode() == null) {
-            contract.setInitcode(ethereumTransaction.getCallData());
+        if (!recordItem.getSidecarRecords().isEmpty()) {
+            contract.setRuntimeBytecode(recordItem.getSidecarRecords().get(0).getContractBytecode().getRuntimeBytecode());
+
+            if (contract.getInitcode() == null) {
+                contract.setInitcode(getInitcodeFromRecordItem(recordItem));
+            }
         }
+    }
+
+    private byte[] getInitcodeFromRecordItem(RecordItem recordItem) {
+        return recordItem.getSidecarRecords().get(0).getContractBytecode().getInitcode();
     }
 }

@@ -101,7 +101,7 @@ class ContractResultServiceImplTest {
         var recordItem = recordItemBuilder.contractCreate()
                 .record(r -> {
                     r.getContractCreateResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
-                    r.getContractCreateResultBuilder().getStateChangesBuilder(0).setContractID(invalidContractId);
+                    // r.getContractCreateResultBuilder().getStateChangesBuilder(0).setContractID(invalidContractId);
                     r.getContractCreateResultBuilder().removeLogInfo(1);
                 })
                 .build();
@@ -114,6 +114,7 @@ class ContractResultServiceImplTest {
 
         contractResultService.process(recordItem, transaction);
 
+        verify(entityListener).onContractAction(assertArg(a -> assertThat(a.getId()).isEqualTo(expectedId)));
         verify(entityListener).onContractLog(assertArg(l -> assertThat(l.getContractId()).isEqualTo(expectedId)));
         verify(entityListener, times(2)).onContractStateChange(assertArg(s ->
                 assertThat(s.getContractId()).isEqualTo(expectedId.getId())));
@@ -141,7 +142,7 @@ class ContractResultServiceImplTest {
         var recordItem = recordItemBuilder.contractCall()
                 .record(r -> {
                     r.getContractCallResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
-                    r.getContractCallResultBuilder().getStateChangesBuilder(0).setContractID(invalidContractId);
+                    // r.getContractCallResultBuilder().getStateChangesBuilder(0).setContractID(invalidContractId);
                     r.getContractCallResultBuilder().removeLogInfo(1);
                 })
                 .build();
@@ -153,6 +154,7 @@ class ContractResultServiceImplTest {
         when(entityIdService.lookup(evmAddress)).thenReturn(resolvedId);
         contractResultService.process(recordItem, transaction);
 
+        verify(entityListener).onContractAction(assertArg(a -> assertThat(a.getId()).isEqualTo(expectedId)));
         verify(entityListener).onContractLog(assertArg(l -> assertThat(l.getContractId()).isEqualTo(expectedId)));
         verify(entityListener, times(2)).onContractStateChange(assertArg(s ->
                 assertThat(s.getContractId()).isEqualTo(expectedId.getId())));

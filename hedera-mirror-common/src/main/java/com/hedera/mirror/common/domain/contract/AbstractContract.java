@@ -54,6 +54,9 @@ public abstract class AbstractContract extends AbstractEntity implements Aliasab
 
     private Boolean permanentRemoval;
 
+    @ToString.Exclude
+    private byte[] runtimeBytecode;
+
     @JsonIgnore
     @Override
     public byte[] getAlias() {

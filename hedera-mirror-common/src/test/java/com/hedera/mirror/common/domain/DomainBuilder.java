@@ -68,6 +68,7 @@ import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractHistory;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -242,6 +243,7 @@ public class DomainBuilder {
                 .proxyAccountId(entityId(ACCOUNT))
                 .num(id)
                 .realm(0L)
+                .runtimeBytecode(bytes(256))
                 .shard(0L)
                 .stakedAccountId(-1L)
                 .stakedNodeId(-1L)
@@ -249,6 +251,26 @@ public class DomainBuilder {
                 .timestampRange(Range.atLeast(timestamp))
                 .type(CONTRACT);
 
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<ContractAction, ContractAction.ContractActionBuilder> contractAction() {
+        var builder = ContractAction.builder()
+                .callDepth(1)
+                .caller(entityId(ACCOUNT))
+                .callerType(CONTRACT)
+                .callType(CONTRACT.getId())
+                .consensusTimestamp(timestamp())
+                .gas(100L)
+                .gasUsed(50L)
+                .index((int) id())
+                .input(bytes(256))
+                .recipientAccount(entityId(ACCOUNT))
+                .recipientAddress(bytes(20))
+                .recipientContract(entityId(CONTRACT))
+                .resultData(bytes(256))
+                .resultDataType(1)
+                .value(300L);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -273,6 +295,7 @@ public class DomainBuilder {
                 .proxyAccountId(entityId(ACCOUNT))
                 .num(id)
                 .realm(0L)
+                .runtimeBytecode(bytes(256))
                 .shard(0L)
                 .stakedAccountId(-1L)
                 .stakedNodeId(-1L)

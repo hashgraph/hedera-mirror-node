@@ -38,6 +38,7 @@ import org.springframework.core.annotation.Order;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
@@ -97,6 +98,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // lists of insert only domains
     private final Collection<AssessedCustomFee> assessedCustomFees;
     private final Collection<Contract> contracts;
+    private final Collection<ContractAction> contractActions;
     private final Collection<ContractLog> contractLogs;
     private final Collection<ContractResult> contractResults;
     private final Collection<ContractStateChange> contractStateChanges;
@@ -152,6 +154,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         assessedCustomFees = new ArrayList<>();
         contracts = new ArrayList<>();
+        contractActions = new ArrayList<>();
         contractLogs = new ArrayList<>();
         contractResults = new ArrayList<>();
         contractStateChanges = new ArrayList<>();
@@ -215,6 +218,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             assessedCustomFees.clear();
             contracts.clear();
             contractState.clear();
+            contractActions.clear();
             contractLogs.clear();
             contractResults.clear();
             contractStateChanges.clear();
@@ -261,6 +265,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // insert only operations
             batchPersister.persist(assessedCustomFees);
+            batchPersister.persist(contractActions);
             batchPersister.persist(contractLogs);
             batchPersister.persist(contractResults);
             batchPersister.persist(contractStateChanges);
@@ -320,6 +325,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // attributes only in the previous state are merged into the new contract object
             contracts.add(merged);
         }
+    }
+
+    @Override
+    public void onContractAction(ContractAction contractAction) {
+        contractActions.add(contractAction);
     }
 
     @Override

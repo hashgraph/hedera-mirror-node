@@ -31,6 +31,9 @@ import com.google.protobuf.BytesValue;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+
+import com.hedera.services.stream.proto.StorageChange;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
@@ -40,7 +43,6 @@ import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import com.hederahashgraph.api.proto.java.ContractStateChange;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
@@ -66,7 +68,6 @@ import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.StorageChange;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -92,6 +93,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Version;
 import org.web3j.crypto.Hash;
 
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -127,6 +129,10 @@ public class RecordItemBuilder {
                 .setSubmitKey(key())
                 .setTopicID(topicId());
         return new Builder<>(TransactionType.CONSENSUSUPDATETOPIC, transactionBody);
+    }
+
+    public ContractAction contractAction() {
+        return new ContractAction();
     }
 
     public Builder<ContractCallTransactionBody.Builder> contractCall() {
@@ -212,12 +218,12 @@ public class RecordItemBuilder {
                         .addTopic(bytes(32))
                         .addTopic(bytes(32))
                         .build())
-                .setSenderId(accountId())
-                .addStateChanges(ContractStateChange.newBuilder()
-                        .setContractID(contractId)
-                        .addStorageChanges(storageChange())
-                        .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)))
-                        .build());
+                .setSenderId(accountId());
+//                .addStateChanges(ContractStateChange.newBuilder()
+//                        .setContractID(contractId)
+//                        .addStorageChanges(storageChange())
+//                        .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)))
+//                        .build());
     }
 
     public Builder<ContractUpdateTransactionBody.Builder> contractUpdate() {
