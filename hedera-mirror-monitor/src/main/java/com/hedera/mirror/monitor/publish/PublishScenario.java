@@ -34,14 +34,13 @@ public class PublishScenario extends AbstractScenario<PublishScenarioProperties,
         super(1, properties);
         String hostname = Objects.requireNonNullElse(System.getenv("HOSTNAME"), "unknown");
         String memoMessage = String.format(" Monitor %s on %s", properties.getName(), hostname);
-        System.out.println(TIMESTAMP_LENGTH);
         int maxMemoLength = properties.getMaxMemoLength();
         this.memo = memoMessage.length() + TIMESTAMP_LENGTH > maxMemoLength ?
                 memoMessage.substring(0, maxMemoLength - TIMESTAMP_LENGTH) : memoMessage;
     }
 
     public String getMemo() {
-        return System.currentTimeMillis() + this.memo;
+        return System.currentTimeMillis() + memo;
     }
 
     @Override
