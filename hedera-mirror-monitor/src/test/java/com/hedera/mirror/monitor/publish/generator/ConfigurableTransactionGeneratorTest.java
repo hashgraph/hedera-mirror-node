@@ -46,6 +46,7 @@ import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 
 class ConfigurableTransactionGeneratorTest {
 
+    private static final int MAX_MEMO_SIZE = 32;
     private static final int SAMPLE_SIZE = 10_000;
     private static final String TOPIC_ID = "0.0.1000";
 
@@ -57,6 +58,7 @@ class ConfigurableTransactionGeneratorTest {
         properties = new PublishScenarioProperties();
         properties.setReceiptPercent(1);
         properties.setRecordPercent(1);
+        properties.setMaxMemoLength(MAX_MEMO_SIZE);
         properties.setName("test");
         properties.setProperties(Map.of("topicId", TOPIC_ID));
         properties.setTps(100_000);
@@ -212,7 +214,8 @@ class ConfigurableTransactionGeneratorTest {
                         .hasFieldOrPropertyWithValue("record", true)
                         .hasFieldOrPropertyWithValue("transaction.topicId", TopicId.fromString(TOPIC_ID))
                         .satisfies(r -> assertThat(r.getTransaction().getTransactionMemo())
-                                .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+")))
+                                .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+"))
+                                .hasSize(MAX_MEMO_SIZE))
                 );
     }
 
