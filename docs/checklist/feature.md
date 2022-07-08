@@ -45,8 +45,9 @@ aims to document the required changes associated with any new feature.
 - [ ] View model added/updated
 - [ ] Route added
 - [ ] Controller added/updated
-- [ ] Service added/udpated
+- [ ] Service added/updated
 - [ ] Tests for each of the above
+- [ ] `integrationDomainOps` updated
 - [ ] Spec tests added
 - [ ] Monitor API test added
 
