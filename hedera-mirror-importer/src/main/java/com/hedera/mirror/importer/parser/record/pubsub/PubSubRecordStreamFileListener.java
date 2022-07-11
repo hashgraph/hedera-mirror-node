@@ -27,6 +27,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.SidecarFileRepository;
 
 @Named
 @RequiredArgsConstructor
@@ -34,6 +35,7 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 public class PubSubRecordStreamFileListener implements RecordStreamFileListener {
 
     private final RecordFileRepository recordFileRepository;
+    private final SidecarFileRepository sidecarFileRepository;
 
     @Override
     public void onStart() throws ImporterException {
@@ -44,6 +46,7 @@ public class PubSubRecordStreamFileListener implements RecordStreamFileListener 
     public void onEnd(RecordFile recordFile) throws ImporterException {
         if (recordFile != null) {
             recordFileRepository.save(recordFile);
+            sidecarFileRepository.saveAll(recordFile.getSidecars());
         }
     }
 

@@ -20,24 +20,42 @@ package com.hedera.mirror.importer;
  * ‍
  */
 
+import com.google.protobuf.BytesValue;
+import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.SidecarFile;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.services.stream.proto.ContractBytecode;
+import com.hedera.services.stream.proto.ContractStateChange;
+import com.hedera.services.stream.proto.ContractStateChanges;
+import com.hedera.services.stream.proto.StorageChange;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @UtilityClass
 public class TestRecordFiles {
 
-    public Map<String, RecordFile> getAll() {
-        DigestAlgorithm digestAlgorithm = DigestAlgorithm.SHA_384;
+    private static final String INITCODE =
+            "60806040526008600055348015601457600080fd5b5060a1806100236000396000f300608060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063086949b7146044575b600080fd5b348015604f57600080fd5b506056606c565b6040518082815260200191505060405180910390f35b600060079050905600a165627a7a723058202e097bbe122ad5d86e840be60aab41d160ad5b86745aa7aa0099a6bbfc2652180029";
 
-        RecordFile recordFileV1_1 = RecordFile.builder()
+    private static final String RUNTIME_BYTECODE =
+            "608060405260043610603f576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff168063086949b7146044575b600080fd5b348015604f57600080fd5b506056606c565b6040518082815260200191505060405180910390f35b600060079050905600a165627a7a723058202e097bbe122ad5d86e840be60aab41d160ad5b86745aa7aa0099a6bbfc2652180029";
+
+    @SneakyThrows
+    public Map<String, RecordFile> getAll() {
+        var digestAlgorithm = DigestAlgorithm.SHA_384;
+
+        var recordFileV1_1 = RecordFile.builder()
                 .consensusStart(1561990380317763000L)
                 .consensusEnd(1561990399074934000L)
                 .count(15L)
@@ -51,7 +69,7 @@ public class TestRecordFiles {
                 .size(4898)
                 .version(1)
                 .build();
-        RecordFile recordFileV1_2 = RecordFile.builder()
+        var recordFileV1_2 = RecordFile.builder()
                 .consensusStart(1561991340302068000L)
                 .consensusEnd(1561991353226225001L)
                 .count(69L)
@@ -64,7 +82,7 @@ public class TestRecordFiles {
                 .size(22347)
                 .version(1)
                 .build();
-        RecordFile recordFileV2_1 = RecordFile.builder()
+        var recordFileV2_1 = RecordFile.builder()
                 .consensusStart(1567188600419072000L)
                 .consensusEnd(1567188604906443001L)
                 .count(19L)
@@ -77,7 +95,7 @@ public class TestRecordFiles {
                 .size(8515)
                 .version(2)
                 .build();
-        RecordFile recordFileV2_2 = RecordFile.builder()
+        var recordFileV2_2 = RecordFile.builder()
                 .consensusStart(1567188605249678000L)
                 .consensusEnd(1567188609705382001L)
                 .count(15L)
@@ -90,7 +108,7 @@ public class TestRecordFiles {
                 .size(6649)
                 .version(2)
                 .build();
-        RecordFile recordFileV5_1 = RecordFile.builder()
+        var recordFileV5_1 = RecordFile.builder()
                 .consensusStart(1610402964063739000L)
                 .consensusEnd(1610402964063739000L)
                 .count(1L)
@@ -108,7 +126,7 @@ public class TestRecordFiles {
                 .size(498)
                 .version(5)
                 .build();
-        RecordFile recordFileV5_2 = RecordFile.builder()
+        var recordFileV5_2 = RecordFile.builder()
                 .consensusStart(1610402974097416003L)
                 .consensusEnd(1610402974097416003L)
                 .count(1L)
@@ -126,47 +144,83 @@ public class TestRecordFiles {
                 .size(498)
                 .version(5)
                 .build();
-        RecordFile recordFileV6_1 = RecordFile.builder()
-                .consensusStart(1655802944212575003L)
-                .consensusEnd(1655802944212575003L)
+        var recordFileV6_1 = RecordFile.builder()
+                .consensusStart(1657701968041986003L)
+                .consensusEnd(1657701968041986003L)
                 .count(1L)
                 .digestAlgorithm(digestAlgorithm)
                 .fileHash(
-                        "459884c41241650e739c194c2120996dcc2aff35ea8e7b3a770929089b89c31583ae9ff383b80561f211b4fc4f6a0a9b")
+                        "69a4354de5aeb12fbc989ae086fc291cfc1b61415391b4a46915b32aef722a511c4ceba60ecda72d527cc4866a4d235b")
                 .hapiVersionMajor(0)
-                .hapiVersionMinor(27)
-                .hapiVersionPatch(1)
-                .hash("099224968b8a38e88bb5bb82d626e1f2835415b4ebbdc0bd6e695505944ed533159c9e66414887f58da34921cf4178a3")
-                .index(-9223372036854775796L)
+                .hapiVersionMinor(28)
+                .hapiVersionPatch(0)
+                .hash("a6c241fad2c636f68a6aa0da9293245a5ef0ebef345cd139858068ff7998716cefe0fd3afa0d21304725507061975279")
+                .index(5L)
                 .metadataHash(
-                        "884757419c733027557616cb0191c59fa13805fbc0500daaddc84c99692924df9ba7419e2391be02da4d1de42255deae")
-                .name("2022-06-21T09_15_44.212575003Z.rcd.gz")
+                        "361c0176ba28cc55525c50e7e75e58618b451f3dca402d9be19626159d939e7a569534658125732c1af31ff6f4a8e283")
+                .name("2022-07-13T08_46_08.041986003Z.rcd.gz")
                 .previousHash(
-                        "502ca907a14af743a441a4f7d0de2664174b931ae0c4cae978712d44b9790123b4ac6cba6a273151703129b22f2d95f2")
-                .size(1223)
+                        "13d2594b9e9dbb73dad0cad67a96ad7a0e249af8693aa894003876c9ddd5534b3143e4d785e04fc0c461945a03e85178")
+                .sidecarCount(0)
+                .size(509)
                 .version(6)
                 .build();
-        RecordFile recordFileV6_2 = RecordFile.builder()
-                .consensusStart(1655802946247764003L)
-                .consensusEnd(1655802946247764003L)
-                .count(1L)
+        var transactionSidecarRecord1 = TransactionSidecarRecord.newBuilder()
+                .setConsensusTimestamp(TestUtils.toTimestamp(1657701971304284003L))
+                .setStateChanges(ContractStateChanges.newBuilder()
+                        .addContractStateChanges(ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1002L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {3, -21})))))
+                        .addContractStateChanges(ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1003L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {8}))))))
+                .build();
+        var transactionSidecarRecord2 = TransactionSidecarRecord.newBuilder()
+                .setConsensusTimestamp(TestUtils.toTimestamp(1657701971304284004L))
+                .setBytecode(ContractBytecode.newBuilder()
+                        .setContractId(ContractID.newBuilder().setContractNum(1003L))
+                        .setInitcode(DomainUtils.fromBytes(Hex.decodeHex(INITCODE)))
+                        .setRuntimeBytecode(DomainUtils.fromBytes(Hex.decodeHex(RUNTIME_BYTECODE))))
+                .build();
+        var transactionSidecarRecords = List.of(transactionSidecarRecord1, transactionSidecarRecord2);
+        var sidecarFileHash = Hex.decodeHex(
+                "1ed54ea01aab5e726a087e94a0dd52c0f49b149d7a773ae71a3dc099f623bcf1840393db68f8db476ab11e6159f030f2");
+        var recordFileV6_2 = RecordFile.builder()
+                .consensusStart(1657701971304284003L)
+                .consensusEnd(1657701971304284004L)
+                .count(2L)
                 .digestAlgorithm(digestAlgorithm)
                 .fileHash(
-                        "7cdb75a5631c67d03b0bf8e10d5de91e054d1941cf50746fea328c42c50279f4eadd7b3d9c159de4f9a9da288cc1142f")
+                        "ed518c8d05f470d4540db35ea8665ab158f9aeb0bcaa3332d171c1efba119da52c1ee510df599269b022d963d4d1e474")
                 .hapiVersionMajor(0)
-                .hapiVersionMinor(27)
-                .hapiVersionPatch(1)
-                .hash("f43343b6bbbc226282b250eff72b72d2eed605921e83263a9558ff72f18aa6113faae71f3d83308756b597dc26b9d8a0")
-                .index(-9223372036854775795L)
+                .hapiVersionMinor(28)
+                .hapiVersionPatch(0)
+                .hash("3064b824b8b9f9ece011f88a26c030c9f6b822f30fbcabcc7240a220ea42bbdbf305db415a4e41307d0630d5cefe4550")
+                .index(6L)
                 .metadataHash(
-                        "d3959bfcfeb0a6933995f58440f374fd300ba06372a6ff6d6226e8cf8afa02d529df52bd162c3c1a40c86d43b6322eea")
-                .name("2022-06-21T09_15_46.247764003Z.rcd.gz")
+                        "b13a2b638c5688dbec43b97dbee8ad637d2d42376fc313c628a990ac65aefdbd39832cf5ece42b925a520ed2d2bf8eac")
+                .name("2022-07-13T08_46_11.304284003Z.rcd.gz")
                 .previousHash(recordFileV6_1.getHash())
-                .size(791)
+                .size(805)
+                .sidecarCount(1)
+                .sidecars(List.of(SidecarFile.builder()
+                        .actualHash(sidecarFileHash)
+                        .consensusEnd(1657701971304284004L)
+                        .count(2)
+                        .hashAlgorithm(DigestAlgorithm.SHA_384)
+                        .hash(sidecarFileHash)
+                        .index(1)
+                        .name("2022-07-13T08_46_11.304284003Z_01.rcd.gz")
+                        .records(transactionSidecarRecords)
+                        .size(279)
+                        .types(List.of(1, 3))
+                        .build()))
                 .version(6)
                 .build();
 
-        List<RecordFile> allFiles = List.of(recordFileV1_1, recordFileV1_2,
+        var allFiles = List.of(recordFileV1_1, recordFileV1_2,
                 recordFileV2_1, recordFileV2_2,
                 recordFileV5_1, recordFileV5_2,
                 recordFileV6_1, recordFileV6_2);

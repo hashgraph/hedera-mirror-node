@@ -9,9 +9,9 @@ package com.hedera.mirror.importer;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,10 +24,10 @@ import java.io.FileFilter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 
 @Log4j2
@@ -72,6 +72,10 @@ public class FileCopier {
 
     public FileCopier filterDirectories(String wildcardPattern) {
         return filterDirectories(new WildcardFileFilter(wildcardPattern));
+    }
+
+    public FileCopier filterDirectories(DirectoryFileFilter directoryFileFilter) {
+        return filterDirectories(directoryFileFilter);
     }
 
     public FileCopier filterFiles(FileFilter newFileFilter) {

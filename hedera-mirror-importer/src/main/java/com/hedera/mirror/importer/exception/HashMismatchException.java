@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
+import org.postgresql.core.Utils;
+
 public class HashMismatchException extends ImporterException {
 
     private static final String MESSAGE = "%s hash mismatch for file %s. Expected = %s, Actual = %s";
@@ -27,5 +29,10 @@ public class HashMismatchException extends ImporterException {
 
     public HashMismatchException(String filename, String expectedHash, String actualHash, String hashType) {
         super(String.format(MESSAGE, hashType, filename, expectedHash, actualHash));
+    }
+
+    public HashMismatchException(String filename, byte[] expectedHash, byte[] actualHash, String hashType) {
+        super(String.format(MESSAGE, hashType, filename, Utils.toHexString(expectedHash),
+                Utils.toHexString(actualHash)));
     }
 }

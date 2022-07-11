@@ -91,7 +91,7 @@ public abstract class Downloader<T extends StreamFile> {
     protected final StreamFileNotifier streamFileNotifier;
     protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
-    private final S3AsyncClient s3Client;
+    protected final S3AsyncClient s3Client;
     private final AddressBookService addressBookService;
     private final ExecutorService signatureDownloadThreadPool; // One per node during the signature download process
     private final MirrorProperties mirrorProperties;
@@ -104,22 +104,22 @@ public abstract class Downloader<T extends StreamFile> {
     private final Timer streamCloseMetric;
     private final Timer.Builder streamVerificationMetric;
 
-    protected Downloader(S3AsyncClient s3Client,
-                         AddressBookService addressBookService, DownloaderProperties downloaderProperties,
-                         MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
+    protected Downloader(AddressBookService addressBookService, DownloaderProperties downloaderProperties,
+                         MeterRegistry meterRegistry,
+                         MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+                         NodeSignatureVerifier nodeSignatureVerifier, S3AsyncClient s3Client,
                          SignatureFileReader signatureFileReader, StreamFileReader<T, ?> streamFileReader,
-                         StreamFileNotifier streamFileNotifier,
-                         MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
-        this.s3Client = s3Client;
+                         StreamFileNotifier streamFileNotifier) {
         this.addressBookService = addressBookService;
         this.downloaderProperties = downloaderProperties;
         this.meterRegistry = meterRegistry;
+        this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         this.nodeSignatureVerifier = nodeSignatureVerifier;
         signatureDownloadThreadPool = Executors.newFixedThreadPool(downloaderProperties.getThreads());
+        this.s3Client = s3Client;
         this.signatureFileReader = signatureFileReader;
         this.streamFileReader = streamFileReader;
         this.streamFileNotifier = streamFileNotifier;
-        this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         Runtime.getRuntime().addShutdownHook(new Thread(signatureDownloadThreadPool::shutdown));
         mirrorProperties = downloaderProperties.getMirrorProperties();
         commonDownloaderProperties = downloaderProperties.getCommon();
@@ -358,7 +358,7 @@ public abstract class Downloader<T extends StreamFile> {
      * @param s3Prefix
      * @return
      */
-    private PendingDownload pendingDownload(StreamFilename streamFilename, String s3Prefix) {
+    protected PendingDownload pendingDownload(StreamFilename streamFilename, String s3Prefix) {
         String s3Key = s3Prefix + streamFilename.getFilename();
         var request = GetObjectRequest.builder()
                 .bucket(commonDownloaderProperties.getBucketName())
@@ -481,7 +481,7 @@ public abstract class Downloader<T extends StreamFile> {
         return pendingDownload(new StreamFilename(filename), getS3Prefix(nodeAccountId));
     }
 
-    private String getS3Prefix(String nodeAccountId) {
+    protected String getS3Prefix(String nodeAccountId) {
         return downloaderProperties.getPrefix() + nodeAccountId + "/";
     }
 

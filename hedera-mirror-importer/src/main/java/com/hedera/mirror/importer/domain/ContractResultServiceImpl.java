@@ -35,7 +35,6 @@ import org.apache.commons.codec.binary.Hex;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -157,26 +156,26 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     private void processContractStateChanges(ContractFunctionResult functionResult, ContractResult contractResult) {
 
-        for (var stateChange : functionResult.getStateChangesList()) {
-            var contractId = lookup(contractResult.getContractId(), stateChange.getContractID());
-            for (var storageChange : stateChange.getStorageChangesList()) {
-                ContractStateChange contractStateChange = new ContractStateChange();
-                contractStateChange.setConsensusTimestamp(contractResult.getConsensusTimestamp());
-                contractStateChange.setContractId(contractId);
-                contractStateChange.setPayerAccountId(contractResult.getPayerAccountId());
-                contractStateChange.setSlot(DomainUtils.toBytes(storageChange.getSlot()));
-                contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
-
-                // If a value of zero is written the valueWritten will be present but the inner value will be
-                // absent. If a value was read and not written this value will not be present.
-                if (storageChange.hasValueWritten()) {
-                    contractStateChange
-                            .setValueWritten(DomainUtils.toBytes(storageChange.getValueWritten().getValue()));
-                }
-
-                entityListener.onContractStateChange(contractStateChange);
-            }
-        }
+//        for (var stateChange : functionResult.getStateChangesList()) {
+//            var contractId = lookup(contractResult.getContractId(), stateChange.getContractID());
+//            for (var storageChange : stateChange.getStorageChangesList()) {
+//                ContractStateChange contractStateChange = new ContractStateChange();
+//                contractStateChange.setConsensusTimestamp(contractResult.getConsensusTimestamp());
+//                contractStateChange.setContractId(contractId);
+//                contractStateChange.setPayerAccountId(contractResult.getPayerAccountId());
+//                contractStateChange.setSlot(DomainUtils.toBytes(storageChange.getSlot()));
+//                contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
+//
+//                // If a value of zero is written the valueWritten will be present but the inner value will be
+//                // absent. If a value was read and not written this value will not be present.
+//                if (storageChange.hasValueWritten()) {
+//                    contractStateChange
+//                            .setValueWritten(DomainUtils.toBytes(storageChange.getValueWritten().getValue()));
+//                }
+//
+//                entityListener.onContractStateChange(contractStateChange);
+//            }
+//        }
     }
 
     @SuppressWarnings("deprecation")
@@ -218,7 +217,7 @@ public class ContractResultServiceImpl implements ContractResultService {
      * contract creation is externalized into its own synthesized contract create transaction and should be processed by
      * ContractCreateTransactionHandler.
      *
-     * @param contract The contract entity
+     * @param contract   The contract entity
      * @param recordItem The recordItem in which the contract is created
      */
     private void updateContractEntityOnCreate(Contract contract, RecordItem recordItem) {

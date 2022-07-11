@@ -42,6 +42,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -102,6 +103,7 @@ import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
@@ -625,6 +627,21 @@ public class DomainBuilder {
                 .scheduleId(entityId(SCHEDULE).getId())
                 .transactionBody(bytes(64))
                 .waitForExpiry(true);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<SidecarFile, SidecarFile.SidecarFileBuilder> sidecarFile() {
+        var data = bytes(256);
+        var builder = SidecarFile.builder()
+                .bytes(data)
+                .consensusEnd(timestamp())
+                .hash(bytes(DigestAlgorithm.SHA_384.getSize()))
+                .hashAlgorithm(DigestAlgorithm.SHA_384)
+                .index(1)
+                .name(now.toString().replace(':', '_') + "_01.rcd.gz")
+                .records(Collections.emptyList())
+                .size(data.length)
+                .types(List.of(1, 2));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

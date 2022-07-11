@@ -53,7 +53,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
         expectLastStreamFile("123", 1L, Instant.EPOCH.plusNanos(100L));
 
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(Instant.parse("2050-01-01T00:00:00.000000Z"));
-        fileCopier.filterFiles(trimCompressionSuffix(file2) + "*").copy(); // Skip first file with zero hash
+        fileCopier.filterFiles(getStreamFilenameInstantString(file2) + "*").copy(); // Skip first file with zero hash
         downloader.download();
         verifyStreamFiles(List.of(file2));
     }

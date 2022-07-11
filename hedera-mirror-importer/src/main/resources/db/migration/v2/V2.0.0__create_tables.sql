@@ -411,6 +411,7 @@ create table if not exists record_file
     name               character varying(250) not null,
     node_account_id    bigint                 not null,
     prev_hash          character varying(96)  not null,
+    sidcar_count       int                    not null,
     size               int                    null,
     version            int                    not null
 );
@@ -429,6 +430,21 @@ create table if not exists schedule
     wait_for_expiry     boolean not null default false
 );
 comment on table schedule is 'Schedule entity entries';
+
+-- sidecar file
+create table if not exists sidecar_file
+(
+  bytes          bytea null,
+  count          int null,
+  consensus_end  bigint not null,
+  hash_algorithm int not null,
+  hash           bytea not null,
+  id             int not null,
+  name           character varying(250) not null,
+  size           int null,
+  types          int[] not null
+);
+comment on table sidecar_file is 'Sidecar record file';
 
 -- staking reward transfer
 create table if not exists staking_reward_transfer
