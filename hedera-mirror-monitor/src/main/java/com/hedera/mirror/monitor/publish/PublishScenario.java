@@ -29,7 +29,6 @@ import com.hedera.mirror.monitor.ScenarioProtocol;
 public class PublishScenario extends AbstractScenario<PublishScenarioProperties, PublishResponse> {
 
     private final String memo;
-    private static final int TIMESTAMP_LENGTH = 13;
 
     public PublishScenario(PublishScenarioProperties properties) {
         super(1, properties);
@@ -38,8 +37,8 @@ public class PublishScenario extends AbstractScenario<PublishScenarioProperties,
     }
 
     public String getMemo() {
-        var memo = System.currentTimeMillis() + " " + this.memo;
-        return StringUtils.truncate(memo, properties.getMaxMemoLength());
+        var memoMessage = System.currentTimeMillis() + " " + this.memo;
+        return StringUtils.truncate(memoMessage, properties.getMaxMemoLength());
     }
 
     @Override

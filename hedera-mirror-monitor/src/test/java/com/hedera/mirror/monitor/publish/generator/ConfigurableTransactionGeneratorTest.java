@@ -72,6 +72,7 @@ class ConfigurableTransactionGeneratorTest {
         properties.setMaxMemoLength(100);
         List<PublishRequest> publishRequests = generator.get().next();
         assertThat(publishRequests)
+                .isNotEmpty()
                 .allSatisfy(publishRequest -> assertThat(publishRequest.getTransaction().getTransactionMemo())
                         .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+"))
                         .hasSizeGreaterThan(MEMO_SIZE));
