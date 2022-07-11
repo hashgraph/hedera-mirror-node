@@ -41,6 +41,7 @@ public class PublishScenarioProperties extends ScenarioProperties {
 
     // Maximum length of the transaction memo string
     @Min(13) // 13 is the length of the memo timestamp
+    @Max(100)
     private int maxMemoLength = 100;
 
     @NotNull

@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.publish;
  */
 
 import java.util.Objects;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.monitor.AbstractScenario;
 import com.hedera.mirror.monitor.ScenarioProtocol;
@@ -33,14 +34,12 @@ public class PublishScenario extends AbstractScenario<PublishScenarioProperties,
     public PublishScenario(PublishScenarioProperties properties) {
         super(1, properties);
         String hostname = Objects.requireNonNullElse(System.getenv("HOSTNAME"), "unknown");
-        String memoMessage = String.format(" Monitor %s on %s", properties.getName(), hostname);
-        int maxMemoLength = properties.getMaxMemoLength();
-        this.memo = memoMessage.length() + TIMESTAMP_LENGTH > maxMemoLength ?
-                memoMessage.substring(0, maxMemoLength - TIMESTAMP_LENGTH) : memoMessage;
+        this.memo = String.format("Monitor %s on %s", properties.getName(), hostname);
     }
 
     public String getMemo() {
-        return System.currentTimeMillis() + memo;
+        var memo = System.currentTimeMillis() + " " + this.memo;
+        return StringUtils.truncate(memo, properties.getMaxMemoLength());
     }
 
     @Override
