@@ -13,18 +13,17 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '>0.0.0-0'  # Update to the latest pre-release
+      version: '>0.0.0-0' # Update to the latest pre-release
   dependsOn:
     - name: mirror
       namespace: common
   install:
     crds: CreateReplace
   interval: 90s
-  suspend: true
   test:
     enable: true
-    timeout: 5m
-  timeout: 10m
+    timeout: 20m  # It can take up to 15m for the next balance file to show up that the helm tests verify
+  timeout: 20m
   upgrade:
     cleanupOnFail: true
     crds: CreateReplace
@@ -40,4 +39,14 @@ spec:
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "PREVIEWNET"
+        HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_TPS: "0.5"
+      prometheusRules:
+        MonitorPublishErrors:
+          enabled: false
+        MonitorPublishLatency:
+          enabled: false
+        MonitorSubscribeLatency:
+          enabled: false
+    postgresql:
+      enabled: false
 
