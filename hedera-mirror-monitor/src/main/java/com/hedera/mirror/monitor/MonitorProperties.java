@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,15 +48,9 @@ public class MonitorProperties {
 
     private NodeValidationProperties nodeValidation = new NodeValidationProperties();
 
+    private boolean retrieveAddressBook = true;
+
     public MirrorNodeProperties getMirrorNode() {
         return Objects.requireNonNullElseGet(this.mirrorNode, network::getMirrorNode);
-    }
-
-    public Set<NodeProperties> getNodes() {
-        Set<NodeProperties> n = !nodes.isEmpty() ? nodes : network.getNodes();
-        if (n.isEmpty()) {
-            throw new IllegalArgumentException("nodes must not be empty");
-        }
-        return n;
     }
 }

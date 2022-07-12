@@ -22,10 +22,14 @@ package com.hedera.mirror.monitor.publish;
 
 import static com.hedera.hashgraph.sdk.Status.SUCCESS;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -33,6 +37,7 @@ import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.util.CollectionUtils;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -54,6 +59,7 @@ import com.hedera.hashgraph.sdk.WithExecute;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.NodeValidationProperties;
+import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 
 @Log4j2
 @Named
@@ -62,6 +68,8 @@ public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
     private final PublishProperties publishProperties;
+    private final RestApiClient restApiClient;
+
     private final CopyOnWriteArrayList<NodeProperties> nodes = new CopyOnWriteArrayList<>();
     private final SecureRandom secureRandom = new SecureRandom();
     private final AtomicReference<Disposable> nodeValidator = new AtomicReference<>();
@@ -171,7 +179,7 @@ public class TransactionPublisher implements AutoCloseable {
 
     private synchronized Flux<Client> getClients() {
         NodeValidationProperties validationProperties = monitorProperties.getNodeValidation();
-        var configuredNodes = monitorProperties.getNodes();
+        var configuredNodes = getNodes();
         Map<String, AccountId> nodeMap = configuredNodes.stream()
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
         this.nodes.addAll(configuredNodes);
@@ -207,6 +215,44 @@ public class TransactionPublisher implements AutoCloseable {
                 .flatMap(i -> Mono.defer(() -> Mono.just(toClient(nodeMap))));
     }
 
+    @VisibleForTesting
+    Collection<NodeProperties> getNodes() {
+        var configuredNodes = monitorProperties.getNodes();
+
+        if (configuredNodes.isEmpty() && monitorProperties.isRetrieveAddressBook()) {
+            configuredNodes = getAddressBook();
+        }
+
+        if (configuredNodes.isEmpty()) {
+            configuredNodes = monitorProperties.getNetwork().getNodes();
+            log.info("Using monitor default address book with {} nodes", configuredNodes.size());
+        }
+
+        if (configuredNodes.isEmpty()) {
+            throw new IllegalArgumentException("nodes must not be empty");
+        }
+
+        return configuredNodes;
+    }
+
+    private Set<NodeProperties> getAddressBook() {
+        try {
+            return restApiClient.getNodes()
+                    .filter(n -> !CollectionUtils.isEmpty(n.getServiceEndpoints()))
+                    .map(n -> new NodeProperties(n.getNodeAccountId(), n.getServiceEndpoints().get(0).getIpAddressV4()))
+                    .collect(Collectors.toSet())
+                    .doOnSuccess(n -> log.info("Retrieved {} nodes from address book", n.size()))
+                    .doOnError(t -> log.warn("Unable to retrieve address book: {}", t.getMessage()))
+                    .toFuture() // Can't use block() in a reactor thread
+                    .get();
+        } catch (Exception e) {
+            log.error("Unable to retrieve address book", e);
+        }
+
+        return Collections.emptySet();
+    }
+
+    @VisibleForTesting
     boolean validateNode(NodeProperties node) {
         try {
             log.info("Validating node {}", node);

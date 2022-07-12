@@ -18,7 +18,10 @@
         <commons-math3.version>3.6.1</commons-math3.version>
         <hedera-sdk.version>2.16.3</hedera-sdk.version>
         <meanbean.version>3.0.0-M9</meanbean.version>
+        <openapi-package>com.hedera.mirror.rest</openapi-package>
+        <openapi-generator.version>6.0.1</openapi-generator.version>
         <springdoc.version>1.6.9</springdoc.version>
+        <swagger-annotations.version>1.6.6</swagger-annotations.version>
     </properties>
 
     <dependencies>
@@ -61,6 +64,11 @@
             <classifier>osx-aarch_64</classifier>
             <scope>runtime</scope>
             <version>${netty.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.swagger</groupId>
+            <artifactId>swagger-annotations</artifactId>
+            <version>${swagger-annotations.version}</version>
         </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
@@ -184,6 +192,56 @@
                         <goals>
                             <goal>build-info</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.openapitools</groupId>
+                <artifactId>openapi-generator-maven-plugin</artifactId>
+                <version>${openapi-generator.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <configuration>
+                            <generateApis>false</generateApis>
+                            <generateModelTests>false</generateModelTests>
+                            <generatorName>java</generatorName>
+                            <inputSpec>${project.basedir}/../hedera-mirror-rest/api/v1/openapi.yml</inputSpec>
+                            <library>webclient</library>
+                            <configOptions>
+                                <apiPackage>${openapi-package}.api</apiPackage>
+                                <interfaceOnly>true</interfaceOnly>
+                                <invokerPackage>${openapi-package}.handler</invokerPackage>
+                                <licenseName>Apache License 2.0</licenseName>
+                                <licenseUrl>https://www.apache.org/licenses/LICENSE-2.0.txt</licenseUrl>
+                                <modelPackage>${openapi-package}.model</modelPackage>
+                                <openApiNullable>false</openApiNullable>
+                                <performBeanValidation>true</performBeanValidation>
+                                <useBeanValidation>true</useBeanValidation>
+                            </configOptions>
+                            <typeMappings>
+                                <typeMapping>Timestamp=String</typeMapping>
+                            </typeMappings>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/openapi</source>
+                            </sources>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

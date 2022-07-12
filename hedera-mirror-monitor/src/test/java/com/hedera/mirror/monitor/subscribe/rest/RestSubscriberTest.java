@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.subscribe.rest;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,9 +39,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-
-import com.hedera.mirror.monitor.publish.transaction.TransactionType;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -68,10 +65,12 @@ import com.hedera.mirror.monitor.publish.PublishRequest;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.publish.PublishScenario;
 import com.hedera.mirror.monitor.publish.PublishScenarioProperties;
+import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 import com.hedera.mirror.monitor.subscribe.Scenario;
 import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
-import com.hedera.mirror.monitor.subscribe.rest.response.MirrorTransaction;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
+import com.hedera.mirror.rest.model.TransactionDetail;
 
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class RestSubscriberTest {
@@ -115,7 +114,8 @@ class RestSubscriberTest {
         subscribeProperties.getRest().put(restSubscriberProperties.getName(), restSubscriberProperties);
 
         WebClient.Builder builder = WebClient.builder().exchangeFunction(exchangeFunction);
-        restSubscriber = new RestSubscriber(monitorProperties, subscribeProperties, builder);
+        var restApiClient = new RestApiClient(monitorProperties, builder);
+        restSubscriber = new RestSubscriber(restApiClient, subscribeProperties);
     }
 
     @Test
@@ -522,14 +522,14 @@ class RestSubscriberTest {
                     .error(WebClientResponseException.create(httpStatus.value(), "", HttpHeaders.EMPTY, null, null)));
         }
 
-        MirrorTransaction mirrorTransaction = new MirrorTransaction();
-        mirrorTransaction.setConsensusTimestamp(Instant.now());
-        mirrorTransaction.setName(TransactionType.CONSENSUS_SUBMIT_MESSAGE);
-        mirrorTransaction.setResult("SUCCESS");
-        mirrorTransaction.setValidStartTimestamp(Instant.now().minusSeconds(1L));
+        var transaction = new TransactionDetail();
+        transaction.setConsensusTimestamp("1.2");
+
+        var response = new TransactionByIdResponse();
+        response.addTransactionsItem(transaction);
 
         try {
-            String json = OBJECT_MAPPER.writeValueAsString(mirrorTransaction);
+            String json = OBJECT_MAPPER.writeValueAsString(response);
             return Mono.just(ClientResponse.create(httpStatus)
                     .header("Content-Type", "application/json")
                     .body(json)
