@@ -316,6 +316,9 @@ test:
               baseUrl: "http://{{ .Release.Name }}-rest/api/v1"
   cucumberTags: "@acceptance"
   enabled: false
+  git:
+    branch: ""  # Default to Chart app version
+    repository: https://github.com/hashgraph/hedera-mirror-node.git
   image:
     pullPolicy: IfNotPresent
     repository: alpine

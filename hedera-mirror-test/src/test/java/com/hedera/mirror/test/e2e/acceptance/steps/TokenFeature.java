@@ -318,8 +318,6 @@ public class TokenFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyTokenPauseStatus(String status) {
         verifyTokenPauseStatus(tokenIds.get(0), status);
-
-        publishBackgroundMessages();
     }
 
     @Then("the mirror node REST API should return status {int}")
@@ -328,8 +326,6 @@ public class TokenFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorAPIResponses(int status) {
         verifyTransactions(status);
-
-        publishBackgroundMessages();
     }
 
     @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?serial number " +
@@ -342,7 +338,6 @@ public class TokenFeature {
         Long serialNumber = tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
         verifyTransactions(status);
         verifyNftTransactions(tokenId, serialNumber);
-        publishBackgroundMessages();
     }
 
     @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?fund flow$")
@@ -364,7 +359,6 @@ public class TokenFeature {
         verifyTransactions(status, assessedCustomFees);
         verifyToken(tokenId);
         verifyTokenTransfers(tokenId);
-        publishBackgroundMessages();
     }
 
     @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?serial number (:?(.*) )?full flow$")
@@ -379,7 +373,6 @@ public class TokenFeature {
         verifyNft(tokenId, serialNumber);
         verifyNftTransfers(tokenId, serialNumber);
         verifyNftTransactions(tokenId, serialNumber);
-        publishBackgroundMessages();
     }
 
     @Then("the mirror node REST API should confirm token update")
@@ -388,9 +381,6 @@ public class TokenFeature {
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenUpdateFlow() {
         verifyTokenUpdate(tokenIds.get(0));
-
-        // publish background message to network to reduce possibility of stale info in low TPS environment
-        topicClient.publishMessageToDefaultTopic();
     }
 
     @Then("the mirror node REST API should return status {int} for transaction {string}")
@@ -409,9 +399,6 @@ public class TokenFeature {
         if (status == HttpStatus.OK.value()) {
             assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
         }
-
-        // publish background message to network to reduce possibility of stale info in low TPS environment
-        topicClient.publishMessageToDefaultTopic();
     }
 
     @Then("the mirror node REST API should confirm token {int} with custom fees schedule")
@@ -737,15 +724,6 @@ public class TokenFeature {
                                 .build()
                 )
                 .isEqualTo(expected);
-    }
-
-    private void publishBackgroundMessages() {
-        // publish background message to network to reduce possibility of stale info in low TPS environment
-        try {
-            topicClient.publishMessageToDefaultTopic();
-        } catch (Exception ex) {
-            log.trace("Encountered issue published background messages to default topic", ex);
-        }
     }
 
     private int getIndexOrDefault(Integer index) {

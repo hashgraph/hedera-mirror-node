@@ -226,6 +226,9 @@ serviceMonitor:
 terminationGracePeriodSeconds: 60
 
 test:
+  checks:
+    accounts: true
+    transactions: true
   enabled: true
   image:
     pullPolicy: IfNotPresent

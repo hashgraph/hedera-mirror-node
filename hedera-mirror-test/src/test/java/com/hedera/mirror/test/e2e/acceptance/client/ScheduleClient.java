@@ -23,8 +23,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import java.util.List;
 import javax.inject.Named;
 import lombok.SneakyThrows;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.KeyList;
@@ -40,12 +38,10 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Named
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ScheduleClient extends AbstractNetworkClient {
 
     public ScheduleClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
-        log.debug("Creating Schedule Client");
     }
 
     public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId, Transaction transaction,

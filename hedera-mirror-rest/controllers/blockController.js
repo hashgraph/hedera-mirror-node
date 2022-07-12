@@ -99,9 +99,7 @@ class BlockController extends BaseController {
       ? utils.getPaginationLink(
           req,
           blocks.length !== filters.limit,
-          {
-            [constants.filterKeys.BLOCK_NUMBER]: blocks[0].index,
-          },
+          {[constants.filterKeys.BLOCK_NUMBER]: _.last(blocks).index},
           filters.order
         )
       : null;

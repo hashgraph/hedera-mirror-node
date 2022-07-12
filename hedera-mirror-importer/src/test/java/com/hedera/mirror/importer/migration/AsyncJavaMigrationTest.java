@@ -23,13 +23,16 @@ package com.hedera.mirror.importer.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -49,19 +52,18 @@ import com.hedera.mirror.importer.db.DBProperties;
 @Tag("migration")
 class AsyncJavaMigrationTest extends IntegrationTest {
 
+    private static final int ELAPSED = 20;
     private static final String TEST_MIGRATION_DESCRIPTION = "Async java migration for testing";
 
     private final DBProperties dbProperties;
-
-    private final NamedParameterJdbcTemplate jdbcTemplate;
-
+    private final NamedParameterJdbcTemplate jdbcTemplate2;
     private final TransactionOperations transactionOperations;
-
     private final String script = TestAsyncJavaMigration.class.getName();
 
     @AfterEach
+    @BeforeEach
     void cleanup() {
-        jdbcTemplate.update("delete from flyway_schema_history where script = :script", Map.of("script", script));
+        jdbcTemplate2.update("delete from flyway_schema_history where script = :script", Map.of("script", script));
     }
 
     @ParameterizedTest
@@ -72,37 +74,50 @@ class AsyncJavaMigrationTest extends IntegrationTest {
             "2, -1"
     })
     void getChecksum(Integer existing, Integer expected) {
-        addMigrationHistory(new MigrationHistory(existing, 1000));
-        var migration = new TestAsyncJavaMigration(dbProperties, false, jdbcTemplate, 1, transactionOperations);
+        addMigrationHistory(new MigrationHistory(existing, ELAPSED, 1000));
+        var migration = new TestAsyncJavaMigration(false, 0, 1);
         assertThat(migration.getChecksum()).isEqualTo(expected);
     }
 
     @Test
     void migrate() throws Exception {
-        addMigrationHistory(new MigrationHistory(-1, 1000));
-        addMigrationHistory(new MigrationHistory(-2, 1001));
-        var migration = new TestAsyncJavaMigration(dbProperties, false, jdbcTemplate, 1, transactionOperations);
-        migration.doMigrate();
-        Thread.sleep(500);
-        assertThat(getAllMigrationHistory()).containsExactlyInAnyOrder(new MigrationHistory(-1, 1000),
-                new MigrationHistory(1, 1001));
+        addMigrationHistory(new MigrationHistory(-1, ELAPSED, 1000));
+        addMigrationHistory(new MigrationHistory(-2, ELAPSED, 1001));
+        var migration = new TestAsyncJavaMigration(false, 0, 1);
+        migrateSync(migration);
+        assertThat(getAllMigrationHistory())
+                .hasSize(2)
+                .extracting(MigrationHistory::getChecksum)
+                .containsExactly(-1, 1);
+    }
+
+    @Test
+    void migrateUpdatedExecutionTime() throws Exception {
+        addMigrationHistory(new MigrationHistory(-1, ELAPSED, 1000));
+        var migration = new TestAsyncJavaMigration(false, 1, 1);
+        migrateSync(migration);
+        assertThat(getAllMigrationHistory())
+                .hasSize(1)
+                .extracting(MigrationHistory::getExecutionTime)
+                .isNotEqualTo(ELAPSED);
     }
 
     @Test
     void migrateError() throws Exception {
-        addMigrationHistory(new MigrationHistory(-1, 1000));
-        addMigrationHistory(new MigrationHistory(-2, 1001));
-        var migration = new TestAsyncJavaMigration(dbProperties, true, jdbcTemplate, 1, transactionOperations);
-        migration.doMigrate();
-        Thread.sleep(500);
-        assertThat(getAllMigrationHistory()).containsExactlyInAnyOrder(new MigrationHistory(-1, 1000),
-                new MigrationHistory(-2, 1001));
+        addMigrationHistory(new MigrationHistory(-1, ELAPSED, 1000));
+        addMigrationHistory(new MigrationHistory(-2, ELAPSED, 1001));
+        var migration = new TestAsyncJavaMigration(true, 0, 1);
+        migrateSync(migration);
+        assertThat(getAllMigrationHistory())
+                .hasSize(2)
+                .extracting(MigrationHistory::getChecksum)
+                .containsExactly(-1, -2);
     }
 
     @ParameterizedTest
     @ValueSource(ints = {0, -1})
-    void migrateNonPositiveSuccessChecksum(Integer checksum) throws Exception {
-        var migration = new TestAsyncJavaMigration(dbProperties, false, jdbcTemplate, checksum, transactionOperations);
+    void migrateNonPositiveSuccessChecksum(int checksum) {
+        var migration = new TestAsyncJavaMigration(false, 0, checksum);
         assertThatThrownBy(migration::doMigrate).isInstanceOf(IllegalArgumentException.class);
         assertThat(getAllMigrationHistory()).isEmpty();
     }
@@ -117,35 +132,50 @@ class AsyncJavaMigrationTest extends IntegrationTest {
                 .addValue("description", TEST_MIGRATION_DESCRIPTION)
                 .addValue("script", script)
                 .addValue("checksum", migrationHistory.getChecksum());
-        jdbcTemplate.update("insert into flyway_schema_history (installed_rank, description, type, script, checksum, " +
-                "installed_by, execution_time, success) values (:installedRank, :description, 'JDBC', :script, " +
-                ":checksum, 20, 100, true)", paramSource);
+        var sql = """
+                insert into flyway_schema_history (installed_rank, description, type, script, checksum,
+                installed_by, execution_time, success) values (:installedRank, :description, 'JDBC', :script,
+                :checksum, 20, 100, true)
+                """;
+        jdbcTemplate2.update(sql, paramSource);
     }
 
     private List<MigrationHistory> getAllMigrationHistory() {
-        return jdbcTemplate.query("select installed_rank, checksum from flyway_schema_history where " +
-                "script = :script", Map.of("script", script), (rs, rowNum) -> {
+        return jdbcTemplate2.query("select installed_rank, checksum, execution_time from flyway_schema_history where " +
+                "script = :script order by installed_rank asc", Map.of("script", script), (rs, rowNum) -> {
             Integer checksum = rs.getInt("checksum");
+            int executionTime = rs.getInt("execution_time");
             int installedRank = rs.getInt("installed_rank");
-            return new MigrationHistory(checksum, installedRank);
+            return new MigrationHistory(checksum, executionTime, installedRank);
         });
+    }
+
+    private void migrateSync(AsyncJavaMigration migration) throws Exception {
+        migration.doMigrate();
+
+        while (!migration.isComplete()) {
+            Uninterruptibles.sleepUninterruptibly(100L, TimeUnit.MILLISECONDS);
+        }
     }
 
     @Value
     private static class MigrationHistory {
         private Integer checksum;
+        private int executionTime;
         private int installedRank;
     }
 
     @Value
-    private static class TestAsyncJavaMigration extends AsyncJavaMigration<Long> {
+    private class TestAsyncJavaMigration extends AsyncJavaMigration<Long> {
+
         private final boolean error;
+        private final long sleep;
         private final int successChecksum;
 
-        public TestAsyncJavaMigration(DBProperties dbProperties, boolean error, NamedParameterJdbcTemplate jdbcTemplate,
-                                      int successChecksum, TransactionOperations transactionOperations) {
-            super(jdbcTemplate, dbProperties.getSchema(), transactionOperations);
+        public TestAsyncJavaMigration(boolean error, long sleep, int successChecksum) {
+            super(jdbcTemplate2, dbProperties.getSchema(), transactionOperations);
             this.error = error;
+            this.sleep = sleep;
             this.successChecksum = successChecksum;
         }
 
@@ -157,6 +187,10 @@ class AsyncJavaMigrationTest extends IntegrationTest {
         @Nonnull
         @Override
         protected Optional<Long> migratePartial(final Long last) {
+            if (sleep > 0) {
+                Uninterruptibles.sleepUninterruptibly(sleep, TimeUnit.SECONDS);
+            }
+
             if (error) {
                 throw new RuntimeException();
             }
