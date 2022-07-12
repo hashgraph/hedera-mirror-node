@@ -23,7 +23,6 @@ package com.hedera.mirror.common.domain.transaction;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
-import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;

@@ -35,6 +35,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
@@ -189,8 +190,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             case INITCODE:
                 if (contract.getInitcode() == null && !recordItem.getSidecarRecords().isEmpty()) {
                     // contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
-                    var sidecarRecord = recordItem.getSidecarRecords().get(0);
-                    contract.setInitcode(sidecarRecord.getContractBytecode().getInitcode());
+                    var sidecarRecord = (TransactionSidecarRecord) recordItem.getSidecarRecords().get(0);
+                    contract.setInitcode(DomainUtils.toBytes(sidecarRecord.getBytecode().getInitcode()));
                 }
                 break;
             default:
@@ -216,7 +217,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 //        }
 
         if (!recordItem.getSidecarRecords().isEmpty()) {
-            contract.setRuntimeBytecode(recordItem.getSidecarRecords().get(0).getContractBytecode().getRuntimeBytecode());
+            contract.setRuntimeBytecode(
+                    DomainUtils.toBytes(recordItem.getSidecarRecords().get(0).getBytecode().getRuntimeBytecode()));
 
             if (contract.getInitcode() == null) {
                 contract.setInitcode(getInitcodeFromRecordItem(recordItem));
@@ -225,6 +227,6 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     private byte[] getInitcodeFromRecordItem(RecordItem recordItem) {
-        return recordItem.getSidecarRecords().get(0).getContractBytecode().getInitcode();
+        return DomainUtils.toBytes(recordItem.getSidecarRecords().get(0).getBytecode().getInitcode());
     }
 }

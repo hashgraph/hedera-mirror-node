@@ -37,6 +37,7 @@ import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -65,14 +66,6 @@ public class ContractResultServiceImpl implements ContractResultService {
         if (!entityProperties.getPersist().isContracts()) {
             return;
         }
-
-        // ContractFunctionResult ->
-        // transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
-        //
-        // ContractFunctionResult ContractStateChange Replaced by Sidecar
-        // Sidecar's ContractActions and ContractBytecode are entirely new.
-        // ContractAction will be a part of the Sidecar.
-
 
         var transactionRecord = recordItem.getRecord();
         var functionResult = transactionRecord.hasContractCreateResult() ?
@@ -106,24 +99,34 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private void processContractActions(RecordItem recordItem) {
-        var sidecarContractAction = recordItem.getSidecarRecords().get(0).getContractActions();
-        var contractAction = new ContractAction();
-        contractAction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-        contractAction.setCallDepth(sidecarContractAction.getCallDepth());
-        contractAction.setCallerType(sidecarContractAction.getCallerType());
-        contractAction.setCallType(sidecarContractAction.getCallType());
-        // contractAction.setCaller(EntityId.of(sidecarContractAction.getCaller()));
-        contractAction.setGas(sidecarContractAction.getGas());
-        contractAction.setGasUsed(sidecarContractAction.getGasUsed());
-        contractAction.setIndex(sidecarContractAction.getIndex());
-        contractAction.setInput(sidecarContractAction.getInput());
-        //contractAction.setRecipientAccount(EntityId.of(sidecarContractAction.getRecipientAccount()));
-        //contractAction.setRecipientAddress();
-        //contractAction.setRecipientContract();
-        contractAction.setResultData(sidecarContractAction.getResultData());
-        contractAction.setResultDataType(sidecarContractAction.getResultDataType());
+        var contractActions = recordItem.getContractActions();
+        for (int index = 0; index < contractActions.size(); ++index) {
+            var action = contractActions.get(index);
+            var contractAction = new ContractAction();
+            contractAction.setCallDepth(action.getCallDepth());
+            contractAction.setCallType(action.getCallTypeValue());
+            contractAction.setCaller(entityIdService.lookup(action.getCallingContract()));
+            switch (action.getCallerCase()) {
+                case CALLING_CONTRACT:
+                    contractAction.setCallerType(EntityType.CONTRACT);
+                    break;
+                case CALLING_ACCOUNT:
+                    contractAction.setCallerType(EntityType.ACCOUNT);
+                    break;
+            }
+            contractAction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
+            contractAction.setGas(action.getGas());
+            contractAction.setGasUsed(action.getGasUsed());
+            contractAction.setIndex(index);
+            contractAction.setInput(DomainUtils.toBytes(action.getInput()));
+            contractAction.setRecipientAccount(EntityId.of(action.getRecipientAccount()));
+            contractAction.setRecipientAddress(action.getRecipientAccount().toByteArray());
+            contractAction.setRecipientContract(entityIdService.lookup(action.getRecipientContract()));
+            contractAction.setResultData(DomainUtils.toBytes(action.getOutput()));
+            contractAction.setResultDataType(action.getResultDataCase().getNumber());
 
-        entityListener.onContractAction(contractAction);
+            entityListener.onContractAction(contractAction);
+        }
     }
 
     private void processContractResult(RecordItem recordItem, EntityId contractEntityId,
@@ -161,10 +164,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             }
 
             processContractLogs(functionResult, contractResult);
-
-            List<ContractStateChange> contractStateChanges = recordItem.getSidecarRecords().get(0).getContractStateChanges();
-            processContractStateChanges(contractStateChanges, contractResult);
-            // processContractStateChanges(functionResult, contractResult);
+            processContractStateChanges(recordItem.getContractStateChanges(), contractResult);
         }
 
         entityListener.onContractResult(contractResult);
@@ -212,30 +212,6 @@ public class ContractResultServiceImpl implements ContractResultService {
             }
         }
     }
-
-//    private void processContractStateChanges(ContractFunctionResult functionResult, ContractResult contractResult) {
-//
-//        for (com.hederahashgraph.api.proto.java.ContractStateChange stateChange : functionResult.getStateChangesList()) {
-//            var contractId = lookup(contractResult.getContractId(), stateChange.getContractID());
-//            for (var storageChange : stateChange.getStorageChangesList()) {
-//                ContractStateChange contractStateChange = new ContractStateChange();
-//                contractStateChange.setConsensusTimestamp(contractResult.getConsensusTimestamp());
-//                contractStateChange.setContractId(contractId);
-//                contractStateChange.setPayerAccountId(contractResult.getPayerAccountId());
-//                contractStateChange.setSlot(DomainUtils.toBytes(storageChange.getSlot()));
-//                contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
-//
-//                // If a value of zero is written the valueWritten will be present but the inner value will be
-//                // absent. If a value was read and not written this value will not be present.
-//                if (storageChange.hasValueWritten()) {
-//                    contractStateChange
-//                            .setValueWritten(DomainUtils.toBytes(storageChange.getValueWritten().getValue()));
-//                }
-//
-//                entityListener.onContractStateChange(contractStateChange);
-//            }
-//        }
-//    }
 
     @SuppressWarnings("deprecation")
     private List<Long> getCreatedContractIds(ContractFunctionResult functionResult, RecordItem recordItem,

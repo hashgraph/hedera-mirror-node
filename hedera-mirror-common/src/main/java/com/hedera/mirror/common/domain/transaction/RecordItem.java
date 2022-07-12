@@ -22,18 +22,18 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import com.hedera.mirror.common.domain.entity.EntityType;
-
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,6 +46,7 @@ import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractStateChange;
 
 @Builder(buildMethodName = "buildInternal")
@@ -74,6 +75,8 @@ public class RecordItem implements StreamItem {
     @Getter(lazy = true)
     private EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
 
+    private final List<com.hedera.services.stream.proto.TransactionSidecarRecord> sidecarRecords;
+
     private final Integer transactionIndex;
 
     private final RecordItem parent;
@@ -101,6 +104,7 @@ public class RecordItem implements StreamItem {
         this.transactionBytes = transactionBytes;
         this.recordBytes = recordBytes;
         this.transactionIndex = transactionIndex;
+        sidecarRecords = Collections.emptyList();
         parent = null;
         previous = null;
     }
@@ -119,6 +123,7 @@ public class RecordItem implements StreamItem {
         this.record = record;
         transactionBytes = transaction.toByteArray();
         recordBytes = record.toByteArray();
+        sidecarRecords = Collections.emptyList();
         transactionIndex = null;
         parent = null;
         previous = null;
@@ -149,6 +154,24 @@ public class RecordItem implements StreamItem {
         } catch (InvalidProtocolBufferException e) {
             throw new ProtobufException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
         }
+    }
+
+    public List<ContractStateChange> getContractStateChanges() {
+        return sidecarRecords.stream()
+                .map(r -> r.getStateChanges())
+                .map(r -> r.getContractStateChangesList())
+                .flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    public List<ContractAction> getContractActions() {
+        return sidecarRecords.stream()
+                .map(r -> r.getActions())
+                .map(a -> a.getContractActionsList())
+                .flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    public List<com.hedera.services.stream.proto.TransactionSidecarRecord> getSidecarRecords() {
+        return sidecarRecords;
     }
 
     /**
@@ -241,134 +264,11 @@ public class RecordItem implements StreamItem {
             this.recordBytes = recordBytes;
             return (B) this;
         }
-    }
 
-    public class TransactionSidecarRecord {
-        //Timestamp consensus_timestamp = 1;
-
-        // new field
-        //bool migration = 2;
-
-        ContractStateChange contractStateChange = ContractStateChange.newBuilder().build();
-
-        //new sidecar records
-        ContractActions contractActions = new ContractActions();
-        ContractBytecode contractBytecode = new ContractBytecode();
-
-        public List<ContractStateChange> getContractStateChanges() {
-            return List.of(contractStateChange);
-        }
-
-        public ContractActions getContractActions() {
-            return contractActions;
-        }
-
-        public ContractBytecode getContractBytecode() {
-            return contractBytecode;
+        public B sidecarRecords(List<com.hedera.services.stream.proto.TransactionSidecarRecord> sidecarRecords) {
+            this.sidecarRecords = sidecarRecords;
+            return (B) this;
         }
     }
 
-    public class ContractActions {
-
-        //    call_depth          integer                             not null,
-        //    call_type           integer                             not null,
-        //    caller              bigint                              not null,
-        //    caller_type         entity_type     default 'CONTRACT'  not null,
-        //    consensus_timestamp bigint                              not null,
-        //    gas                 bigint                              not null,
-        //    gas_used            bigint                              not null,
-        //    index               integer                             not null,
-        //    input               bytea                               null,
-        //    recipient_account   bigint                              null,
-        //    recipient_address   bytea                               null,
-        //    recipient_contract  bigint                              null,
-        //    result_data         bytea                               null,
-        //    result_data_type    integer                             not null,
-        //    value               bigint
-
-        int callDepth = 14;
-        int callType = 1;
-
-        private EntityType callerType;
-
-        Long caller;
-        int gas = 4;
-        int gasUsed = 10;
-        int index;
-        byte[] input;
-        Long recipientAccount;
-        Long recipientContract;
-        byte[] resultData;
-
-        int resultDataType;
-        int value = 9;
-
-        public int getCallDepth() {
-            return callDepth;
-        }
-
-        public int getCallType() {
-            return callType;
-        }
-
-        public Long getCaller() {
-            return caller;
-        }
-
-        public EntityType getCallerType() {
-            return callerType;
-        }
-
-        public int getGas() {
-            return gas;
-        }
-
-        public int getGasUsed() {
-            return gasUsed;
-        }
-
-        public int getIndex() {
-            return index;
-        }
-
-        public byte[] getInput() {
-            return input;
-        }
-
-        public Long getRecipientAccount() {
-            return recipientAccount;
-        }
-
-        public Long getRecipientContract() {
-            return recipientContract;
-        }
-
-        public byte[] getResultData() {
-            return resultData;
-        }
-
-        public int getResultDataType() {
-            return resultDataType;
-        }
-
-        public int getValue() {
-            return value;
-        }
-    }
-
-    public class ContractBytecode {
-        byte[] initcode = new byte[2048];
-        byte[] runtimeBytecode;
-
-        public byte[] getRuntimeBytecode() {
-            return runtimeBytecode;
-        }
-        public byte[] getInitcode() {
-            return initcode;
-        }
-    }
-
-    public List<TransactionSidecarRecord> getSidecarRecords() {
-        return List.of(new TransactionSidecarRecord());
-    }
 }
