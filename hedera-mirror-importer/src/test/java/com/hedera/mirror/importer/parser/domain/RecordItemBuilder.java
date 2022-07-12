@@ -136,11 +136,11 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.CONSENSUSUPDATETOPIC, transactionBody);
     }
 
-    public ContractAction.Builder contractAction() {
+    public ContractAction.Builder contractAction(ContractID contractId) {
         return ContractAction.newBuilder()
                 .setCallDepth(3)
                 .setCallingAccount(accountId())
-                .setCallingContract(contractId())
+                .setCallingContract(contractId)
                 .setCallType(ContractActionType.CALL)
                 .setGas(100)
                 .setGasUsed(50)
@@ -528,7 +528,8 @@ public class RecordItemBuilder {
                         .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId()).setAmount(100)));
     }
 
-    private ContractID contractId() {
+    // Return to private
+    public ContractID contractId() {
         return ContractID.newBuilder().setContractNum(id()).build();
     }
 

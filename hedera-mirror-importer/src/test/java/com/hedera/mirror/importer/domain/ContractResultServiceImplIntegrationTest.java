@@ -182,8 +182,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void multipleSidecarFiles() {
-        ContractActions.Builder contractActions = ContractActions.newBuilder().addContractActions(recordItemBuilder.contractAction());
-        ContractActions.Builder contractActions2 = ContractActions.newBuilder().addContractActions(recordItemBuilder.contractAction());
+        ContractActions.Builder contractActions = ContractActions.newBuilder().addContractActions(recordItemBuilder.contractAction(recordItemBuilder.contractId()));
+        ContractActions.Builder contractActions2 = ContractActions.newBuilder().addContractActions(recordItemBuilder.contractAction(recordItemBuilder.contractId()));
 
         var sidecarRecord = recordItemBuilder.transactionSidecarRecord();
         sidecarRecord.setActions(contractActions);

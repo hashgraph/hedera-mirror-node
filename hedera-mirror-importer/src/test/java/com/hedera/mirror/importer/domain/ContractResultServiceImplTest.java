@@ -21,6 +21,8 @@ package com.hedera.mirror.importer.domain;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
+import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -51,6 +53,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.services.stream.proto.ContractActions;
 
 @ExtendWith(MockitoExtension.class)
 class ContractResultServiceImplTest {
@@ -71,7 +74,6 @@ class ContractResultServiceImplTest {
 
     @BeforeEach
     void beforeEach() {
-
         doNothing().when(transactionHandler).updateContractResult(any(ContractResult.class), any(RecordItem.class));
         doReturn(transactionHandler).when(transactionHandlerFactory).get(any(TransactionType.class));
         contractResultService = new ContractResultServiceImpl(entityProperties, entityIdService, entityListener,
@@ -91,29 +93,34 @@ class ContractResultServiceImplTest {
                 .setRealmNum(realm)
                 .setContractNum(num)
                 .build();
-        // var evmAddress = ContractID.newBuilder().setEvmAddress(fromBytes(toEvmAddress(invalidContractId))).build();
+        var evmAddress = ContractID.newBuilder().setEvmAddress(fromBytes(toEvmAddress(invalidContractId))).build();
         var expectedId = EntityId.of(expectedNum, CONTRACT);
-        // var resolvedId = EntityId.of(resolvedNum, CONTRACT);
+        var resolvedId = EntityId.of(resolvedNum, CONTRACT);
 
         var transaction = domainBuilder.transaction().customize(t -> t.entityId(expectedId)).get();
+        var contractActions = ContractActions.newBuilder()
+                .addContractActions(recordItemBuilder.contractAction(evmAddress));
         var contractStateChanges = recordItemBuilder.contractStateChanges(invalidContractId).build();
         var recordItem = recordItemBuilder.contractCreate()
                 .record(r -> {
                     r.getContractCreateResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
                     r.getContractCreateResultBuilder().removeLogInfo(1);
                 })
-                .sidecarRecord(s -> s.get(0).setStateChanges(contractStateChanges))
+                .sidecarRecord(s -> {
+                    s.get(0).setStateChanges(contractStateChanges);
+                    s.get(1).setActions(contractActions);
+                })
                 .build();
 
         if (shard == 0 && realm == 0) {
             when(entityIdService.lookup(invalidContractId))
                     .thenThrow(new RuntimeException(new InvalidEntityException("")));
         }
-        // when(entityIdService.lookup(evmAddress)).thenReturn(resolvedId);
+        when(entityIdService.lookup(evmAddress)).thenReturn(resolvedId);
 
         contractResultService.process(recordItem, transaction);
 
-        // verify(entityListener).onContractAction(assertArg(a -> assertThat(a.getId()).isEqualTo(expectedId)));
+        verify(entityListener).onContractAction(assertArg(a -> assertThat(a.getCaller()).isEqualTo(resolvedId)));
         verify(entityListener).onContractLog(assertArg(l -> assertThat(l.getContractId()).isEqualTo(expectedId)));
         verify(entityListener, times(2)).onContractStateChange(assertArg(s ->
                 assertThat(s.getContractId()).isEqualTo(expectedId.getId())));
@@ -133,71 +140,38 @@ class ContractResultServiceImplTest {
                 .setRealmNum(realm)
                 .setContractNum(num)
                 .build();
-        // var evmAddress = ContractID.newBuilder().setEvmAddress(fromBytes(toEvmAddress(invalidContractId))).build();
+        var evmAddress = ContractID.newBuilder().setEvmAddress(fromBytes(toEvmAddress(invalidContractId))).build();
         var expectedId = EntityId.of(expectedNum, CONTRACT);
-        // var resolvedId = EntityId.of(resolvedNum, CONTRACT);
+        var resolvedId = EntityId.of(resolvedNum, CONTRACT);
 
         var transaction = domainBuilder.transaction().customize(t -> t.entityId(expectedId)).get();
+        var contractActions = ContractActions.newBuilder()
+                .addContractActions(recordItemBuilder.contractAction(evmAddress));
         var contractStateChanges = recordItemBuilder.contractStateChanges(invalidContractId).build();
         var recordItem = recordItemBuilder.contractCall()
                 .record(r -> {
                     r.getContractCallResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
                     r.getContractCallResultBuilder().removeLogInfo(1);
                 })
-                .sidecarRecord(s -> s.get(0).setStateChanges(contractStateChanges))
+                .sidecarRecord(s -> {
+                    s.get(0).setStateChanges(contractStateChanges);
+                    s.get(1).setActions(contractActions);
+                })
                 .build();
 
         if (shard == 0 && realm == 0) {
             when(entityIdService.lookup(invalidContractId))
                     .thenThrow(new RuntimeException(new InvalidEntityException("")));
         }
-        // when(entityIdService.lookup(evmAddress)).thenReturn(resolvedId);
+        when(entityIdService.lookup(evmAddress)).thenReturn(resolvedId);
         contractResultService.process(recordItem, transaction);
 
+        verify(entityListener).onContractAction(assertArg(a -> assertThat(a.getCaller()).isEqualTo(resolvedId)));
         verify(entityListener).onContractLog(assertArg(l -> assertThat(l.getContractId()).isEqualTo(expectedId)));
         verify(entityListener, times(2)).onContractStateChange(assertArg(s ->
                 assertThat(s.getContractId()).isEqualTo(expectedId.getId())));
         verify(entityListener).onContractResult(isA(ContractResult.class));
     }
-
-//    @CsvSource({
-//            "0,0,9223372036854775807,1000,1000",
-//            "0,0,-1,0,2",
-//    })
-//    @ParameterizedTest
-//    void create2ContractIdWorkaroundCall2(long shard, long realm, long num, long resolvedNum, long expectedNum) {
-//        var invalidContractId = ContractID.newBuilder()
-//                .setShardNum(0)
-//                .setRealmNum(0)
-//                .setContractNum(num)
-//                .build();
-//        var expectedId = EntityId.of(expectedNum, CONTRACT);
-//
-//        var transaction = domainBuilder.transaction().customize(t -> t.entityId(expectedId)).get();
-//        var contractStateChanges = recordItemBuilder.contractStateChanges(invalidContractId).build();
-//        var recordItem = recordItemBuilder.contractCall()
-//                .record(r -> {
-//                    r.getContractCallResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
-//                    r.getContractCallResultBuilder().removeLogInfo(1);
-//                })
-//                // .sidecarRecord(s -> s.get(0).setStateChanges(contractStateChanges))
-//                .build();
-//
-////        if (shard == 0 && realm == 0) {
-////            when(entityIdService.lookup(invalidContractId))
-////                    .thenThrow(new RuntimeException(new InvalidEntityException("")));
-////        }
-//        // when(entityIdService.lookup(invalidContractId)).thenReturn(EntityId.of(invalidContractId));
-//
-//        contractResultService.process(recordItem, transaction);
-//
-//        verify(entityListener).onContractLog(assertArg(l -> assertThat(l.getContractId()).isEqualTo(expectedId)));
-//        verify(entityListener, times(2)).onContractStateChange(assertArg(s ->
-//                assertThat(s.getContractId()).isEqualTo(expectedId.getId())));
-//        verify(entityListener).onContractResult(isA(ContractResult.class));
-//    }
-
-
 
     private <T> T assertArg(Consumer<T> asserter) {
         return argThat(t -> {
