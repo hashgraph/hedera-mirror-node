@@ -20,7 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import java.util.stream.Collectors;
 import javax.inject.Named;
+import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -37,6 +39,7 @@ import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionPars
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
+@CustomLog
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
 
@@ -101,10 +104,17 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 contract.setFileId(EntityId.of(transactionBody.getFileID()));
                 break;
             case INITCODE:
-                // contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
-                if (!recordItem.getSidecarRecords().isEmpty()) {
-                    contract.setInitcode(getInitcodeFromRecordItem(recordItem));
+                var contractBytecodes = recordItem.getContractBytecode();
+                var initcodes = contractBytecodes.stream()
+                        .filter(b -> contract.getId() == b.getContractId().getContractNum())
+                        .map(b -> b.getInitcode()).collect(Collectors.toList());
+                if(initcodes.size() == 1) {
+                    contract.setInitcode(DomainUtils.toBytes(initcodes.get(0)));
+                } else {
+                    log.warn("Incorrect number of initcodes {} found in sidecar record for Contract Id {}",
+                            initcodes.size(), contract.getId());
                 }
+
                 break;
             default:
                 break;
@@ -209,24 +219,14 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             return;
         }
 
-//        var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
-//        var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
-//
-//        if (contract.getInitcode() == null) {
-//            contract.setInitcode(ethereumTransaction.getCallData());
-//        }
+        var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
+        var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
 
-        if (!recordItem.getSidecarRecords().isEmpty()) {
-            contract.setRuntimeBytecode(
-                    DomainUtils.toBytes(recordItem.getSidecarRecords().get(0).getBytecode().getRuntimeBytecode()));
-
-            if (contract.getInitcode() == null) {
-                contract.setInitcode(getInitcodeFromRecordItem(recordItem));
-            }
+        if (contract.getInitcode() == null) {
+            // Should the initcode here be from the recordItem?
+            contract.setInitcode(ethereumTransaction.getCallData());
         }
+
     }
 
-    private byte[] getInitcodeFromRecordItem(RecordItem recordItem) {
-        return DomainUtils.toBytes(recordItem.getSidecarRecords().get(0).getBytecode().getInitcode());
-    }
 }

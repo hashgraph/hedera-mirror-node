@@ -150,8 +150,11 @@ public class RecordItemBuilder {
                 .setOutput(bytes(256));
     }
 
-    public ContractBytecode.Builder contractBytecode() {
-        return ContractBytecode.newBuilder();
+    public ContractBytecode.Builder contractBytecode(ContractID contractId, int initcodeSize, int runtimeBytecodeSize) {
+        return ContractBytecode.newBuilder()
+                .setContractId(contractId)
+                .setInitcode(bytes(initcodeSize))
+                .setRuntimeBytecode(bytes(runtimeBytecodeSize));
     }
 
     public Builder<ContractCallTransactionBody.Builder> contractCall() {

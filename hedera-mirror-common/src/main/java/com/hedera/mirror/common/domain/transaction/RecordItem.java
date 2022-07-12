@@ -47,6 +47,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
 
 @Builder(buildMethodName = "buildInternal")
@@ -168,6 +169,13 @@ public class RecordItem implements StreamItem {
                 .map(r -> r.getActions())
                 .map(a -> a.getContractActionsList())
                 .flatMap(Collection::stream).collect(Collectors.toList());
+    }
+
+    public List<ContractBytecode> getContractBytecode() {
+        return sidecarRecords.stream()
+                .filter(r -> r.hasBytecode())
+                .map(r -> r.getBytecode())
+                .collect(Collectors.toList());
     }
 
     public List<com.hedera.services.stream.proto.TransactionSidecarRecord> getSidecarRecords() {

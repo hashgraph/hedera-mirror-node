@@ -209,19 +209,22 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Test
     void updateTransactionSuccessfulWithEvmAddressAndInitcode() {
-        var recordItem = recordItemBuilder.contractCreate()
+        var contractId = recordItemBuilder.contractId();
+        var recordItem = recordItemBuilder.contractCreate(contractId)
                 .transactionBody(b -> b.clearAutoRenewAccountId()
                         .clearFileID()
+                        // Incorrect here ?
                         .setInitcode(recordItemBuilder.bytes(2048)))
                 .record(r -> r.getContractCreateResultBuilder().setEvmAddress(recordItemBuilder.evmAddress()))
+                .sidecarRecord(r -> r.get(0).setBytecode(recordItemBuilder.contractBytecode(contractId, 2048, 0)))
                 .build();
-        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
-                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractEntityId))
                 .get();
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertContract(contractId, timestamp, t -> assertThat(t)
+        assertContract(contractEntityId, timestamp, t -> assertThat(t)
                 .returns(null, Contract::getAutoRenewAccountId)
                 .satisfies(c -> assertThat(c.getEvmAddress()).hasSize(20))
                 .returns(null, Contract::getFileId)
@@ -392,6 +395,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var parentRecordItem = recordItemBuilder.contractCreate()
                 .transactionBody(x -> x.clearFileID()
                         .setInitcode(ByteString.copyFrom("init code", StandardCharsets.UTF_8)))
+                .sidecarRecord(r -> r.get(0).setBytecode(recordItemBuilder.contractBytecode(contractId, 2048, 0)))
                 .build();
 
         // child item
