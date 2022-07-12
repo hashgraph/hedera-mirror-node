@@ -49,4 +49,6 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    test:
+      enabled: true
 
