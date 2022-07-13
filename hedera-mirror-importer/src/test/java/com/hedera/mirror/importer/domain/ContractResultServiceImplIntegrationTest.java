@@ -41,10 +41,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -56,6 +58,7 @@ import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
+import com.hedera.services.stream.proto.ContractActionType;
 import com.hedera.services.stream.proto.ContractActions;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -181,15 +184,28 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    void multipleSidecarFiles() {
-        ContractActions.Builder contractActions = ContractActions.newBuilder().addContractActions(recordItemBuilder.contractAction(recordItemBuilder.contractId()));
-        ContractActions.Builder contractActions2 = ContractActions.newBuilder().addContractActions(recordItemBuilder.contractAction(recordItemBuilder.contractId()));
+    void contractActionsTest() {
+        ContractActions.Builder contractActionCreate = ContractActions.newBuilder()
+                .addContractActions(
+                        recordItemBuilder.contractAction(recordItemBuilder.contractId())
+                                .setCallingAccount(recordItemBuilder.accountId())
+                                .setCallType(ContractActionType.CREATE)
+                );
+        ContractActions.Builder contractActionsRecipientAccount = ContractActions.newBuilder()
+                .addContractActions(
+                        recordItemBuilder.contractAction(recordItemBuilder.contractId())
+                                .setRecipientAccount(recordItemBuilder.accountId())
+                );
+        ContractActions.Builder contractActionsRecipientAddress = ContractActions.newBuilder()
+                .addContractActions(
+                        recordItemBuilder.contractAction(recordItemBuilder.contractId())
+                                .setInvalidSolidityAddress(recordItemBuilder.bytes(20))
+                );
 
-        var sidecarRecord = recordItemBuilder.transactionSidecarRecord();
-        sidecarRecord.setActions(contractActions);
         RecordItem recordItem = recordItemBuilder.contractCall()
-                .sidecarRecord(r -> r.get(1).setActions(contractActions))
-                .sidecarRecord(r -> r.get(2).setActions(contractActions2))
+                .sidecarRecord(r -> r.get(0).setActions(contractActionCreate))
+                .sidecarRecord(r -> r.get(1).setActions(contractActionsRecipientAccount))
+                .sidecarRecord(r -> r.get(2).setActions(contractActionsRecipientAddress))
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCallResult();
 
@@ -243,28 +259,45 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
             IterableAssert<com.hedera.mirror.common.domain.contract.ContractAction> listAssert = assertThat(contractActionRepository.findAll())
                     .hasSize(contractActions.size());
 
-            var callingContracts = new ArrayList<>();
-            var recipientAccounts = new ArrayList<>();
-            var recipientContract = new ArrayList<>();
+            var callers = new ArrayList<EntityId>();
+            var callTypes = new ArrayList<EntityType>();
+            var recipientAccounts = new ArrayList<EntityId>();
+            var recipientContracts = new ArrayList<EntityId>();
+            var recipientAddresses = new ArrayList<byte[]>();
+            var inputs = new ArrayList<byte[]>();
+            var outputs = new ArrayList<byte[]>();
 
             contractActions.forEach(a -> {
-                callingContracts.add(a.getCallingContract());
-                recipientAccounts.add(a.getRecipientAccount());
-                recipientContract.add(a.getRecipientContract());
+                switch (a.getCallerCase()) {
+                    case CALLING_CONTRACT -> callers.add(EntityId.of(a.getCallingContract()));
+                    default -> callers.add(EntityId.of(a.getCallingAccount()));
+                }
+
+                switch (a.getRecipientCase()) {
+                    case RECIPIENT_CONTRACT -> recipientContracts.add(EntityId.of(a.getRecipientContract()));
+                    case RECIPIENT_ACCOUNT -> recipientAccounts.add(EntityId.of(a.getRecipientAccount()));
+                    default -> recipientAddresses.add(DomainUtils.toBytes(a.getInvalidSolidityAddress()));
+                }
+
+                callTypes.add(EntityType.fromId(a.getCallType().getNumber()));
+                inputs.add(a.getInput().toByteArray());
+                outputs.add(a.getOutput().toByteArray());
             });
 
-            contractActions.forEach(x -> {
-//                contractIds.add(EntityId.of(x.getContractId()).getId());
-//                x.getStorageChangesList().forEach(y -> {
-//                    slots.add(DomainUtils.toBytes(y.getSlot()));
-//                    valuesRead.add(DomainUtils.toBytes(y.getValueRead()));
-//                    valuesWritten.add(DomainUtils.toBytes(y.getValueWritten().getValue()));
-//                });
-            });
-
-//            listAssert.extracting(ContractAction::getCallingContract).containsOnly(recordItem.getPayerAccountId());
-//            listAssert.extracting(TransactionSidecarRecord::)
-//                    .containsOnly(recordItem.getConsensusTimestamp());
+            listAssert.extracting(ContractAction::getCallDepth).containsOnly(contractActions.get(0).getCallDepth());
+            listAssert.extracting(ContractAction::getCaller).containsAll(callers);
+            listAssert.extracting(ContractAction::getConsensusTimestamp).containsOnly(recordItem.getConsensusTimestamp());
+            listAssert.extracting(ContractAction::getRecipientAccount).containsAll(recipientAccounts);
+            listAssert.extracting(ContractAction::getRecipientContract).containsAll(recipientContracts);
+            listAssert.extracting(ContractAction::getRecipientAddress).containsAll(recipientAddresses);
+            listAssert.extracting(ContractAction::getGas).containsOnly(contractActions.get(0).getGas());
+            listAssert.extracting(ContractAction::getGasUsed).containsOnly(contractActions.get(0).getGasUsed());
+            listAssert.extracting(ContractAction::getCallerType).containsAll(callTypes);
+            listAssert.extracting(ContractAction::getInput).containsAll(inputs);
+            listAssert.extracting(ContractAction::getResultData).containsAll(outputs);
+            listAssert.extracting(ContractAction::getResultDataType)
+                    .containsOnly(contractActions.get(0).getResultDataCase().getNumber());
+            listAssert.extracting(ContractAction::getValue).containsOnly(contractActions.get(0).getValue());
         }
     }
 
@@ -296,7 +329,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private void assertContractStateChanges(RecordItem recordItem) {
         var stateChanges = recordItem.getContractStateChanges();
         if (stateChanges.size() > 0) {
-            System.out.println("Testing state changes");
             var listAssert = assertThat(contractStateChangeRepository.findAll())
                     .hasSize(stateChanges.get(0).getStorageChangesCount());
 

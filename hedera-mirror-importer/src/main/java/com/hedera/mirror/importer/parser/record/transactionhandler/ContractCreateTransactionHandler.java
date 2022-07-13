@@ -100,24 +100,20 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         switch (transactionBody.getInitcodeSourceCase()) {
-            case FILEID:
-                contract.setFileId(EntityId.of(transactionBody.getFileID()));
-                break;
-            case INITCODE:
+            case FILEID -> contract.setFileId(EntityId.of(transactionBody.getFileID()));
+            case INITCODE -> {
                 var contractBytecodes = recordItem.getContractBytecode();
                 var initcodes = contractBytecodes.stream()
                         .filter(b -> contract.getId() == b.getContractId().getContractNum())
                         .map(b -> b.getInitcode()).collect(Collectors.toList());
-                if(initcodes.size() == 1) {
-                    contract.setInitcode(DomainUtils.toBytes(initcodes.get(0)));
+                if (initcodes.size() == 1) {
+                    contract.setInitcode(initcodes.get(0).toByteArray());
                 } else {
-                    log.warn("Incorrect number of initcodes {} found in sidecar record for Contract Id {}",
+                    log.warn("Incorrect number of initcodes ({}) found in sidecar record for Contract Id {}",
                             initcodes.size(), contract.getId());
                 }
-
-                break;
-            default:
-                break;
+            }
+            default -> {}
         }
 
         contract.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
@@ -198,10 +194,16 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 }
                 break;
             case INITCODE:
-                if (contract.getInitcode() == null && !recordItem.getSidecarRecords().isEmpty()) {
-                    // contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
-                    var sidecarRecord = (TransactionSidecarRecord) recordItem.getSidecarRecords().get(0);
-                    contract.setInitcode(DomainUtils.toBytes(sidecarRecord.getBytecode().getInitcode()));
+                if (contract.getInitcode() == null && !recordItem.getContractBytecode().isEmpty()) {
+                    var initcodes = recordItem.getContractBytecode().stream()
+                            .filter(b -> b.getContractId().getContractNum() == contract.getId())
+                            .collect(Collectors.toList());
+                    if(initcodes.size() > 1) {
+                        log.warn("Incorrect number of initcodes ({}) found in sidecar record for Contract Id {}",
+                                initcodes.size(), contract.getId());
+                    } else if(initcodes.size() == 1) {
+                        contract.setInitcode(initcodes.get(0).getInitcode().toByteArray());
+                    }
                 }
                 break;
             default:
@@ -223,7 +225,6 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
 
         if (contract.getInitcode() == null) {
-            // Should the initcode here be from the recordItem?
             contract.setInitcode(ethereumTransaction.getCallData());
         }
 

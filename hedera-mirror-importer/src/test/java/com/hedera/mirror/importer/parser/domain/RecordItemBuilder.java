@@ -139,22 +139,21 @@ public class RecordItemBuilder {
     public ContractAction.Builder contractAction(ContractID contractId) {
         return ContractAction.newBuilder()
                 .setCallDepth(3)
-                .setCallingAccount(accountId())
                 .setCallingContract(contractId)
                 .setCallType(ContractActionType.CALL)
                 .setGas(100)
                 .setGasUsed(50)
                 .setInput(bytes(100))
-                .setRecipientAccount(accountId())
                 .setRecipientContract(contractId())
-                .setOutput(bytes(256));
+                .setOutput(bytes(256))
+                .setValue(20);
     }
 
-    public ContractBytecode.Builder contractBytecode(ContractID contractId, int initcodeSize, int runtimeBytecodeSize) {
+    public ContractBytecode.Builder contractBytecode(ContractID contractId) {
         return ContractBytecode.newBuilder()
                 .setContractId(contractId)
-                .setInitcode(bytes(initcodeSize))
-                .setRuntimeBytecode(bytes(runtimeBytecodeSize));
+                .setInitcode(bytes(2048))
+                .setRuntimeBytecode(bytes(3048));
     }
 
     public Builder<ContractCallTransactionBody.Builder> contractCall() {
@@ -212,20 +211,6 @@ public class RecordItemBuilder {
                 .receipt(r -> r.setContractID(contractId));
     }
 
-//    public TransactionSidecarRecord.Builder transactionSidecarRecordsResult(List<ContractAction> contractActions, ContractBytecode contractBytecode, ContractID contractId) {
-//        return TransactionSidecarRecord.newBuilder()
-//                .setActions(ContractActions.newBuilder()
-//                        .addAllContractActions(contractActions)
-//                        .build())
-//                .setBytecode(contractBytecode)
-//                .setStateChanges(ContractStateChanges.newBuilder()
-//                        .addContractStateChanges(ContractStateChange.newBuilder()
-//                                .setContractId(contractId)
-//                                .addStorageChanges(storageChange())
-//                                .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)))
-//                                .build()));
-//    }
-
     public ContractFunctionResult.Builder contractFunctionResult(ContractID contractId) {
         return ContractFunctionResult.newBuilder()
                 .setAmount(5_000L)
@@ -266,40 +251,6 @@ public class RecordItemBuilder {
 
         return ContractStateChanges.newBuilder().addContractStateChanges(contractStateChange);
     }
-
-//    public ContractStateChanges.Builder contractStateChangesTest() {
-//        var contractStateChange = ContractStateChange.newBuilder()
-//                .setContractId(contractId())
-//                .addStorageChanges(storageChange())
-//                .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)));
-//
-//        var contractStateChange2 = ContractStateChange.newBuilder()
-//                .setContractId(contractId())
-//                .addStorageChanges(storageChange())
-//                .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)));
-//
-//        var contractStateChange3 = ContractStateChange.newBuilder()
-//                .setContractId(contractId())
-//                .addStorageChanges(storageChange())
-//                .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)));
-//
-//        var contractStateChange4 = ContractStateChange.newBuilder()
-//                .setContractId(contractId())
-//                .addStorageChanges(storageChange())
-//                .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)));
-//
-//        var contractStateChange5 = ContractStateChange.newBuilder()
-//                .setContractId(contractId())
-//                .addStorageChanges(storageChange())
-//                .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)));
-//
-//        return ContractStateChanges.newBuilder().addContractStateChanges(contractStateChange)
-//                .addContractStateChanges(contractStateChange2)
-//                .addContractStateChanges(contractStateChange3)
-//                .addContractStateChanges(contractStateChange4)
-//                .addContractStateChanges(contractStateChange5)
-//                ;
-//    }
 
     public Builder<ContractUpdateTransactionBody.Builder> contractUpdate() {
         var contractId = contractId();
@@ -518,6 +469,10 @@ public class RecordItemBuilder {
         return ByteString.copyFrom(bytes);
     }
 
+    public ContractID contractId() {
+        return ContractID.newBuilder().setContractNum(id()).build();
+    }
+
     private byte[] randomBytes(int length) {
         byte[] bytes = new byte[length];
         random.nextBytes(bytes);
@@ -529,11 +484,6 @@ public class RecordItemBuilder {
                 .setTransfers(TransferList.newBuilder()
                         .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId()).setAmount(-100))
                         .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId()).setAmount(100)));
-    }
-
-    // Return to private
-    public ContractID contractId() {
-        return ContractID.newBuilder().setContractNum(id()).build();
     }
 
     private Duration duration(int seconds) {
@@ -621,16 +571,6 @@ public class RecordItemBuilder {
             transactionBodyWrapper = defaultTransactionBody();
             transactionRecord = defaultTransactionRecord();
             transactionSidecarRecords = defaultTransactionSidecarRecords();
-        }
-
-        private Builder(TransactionType type, T transactionBody, List<TransactionSidecarRecord.Builder> sidecarRecords) {
-            payerAccountId = accountId();
-            this.type = type;
-            this.transactionBody = transactionBody;
-            signatureMap = defaultSignatureMap();
-            transactionBodyWrapper = defaultTransactionBody();
-            transactionRecord = defaultTransactionRecord();
-            transactionSidecarRecords = sidecarRecords;
         }
 
         public RecordItem build() {
@@ -730,31 +670,7 @@ public class RecordItemBuilder {
         private List<TransactionSidecarRecord.Builder>  defaultTransactionSidecarRecords() {
             return List.of(TransactionSidecarRecord.newBuilder(), TransactionSidecarRecord.newBuilder(),
                     TransactionSidecarRecord.newBuilder());
-
-            //             return List.of(TransactionSidecarRecord.newBuilder().setConsensusTimestamp(timestamp()),
-            //                    TransactionSidecarRecord.newBuilder().setConsensusTimestamp(timestamp()),
-            //                    TransactionSidecarRecord.newBuilder().setConsensusTimestamp(timestamp()));
         }
-
-//        private List<TransactionSidecarRecord.Builder>  defaultTransactionSidecarRecords() {
-//            var contractAction = TransactionSidecarRecord.newBuilder()
-//                    .setActions(ContractActions.newBuilder()
-//                            .addContractActions(contractAction())
-//                            .build());
-//
-//            var contractBytecode = TransactionSidecarRecord.newBuilder()
-//                    .setBytecode(contractBytecode());
-//
-//            var stateChanges = TransactionSidecarRecord.newBuilder()
-//                    .setStateChanges(ContractStateChanges.newBuilder()
-//                            .addContractStateChanges(ContractStateChange.newBuilder()
-//                                    .setContractId(contractId())
-//                                    .addStorageChanges(storageChange())
-//                                    .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)))
-//                                    .build()));
-//
-//            return List.of(contractAction, contractBytecode, stateChanges);
-//        }
 
         private Transaction.Builder transaction() {
             return Transaction.newBuilder()

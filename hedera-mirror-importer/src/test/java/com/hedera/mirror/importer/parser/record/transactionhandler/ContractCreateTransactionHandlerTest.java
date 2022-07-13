@@ -216,7 +216,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         // Incorrect here ?
                         .setInitcode(recordItemBuilder.bytes(2048)))
                 .record(r -> r.getContractCreateResultBuilder().setEvmAddress(recordItemBuilder.evmAddress()))
-                .sidecarRecord(r -> r.get(0).setBytecode(recordItemBuilder.contractBytecode(contractId, 2048, 0)))
+                .sidecarRecord(r -> r.get(0).setBytecode(recordItemBuilder.contractBytecode(contractId)))
                 .build();
         var contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
@@ -395,7 +395,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var parentRecordItem = recordItemBuilder.contractCreate()
                 .transactionBody(x -> x.clearFileID()
                         .setInitcode(ByteString.copyFrom("init code", StandardCharsets.UTF_8)))
-                .sidecarRecord(r -> r.get(0).setBytecode(recordItemBuilder.contractBytecode(contractId, 2048, 0)))
+                .sidecarRecord(r -> r.get(0).setBytecode(recordItemBuilder.contractBytecode(contractId)))
                 .build();
 
         // child item

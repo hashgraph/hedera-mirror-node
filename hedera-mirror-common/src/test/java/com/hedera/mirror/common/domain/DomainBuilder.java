@@ -30,6 +30,9 @@ import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+
+import com.hedera.services.stream.proto.ContractActionType;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -259,7 +262,7 @@ public class DomainBuilder {
                 .callDepth(1)
                 .caller(entityId(ACCOUNT))
                 .callerType(CONTRACT)
-                .callType(CONTRACT.getId())
+                .callType(ContractActionType.CALL.getNumber())
                 .consensusTimestamp(timestamp())
                 .gas(100L)
                 .gasUsed(50L)

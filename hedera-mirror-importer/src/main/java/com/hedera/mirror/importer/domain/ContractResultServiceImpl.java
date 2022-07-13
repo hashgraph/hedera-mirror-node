@@ -44,6 +44,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
@@ -86,7 +87,6 @@ public class ContractResultServiceImpl implements ContractResultService {
         var contractId = isContractCreateOrCall(recordItem.getTransactionBody()) ? transaction.getEntityId() :
                 entityIdService.lookup(functionResult.getContractID());
         processContractResult(recordItem, contractId, functionResult, transactionHandler);
-
         processContractActions(recordItem);
     }
 
@@ -103,27 +103,41 @@ public class ContractResultServiceImpl implements ContractResultService {
         for (int index = 0; index < contractActions.size(); ++index) {
             var action = contractActions.get(index);
             var contractAction = new ContractAction();
+
+            switch (action.getCallerCase()) {
+                case CALLING_CONTRACT -> {
+                    contractAction.setCallerType(EntityType.CONTRACT);
+                    contractAction.setCaller(entityIdService.lookup(action.getCallingContract()));
+                }
+                case CALLING_ACCOUNT -> {
+                    contractAction.setCallerType(EntityType.ACCOUNT);
+                    contractAction.setCaller(EntityId.of(action.getCallingAccount()));
+                }
+                default ->
+                    throw new InvalidDatasetException("Invalid Contract Action Caller Case: " + action.getCallerCase());
+            }
+
+            switch (action.getRecipientCase()) {
+                case RECIPIENT_ACCOUNT ->
+                        contractAction.setRecipientAccount(EntityId.of(action.getRecipientAccount()));
+                case RECIPIENT_CONTRACT ->
+                        contractAction.setRecipientContract(entityIdService.lookup(action.getRecipientContract()));
+                case INVALID_SOLIDITY_ADDRESS ->
+                        contractAction.setRecipientAddress(action.getInvalidSolidityAddress().toByteArray());
+                default ->
+                    log.warn("Invalid recipient case for contract action: {}", action.getRecipientCase());
+            }
+
             contractAction.setCallDepth(action.getCallDepth());
             contractAction.setCallType(action.getCallTypeValue());
-            contractAction.setCaller(entityIdService.lookup(action.getCallingContract()));
-            switch (action.getCallerCase()) {
-                case CALLING_CONTRACT:
-                    contractAction.setCallerType(EntityType.CONTRACT);
-                    break;
-                case CALLING_ACCOUNT:
-                    contractAction.setCallerType(EntityType.ACCOUNT);
-                    break;
-            }
             contractAction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
             contractAction.setGas(action.getGas());
             contractAction.setGasUsed(action.getGasUsed());
             contractAction.setIndex(index);
             contractAction.setInput(DomainUtils.toBytes(action.getInput()));
-            contractAction.setRecipientAccount(EntityId.of(action.getRecipientAccount()));
-            contractAction.setRecipientAddress(action.getRecipientAccount().toByteArray());
-            contractAction.setRecipientContract(entityIdService.lookup(action.getRecipientContract()));
             contractAction.setResultData(DomainUtils.toBytes(action.getOutput()));
             contractAction.setResultDataType(action.getResultDataCase().getNumber());
+            contractAction.setValue(action.getValue());
 
             entityListener.onContractAction(contractAction);
         }
