@@ -392,10 +392,11 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Test
     void updateContractFromContractCreateWInitCodeParent() {
         // parent item
-        var parentRecordItem = recordItemBuilder.contractCreate()
+        var parentContractId = recordItemBuilder.contractId();
+        var parentRecordItem = recordItemBuilder.contractCreate(parentContractId)
                 .transactionBody(x -> x.clearFileID()
                         .setInitcode(ByteString.copyFrom("init code", StandardCharsets.UTF_8)))
-                .sidecarRecord(r -> r.get(0).setBytecode(recordItemBuilder.contractBytecode(contractId)))
+                .sidecarRecord(r -> r.get(0).setBytecode(recordItemBuilder.contractBytecode(parentContractId)))
                 .build();
 
         // child item

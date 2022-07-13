@@ -37,7 +37,6 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.util.Utility;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @CustomLog
 @Named
@@ -102,8 +101,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         switch (transactionBody.getInitcodeSourceCase()) {
             case FILEID -> contract.setFileId(EntityId.of(transactionBody.getFileID()));
             case INITCODE -> {
-                var contractBytecodes = recordItem.getContractBytecode();
-                var initcodes = contractBytecodes.stream()
+                var initcodes = recordItem.getContractBytecode().stream()
                         .filter(b -> contract.getId() == b.getContractId().getContractNum())
                         .map(b -> b.getInitcode()).collect(Collectors.toList());
                 if (initcodes.size() == 1) {
@@ -184,8 +182,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
     }
 
-    private void updateChildFromContractCreateParent(Contract contract, RecordItem recordItem) {
-        var transactionBody = recordItem.getTransactionBody()
+    private void updateChildFromContractCreateParent(Contract contract, RecordItem parentRecordItem) {
+        var transactionBody = parentRecordItem.getTransactionBody()
                 .getContractCreateInstance();
         switch (transactionBody.getInitcodeSourceCase()) {
             case FILEID:
@@ -194,15 +192,15 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 }
                 break;
             case INITCODE:
-                if (contract.getInitcode() == null && !recordItem.getContractBytecode().isEmpty()) {
-                    var initcodes = recordItem.getContractBytecode().stream()
-                            .filter(b -> b.getContractId().getContractNum() == contract.getId())
+                if (contract.getInitcode() == null && !parentRecordItem.getContractBytecode().isEmpty()) {
+                    var initcodes = parentRecordItem.getContractBytecode().stream()
+                            .map(b -> b.getInitcode())
                             .collect(Collectors.toList());
                     if(initcodes.size() > 1) {
                         log.warn("Incorrect number of initcodes ({}) found in sidecar record for Contract Id {}",
                                 initcodes.size(), contract.getId());
                     } else if(initcodes.size() == 1) {
-                        contract.setInitcode(initcodes.get(0).getInitcode().toByteArray());
+                        contract.setInitcode(initcodes.get(0).toByteArray());
                     }
                 }
                 break;
@@ -227,7 +225,5 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         if (contract.getInitcode() == null) {
             contract.setInitcode(ethereumTransaction.getCallData());
         }
-
     }
-
 }
