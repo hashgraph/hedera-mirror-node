@@ -18,10 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const {DbError} = require('./errors/dbError');
-const {NotFoundError} = require('./errors/notFoundError');
+import {DbError, NotFoundError} from './errors';
 
 const readinessQuery = `select true
                         from address_book
@@ -62,7 +59,7 @@ const beforeShutdown = async () => {
   return pool.end();
 };
 
-module.exports = {
+export default {
   readinessCheck,
   livenessCheck,
   beforeShutdown,

@@ -41,22 +41,22 @@
  * in the specs/ dir.
  */
 // external libraries
-const S3 = require('aws-sdk/clients/s3');
-const crypto = require('crypto');
-const fs = require('fs');
-const _ = require('lodash');
-const path = require('path');
-const request = require('supertest');
+import S3 from 'aws-sdk/clients/s3';
 
-const integrationDbOps = require('./integrationDbOps');
-const integrationDomainOps = require('./integrationDomainOps');
-const {S3Ops} = require('./integrationS3Ops');
-const config = require('../config');
-const {cloudProviders} = require('../constants');
-const EntityId = require('../entityId');
-const server = require('../server');
-const transactions = require('../transactions');
-const {JSONParse} = require('../utils');
+import crypto from 'crypto';
+import fs from 'fs';
+import _ from 'lodash';
+import path from 'path';
+import request from 'supertest';
+import integrationDbOps from './integrationDbOps';
+import integrationDomainOps from './integrationDomainOps';
+import {S3Ops} from './integrationS3Ops';
+import config from '../config';
+import {cloudProviders} from '../constants';
+import EntityId from '../entityId';
+import server from '../server';
+import transactions from '../transactions';
+import {JSONParse} from '../utils';
 
 jest.setTimeout(40000);
 

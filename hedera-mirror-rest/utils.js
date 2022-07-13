@@ -18,27 +18,25 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
+import anonymize from 'ip-anonymize';
+import crypto from 'crypto';
+import JSONBigFactory from 'json-bigint';
+import long from 'long';
+import * as math from 'mathjs';
+import pg from 'pg';
+import pgRange from 'pg-range';
+import util from 'util';
 
-const _ = require('lodash');
-const anonymize = require('ip-anonymize');
-const crypto = require('crypto');
-const JSONBig = require('json-bigint')({useNativeBigInt: true});
-const long = require('long');
-const math = require('mathjs');
-const pg = require('pg');
-const pgRange = require('pg-range');
-const util = require('util');
+import * as constants from './constants';
+import EntityId from './entityId';
+import config from './config';
+import ed25519 from './ed25519';
+import {DbError, InvalidArgumentError, InvalidClauseError} from './errors';
+import mockPool from './__tests__/mockpool';
+import {FeeSchedule, TransactionResult, TransactionType} from './model';
 
-const constants = require('./constants');
-const EntityId = require('./entityId');
-const config = require('./config');
-const ed25519 = require('./ed25519');
-const {DbError} = require('./errors/dbError');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
-const {InvalidClauseError} = require('./errors/invalidClauseError');
-const {TransactionResult, TransactionType, FeeSchedule} = require('./model');
-const {keyTypes} = require('./constants');
+const JSONBig = JSONBigFactory({useNativeBigInt: true});
 
 const responseLimit = config.response.limit;
 const resultSuccess = TransactionResult.getSuccessProtoId();
@@ -922,7 +920,7 @@ const encodeKey = (key) => {
   const ed25519Key = keyHex.match(PATTERN_ED25519);
   if (ed25519Key) {
     return {
-      _type: keyTypes.ED25519,
+      _type: constants.keyTypes.ED25519,
       key: ed25519Key[2],
     };
   }
@@ -930,13 +928,13 @@ const encodeKey = (key) => {
   const ecdsa = keyHex.match(PATTERN_ECDSA);
   if (ecdsa) {
     return {
-      _type: keyTypes.ECDSA_SECP256K1,
+      _type: constants.keyTypes.ECDSA_SECP256K1,
       key: ecdsa[2],
     };
   }
 
   return {
-    _type: keyTypes.PROTOBUF,
+    _type: constants.keyTypes.PROTOBUF,
     key: keyHex,
   };
 };
@@ -1235,7 +1233,7 @@ const ipMask = (ip) => {
  * @param {boolean} mock
  */
 const getPoolClass = (mock = false) => {
-  const Pool = mock ? require('./__tests__/mockpool') : pg.Pool;
+  const Pool = mock ? mockPool : pg.Pool;
   Pool.prototype.queryQuietly = async function (query, params = [], preQueryHint = undefined) {
     let client;
     let result;
@@ -1391,11 +1389,15 @@ const convertGasPriceToTinyBars = (gasPrice, hbarsPerTinyCent, centsPerHbar) => 
   return Math.round(Math.max(tinyBars, 1));
 };
 
-module.exports = {
+const JSONParse = JSONBig.parse;
+const JSONStringify = JSONBig.stringify;
+
+export {
   addHexPrefix,
   asNullIfDefault,
   buildAndValidateFilters,
   buildComparatorFilter,
+  buildFilters,
   buildPgSqlObject,
   checkTimestampRange,
   conflictingPathParam,
@@ -1407,6 +1409,10 @@ module.exports = {
   encodeKey,
   filterDependencyCheck,
   filterValidityChecks,
+  formatComparator,
+  formatFilters,
+  getLimitParamValue,
+  getNextParamQueries,
   getNullableNumber,
   getPaginationLink,
   getPoolClass,
@@ -1423,8 +1429,8 @@ module.exports = {
   isValidOperatorQuery,
   isValidValueIgnoreCase,
   isValidTimestampParam,
-  JSONParse: JSONBig.parse,
-  JSONStringify: JSONBig.stringify,
+  JSONParse,
+  JSONStringify,
   ltLte,
   mergeParams,
   nsToSecNs,
@@ -1434,6 +1440,7 @@ module.exports = {
   parseBalanceQueryParam,
   parseBooleanValue,
   parseCreditDebitParams,
+  parseInteger,
   parseLimitAndOrderParams,
   parseParams,
   parsePublicKey,
@@ -1450,22 +1457,9 @@ module.exports = {
   toHexString,
   toHexStringNonQuantity,
   toHexStringQuantity,
+  validateAndParseFilters,
+  validateFilters,
   validateReq,
   isValidBlockHash,
   convertGasPriceToTinyBars,
 };
-
-if (isTestEnv()) {
-  Object.assign(module.exports, {
-    buildFilters,
-    formatComparator,
-    formatFilters,
-    getLimitParamValue,
-    getNextParamQueries,
-    getPaginationLink,
-    parseInteger,
-    validateAndParseFilters,
-    validateFilters,
-    convertGasPriceToTinyBars,
-  });
-}

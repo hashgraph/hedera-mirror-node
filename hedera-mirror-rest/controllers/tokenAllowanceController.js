@@ -18,23 +18,15 @@
  * ‍
  */
 
-'use strict';
+import {getResponseLimit} from '../config';
+import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
+import BaseController from './baseController';
+import Bound from './bound';
+import {EntityService, TokenAllowanceService} from '../service';
+import * as utils from '../utils';
+import {TokenAllowanceViewModel} from '../viewmodel';
 
-const _ = require('lodash');
-
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../config');
-const constants = require('../constants');
-const utils = require('../utils');
-
-const BaseController = require('./baseController');
-const Bound = require('./bound');
-
-const {EntityService, TokenAllowanceService} = require('../service');
-const {TokenAllowanceViewModel} = require('../viewmodel');
+const {default: defaultLimit} = getResponseLimit();
 
 class TokenAllowanceController extends BaseController {
   /**
@@ -47,24 +39,24 @@ class TokenAllowanceController extends BaseController {
    */
   extractTokenMultiUnionQuery(filters, ownerAccountId) {
     const bounds = {
-      primary: new Bound(constants.filterKeys.SPENDER_ID, 'spender'),
-      secondary: new Bound(constants.filterKeys.TOKEN_ID, 'token_id'),
+      primary: new Bound(filterKeys.SPENDER_ID, 'spender'),
+      secondary: new Bound(filterKeys.TOKEN_ID, 'token_id'),
     };
     let limit = defaultLimit;
-    let order = constants.orderFilterValues.ASC;
+    let order = orderFilterValues.ASC;
 
     for (const filter of filters) {
       switch (filter.key) {
-        case constants.filterKeys.SPENDER_ID:
+        case filterKeys.SPENDER_ID:
           bounds.primary.parse(filter);
           break;
-        case constants.filterKeys.TOKEN_ID:
+        case filterKeys.TOKEN_ID:
           bounds.secondary.parse(filter);
           break;
-        case constants.filterKeys.LIMIT:
+        case filterKeys.LIMIT:
           limit = filter.value;
           break;
-        case constants.filterKeys.ORDER:
+        case filterKeys.ORDER:
           order = filter.value;
           break;
         default:
@@ -92,13 +84,13 @@ class TokenAllowanceController extends BaseController {
    * @returns {Promise<void>}
    */
   getAccountTokenAllowances = async (req, res) => {
-    const accountId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
+    const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
     const filters = utils.buildAndValidateFilters(req.query);
     const query = this.extractTokenMultiUnionQuery(filters, accountId);
     const tokenAllowances = await TokenAllowanceService.getAccountTokenAllowances(query);
     const allowances = tokenAllowances.map((model) => new TokenAllowanceViewModel(model));
 
-    res.locals[constants.responseDataLabel] = {
+    res.locals[responseDataLabel] = {
       allowances,
       links: {
         next: this.getPaginationLink(req, allowances, query.bounds, query.limit, query.order),
@@ -107,4 +99,4 @@ class TokenAllowanceController extends BaseController {
   };
 }
 
-module.exports = new TokenAllowanceController();
+export default new TokenAllowanceController();

@@ -18,17 +18,15 @@
  * ‍
  */
 
-'use strict';
+import {jest} from '@jest/globals';
+import * as math from 'mathjs';
+import path from 'path';
 
-const math = require('mathjs');
-const path = require('path');
-const EntityId = require('../entityId');
-const testutils = require('./testutils');
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../config');
+import {getResponseLimit} from '../config';
+import EntityId from '../entityId';
+import * as testutils from './testutils';
+
+const {default: defaultLimit} = getResponseLimit();
 
 /**
  * This is a mock database for unit testing.
@@ -449,4 +447,4 @@ class Pool {
   }
 }
 
-module.exports = Pool;
+export default Pool;

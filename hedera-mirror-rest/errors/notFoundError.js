@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 const NotFoundErrorMessage = 'Not found';
 
 class NotFoundError extends Error {
@@ -29,6 +27,4 @@ class NotFoundError extends Error {
   }
 }
 
-module.exports = {
-  NotFoundError,
-};
+export default NotFoundError;

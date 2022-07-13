@@ -20,8 +20,8 @@
 
 'use strict';
 
-const CustomFee = require('../../model/customFee');
-const CustomFeeViewModel = require('../../viewmodel/customFeeViewModel');
+import CustomFee from '../../model/customFee';
+import CustomFeeViewModel from '../../viewmodel/customFeeViewModel';
 
 describe('CustomFeeViewModel', () => {
   const fixedFeeTestSpecs = [

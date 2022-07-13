@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const crypto = require('crypto');
+import crypto from 'crypto';
 
 /**
  * Calculates the next running hash from running hash object and next hash object using the specified digest algorithm.
@@ -40,6 +38,4 @@ const calculateRunningHash = (runningHashObject, nextHashObject, algorithm) => {
     .digest();
 };
 
-module.exports = {
-  calculateRunningHash,
-};
+export default calculateRunningHash;

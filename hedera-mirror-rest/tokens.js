@@ -18,32 +18,23 @@
  * ‍
  */
 
-'use strict';
+import {getResponseLimit} from './config';
+import {
+  entityTypes,
+  filterKeys,
+  httpStatusCodes,
+  orderFilterValues,
+  responseDataLabel,
+  tokenTypeFilter,
+} from './constants';
+import EntityId from './entityId';
+import {InvalidArgumentError, NotFoundError} from './errors';
+import {CustomFee, Entity, Nft, NftTransfer, Token, Transaction} from './model';
+import {NftService} from './service';
+import * as utils from './utils';
+import {CustomFeeViewModel, NftViewModel, NftTransactionHistoryViewModel} from './viewmodel';
 
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('./config');
-const constants = require('./constants');
-const EntityId = require('./entityId');
-const utils = require('./utils');
-
-// errors
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
-const {NotFoundError} = require('./errors/notFoundError');
-
-// models
-const {CustomFee, Entity, Nft, NftTransfer, Token, Transaction} = require('./model');
-
-// middleware
-const {httpStatusCodes} = require('./constants');
-
-// services
-const {NftService, TokenService} = require('./service');
-
-// view models
-const {CustomFeeViewModel, NftViewModel, NftTransactionHistoryViewModel} = require('./viewmodel');
+const {default: defaultLimit} = getResponseLimit();
 
 // select columns
 const sqlQueryColumns = {
@@ -59,8 +50,8 @@ const sqlQueryColumns = {
 const filterColumnMap = {
   publickey: sqlQueryColumns.PUBLIC_KEY,
   symbol: sqlQueryColumns.SYMBOL,
-  [constants.filterKeys.TOKEN_ID]: sqlQueryColumns.TOKEN_ID,
-  [constants.filterKeys.TOKEN_TYPE]: sqlQueryColumns.TYPE,
+  [filterKeys.TOKEN_ID]: sqlQueryColumns.TOKEN_ID,
+  [filterKeys.TOKEN_TYPE]: sqlQueryColumns.TYPE,
 };
 
 const nftQueryColumns = {
@@ -74,7 +65,7 @@ const nftQueryColumns = {
 // query to column maps
 const nftFilterColumnMap = {
   serialnumber: nftQueryColumns.SERIAL_NUMBER,
-  [constants.filterKeys.ACCOUNT_ID]: nftQueryColumns.ACCOUNT_ID,
+  [filterKeys.ACCOUNT_ID]: nftQueryColumns.ACCOUNT_ID,
 };
 
 const nftSelectFields = [
@@ -140,25 +131,22 @@ const tokenIdMatchQuery = 'where token_id = $1';
 const extractSqlFromTokenRequest = (query, params, filters, conditions) => {
   // add filters
   let limit = defaultLimit;
-  let order = constants.orderFilterValues.ASC;
+  let order = orderFilterValues.ASC;
   conditions = conditions || [];
   for (const filter of filters) {
-    if (filter.key === constants.filterKeys.LIMIT) {
+    if (filter.key === filterKeys.LIMIT) {
       limit = filter.value;
       continue;
     }
 
     // handle keys that do not require formatting first
-    if (filter.key === constants.filterKeys.ORDER) {
+    if (filter.key === filterKeys.ORDER) {
       order = filter.value;
       continue;
     }
 
     // handle token type=ALL, valid param but not present in db
-    if (
-      filter.key === constants.filterKeys.TOKEN_TYPE &&
-      filter.value === constants.tokenTypeFilter.ALL.toUpperCase()
-    ) {
+    if (filter.key === filterKeys.TOKEN_TYPE && filter.value === tokenTypeFilter.ALL.toUpperCase()) {
       continue;
     }
 
@@ -268,30 +256,30 @@ const validateTokenQueryFilter = (param, op, val) => {
 
   // Validate the value
   switch (param) {
-    case constants.filterKeys.ACCOUNT_ID:
+    case filterKeys.ACCOUNT_ID:
       ret = EntityId.isValidEntityId(val);
       break;
-    case constants.filterKeys.ENTITY_PUBLICKEY:
+    case filterKeys.ENTITY_PUBLICKEY:
       // Acceptable forms: exactly 64 characters or +12 bytes (DER encoded)
       ret = utils.isValidPublicKeyQuery(val);
       break;
-    case constants.filterKeys.LIMIT:
+    case filterKeys.LIMIT:
       ret = utils.isPositiveLong(val);
       break;
-    case constants.filterKeys.ORDER:
+    case filterKeys.ORDER:
       // Acceptable words: asc or desc
-      ret = utils.isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
+      ret = utils.isValidValueIgnoreCase(val, Object.values(orderFilterValues));
       break;
-    case constants.filterKeys.SERIAL_NUMBER:
+    case filterKeys.SERIAL_NUMBER:
       ret = utils.isPositiveLong(val);
       break;
-    case constants.filterKeys.TOKEN_ID:
+    case filterKeys.TOKEN_ID:
       ret = EntityId.isValidEntityId(val, false);
       break;
-    case constants.filterKeys.TOKEN_TYPE:
-      ret = utils.isValidValueIgnoreCase(val, Object.values(constants.tokenTypeFilter));
+    case filterKeys.TOKEN_TYPE:
+      ret = utils.isValidValueIgnoreCase(val, Object.values(tokenTypeFilter));
       break;
-    case constants.filterKeys.TIMESTAMP:
+    case filterKeys.TIMESTAMP:
       ret = utils.isValidTimestampParam(val);
       break;
     default:
@@ -312,12 +300,12 @@ const getTokensRequest = async (req, res) => {
   const getTokenSqlParams = [];
 
   // if account.id filter is present join on token_account and filter dissociated tokens
-  const accountId = req.query[constants.filterKeys.ACCOUNT_ID];
+  const accountId = req.query[filterKeys.ACCOUNT_ID];
   if (accountId) {
     conditions.push('ta.associated is true');
     getTokensSqlQuery.unshift(tokenAccountCte);
     getTokensSqlQuery.push(tokenAccountJoinQuery);
-    getTokenSqlParams.push(EntityId.parse(accountId, {paramName: constants.filterKeys.ACCOUNT_ID}).getEncodedId());
+    getTokenSqlParams.push(EntityId.parse(accountId, {paramName: filterKeys.ACCOUNT_ID}).getEncodedId());
   }
 
   // add join with entities table to sql query
@@ -340,12 +328,12 @@ const getTokensRequest = async (req, res) => {
     req,
     tokens.length !== limit,
     {
-      [constants.filterKeys.TOKEN_ID]: lastTokenId,
+      [filterKeys.TOKEN_ID]: lastTokenId,
     },
     order
   );
 
-  res.locals[constants.responseDataLabel] = {
+  res.locals[responseDataLabel] = {
     tokens,
     links: {
       next: nextLink,
@@ -358,14 +346,14 @@ const getTokensRequest = async (req, res) => {
  */
 const validateTokenIdParam = (tokenId) => {
   if (!EntityId.isValidEntityId(tokenId, false)) {
-    throw InvalidArgumentError.forParams(constants.filterKeys.TOKENID);
+    throw InvalidArgumentError.forParams(filterKeys.TOKENID);
   }
 };
 
 const getAndValidateTokenIdRequestPathParam = (req) => {
   const tokenIdString = req.params.tokenId;
   validateTokenIdParam(tokenIdString);
-  return EntityId.parse(tokenIdString, {paramName: constants.filterKeys.TOKENID}).getEncodedId();
+  return EntityId.parse(tokenIdString, {paramName: filterKeys.TOKENID}).getEncodedId();
 };
 
 /**
@@ -393,7 +381,7 @@ const validateTokenInfoFilter = (param, op, val) => {
     return ret;
   }
 
-  if (param === constants.filterKeys.TIMESTAMP) {
+  if (param === filterKeys.TIMESTAMP) {
     ret = isValidTokenInfoTimestampFilterOp(op) && utils.isValidTimestampParam(val);
   }
 
@@ -481,7 +469,7 @@ const getTokenInfoRequest = async (req, res) => {
     throw new NotFoundError();
   }
 
-  res.locals[constants.responseDataLabel] = tokenInfo;
+  res.locals[responseDataLabel] = tokenInfo;
 };
 
 const getTokens = async (pgSqlQuery, pgSqlParams) => {
@@ -505,8 +493,8 @@ const tokenBalancesSqlQueryColumns = {
 
 // token balances query to column maps
 const tokenBalancesFilterColumnMap = {
-  [constants.filterKeys.ACCOUNT_BALANCE]: tokenBalancesSqlQueryColumns.ACCOUNT_BALANCE,
-  [constants.filterKeys.ACCOUNT_ID]: tokenBalancesSqlQueryColumns.ACCOUNT_ID,
+  [filterKeys.ACCOUNT_BALANCE]: tokenBalancesSqlQueryColumns.ACCOUNT_BALANCE,
+  [filterKeys.ACCOUNT_ID]: tokenBalancesSqlQueryColumns.ACCOUNT_ID,
 };
 
 const tokenBalancesSelectFields = ['tb.consensus_timestamp', 'tb.account_id', 'tb.balance'];
@@ -522,7 +510,7 @@ const tokenBalancesSelectQuery = ['select', tokenBalancesSelectFields.join(',\n'
  */
 const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
   let limit = defaultLimit;
-  let order = constants.orderFilterValues.DESC;
+  let order = orderFilterValues.DESC;
   let joinEntityClause = '';
   const conditions = [`${tokenBalancesSqlQueryColumns.TOKEN_ID} = $1`];
   const params = [tokenId];
@@ -530,19 +518,19 @@ const extractSqlFromTokenBalancesRequest = (tokenId, query, filters) => {
 
   for (const filter of filters) {
     switch (filter.key) {
-      case constants.filterKeys.ACCOUNT_PUBLICKEY:
+      case filterKeys.ACCOUNT_PUBLICKEY:
         joinEntityClause = `join entity e
-          on e.type = '${constants.entityTypes.ACCOUNT}'
+          on e.type = '${entityTypes.ACCOUNT}'
           and e.id = ${tokenBalancesSqlQueryColumns.ACCOUNT_ID}
           and ${tokenBalancesSqlQueryColumns.ACCOUNT_PUBLICKEY} = $${params.push(filter.value)}`;
         break;
-      case constants.filterKeys.LIMIT:
+      case filterKeys.LIMIT:
         limit = filter.value;
         break;
-      case constants.filterKeys.ORDER:
+      case filterKeys.ORDER:
         order = filter.value;
         break;
-      case constants.filterKeys.TIMESTAMP:
+      case filterKeys.TIMESTAMP:
         const op = transformTimestampFilterOp(filter.operator);
         params.push(filter.value);
         tsQueryConditions.push(`${tokenBalancesSqlQueryColumns.CONSENSUS_TIMESTAMP} ${op} $${params.length}`);
@@ -611,13 +599,13 @@ const getTokenBalances = async (req, res) => {
     req,
     response.balances.length !== limit,
     {
-      [constants.filterKeys.ACCOUNT_ID]: anchorAccountId,
+      [filterKeys.ACCOUNT_ID]: anchorAccountId,
     },
     order
   );
 
   logger.debug(`getTokenBalances returning ${response.balances.length} entries`);
-  res.locals[constants.responseDataLabel] = response;
+  res.locals[responseDataLabel] = response;
 };
 
 /**
@@ -630,16 +618,16 @@ const getTokenBalances = async (req, res) => {
  */
 const extractSqlFromNftTokensRequest = (tokenId, query, filters) => {
   let limit = defaultLimit;
-  let order = constants.orderFilterValues.DESC;
+  let order = orderFilterValues.DESC;
   const conditions = [`${nftQueryColumns.TOKEN_ID} = $1`];
   const params = [tokenId];
 
   for (const filter of filters) {
     switch (filter.key) {
-      case constants.filterKeys.LIMIT:
+      case filterKeys.LIMIT:
         limit = filter.value;
         break;
-      case constants.filterKeys.ORDER:
+      case filterKeys.ORDER:
         order = filter.value;
         break;
       default:
@@ -685,7 +673,7 @@ const extractSqlFromNftTokenInfoRequest = (tokenId, serialNumber, query) => {
  */
 const validateSerialNumberParam = (serialNumber) => {
   if (!utils.isPositiveLong(serialNumber)) {
-    throw InvalidArgumentError.forParams(constants.filterKeys.SERIAL_NUMBER);
+    throw InvalidArgumentError.forParams(filterKeys.SERIAL_NUMBER);
   }
 };
 
@@ -729,13 +717,13 @@ const getNftTokensRequest = async (req, res) => {
     req,
     response.nfts.length !== limit,
     {
-      [constants.filterKeys.SERIAL_NUMBER]: anchorSerialNumber,
+      [filterKeys.SERIAL_NUMBER]: anchorSerialNumber,
     },
     order
   );
 
   logger.debug(`getNftTokens returning ${response.nfts.length} entries`);
-  res.locals[constants.responseDataLabel] = response;
+  res.locals[responseDataLabel] = response;
 };
 
 /**
@@ -760,7 +748,7 @@ const getNftTokenInfoRequest = async (req, res) => {
 
   logger.debug(`getNftToken info returning single entry`);
   const nftModel = new Nft(rows[0]);
-  res.locals[constants.responseDataLabel] = new NftViewModel(nftModel);
+  res.locals[responseDataLabel] = new NftViewModel(nftModel);
 };
 
 const getTokenInfo = async (query, params) => {
@@ -788,7 +776,7 @@ const getTokenInfo = async (query, params) => {
  */
 const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters) => {
   let limit = defaultLimit;
-  let order = constants.orderFilterValues.DESC;
+  let order = orderFilterValues.DESC;
 
   const params = [tokenId, serialNumber];
   // if the nft token class is deleted, the lower of the timestamp_range is the consensus timestamp of the token
@@ -807,13 +795,13 @@ const extractSqlFromNftTransferHistoryRequest = (tokenId, serialNumber, filters)
   const transferTimestampColumn = NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP);
   for (const filter of filters) {
     switch (filter.key) {
-      case constants.filterKeys.LIMIT:
+      case filterKeys.LIMIT:
         limit = filter.value;
         break;
-      case constants.filterKeys.ORDER:
+      case filterKeys.ORDER:
         order = filter.value;
         break;
-      case constants.filterKeys.TIMESTAMP:
+      case filterKeys.TIMESTAMP:
         const paramCount = params.push(filter.value);
         transferConditions.push(`${transferTimestampColumn} ${filter.operator} $${paramCount}`);
         tokenDeleteConditions.push(`${Transaction.CONSENSUS_TIMESTAMP} ${filter.operator} $${paramCount}`);
@@ -932,13 +920,13 @@ const getNftTransferHistoryRequest = async (req, res) => {
     req,
     response.transactions.length !== limit,
     {
-      [constants.filterKeys.TIMESTAMP]: anchorTimestamp,
+      [filterKeys.TIMESTAMP]: anchorTimestamp,
     },
     order
   );
 
   logger.debug(`getNftTransferHistory returning ${response.transactions.length} entries`);
-  res.locals[constants.responseDataLabel] = response;
+  res.locals[responseDataLabel] = response;
 
   if (response.transactions.length > 0) {
     // check if nft exists
@@ -951,36 +939,31 @@ const getNftTransferHistoryRequest = async (req, res) => {
   }
 };
 
-module.exports = {
+export default {
+  entityIdJoinQuery,
+  extractSqlFromNftTokenInfoRequest,
+  extractSqlFromNftTokensRequest,
+  extractSqlFromNftTransferHistoryRequest,
+  extractSqlFromTokenBalancesRequest,
+  extractSqlFromTokenInfoRequest,
+  extractSqlFromTokenRequest,
+  formatNftHistoryRow,
+  formatTokenBalanceRow,
+  formatTokenInfoRow,
+  formatTokenRow,
   getNftTokenInfoRequest,
   getNftTokensRequest,
   getNftTransferHistoryRequest,
+  getTokenBalances,
   getTokenInfoRequest,
   getTokensRequest,
-  getTokenBalances,
+  nftSelectQuery,
+  tokenAccountCte,
+  tokenAccountJoinQuery,
+  tokenBalancesSelectQuery,
+  tokensSelectQuery,
+  validateSerialNumberParam,
+  validateTokenIdParam,
+  validateTokenInfoFilter,
+  validateTokenQueryFilter,
 };
-
-if (utils.isTestEnv()) {
-  Object.assign(module.exports, {
-    entityIdJoinQuery,
-    extractSqlFromNftTransferHistoryRequest,
-    extractSqlFromTokenInfoRequest,
-    extractSqlFromTokenRequest,
-    extractSqlFromNftTokenInfoRequest,
-    extractSqlFromNftTokensRequest,
-    extractSqlFromTokenBalancesRequest,
-    formatNftHistoryRow,
-    formatTokenBalanceRow,
-    formatTokenInfoRow,
-    formatTokenRow,
-    nftSelectQuery,
-    tokenAccountCte,
-    tokenAccountJoinQuery,
-    tokenBalancesSelectQuery,
-    tokensSelectQuery,
-    validateSerialNumberParam,
-    validateTokenIdParam,
-    validateTokenInfoFilter,
-    validateTokenQueryFilter,
-  });
-}

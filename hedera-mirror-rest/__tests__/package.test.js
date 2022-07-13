@@ -18,8 +18,9 @@
  * ‍
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+
+import path from 'path';
 
 describe('npm dependency check for packaging', () => {
   test('bundledDependencies should match dependencies keys', () => {

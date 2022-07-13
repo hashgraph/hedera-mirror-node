@@ -20,17 +20,16 @@
 
 'use strict';
 
-const _ = require('lodash');
-
-const TransactionId = require('../../transactionId');
-const {TransactionService} = require('../../service');
-const {TransactionResult, TransactionType} = require('../../model');
+import _ from 'lodash';
+import TransactionId from '../../transactionId';
+import {TransactionService} from '../../service';
+import {TransactionResult, TransactionType} from '../../model';
 
 // add logger configuration support
-require('../testutils');
+import '../testutils';
 
-const integrationDbOps = require('../integrationDbOps');
-const integrationDomainOps = require('../integrationDomainOps');
+import integrationDbOps from '../integrationDbOps';
+import integrationDomainOps from '../integrationDomainOps';
 
 const contractCallType = TransactionType.getProtoId('CONTRACTCALL');
 const contractCreateType = TransactionType.getProtoId('CONTRACTCREATEINSTANCE');
@@ -39,7 +38,7 @@ const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANS
 const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
 const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
 
-const {defaultMochaStatements} = require('./defaultMochaStatements');
+import {defaultMochaStatements} from './defaultMochaStatements';
 defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 describe('TransactionService.getTransactionDetailsFromTimestamp tests', () => {

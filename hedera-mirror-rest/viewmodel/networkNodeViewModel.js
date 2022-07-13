@@ -18,13 +18,11 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
-
-const AddressBookServiceEndpointViewModel = require('./addressBookServiceEndpointViewModel');
-const EntityId = require('../entityId');
-const utils = require('../utils');
+import AddressBookServiceEndpointViewModel from './addressBookServiceEndpointViewModel.js';
+import EntityId from '../entityId.js';
+import * as utils from '../utils.js';
 
 /**
  * Network node view model
@@ -72,4 +70,4 @@ class NetworkNodeViewModel {
   }
 }
 
-module.exports = NetworkNodeViewModel;
+export default NetworkNodeViewModel;

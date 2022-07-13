@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 class NodeStake {
   /**
    * Parses node_stake table columns into object
@@ -64,4 +62,4 @@ class NodeStake {
   }
 }
 
-module.exports = NodeStake;
+export default NodeStake;

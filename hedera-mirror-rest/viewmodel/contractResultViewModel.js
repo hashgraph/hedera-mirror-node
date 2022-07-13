@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
-const EntityId = require('../entityId');
-const utils = require('../utils');
+import _ from 'lodash';
+import EntityId from '../entityId.js';
+import {nsToSecNs, toHexString} from '../utils.js';
 
 /**
  * Contract results view model
@@ -37,19 +35,19 @@ class ContractResultViewModel {
   constructor(contractResult, hash = null) {
     const contractId = EntityId.parse(contractResult.contractId, {isNullable: true});
     this.amount = contractResult.amount;
-    this.bloom = utils.toHexString(contractResult.bloom, true);
-    this.call_result = utils.toHexString(contractResult.callResult, true);
+    this.bloom = toHexString(contractResult.bloom, true);
+    this.call_result = toHexString(contractResult.callResult, true);
     this.contract_id = contractId.toString();
     this.created_contract_ids = _.toArray(contractResult.createdContractIds).map((id) => EntityId.parse(id).toString());
     this.error_message = _.isEmpty(contractResult.errorMessage) ? null : contractResult.errorMessage;
     this.from = EntityId.parse(contractResult.payerAccountId).toEvmAddress();
-    this.function_parameters = utils.toHexString(contractResult.functionParameters, true);
+    this.function_parameters = toHexString(contractResult.functionParameters, true);
     this.gas_limit = contractResult.gasLimit;
     this.gas_used = contractResult.gasUsed;
-    this.timestamp = utils.nsToSecNs(contractResult.consensusTimestamp);
+    this.timestamp = nsToSecNs(contractResult.consensusTimestamp);
     this.to = contractId.toEvmAddress();
-    this.hash = hash ? utils.toHexString(hash, true) : null;
+    this.hash = hash ? toHexString(hash, true) : null;
   }
 }
 
-module.exports = ContractResultViewModel;
+export default ContractResultViewModel;

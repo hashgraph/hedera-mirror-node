@@ -18,17 +18,15 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
+import {toBigIntBE} from 'bigint-buffer';
 
-const _ = require('lodash');
-const {toBigIntBE} = require('bigint-buffer');
-
-const ContractLogResultsViewModel = require('./contractResultLogViewModel');
-const ContractResultStateChangeViewModel = require('./contractResultStateChangeViewModel');
-const ContractResultViewModel = require('./contractResultViewModel');
-const {TransactionResult} = require('../model');
-const utils = require('../utils');
-const EntityId = require('../entityId');
+import ContractLogResultsViewModel from './contractResultLogViewModel.js';
+import ContractResultStateChangeViewModel from './contractResultStateChangeViewModel.js';
+import ContractResultViewModel from './contractResultViewModel.js';
+import EntityId from '../entityId.js';
+import {TransactionResult} from '../model/index.js';
+import * as utils from '../utils.js';
 
 /**
  * Contract result details view model
@@ -109,4 +107,4 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
   }
 }
 
-module.exports = ContractResultDetailsViewModel;
+export default ContractResultDetailsViewModel;

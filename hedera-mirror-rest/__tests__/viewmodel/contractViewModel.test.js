@@ -20,8 +20,8 @@
 
 'use strict';
 
-const {Range} = require('pg-range');
-const ContractViewModel = require('../../viewmodel/contractViewModel');
+import {Range} from 'pg-range';
+import ContractViewModel from '../../viewmodel/contractViewModel';
 
 describe('ContractViewModel', () => {
   const defaultContract = {

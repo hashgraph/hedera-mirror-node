@@ -18,13 +18,8 @@
  * ‍
  */
 
-const InvalidClauseErrorMessage = 'Invalid clause produced after parsing query parameters';
-
-class InvalidClauseError extends Error {
-  constructor(errorMessage) {
-    super();
-    this.message = errorMessage === undefined ? InvalidClauseErrorMessage : errorMessage;
-  }
-}
-
-export default InvalidClauseError;
+export {default as handleError} from './httpErrorHandler';
+export * from './metricsHandler';
+export {openApiValidator, serveSwaggerDocs} from './openapiHandler';
+export * from './requestHandler';
+export {default as responseHandler} from './responseHandler';

@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const utils = require('../utils');
-const ExchangeRateViewModel = require('./exchangeRateViewModel');
+import ExchangeRateViewModel from './exchangeRateViewModel.js';
+import {nsToSecNs} from '../utils.js';
 
 /**
  * Exchange rate set view model
@@ -38,8 +36,8 @@ class ExchangeRateSetViewModel {
   constructor(exchangeRateSet) {
     this.current_rate = new ExchangeRateViewModel(exchangeRateSet, ExchangeRateSetViewModel.currentLabel);
     this.next_rate = new ExchangeRateViewModel(exchangeRateSet, ExchangeRateSetViewModel.nextLabel);
-    this.timestamp = utils.nsToSecNs(exchangeRateSet.timestamp);
+    this.timestamp = nsToSecNs(exchangeRateSet.timestamp);
   }
 }
 
-module.exports = ExchangeRateSetViewModel;
+export default ExchangeRateSetViewModel;

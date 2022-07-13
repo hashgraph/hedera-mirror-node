@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const EntityId = require('../entityId');
-const constants = require('../constants');
-const utils = require('../utils');
+import {filterKeys} from '../constants.js';
+import EntityId from '../entityId.js';
+import {toHexString} from '../utils.js';
 
 /**
  * Contract result state change view model
@@ -34,13 +32,13 @@ class ContractResultStateChangeViewModel {
    * @param {ContractStateChange} contractStateChange
    */
   constructor(contractStateChange) {
-    const contractId = EntityId.parse(contractStateChange.contractId, {paramName: constants.filterKeys.CONTRACTID});
+    const contractId = EntityId.parse(contractStateChange.contractId, {paramName: filterKeys.CONTRACTID});
     this.address = contractId.toEvmAddress();
     this.contract_id = contractId.toString();
-    this.slot = utils.toHexString(contractStateChange.slot, true, 64);
-    this.value_read = utils.toHexString(contractStateChange.valueRead, true, 64);
-    this.value_written = utils.toHexString(contractStateChange.valueWritten, true, 64);
+    this.slot = toHexString(contractStateChange.slot, true, 64);
+    this.value_read = toHexString(contractStateChange.valueRead, true, 64);
+    this.value_written = toHexString(contractStateChange.valueWritten, true, 64);
   }
 }
 
-module.exports = ContractResultStateChangeViewModel;
+export default ContractResultStateChangeViewModel;

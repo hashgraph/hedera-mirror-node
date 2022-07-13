@@ -18,24 +18,16 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
+import {Range} from 'pg-range';
 
-const _ = require('lodash');
-const {Range} = require('pg-range');
-
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../config');
-const constants = require('../constants');
-const EntityId = require('../entityId');
-
-// errors
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-const {NotFoundError} = require('../errors/notFoundError');
-
-const {
+import BaseController from './baseController';
+import Bound from './bound';
+import {getResponseLimit} from '../config';
+import {filterKeys, httpStatusCodes, orderFilterValues, queryParamOperators, responseDataLabel} from '../constants';
+import EntityId from '../entityId';
+import {InvalidArgumentError, NotFoundError} from '../errors';
+import {
   Contract,
   ContractLog,
   ContractResult,
@@ -43,20 +35,16 @@ const {
   RecordFile,
   Transaction,
   TransactionType,
-} = require('../model');
-const {ContractService, FileDataService, RecordFileService, TransactionService} = require('../service');
-const TransactionId = require('../transactionId');
-const utils = require('../utils');
-const {
+} from '../model';
+import {ContractService, FileDataService, RecordFileService, TransactionService} from '../service';
+import TransactionId from '../transactionId';
+import * as utils from '../utils';
+import {
   ContractViewModel,
   ContractLogViewModel,
   ContractResultViewModel,
   ContractResultDetailsViewModel,
-} = require('../viewmodel');
-const {httpStatusCodes} = require('../constants');
-
-const BaseController = require('./baseController');
-const Bound = require('./bound');
+} from '../viewmodel';
 
 const contractSelectFields = [
   Contract.AUTO_RENEW_ACCOUNT_ID,
@@ -76,6 +64,7 @@ const contractSelectFields = [
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
 const contractWithInitcodeSelectFields = [...contractSelectFields, Contract.getFullName(Contract.INITCODE)];
+const {default: defaultLimit} = getResponseLimit();
 
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
@@ -92,7 +81,7 @@ const extractSqlFromContractFilters = async (filters) => {
   const filterQuery = {
     filterQuery: '',
     params: [defaultLimit],
-    order: constants.orderFilterValues.DESC,
+    order: orderFilterValues.DESC,
     limit: defaultLimit,
     limitQuery: 'limit $1',
   };
@@ -109,7 +98,7 @@ const extractSqlFromContractFilters = async (filters) => {
 
   for (const filter of filters) {
     switch (filter.key) {
-      case constants.filterKeys.CONTRACT_ID:
+      case filterKeys.CONTRACT_ID:
         const contractIdValue = await ContractService.computeContractIdFromString(filter.value);
 
         if (filter.operator === utils.opsMap.eq) {
@@ -120,10 +109,10 @@ const extractSqlFromContractFilters = async (filters) => {
           conditions.push(`${contractIdFullName}${filter.operator}$${params.length}`);
         }
         break;
-      case constants.filterKeys.LIMIT:
+      case filterKeys.LIMIT:
         filterQuery.limit = filter.value;
         break;
-      case constants.filterKeys.ORDER:
+      case filterKeys.ORDER:
         filterQuery.order = filter.value;
         break;
     }
@@ -160,7 +149,7 @@ const extractTimestampConditionsFromContractFilters = (filters) => {
   const timestampRangeColumn = Contract.getFullName(Contract.TIMESTAMP_RANGE);
 
   filters
-    .filter((filter) => filter.key === constants.filterKeys.TIMESTAMP)
+    .filter((filter) => filter.key === filterKeys.TIMESTAMP)
     .forEach((filter) => {
       // the first param is the contract id, the param for the current filter will be pushed later, so add 2
       const position = `$${params.length + 1}`;
@@ -307,7 +296,7 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
  * @returns {void}
  */
 const alterTimestampRangeInReq = (req) => {
-  const timestamps = utils.buildAndValidateFilters(req.query).filter((f) => f.key === constants.filterKeys.TIMESTAMP);
+  const timestamps = utils.buildAndValidateFilters(req.query).filter((f) => f.key === filterKeys.TIMESTAMP);
   const ops = [utils.opsMap.gte, utils.opsMap.lte];
   const firstTimestamp = _.first(timestamps);
   const secondTimestamp = _.last(timestamps);
@@ -321,7 +310,7 @@ const alterTimestampRangeInReq = (req) => {
     ops.includes(firstTimestamp.operator) &&
     ops.includes(secondTimestamp.operator)
   ) {
-    req.query[constants.filterKeys.TIMESTAMP] = utils.nsToSecNs(firstTimestamp.value);
+    req.query[filterKeys.TIMESTAMP] = utils.nsToSecNs(firstTimestamp.value);
   }
 };
 
@@ -333,8 +322,8 @@ const alterTimestampRangeInReq = (req) => {
  */
 const contractResultsFilterValidityChecks = (param, op, val) => {
   const ret = utils.filterValidityChecks(param, op, val);
-  if (ret && param === constants.filterKeys.BLOCK_NUMBER) {
-    return op === constants.queryParamOperators.eq;
+  if (ret && param === filterKeys.BLOCK_NUMBER) {
+    return op === queryParamOperators.eq;
   }
   return ret;
 };
@@ -344,13 +333,13 @@ const checkTimestampsForTopics = (filters) => {
   const timestampFilters = [];
   for (const filter of filters) {
     switch (filter.key) {
-      case constants.filterKeys.TOPIC0:
-      case constants.filterKeys.TOPIC1:
-      case constants.filterKeys.TOPIC2:
-      case constants.filterKeys.TOPIC3:
+      case filterKeys.TOPIC0:
+      case filterKeys.TOPIC1:
+      case filterKeys.TOPIC2:
+      case filterKeys.TOPIC3:
         hasTopic = true;
         break;
-      case constants.filterKeys.TIMESTAMP:
+      case filterKeys.TIMESTAMP:
         timestampFilters.push(filter);
         break;
       default:
@@ -372,7 +361,7 @@ const checkTimestampsForTopics = (filters) => {
  * @returns {Number}
  */
 const getLastNonceParamValue = (query) => {
-  const key = constants.filterKeys.NONCE;
+  const key = filterKeys.NONCE;
   let nonce = 0; // default
 
   if (key in query) {
@@ -392,7 +381,7 @@ const validateContractIdParam = (contractId) => {
   }
 
   if (!EntityId.isValidEntityId(contractId)) {
-    throw InvalidArgumentError.forParams(constants.filterKeys.CONTRACTID);
+    throw InvalidArgumentError.forParams(filterKeys.CONTRACTID);
   }
 };
 
@@ -411,10 +400,10 @@ const getAndValidateContractIdRequestPathParam = (req) => {
 const validateContractIdAndConsensusTimestampParam = (consensusTimestamp, contractId) => {
   const params = [];
   if (!EntityId.isValidEntityId(contractId)) {
-    params.push(constants.filterKeys.CONTRACTID);
+    params.push(filterKeys.CONTRACTID);
   }
   if (!utils.isValidTimestampParam(consensusTimestamp)) {
-    params.push(constants.filterKeys.TIMESTAMP);
+    params.push(filterKeys.TIMESTAMP);
   }
 
   if (params.length > 0) {
@@ -450,7 +439,7 @@ class ContractController extends BaseController {
    */
   extractContractResultsByIdQuery = async (filters, contractId) => {
     let limit = defaultLimit;
-    let order = constants.orderFilterValues.DESC;
+    let order = orderFilterValues.DESC;
     const conditions = [];
     const params = [];
     if (contractId !== '') {
@@ -472,14 +461,14 @@ class ContractController extends BaseController {
     let blockFilter;
 
     const supportedParams = [
-      constants.filterKeys.FROM,
-      constants.filterKeys.TIMESTAMP,
-      constants.filterKeys.BLOCK_NUMBER,
-      constants.filterKeys.BLOCK_HASH,
-      constants.filterKeys.TRANSACTION_INDEX,
-      constants.filterKeys.INTERNAL,
-      constants.filterKeys.LIMIT,
-      constants.filterKeys.ORDER,
+      filterKeys.FROM,
+      filterKeys.TIMESTAMP,
+      filterKeys.BLOCK_NUMBER,
+      filterKeys.BLOCK_HASH,
+      filterKeys.TRANSACTION_INDEX,
+      filterKeys.INTERNAL,
+      filterKeys.LIMIT,
+      filterKeys.ORDER,
     ];
     for (const filter of filters) {
       if (!supportedParams.includes(filter.key)) {
@@ -488,7 +477,7 @@ class ContractController extends BaseController {
       }
 
       switch (filter.key) {
-        case constants.filterKeys.FROM:
+        case filterKeys.FROM:
           // handle repeated values
           this.updateConditionsAndParamsWithInValues(
             filter,
@@ -499,13 +488,13 @@ class ContractController extends BaseController {
             conditions.length + 1
           );
           break;
-        case constants.filterKeys.LIMIT:
+        case filterKeys.LIMIT:
           limit = filter.value;
           break;
-        case constants.filterKeys.ORDER:
+        case filterKeys.ORDER:
           order = filter.value;
           break;
-        case constants.filterKeys.TIMESTAMP:
+        case filterKeys.TIMESTAMP:
           // handle repeated values
           this.updateConditionsAndParamsWithInValues(
             filter,
@@ -516,11 +505,11 @@ class ContractController extends BaseController {
             conditions.length + 1
           );
           break;
-        case constants.filterKeys.BLOCK_NUMBER:
-        case constants.filterKeys.BLOCK_HASH:
+        case filterKeys.BLOCK_NUMBER:
+        case filterKeys.BLOCK_HASH:
           blockFilter = filter;
           break;
-        case constants.filterKeys.TRANSACTION_INDEX:
+        case filterKeys.TRANSACTION_INDEX:
           this.updateConditionsAndParamsWithInValues(
             filter,
             transactionIndexInValues,
@@ -530,7 +519,7 @@ class ContractController extends BaseController {
             conditions.length + 1
           );
           break;
-        case constants.filterKeys.INTERNAL:
+        case filterKeys.INTERNAL:
           internal = filter.value;
           break;
         default:
@@ -545,7 +534,7 @@ class ContractController extends BaseController {
 
     if (blockFilter) {
       let blockData;
-      if (blockFilter.key === constants.filterKeys.BLOCK_NUMBER) {
+      if (blockFilter.key === filterKeys.BLOCK_NUMBER) {
         blockData = await RecordFileService.getRecordFileBlockDetailsFromIndex(blockFilter.value);
       } else {
         blockData = await RecordFileService.getRecordFileBlockDetailsFromHash(blockFilter.value);
@@ -556,7 +545,7 @@ class ContractController extends BaseController {
         const conEndColName = _.camelCase(RecordFile.CONSENSUS_END);
 
         this.updateConditionsAndParamsWithInValues(
-          {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: blockData[conStartColName]},
+          {key: filterKeys.TIMESTAMP, operator: utils.opsMap.gte, value: blockData[conStartColName]},
           contractResultTimestampInValues,
           params,
           conditions,
@@ -564,7 +553,7 @@ class ContractController extends BaseController {
           conditions.length + 1
         );
         this.updateConditionsAndParamsWithInValues(
-          {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: blockData[conEndColName]},
+          {key: filterKeys.TIMESTAMP, operator: utils.opsMap.lte, value: blockData[conEndColName]},
           contractResultTimestampInValues,
           params,
           conditions,
@@ -633,8 +622,8 @@ class ContractController extends BaseController {
    */
   extractContractLogsMultiUnionQuery = (filters, contractId) => {
     let limit = defaultLimit;
-    let timestampOrder = constants.orderFilterValues.DESC;
-    let indexOrder = constants.orderFilterValues.DESC;
+    let timestampOrder = orderFilterValues.DESC;
+    let indexOrder = orderFilterValues.DESC;
     const conditions = [];
     const params = [];
 
@@ -644,42 +633,42 @@ class ContractController extends BaseController {
     }
 
     const bounds = {
-      primary: new Bound(constants.filterKeys.TIMESTAMP),
-      secondary: new Bound(constants.filterKeys.INDEX),
+      primary: new Bound(filterKeys.TIMESTAMP),
+      secondary: new Bound(filterKeys.INDEX),
     };
     const keyFullNames = {
-      [constants.filterKeys.TOPIC0]: ContractLog.getFullName(ContractLog.TOPIC0),
-      [constants.filterKeys.TOPIC1]: ContractLog.getFullName(ContractLog.TOPIC1),
-      [constants.filterKeys.TOPIC2]: ContractLog.getFullName(ContractLog.TOPIC2),
-      [constants.filterKeys.TOPIC3]: ContractLog.getFullName(ContractLog.TOPIC3),
+      [filterKeys.TOPIC0]: ContractLog.getFullName(ContractLog.TOPIC0),
+      [filterKeys.TOPIC1]: ContractLog.getFullName(ContractLog.TOPIC1),
+      [filterKeys.TOPIC2]: ContractLog.getFullName(ContractLog.TOPIC2),
+      [filterKeys.TOPIC3]: ContractLog.getFullName(ContractLog.TOPIC3),
     };
 
     const inValues = {
-      [constants.filterKeys.TOPIC0]: [],
-      [constants.filterKeys.TOPIC1]: [],
-      [constants.filterKeys.TOPIC2]: [],
-      [constants.filterKeys.TOPIC3]: [],
+      [filterKeys.TOPIC0]: [],
+      [filterKeys.TOPIC1]: [],
+      [filterKeys.TOPIC2]: [],
+      [filterKeys.TOPIC3]: [],
     };
 
     for (const filter of filters) {
       switch (filter.key) {
-        case constants.filterKeys.INDEX:
+        case filterKeys.INDEX:
           bounds.secondary.parse(filter);
           break;
-        case constants.filterKeys.TIMESTAMP:
+        case filterKeys.TIMESTAMP:
           bounds.primary.parse(filter);
           break;
-        case constants.filterKeys.LIMIT:
+        case filterKeys.LIMIT:
           limit = filter.value;
           break;
-        case constants.filterKeys.ORDER:
+        case filterKeys.ORDER:
           timestampOrder = filter.value;
           indexOrder = filter.value;
           break;
-        case constants.filterKeys.TOPIC0:
-        case constants.filterKeys.TOPIC1:
-        case constants.filterKeys.TOPIC2:
-        case constants.filterKeys.TOPIC3:
+        case filterKeys.TOPIC0:
+        case filterKeys.TOPIC1:
+        case filterKeys.TOPIC2:
+        case filterKeys.TOPIC3:
           let topic = filter.value.replace(/^(0x)?0*/, '');
           if (topic.length % 2 !== 0) {
             topic = `0${topic}`; // Left pad so that Buffer.from parses correctly
@@ -746,7 +735,7 @@ class ContractController extends BaseController {
       throw new NotFoundError();
     }
 
-    res.locals[constants.responseDataLabel] = formatContractRow(rows[0]);
+    res.locals[responseDataLabel] = formatContractRow(rows[0]);
   };
 
   /**
@@ -783,12 +772,12 @@ class ContractController extends BaseController {
       req,
       response.contracts.length !== limit,
       {
-        [constants.filterKeys.CONTRACT_ID]: lastContractId,
+        [filterKeys.CONTRACT_ID]: lastContractId,
       },
       order
     );
 
-    res.locals[constants.responseDataLabel] = response;
+    res.locals[responseDataLabel] = response;
   };
 
   /**
@@ -811,7 +800,7 @@ class ContractController extends BaseController {
 
     const logs = rows.map((row) => new ContractLogViewModel(row));
 
-    res.locals[constants.responseDataLabel] = {
+    res.locals[responseDataLabel] = {
       logs,
       links: {
         next: this.getPaginationLink(req, logs, query.bounds, query.limit, query.timestampOrder),
@@ -837,7 +826,7 @@ class ContractController extends BaseController {
 
     const logs = rows.map((row) => new ContractLogViewModel(row));
 
-    res.locals[constants.responseDataLabel] = {
+    res.locals[responseDataLabel] = {
       logs,
       links: {
         next: this.getPaginationLink(req, logs, query.bounds, query.limit, query.timestampOrder),
@@ -873,13 +862,13 @@ class ContractController extends BaseController {
         req,
         response.results.length !== limit,
         {
-          [constants.filterKeys.TIMESTAMP]: lastContractResultTimestamp,
+          [filterKeys.TIMESTAMP]: lastContractResultTimestamp,
         },
         order
       );
     }
 
-    res.locals[constants.responseDataLabel] = response;
+    res.locals[responseDataLabel] = response;
   };
 
   /**
@@ -954,13 +943,13 @@ class ContractController extends BaseController {
         req,
         response.results.length !== limit,
         {
-          [constants.filterKeys.TIMESTAMP]: lastContractResultTimestamp,
+          [filterKeys.TIMESTAMP]: lastContractResultTimestamp,
         },
         order
       );
     }
 
-    res.locals[constants.responseDataLabel] = response;
+    res.locals[responseDataLabel] = response;
   };
 
   /**
@@ -1061,7 +1050,7 @@ class ContractController extends BaseController {
     contractStateChanges,
     fileData
   ) => {
-    res.locals[constants.responseDataLabel] = new ContractResultDetailsViewModel(
+    res.locals[responseDataLabel] = new ContractResultDetailsViewModel(
       contractResult,
       recordFile,
       transaction,
@@ -1105,7 +1094,7 @@ const exportControllerMethods = (methods = []) => {
   }, {});
 };
 
-module.exports = exportControllerMethods([
+const exports = exportControllerMethods([
   'getContractById',
   'getContracts',
   'getContractLogsById',
@@ -1118,7 +1107,7 @@ module.exports = exportControllerMethods([
 
 if (utils.isTestEnv()) {
   Object.assign(
-    module.exports,
+    exports,
     exportControllerMethods(['extractContractResultsByIdQuery', 'extractContractLogsMultiUnionQuery']),
     {
       checkTimestampsForTopics,
@@ -1134,3 +1123,5 @@ if (utils.isTestEnv()) {
     }
   );
 }
+
+export default exports;

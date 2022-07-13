@@ -8,7 +8,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      http,
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,17 +18,26 @@
  * ‍
  */
 
-'use strict';
+import ContractService from './contractService';
+import CryptoAllowanceService from './cryptoAllowanceService';
+import EntityService from './entityService';
+import FileDataService from './fileDataService';
+import NetworkNodeService from './networkNodeService';
+import NftService from './nftService';
+import RecordFileService from './recordFileService';
+import TokenAllowanceService from './tokenAllowanceService';
+import TokenService from './tokenService';
+import TransactionService from './transactionService';
 
-module.exports = {
-  ContractService: require('./contractService'),
-  CryptoAllowanceService: require('./cryptoAllowanceService'),
-  EntityService: require('./entityService'),
-  FileDataService: require('./fileDataService'),
-  NetworkNodeService: require('./networkNodeService'),
-  NftService: require('./nftService'),
-  RecordFileService: require('./recordFileService'),
-  TokenAllowanceService: require('./tokenAllowanceService'),
-  TokenService: require('./tokenService'),
-  TransactionService: require('./transactionService'),
+export {
+  ContractService,
+  CryptoAllowanceService,
+  EntityService,
+  FileDataService,
+  NetworkNodeService,
+  NftService,
+  RecordFileService,
+  TokenAllowanceService,
+  TokenService,
+  TransactionService,
 };

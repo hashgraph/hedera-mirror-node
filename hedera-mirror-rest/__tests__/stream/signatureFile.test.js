@@ -18,15 +18,13 @@
  * ‍
  */
 
-'use strict';
-
-const {BYTE_SIZE} = require('../../stream/constants');
-const {SHA_384} = require('../../stream/hashObject');
-const SignatureFile = require('../../stream/signatureFile');
-const {testSignatureFiles} = require('./testUtils');
+import {BYTE_SIZE} from '../../stream/constants';
+import HashObject from '../../stream/hashObject';
+import SignatureFile from '../../stream/signatureFile';
+import testUtils from './testUtils';
 
 describe('from signature file buffer', () => {
-  Object.entries(testSignatureFiles).forEach(([version, testSpec]) => {
+  Object.entries(testUtils.testSignatureFiles).forEach(([version, testSpec]) => {
     test(version, () => {
       expect(new SignatureFile(testSpec.buffer)).toEqual(testSpec.expected);
     });
@@ -46,7 +44,7 @@ describe('from signature file buffer', () => {
   describe('unsupported version', () => {
     [0, 1, 2, 3, 6].forEach((version) => {
       test(`mark/version ${version}`, () => {
-        const buffer = Buffer.from(testSignatureFiles.v2.buffer);
+        const buffer = Buffer.from(testUtils.testSignatureFiles.v2.buffer);
         buffer.writeInt8(version);
         expect(() => new SignatureFile(buffer)).toThrowErrorMatchingSnapshot();
       });
@@ -54,8 +52,8 @@ describe('from signature file buffer', () => {
   });
 
   test('incorrect signature mark', () => {
-    const buffer = Buffer.from(testSignatureFiles.v2.buffer);
-    buffer.writeInt8(16, BYTE_SIZE + SHA_384.length);
+    const buffer = Buffer.from(testUtils.testSignatureFiles.v2.buffer);
+    buffer.writeInt8(16, BYTE_SIZE + HashObject.SHA_384.length);
     expect(() => new SignatureFile(buffer)).toThrowErrorMatchingSnapshot();
   });
 });

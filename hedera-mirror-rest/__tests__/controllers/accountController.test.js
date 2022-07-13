@@ -20,13 +20,9 @@
 
 'use strict';
 
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../../config');
-const constants = require('../../constants');
-const utils = require('../../utils');
+import {response} from '../../config';
+import constants from '../../constants';
+import utils from '../../utils';
 
 const {
   filterKeys: {SERIAL_NUMBER, SPENDER_ID, TOKEN_ID, ORDER, LIMIT},
@@ -35,8 +31,8 @@ const {
   opsMap: {eq, gt, gte, lt, lte, ne},
 } = utils;
 
-const Bound = require('../../controllers/bound');
-const {AccountController} = require('../../controllers');
+import Bound from '../../controllers/bound';
+import {AccountController} from '../../controllers';
 
 const ownerAccountId = BigInt(1);
 

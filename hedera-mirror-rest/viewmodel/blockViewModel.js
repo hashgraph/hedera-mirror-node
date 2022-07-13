@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const utils = require('../utils');
+import {nsToSecNs, toHexString} from '../utils.js';
 
 /**
  * Block view model
@@ -40,12 +38,12 @@ class BlockViewModel {
     this.previous_hash = utils.addHexPrefix(recordFile.prevHash);
     this.size = recordFile.size;
     this.timestamp = {
-      from: utils.nsToSecNs(recordFile.consensusStart),
-      to: utils.nsToSecNs(recordFile.consensusEnd),
+      from: nsToSecNs(recordFile.consensusStart),
+      to: nsToSecNs(recordFile.consensusEnd),
     };
     this.gas_used = recordFile.gasUsed === -1 ? null : recordFile.gasUsed;
-    this.logs_bloom = recordFile.logsBloom ? utils.toHexString(recordFile.logsBloom, true, 512) : null;
+    this.logs_bloom = recordFile.logsBloom ? toHexString(recordFile.logsBloom, true, 512) : null;
   }
 }
 
-module.exports = BlockViewModel;
+export default BlockViewModel;

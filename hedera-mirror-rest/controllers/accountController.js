@@ -18,25 +18,16 @@
  * ‍
  */
 
-'use strict';
+import Bound from './bound';
+import BaseController from './baseController';
+import {getResponseLimit} from '../config';
+import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
+import {InvalidArgumentError} from '../errors';
+import {EntityService, NftService} from '../service';
+import {NftViewModel} from '../viewmodel';
+import * as utils from '../utils';
 
-const _ = require('lodash');
-
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../config');
-const constants = require('../constants');
-const utils = require('../utils');
-
-const Bound = require('./bound');
-const BaseController = require('./baseController');
-const {EntityService, NftService} = require('../service');
-const {NftViewModel} = require('../viewmodel');
-
-// errors
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+const {default: defaultLimit} = getResponseLimit();
 
 class AccountController extends BaseController {
   validateFilters(bounds, spenderIdFilters) {
@@ -57,29 +48,29 @@ class AccountController extends BaseController {
 
   extractNftMultiUnionQuery(filters, ownerAccountId) {
     const bounds = {
-      primary: new Bound(constants.filterKeys.TOKEN_ID, 'token_id'),
-      secondary: new Bound(constants.filterKeys.SERIAL_NUMBER, 'serial_number'),
+      primary: new Bound(filterKeys.TOKEN_ID, 'token_id'),
+      secondary: new Bound(filterKeys.SERIAL_NUMBER, 'serial_number'),
     };
     let limit = defaultLimit;
-    let order = constants.orderFilterValues.DESC;
+    let order = orderFilterValues.DESC;
     const spenderIdFilters = [];
     const spenderIdInFilters = [];
 
     for (const filter of filters) {
       switch (filter.key) {
-        case constants.filterKeys.SERIAL_NUMBER:
+        case filterKeys.SERIAL_NUMBER:
           bounds.secondary.parse(filter);
           break;
-        case constants.filterKeys.TOKEN_ID:
+        case filterKeys.TOKEN_ID:
           bounds.primary.parse(filter);
           break;
-        case constants.filterKeys.LIMIT:
+        case filterKeys.LIMIT:
           limit = filter.value;
           break;
-        case constants.filterKeys.ORDER:
+        case filterKeys.ORDER:
           order = filter.value;
           break;
-        case constants.filterKeys.SPENDER_ID:
+        case filterKeys.SPENDER_ID:
           filter.operator === utils.opsMap.eq ? spenderIdInFilters.push(filter) : spenderIdFilters.push(filter);
           break;
         default:
@@ -112,13 +103,13 @@ class AccountController extends BaseController {
    * @returns {Promise<void>}
    */
   getNftsByAccountId = async (req, res) => {
-    const accountId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
+    const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
     const filters = utils.buildAndValidateFilters(req.query);
     const query = this.extractNftMultiUnionQuery(filters, accountId);
     const nonFungibleTokens = await NftService.getNfts(query);
     const nfts = nonFungibleTokens.map((nft) => new NftViewModel(nft));
 
-    res.locals[constants.responseDataLabel] = {
+    res.locals[responseDataLabel] = {
       nfts,
       links: {
         next: this.getPaginationLink(req, nfts, query.bounds, query.limit, query.order),
@@ -127,4 +118,4 @@ class AccountController extends BaseController {
   };
 }
 
-module.exports = new AccountController();
+export default new AccountController();

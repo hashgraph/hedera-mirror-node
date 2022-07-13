@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   defaultMochaStatements: (jest, integrationDbOps, integrationDomainOps) => {
     jest.setTimeout(40000);
     let dbConfig;

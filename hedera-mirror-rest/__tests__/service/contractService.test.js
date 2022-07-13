@@ -20,16 +20,13 @@
 
 'use strict';
 
-const _ = require('lodash');
-
-const {ContractService} = require('../../service');
-const {assertSqlQueryEqual} = require('../testutils');
-
-const integrationDbOps = require('../integrationDbOps');
-const integrationDomainOps = require('../integrationDomainOps');
-const {NotFoundError} = require('../../errors/notFoundError');
-
-const {defaultMochaStatements} = require('./defaultMochaStatements');
+import _ from 'lodash';
+import {ContractService} from '../../service';
+import {assertSqlQueryEqual} from '../testutils';
+import integrationDbOps from '../integrationDbOps';
+import integrationDomainOps from '../integrationDomainOps';
+import {NotFoundError} from '../../errors/notFoundError';
+import {defaultMochaStatements} from './defaultMochaStatements';
 defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {

@@ -20,13 +20,9 @@
 
 'use strict';
 
-const {
-  response: {
-    limit: {default: defaultLimit, max: maxLimit},
-  },
-} = require('../../config');
-const constants = require('../../constants');
-const {BlockController} = require('../../controllers');
+import {response} from '../../config';
+import constants from '../../constants';
+import {BlockController} from '../../controllers';
 
 describe('Block Controller', () => {
   test('Verify extractOrderFromFilters', async () => {

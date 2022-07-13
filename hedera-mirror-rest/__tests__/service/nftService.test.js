@@ -20,15 +20,10 @@
 
 'use strict';
 
-const {
-  filterKeys: {SERIAL_NUMBER, SPENDER_ID, TOKEN_ID},
-} = require('../../constants');
-const {
-  opsMap: {eq, gt, gte, lt, lte},
-} = require('../../utils');
-
-const {assertSqlQueryEqual} = require('../testutils');
-const {NftService} = require('../../service');
+import {filterKeys} from '../../constants';
+import {opsMap} from '../../utils';
+import {assertSqlQueryEqual} from '../testutils';
+import {NftService} from '../../service';
 
 describe('getQuery', () => {
   const defaultQuery = {

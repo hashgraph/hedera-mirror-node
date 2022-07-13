@@ -18,10 +18,6 @@
  * ‍
  */
 
-'use strict';
-
-const utils = require('../utils');
-
 /**
  * Exchange rate view model
  */
@@ -30,6 +26,7 @@ class ExchangeRateViewModel {
    * Constructs exchange rate view model
    *
    * @param {ExchangeRate} exchangeRate
+   * @param {string} prefix
    */
   constructor(exchangeRate, prefix) {
     this.cent_equivalent = exchangeRate[`${prefix}cent`];
@@ -38,4 +35,4 @@ class ExchangeRateViewModel {
   }
 }
 
-module.exports = ExchangeRateViewModel;
+export default ExchangeRateViewModel;

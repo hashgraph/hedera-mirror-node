@@ -18,20 +18,16 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
-
-const config = require('./config');
-const constants = require('./constants');
-const EntityId = require('./entityId');
-const s3client = require('./s3client');
-const {CompositeRecordFile} = require('./stream');
-const TransactionId = require('./transactionId');
-const utils = require('./utils');
-const {DbError} = require('./errors/dbError');
-const {NotFoundError} = require('./errors/notFoundError');
-const {FileDownloadError} = require('./errors/fileDownloadError');
+import config from './config';
+import * as constants from './constants';
+import EntityId from './entityId';
+import {DbError, FileDownloadError, NotFoundError} from './errors';
+import s3client from './s3client';
+import {CompositeRecordFile} from './stream';
+import TransactionId from './transactionId';
+import * as utils from './utils';
 
 /**
  * Get the consensus_timestamp of the transaction. Throws exception if no such successful transaction found or multiple such
@@ -337,18 +333,16 @@ const getStateProofForTransaction = async (req, res) => {
   };
 };
 
-module.exports = {
+export default {
   getStateProofForTransaction,
 };
 
-if (utils.isTestEnv()) {
-  Object.assign(module.exports, {
-    getAddressBooksAndNodeAccountIdsByConsensusNs,
-    getQueryParamValues,
-    getRCDFileInfoByConsensusNs,
-    getSuccessfulTransactionConsensusNs,
-    downloadRecordStreamFilesFromObjectStorage,
-    canReachConsensus,
-    formatCompactableRecordFile,
-  });
-}
+export {
+  getAddressBooksAndNodeAccountIdsByConsensusNs,
+  getQueryParamValues,
+  getRCDFileInfoByConsensusNs,
+  getSuccessfulTransactionConsensusNs,
+  downloadRecordStreamFilesFromObjectStorage,
+  canReachConsensus,
+  formatCompactableRecordFile,
+};

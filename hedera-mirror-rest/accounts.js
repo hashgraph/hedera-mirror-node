@@ -18,16 +18,14 @@
  * ‍
  */
 
-'use strict';
-
-const base32 = require('./base32');
-const {getAccountContractUnionQueryWithOrder} = require('./accountContract');
-const constants = require('./constants');
-const EntityId = require('./entityId');
-const utils = require('./utils');
-const {EntityService} = require('./service');
-const transactions = require('./transactions');
-const {NotFoundError} = require('./errors/notFoundError');
+import accountContract from './accountContract';
+import base32 from './base32';
+import * as constants from './constants';
+import EntityId from './entityId';
+import * as utils from './utils';
+import {EntityService} from './service';
+import transactions from './transactions';
+import {NotFoundError} from './errors';
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -245,7 +243,7 @@ const getAccountQuery = (
   const limitParams = limitAndOrderQuery.params;
   const limitQuery = limitAndOrderQuery.query || '';
   const order = limitAndOrderQuery.order || constants.orderFilterValues.ASC;
-  const accountContractQuery = getAccountContractUnionQueryWithOrder({field: 'id', order});
+  const accountContractQuery = accountContract.getAccountContractUnionQueryWithOrder({field: 'id', order});
 
   if (!includeBalance) {
     const entityOnlyQuery = `
@@ -382,9 +380,7 @@ const getAccounts = async (req, res) => {
     next: utils.getPaginationLink(
       req,
       ret.accounts.length !== limitAndOrderQuery.limit,
-      {
-        [constants.filterKeys.ACCOUNT_ID]: anchorAcc,
-      },
+      {[constants.filterKeys.ACCOUNT_ID]: anchorAcc},
       limitAndOrderQuery.order
     ),
   };
@@ -497,14 +493,9 @@ const getOneAccount = async (req, res) => {
   res.locals[constants.responseDataLabel] = ret;
 };
 
-module.exports = {
+export default {
   getAccounts,
   getOneAccount,
 };
 
-if (utils.isTestEnv()) {
-  Object.assign(module.exports, {
-    getBalanceParamValue,
-    processRow,
-  });
-}
+export {getBalanceParamValue, processRow};

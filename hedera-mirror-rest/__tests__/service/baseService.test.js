@@ -20,8 +20,8 @@
 
 'use strict';
 
-const BaseService = require('../../service/baseService');
-const {OrderSpec} = require('../../sql');
+import BaseService from '../../service/baseService';
+import {OrderSpec} from '../../sql';
 
 describe('getOrderByQuery', () => {
   const baseService = new BaseService();

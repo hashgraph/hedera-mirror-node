@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const CompactRecordFile = require('../../stream/compactRecordFile');
-const testUtils = require('./testUtils');
+import CompactRecordFile from '../../stream/compactRecordFile';
+import testUtils from './testUtils';
 
 describe('unsupported record file version', () => {
   testUtils.testRecordFileUnsupportedVersion([1, 2, 3, 4, 6], CompactRecordFile);

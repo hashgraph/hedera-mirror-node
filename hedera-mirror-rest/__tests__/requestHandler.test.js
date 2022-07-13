@@ -20,7 +20,7 @@
 
 'use strict';
 
-const {requestQueryParser} = require('../middleware/requestHandler');
+import {requestQueryParser} from '../middleware/requestHandler';
 
 describe('qs tests', () => {
   test('requestQueryParser for empty', () => {

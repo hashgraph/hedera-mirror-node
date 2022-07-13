@@ -18,18 +18,13 @@
  * ‍
  */
 
-'use strict';
+import request from 'supertest';
 
-const log4js = require('log4js');
-const request = require('supertest');
-
-const {getBalanceParamValue, processRow} = require('../accounts');
-const base32 = require('../base32');
-const constants = require('../constants');
-const server = require('../server');
-const testutils = require('./testutils');
-
-const logger = log4js.getLogger();
+import {getBalanceParamValue, processRow} from '../accounts';
+import base32 from '../base32';
+import * as constants from '../constants';
+import server from '../server';
+import * as testutils from './testutils';
 
 // Validation functions
 /**

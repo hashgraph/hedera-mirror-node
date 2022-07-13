@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const log4js = require('log4js');
-const config = require('../config');
+import log4js from 'log4js';
+import config from '../config';
 
 const invalidBase32Strs = [
   // A base32 group without padding can have 2, 4, 5, 7 or 8 characters from its alphabet
@@ -159,7 +157,7 @@ const parseSqlQueryAndParams = (sqlquery, sqlparams, orderprefix = '') => {
     }
     // Result parameter
     const resultparam = sql.match(/result\s*(!*=)\s*(\d+)/);
-    if (resultparam !== null && resultparam.length == 3) {
+    if (resultparam !== null && resultparam.length === 3) {
       parsedparams.push({
         field: 'result',
         operator: resultparam[1],
@@ -261,7 +259,7 @@ const getBuffer = (inputBytes, defaultBytes) => {
 
 configureLogger();
 
-module.exports = {
+export {
   assertSqlQueryEqual,
   badParamsList,
   checkSql,

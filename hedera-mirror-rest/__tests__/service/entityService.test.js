@@ -20,16 +20,15 @@
 
 'use strict';
 
-const {EntityService} = require('../../service');
-const AccountAlias = require('../../accountAlias');
+import {EntityService} from '../../service';
+import AccountAlias from '../../accountAlias';
 
 // add logger configuration support
-require('../testutils');
+import '../testutils';
 
-const integrationDbOps = require('../integrationDbOps');
-const integrationDomainOps = require('../integrationDomainOps');
-
-const {defaultMochaStatements} = require('./defaultMochaStatements');
+import integrationDbOps from '../integrationDbOps';
+import integrationDomainOps from '../integrationDomainOps';
+import {defaultMochaStatements} from './defaultMochaStatements';
 defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 const defaultEntityAlias = new AccountAlias('1', '2', 'KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ');

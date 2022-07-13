@@ -18,10 +18,11 @@
  * ‍
  */
 
-'use strict';
+import {jest} from '@jest/globals';
+import log4js from 'log4js';
+import matchers from 'jest-extended';
 
-const logger = require('log4js').getLogger();
-const matchers = require('jest-extended');
+global.logger = log4js.getLogger();
 
 expect.extend(matchers); // add matchers from jest-extended
 jest.setTimeout(2000);

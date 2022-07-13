@@ -18,39 +18,44 @@
  * ‍
  */
 
-'use strict';
-
 // external libraries
-const express = require('express');
-const {createTerminus} = require('@godaddy/terminus');
-const {addAsync} = require('@awaitjs/express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const httpContext = require('express-http-context');
-const log4js = require('log4js');
-const compression = require('compression');
+import express from 'express';
+
+import {createTerminus} from '@godaddy/terminus';
+import {addAsync} from '@awaitjs/express';
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import httpContext from 'express-http-context';
+import fs from 'fs';
+import log4js from 'log4js';
+import compression from 'compression';
 
 // local files
-const accounts = require('./accounts');
-const balances = require('./balances');
-const config = require('./config');
-const constants = require('./constants');
-const health = require('./health');
-const schedules = require('./schedules');
-const stateproof = require('./stateproof');
-const tokens = require('./tokens');
-const topicmessage = require('./topicmessage');
-const transactions = require('./transactions');
-const {getPoolClass, isTestEnv} = require('./utils');
-const {handleError} = require('./middleware/httpErrorHandler');
-const {metricsHandler, recordIpAndEndpoint} = require('./middleware/metricsHandler');
-const {serveSwaggerDocs, openApiValidator} = require('./middleware/openapiHandler');
-const {responseHandler} = require('./middleware/responseHandler');
-const {requestLogger, requestQueryParser} = require('./middleware/requestHandler');
-const fs = require('fs');
+import accounts from './accounts';
+import balances from './balances';
+import config from './config';
+import * as constants from './constants';
+import health from './health';
+import schedules from './schedules';
+import stateproof from './stateproof';
+import tokens from './tokens';
+import topicmessage from './topicmessage';
+import transactions from './transactions';
+import {getPoolClass, isTestEnv} from './utils';
+
+import {
+  handleError,
+  metricsHandler,
+  recordIpAndEndpoint,
+  requestLogger,
+  requestQueryParser,
+  responseHandler,
+  serveSwaggerDocs,
+  openApiValidator,
+} from './middleware';
 
 // routes
-const {AccountRoutes, ContractRoutes, NetworkRoutes, BlockRoutes} = require('./routes');
+import {AccountRoutes, ContractRoutes, NetworkRoutes, BlockRoutes} from './routes';
 
 // Logger
 const logger = log4js.getLogger();
@@ -220,4 +225,4 @@ if (!isTestEnv()) {
   });
 }
 
-module.exports = app;
+export default app;

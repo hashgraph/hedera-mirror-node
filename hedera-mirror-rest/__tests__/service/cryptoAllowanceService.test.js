@@ -20,13 +20,11 @@
 
 'use strict';
 
-const {CryptoAllowanceService} = require('../../service');
-const {assertSqlQueryEqual} = require('../testutils');
-
-const integrationDbOps = require('../integrationDbOps');
-const integrationDomainOps = require('../integrationDomainOps');
-
-const {defaultMochaStatements} = require('./defaultMochaStatements');
+import {CryptoAllowanceService} from '../../service';
+import {assertSqlQueryEqual} from '../testutils';
+import integrationDbOps from '../integrationDbOps';
+import integrationDomainOps from '../integrationDomainOps';
+import {defaultMochaStatements} from './defaultMochaStatements';
 defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 const defaultOwnerFilter = 'owner = $1';

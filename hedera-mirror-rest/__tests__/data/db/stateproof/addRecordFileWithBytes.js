@@ -20,14 +20,14 @@
 
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 const recordFilename = '2021-03-05T05_23_04.299486999Z.rcd';
 const recordFilePath = path.join(__dirname, recordFilename);
 const data = fs.readFileSync(recordFilePath);
 
-module.exports = async (sqlConnection) => {
+export default async (sqlConnection) => {
   const fields = [
     'name',
     'load_start',

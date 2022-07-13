@@ -18,14 +18,14 @@
  * ‍
  */
 
-'use strict';
+import request from 'supertest';
 
-const log4js = require('log4js');
-const request = require('supertest');
+import * as constants from '../constants';
+import server from '../server';
+import * as testutils from './testutils';
+import transactions from '../transactions';
+import * as utils from '../utils';
 
-const constants = require('../constants');
-const server = require('../server');
-const testutils = require('./testutils');
 const {
   buildWhereClause,
   createAssessedCustomFeeList,
@@ -33,10 +33,8 @@ const {
   createNftTransferList,
   createTransferLists,
   extractSqlFromTransactionsByIdRequest,
-} = require('../transactions');
-const utils = require('../utils');
+} = transactions;
 
-const logger = log4js.getLogger();
 const timeNow = Math.floor(new Date().getTime() / 1000);
 const timeOneHourAgo = timeNow - 60 * 60;
 

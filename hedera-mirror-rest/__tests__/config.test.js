@@ -18,14 +18,13 @@
  * ‍
  */
 
-'use strict';
-
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const yaml = require('js-yaml');
-const _ = require('lodash');
-const {cloudProviders, defaultBucketNames, networks} = require('../constants');
+import fs from 'fs';
+import {jest} from '@jest/globals';
+import os from 'os';
+import path from 'path';
+import yaml from 'js-yaml';
+import _ from 'lodash';
+import {cloudProviders, defaultBucketNames, networks} from '../constants';
 
 let tempDir;
 const custom = {
@@ -67,123 +66,132 @@ const assertCustomConfig = (actual, customConfig) => {
   expect(actual.response.compression).toBe(customConfig.hedera.mirror.rest.response.compression);
 };
 
+const loadConfig = async () => (await import('../config.js')).default;
+
 describe('Load YAML configuration:', () => {
-  test('./config/application.yml', () => {
-    const config = require('../config');
+  test('./config/application.yml', async () => {
+    const config = await loadConfig();
     expect(config.shard).toBe(0);
     expect(config.response.includeHostInLink).toBe(false);
     expect(config.log.level).toBe('info');
   });
 
-  test('./application.yml', () => {
+  test('./application.yml', async () => {
     fs.writeFileSync(path.join('.', 'application.yml'), yaml.dump(custom));
-    const config = require('../config');
+    const config = await loadConfig();
     assertCustomConfig(config, custom);
   });
 
-  test('CONFIG_PATH/application.yml', () => {
+  test('CONFIG_PATH/application.yml', async () => {
     fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.dump(custom));
-    const config = require('../config');
+    const config = await loadConfig();
     assertCustomConfig(config, custom);
   });
 
-  test('CONFIG_PATH/application.yaml', () => {
+  test('CONFIG_PATH/application.yaml', async () => {
     fs.writeFileSync(path.join(tempDir, 'application.yaml'), yaml.dump(custom));
-    const config = require('../config');
+    const config = await loadConfig();
     assertCustomConfig(config, custom);
   });
 });
 
 describe('Load environment configuration:', () => {
-  test('Number', () => {
+  test('Number', async () => {
     process.env = {HEDERA_MIRROR_REST_SHARD: '2', HEDERA_MIRROR_REST_PORT: '5552'};
-    const config = require('../config');
+    const config = await loadConfig();
     expect(config.shard).toBe(2);
     expect(config.port).toBe(5552);
   });
 
-  test('Secret', () => {
+  test('Secret', async () => {
     const secret = 'secret';
     process.env = {HEDERA_MIRROR_REST_DB_PASSWORD: secret, HEDERA_MIRROR_REST_DB_TLS_KEY: secret};
-    const config = require('../config');
+    const config = await loadConfig();
     expect(config.db.password).toBe(secret);
     expect(config.db.tls.key).toBe(secret);
   });
 
-  test('String', () => {
+  test('String', async () => {
     process.env = {HEDERA_MIRROR_REST_LOG_LEVEL: 'warn'};
-    const config = require('../config');
+    const config = await loadConfig();
     expect(config.log.level).toBe('warn');
   });
 
-  test('Boolean', () => {
+  test('Boolean', async () => {
     process.env = {HEDERA_MIRROR_REST_RESPONSE_INCLUDEHOSTINLINK: 'true'};
-    const config = require('../config');
+    const config = await loadConfig();
     expect(config.response.includeHostInLink).toBe(true);
   });
 
-  test('Camel case', () => {
+  test('Camel case', async () => {
     process.env = {HEDERA_MIRROR_REST_MAXREPEATEDQUERYPARAMETERS: '50'};
-    const config = require('../config');
+    const config = await loadConfig();
     expect(config.maxRepeatedQueryParameters).toBe(50);
   });
 
-  test('Unknown property', () => {
+  test('Unknown property', async () => {
     process.env = {HEDERA_MIRROR_REST_FOO: '3'};
-    const config = require('../config');
+    const config = await loadConfig();
     expect(config.foo).toBeUndefined();
   });
 
-  test('Invalid property path', () => {
+  test('Invalid property path', async () => {
     process.env = {HEDERA_MIRROR_REST_SHARD_FOO: '3'};
-    const config = require('../config');
+    const config = await loadConfig();
     expect(config.shard).toBe(0);
   });
-  test('Unexpected prefix', () => {
+
+  test('Unexpected prefix', async () => {
     process.env = {HEDERA_MIRROR_NODE_REST_PORT: '80'};
-    const config = require('../config');
+    const config = await loadConfig();
     expect(config.port).not.toBe(80);
   });
-  test('Extra path', () => {
+
+  test('Extra path', async () => {
     process.env = {HEDERA_MIRROR_REST_SERVICE_PORT: '80'};
-    const config = require('../config');
+    const config = await loadConfig();
     expect(config.port).not.toBe(80);
   });
-  test('Max Timestamp Range 3d', () => {
+
+  test('Max Timestamp Range 3d', async () => {
     process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: '3d'};
-    const config = require('../config');
+    const config = await loadConfig();
     expect(config.maxTimestampRangeNs).toBe(259200000000000n);
   });
-  test('Max Timestamp Range 120d - larger than js MAX_SAFE_INTEGER', () => {
+
+  test('Max Timestamp Range 120d - larger than js MAX_SAFE_INTEGER', async () => {
     process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: '120d'};
-    const config = require('../config');
+    const config = await loadConfig();
     expect(config.maxTimestampRangeNs).toBe(10368000000000000n);
   });
-  test('Max Timestamp Range invalid', () => {
+
+  test('Max Timestamp Range invalid', async () => {
     process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: '3x'};
-    expect(() => require('../config')).toThrowErrorMatchingSnapshot();
+    await expect(loadConfig()).rejects.toThrowErrorMatchingSnapshot();
+    // expect(() => require('../config')).toThrowErrorMatchingSnapshot();
   });
-  test('Max Timestamp Range null', () => {
+
+  test('Max Timestamp Range null', async () => {
     process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: null};
-    expect(() => require('../config')).toThrowErrorMatchingSnapshot();
+    await expect(loadConfig()).rejects.toThrowErrorMatchingSnapshot();
   });
 });
 
 describe('Custom CONFIG_NAME:', () => {
-  const loadConfigFromCustomObject = (custom) => {
+  const loadConfigFromCustomObject = async (custom) => {
     fs.writeFileSync(path.join(tempDir, 'config.yml'), yaml.dump(custom));
     process.env = {CONFIG_NAME: 'config', CONFIG_PATH: tempDir};
-    return require('../config');
+    return await loadConfig();
   };
 
-  test('CONFIG_PATH/CONFIG_NAME.yml', () => {
-    const config = loadConfigFromCustomObject(custom);
+  test('CONFIG_PATH/CONFIG_NAME.yml', async () => {
+    const config = await loadConfigFromCustomObject(custom);
     assertCustomConfig(config, custom);
   });
 });
 
 describe('Override stateproof config', () => {
-  const loadConfigWithCustomStateproofConfig = (customStateproofConfig) => {
+  const loadConfigWithCustomStateproofConfig = async (customStateproofConfig) => {
     const customConfig = {
       hedera: {
         mirror: {
@@ -195,7 +203,7 @@ describe('Override stateproof config', () => {
     };
     fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.dump(customConfig));
     process.env = {CONFIG_PATH: tempDir};
-    return require('../config');
+    return await loadConfig();
   };
 
   const getExpectedStreamsConfig = (override) => {
@@ -287,12 +295,12 @@ describe('Override stateproof config', () => {
   ];
 
   testSpecs.forEach((testSpec) => {
-    test(testSpec.name, () => {
+    test(testSpec.name, async () => {
       const customConfig = {enabled: testSpec.enabled};
       customConfig.streams = testSpec.override ? testSpec.override : {};
 
       if (!testSpec.expectThrow) {
-        const config = loadConfigWithCustomStateproofConfig(customConfig);
+        const config = await loadConfigWithCustomStateproofConfig(customConfig);
         if (testSpec.enabled) {
           expect(config.stateproof.enabled).toBeTruthy();
           expect(config.stateproof.streams).toEqual(getExpectedStreamsConfig(testSpec.override));
@@ -300,16 +308,14 @@ describe('Override stateproof config', () => {
           expect(config.stateproof.enabled).toBeFalsy();
         }
       } else {
-        expect(() => {
-          loadConfigWithCustomStateproofConfig(customConfig);
-        }).toThrow();
+        await expect(loadConfigWithCustomStateproofConfig(customConfig)).rejects.toThrow();
       }
     });
   });
 });
 
 describe('Override db pool config', () => {
-  const loadConfigWithCustomDbPoolConfig = (customDbPoolConfig) => {
+  const loadConfigWithCustomDbPoolConfig = async (customDbPoolConfig) => {
     if (customDbPoolConfig) {
       const customConfig = {
         hedera: {
@@ -326,7 +332,7 @@ describe('Override db pool config', () => {
       process.env = {CONFIG_PATH: tempDir};
     }
 
-    return require('../config');
+    return await loadConfig();
   };
 
   const testSpecs = [
@@ -377,16 +383,14 @@ describe('Override db pool config', () => {
 
   testSpecs.forEach((testSpec) => {
     const {name, override, expected, expectThrow} = testSpec;
-    test(name, () => {
+    test(name, async () => {
       if (!expectThrow) {
-        const config = loadConfigWithCustomDbPoolConfig(override);
+        const config = await loadConfigWithCustomDbPoolConfig(override);
         if (expected) {
           expect(config.db.pool).toEqual(expected);
         }
       } else {
-        expect(() => {
-          loadConfigWithCustomDbPoolConfig(override);
-        }).toThrow();
+        await expect(loadConfigWithCustomDbPoolConfig(override)).rejects.toThrow();
       }
     });
   });

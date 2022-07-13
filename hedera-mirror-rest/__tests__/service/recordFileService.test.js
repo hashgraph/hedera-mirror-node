@@ -20,15 +20,14 @@
 
 'use strict';
 
-const {RecordFileService} = require('../../service');
+import {RecordFileService} from '../../service';
 
 // add logger configuration support
-require('../testutils');
+import '../testutils';
 
-const integrationDbOps = require('../integrationDbOps');
-const integrationDomainOps = require('../integrationDomainOps');
-
-const {defaultMochaStatements} = require('./defaultMochaStatements');
+import integrationDbOps from '../integrationDbOps';
+import integrationDomainOps from '../integrationDomainOps';
+import {defaultMochaStatements} from './defaultMochaStatements';
 defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 const expectToEqualId16 = (blockId16) => {

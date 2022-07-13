@@ -18,10 +18,6 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
-
 class AddressBookEntry {
   /**
    * Parses address_book_entry table columns into object
@@ -61,4 +57,4 @@ class AddressBookEntry {
   }
 }
 
-module.exports = AddressBookEntry;
+export default AddressBookEntry;

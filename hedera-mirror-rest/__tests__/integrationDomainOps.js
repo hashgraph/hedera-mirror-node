@@ -20,15 +20,14 @@
 
 'use strict';
 
-const _ = require('lodash');
-const math = require('mathjs');
-const pgformat = require('pg-format');
-
-const base32 = require('../base32');
-const config = require('../config');
-const constants = require('../constants');
-const EntityId = require('../entityId');
-const testUtils = require('./testutils');
+import _ from 'lodash';
+import math from 'mathjs';
+import pgformat from 'pg-format';
+import base32 from '../base32';
+import config from '../config';
+import constants from '../constants';
+import EntityId from '../entityId';
+import testUtils from './testutils';
 
 const NETWORK_FEE = 1n;
 const NODE_FEE = 2n;
@@ -1337,7 +1336,7 @@ const insertDomainObject = async (table, fields, obj) => {
 // use the history table
 const getTableName = (base, entity) => (entity.timestamp_range.endsWith(',)') ? base : `${base}_history`);
 
-module.exports = {
+export default {
   addAccount,
   addCryptoTransaction,
   addNft,

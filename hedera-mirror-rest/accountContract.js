@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const utils = require('./utils');
+import {isTestEnv} from './utils';
 
 const commonFields = [
   'auto_renew_period',
@@ -73,13 +71,15 @@ const getAccountContractUnionQueryWithOrder = (...orderOptions) => {
   `;
 };
 
-module.exports = {
+const exports = {
   getAccountContractUnionQueryWithOrder,
 };
 
-if (utils.isTestEnv()) {
-  Object.assign(module.exports, {
+if (isTestEnv()) {
+  Object.assign(exports, {
     accountFields,
     contractFields,
   });
 }
+
+export default exports;

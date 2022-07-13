@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const EntityId = require('../entityId');
-const utils = require('../utils');
+import EntityId from '../entityId.js';
+import {nsToSecNs} from '../utils.js';
 
 /**
  * BaseAllowance view model, captures the common fields of the allowance view model classes
@@ -36,10 +34,10 @@ class BaseAllowanceViewModel {
     this.owner = EntityId.parse(baseAllowance.owner).toString();
     this.spender = EntityId.parse(baseAllowance.spender).toString();
     this.timestamp = {
-      from: utils.nsToSecNs(baseAllowance.timestampRange.begin),
-      to: utils.nsToSecNs(baseAllowance.timestampRange.end),
+      from: nsToSecNs(baseAllowance.timestampRange.begin),
+      to: nsToSecNs(baseAllowance.timestampRange.end),
     };
   }
 }
 
-module.exports = BaseAllowanceViewModel;
+export default BaseAllowanceViewModel;

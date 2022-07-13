@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const {proto} = require('@hashgraph/proto');
-const {FileDecodeError} = require('../errors/fileDecodeError');
+import {proto} from '@hashgraph/proto';
+import {FileDecodeError} from '../errors';
 
 class ExchangeRate {
   /**
@@ -47,4 +45,4 @@ class ExchangeRate {
   }
 }
 
-module.exports = ExchangeRate;
+export default ExchangeRate;

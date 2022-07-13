@@ -18,10 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const {httpStatusCodes} = require('../constants');
-const constants = require('../constants');
+import {httpStatusCodes, requestStartTime} from '../constants';
 
 const defaultStatusCode = httpStatusCodes.INTERNAL_ERROR;
 
@@ -37,7 +34,7 @@ const errorMap = {
 const handleError = async (err, req, res, next) => {
   const statusCode = errorMap[err.constructor.name] || defaultStatusCode;
   let errorMessage;
-  const startTime = res.locals[constants.requestStartTime];
+  const startTime = res.locals[requestStartTime];
   const elapsed = startTime ? Date.now() - startTime : 0;
 
   if (shouldReturnMessage(statusCode)) {
@@ -76,6 +73,4 @@ const errorMessageFormat = (errorMessages) => {
   };
 };
 
-module.exports = {
-  handleError,
-};
+export default handleError;

@@ -20,7 +20,7 @@
 
 'use strict';
 
-const ContractResultViewModel = require('../../viewmodel/contractResultViewModel');
+import ContractResultViewModel from '../../viewmodel/contractResultViewModel';
 
 describe('ContractResultViewModel', () => {
   const defaultContractResult = {

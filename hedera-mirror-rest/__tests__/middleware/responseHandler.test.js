@@ -20,13 +20,11 @@
 
 'use strict';
 
-const {
-  response: {headers},
-} = require('../../config');
-const {NotFoundError} = require('../../errors/notFoundError');
-const {responseHandler} = require('../../middleware/responseHandler');
-const {JSONStringify} = require('../../utils');
-require('../testutils'); // For logger init
+import {response} from '../../config';
+import {NotFoundError} from '../../errors/notFoundError';
+import {responseHandler} from '../../middleware/responseHandler';
+import {JSONStringify} from '../../utils';
+import '../testutils'; // For logger init
 
 const responseData = {transactions: [], links: {next: null}};
 

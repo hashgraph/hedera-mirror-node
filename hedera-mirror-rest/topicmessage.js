@@ -18,20 +18,15 @@
  * ‍
  */
 
-'use strict';
+import {getResponseLimit} from './config';
+import * as constants from './constants';
+import EntityId from './entityId';
+import {InvalidArgumentError, NotFoundError} from './errors';
+import {TopicMessage} from './model';
+import * as utils from './utils';
+import {TopicMessageViewModel} from './viewmodel';
 
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('./config');
-const constants = require('./constants');
-const EntityId = require('./entityId');
-const utils = require('./utils');
-const {NotFoundError} = require('./errors/notFoundError');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
-const {TopicMessage} = require('./model');
-const {TopicMessageViewModel} = require('./viewmodel');
+const {default: defaultLimit} = getResponseLimit();
 
 const columnMap = {
   sequencenumber: TopicMessage.SEQUENCE_NUMBER,
@@ -237,7 +232,7 @@ const getMessages = async (pgSqlQuery, pgSqlParams, preQueryHint) => {
   return rows.map((row) => new TopicMessage(row));
 };
 
-module.exports = {
+export default {
   extractSqlFromTopicMessagesRequest,
   getMessageByConsensusTimestamp,
   getMessageByTopicAndSequenceRequest,

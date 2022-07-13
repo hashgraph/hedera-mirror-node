@@ -18,15 +18,15 @@
  * ‍
  */
 
-'use strict';
+import extend from 'extend';
+import fs from 'fs';
+import yaml from 'js-yaml';
+import parseDuration from 'parse-duration';
+import path from 'path';
+import {fileURLToPath} from 'url';
 
-const extend = require('extend');
-const fs = require('fs');
-const yaml = require('js-yaml');
-const parseDuration = require('parse-duration');
-const path = require('path');
-const {InvalidConfigError} = require('./errors/invalidConfigError');
-const {cloudProviders, networks, defaultBucketNames} = require('./constants');
+import {cloudProviders, defaultBucketNames, networks} from './constants';
+import {InvalidConfigError} from './errors';
 
 const defaultConfigName = 'application';
 const config = {};
@@ -119,6 +119,10 @@ function getConfig() {
   return config.hedera && config.hedera.mirror ? config.hedera.mirror.rest : config;
 }
 
+function getResponseLimit() {
+  return getConfig().response.limit;
+}
+
 function parseDbPoolConfig() {
   const {pool} = getConfig().db;
   const configKeys = ['connectionTimeout', 'maxConnections', 'statementTimeout'];
@@ -169,6 +173,7 @@ const parseMaxTimestampRange = () => {
 if (!loaded) {
   const configName = process.env.CONFIG_NAME || defaultConfigName;
   // always load the default configuration
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
   load(path.join(__dirname, 'config'), defaultConfigName);
   load(__dirname, configName);
   load(process.env.CONFIG_PATH, configName);
@@ -179,4 +184,6 @@ if (!loaded) {
   loaded = true;
 }
 
-module.exports = getConfig();
+export default getConfig();
+
+export {getResponseLimit};

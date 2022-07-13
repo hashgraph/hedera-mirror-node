@@ -18,15 +18,13 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
+import {proto} from '@hashgraph/proto';
 
-const _ = require('lodash');
-
-const EntityId = require('../entityId');
-const utils = require('../utils');
-const TransactionId = require('../model/transactionId');
-const {proto} = require('@hashgraph/proto');
-const TransactionIdViewModel = require('./transactionIdViewModel');
+import EntityId from '../entityId.js';
+import {TransactionId} from '../model/index.js';
+import TransactionIdViewModel from './transactionIdViewModel.js';
+import {encodeBase64, encodeBinary, nsToSecNs} from '../utils.js';
 
 /**
  * Topic message view model
@@ -40,10 +38,10 @@ class TopicMessageViewModel {
    */
   constructor(topicMessage, messageEncoding) {
     this.chunk_info = _.isNil(topicMessage.chunkNum) ? null : new ChunkInfoViewModel(topicMessage);
-    this.consensus_timestamp = utils.nsToSecNs(topicMessage.consensusTimestamp);
-    this.message = utils.encodeBinary(topicMessage.message, messageEncoding);
+    this.consensus_timestamp = nsToSecNs(topicMessage.consensusTimestamp);
+    this.message = encodeBinary(topicMessage.message, messageEncoding);
     this.payer_account_id = EntityId.parse(topicMessage.payerAccountId).toString();
-    this.running_hash = utils.encodeBase64(topicMessage.runningHash);
+    this.running_hash = encodeBase64(topicMessage.runningHash);
     this.running_hash_version = topicMessage.runningHashVersion;
     this.sequence_number = topicMessage.sequenceNumber;
     this.topic_id = EntityId.parse(topicMessage.topicId).toString();
@@ -69,4 +67,4 @@ class ChunkInfoViewModel {
   }
 }
 
-module.exports = TopicMessageViewModel;
+export default TopicMessageViewModel;

@@ -18,26 +18,30 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
+import {mockRequest, mockResponse} from 'mock-req-res';
+import {Readable} from 'stream';
+import rewire from 'rewire';
+import sinon from 'sinon';
 
-const _ = require('lodash');
-const log4js = require('log4js');
-const {mockRequest, mockResponse} = require('mock-req-res');
-const {Readable} = require('stream');
-const rewire = require('rewire');
-const sinon = require('sinon');
-const constants = require('../constants');
-const config = require('../config');
-const s3client = require('../s3client');
-const stateproof = require('../stateproof');
-const {CompositeRecordFile} = require('../stream');
-const TransactionId = require('../transactionId');
-const EntityId = require('../entityId');
-const {opsMap} = require('../utils');
+import config from '../config';
+import * as constants from '../constants';
+import EntityId from '../entityId';
+import s3client from '../s3client';
+import stateproof from '../stateproof';
+import {
+  getAddressBooksAndNodeAccountIdsByConsensusNs,
+  getQueryParamValues,
+  getRCDFileInfoByConsensusNs,
+  getSuccessfulTransactionConsensusNs,
+  downloadRecordStreamFilesFromObjectStorage,
+  canReachConsensus,
+  formatCompactableRecordFile,
+} from '../stateproof';
+import {CompositeRecordFile} from '../stream';
+import TransactionId from '../transactionId';
+import {opsMap} from '../utils';
 
-const logger = log4js.getLogger();
-// need to set the globals here so when __set__ them with rewire it won't throw ReferenceError 'xxx is not defined'
-global.logger = logger;
 global.pool = {};
 
 afterEach(() => {
@@ -71,7 +75,7 @@ describe('getSuccessfulTransactionConsensusNs', () => {
     const fakeQuery = sinon.fake.resolves(validQueryResult);
     global.pool = {queryQuietly: fakeQuery};
 
-    const consensusNs = await stateproof.getSuccessfulTransactionConsensusNs(transactionId, 0, false);
+    const consensusNs = await getSuccessfulTransactionConsensusNs(transactionId, 0, false);
     expect(consensusNs).toEqual(expectedValidConsensusNs);
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
       transactionId.getEntityId().getEncodedId(),
@@ -85,7 +89,7 @@ describe('getSuccessfulTransactionConsensusNs', () => {
     const fakeQuery = sinon.fake.resolves(emptyQueryResult);
     global.pool = {queryQuietly: fakeQuery};
 
-    await expect(stateproof.getSuccessfulTransactionConsensusNs(transactionId, 0, false)).rejects.toThrow();
+    await expect(getSuccessfulTransactionConsensusNs(transactionId, 0, false)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
       transactionId.getEntityId().getEncodedId(),
       transactionId.getValidStartNs(),
@@ -98,7 +102,7 @@ describe('getSuccessfulTransactionConsensusNs', () => {
     const fakeQuery = sinon.fake.rejects(new Error('db runtime error'));
     global.pool = {queryQuietly: fakeQuery};
 
-    await expect(stateproof.getSuccessfulTransactionConsensusNs(transactionId, 0, false)).rejects.toThrow();
+    await expect(getSuccessfulTransactionConsensusNs(transactionId, 0, false)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, [
       transactionId.getEntityId().getEncodedId(),
       transactionId.getValidStartNs(),
@@ -125,7 +129,7 @@ describe('getRCDFileInfoByConsensusNs', () => {
     const fakeQuery = sinon.fake.resolves(validQueryResult);
     global.pool = {queryQuietly: fakeQuery};
 
-    const info = await stateproof.getRCDFileInfoByConsensusNs(consensusNs);
+    const info = await getRCDFileInfoByConsensusNs(consensusNs);
     expect(info).toEqual(expectedRCDFileInfo);
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, consensusNs);
   });
@@ -134,7 +138,7 @@ describe('getRCDFileInfoByConsensusNs', () => {
     const fakeQuery = sinon.fake.resolves(emptyQueryResult);
     global.pool = {queryQuietly: fakeQuery};
 
-    await expect(stateproof.getRCDFileInfoByConsensusNs(consensusNs)).rejects.toThrow();
+    await expect(getRCDFileInfoByConsensusNs(consensusNs)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, consensusNs);
   });
 
@@ -142,7 +146,7 @@ describe('getRCDFileInfoByConsensusNs', () => {
     const fakeQuery = sinon.fake.rejects(new Error('db runtime error'));
     global.pool = {queryQuietly: fakeQuery};
 
-    await expect(stateproof.getRCDFileInfoByConsensusNs(consensusNs)).rejects.toThrow();
+    await expect(getRCDFileInfoByConsensusNs(consensusNs)).rejects.toThrow();
     verifyFakeCallCountAndLastCallParamsArg(fakeQuery, 1, consensusNs);
   });
 });
@@ -209,7 +213,7 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
     global.pool = {queryQuietly: queryStub};
 
     if (expectPass) {
-      const result = await stateproof.getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs);
+      const result = await getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs);
       expect(result.addressBooks).toEqual(
         _.map(queryResult.rows, (row) => Buffer.from(row.file_data).toString('base64'))
       );
@@ -225,7 +229,7 @@ describe('getAddressBooksAndNodeAccountIdsByConsensusNs', () => {
 
       expect(queryStub.callCount).toEqual(1);
     } else {
-      await expect(stateproof.getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs)).rejects.toThrow();
+      await expect(getAddressBooksAndNodeAccountIdsByConsensusNs(transactionConsensusNs)).rejects.toThrow();
       expect(queryStub.callCount).toEqual(1);
     }
   };
@@ -341,7 +345,7 @@ describe('getQueryParamValues', () => {
 
   for (const testSpec of testSpecs) {
     test(testSpec.name, () => {
-      expect(stateproof.getQueryParamValues(testSpec.filters)).toEqual(testSpec.expected);
+      expect(getQueryParamValues(testSpec.filters)).toEqual(testSpec.expected);
     });
   }
 });
@@ -407,7 +411,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     }));
     stubS3ClientGetObject(getObjectStub);
 
-    const fileObjects = await stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
+    const fileObjects = await downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
     verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects);
   });
 
@@ -428,7 +432,7 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     }));
     stubS3ClientGetObject(getObjectStub);
 
-    const fileObjects = await stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
+    const fileObjects = await downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
     const failedNodes = _.map([3, 4, 5, 6], (num) => `0.0.${num}`);
     verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects, failedNodes);
   });
@@ -461,22 +465,22 @@ describe('downloadRecordStreamFilesFromObjectStorage', () => {
     }));
     stubS3ClientGetObject(getObjectStub);
 
-    const fileObjects = await stateproof.downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
+    const fileObjects = await downloadRecordStreamFilesFromObjectStorage(...partialFilePaths);
     verifyGetObjectStubAndReturnedFileObjects(getObjectStub, fileObjects, ['0.0.3']);
   });
 });
 
 describe('canReachConsensus', () => {
   test('with exactly 1/3 count', () => {
-    expect(stateproof.canReachConsensus(1, 3)).toBeTruthy();
+    expect(canReachConsensus(1, 3)).toBeTruthy();
   });
 
   test('with more than 1/3 when rounded up', () => {
-    expect(stateproof.canReachConsensus(2, 4)).toBeTruthy();
+    expect(canReachConsensus(2, 4)).toBeTruthy();
   });
 
   test('with less than 1/3', () => {
-    expect(stateproof.canReachConsensus(1, 4)).toBeFalsy();
+    expect(canReachConsensus(1, 4)).toBeFalsy();
   });
 });
 
@@ -789,7 +793,7 @@ describe('formatCompactableRecordFile', () => {
       end_running_hash_object: Buffer.from([6]).toString('base64'),
     };
 
-    const actual = stateproof.formatCompactableRecordFile(stub, '0.0.1-123-12345678', false);
+    const actual = formatCompactableRecordFile(stub, '0.0.1-123-12345678', false);
     expect(actual).toEqual(expected);
   });
 
@@ -798,8 +802,6 @@ describe('formatCompactableRecordFile', () => {
       toCompactObject: sinon.stub().throws(new Error('oops')),
     });
 
-    expect(() =>
-      stateproof.formatCompactableRecordFile(stub, '0.0.1-123-12345678', false)
-    ).toThrowErrorMatchingSnapshot();
+    expect(() => formatCompactableRecordFile(stub, '0.0.1-123-12345678', false)).toThrowErrorMatchingSnapshot();
   });
 });

@@ -20,16 +20,15 @@
 
 'use strict';
 
-const {FileData} = require('../../model');
-const {FileDataService} = require('../../service');
+import {FileData} from '../../model';
+import {FileDataService} from '../../service';
 
 // add logger configuration support
-require('../testutils');
+import '../testutils';
 
-const integrationDbOps = require('../integrationDbOps');
-const integrationDomainOps = require('../integrationDomainOps');
-
-const {defaultMochaStatements} = require('./defaultMochaStatements');
+import integrationDbOps from '../integrationDbOps';
+import integrationDomainOps from '../integrationDomainOps';
+import {defaultMochaStatements} from './defaultMochaStatements';
 
 defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
