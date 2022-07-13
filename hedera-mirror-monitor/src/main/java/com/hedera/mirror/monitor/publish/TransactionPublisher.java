@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -245,8 +246,9 @@ public class TransactionPublisher implements AutoCloseable {
                     .doOnError(t -> log.warn("Unable to retrieve address book: {}", t.getMessage()))
                     .toFuture() // Can't use block() in a reactor thread
                     .get();
-        } catch (Exception e) {
+        } catch (InterruptedException | ExecutionException e) {
             log.error("Unable to retrieve address book", e);
+            Thread.currentThread().interrupt();
         }
 
         return Collections.emptySet();
