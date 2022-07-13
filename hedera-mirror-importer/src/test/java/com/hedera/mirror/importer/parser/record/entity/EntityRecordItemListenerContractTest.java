@@ -32,6 +32,9 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+
+import com.hedera.services.stream.proto.ContractStateChanges;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -442,7 +445,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
                 ContractTransactionType.UPDATE);
-        RecordItem recordItem = new RecordItem(transaction, record);
+        var contractStateChanges = ContractStateChanges.newBuilder();
+        buildContractStateChanges(contractStateChanges);
+        var sidecarRecords = recordItemBuilder.transactionSidecarRecord()
+                .setStateChanges(contractStateChanges);
+
+        var recordItem = new RecordItem(transaction, record, List.of(sidecarRecords.build()));
 
         parseRecordItemAndCommit(recordItem);
 
@@ -451,6 +459,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(0, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertContractStateChanges(recordItem),
                 () -> assertThat(contractRepository.findAll()).containsExactly(setupResult.contract)
         );
     }
@@ -826,7 +835,13 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             contractFunctionResult.removeCreatedContractIDs(0); // Only contract create can contain parent ID
         }, transactionBody, ResponseCodeEnum.INVALID_CONTRACT_ID.getNumber());
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        var contractStateChanges = ContractStateChanges.newBuilder();
+        buildContractStateChanges(contractStateChanges);
+        var sidecarRecords = recordItemBuilder.transactionSidecarRecord()
+                .setStateChanges(contractStateChanges);
+
+        var recordItem = new RecordItem(transaction, record, List.of(sidecarRecords.build()));
+        parseRecordItemAndCommit(recordItem);
 
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
 
@@ -836,6 +851,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEntities(),
                 () -> assertTransactionAndRecord(transactionBody, record),
+                () -> assertContractStateChanges(recordItem),
                 () -> assertNull(dbTransaction.getEntityId())
         );
     }

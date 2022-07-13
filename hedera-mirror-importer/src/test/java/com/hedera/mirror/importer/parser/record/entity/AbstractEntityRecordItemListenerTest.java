@@ -28,6 +28,12 @@ import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import com.hedera.services.stream.proto.ContractStateChange;
+import com.hedera.services.stream.proto.ContractStateChanges;
+
+import com.hedera.services.stream.proto.StorageChange;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -492,30 +498,34 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .addTopic(ByteString.copyFromUtf8("Topic1"))
                 .addTopic(ByteString.copyFromUtf8("Topic2"))
                 .addTopic(ByteString.copyFromUtf8("Topic3")).build());
-//        // 3 state changes, no value written, valid value written and zero value written
-//        builder.addStateChanges(com.hederahashgraph.api.proto.java.ContractStateChange.newBuilder()
-//                .setContractID(CONTRACT_ID)
-//                .addStorageChanges(StorageChange.newBuilder()
-//                        .setSlot(ByteString
-//                                .copyFromUtf8("0x000000000000000000"))
-//                        .setValueRead(ByteString
-//                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
-//                        .build())
-//                .addStorageChanges(StorageChange.newBuilder()
-//                        .setSlot(ByteString
-//                                .copyFromUtf8("0x000000000000000001"))
-//                        .setValueRead(ByteString
-//                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
-//                        .setValueWritten(BytesValue.of(ByteString
-//                                .copyFromUtf8("0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5")))
-//                        .build())
-//                .addStorageChanges(StorageChange.newBuilder()
-//                        .setSlot(ByteString
-//                                .copyFromUtf8("0x00000000000000002"))
-//                        .setValueRead(ByteString
-//                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
-//                        .setValueWritten(BytesValue.of(ByteString.copyFromUtf8("0")))
-//                        .build())
-//                .build());
+    }
+
+    protected void buildContractStateChanges(ContractStateChanges.Builder builder) {
+        // 3 state changes, no value written, valid value written and zero value written
+        builder.addContractStateChanges(
+            ContractStateChange.newBuilder()
+                .setContractId(CONTRACT_ID)
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x000000000000000000"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .build())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x000000000000000001"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .setValueWritten(BytesValue.of(ByteString
+                                .copyFromUtf8("0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5")))
+                        .build())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x00000000000000002"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .setValueWritten(BytesValue.of(ByteString.copyFromUtf8("0")))
+                        .build())
+                .build());
     }
 }

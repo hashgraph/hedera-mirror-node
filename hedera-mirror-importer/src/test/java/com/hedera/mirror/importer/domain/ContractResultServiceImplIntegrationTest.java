@@ -255,7 +255,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private void assertContractActions(RecordItem recordItem) {
         var contractActions = recordItem.getContractActions();
         if (contractActions.size() > 0) {
-            System.out.println("Testing Actions");
             IterableAssert<com.hedera.mirror.common.domain.contract.ContractAction> listAssert = assertThat(contractActionRepository.findAll())
                     .hasSize(contractActions.size());
 

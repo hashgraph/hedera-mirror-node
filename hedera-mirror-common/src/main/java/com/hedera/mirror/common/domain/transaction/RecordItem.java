@@ -22,6 +22,9 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
+
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -113,7 +116,7 @@ public class RecordItem implements StreamItem {
     // Used only in tests
     // There are many brittle RecordItemParser*Tests which rely on bytes being null. Those tests need to be fixed,
     // then this function can be removed.
-    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord record) {
+    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord record, List<TransactionSidecarRecord> sidecarRecords) {
         Objects.requireNonNull(transaction, "transaction is required");
         Objects.requireNonNull(record, "record is required");
 
@@ -124,15 +127,24 @@ public class RecordItem implements StreamItem {
         this.record = record;
         transactionBytes = transaction.toByteArray();
         recordBytes = record.toByteArray();
-        sidecarRecords = Collections.emptyList();
+        this.sidecarRecords = sidecarRecords;
         transactionIndex = null;
         parent = null;
         previous = null;
     }
 
+    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord record) {
+        this(hapiVersion, transaction, record, Collections.emptyList());
+    }
+
     // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET
+    public RecordItem(Transaction transaction, TransactionRecord record, List<TransactionSidecarRecord> sidecarRecords) {
+        this(RecordFile.HAPI_VERSION_NOT_SET, transaction, record, sidecarRecords);
+    }
+
+    // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET and no sidecarRecords
     public RecordItem(Transaction transaction, TransactionRecord record) {
-        this(RecordFile.HAPI_VERSION_NOT_SET, transaction, record);
+        this(RecordFile.HAPI_VERSION_NOT_SET, transaction, record, Collections.emptyList());
     }
 
     private static TransactionBodyAndSignatureMap parseTransactionBodyAndSignatureMap(Transaction transaction) {
@@ -176,10 +188,6 @@ public class RecordItem implements StreamItem {
                 .filter(r -> r.hasBytecode())
                 .map(r -> r.getBytecode())
                 .collect(Collectors.toList());
-    }
-
-    public List<com.hedera.services.stream.proto.TransactionSidecarRecord> getSidecarRecords() {
-        return sidecarRecords;
     }
 
     /**
