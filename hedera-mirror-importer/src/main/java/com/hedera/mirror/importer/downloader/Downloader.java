@@ -212,7 +212,7 @@ public abstract class Downloader<T extends StreamFile> {
         Set<EntityId> nodeAccountIds = addressBook.getNodeSet();
         List<Callable<Object>> tasks = new ArrayList<>(nodeAccountIds.size());
         AtomicInteger totalDownloads = new AtomicInteger();
-        log.info("Downloading signature files created after file: {}", startAfterFilename);
+        log.trace("Asking for new signature files created after file: {}", startAfterFilename);
 
         /*
          * For each node, create a thread that will make S3 ListObject requests as many times as necessary to
@@ -264,6 +264,9 @@ public abstract class Downloader<T extends StreamFile> {
         if (totalDownloads.get() > 0) {
             var rate = (int) (1000000.0 * totalDownloads.get() / stopwatch.elapsed(TimeUnit.MICROSECONDS));
             log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
+        } else {
+            log.info("No new signature files to download after file: {}. Retrying in {} s",
+                    startAfterFilename, downloaderProperties.getFrequency().toMillis() / 1_000f);
         }
 
         return sigFilesMap;
