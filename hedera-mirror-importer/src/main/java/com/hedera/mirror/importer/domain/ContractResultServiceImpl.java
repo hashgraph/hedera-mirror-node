@@ -128,7 +128,6 @@ public class ContractResultServiceImpl implements ContractResultService {
             }
 
             processContractLogs(functionResult, contractResult);
-            processContractStateChanges(functionResult, contractResult);
         }
 
         entityListener.onContractResult(contractResult);
@@ -152,30 +151,6 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractLog.setTopic3(Utility.getTopic(contractLoginfo, 3));
             entityListener.onContractLog(contractLog);
         }
-    }
-
-    private void processContractStateChanges(ContractFunctionResult functionResult, ContractResult contractResult) {
-
-//        for (var stateChange : functionResult.getStateChangesList()) {
-//            var contractId = lookup(contractResult.getContractId(), stateChange.getContractID());
-//            for (var storageChange : stateChange.getStorageChangesList()) {
-//                ContractStateChange contractStateChange = new ContractStateChange();
-//                contractStateChange.setConsensusTimestamp(contractResult.getConsensusTimestamp());
-//                contractStateChange.setContractId(contractId);
-//                contractStateChange.setPayerAccountId(contractResult.getPayerAccountId());
-//                contractStateChange.setSlot(DomainUtils.toBytes(storageChange.getSlot()));
-//                contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
-//
-//                // If a value of zero is written the valueWritten will be present but the inner value will be
-//                // absent. If a value was read and not written this value will not be present.
-//                if (storageChange.hasValueWritten()) {
-//                    contractStateChange
-//                            .setValueWritten(DomainUtils.toBytes(storageChange.getValueWritten().getValue()));
-//                }
-//
-//                entityListener.onContractStateChange(contractStateChange);
-//            }
-//        }
     }
 
     @SuppressWarnings("deprecation")

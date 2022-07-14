@@ -25,11 +25,9 @@ import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.services.stream.proto.SidecarType;
 
 @Data
-@ConditionOnEntityRecordParser
 @ConfigurationProperties("hedera.mirror.importer.parser.record.sidecar")
 public class SidecarProperties {
 

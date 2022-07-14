@@ -29,7 +29,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -114,8 +114,7 @@ class ContractResultServiceImplTest {
         contractResultService.process(recordItem, transaction);
 
         verify(entityListener).onContractLog(assertArg(l -> assertThat(l.getContractId()).isEqualTo(expectedId)));
-        verify(entityListener, times(2)).onContractStateChange(assertArg(s ->
-                assertThat(s.getContractId()).isEqualTo(expectedId.getId())));
+        verify(entityListener, never()).onContractStateChange(any());
         verify(entityListener).onContractResult(isA(ContractResult.class));
     }
 
@@ -152,8 +151,7 @@ class ContractResultServiceImplTest {
         contractResultService.process(recordItem, transaction);
 
         verify(entityListener).onContractLog(assertArg(l -> assertThat(l.getContractId()).isEqualTo(expectedId)));
-        verify(entityListener, times(2)).onContractStateChange(assertArg(s ->
-                assertThat(s.getContractId()).isEqualTo(expectedId.getId())));
+        verify(entityListener, never()).onContractStateChange(any());
         verify(entityListener).onContractResult(isA(ContractResult.class));
     }
 
