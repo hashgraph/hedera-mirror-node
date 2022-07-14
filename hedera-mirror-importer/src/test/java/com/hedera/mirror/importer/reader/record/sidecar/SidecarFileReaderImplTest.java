@@ -73,10 +73,6 @@ class SidecarFileReaderImplTest {
 
         assertThat(sidecar)
                 .returns(streamFileData.getBytes(), SidecarFile::getBytes)
-                .returns(expected.getRecords(), SidecarFile::getRecords)
-                .usingRecursiveComparison()
-                // can't verify records using recursive field by field comparison
-                .ignoringFields("bytes", "records")
                 .isEqualTo(expected);
     }
 

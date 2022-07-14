@@ -36,6 +36,7 @@ import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.hibernate.annotations.Type;
@@ -57,6 +58,7 @@ public class SidecarFile implements Persistable<SidecarFile.Id> {
     @Transient
     private byte[] actualHash;
 
+    @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private byte[] bytes;
     @javax.persistence.Id

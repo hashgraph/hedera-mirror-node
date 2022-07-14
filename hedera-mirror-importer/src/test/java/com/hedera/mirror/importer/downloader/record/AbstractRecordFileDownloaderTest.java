@@ -31,7 +31,6 @@ import org.junit.jupiter.api.BeforeEach;
 
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -88,13 +87,7 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
                             .returns(expected.getSidecarCount(), RecordFile::getSidecarCount)
                             .returns(expected.getSize(), RecordFile::getSize),
                     () -> assertThat(recordFile.getSidecars())
-                            .usingRecursiveFieldByFieldElementComparatorIgnoringFields("bytes", "records")
                             .containsExactlyInAnyOrderElementsOf(expected.getSidecars())
-                            .usingDefaultElementComparator()
-                            .extracting(SidecarFile::getRecords)
-                            .containsExactlyInAnyOrderElementsOf(
-                                    expected.getSidecars().stream().map(SidecarFile::getRecords).toList()),
-                    () -> assertThat(recordFile.getSidecars())
                             .allMatch(sidecar -> downloaderProperties.isPersistBytes() ^ (sidecar.getBytes() == null))
             );
         });
