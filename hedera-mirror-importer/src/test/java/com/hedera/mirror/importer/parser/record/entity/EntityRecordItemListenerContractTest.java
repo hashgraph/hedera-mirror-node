@@ -189,9 +189,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var parentEvmAddress = domainBuilder.evmAddress();
         var parentRecordItem = recordItemBuilder.contractCreate()
                 .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
-                        // .clearStateChanges()
                         .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(parentEvmAddress)))
                 ))
+                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
                 .hapiVersion(HAPI_VERSION_0_23_0)
                 .build();
 
@@ -207,8 +207,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .setTransactionID(childTransactionId)
                         .setContractCreateResult(r.getContractCreateResultBuilder()
                                 .clearCreatedContractIDs()
-                                // .clearStateChanges()
                                 .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(childEvmAddress)))))
+                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
                 .hapiVersion(HAPI_VERSION_0_23_0)
                 .build();
 
@@ -605,6 +605,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .transactionBody(b -> b.setContractID(setupResult.protoContractId))
                 .record(r -> r.clearContractCallResult()
                         .setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
+                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
                 .hapiVersion(HAPI_VERSION_0_23_0)
                 .build();
 
@@ -619,6 +620,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                                 .clearCreatedContractIDs()
                                 .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(childEvmAddress))))
                         .setTransactionID(childTransactionId))
+                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
                 .hapiVersion(HAPI_VERSION_0_23_0)
                 .build();
 

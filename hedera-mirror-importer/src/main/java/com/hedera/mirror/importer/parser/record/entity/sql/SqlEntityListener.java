@@ -573,6 +573,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         dest.setFileId(src.getFileId());
         dest.setInitcode(src.getInitcode());
+        dest.setRuntimeBytecode(src.getRuntimeBytecode());
 
         if (dest.getMaxAutomaticTokenAssociations() == null) {
             dest.setMaxAutomaticTokenAssociations(src.getMaxAutomaticTokenAssociations());

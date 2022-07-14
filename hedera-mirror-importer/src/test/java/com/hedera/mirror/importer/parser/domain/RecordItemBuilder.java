@@ -197,7 +197,8 @@ public class RecordItemBuilder {
 
         return new Builder<>(TransactionType.CONTRACTCREATEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId))
-                .record(r -> r.setContractCreateResult(contractFunctionResult(contractId).addCreatedContractIDs(contractId)))
+                .record(r -> r.setContractCreateResult(contractFunctionResult(contractId)
+                        .addCreatedContractIDs(contractId)))
                 .sidecarRecord(r -> r.get(0).setStateChanges(contractStateChanges(contractId)));
     }
 
