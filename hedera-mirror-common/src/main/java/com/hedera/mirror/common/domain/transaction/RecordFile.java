@@ -124,6 +124,8 @@ public class RecordFile implements StreamFile<RecordItem> {
 
     private int sidecarCount;
 
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
     @Transient
     private List<SidecarFile> sidecars = Collections.emptyList();
 
