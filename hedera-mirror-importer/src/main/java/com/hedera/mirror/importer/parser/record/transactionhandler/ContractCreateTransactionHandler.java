@@ -22,6 +22,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import java.util.stream.Collectors;
 import javax.inject.Named;
+
+import com.hedera.services.stream.proto.ContractBytecode;
+
 import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -99,9 +102,10 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         var contractBytecodes = recordItem.getContractBytecode().stream()
-                .filter(b -> contract.getId() == b.getContractId().getContractNum()).collect(Collectors.toList());
-        var runtimeBytecodes= contractBytecodes.stream().map(b -> b.getRuntimeBytecode())
-                .collect(Collectors.toList());
+                .filter(b -> contract.getId() == b.getContractId().getContractNum()).toList();
+        var runtimeBytecodes= contractBytecodes.stream()
+                .map(ContractBytecode::getRuntimeBytecode)
+                .toList();
         if(runtimeBytecodes.size() == 1) {
             contract.setRuntimeBytecode(runtimeBytecodes.get(0).toByteArray());
         } else if(runtimeBytecodes.size() > 1) {
@@ -113,7 +117,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             case FILEID -> contract.setFileId(EntityId.of(transactionBody.getFileID()));
             case INITCODE -> {
                 var initcodes = contractBytecodes.stream()
-                        .map(b -> b.getInitcode()).collect(Collectors.toList());
+                        .map(ContractBytecode::getInitcode).toList();
                 if (initcodes.size() == 1) {
                     contract.setInitcode(initcodes.get(0).toByteArray());
                 } else {
@@ -121,7 +125,6 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                             initcodes.size(), contract.getId());
                 }
             }
-            default -> {}
         }
 
         contract.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
@@ -204,8 +207,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             case INITCODE:
                 if (contract.getInitcode() == null && !parentRecordItem.getContractBytecode().isEmpty()) {
                     var initcodes = parentRecordItem.getContractBytecode().stream()
-                            .map(b -> b.getInitcode())
-                            .collect(Collectors.toList());
+                            .map(ContractBytecode::getInitcode).toList();
                     if(initcodes.size() > 1) {
                         log.warn("Incorrect number of initcodes ({}) found in sidecar record for Contract Id {}",
                                 initcodes.size(), contract.getId());
