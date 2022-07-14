@@ -98,11 +98,21 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             contract.setKey(transactionBody.getAdminKey().toByteArray());
         }
 
+        var contractBytecodes = recordItem.getContractBytecode().stream()
+                .filter(b -> contract.getId() == b.getContractId().getContractNum()).collect(Collectors.toList());
+        var runtimeBytecodes= contractBytecodes.stream().map(b -> b.getRuntimeBytecode())
+                .collect(Collectors.toList());
+        if(runtimeBytecodes.size() == 1) {
+            contract.setRuntimeBytecode(runtimeBytecodes.get(0).toByteArray());
+        } else if(runtimeBytecodes.size() > 1) {
+            log.warn("Incorrect number of runtime bytecodes ({}) found in sidecar record for Contract Id {}",
+                    runtimeBytecodes.size(), contract.getId());
+        }
+
         switch (transactionBody.getInitcodeSourceCase()) {
             case FILEID -> contract.setFileId(EntityId.of(transactionBody.getFileID()));
             case INITCODE -> {
-                var initcodes = recordItem.getContractBytecode().stream()
-                        .filter(b -> contract.getId() == b.getContractId().getContractNum())
+                var initcodes = contractBytecodes.stream()
                         .map(b -> b.getInitcode()).collect(Collectors.toList());
                 if (initcodes.size() == 1) {
                     contract.setInitcode(initcodes.get(0).toByteArray());

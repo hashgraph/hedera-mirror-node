@@ -22,9 +22,6 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
-
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -52,6 +49,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @Builder(buildMethodName = "buildInternal")
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
