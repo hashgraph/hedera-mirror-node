@@ -117,7 +117,7 @@ create table if not exists contract_action
     call_depth          integer                             not null,
     call_type           integer                             not null,
     caller              bigint                              not null,
-    caller_type         entity_type     default 'CONTRACT'  not null ,
+    caller_type         entity_type     default 'CONTRACT'  not null,
     consensus_timestamp bigint                              not null,
     gas                 bigint                              not null,
     gas_used            bigint                              not null,
@@ -128,7 +128,7 @@ create table if not exists contract_action
     recipient_contract  bigint                              null,
     result_data         bytea                               null,
     result_data_type    integer                             not null,
-    value               bigint                              not null,
+    value               bigint                              not null
 );
 comment on table contract_action is 'Contract action';
 
