@@ -411,7 +411,7 @@ create table if not exists record_file
     name               character varying(250) not null,
     node_account_id    bigint                 not null,
     prev_hash          character varying(96)  not null,
-    sidecar_count      int                    not null,
+    sidecar_count      int                    not null default 0,
     size               int                    null,
     version            int                    not null
 );
