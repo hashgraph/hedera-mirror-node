@@ -257,6 +257,10 @@ public class RecordItem implements StreamItem {
                 }
             }
 
+            if (sidecarRecords == null) {
+                sidecarRecords = Collections.emptyList();
+            }
+
             return buildInternal();
         }
 
