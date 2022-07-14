@@ -25,6 +25,7 @@ import javax.inject.Named;
 
 import com.hedera.services.stream.proto.ContractBytecode;
 
+import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -40,6 +41,8 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.util.Utility;
+
+import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.FILEID;
 
 @CustomLog
 @Named
@@ -113,17 +116,16 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                     runtimeBytecodes.size(), contract.getId());
         }
 
-        switch (transactionBody.getInitcodeSourceCase()) {
-            case FILEID -> contract.setFileId(EntityId.of(transactionBody.getFileID()));
-            case INITCODE -> {
-                var initcodes = contractBytecodes.stream()
-                        .map(ContractBytecode::getInitcode).toList();
-                if (initcodes.size() == 1) {
-                    contract.setInitcode(initcodes.get(0).toByteArray());
-                } else {
-                    log.warn("Incorrect number of initcodes ({}) found in sidecar record for Contract Id {}",
-                            initcodes.size(), contract.getId());
-                }
+        if (transactionBody.getInitcodeSourceCase().equals(FILEID)) {
+            contract.setFileId(EntityId.of(transactionBody.getFileID()));
+        } else if (transactionBody.getInitcodeSourceCase().equals(FILEID)){
+            var initcodes = contractBytecodes.stream()
+                    .map(ContractBytecode::getInitcode).toList();
+            if (initcodes.size() == 1) {
+                contract.setInitcode(initcodes.get(0).toByteArray());
+            } else {
+                log.warn("Incorrect number of initcodes ({}) found in sidecar record for Contract Id {}",
+                        initcodes.size(), contract.getId());
             }
         }
 

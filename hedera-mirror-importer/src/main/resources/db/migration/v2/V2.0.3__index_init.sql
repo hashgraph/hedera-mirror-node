@@ -41,7 +41,7 @@ create index if not exists contract__evm_address on contract (evm_address) where
 create index if not exists contract__public_key on contract (public_key) where public_key is not null;
 
 -- contract_action
-alter table contract_action
+alter table if exists contract_action
     add constraint contract_action__pk primary key (consensus_timestamp, index);
 
 -- contract_history
