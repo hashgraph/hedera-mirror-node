@@ -1041,10 +1041,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     .returns(Utility.getTopic(logInfo, 3), ContractLog::getTopic3);
         }
 
-//        int count = 0;
-//        var contractStateChanges = assertThat(contractStateChangeRepository.findAll());
-//
-//        contractStateChanges.hasSize(count);
+        assertThat(contractStateChangeRepository.count()).isZero();
     }
 
     private void assertPartialContractCreateResult(ContractCreateTransactionBody transactionBody,
