@@ -83,7 +83,8 @@ class SidecarFileReaderImplTest {
     @Test
     void readCorruptedGzipFile() {
         var streamFileData = StreamFileData.from(SIDECAR_FILENAME, domainBuilder.bytes(256));
-        assertThatThrownBy(() -> sidecarFileReader.read(domainBuilder.sidecarFile().get(), streamFileData))
+        var sidecar = domainBuilder.sidecarFile().get();
+        assertThatThrownBy(() -> sidecarFileReader.read(sidecar, streamFileData))
                 .isInstanceOf(InvalidStreamFileException.class)
                 .hasCauseInstanceOf(CompressorException.class);
     }
@@ -95,7 +96,8 @@ class SidecarFileReaderImplTest {
             gzipCompressorOutputStream.write(domainBuilder.bytes(256));
             gzipCompressorOutputStream.finish();
             var streamFileData = StreamFileData.from(SIDECAR_FILENAME, byteArrayOutputStream.toByteArray());
-            assertThatThrownBy(() -> sidecarFileReader.read(domainBuilder.sidecarFile().get(), streamFileData))
+            var sidecar = domainBuilder.sidecarFile().get();
+            assertThatThrownBy(() -> sidecarFileReader.read(sidecar, streamFileData))
                     .isInstanceOf(InvalidStreamFileException.class)
                     .hasCauseInstanceOf(InvalidProtocolBufferException.class);
         }
