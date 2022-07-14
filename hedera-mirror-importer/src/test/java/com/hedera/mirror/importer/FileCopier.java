@@ -27,7 +27,6 @@ import java.nio.file.Paths;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.DirectoryFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 
 @Log4j2
@@ -72,10 +71,6 @@ public class FileCopier {
 
     public FileCopier filterDirectories(String wildcardPattern) {
         return filterDirectories(new WildcardFileFilter(wildcardPattern));
-    }
-
-    public FileCopier filterDirectories(DirectoryFileFilter directoryFileFilter) {
-        return filterDirectories(directoryFileFilter);
     }
 
     public FileCopier filterFiles(FileFilter newFileFilter) {

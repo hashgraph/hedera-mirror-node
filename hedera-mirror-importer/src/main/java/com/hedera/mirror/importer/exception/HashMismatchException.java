@@ -20,11 +20,15 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-import org.postgresql.core.Utils;
+import java.io.Serial;
+
+import com.hedera.mirror.common.util.DomainUtils;
 
 public class HashMismatchException extends ImporterException {
 
     private static final String MESSAGE = "%s hash mismatch for file %s. Expected = %s, Actual = %s";
+    
+    @Serial
     private static final long serialVersionUID = -1093315700008851731L;
 
     public HashMismatchException(String filename, String expectedHash, String actualHash, String hashType) {
@@ -32,7 +36,7 @@ public class HashMismatchException extends ImporterException {
     }
 
     public HashMismatchException(String filename, byte[] expectedHash, byte[] actualHash, String hashType) {
-        super(String.format(MESSAGE, hashType, filename, Utils.toHexString(expectedHash),
-                Utils.toHexString(actualHash)));
+        super(String.format(MESSAGE, hashType, filename, DomainUtils.bytesToHex(expectedHash),
+                DomainUtils.bytesToHex(actualHash)));
     }
 }
