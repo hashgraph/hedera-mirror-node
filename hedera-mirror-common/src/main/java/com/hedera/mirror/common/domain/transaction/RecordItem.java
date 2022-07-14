@@ -22,10 +22,6 @@ package com.hedera.mirror.common.domain.transaction;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import com.hedera.services.stream.proto.ContractActions;
-import com.hedera.services.stream.proto.ContractStateChanges;
-
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -37,12 +33,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.util.Version;
 
@@ -51,8 +48,10 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
+import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @Builder(buildMethodName = "buildInternal")
@@ -81,7 +80,9 @@ public class RecordItem implements StreamItem {
     @Getter(lazy = true)
     private EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
 
-    private final List<com.hedera.services.stream.proto.TransactionSidecarRecord> sidecarRecords;
+    @NonFinal
+    @Setter
+    private List<TransactionSidecarRecord> sidecarRecords = Collections.emptyList();
 
     private final Integer transactionIndex;
 
@@ -110,7 +111,6 @@ public class RecordItem implements StreamItem {
         this.transactionBytes = transactionBytes;
         this.recordBytes = recordBytes;
         this.transactionIndex = transactionIndex;
-        sidecarRecords = Collections.emptyList();
         parent = null;
         previous = null;
     }
