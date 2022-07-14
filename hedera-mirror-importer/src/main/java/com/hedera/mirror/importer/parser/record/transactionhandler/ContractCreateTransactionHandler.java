@@ -20,12 +20,10 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import java.util.stream.Collectors;
+import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.FILEID;
+import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODE;
+
 import javax.inject.Named;
-
-import com.hedera.services.stream.proto.ContractBytecode;
-
-import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
 import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -41,8 +39,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.util.Utility;
-
-import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.FILEID;
+import com.hedera.services.stream.proto.ContractBytecode;
 
 @CustomLog
 @Named
@@ -118,7 +115,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
         if (transactionBody.getInitcodeSourceCase().equals(FILEID)) {
             contract.setFileId(EntityId.of(transactionBody.getFileID()));
-        } else if (transactionBody.getInitcodeSourceCase().equals(FILEID)){
+        } else if (transactionBody.getInitcodeSourceCase().equals(INITCODE)){
             var initcodes = contractBytecodes.stream()
                     .map(ContractBytecode::getInitcode).toList();
             if (initcodes.size() == 1) {
