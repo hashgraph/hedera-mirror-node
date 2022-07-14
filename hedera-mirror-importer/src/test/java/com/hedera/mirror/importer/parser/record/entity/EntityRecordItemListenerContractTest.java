@@ -445,12 +445,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
                 ContractTransactionType.UPDATE);
-        var contractStateChanges = ContractStateChanges.newBuilder();
-        buildContractStateChanges(contractStateChanges);
-        var sidecarRecords = recordItemBuilder.transactionSidecarRecord()
-                .setStateChanges(contractStateChanges);
 
-        var recordItem = new RecordItem(transaction, record, List.of(sidecarRecords.build()));
+        var recordItem = new RecordItem(transaction, record);
 
         parseRecordItemAndCommit(recordItem);
 
@@ -592,6 +588,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEntities(EntityId.of(CONTRACT_ID), EntityId.of(CREATED_CONTRACT_ID)),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContractCallResult(contractCallTransactionBody, record),
+                () -> assertContractStateChanges(recordItem),
                 () -> assertThat(contractRepository.findAll()).contains(setupResult.contract)
         );
     }
@@ -698,6 +695,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(5, cryptoTransferRepository.count()),
                 () -> assertTransactionAndRecord(transactionBody, recordItem.getRecord()),
                 () -> assertContractCallResult(contractCallTransactionBody, recordItem.getRecord()),
+                () -> assertContractStateChanges(recordItem),
                 () -> assertThat(contractRepository.findAll()).containsExactlyInAnyOrder(contract, newContract)
         );
     }
