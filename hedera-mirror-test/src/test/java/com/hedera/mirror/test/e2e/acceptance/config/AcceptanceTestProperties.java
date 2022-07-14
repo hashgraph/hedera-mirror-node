@@ -41,6 +41,8 @@ public class AcceptanceTestProperties {
     @NotNull
     private Duration backOffPeriod = Duration.ofMillis(5000);
 
+    private boolean createOperatorAccount = true;
+
     private boolean emitBackgroundMessages = false;
 
     private final FeatureProperties featureProperties;
@@ -62,6 +64,8 @@ public class AcceptanceTestProperties {
 
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
+    private long operatorBalance = 30_000_000_000L;
+
     @NotBlank
     private String operatorId;
 
@@ -75,13 +79,6 @@ public class AcceptanceTestProperties {
     private final SdkProperties sdkProperties;
 
     private final WebClientProperties webClientProperties;
-
-    public Set<NodeProperties> getNodes() {
-        if (network == HederaNetwork.OTHER && nodes.isEmpty()) {
-            throw new IllegalArgumentException("nodes must not be empty");
-        }
-        return nodes;
-    }
 
     public enum HederaNetwork {
         MAINNET,
