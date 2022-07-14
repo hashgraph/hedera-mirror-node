@@ -42,7 +42,7 @@ create index if not exists contract__public_key on contract (public_key) where p
 
 -- contract_action
 alter table if exists contract_action
-    add constraint contract_action__pk primary key (consensus_timestamp, index);
+    add constraint contract_action__pk primary key (consensus_timestamp, index, caller);
 
 -- contract_history
 alter table if exists contract_history
