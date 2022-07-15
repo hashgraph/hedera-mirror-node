@@ -213,7 +213,6 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var recordItem = recordItemBuilder.contractCreate(contractId)
                 .transactionBody(b -> b.clearAutoRenewAccountId()
                         .clearFileID()
-                        // Incorrect here ?
                         .setInitcode(recordItemBuilder.bytes(2048)))
                 .record(r -> r.getContractCreateResultBuilder().setEvmAddress(recordItemBuilder.evmAddress()))
                 .sidecarRecord(r -> r.get(0).setBytecode(recordItemBuilder.contractBytecode(contractId)))

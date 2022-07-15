@@ -21,6 +21,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
+import static com.hedera.services.stream.proto.ContractAction.CallerCase.CALLING_CONTRACT;
+import static com.hedera.services.stream.proto.ContractAction.RecipientCase.RECIPIENT_ACCOUNT;
+import static com.hedera.services.stream.proto.ContractAction.RecipientCase.RECIPIENT_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -70,6 +73,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
@@ -80,9 +84,11 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
+import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractStateChanges;
 
 class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
@@ -93,6 +99,9 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
     // saves the mapping from proto ContractID to EntityId so as not to use EntityIdService to verify itself
     private Map<ContractID, EntityId> contractIds;
+
+    @Resource
+    private ContractActionRepository contractActionRepository;
 
     @Resource
     private ContractLogRepository contractLogRepository;
@@ -575,7 +584,19 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.CALL);
         ContractCallTransactionBody contractCallTransactionBody = transactionBody.getContractCall();
-        RecordItem recordItem = new RecordItem(transaction, record);
+
+        var contractRecipientContract = recordItemBuilder.contractAction(CONTRACT_ID).build();
+        var accountRecipientAccount = recordItemBuilder.contractAction(CONTRACT_ID)
+                .clearCaller().clearRecipient().setCallingAccount(recordItemBuilder.accountId())
+                .setRecipientAccount(recordItemBuilder.accountId()).build();
+        var contractRecipientAddress = recordItemBuilder.contractAction(recordItemBuilder.contractId())
+                .clearRecipient().setInvalidSolidityAddress(recordItemBuilder.bytes(20)).build();
+        var contractActions = List.of(contractRecipientContract, accountRecipientAccount, contractRecipientAddress);
+
+        var sidecarRecord = recordItemBuilder.transactionSidecarRecord()
+                .setActions(ContractActions.newBuilder()
+                        .addAllContractActions(contractActions)).build();
+        RecordItem recordItem = new RecordItem(transaction, record, List.of(sidecarRecord));
 
         parseRecordItemAndCommit(recordItem);
 
@@ -587,6 +608,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> assertContractCallResult(contractCallTransactionBody, record),
                 () -> assertContractStateChanges(recordItem),
+                () -> assertContractAction(recordItem),
                 () -> assertThat(contractRepository.findAll()).contains(setupResult.contract)
         );
     }
@@ -956,6 +978,48 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             contractAssert.returns(contractCreateInstance.getStakedNodeId(), Contract::getStakedNodeId)
                     .returns(null, Contract::getStakedAccountId);
         }
+    }
+
+    private void assertContractAction(RecordItem recordItem) {
+        int count = 0;
+        var repositoryActions = assertThat(contractActionRepository.findAll());
+
+        for (var contractAction : recordItem.getContractActions()) {
+            var caller = contractAction.getCallerCase().equals(CALLING_CONTRACT) ?
+                EntityId.of(contractAction.getCallingContract()) :
+                EntityId.of(contractAction.getCallingAccount());
+
+            EntityId recipientAccount = null;
+            EntityId recipientContract = null;
+            byte[] recipientAddress = null;
+            if(contractAction.getRecipientCase().equals(RECIPIENT_CONTRACT)) {
+                recipientContract = EntityId.of(contractAction.getRecipientContract());
+            } else if(contractAction.getRecipientCase().equals(RECIPIENT_ACCOUNT)) {
+                recipientAccount = EntityId.of(contractAction.getRecipientAccount());
+            } else {
+                recipientAddress = contractAction.getInvalidSolidityAddress().toByteArray();
+            }
+
+            repositoryActions.filteredOn(c -> c.getConsensusTimestamp() == recordItem.getConsensusTimestamp()
+                    && c.getCaller().equals(caller)
+                    )
+                    .hasSize(1)
+                    .first()
+                    .returns(contractAction.getCallDepth(), ContractAction::getCallDepth)
+                    .returns(contractAction.getCallType().getNumber(), ContractAction::getCallType)
+                    .returns(contractAction.getGas(), ContractAction::getGas)
+                    .returns(contractAction.getGasUsed(), ContractAction::getGasUsed)
+                    .returns(contractAction.getInput().toByteArray(), ContractAction::getInput)
+                    .returns(recipientAccount, ContractAction::getRecipientAccount)
+                    .returns(recipientAddress, ContractAction::getRecipientAddress)
+                    .returns(recipientContract, ContractAction::getRecipientContract)
+                    .returns(contractAction.getOutput().toByteArray(), ContractAction::getResultData)
+                    .returns(contractAction.getResultDataCase().getNumber(), ContractAction::getResultDataType)
+                    .returns(contractAction.getValue(), ContractAction::getValue);
+            ++count;
+        }
+
+        assertThat(contractActionRepository.count()).isEqualTo(count);
     }
 
     private ObjectAssert<Contract> assertContractEntity(ContractUpdateTransactionBody expected,
