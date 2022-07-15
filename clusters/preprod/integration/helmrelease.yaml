@@ -55,4 +55,5 @@ spec:
     postgresql:
       enabled: false
     test:
+      cucumberTags: "@critical"
       enabled: true
