@@ -84,7 +84,8 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @Test
     void sidecarTypesFilter() {
-        sidecarProperties.setTypes(Collections.emptySet());
+        // The test sidecar file has CONTRACT_BYTECODE and CONTRACT_STATE_CHANGE
+        sidecarProperties.setTypes(Set.of(SidecarType.CONTRACT_ACTION));
         var recordFile = recordFileMap.get(RECORD_FILE_WITH_SIDECAR);
         recordFile.getSidecars().forEach(sidecar -> {
             sidecar.setActualHash(null);

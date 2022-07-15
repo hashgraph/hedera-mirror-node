@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.sidecar;
  * ‍
  */
 
+import java.util.Collections;
 import java.util.Set;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -34,6 +35,5 @@ public class SidecarProperties {
     private boolean enabled = true;
 
     @NotNull
-    private Set<SidecarType> types = Set.of(SidecarType.CONTRACT_STATE_CHANGE, SidecarType.CONTRACT_ACTION,
-            SidecarType.CONTRACT_BYTECODE);
+    private Set<SidecarType> types = Collections.emptySet();
 }

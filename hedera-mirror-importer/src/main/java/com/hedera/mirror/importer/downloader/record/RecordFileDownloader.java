@@ -110,7 +110,7 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
 
         // First pass, create sidecar pending downloads to download the files async
         for (var sidecar : recordFile.getSidecars()) {
-            if (sidecar.getTypes().stream().noneMatch(acceptedTypes::contains)) {
+            if (!acceptedTypes.isEmpty() && sidecar.getTypes().stream().noneMatch(acceptedTypes::contains)) {
                 log.info("Skipping sidecar file {} based on the sidecar type filter", sidecar.getName());
                 continue;
             }
@@ -141,7 +141,7 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
 
             for (var record : sidecar.getRecords()) {
                 int type = getSidecarType(record);
-                if (acceptedTypes.contains(type)) {
+                if (acceptedTypes.isEmpty() || acceptedTypes.contains(type)) {
                     records.put(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()), record);
                 }
             }
