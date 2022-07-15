@@ -47,7 +47,7 @@ import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Builder(buildMethodName = "buildInternal", toBuilder = true)
+@Builder(toBuilder = true)
 @Data
 @Entity
 @IdClass(SidecarFile.Id.class)
@@ -61,6 +61,7 @@ public class SidecarFile implements Persistable<SidecarFile.Id> {
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     private byte[] bytes;
+
     @javax.persistence.Id
     private long consensusEnd;
 
@@ -78,6 +79,7 @@ public class SidecarFile implements Persistable<SidecarFile.Id> {
 
     private String name;
 
+    @Builder.Default
     @ToString.Exclude
     @Transient
     private List<TransactionSidecarRecord> records = Collections.emptyList();
@@ -101,16 +103,6 @@ public class SidecarFile implements Persistable<SidecarFile.Id> {
     @Override
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
-    }
-
-    public static class SidecarFileBuilder<C, B extends SidecarFile.SidecarFileBuilder> {
-
-        public SidecarFile build() {
-            if (records == null) {
-                records = Collections.emptyList();
-            }
-            return buildInternal();
-        }
     }
 
     @Data

@@ -73,6 +73,7 @@ public class RecordItem implements StreamItem {
     private final byte[] transactionBytes;
     private final byte[] recordBytes;
 
+    @Builder.Default
     @NonFinal
     @Setter
     private List<TransactionSidecarRecord> sidecarRecords = Collections.emptyList();
@@ -257,10 +258,6 @@ public class RecordItem implements StreamItem {
                 }
             }
 
-            if (sidecarRecords == null) {
-                sidecarRecords = Collections.emptyList();
-            }
-
             return buildInternal();
         }
 
@@ -287,10 +284,9 @@ public class RecordItem implements StreamItem {
             return (B) this;
         }
 
-        public B sidecarRecords(List<com.hedera.services.stream.proto.TransactionSidecarRecord> sidecarRecords) {
-            this.sidecarRecords = sidecarRecords;
-            return (B) this;
-        }
+//        public B sidecarRecords(List<com.hedera.services.stream.proto.TransactionSidecarRecord> sidecarRecords) {
+//            this.sidecarRecords = sidecarRecords;
+//            return (B) this;
+//        }
     }
-
 }

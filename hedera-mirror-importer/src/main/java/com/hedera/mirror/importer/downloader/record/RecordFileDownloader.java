@@ -135,7 +135,7 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
                         sidecar.getHashAlgorithm().getName());
             }
 
-            if (!downloaderProperties.isPersistBytes()) {
+            if (!sidecarProperties.isPersistBytes()) {
                 sidecar.setBytes(null);
             }
 
@@ -148,7 +148,11 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
         }
 
         recordFile.getItems()
-                .doOnNext(recordItem -> recordItem.setSidecarRecords(records.get(recordItem.getConsensusTimestamp())))
+                .doOnNext(recordItem -> {
+                    if (records.containsKey(recordItem.getConsensusTimestamp())) {
+                        recordItem.setSidecarRecords(records.get(recordItem.getConsensusTimestamp()));
+                    }
+                })
                 .blockLast();
     }
 

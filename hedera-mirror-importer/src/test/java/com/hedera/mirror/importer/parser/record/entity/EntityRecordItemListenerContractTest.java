@@ -450,8 +450,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
                 ContractTransactionType.UPDATE);
-
-        var recordItem = new RecordItem(transaction, record);
+        RecordItem recordItem = new RecordItem(transaction, record);
 
         parseRecordItemAndCommit(recordItem);
 

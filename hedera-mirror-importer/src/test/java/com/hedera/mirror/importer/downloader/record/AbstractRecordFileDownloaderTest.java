@@ -67,6 +67,7 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
         var recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(),
                 new RecordFileReaderImplV2(), new RecordFileReaderImplV5(), new ProtoRecordFileReader());
         sidecarProperties = new SidecarProperties();
+        sidecarProperties.setEnabled(true);
         return new RecordFileDownloader(addressBookService, (RecordDownloaderProperties) downloaderProperties,
                 meterRegistry, dateRangeProcessor, nodeSignatureVerifier, s3AsyncClient, sidecarProperties,
                 signatureFileReader, recordFileReader, new SidecarFileReaderImpl(), streamFileNotifier);
@@ -88,7 +89,7 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
                             .returns(expected.getSize(), RecordFile::getSize),
                     () -> assertThat(recordFile.getSidecars())
                             .containsExactlyInAnyOrderElementsOf(expected.getSidecars())
-                            .allMatch(sidecar -> downloaderProperties.isPersistBytes() ^ (sidecar.getBytes() == null))
+                            .allMatch(sidecar -> sidecarProperties.isPersistBytes() ^ (sidecar.getBytes() == null))
             );
         });
         super.verifyStreamFiles(files, extraAsserts);

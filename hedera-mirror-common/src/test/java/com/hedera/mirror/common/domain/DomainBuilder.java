@@ -640,14 +640,9 @@ public class DomainBuilder {
                 .nodeAccountId(entityId(ACCOUNT))
                 .previousHash(text(96))
                 .sidecarCount(1)
-                .sidecars(List.of(SidecarFile.builder()
-                        .consensusEnd(consensusEnd)
-                        .hashAlgorithm(DigestAlgorithm.SHA_384)
-                        .hash(bytes(48))
-                        .index(1)
-                        .name(instantString + "_01.rcd.gz")
-                        .types(List.of(1))
-                        .build()))
+                .sidecars(List.of(sidecarFile()
+                        .customize(s -> s.consensusEnd(consensusEnd).name(instantString + "_01.rcd.gz"))
+                        .get()))
                 .size(256 * 1024)
                 .version(6);
         return new DomainWrapperImpl<>(builder, builder::build);

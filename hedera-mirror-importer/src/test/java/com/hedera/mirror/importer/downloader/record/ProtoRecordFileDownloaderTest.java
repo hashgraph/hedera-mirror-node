@@ -45,6 +45,7 @@ import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
@@ -111,6 +112,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @Test
     void sidecarTypesFilterSome() {
+        sidecarProperties.setPersistBytes(true);
         sidecarProperties.setTypes(Set.of(SidecarType.CONTRACT_BYTECODE));
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
@@ -196,16 +198,24 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
             var recordFile = (RecordFile) s;
             var recordItems = recordFile.getItems().collectList().block();
             if (Objects.equals(recordFile.getName(), RECORD_FILE_WITH_SIDECAR)) {
-                assertThat(recordItems).anySatisfy(recordItem -> {
-                    var consensusTimestamp = recordItem.getConsensusTimestamp();
-                    var sidecarConsensusTimestamps = recordItem.getSidecarRecords().stream()
-                            .map(TransactionSidecarRecord::getConsensusTimestamp)
-                            .map(DomainUtils::timestampInNanosMax)
-                            .toList();
-                    assertThat(sidecarConsensusTimestamps).containsOnly(consensusTimestamp);
-                });
+                assertThat(recordItems)
+                        // The record item either has empty transaction sidecar records or all such records consensus
+                        // timestamp is the same as that of the recordItem
+                        .allSatisfy(recordItem -> {
+                            var consensusTimestamp = recordItem.getConsensusTimestamp();
+                            assertThat(recordItem.getSidecarRecords()).satisfiesAnyOf(
+                                    sidecarRecords -> assertThat(sidecarRecords).isEmpty(),
+                                    sidecarRecords -> assertThat(sidecarRecords)
+                                            .map(TransactionSidecarRecord::getConsensusTimestamp)
+                                            .map(DomainUtils::timestampInNanosMax)
+                                            .containsOnly(consensusTimestamp)
+                            );
+                        })
+                        // Also verify there are transaction sidecar records
+                        .flatMap(RecordItem::getSidecarRecords)
+                        .isNotEmpty();
             } else {
-                assertThat(recordItems).allMatch(recordItem -> recordItem.getSidecarRecords().isEmpty());
+                assertThat(recordItems).flatMap(RecordItem::getSidecarRecords).isEmpty();
             }
         });
         super.verifyStreamFiles(files, extraAsserts);
