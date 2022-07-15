@@ -1,6 +1,14 @@
 #!/bin/bash
 set -eo pipefail
 
+function config_data_retention() {
+  echo "Configuring data retention"
+  export HEDERA_MIRROR_IMPORTER_RETENTION_BATCHPERIOD="${HEDERA_MIRROR_IMPORTER_RETENTION_BATCHPERIOD:-1d}"
+  export HEDERA_MIRROR_IMPORTER_RETENTION_ENABLED="${HEDERA_MIRROR_IMPORTER_RETENTION_ENABLED:-true}"
+  export HEDERA_MIRROR_IMPORTER_RETENTION_FREQUENCY="${HEDERA_MIRROR_IMPORTER_RETENTION_FREQUENCY:-7d}"
+  export HEDERA_MIRROR_IMPORTER_RETENTION_PERIOD="${HEDERA_MIRROR_IMPORTER_RETENTION_PERIOD:-90d}"
+}
+
 function run_offline_mode() {
   echo "Running in offline mode"
   exec supervisord --configuration /app/supervisord-offline.conf
@@ -8,6 +16,7 @@ function run_offline_mode() {
 
 function run_online_mode() {
   echo "Running in online mode"
+  config_data_retention
   exec supervisord --configuration /app/supervisord.conf
 }
 
