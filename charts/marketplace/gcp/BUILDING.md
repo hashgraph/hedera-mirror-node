@@ -8,7 +8,13 @@ Registry on maven deploy.
 # Setup
 
 A Google Kubernetes Engine (GKE) cluster is required to verify and test the deployment of the Marketplace application.
-Follow the GKE [quickstart](https://cloud.google.com/kubernetes-engine/docs/quickstart) to create a test cluster.
+Other clusters like minikube will not work. Follow the
+GKE [quickstart](https://cloud.google.com/kubernetes-engine/docs/quickstart) to create a test cluster. Once created,
+manually install the `Application` custom resource definition (CRD) into the cluster.
+
+```shell
+kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketplace-k8s-app-tools/master/crd/app-crd.yaml"
+```
 
 ## Prerequisites
 
@@ -22,9 +28,11 @@ Follow the GKE [quickstart](https://cloud.google.com/kubernetes-engine/docs/quic
 First ensure the following environment variables are populated with the appropriate version and names. These variables
 will be used for the remainder of the document.
 
-    NAME="marketplace"
-    NAMESPACE="marketplace"
-    TAG="x.y.z"
+```shell
+export NAME="marketplace"
+export NAMESPACE="marketplace"
+export TAG="x.y.z"
+```
 
 # Building
 
@@ -37,11 +45,12 @@ Additionally, GCP Marketplace restricts applications to images pulled from the M
 Node uses some third party images like PostgreSQL, we need to re-publish these images to our staging registry and keep
 them up to date.
 
-Run the below commands to re-tag an existing image for testing with Marketplace:
+Run the below commands to re-tag existing images and build the deployer image for testing with Marketplace:
 
-    SRC_TAG="x.y.z"
-    cd charts/marketplace/gcp
-    ./release.sh "${SRC_TAG}" "${TAG}"
+```shell
+cd charts/marketplace/gcp
+./release.sh "${TAG}"
+```
 
 # Testing
 
@@ -53,44 +62,40 @@ Run `mpdev verify` to automatically install the application in a new namespace, 
 uninstall it. Ensure [schema-test.yaml](schema-test.yaml) contains defaults for any required fields
 in [schema.yaml](schema.yaml).
 
-    mpdev verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
+```shell
+mpdev verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
+```
 
 ## Install
 
 To install run `mpdev install`. Note the properties in the `required` section of the [schema.yaml](schema.yaml)
 file must be specified via the parameters flag.
 
-    kubectl create namespace "${NAMESPACE}"
-    mpdev install --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG} --parameters='{"name": "'${NAME}'",
-        "namespace": "'${NAMESPACE}'",
-        "importer.config.hedera.mirror.importer.downloader.accessKey": "GOOG1...",
-        "importer.config.hedera.mirror.importer.downloader.secretKey": "...",
-        "importer.config.hedera.mirror.importer.network": "MAINNET"}'
+```shell
+kubectl create namespace "${NAMESPACE}"
+mpdev install --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG} --parameters='{"name": "'${NAME}'",
+    "namespace": "'${NAMESPACE}'",
+    "importer.config.hedera.mirror.importer.downloader.accessKey": "GOOG1...",
+    "importer.config.hedera.mirror.importer.downloader.secretKey": "...",
+    "importer.config.hedera.mirror.importer.network": "MAINNET"}'
+```
 
 ## Uninstall
 
 Once installed in a Kubernetes cluster the Marketplace solution can be cleaned up with the following commands:
 
-    kubectl delete application "${NAME}" -n "${NAMESPACE}"
-    kubectl delete -n "${NAMESPACE}" $(kubectl get pvc -n "${NAMESPACE}")
+```shell
+kubectl delete application "${NAME}" -n "${NAMESPACE}"
+kubectl delete -n "${NAMESPACE}" $(kubectl get pvc -n "${NAMESPACE}" -o name)
+```
 
-Or you can simply delete the entire namespace if you created it during the install step and it's no longer needed:
+Or you can simply delete the entire namespace if you created it during installation, and it's no longer needed:
 
-    kubectl delete namespace "${NAMESPACE}"
+```shell
+kubectl delete namespace "${NAMESPACE}"
+```
 
 # Releasing
 
-Once all local testing is completed successfully and the images are tagged, run the below commands to republish the
-images to the staging registry:
-
-    git checkout "tags/v${TAG}"
-    cd charts/marketplace/gcp
-    ./release.sh "${TAG}"
-
-## Open Source Compliance
-
-As part of submission to marketplace, a list of sources and licenses used by the distroless java images is required. To
-generate the list for the grpc and importer images:
-
-    cd charts/marketplace/gcp/open-source-compliance
-    ./generate.sh "${TAG}"
+Once all local testing is completed successfully and the images are tagged, create the version on the Marketplace
+Producer Portal and submit it.
