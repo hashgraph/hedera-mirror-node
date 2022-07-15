@@ -49,7 +49,7 @@ import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
 
-@Builder(buildMethodName = "buildInternal", toBuilder = true)
+@Builder(toBuilder = true)
 @Data
 @Entity
 @AllArgsConstructor
@@ -124,6 +124,7 @@ public class RecordFile implements StreamFile<RecordItem> {
 
     private int sidecarCount;
 
+    @Builder.Default
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @Transient
@@ -173,15 +174,5 @@ public class RecordFile implements StreamFile<RecordItem> {
             return record.getContractCallResult();
         }
         return null;
-    }
-
-    public static class RecordFileBuilder<C, B extends RecordFile.RecordFileBuilder> {
-
-        public RecordFile build() {
-            if (sidecars == null) {
-                sidecars = Collections.emptyList();
-            }
-            return buildInternal();
-        }
     }
 }

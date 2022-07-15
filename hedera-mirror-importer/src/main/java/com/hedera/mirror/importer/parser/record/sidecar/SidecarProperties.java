@@ -32,8 +32,10 @@ import com.hedera.services.stream.proto.SidecarType;
 @ConfigurationProperties("hedera.mirror.importer.parser.record.sidecar")
 public class SidecarProperties {
 
-    private boolean enabled = true;
+    private boolean enabled = false;
 
+    private boolean persistBytes = false;
+    
     @NotNull
     private Set<SidecarType> types = Collections.emptySet();
 }

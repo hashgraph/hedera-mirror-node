@@ -67,6 +67,7 @@ public class RecordItem implements StreamItem {
     private final byte[] transactionBytes;
     private final byte[] recordBytes;
 
+    @Builder.Default
     @NonFinal
     @Setter
     private List<TransactionSidecarRecord> sidecarRecords = Collections.emptyList();
@@ -218,10 +219,6 @@ public class RecordItem implements StreamItem {
                     // check older siblings parent, if child count is > 1 this prevents having to search to parent
                     parent = previous.parent;
                 }
-            }
-
-            if (sidecarRecords == null) {
-                sidecarRecords = Collections.emptyList();
             }
 
             return buildInternal();
