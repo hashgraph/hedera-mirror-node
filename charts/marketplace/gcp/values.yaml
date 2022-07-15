@@ -3,7 +3,7 @@ applicationResource:
   partnerId: mirror-node-public
   partnerName: mirror-node-public
   solutionId: hedera-mirror-node
-  version: ''
+  version: ""
 
 global:
   db:
@@ -67,6 +67,8 @@ postgresql:
   enabled: true
   pgpool:
     replicaCount: 0
+  serviceAccount:
+    create: false
 
 redis:
   enabled: false

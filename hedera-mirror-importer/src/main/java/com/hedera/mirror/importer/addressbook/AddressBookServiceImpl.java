@@ -42,7 +42,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.cache.annotation.CacheConfig;
@@ -485,7 +484,7 @@ public class AddressBookServiceImpl implements AddressBookService {
 
                 log.info("Loading bootstrap address book from {}", resourcePath);
                 Resource resource = new ClassPathResource(resourcePath, getClass());
-                addressBookBytes = IOUtils.toByteArray(resource.getInputStream());
+                addressBookBytes = resource.getInputStream().readAllBytes();
             }
 
             log.info("Loaded bootstrap address book of {} B", addressBookBytes.length);

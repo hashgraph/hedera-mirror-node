@@ -1905,8 +1905,9 @@ components:
       type: object
       properties:
         next:
-          example: null
+          example: "/api/v1/transactions?timestamp=lt:1657598275.517984411"
           nullable: true
+          type: string
     NetworkNode:
       type: object
       required:
@@ -2468,6 +2469,7 @@ components:
         - FILEUPDATE
         - FREEZE
         - NODESTAKEUPDATE
+        - PRNG
         - SCHEDULECREATE
         - SCHEDULEDELETE
         - SCHEDULESIGN
@@ -2555,7 +2557,9 @@ components:
         max_fee:
           type: string
         memo_base64:
+          format: byte
           nullable: true
+          type: string
         name:
           $ref: '#/components/schemas/TransactionTypes'
         node:
