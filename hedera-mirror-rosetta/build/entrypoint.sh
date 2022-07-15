@@ -35,7 +35,7 @@ function init_db() {
   if [[ -f "${PGDATA}/PG_VERSION" ]]; then
     # relink the config dir just in case it's a newly created container with existing mapped /data dir
     ln -sTf ${PGDATA} ${PG_CLUSTER_CONF}
-    echo "Database is already initialzed"
+    echo "Database is already initialized"
     return
   fi
 
