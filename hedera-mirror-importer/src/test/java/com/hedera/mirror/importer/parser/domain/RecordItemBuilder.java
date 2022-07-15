@@ -40,7 +40,6 @@ import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import com.hederahashgraph.api.proto.java.ContractStateChange;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
@@ -66,7 +65,6 @@ import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.StorageChange;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -96,6 +94,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.StorageChange;
 
 /**
  * Generates typical protobuf request and response objects with all fields populated.
@@ -212,12 +211,7 @@ public class RecordItemBuilder {
                         .addTopic(bytes(32))
                         .addTopic(bytes(32))
                         .build())
-                .setSenderId(accountId())
-                .addStateChanges(ContractStateChange.newBuilder()
-                        .setContractID(contractId)
-                        .addStorageChanges(storageChange())
-                        .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)))
-                        .build());
+                .setSenderId(accountId());
     }
 
     public Builder<ContractUpdateTransactionBody.Builder> contractUpdate() {
@@ -364,12 +358,12 @@ public class RecordItemBuilder {
         var builder = PrngTransactionBody.newBuilder().setRange(range);
         var transactionBodyBuilder = new Builder<>(TransactionType.PRNG, builder);
         return transactionBodyBuilder.record(r -> {
-                    if(range == 0) {
-                        r.setPrngBytes(ByteString.copyFrom(randomBytes(382)));
-                    } else if(range > 0) {
-                        r.setPrngNumber(random.nextInt());
-                    }
-                });
+            if (range == 0) {
+                r.setPrngBytes(ByteString.copyFrom(randomBytes(382)));
+            } else if (range > 0) {
+                r.setPrngNumber(random.nextInt());
+            }
+        });
     }
 
     public Builder<ScheduleCreateTransactionBody.Builder> scheduleCreate() {

@@ -42,7 +42,6 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -132,7 +131,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     @Test
     void contractResultZeroStateChanges() {
         RecordItem recordItem = recordItemBuilder.contractCreate().record(x -> x
-                        .setContractCreateResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID).clearStateChanges()))
+                        .setContractCreateResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
                 .receipt(r -> r.setContractID(CONTRACT_ID))
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
@@ -187,7 +186,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .returns(parseContractResultLongs(contractFunctionResult.getGasUsed()), ContractResult::getGasUsed);
 
         assertContractLogs(contractFunctionResult, recordItem);
-        assertContractStateChanges(contractFunctionResult, recordItem);
     }
 
     private byte[] parseContractResultBytes(ByteString byteString) {
@@ -224,34 +222,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
             listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 1);
             listAssert.extracting(ContractLog::getBloom).containsAll(blooms);
             listAssert.extracting(ContractLog::getData).containsAll(data);
-        }
-    }
-
-    private void assertContractStateChanges(ContractFunctionResult contractFunctionResult, RecordItem recordItem) {
-        if (contractFunctionResult.getStateChangesCount() > 0) {
-            var listAssert = assertThat(contractStateChangeRepository.findAll())
-                    .hasSize(contractFunctionResult.getStateChanges(0).getStorageChangesCount());
-
-            var contractIds = new ArrayList<Long>();
-            var slots = new ArrayList<byte[]>();
-            var valuesRead = new ArrayList<byte[]>();
-            var valuesWritten = new ArrayList<byte[]>();
-            contractFunctionResult.getStateChangesList().forEach(x -> {
-                contractIds.add(EntityId.of(x.getContractID()).getId());
-                x.getStorageChangesList().forEach(y -> {
-                    slots.add(DomainUtils.toBytes(y.getSlot()));
-                    valuesRead.add(DomainUtils.toBytes(y.getValueRead()));
-                    valuesWritten.add(DomainUtils.toBytes(y.getValueWritten().getValue()));
-                });
-            });
-
-            listAssert.extracting(ContractStateChange::getPayerAccountId).containsOnly(recordItem.getPayerAccountId());
-            listAssert.extracting(ContractStateChange::getContractId).containsAll(contractIds);
-            listAssert.extracting(ContractStateChange::getConsensusTimestamp)
-                    .containsOnly(recordItem.getConsensusTimestamp());
-            listAssert.extracting(ContractStateChange::getSlot).containsAll(slots);
-            listAssert.extracting(ContractStateChange::getValueRead).containsAll(valuesRead);
-            listAssert.extracting(ContractStateChange::getValueWritten).containsAll(valuesWritten);
         }
     }
 

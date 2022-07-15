@@ -43,8 +43,10 @@ import reactor.core.publisher.Flux;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.StreamFileReaderException;
 import com.hedera.services.stream.proto.HashAlgorithm;
@@ -72,16 +74,18 @@ public class ProtoRecordFileReader implements RecordFileReader {
                         "hash algorithm {}", filename, startHashAlgorithm, endHashAlgorithm);
             }
 
+            var bytes = streamFileData.getBytes();
             var items = readItems(filename, recordStreamFile);
             int count = items.size();
+            long consensusEnd = items.get(count - 1).getConsensusTimestamp();
             var digestAlgorithm = getDigestAlgorithm(filename, startHashAlgorithm, endHashAlgorithm);
             var hapiProtoVersion = recordStreamFile.getHapiProtoVersion();
+            var sidecars = getSidecars(consensusEnd, recordStreamFile, streamFileData.getStreamFilename());
 
-            var bytes = streamFileData.getBytes();
             return RecordFile.builder()
                     .bytes(bytes)
                     .consensusStart(items.get(0).getConsensusTimestamp())
-                    .consensusEnd(items.get(count - 1).getConsensusTimestamp())
+                    .consensusEnd(consensusEnd)
                     .count((long) count)
                     .digestAlgorithm(digestAlgorithm)
                     .fileHash(getFileHash(digestAlgorithm, streamFileData.getDecompressedBytes()))
@@ -95,6 +99,8 @@ public class ProtoRecordFileReader implements RecordFileReader {
                     .metadataHash(getMetadataHash(digestAlgorithm, recordStreamFile))
                     .name(filename)
                     .previousHash(DomainUtils.bytesToHex(DomainUtils.getHashBytes(startObjectRunningHash)))
+                    .sidecarCount(sidecars.size())
+                    .sidecars(sidecars)
                     .size(bytes.length)
                     .version(VERSION)
                     .build();
@@ -147,6 +153,25 @@ public class ProtoRecordFileReader implements RecordFileReader {
             dataOutputStream.writeLong(recordStreamFile.getBlockNumber());
 
             return DomainUtils.bytesToHex(digestOutputStream.getMessageDigest().digest());
+        }
+    }
+
+    private List<SidecarFile> getSidecars(long consensusEnd, RecordStreamFile recordStreamFile,
+                                          StreamFilename recordStreamFilename) {
+        try {
+            return recordStreamFile.getSidecarsList().stream()
+                    .map(sidecar -> SidecarFile.builder()
+                            .consensusEnd(consensusEnd)
+                            .hashAlgorithm(DigestAlgorithm.valueOf(sidecar.getHash().getAlgorithm().toString()))
+                            .hash(DomainUtils.toBytes(sidecar.getHash().getHash()))
+                            .index(sidecar.getId())
+                            .name(recordStreamFilename.getSidecarFilename(sidecar.getId()))
+                            .types(sidecar.getTypesValueList())
+                            .build())
+                    .toList();
+        } catch (IllegalArgumentException e) {
+            throw new InvalidStreamFileException(
+                    recordStreamFilename.getFilename() + " has unsupported sidecar hash algorithm");
         }
     }
 

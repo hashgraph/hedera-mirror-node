@@ -28,13 +28,17 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.util.Version;
 
@@ -42,6 +46,7 @@ import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @Builder(buildMethodName = "buildInternal")
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -62,6 +67,11 @@ public class RecordItem implements StreamItem {
     private final byte[] transactionBytes;
     private final byte[] recordBytes;
 
+    @Builder.Default
+    @NonFinal
+    @Setter
+    private List<TransactionSidecarRecord> sidecarRecords = Collections.emptyList();
+
     @Getter(lazy = true)
     private long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
 
@@ -69,7 +79,7 @@ public class RecordItem implements StreamItem {
     @Getter(lazy = true)
     private EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
 
-    private final Integer transactionIndex;
+    private final int transactionIndex;
 
     private final RecordItem parent;
 
@@ -78,7 +88,7 @@ public class RecordItem implements StreamItem {
     /**
      * Constructs RecordItem from serialized transactionBytes and recordBytes.
      */
-    public RecordItem(Version hapiVersion, byte[] transactionBytes, byte[] recordBytes, Integer transactionIndex) {
+    public RecordItem(Version hapiVersion, byte[] transactionBytes, byte[] recordBytes, int transactionIndex) {
         try {
             transaction = Transaction.parseFrom(transactionBytes);
         } catch (InvalidProtocolBufferException e) {
@@ -114,7 +124,7 @@ public class RecordItem implements StreamItem {
         this.record = record;
         transactionBytes = transaction.toByteArray();
         recordBytes = record.toByteArray();
-        transactionIndex = null;
+        transactionIndex = 0;
         parent = null;
         previous = null;
     }
