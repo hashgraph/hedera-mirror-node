@@ -20,14 +20,12 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -62,20 +60,21 @@ class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
     void downloadV1() throws Exception {
         mirrorProperties.setStartBlockNumber(null);
         doReturn(loadAddressBook("test-v1")).when(addressBookService).getCurrent();
+        var allRecordFiles = TestRecordFiles.getAll();
+        var testRecordFiles = Map.of(
+                "2019-07-01T14_13_00.317763Z.rcd", allRecordFiles.get("2019-07-01T14_13_00.317763Z.rcd"),
+                "2019-07-01T14_29_00.302068Z.rcd", allRecordFiles.get("2019-07-01T14_29_00.302068Z.rcd")
+        );
+        setupRecordFiles(testRecordFiles);
 
         fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path)
                 .from(downloaderProperties.getStreamType().getPath(), "v1")
                 .to(commonDownloaderProperties.getBucketName(), downloaderProperties.getStreamType().getPath());
         fileCopier.copy();
         expectLastStreamFile(Instant.EPOCH);
-        var expectedFileSizes = Map.of("2019-07-01T14_13_00.317763Z.rcd", 4898,
-                "2019-07-01T14_29_00.302068Z.rcd", 22347);
 
         downloader.download();
 
-        verifyStreamFiles(List.of("2019-07-01T14_13_00.317763Z.rcd", "2019-07-01T14_29_00.302068Z.rcd"), s -> {
-            var recordFile = (RecordFile) s;
-            assertThat(recordFile.getSize()).isEqualTo(expectedFileSizes.get(recordFile.getName()));
-        });
+        verifyForSuccess();
     }
 }

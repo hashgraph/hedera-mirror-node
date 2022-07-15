@@ -380,7 +380,7 @@ class RecordItemTest {
     }
 
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {
-        assertThatThrownBy(() -> new RecordItem(DEFAULT_HAPI_VERSION, transactionBytes, recordBytes, null))
+        assertThatThrownBy(() -> new RecordItem(DEFAULT_HAPI_VERSION, transactionBytes, recordBytes, 0))
                 .isInstanceOf(ProtobufException.class)
                 .hasMessage(expectedMessage);
     }

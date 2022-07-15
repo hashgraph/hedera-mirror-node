@@ -73,6 +73,10 @@ public class RecordItem implements StreamItem {
     private final byte[] transactionBytes;
     private final byte[] recordBytes;
 
+    @NonFinal
+    @Setter
+    private List<TransactionSidecarRecord> sidecarRecords = Collections.emptyList();
+
     @Getter(lazy = true)
     private long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
 
@@ -80,11 +84,7 @@ public class RecordItem implements StreamItem {
     @Getter(lazy = true)
     private EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
 
-    @NonFinal
-    @Setter
-    private List<TransactionSidecarRecord> sidecarRecords = Collections.emptyList();
-
-    private final Integer transactionIndex;
+    private final int transactionIndex;
 
     private final RecordItem parent;
 
@@ -93,7 +93,7 @@ public class RecordItem implements StreamItem {
     /**
      * Constructs RecordItem from serialized transactionBytes and recordBytes.
      */
-    public RecordItem(Version hapiVersion, byte[] transactionBytes, byte[] recordBytes, Integer transactionIndex) {
+    public RecordItem(Version hapiVersion, byte[] transactionBytes, byte[] recordBytes, int transactionIndex) {
         try {
             transaction = Transaction.parseFrom(transactionBytes);
         } catch (InvalidProtocolBufferException e) {
@@ -131,7 +131,7 @@ public class RecordItem implements StreamItem {
         transactionBytes = transaction.toByteArray();
         recordBytes = transactionRecord.toByteArray();
         this.sidecarRecords = sidecarRecords;
-        transactionIndex = null;
+        transactionIndex = 0;
         parent = null;
         previous = null;
     }

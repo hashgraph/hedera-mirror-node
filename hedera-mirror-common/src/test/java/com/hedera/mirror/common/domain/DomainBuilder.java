@@ -42,6 +42,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -103,6 +104,7 @@ import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
@@ -616,10 +618,12 @@ public class DomainBuilder {
         transactionIndex.set(0);
 
         long timestamp = timestamp();
+        long consensusEnd = timestamp + 1;
+        var instantString = now.toString().replace(':', '_');
         var builder = RecordFile.builder()
                 .bytes(bytes(128))
                 .consensusStart(timestamp)
-                .consensusEnd(timestamp + 1)
+                .consensusEnd(consensusEnd)
                 .count(1L)
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .fileHash(text(96))
@@ -632,9 +636,18 @@ public class DomainBuilder {
                 .logsBloom(bloomFilter())
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
-                .name(now.toString().replace(':', '_') + ".rcd")
+                .name(instantString + ".rcd.gz")
                 .nodeAccountId(entityId(ACCOUNT))
                 .previousHash(text(96))
+                .sidecarCount(1)
+                .sidecars(List.of(SidecarFile.builder()
+                        .consensusEnd(consensusEnd)
+                        .hashAlgorithm(DigestAlgorithm.SHA_384)
+                        .hash(bytes(48))
+                        .index(1)
+                        .name(instantString + "_01.rcd.gz")
+                        .types(List.of(1))
+                        .build()))
                 .size(256 * 1024)
                 .version(6);
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -649,6 +662,21 @@ public class DomainBuilder {
                 .scheduleId(entityId(SCHEDULE).getId())
                 .transactionBody(bytes(64))
                 .waitForExpiry(true);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<SidecarFile, SidecarFile.SidecarFileBuilder> sidecarFile() {
+        var data = bytes(256);
+        var builder = SidecarFile.builder()
+                .bytes(data)
+                .consensusEnd(timestamp())
+                .hash(bytes(DigestAlgorithm.SHA_384.getSize()))
+                .hashAlgorithm(DigestAlgorithm.SHA_384)
+                .index(1)
+                .name(now.toString().replace(':', '_') + "_01.rcd.gz")
+                .records(Collections.emptyList())
+                .size(data.length)
+                .types(List.of(1, 2));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

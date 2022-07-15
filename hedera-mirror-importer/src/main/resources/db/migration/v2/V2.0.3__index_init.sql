@@ -185,6 +185,10 @@ alter table schedule
 create index if not exists schedule__creator_account_id
     on schedule (creator_account_id desc);
 
+-- sidecar_file
+alter table sidecar_file
+    add constraint sidecar_file__pk primary key (consensus_end, id);
+
 -- staking_reward_transfer
 alter table staking_reward_transfer
     add constraint staking_reward_transfer__pk primary key (consensus_timestamp, account_id);

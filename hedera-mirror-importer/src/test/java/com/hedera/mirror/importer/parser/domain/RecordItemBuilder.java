@@ -397,12 +397,12 @@ public class RecordItemBuilder {
         var builder = PrngTransactionBody.newBuilder().setRange(range);
         var transactionBodyBuilder = new Builder<>(TransactionType.PRNG, builder);
         return transactionBodyBuilder.record(r -> {
-                    if(range == 0) {
-                        r.setPrngBytes(ByteString.copyFrom(randomBytes(382)));
-                    } else if(range > 0) {
-                        r.setPrngNumber(random.nextInt());
-                    }
-                });
+            if (range == 0) {
+                r.setPrngBytes(ByteString.copyFrom(randomBytes(382)));
+            } else if (range > 0) {
+                r.setPrngNumber(random.nextInt());
+            }
+        });
     }
 
     public Builder<ScheduleCreateTransactionBody.Builder> scheduleCreate() {

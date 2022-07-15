@@ -21,33 +21,38 @@ package com.hedera.mirror.importer.downloader.record;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
 
+import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
+import com.hedera.mirror.importer.parser.record.sidecar.SidecarProperties;
 import com.hedera.mirror.importer.reader.record.CompositeRecordFileReader;
 import com.hedera.mirror.importer.reader.record.ProtoRecordFileReader;
-import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV1;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV2;
 import com.hedera.mirror.importer.reader.record.RecordFileReaderImplV5;
+import com.hedera.mirror.importer.reader.record.sidecar.SidecarFileReaderImpl;
 
 abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDownloaderTest {
 
-    private Map<String, RecordFile> recordFileMap;
+    protected Map<String, RecordFile> recordFileMap;
+
+    protected SidecarProperties sidecarProperties;
 
     @Override
     @BeforeEach
     protected void beforeEach() {
         super.beforeEach();
-        recordFileMap = getRecordFileMap();
-        setTestFilesAndInstants(recordFileMap.keySet().stream().sorted().collect(Collectors.toList()));
+        setupRecordFiles(getRecordFileMap());
     }
 
     abstract protected Map<String, RecordFile> getRecordFileMap();
@@ -59,18 +64,33 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
 
     @Override
     protected Downloader getDownloader() {
-        RecordFileReader recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(),
+        var recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(),
                 new RecordFileReaderImplV2(), new RecordFileReaderImplV5(), new ProtoRecordFileReader());
-        return new RecordFileDownloader(s3AsyncClient, addressBookService,
-                (RecordDownloaderProperties) downloaderProperties, meterRegistry,
-                nodeSignatureVerifier, signatureFileReader, recordFileReader, streamFileNotifier, dateRangeProcessor);
+        sidecarProperties = new SidecarProperties();
+        return new RecordFileDownloader(addressBookService, (RecordDownloaderProperties) downloaderProperties,
+                meterRegistry, dateRangeProcessor, nodeSignatureVerifier, s3AsyncClient, sidecarProperties,
+                signatureFileReader, recordFileReader, new SidecarFileReaderImpl(), streamFileNotifier);
+    }
+
+    protected void setupRecordFiles(Map<String, RecordFile> recordFileMap) {
+        this.recordFileMap = recordFileMap;
+        setTestFilesAndInstants(recordFileMap.keySet().stream().sorted().toList());
     }
 
     @Override
-    protected void verifyStreamFiles(List<String> files) {
-        verifyStreamFiles(files, s -> {
+    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {
+        extraAsserts = ArrayUtils.add(extraAsserts, s -> {
             var recordFile = (RecordFile) s;
-            assertThat(recordFile.getSize()).isEqualTo(recordFileMap.get(recordFile.getName()).getSize());
+            var expected = recordFileMap.get(recordFile.getName());
+            assertAll(
+                    () -> assertThat(recordFile)
+                            .returns(expected.getSidecarCount(), RecordFile::getSidecarCount)
+                            .returns(expected.getSize(), RecordFile::getSize),
+                    () -> assertThat(recordFile.getSidecars())
+                            .containsExactlyInAnyOrderElementsOf(expected.getSidecars())
+                            .allMatch(sidecar -> downloaderProperties.isPersistBytes() ^ (sidecar.getBytes() == null))
+            );
         });
+        super.verifyStreamFiles(files, extraAsserts);
     }
 }

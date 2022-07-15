@@ -22,11 +22,11 @@ package com.hedera.mirror.importer.repository;
 
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.transaction.Prng;
 
-public interface PrngRepository extends PagingAndSortingRepository<Prng, Long>, RetentionRepository {
+public interface PrngRepository extends CrudRepository<Prng, Long>, RetentionRepository {
 
     @Modifying
     @Query("delete from Prng where consensusTimestamp <= ?1")

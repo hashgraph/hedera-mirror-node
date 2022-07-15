@@ -25,7 +25,6 @@ import static com.hedera.services.stream.proto.ContractAction.CallerCase.CALLING
 import static com.hedera.services.stream.proto.ContractAction.RecipientCase.RECIPIENT_ACCOUNT;
 import static com.hedera.services.stream.proto.ContractAction.RecipientCase.RECIPIENT_CONTRACT;
 import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
-import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -55,7 +54,6 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1184,8 +1182,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     private void assertPartialContractCallResult(ContractCallTransactionBody transactionBody,
                                                  TransactionRecord record) {
         long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
-        ContractFunctionResult result = record.getContractCallResult();
-
         ObjectAssert<ContractResult> contractResult = assertThat(contractResultRepository.findAll())
                 .filteredOn(c -> c.getConsensusTimestamp().equals(consensusTimestamp))
                 .hasSize(1)
@@ -1286,36 +1282,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
             contractCall.setFunctionParameters(ByteString.copyFromUtf8("Call Parameters"));
             contractCall.setGas(33333);
         });
-    }
-
-    private Transaction tokenSupplyTransaction(TokenType tokenType, boolean mint) {
-        var serialNumbers = List.of(1L, 2L, 3L);
-        Transaction transaction = null;
-        if (mint) {
-            transaction = buildTransaction(builder -> {
-                builder.getTokenMintBuilder()
-                        .setToken(TOKEN_ID);
-                if (tokenType == FUNGIBLE_COMMON) {
-                    builder.getTokenMintBuilder().setAmount(10);
-                } else {
-                    builder.getTokenMintBuilder().addAllMetadata(Collections
-                            .nCopies(serialNumbers.size(), ByteString.copyFromUtf8(METADATA)));
-                }
-            });
-        } else {
-            transaction = buildTransaction(builder -> {
-                builder.getTokenBurnBuilder()
-                        .setToken(TOKEN_ID);
-                if (tokenType == FUNGIBLE_COMMON) {
-                    builder.getTokenBurnBuilder().setAmount(10);
-                } else {
-                    builder.getTokenBurnBuilder()
-                            .addAllSerialNumbers(serialNumbers);
-                }
-            });
-        }
-
-        return transaction;
     }
 
     private Optional<ContractResult> getContractResult(Timestamp consensusTimestamp) {

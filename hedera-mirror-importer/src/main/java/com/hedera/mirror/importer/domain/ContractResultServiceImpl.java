@@ -266,7 +266,7 @@ public class ContractResultServiceImpl implements ContractResultService {
      * contract creation is externalized into its own synthesized contract create transaction and should be processed by
      * ContractCreateTransactionHandler.
      *
-     * @param contract The contract entity
+     * @param contract   The contract entity
      * @param recordItem The recordItem in which the contract is created
      */
     private void updateContractEntityOnCreate(Contract contract, RecordItem recordItem) {

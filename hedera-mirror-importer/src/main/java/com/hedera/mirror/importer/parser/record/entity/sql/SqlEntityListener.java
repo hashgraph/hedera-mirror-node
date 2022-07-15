@@ -84,6 +84,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.SidecarFileRepository;
 
 @Log4j2
 @Named
@@ -95,6 +96,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final EntityIdService entityIdService;
     private final ApplicationEventPublisher eventPublisher;
     private final RecordFileRepository recordFileRepository;
+    private final SidecarFileRepository sidecarFileRepository;
     private final SqlProperties sqlProperties;
     private final BatchPersister tokenDissociateTransferBatchPersister;
 
@@ -146,12 +148,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                              EntityIdService entityIdService,
                              ApplicationEventPublisher eventPublisher,
                              RecordFileRepository recordFileRepository,
+                             SidecarFileRepository sidecarFileRepository,
                              SqlProperties sqlProperties,
                              @Qualifier(TOKEN_DISSOCIATE_BATCH_PERSISTER) BatchPersister tokenDissociateTransferBatchPersister) {
         this.batchPersister = batchPersister;
         this.entityIdService = entityIdService;
         this.eventPublisher = eventPublisher;
         this.recordFileRepository = recordFileRepository;
+        this.sidecarFileRepository = sidecarFileRepository;
         this.sqlProperties = sqlProperties;
         this.tokenDissociateTransferBatchPersister = tokenDissociateTransferBatchPersister;
 
@@ -208,6 +212,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         executeBatches();
         if (recordFile != null) {
             recordFileRepository.save(recordFile);
+            sidecarFileRepository.saveAll(recordFile.getSidecars());
         }
     }
 

@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.domain;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,13 +28,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import com.hedera.mirror.common.domain.StreamType;
-
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
 class StreamFilenameTest {
@@ -58,10 +56,23 @@ class StreamFilenameTest {
                        String fullExtension, Instant instant, StreamType streamType) {
         StreamFilename streamFilename = new StreamFilename(filename);
         String[] fields = {"filename", "compressor", "extension.name", "fileType", "fullExtension", "instant",
-                "streamType"};
-        Object[] expected = {filename, compressor, extension, fileType, fullExtension, instant, streamType};
+                "sidecarId", "streamType"};
+        Object[] expected = {filename, compressor, extension, fileType, fullExtension, instant, null, streamType};
 
         assertThat(streamFilename).extracting(fields).containsExactly(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "2020-06-03T16_45_00Z_01.rcd, 01",
+            "2020-06-03T16_45_00.123Z_02.rcd, 02",
+            "2020-06-03T16_45_00.123Z_02.rcd.gz, 02",
+    })
+    void newStreamFileFromSidecarRecordFilename(String filename, String expectedSidecarId) {
+        StreamFilename streamFilename = new StreamFilename(filename);
+        assertThat(streamFilename)
+                .returns(true, StreamFilename::isSidecar)
+                .returns(expectedSidecarId, StreamFilename::getSidecarId);
     }
 
     @ParameterizedTest(name = "Exception creating StreamFilename from \"{0}\"")
@@ -106,5 +117,22 @@ class StreamFilenameTest {
     void getFilenameAfter(String filename, String expected) {
         StreamFilename streamFilename = new StreamFilename(filename);
         assertThat(streamFilename.getFilenameAfter()).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "2020-06-03T16_45_00.100200345Z.rcd.gz, 1, 2020-06-03T16_45_00.100200345Z_01.rcd.gz",
+            "2020-06-03T16_45_00.100200345Z_02.rcd.gz, 3, 2020-06-03T16_45_00.100200345Z_03.rcd.gz",
+    })
+    void getSidecarFilename(String filename, int id, String expected) {
+        StreamFilename streamFilename = new StreamFilename(filename);
+        assertThat(streamFilename.getSidecarFilename(id)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"2020-06-03T16_45_00.1Z_Balances.csv", "2020-06-03T16_45_00.100200345Z.rcd_sig"})
+    void getSidecarFilenameThrows(String filename) {
+        StreamFilename streamFilename = new StreamFilename(filename);
+        assertThrows(IllegalArgumentException.class, () -> streamFilename.getSidecarFilename(1));
     }
 }

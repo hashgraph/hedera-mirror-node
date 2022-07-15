@@ -37,7 +37,7 @@ import com.hedera.mirror.importer.domain.StreamFilename;
  */
 @Log4j2
 @Value
-class PendingDownload {
+public class PendingDownload {
 
     private final CompletableFuture<ResponseBytes<GetObjectResponse>> future;
     private final StreamFilename streamFilename;
@@ -58,18 +58,18 @@ class PendingDownload {
         this.s3key = s3key;
     }
 
-    byte[] getBytes() throws ExecutionException, InterruptedException {
+    public byte[] getBytes() throws ExecutionException, InterruptedException {
         return future.get().asByteArrayUnsafe();
     }
 
-    GetObjectResponse getObjectResponse() throws ExecutionException, InterruptedException {
+    public GetObjectResponse getObjectResponse() throws ExecutionException, InterruptedException {
         return future.get().response();
     }
 
     /**
      * @return true if the download was successful.
      */
-    boolean waitForCompletion() throws InterruptedException {
+    public boolean waitForCompletion() throws InterruptedException {
         if (alreadyWaited) {
             return downloadSuccessful;
         }

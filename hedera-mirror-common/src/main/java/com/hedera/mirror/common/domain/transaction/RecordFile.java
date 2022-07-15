@@ -23,6 +23,8 @@ package com.hedera.mirror.common.domain.transaction;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -47,7 +49,7 @@ import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
 
-@Builder(toBuilder = true)
+@Builder(buildMethodName = "buildInternal", toBuilder = true)
 @Data
 @Entity
 @AllArgsConstructor
@@ -120,6 +122,13 @@ public class RecordFile implements StreamFile<RecordItem> {
     @ToString.Exclude
     private String previousHash;
 
+    private int sidecarCount;
+
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    @Transient
+    private List<SidecarFile> sidecars = Collections.emptyList();
+
     private Integer size;
 
     private int version;
@@ -164,5 +173,15 @@ public class RecordFile implements StreamFile<RecordItem> {
             return record.getContractCallResult();
         }
         return null;
+    }
+
+    public static class RecordFileBuilder<C, B extends RecordFile.RecordFileBuilder> {
+
+        public RecordFile build() {
+            if (sidecars == null) {
+                sidecars = Collections.emptyList();
+            }
+            return buildInternal();
+        }
     }
 }
