@@ -262,8 +262,7 @@ func (br *blockRepository) initGenesisRecordFile(ctx context.Context) *rTypes.Er
 		br.genesisBlock = rb
 	})
 
-	//log.Infof("Fetched genesis record file, index - %d", br.genesisBlock.Index)
-	log.Infof("Fetched genesis record file - %+v", br.genesisBlock)
+	log.Infof("Fetched genesis record file, index - %d", br.genesisBlock.Index)
 	return nil
 }
 
