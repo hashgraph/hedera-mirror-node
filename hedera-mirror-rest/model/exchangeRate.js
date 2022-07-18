@@ -38,10 +38,10 @@ class ExchangeRate {
     }
 
     this.current_cent = exchangeRateSet.currentRate.centEquiv;
-    this.current_expiration = exchangeRateSet.currentRate.expirationTime.seconds.low;
+    this.current_expiration = exchangeRateSet.currentRate.expirationTime.seconds.toNumber();
     this.current_hbar = exchangeRateSet.currentRate.hbarEquiv;
     this.next_cent = exchangeRateSet.nextRate.centEquiv;
-    this.next_expiration = exchangeRateSet.nextRate.expirationTime.seconds.low;
+    this.next_expiration = exchangeRateSet.nextRate.expirationTime.seconds.toNumber();
     this.next_hbar = exchangeRateSet.nextRate.hbarEquiv;
     this.timestamp = exchangeRate.consensus_timestamp;
   }
