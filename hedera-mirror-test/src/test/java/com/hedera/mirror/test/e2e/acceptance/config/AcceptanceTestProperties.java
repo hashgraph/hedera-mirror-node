@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,14 +38,18 @@ import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 @Data
 @Validated
 public class AcceptanceTestProperties {
+
+    private final FeatureProperties featureProperties;
+    private final RestPollingProperties restPollingProperties;
+    private final SdkProperties sdkProperties;
+    private final WebClientProperties webClientProperties;
+
     @NotNull
     private Duration backOffPeriod = Duration.ofMillis(5000);
 
     private boolean createOperatorAccount = true;
 
     private boolean emitBackgroundMessages = false;
-
-    private final FeatureProperties featureProperties;
 
     @Max(5)
     private int maxRetries = 2;
@@ -54,7 +58,7 @@ public class AcceptanceTestProperties {
     private Long maxTinyBarTransactionFee = 2_000_000_000L;
 
     @NotNull
-    private Duration messageTimeout = Duration.ofSeconds(60);
+    private Duration messageTimeout = Duration.ofSeconds(20);
 
     @NotBlank
     private String mirrorNodeAddress;
@@ -64,7 +68,7 @@ public class AcceptanceTestProperties {
 
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
-    private long operatorBalance = 30_000_000_000L;
+    private long operatorBalance = 15_000_000_000L;
 
     @NotBlank
     private String operatorId;
@@ -72,18 +76,12 @@ public class AcceptanceTestProperties {
     @NotBlank
     private String operatorKey;
 
-    private final RestPollingProperties restPollingProperties;
-
     private boolean retrieveAddressBook = true;
-
-    private final SdkProperties sdkProperties;
-
-    private final WebClientProperties webClientProperties;
 
     public enum HederaNetwork {
         MAINNET,
+        OTHER,
         PREVIEWNET,
         TESTNET,
-        OTHER
     }
 }
