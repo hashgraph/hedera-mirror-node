@@ -126,7 +126,7 @@ class RecordFileService extends BaseService {
       RecordFileService.blocksQuery +
       `
       ${where}
-      order by ${RecordFile.INDEX} ${filters.order}
+      order by ${RecordFile.CONSENSUS_END} ${filters.order}
       limit ${filters.limit}
     `;
     const rows = await super.getRows(query, params, 'getBlocks');
