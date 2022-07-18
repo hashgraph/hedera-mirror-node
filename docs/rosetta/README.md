@@ -163,9 +163,8 @@ testnet accounts with the private keys and set `prefunded_accounts` in `testnet/
 }
 ```
 
-Note you can follow the
-[account creation guide](https://help.hedera.com/hc/en-us/articles/360000664678-How-do-I-create-an-account-on-the-Hedera-testnet-)
-to get testnet accounts.
+Note you can follow the [account creation guide](https://help.hedera.com/hc/en-us/articles/360000664678) to get testnet
+accounts.
 
 After updating the `validation.json` file run
 
