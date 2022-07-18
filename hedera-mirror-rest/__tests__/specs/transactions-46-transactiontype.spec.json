@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for a specific transactions using all params",
+  "description": "Transaction api calls with transactiontype query filter",
   "setup": {
     "accounts": [
       {
