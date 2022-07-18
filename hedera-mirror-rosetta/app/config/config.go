@@ -43,7 +43,7 @@ const (
 	configTypeYaml  = "yml"
 	envKeyDelimiter = "_"
 	keyDelimiter    = "::"
-	nodeEnvKey      = "HEDERA_MIRROR_ROSETTA_NODES"
+	nodesEnvKey     = "HEDERA_MIRROR_ROSETTA_NODES"
 )
 
 type fullConfig struct {
@@ -108,8 +108,8 @@ func LoadConfig() (*Config, error) {
 }
 
 func loadNodeMapFromEnv() (NodeMap, error) {
-	nodeValue := os.Getenv(nodeEnvKey)
-	os.Unsetenv(nodeEnvKey)
+	nodeValue := os.Getenv(nodesEnvKey)
+	os.Unsetenv(nodesEnvKey)
 	if nodeValue == "" {
 		return nil, nil
 	}
