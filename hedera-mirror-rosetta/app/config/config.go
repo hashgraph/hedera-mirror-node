@@ -124,7 +124,7 @@ func loadNodeMapFromEnv() (NodeMap, error) {
 		nodeInfoMap[fmt.Sprintf("%s:%s", parts[0], parts[1])] = parts[2]
 	}
 
-	nodeMap, err := nodeMapDecodeHookFunc(reflect.TypeOf(map[string]string{}), reflect.TypeOf(NodeMap{}), nodeInfoMap)
+	nodeMap, err := nodeMapDecodeHookFunc(reflect.TypeOf(nodeInfoMap), reflect.TypeOf(NodeMap{}), nodeInfoMap)
 	return nodeMap.(NodeMap), err
 }
 
