@@ -197,6 +197,58 @@ func TestLoadCustomConfigByEnvVarFileNotFound(t *testing.T) {
 	assert.Nil(t, config)
 }
 
+func TestLoadNodeMapFromEnv(t *testing.T) {
+	tests := []struct {
+		value    string
+		expected NodeMap
+	}{
+		{
+			value:    "192.168.0.1:50211:0.0.3",
+			expected: NodeMap{"192.168.0.1:50211": hedera.AccountID{Account: 3}},
+		},
+		{
+			value: "192.168.0.1:50211:0.0.3,192.168.15.8:50211:0.0.4",
+			expected: NodeMap{
+				"192.168.0.1:50211":  hedera.AccountID{Account: 3},
+				"192.168.15.8:50211": hedera.AccountID{Account: 4},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.value, func(t *testing.T) {
+			em := envManager{}
+			em.SetEnv("HEDERA_MIRROR_ROSETTA_NODES", tt.value)
+			t.Cleanup(em.Cleanup)
+
+			// when
+			config, err := LoadConfig()
+
+			// then
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expected, config.Nodes)
+		})
+	}
+}
+
+func TestLoadNodeMapFromEnvError(t *testing.T) {
+	values := []string{"192.168.0.1:0.0.3", "192.168.0.1:50211:0.3", "192.168.0.1"}
+	for _, value := range values {
+		t.Run(value, func(t *testing.T) {
+			em := envManager{}
+			em.SetEnv("HEDERA_MIRROR_ROSETTA_NODES", value)
+			t.Cleanup(em.Cleanup)
+
+			// when
+			config, err := LoadConfig()
+
+			// then
+			assert.Error(t, err)
+			assert.Nil(t, config)
+		})
+	}
+}
+
 func TestNodeMapDecodeHookFunc(t *testing.T) {
 	nodeMapTye := reflect.TypeOf(NodeMap{})
 	tests := []struct {
