@@ -49,7 +49,7 @@ import request from 'supertest';
 
 import integrationDbOps from './integrationDbOps';
 import integrationDomainOps from './integrationDomainOps';
-import S3Ops from './integrationS3Ops';
+import IntegrationS3Ops from './integrationS3Ops';
 import config from '../config';
 import {cloudProviders} from '../constants';
 import EntityId from '../entityId';
@@ -360,7 +360,7 @@ describe('DB integration test - spec based', () => {
   jest.setTimeout(40000);
 
   beforeAll(async () => {
-    s3Ops = new S3Ops();
+    s3Ops = new IntegrationS3Ops();
     await s3Ops.start();
     configS3ForStateProof(s3Ops.getEndpointUrl());
     await uploadFilesToS3(s3Ops.getEndpointUrl());

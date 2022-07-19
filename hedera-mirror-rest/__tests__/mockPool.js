@@ -33,7 +33,7 @@ const {default: defaultLimit} = getResponseLimit();
  * It captures SQL query that would have been sent to the database, and parses the
  * relevant parameters such as timestamp, account.id from it.
  */
-class Pool {
+class MockPool {
   /**
    * Constructor for the mock DB pool
    * @param {Object} dbParams Unused - db parameters
@@ -447,4 +447,4 @@ class Pool {
   }
 }
 
-export default Pool;
+export default MockPool;

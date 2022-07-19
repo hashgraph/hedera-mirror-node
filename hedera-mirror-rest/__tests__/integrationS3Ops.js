@@ -26,7 +26,7 @@ const localstackImageName = 'localstack/localstack';
 const localstackImageTag = 'latest';
 const defaultS3Port = 4566;
 
-class S3Ops {
+class IntegrationS3Ops {
   async start() {
     const isInstalled = await isDockerInstalled();
     if (!isInstalled) {
@@ -83,4 +83,4 @@ class S3Ops {
   }
 }
 
-export default S3Ops;
+export default IntegrationS3Ops;
