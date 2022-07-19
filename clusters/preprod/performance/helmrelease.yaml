@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.60.0'
+      version: '0.61.0-rc1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -21,7 +21,7 @@ spec:
     crds: CreateReplace
   interval: 90s
   test:
-    enable: false
+    enable: true
     timeout: 16m
   upgrade:
     cleanupOnFail: true
@@ -47,4 +47,6 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    test:
+      enabled: true
 
