@@ -18,15 +18,12 @@
  * ‍
  */
 
-import {jest} from '@jest/globals';
-
 import {CryptoAllowanceService} from '../../service';
 import {assertSqlQueryEqual} from '../testutils';
-import integrationDbOps from '../integrationDbOps';
 import integrationDomainOps from '../integrationDomainOps';
 import defaultMochaStatements from './defaultMochaStatements';
 
-defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
+defaultMochaStatements();
 
 const defaultOwnerFilter = 'owner = $1';
 const additionalConditions = [defaultOwnerFilter, 'spender > $2'];

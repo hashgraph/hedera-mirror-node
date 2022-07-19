@@ -18,15 +18,16 @@
  * ‍
  */
 
-import {jest} from '@jest/globals';
 import _ from 'lodash';
 
 import TransactionId from '../../transactionId';
 import {TransactionService} from '../../service';
 import {TransactionResult, TransactionType} from '../../model';
 
-import integrationDbOps from '../integrationDbOps';
 import integrationDomainOps from '../integrationDomainOps';
+import defaultMochaStatements from './defaultMochaStatements';
+
+defaultMochaStatements();
 
 const contractCallType = TransactionType.getProtoId('CONTRACTCALL');
 const contractCreateType = TransactionType.getProtoId('CONTRACTCREATEINSTANCE');
@@ -34,9 +35,6 @@ const ethereumTxType = TransactionType.getProtoId('ETHEREUMTRANSACTION');
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
 const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
-
-import defaultMochaStatements from './defaultMochaStatements';
-defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 describe('TransactionService.getTransactionDetailsFromTimestamp tests', () => {
   test('No match', async () => {

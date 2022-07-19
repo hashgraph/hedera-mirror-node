@@ -19,8 +19,8 @@
  */
 
 import {jest} from '@jest/globals';
-import log4js from 'log4js';
 import matchers from 'jest-extended';
+import log4js from 'log4js';
 
 global.logger = log4js.getLogger();
 

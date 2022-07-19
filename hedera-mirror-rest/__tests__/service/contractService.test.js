@@ -18,17 +18,15 @@
  * ‍
  */
 
-import {jest} from '@jest/globals';
 import _ from 'lodash';
 
 import {ContractService} from '../../service';
 import {assertSqlQueryEqual} from '../testutils';
-import integrationDbOps from '../integrationDbOps';
 import integrationDomainOps from '../integrationDomainOps';
 import {NotFoundError} from '../../errors';
 import defaultMochaStatements from './defaultMochaStatements';
 
-defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
+defaultMochaStatements();
 
 describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
   test('Verify simple query', async () => {

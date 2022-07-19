@@ -18,15 +18,12 @@
  * ‍
  */
 
-import {jest} from '@jest/globals';
-
 import {FileData} from '../../model';
 import {FileDataService} from '../../service';
-import integrationDbOps from '../integrationDbOps';
 import integrationDomainOps from '../integrationDomainOps';
 import defaultMochaStatements from './defaultMochaStatements';
 
-defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
+defaultMochaStatements();
 
 const files = [
   {

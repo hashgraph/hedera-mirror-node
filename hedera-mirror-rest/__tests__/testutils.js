@@ -18,8 +18,6 @@
  * ‍
  */
 
-import log4js from 'log4js';
-import config from '../config';
 import path from 'path';
 import {fileURLToPath} from 'url';
 
@@ -235,32 +233,6 @@ const validateAccNumInArray = function (responseObjects, potentialValues) {
   }
   return true;
 };
-
-const configureLogger = () => {
-  log4js.configure({
-    appenders: {
-      console: {
-        layout: {
-          pattern: '%d{yyyy-MM-ddThh:mm:ss.SSSO} %p %x{requestId} %m',
-          tokens: {
-            requestId: (e) => 'TEST',
-          },
-          type: 'pattern',
-        },
-        type: 'stdout',
-      },
-    },
-    categories: {
-      default: {
-        appenders: ['console'],
-        level: config.log.level,
-      },
-    },
-  });
-  global.logger = log4js.getLogger();
-};
-
-configureLogger();
 
 export {
   assertSqlQueryEqual,

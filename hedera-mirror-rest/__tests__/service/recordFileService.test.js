@@ -18,14 +18,11 @@
  * ‍
  */
 
-import {jest} from '@jest/globals';
-
 import {RecordFileService} from '../../service';
-import integrationDbOps from '../integrationDbOps';
 import integrationDomainOps from '../integrationDomainOps';
 import defaultMochaStatements from './defaultMochaStatements';
 
-defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
+defaultMochaStatements();
 
 const expectToEqualId16 = (blockId16) => {
   expect(blockId16.index).toEqual(16);

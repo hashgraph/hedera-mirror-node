@@ -18,15 +18,12 @@
  * ‍
  */
 
-import {jest} from '@jest/globals';
-
 import {EntityService} from '../../service';
 import AccountAlias from '../../accountAlias';
-import integrationDbOps from '../integrationDbOps';
 import integrationDomainOps from '../integrationDomainOps';
 import defaultMochaStatements from './defaultMochaStatements';
 
-defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
+defaultMochaStatements();
 
 const defaultEntityAlias = new AccountAlias('1', '2', 'KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ');
 const defaultInputEntity = [
