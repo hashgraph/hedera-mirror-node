@@ -292,11 +292,11 @@ class MockPool {
     // Create a mock response based on the sql query parameters
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
-      const row = {};
-      row.consensus_timestamp = this.toNs(Math.floor((timestamp.low + timestamp.high) / 2));
-      row.account_id = this.getAccountId(accountNum, i);
-
-      row.balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
+      const row = {
+        consensus_timestamp: this.toNs(Math.floor((timestamp.low + timestamp.high) / 2)),
+        account_id: this.getAccountId(accountNum, i),
+        balance: balance.low + Math.floor((balance.high - balance.low) / limit.high),
+      };
 
       rows.push(row);
     }
@@ -354,24 +354,24 @@ class MockPool {
     // Create a mock response based on the sql query parameters
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
-      const row = {};
-
-      row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
-      row.alias = null;
-      row.auto_renew_period = i * 1000;
-      row.consensus_timestamp = this.toNs(this.timeNow);
-      row.decline_reward = false;
-      row.deleted = false;
-      row.expiration_timestamp = this.toNs(this.timeNow + 1000);
-      row.id = this.getAccountId(accountNum, i);
-      row.key = Buffer.from(`Key for row ${i}`);
-      row.max_automatic_token_associations = i;
-      row.memo = 'account_memo' + i;
-      row.receiver_sig_required = false;
-      row.staked_account_id = 0;
-      row.staked_node_id = -1;
-      row.stake_period_start = -1;
-      row.type = 'ACCOUNT';
+      const row = {
+        account_balance: balance.low + Math.floor((balance.high - balance.low) / limit.high),
+        alias: null,
+        auto_renew_period: i * 1000,
+        consensus_timestamp: this.toNs(this.timeNow),
+        decline_reward: false,
+        deleted: false,
+        expiration_timestamp: this.toNs(this.timeNow + 1000),
+        id: this.getAccountId(accountNum, i),
+        key: Buffer.from(`Key for row ${i}`),
+        max_automatic_token_associations: i,
+        memo: 'account_memo' + i,
+        receiver_sig_required: false,
+        staked_account_id: 0,
+        staked_node_id: -1,
+        stake_period_start: -1,
+        type: 'ACCOUNT',
+      };
 
       rows.push(row);
     }
