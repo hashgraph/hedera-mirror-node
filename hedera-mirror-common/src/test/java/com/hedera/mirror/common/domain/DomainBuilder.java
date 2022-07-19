@@ -110,6 +110,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.services.stream.proto.ContractAction.ResultDataCase;
 import com.hedera.services.stream.proto.ContractActionType;
 
 @Component
@@ -260,7 +261,7 @@ public class DomainBuilder {
     public DomainWrapper<ContractAction, ContractAction.ContractActionBuilder> contractAction() {
         var builder = ContractAction.builder()
                 .callDepth(1)
-                .caller(entityId(ACCOUNT))
+                .caller(entityId(CONTRACT))
                 .callerType(CONTRACT)
                 .callType(ContractActionType.CALL.getNumber())
                 .consensusTimestamp(timestamp())
@@ -269,10 +270,8 @@ public class DomainBuilder {
                 .index((int) id())
                 .input(bytes(256))
                 .recipientAccount(entityId(ACCOUNT))
-                .recipientAddress(bytes(20))
-                .recipientContract(entityId(CONTRACT))
                 .resultData(bytes(256))
-                .resultDataType(1)
+                .resultDataType(ResultDataCase.OUTPUT.getNumber())
                 .value(300L);
         return new DomainWrapperImpl<>(builder, builder::build);
     }

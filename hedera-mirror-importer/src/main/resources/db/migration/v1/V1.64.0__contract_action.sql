@@ -17,3 +17,9 @@ create table if not exists contract_action
     value               bigint                              not null,
     primary key (consensus_timestamp, index)
 );
+
+alter table if exists contract
+    add column if not exists runtime_bytecode bytea null;
+
+alter table if exists contract_history
+    add column if not exists runtime_bytecode bytea null;

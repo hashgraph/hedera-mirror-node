@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -86,8 +87,9 @@ public class ContractResultServiceImpl implements ContractResultService {
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = isContractCreateOrCall(recordItem.getTransactionBody()) ? transaction.getEntityId() :
                 entityIdService.lookup(functionResult.getContractID());
-        processContractResult(recordItem, contractId, functionResult, transactionHandler);
-        processContractActions(recordItem);
+        var sidecarLists = recordItem.getSidecarLists();
+        processContractResult(recordItem, contractId, functionResult, transactionHandler, sidecarLists.getRight());
+        processContractActions(recordItem, sidecarLists.getLeft());
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
@@ -98,8 +100,9 @@ public class ContractResultServiceImpl implements ContractResultService {
         return transactionBody.hasContractCall() || transactionBody.hasContractCreateInstance();
     }
 
-    private void processContractActions(RecordItem recordItem) {
-        var contractActions = recordItem.getContractActions();
+    private void processContractActions(RecordItem recordItem,
+                                        List<com.hedera.services.stream.proto.ContractAction> contractActions) {
+        var consensusTimestamp = recordItem.getConsensusTimestamp();
         for (int index = 0; index < contractActions.size(); ++index) {
             var action = contractActions.get(index);
             var contractAction = new ContractAction();
@@ -107,7 +110,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             switch (action.getCallerCase()) {
                 case CALLING_CONTRACT -> {
                     contractAction.setCallerType(EntityType.CONTRACT);
-                    contractAction.setCaller(entityIdService.lookup(action.getCallingContract()));
+                    contractAction.setCaller(EntityId.of(action.getCallingContract()));
                 }
                 case CALLING_ACCOUNT -> {
                     contractAction.setCallerType(EntityType.ACCOUNT);
@@ -121,21 +124,31 @@ public class ContractResultServiceImpl implements ContractResultService {
                 case RECIPIENT_ACCOUNT ->
                         contractAction.setRecipientAccount(EntityId.of(action.getRecipientAccount()));
                 case RECIPIENT_CONTRACT ->
-                        contractAction.setRecipientContract(entityIdService.lookup(action.getRecipientContract()));
+                        contractAction.setRecipientContract(EntityId.of(action.getRecipientContract()));
                 case INVALID_SOLIDITY_ADDRESS ->
                         contractAction.setRecipientAddress(action.getInvalidSolidityAddress().toByteArray());
                 default ->
-                    log.warn("Invalid recipient case for contract action: {}", action.getRecipientCase());
+                    throw new InvalidDatasetException("Invalid recipient case for contract action: " +
+                            action.getRecipientCase());
+            }
+
+            ByteString resultData;
+            if(!action.getError().isEmpty()) {
+                resultData = action.getError();
+            } else if(!action.getRevertReason().isEmpty()) {
+                resultData = action.getRevertReason();
+            } else {
+                resultData = action.getOutput();
             }
 
             contractAction.setCallDepth(action.getCallDepth());
             contractAction.setCallType(action.getCallTypeValue());
-            contractAction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
+            contractAction.setConsensusTimestamp(consensusTimestamp);
             contractAction.setGas(action.getGas());
             contractAction.setGasUsed(action.getGasUsed());
             contractAction.setIndex(index);
             contractAction.setInput(DomainUtils.toBytes(action.getInput()));
-            contractAction.setResultData(DomainUtils.toBytes(action.getOutput()));
+            contractAction.setResultData(DomainUtils.toBytes(resultData));
             contractAction.setResultDataType(action.getResultDataCase().getNumber());
             contractAction.setValue(action.getValue());
 
@@ -145,7 +158,8 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     private void processContractResult(RecordItem recordItem, EntityId contractEntityId,
                                        ContractFunctionResult functionResult,
-                                       TransactionHandler transactionHandler) {
+                                       TransactionHandler transactionHandler,
+                                       List<ContractStateChange> contractStateChanges) {
         // create child contracts regardless of contractResults support
         List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
         if (!entityProperties.getPersist().isContractResults()) {
@@ -178,7 +192,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             }
 
             processContractLogs(functionResult, contractResult);
-            processContractStateChanges(recordItem.getContractStateChanges(), contractResult);
+            processContractStateChanges(contractStateChanges, contractResult);
         }
 
         entityListener.onContractResult(contractResult);
@@ -208,7 +222,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         for (ContractStateChange stateChange : stateChangeList) {
             var contractId = lookup(contractResult.getContractId(), stateChange.getContractId());
             for (var storageChange : stateChange.getStorageChangesList()) {
-                com.hedera.mirror.common.domain.contract.ContractStateChange contractStateChange = new com.hedera.mirror.common.domain.contract.ContractStateChange();
+                com.hedera.mirror.common.domain.contract.ContractStateChange contractStateChange =
+                        new com.hedera.mirror.common.domain.contract.ContractStateChange();
                 contractStateChange.setConsensusTimestamp(contractResult.getConsensusTimestamp());
                 contractStateChange.setContractId(contractId);
                 contractStateChange.setPayerAccountId(contractResult.getPayerAccountId());

@@ -20,9 +20,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.FILEID;
-import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODE;
-
+import com.google.protobuf.ByteString;
+import java.util.ArrayList;
 import javax.inject.Named;
 import lombok.CustomLog;
 
@@ -39,7 +38,6 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.util.Utility;
-import com.hedera.services.stream.proto.ContractBytecode;
 
 @CustomLog
 @Named
@@ -101,28 +99,41 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             contract.setKey(transactionBody.getAdminKey().toByteArray());
         }
 
-        var contractBytecodes = recordItem.getContractBytecode().stream()
-                .filter(b -> contract.getId() == b.getContractId().getContractNum()).toList();
-        var runtimeBytecodes= contractBytecodes.stream()
-                .map(ContractBytecode::getRuntimeBytecode)
-                .toList();
-        if(runtimeBytecodes.size() == 1) {
-            contract.setRuntimeBytecode(runtimeBytecodes.get(0).toByteArray());
-        } else if(runtimeBytecodes.size() > 1) {
-            log.warn("Incorrect number of runtime bytecodes ({}) found in sidecar record for Contract Id {}",
-                    runtimeBytecodes.size(), contract.getId());
+        switch (transactionBody.getInitcodeSourceCase()) {
+            case FILEID:
+                contract.setFileId(EntityId.of(transactionBody.getFileID()));
+                break;
+            case INITCODE:
+                contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+                break;
+            default:
+                break;
         }
 
-        if (transactionBody.getInitcodeSourceCase().equals(FILEID)) {
-            contract.setFileId(EntityId.of(transactionBody.getFileID()));
-        } else if (transactionBody.getInitcodeSourceCase().equals(INITCODE)){
-            var initcodes = contractBytecodes.stream()
-                    .map(ContractBytecode::getInitcode).toList();
-            if (initcodes.size() == 1) {
-                contract.setInitcode(initcodes.get(0).toByteArray());
-            } else {
+        var contractBytecodes = recordItem.getContractBytecode(contract.getId());
+        var runtimeBytecodes = new ArrayList<ByteString>();
+        var sidecarInitCodes = new ArrayList<ByteString>();
+        for(int i = 0; i < contractBytecodes.size(); i++) {
+            var contractBytecode = contractBytecodes.get(i);
+            runtimeBytecodes.add(contractBytecode.getRuntimeBytecode());
+            sidecarInitCodes.add(contractBytecode.getInitcode());
+        }
+
+        if(!runtimeBytecodes.isEmpty()) {
+            contract.setRuntimeBytecode(runtimeBytecodes.get(0).toByteArray());
+
+            if(runtimeBytecodes.size() > 1) {
+                log.warn("Incorrect number of runtime bytecodes ({}) found in sidecar record for Contract Id {}",
+                        runtimeBytecodes.size(), contract.getId());
+            }
+        }
+
+        if (contract.getInitcode() == null && !sidecarInitCodes.isEmpty()) {
+            contract.setInitcode(DomainUtils.toBytes(sidecarInitCodes.get(0)));
+
+            if(sidecarInitCodes.size() > 1) {
                 log.warn("Incorrect number of initcodes ({}) found in sidecar record for Contract Id {}",
-                        initcodes.size(), contract.getId());
+                        sidecarInitCodes.size(), contract.getId());
             }
         }
 
@@ -194,8 +205,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
     }
 
-    private void updateChildFromContractCreateParent(Contract contract, RecordItem parentRecordItem) {
-        var transactionBody = parentRecordItem.getTransactionBody()
+    private void updateChildFromContractCreateParent(Contract contract, RecordItem recordItem) {
+        var transactionBody = recordItem.getTransactionBody()
                 .getContractCreateInstance();
         switch (transactionBody.getInitcodeSourceCase()) {
             case FILEID:
@@ -204,15 +215,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 }
                 break;
             case INITCODE:
-                if (contract.getInitcode() == null && !parentRecordItem.getContractBytecode().isEmpty()) {
-                    var initcodes = parentRecordItem.getContractBytecode().stream()
-                            .map(ContractBytecode::getInitcode).toList();
-                    if(initcodes.size() > 1) {
-                        log.warn("Incorrect number of initcodes ({}) found in sidecar record for Contract Id {}",
-                                initcodes.size(), contract.getId());
-                    } else if(initcodes.size() == 1) {
-                        contract.setInitcode(initcodes.get(0).toByteArray());
-                    }
+                if (contract.getInitcode() == null) {
+                    contract.setInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
                 }
                 break;
             default:

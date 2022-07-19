@@ -197,25 +197,24 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
                 .get();
         var autoRenewAccount = recordItem.getTransactionBody().getContractCreateInstance().getAutoRenewAccountId();
+        var initCode = DomainUtils.toBytes(recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
         when(entityIdService.lookup(autoRenewAccount)).thenReturn(EntityId.of(autoRenewAccount));
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContract(contractId, timestamp, t -> assertThat(t)
                 .returns(autoRenewAccount.getAccountNum(), Contract::getAutoRenewAccountId)
                 .returns(null, Contract::getEvmAddress)
                 .satisfies(c -> assertThat(c.getFileId().getId()).isPositive())
-                .returns(null, Contract::getInitcode)
+                .returns(initCode, Contract::getInitcode)
         );
     }
 
     @Test
     void updateTransactionSuccessfulWithEvmAddressAndInitcode() {
-        var contractId = recordItemBuilder.contractId();
-        var recordItem = recordItemBuilder.contractCreate(contractId)
+        var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.clearAutoRenewAccountId()
                         .clearFileID()
                         .setInitcode(recordItemBuilder.bytes(2048)))
                 .record(r -> r.getContractCreateResultBuilder().setEvmAddress(recordItemBuilder.evmAddress()))
-                .sidecarRecord(r -> r.get(0).setBytecode(recordItemBuilder.contractBytecode(contractId)))
                 .build();
         var contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
@@ -241,6 +240,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
+        var initCode = DomainUtils.toBytes(recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
                 .thenReturn(EntityIdEndec.decode(10L, ACCOUNT));
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -248,7 +248,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(10L, Contract::getAutoRenewAccountId)
                 .returns(null, Contract::getEvmAddress)
                 .satisfies(c -> assertThat(c.getFileId().getId()).isPositive())
-                .returns(null, Contract::getInitcode)
+                .returns(initCode, Contract::getInitcode)
         );
     }
 
@@ -325,6 +325,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
+        var initCode = DomainUtils.toBytes(recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
                 .thenThrow(new AliasNotFoundException("alias", ACCOUNT));
         transactionHandler.updateTransaction(transaction, recordItem);
@@ -332,7 +333,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(null, Contract::getAutoRenewAccountId)
                 .returns(null, Contract::getEvmAddress)
                 .satisfies(c -> assertThat(c.getFileId().getId()).isPositive())
-                .returns(null, Contract::getInitcode)
+                .returns(initCode, Contract::getInitcode)
         );
     }
 
@@ -354,11 +355,12 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
                 .get();
+        var initCode = DomainUtils.toBytes(recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContract(contractId, timestamp, t -> assertThat(t)
                 .returns(null, Contract::getAutoRenewAccountId)
                 .returns(null, Contract::getFileId)
-                .returns(null, Contract::getInitcode)
+                .returns(initCode, Contract::getInitcode)
         );
     }
 
@@ -380,22 +382,21 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
                 .get();
+        var initCode = DomainUtils.toBytes(recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContract(contractId, timestamp, t -> assertThat(t)
                 .returns(null, Contract::getAutoRenewAccountId)
                 .returns(null, Contract::getFileId)
-                .returns(null, Contract::getInitcode)
+                .returns(initCode, Contract::getInitcode)
         );
     }
 
     @Test
     void updateContractFromContractCreateWInitCodeParent() {
         // parent item
-        var parentContractId = recordItemBuilder.contractId();
-        var parentRecordItem = recordItemBuilder.contractCreate(parentContractId)
+        var parentRecordItem = recordItemBuilder.contractCreate()
                 .transactionBody(x -> x.clearFileID()
                         .setInitcode(ByteString.copyFrom("init code", StandardCharsets.UTF_8)))
-                .sidecarRecord(r -> r.get(0).setBytecode(recordItemBuilder.contractBytecode(parentContractId)))
                 .build();
 
         // child item
@@ -436,10 +437,11 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
                 .get();
+        var initCode = DomainUtils.toBytes(recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContract(contractId, timestamp, t -> assertThat(t)
                 .returns(null, Contract::getAutoRenewAccountId)
-                .returns(null, Contract::getInitcode)
+                .returns(initCode, Contract::getInitcode)
                 .satisfies(c -> assertThat(c.getFileId()).isNotNull())
         );
     }
@@ -495,10 +497,11 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
                 .get();
+        var initCode = DomainUtils.toBytes(recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContract(contractId, timestamp, t -> assertThat(t)
                 .returns(null, Contract::getAutoRenewAccountId)
-                .returns(null, Contract::getInitcode)
+                .returns(initCode, Contract::getInitcode)
                 .satisfies(c -> assertThat(c.getFileId()).isNotNull())
         );
     }

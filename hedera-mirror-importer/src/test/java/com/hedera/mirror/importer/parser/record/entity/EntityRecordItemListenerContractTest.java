@@ -86,7 +86,6 @@ import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.util.Utility;
-import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractStateChanges;
 
 class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
@@ -119,9 +118,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     @ParameterizedTest
     @CsvSource({"true,true", "false, false"})
     void contractCreate(boolean bytecodeSourceFileId, boolean hasAutoRenewAccount) {
-        var contractId = recordItemBuilder.contractId();
-        var contractBytecode = recordItemBuilder.contractBytecode(contractId).build();
-        var recordItem = recordItemBuilder.contractCreate(contractId)
+        var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> {
                     if (!bytecodeSourceFileId) {
                         b.clearFileID().setInitcode(recordItemBuilder.bytes(1));
@@ -132,11 +129,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     b.clearAutoRenewAccountId()
                             .setDeclineReward(true)
                             .setStakedAccountId(AccountID.newBuilder().setAccountNum(1L).build());
-                })
-                .sidecarRecord(s -> {
-                    if(!bytecodeSourceFileId) {
-                        s.get(1).setBytecode(contractBytecode);
-                    }
                 })
                 .build();
         var record = recordItem.getRecord();
@@ -582,17 +574,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.CALL);
         ContractCallTransactionBody contractCallTransactionBody = transactionBody.getContractCall();
 
-        var contractRecipientContract = recordItemBuilder.contractAction(CONTRACT_ID).build();
-        var accountRecipientAccount = recordItemBuilder.contractAction(CONTRACT_ID)
-                .clearCaller().clearRecipient().setCallingAccount(recordItemBuilder.accountId())
-                .setRecipientAccount(recordItemBuilder.accountId()).build();
-        var contractRecipientAddress = recordItemBuilder.contractAction(recordItemBuilder.contractId())
-                .clearRecipient().setInvalidSolidityAddress(recordItemBuilder.bytes(20)).build();
-        var contractActions = List.of(contractRecipientContract, accountRecipientAccount, contractRecipientAddress);
-
-        var sidecarRecord = recordItemBuilder.transactionSidecarRecord()
-                .setActions(ContractActions.newBuilder()
-                        .addAllContractActions(contractActions)).build();
+        var sidecarRecord = recordItemBuilder.transactionSidecarRecord(CONTRACT_ID).build();
         RecordItem recordItem = new RecordItem(transaction, record, List.of(sidecarRecord));
 
         parseRecordItemAndCommit(recordItem);
@@ -844,7 +826,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     // Test for bad entity id in a failed transaction
     @Test
     void contractCallBadContractId() {
-        Transaction transaction = contractCallTransaction(ContractID.newBuilder().setContractNum(-1L).build());
+        var contractId = ContractID.newBuilder().setContractNum(-1L).build();
+        Transaction transaction = contractCallTransaction(contractId);
         var transactionBody = getTransactionBody(transaction);
         TransactionRecord record = buildTransactionRecord(recordBuilder -> {
             var contractFunctionResult = recordBuilder.getContractCallResultBuilder();
@@ -854,7 +837,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         var contractStateChanges = ContractStateChanges.newBuilder();
         buildContractStateChanges(contractStateChanges);
-        var sidecarRecords = recordItemBuilder.transactionSidecarRecord()
+        var sidecarRecords = recordItemBuilder.transactionSidecarRecord(contractId)
                 .setStateChanges(contractStateChanges);
 
         var recordItem = new RecordItem(transaction, record, List.of(sidecarRecords.build()));
@@ -908,10 +891,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         Long expectedAutoRenewAccountId = transactionBody.hasAutoRenewAccountId() ?
                 transactionBody.getAutoRenewAccountId().getAccountNum() : null;
         EntityId expectedFileId = transactionBody.hasFileID() ? EntityId.of(transactionBody.getFileID()) : null;
-        var optionalInitcode = recordItem.getContractBytecode().stream()
-                .filter(b -> b.getContractId().getContractNum() == contract.getId())
+        var optionalInitcode = recordItem.getContractBytecode(contract.getId()).stream()
                 .findFirst();
-        byte[] expectedInitcode = optionalInitcode.isPresent() ? optionalInitcode.get().getInitcode().toByteArray() : null;
+        byte[] expectedInitcode = optionalInitcode.isPresent() ? optionalInitcode.get().getInitcode().toByteArray() :
+                null;
+        expectedInitcode = transactionBody.getInitcode() != ByteString.EMPTY ?
+                DomainUtils.toBytes(transactionBody.getInitcode()) : expectedInitcode;
 
         assertThat(transaction)
                 .isNotNull()
@@ -980,8 +965,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     private void assertContractAction(RecordItem recordItem) {
         int count = 0;
         var repositoryActions = assertThat(contractActionRepository.findAll());
-
-        for (var contractAction : recordItem.getContractActions()) {
+        for (var contractAction : recordItem.getSidecarLists().getLeft()) {
             var caller = contractAction.getCallerCase().equals(CALLING_CONTRACT) ?
                 EntityId.of(contractAction.getCallingContract()) :
                 EntityId.of(contractAction.getCallingAccount());
@@ -1143,7 +1127,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         int count = 0;
         var contractStateChanges = assertThat(contractStateChangeRepository.findAll());
 
-        for (var contractStateChange : recordItem.getContractStateChanges()) {
+        for (var contractStateChange : recordItem.getSidecarLists().getRight()) {
             EntityId contractId = EntityId.of(contractStateChange.getContractId());
             for (var storageChange : contractStateChange.getStorageChangesList()) {
                 byte[] slot = DomainUtils.toBytes(storageChange.getSlot());

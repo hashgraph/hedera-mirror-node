@@ -29,7 +29,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,7 +53,6 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
-import com.hedera.services.stream.proto.ContractActions;
 
 @ExtendWith(MockitoExtension.class)
 class ContractResultServiceImplTest {
@@ -98,17 +97,14 @@ class ContractResultServiceImplTest {
         var resolvedId = EntityId.of(resolvedNum, CONTRACT);
 
         var transaction = domainBuilder.transaction().customize(t -> t.entityId(expectedId)).get();
-        var contractActions = ContractActions.newBuilder()
-                .addContractActions(recordItemBuilder.contractAction(evmAddress));
-        var contractStateChanges = recordItemBuilder.contractStateChanges(invalidContractId).build();
         var recordItem = recordItemBuilder.contractCreate()
                 .record(r -> {
                     r.getContractCreateResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
                     r.getContractCreateResultBuilder().removeLogInfo(1);
                 })
-                .sidecarRecord(s -> {
-                    s.get(0).setStateChanges(contractStateChanges);
-                    s.get(1).setActions(contractActions);
+                .sidecarRecord(r -> {
+                    r.get(0).clearSidecarRecords();
+                    r.get(1).clearSidecarRecords();
                 })
                 .build();
 
@@ -120,10 +116,8 @@ class ContractResultServiceImplTest {
 
         contractResultService.process(recordItem, transaction);
 
-        verify(entityListener).onContractAction(assertArg(a -> assertThat(a.getCaller()).isEqualTo(resolvedId)));
         verify(entityListener).onContractLog(assertArg(l -> assertThat(l.getContractId()).isEqualTo(expectedId)));
-        verify(entityListener, times(2)).onContractStateChange(assertArg(s ->
-                assertThat(s.getContractId()).isEqualTo(expectedId.getId())));
+        verify(entityListener, never()).onContractStateChange(any());
         verify(entityListener).onContractResult(isA(ContractResult.class));
     }
 
@@ -145,17 +139,14 @@ class ContractResultServiceImplTest {
         var resolvedId = EntityId.of(resolvedNum, CONTRACT);
 
         var transaction = domainBuilder.transaction().customize(t -> t.entityId(expectedId)).get();
-        var contractActions = ContractActions.newBuilder()
-                .addContractActions(recordItemBuilder.contractAction(evmAddress));
-        var contractStateChanges = recordItemBuilder.contractStateChanges(invalidContractId).build();
         var recordItem = recordItemBuilder.contractCall()
                 .record(r -> {
                     r.getContractCallResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
                     r.getContractCallResultBuilder().removeLogInfo(1);
                 })
-                .sidecarRecord(s -> {
-                    s.get(0).setStateChanges(contractStateChanges);
-                    s.get(1).setActions(contractActions);
+                .sidecarRecord(r -> {
+                    r.get(0).clearSidecarRecords();
+                    r.get(1).clearSidecarRecords();
                 })
                 .build();
 
@@ -166,10 +157,8 @@ class ContractResultServiceImplTest {
         when(entityIdService.lookup(evmAddress)).thenReturn(resolvedId);
         contractResultService.process(recordItem, transaction);
 
-        verify(entityListener).onContractAction(assertArg(a -> assertThat(a.getCaller()).isEqualTo(resolvedId)));
         verify(entityListener).onContractLog(assertArg(l -> assertThat(l.getContractId()).isEqualTo(expectedId)));
-        verify(entityListener, times(2)).onContractStateChange(assertArg(s ->
-                assertThat(s.getContractId()).isEqualTo(expectedId.getId())));
+        verify(entityListener, never()).onContractStateChange(any());
         verify(entityListener).onContractResult(isA(ContractResult.class));
     }
 

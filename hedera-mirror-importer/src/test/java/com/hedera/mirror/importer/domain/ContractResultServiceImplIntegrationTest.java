@@ -95,7 +95,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     void getContractResultOnTokenMintFT() {
         RecordItem recordItem = recordItemBuilder.tokenMint(TokenType.FUNGIBLE_COMMON)
                 .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
-                .sidecarRecord(r -> r.get(0).setStateChanges(recordItemBuilder.contractStateChanges(CONTRACT_ID)))
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCallResult();
 
@@ -106,7 +105,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     void getContractResultOnTokenMintNFT() {
         RecordItem recordItem = recordItemBuilder.tokenMint(TokenType.NON_FUNGIBLE_UNIQUE)
                 .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
-                .sidecarRecord(r -> r.get(0).setStateChanges(recordItemBuilder.contractStateChanges(CONTRACT_ID)))
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCallResult();
 
@@ -117,7 +115,10 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     void getContractCallResultDefaultFunctionResult() {
         RecordItem recordItem = recordItemBuilder.contractCall()
                 .record(x -> x.clearContractCallResult())
-                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
+                .sidecarRecord(r -> {
+                    r.get(0).clearSidecarRecords();
+                    r.get(1).clearSidecarRecords();
+                })
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
@@ -128,7 +129,10 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     void getContractCreateResultDefaultFunctionResult() {
         RecordItem recordItem = recordItemBuilder.contractCreate()
                 .record(x -> x.clearContractCreateResult())
-                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
+                .sidecarRecord(r -> {
+                    r.get(0).clearSidecarRecords();
+                    r.get(1).clearSidecarRecords();
+                })
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
@@ -140,7 +144,10 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         RecordItem recordItem = recordItemBuilder.contractCall()
                 .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)
                         .clearLogInfo()))
-                .sidecarRecord(r -> r.get(0).setStateChanges(recordItemBuilder.contractStateChanges(CONTRACT_ID)))
+                .sidecarRecord(r -> {
+                    r.get(0).clearSidecarRecords();
+                    r.get(1).clearSidecarRecords();
+                })
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCallResult();
 
@@ -152,7 +159,10 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         RecordItem recordItem = recordItemBuilder.contractCreate()
                 .record(x -> x.setContractCreateResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
                 .receipt(r -> r.setContractID(CONTRACT_ID))
-                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
+                .sidecarRecord(r -> {
+                    r.get(0).clearSidecarRecords();
+                    r.get(1).clearSidecarRecords();
+                })
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
@@ -164,7 +174,10 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         RecordItem recordItem = recordItemBuilder.contractCall()
                 .record(x -> x.clearContractCallResult())
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
-                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
+                .sidecarRecord(r -> {
+                    r.get(0).clearSidecarRecords();
+                    r.get(1).clearSidecarRecords();
+                })
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
@@ -176,7 +189,10 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         RecordItem recordItem = recordItemBuilder.contractCreate()
                 .record(x -> x.clearContractCreateResult())
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
-                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
+                .sidecarRecord(r -> {
+                    r.get(0).clearSidecarRecords();
+                    r.get(1).clearSidecarRecords();
+                })
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
@@ -185,27 +201,17 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void contractActionsTest() {
-        ContractActions.Builder contractActionCreate = ContractActions.newBuilder()
-                .addContractActions(
-                        recordItemBuilder.contractAction(recordItemBuilder.contractId())
-                                .setCallingAccount(recordItemBuilder.accountId())
-                                .setCallType(ContractActionType.CREATE)
-                );
-        ContractActions.Builder contractActionsRecipientAccount = ContractActions.newBuilder()
-                .addContractActions(
-                        recordItemBuilder.contractAction(recordItemBuilder.contractId())
-                                .setRecipientAccount(recordItemBuilder.accountId())
-                );
-        ContractActions.Builder contractActionsRecipientAddress = ContractActions.newBuilder()
-                .addContractActions(
-                        recordItemBuilder.contractAction(recordItemBuilder.contractId())
-                                .setInvalidSolidityAddress(recordItemBuilder.bytes(20))
-                );
-
+        var transactionsSidecar = recordItemBuilder.transactionSidecarRecord(CONTRACT_ID).build();
+        var contractRecipientContract = ContractActions.newBuilder()
+                .addContractActions(transactionsSidecar.getActions().getContractActions(0));
+        var accountRecipientAccount = ContractActions.newBuilder()
+                .addContractActions(transactionsSidecar.getActions().getContractActions(1));
+        var contractRecipientAddress = ContractActions.newBuilder()
+                .addContractActions(transactionsSidecar.getActions().getContractActions(2));
         RecordItem recordItem = recordItemBuilder.contractCall()
-                .sidecarRecord(r -> r.get(0).setActions(contractActionCreate))
-                .sidecarRecord(r -> r.get(1).setActions(contractActionsRecipientAccount))
-                .sidecarRecord(r -> r.get(2).setActions(contractActionsRecipientAddress))
+                .sidecarRecord(r -> r.get(0).setActions(contractRecipientContract))
+                .sidecarRecord(r -> r.get(1).setActions(accountRecipientAccount))
+                .sidecarRecord(r -> r.get(2).setActions(contractRecipientAddress))
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCallResult();
 
@@ -253,13 +259,14 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     private void assertContractActions(RecordItem recordItem) {
-        var contractActions = recordItem.getContractActions();
+        var contractActions = recordItem.getSidecarLists().getLeft();
         if (contractActions.size() > 0) {
             IterableAssert<com.hedera.mirror.common.domain.contract.ContractAction> listAssert = assertThat(contractActionRepository.findAll())
                     .hasSize(contractActions.size());
 
             var callers = new ArrayList<EntityId>();
             var callTypes = new ArrayList<EntityType>();
+            var contractActionTypes = new ArrayList<ContractActionType>();
             var recipientAccounts = new ArrayList<EntityId>();
             var recipientContracts = new ArrayList<EntityId>();
             var recipientAddresses = new ArrayList<byte[]>();
@@ -268,8 +275,15 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
             contractActions.forEach(a -> {
                 switch (a.getCallerCase()) {
-                    case CALLING_CONTRACT -> callers.add(EntityId.of(a.getCallingContract()));
-                    default -> callers.add(EntityId.of(a.getCallingAccount()));
+                    case CALLING_CONTRACT -> {
+                        callers.add(EntityId.of(a.getCallingContract()));
+                        callTypes.add(EntityType.CONTRACT);
+                    }
+                    default -> {
+                        callers.add(EntityId.of(a.getCallingAccount()));
+                        callTypes.add(EntityType.ACCOUNT);
+                    }
+
                 }
 
                 switch (a.getRecipientCase()) {
@@ -278,7 +292,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                     default -> recipientAddresses.add(DomainUtils.toBytes(a.getInvalidSolidityAddress()));
                 }
 
-                callTypes.add(EntityType.fromId(a.getCallType().getNumber()));
+                contractActionTypes.add(a.getCallType());
+
                 inputs.add(a.getInput().toByteArray());
                 outputs.add(a.getOutput().toByteArray());
             });
@@ -292,6 +307,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
             listAssert.extracting(ContractAction::getGas).containsOnly(contractActions.get(0).getGas());
             listAssert.extracting(ContractAction::getGasUsed).containsOnly(contractActions.get(0).getGasUsed());
             listAssert.extracting(ContractAction::getCallerType).containsAll(callTypes);
+            listAssert.extracting(ContractAction::getCallType).containsOnly(contractActionTypes.get(0).getNumber());
             listAssert.extracting(ContractAction::getInput).containsAll(inputs);
             listAssert.extracting(ContractAction::getResultData).containsAll(outputs);
             listAssert.extracting(ContractAction::getResultDataType)
@@ -326,7 +342,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     private void assertContractStateChanges(RecordItem recordItem) {
-        var stateChanges = recordItem.getContractStateChanges();
+        var stateChanges = recordItem.getSidecarLists().getRight();
         if (stateChanges.size() > 0) {
             var listAssert = assertThat(contractStateChangeRepository.findAll())
                     .hasSize(stateChanges.get(0).getStorageChangesCount());
